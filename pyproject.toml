@@ -1,0 +1,68 @@
+[tool.black]
+target-version = ['py310']
+line-length = 79
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | migrations
+  )/
+                     # the root of the project
+)
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 79
+skip = '.venv,venv,env'
+src_paths = ["src"]
+
+[tool.pytest.ini_options]
+addopts = '-s -v --cache-clear'
+asyncio_mode = 'auto'
+cache_dir = '/tmp'
+python_files = 'tests.py test_*.py *_test.py'
+python_functions = 'test_* *_test'
+filterwarnings = ['ignore::RuntimeWarning', 'ignore::UserWarning']
+
+[tool.coverage.run]
+omit = [
+    "*/conftest.py",
+    "*/test_*.py",
+]
+
+[tool.mypy]
+plugins = [
+    "pydantic.mypy"
+]
+python_version = '3.9'
+mypy_path = 'src'
+files = ['*.py',]
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+namespace_packages = true
+
+# Silint "type import errors" as our 3rd-party libs does not have types
+# Check: https://mypy.readthedocs.io/en/latest/config_file.html#import-discovery
+follow_imports = 'silent'
+
+[[tool.mypy.overrides]]
+module = [
+    'mixer.*',
+]
+ignore_missing_imports = true
+
