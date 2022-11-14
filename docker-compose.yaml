@@ -17,6 +17,8 @@ services:
       - 6379:6379
 
   web_app:
+    stdin_open: true
+    tty: true
     image: mindlogger_backend
     build:
       context: .
