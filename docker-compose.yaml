@@ -3,11 +3,15 @@ version: "3"
 services:
 
   postgres:
-    image: postgres:14
-    container_name: postgres
-    env_file: .env
+    image: postgres:14-alpine
+    env_file: ".env"
+    container_name: pg_minedlogger_db
+    environment:
+      - POSTGRES_PASSWORD=postgres
     expose:
       - "5432"
+    ports:
+      - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
   redis:
