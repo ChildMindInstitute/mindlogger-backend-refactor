@@ -3,8 +3,8 @@ version: "3"
 services:
 
   postgres:
-    image: postgres:14-alpine
-    container_name: postgres_mindlogger
+    image: postgres:14
+    container_name: mindlogger_postgres
     env_file: .env
     ports:
       - 5432:5432
@@ -12,16 +12,16 @@ services:
       - pg_data:/var/lib/postgresql/data
 
   redis:
-    image: redis:6.2.4
+    image: redis
     ports:
       - 6379:6379
 
   web_app:
-    image: web_app_mindlogger
+    image: mindlogger_backend
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-    container_name: web_app_mindlogger
+    container_name: mindlogger_backend_web_app
     env_file: .env
     depends_on:
       - postgres
