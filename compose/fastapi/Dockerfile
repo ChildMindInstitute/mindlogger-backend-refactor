@@ -1,4 +1,4 @@
-FROM --platform=linux/x86_64 python:3.10-slim
+FROM --platform=linux/x86_64 python:3.10.8-slim
 
 ARG PIPENV_EXTRA_ARGS
 
