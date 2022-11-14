@@ -4,32 +4,30 @@ services:
 
   postgres:
     image: postgres:14-alpine
-    env_file: ".env"
-    container_name: pg_minedlogger_db
-    environment:
-      - POSTGRES_PASSWORD=postgres
-    expose:
-      - "5432"
+    container_name: postgres_mindlogger
+    env_file: .env
     ports:
-      - "5432:5432"
+      - 5432:5432
     volumes:
       - pg_data:/var/lib/postgresql/data
+
   redis:
     image: redis:6.2.4
     ports:
       - 6379:6379
-  fastapi:
-    image: fastapi_service
-    container_name: fastapi_service
+
+  web_app:
+    image: web_app_mindlogger
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
+    container_name: web_app_mindlogger
     env_file: .env
     depends_on:
       - postgres
       - redis
     ports:
-      - 8012:80
+      - 8000:80
     volumes:
       - ./:/app/
 

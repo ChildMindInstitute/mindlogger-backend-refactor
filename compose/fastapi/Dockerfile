@@ -1,7 +1,5 @@
 FROM --platform=linux/x86_64 python:3.9-slim
 
-ARG GITLAB_RO_USERNAME
-ARG GITLAB_RO_PASSWORD
 ARG PIPENV_EXTRA_ARGS
 
 # https://www.uvicorn.org/settings/
@@ -31,9 +29,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
 RUN pip install --upgrade pip setuptools pipenv
 
 COPY Pipfile Pipfile.lock ./
-RUN env
 RUN pipenv sync --system ${PIPENV_EXTRA_ARGS}
-# RUN pipenv install --system --deploy --ignore-pipfile $PIPENV_EXTRA_ARGS
 
 
 # Copy the whole project project
