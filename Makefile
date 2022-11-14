@@ -1,4 +1,4 @@
-PORT = 8012
+PORT = 8000
 HOST = localhost
 
 TEST_COMMAND = pytest -s -vvv
