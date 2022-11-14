@@ -52,7 +52,6 @@ git clone git@github.com:ChildMindInstitute/mindlogger-backend-refactor.git
 | Key | Default value                                                     | Description                                                                                                 |
 | --- |-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
 | PYTHONPATH | src/                                                              | This variable makes all folders inside `src/` reachable in a runtime. </br> ***NOTE:*** You don't need to do this if you use Docker as far as it is hardcoded in `Dockerfile` |
-| COMPOSE_FILE | docker-compose.yaml                                               | The name of the docker-compose file we are using.                                                    |
 | DATABASE_URL | postgresql://postgres: postgres@postgres:5432/ mindlogger_backend | Database connection. (If you want to take the default value, do not forget to remove the extra spaces) |
 
 ##### ✋ Mandatory:
