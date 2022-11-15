@@ -1,0 +1,12 @@
+docker-compose.yaml
+.devcontainer
+*.code-workspace
+.python-version
+.pre-commit-config.yaml
+.env
+*.md
+*.rst
+compose/
+venv*/
+Makefile
+
