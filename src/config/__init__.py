@@ -22,8 +22,10 @@ class Settings(BaseSettings):
 
     database_url = getenv(
         "DATABASE_URL",
-        default="postgresql+asyncpg:// \
-        postgres:postgres@postgres:5432/mindlogger_backend",
+        default=(
+            "postgresql+asyncpg://"
+            "postgres:postgres@postgres:5432/mindlogger_backend"
+        ),
     )
 
     # Cache

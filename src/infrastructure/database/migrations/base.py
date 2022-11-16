@@ -8,9 +8,3 @@ Import all SQLAlchemy models here
 """
 
 from infrastructure.database import Base  # noqa: F401, F403
-
-# from infrastructure.database.base import Base  # noqa: F401, F403
-
-# Import all the required models here
-# Example:
-# from src.apps.authentication.db import *  # noqa: F401, F403
