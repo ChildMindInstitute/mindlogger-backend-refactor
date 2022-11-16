@@ -63,6 +63,7 @@ follow_imports = 'silent'
 [[tool.mypy.overrides]]
 module = [
     'mixer.*',
+    'sqlalchemy.*'
 ]
 ignore_missing_imports = true
 
