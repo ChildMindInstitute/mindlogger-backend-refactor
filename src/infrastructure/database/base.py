@@ -1,6 +1,7 @@
-from core import engine
 from sqlalchemy import Column, Integer
 from sqlalchemy.orm import declarative_base
+
+from infrastructure.database.core import engine
 
 __all__ = ["Base"]
 

@@ -1,13 +1,12 @@
 from typing import Any, Generic, Type, TypeVar
 
-from base import Base
-from core import get_session
-from sqlalchemy import func, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Query
-from sqlalchemy.sql import select
-from sqlalchemy.sql.expression import delete
+
+from infrastructure.database.base import Base
+from infrastructure.database.core import get_session
 
 ConcreteSchema = TypeVar("ConcreteSchema", bound=Base)
 
