@@ -1,4 +1,4 @@
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.engine import Result
@@ -34,15 +34,14 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
     async def _update(
         self,
-        schema_class: Type[ConcreteSchema],
         lookup: tuple[str, Any],
         payload: dict[str, Any],
     ) -> None:
         """Updates an existed instance of the model in the related table"""
 
         query: Query = (
-            update(schema_class)
-            .where(getattr(schema_class, lookup[0]) == lookup[1])
+            update(self.schema_class)
+            .where(getattr(self.schema_class, lookup[0]) == lookup[1])
             .values(
                 **payload,
             )
