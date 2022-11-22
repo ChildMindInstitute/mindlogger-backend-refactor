@@ -17,7 +17,11 @@ DOCKER_EXEC = docker-compose exec fastapi
 # NOTE: Make sure that Redis server is running
 .PHONY: run
 run:
-	uvicorn src.main:app --proxy-headers --host ${HOST} --port ${PORT} --debug
+	uvicorn src.main:app --proxy-headers --host ${HOST} --port ${PORT} --reload
+
+.PHONY: run_storages
+run_storages:
+	docker-compose up -d redis postgres
 
 .PHONY: test
 test:
@@ -28,11 +32,6 @@ test:
 cq:
 	${BLACK_COMMAND} ./ && ${FLAKE8_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./
 
-
-.PHONY: check
-check:
-	${BLACK_COMMAND} ./ && ${FLAKE8_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./ \
-	&& ${TEST_COMMAND}
 
 
 # ###############
