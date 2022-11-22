@@ -1,16 +1,22 @@
-from sqlalchemy import Column, String
+from pydantic import EmailStr
+from sqlalchemy import Boolean, Column, String
 
 from apps.shared.domain import Model
 from infrastructure.database.base import Base
 
 
+# Shared properties
 class UserSchema(Base):
     __tablename__ = "users"
 
-    username = Column(String(length=100))
     email = Column(String(length=100))
+    username = Column(String(length=100))
+    is_active = Column(Boolean, default=True)
+    is_superuser = Column(Boolean, default=False)
 
 
-class UserCreateSchema(Model):
+# Properties to receive via API on creation
+class UserCreate(Model):
+    email: EmailStr
+    password: str
     username: str
-    email: str

@@ -1,8 +1,9 @@
-from os import getenv
 from pathlib import Path
 
 from pydantic import BaseSettings
 
+from config.authentication import AuthenticationSettings
+from config.database import DatabaseSettings
 from config.sentry import SentrySettings
 from config.service import ServiceSettings, ServiceUrlsSettings
 
@@ -20,36 +21,17 @@ class Settings(BaseSettings):
     # Service
     service: ServiceSettings = ServiceSettings()
 
-    database_url = getenv(
-        "DATABASE_URL",
-        default=(
-            "postgresql+asyncpg://"
-            "postgres:postgres@postgres:5432/mindlogger_backend"
-        ),
-    )
-
     # Cache
     redis_url: str = "redis://redis"
 
+    # DataBase
+    database = DatabaseSettings()
+
     # Authentication
-    secret_key = getenv(
-        "SECRET_KEY",
-        default="e51bcf5f4cb8550ff3f6a8bb4dfe112a"
-        "3da2cf5142929e1b281cd974c88fa66c",
-    )
-    algorithm = getenv(
-        "ALGORITHM",
-        default="HS256",
-    )
-    access_token_expire_minutes = getenv(
-        "ACCESS_TOKEN_EXPIRE_MINUTES",
-        default=30,
-    )
+    authentication = AuthenticationSettings()
 
     # Sentry stuff
     sentry: SentrySettings = SentrySettings()
-
-    # Providers
 
     class Config:
         env_nested_delimiter = "__"
