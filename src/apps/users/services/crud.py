@@ -1,6 +1,7 @@
 from typing import Any
 
-from apps.users.db.schemas import UserCreate, UserSchema
+from apps.users.db.schemas import UserCreate
+from apps.users.domain.models import UserSchema
 from apps.users.domain.models import User, UsersError
 from infrastructure.database.crud import BaseCRUD
 

@@ -8,7 +8,6 @@ alembic = "~=1.8.1"
 asyncpg = "~=0.27.0"
 fastapi = "==0.86.0"
 httpx = "~=0.23"
-pydantic = "~=1.10.2"
 sentry-sdk = "~=1.6"
 sqlalchemy = {extras = ["asyncio"], version = "~=1.4.43"}
 uvicorn = {extras = ["standard"], version = "==0.19"}
@@ -16,6 +15,9 @@ python-jose = {version = "==3.3.0", extras = ["cryptography"]}
 passlib = {version = "==1.7.4", extras = ["bcrypt"]}
 types-python-jose = "==3.3.4"
 types-passlib = "==1.7.7.1"
+pyjwt = "==2.6.0"
+python-decouple = "==3.6"
+pydantic = {extras = ["email"], version = "*"}
 
 [dev-packages]
 black = "~=22.6"

@@ -11,7 +11,7 @@ __all__ = ["get_session", "engine"]
 
 
 engine = create_async_engine(
-    settings.database.database_url, future=True, pool_pre_ping=True, echo=False
+    settings.database.url, future=True, pool_pre_ping=True, echo=False
 )
 
 

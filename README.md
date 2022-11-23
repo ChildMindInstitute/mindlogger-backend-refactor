@@ -49,12 +49,23 @@ git clone git@github.com:ChildMindInstitute/mindlogger-backend-refactor.git
 
 
 #### 2.1 Description 📜
-| Key | Default value                                                     | Description                                                                                                 |
-| --- |-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
-| PYTHONPATH | src/                                                              | This variable makes all folders inside `src/` reachable in a runtime. </br> ***NOTE:*** You don't need to do this if you use Docker as far as it is hardcoded in `Dockerfile` |
-| DATABASE_URL | postgresql://postgres: postgres@postgres:5432/ mindlogger_backend | Database connection. (If you want to take the default value, do not forget to remove the extra spaces) |
+| Key | Default value                                                  | Description                                                                                                                                                                   |
+| --- |----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| PYTHONPATH | src/                                                           | This variable makes all folders inside `src/` reachable in a runtime. </br> ***NOTE:*** You don't need to do this if you use Docker as far as it is hardcoded in `Dockerfile` |
+| DATABASE__URL | postgresql://postgres: postgres@postgres:5432/ mindlogger_backend | Database connection. (If you want to take the default value, do not forget to remove the extra spaces)                                                                        |
+| DATABASE__POSTGRES_HOST | postgres | Database Host                                                                                                                                                                 |
+| DATABASE__POSTGRES_USER | postgres | User name for Postgresql Database user                                                                                                                                        |
+| DATABASE__POSTGRES_PASSWORD | postgres | Password for Postgresql Database user                                                                                                                                         |
+| DATABASE__POSTGRES_DB | mindlogger_backend | Database name                                                                                                                                                                 |
+| AUTHENTICATION__SECRET_KEY | e51bcf5f4cb8550ff3f6a8bb4dfe112a 3da2cf5142929e1b281cd974c88fa66c | Authentication Secret Key (Store in a secure place)                                                                                                                           |
+| AUTHENTICATION__ALGORITHM | HS256 | The algorithm used to sign the JWT token                                                                                                                                      |
+| AUTHENTICATION__ACCESS_TOKEN_EXPIRE_MINUTES | 30 | Time in minutes after which the token will stop working                                                                                                                       |
 
 ##### ✋ Mandatory:
+
+> You can see that some environment variables have double underscore (`__`) instead of `_`.
+>
+> As far as `pydantic` supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) it uses to have cleaner code
 
 #### 2.2 Create `.env` file for future needs
 
