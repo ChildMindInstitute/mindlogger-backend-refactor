@@ -1,5 +1,6 @@
 import io
 import uuid
+from config.cdn import CDNSettings
 
 
 class CDNClient:
@@ -10,29 +11,25 @@ class CDNClient:
         )
         PDF = "application/pdf"
 
-    def __init__(self):
+    def __init__(self, config: CDNSettings):
         self.client = None
         self.bucket = None
         self.endpoint = None
         self.env = "development"
 
-    def create_client(self, config: dict):
         try:
             import boto3
 
-            assert "SECRET_KEY" in config, "set SECRET_KEY"
-            assert "ACCESS_KEY" in config, "set ACCESS_KEY"
-            assert "REGION" in config, "set REGION"
-            assert "BUCKET" in config, "set BUCKET"
+            assert config, "set CDN"
 
             self.client = boto3.client(
                 "s3",
-                region_name=config["REGION"],
-                aws_access_key_id=config["ACCESS_KEY"],
-                aws_secret_access_key=config["SECRET_KEY"],
+                region_name=config.region,
+                aws_access_key_id=config.access_key,
+                aws_secret_access_key=config.secret_key,
             )
-            self.bucket = config["BUCKET"]
-            self.env = config["ENV"]
+            self.bucket = config.bucket
+            self.env = config.env
         except KeyError:
             print("CDN configuration is not full")
         except ImportError:

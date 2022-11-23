@@ -1,2 +1,2 @@
-from infrastructure.utility.redis import *
+from infrastructure.utility.redisclient import *
 from infrastructure.utility.cdnclient import *

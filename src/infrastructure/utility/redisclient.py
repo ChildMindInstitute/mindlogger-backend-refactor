@@ -2,6 +2,7 @@ import datetime
 import typing
 
 import aioredis
+from config.redis import RedisSettings
 
 
 class _Cache(aioredis.Redis):
@@ -29,25 +30,22 @@ class RedisCache:
     configuration = dict()
     _cache: typing.Optional[aioredis.Redis] = None
     host: typing.Optional[str] = None
-    port: typing.Optional[int] = None
-    db: typing.Optional[int] = None
+    port: typing.Optional[str] = None
+    db: typing.Optional[str] = None
     expire_duration: typing.Optional[int] = None
     env = None
 
-    def create(self, env, **kwargs):
-        self.env = env
+    def __init__(self, config: RedisSettings, **kwargs):
         self.configuration = dict()
+        self.env = config.env
+        self.host = config.host
+        self.port = config.port
+        self.db = config.db
+        self.expire_duration = config.expire_duration
+
         for key, val in kwargs.items():
-            if key.lower() == "host":
-                self.host = val
-            elif key.lower() == "port":
-                self.port = val
-            elif key.lower() == "db":
-                self.db = val
-            elif key.lower() == "expire_duration":
-                self.expire_duration = val
-            else:
-                self.configuration[key.lower()] = val
+            self.configuration[key.lower()] = val
+
         self._start()
 
     def _start(self):
