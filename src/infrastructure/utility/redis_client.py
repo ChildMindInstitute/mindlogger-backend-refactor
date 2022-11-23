@@ -35,9 +35,9 @@ class RedisCache:
     expire_duration: typing.Optional[int] = None
     env = None
 
-    def __init__(self, config: RedisSettings, **kwargs):
+    def __init__(self, config: RedisSettings, env, **kwargs):
         self.configuration = dict()
-        self.env = config.env
+        self.env = env
         self.host = config.host
         self.port = config.port
         self.db = config.db

@@ -9,4 +9,3 @@ class RedisSettings(BaseModel):
     port: str = ""
     db: str = ""
     expire_duration: int = None
-    env: str = ""

@@ -11,11 +11,11 @@ class CDNClient:
         )
         PDF = "application/pdf"
 
-    def __init__(self, config: CDNSettings):
+    def __init__(self, config: CDNSettings, env):
         self.client = None
         self.bucket = None
         self.endpoint = None
-        self.env = "development"
+        self.env = env
 
         try:
             import boto3
@@ -29,14 +29,13 @@ class CDNClient:
                 aws_secret_access_key=config.secret_key,
             )
             self.bucket = config.bucket
-            self.env = config.env
         except KeyError:
             print("CDN configuration is not full")
         except ImportError:
             print("Install boto3 in order to work with upload/download files.")
 
     def upload(self, path, body: io.BytesIO, content_type):
-        assert self.client, "initialize client"
+
         if self.env == "testing":
             # filename = path.split("/")[-1]
             # with open(filename, "wb") as file:
@@ -55,7 +54,7 @@ class CDNClient:
 
     def download(self, key):
         file = io.BytesIO()
-        assert self.client, "initialize client"
+
         if self.env == "testing":
             local_file = open(key, "rb")
             file.write(local_file.read())

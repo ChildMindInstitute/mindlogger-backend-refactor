@@ -8,4 +8,3 @@ class CDNSettings(BaseModel):
     access_key: str = ""
     region: str = ""
     bucket: str = ""
-    env: str = ""
