@@ -1,24 +1,16 @@
+import boto3
 import io
 import uuid
 from config.cdn import CDNSettings
 
 
 class CDNClient:
-    class ContentType:
-        CSV = "application/csv"
-        EXCEL = (
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        PDF = "application/pdf"
-
-    def __init__(self, config: CDNSettings, env):
-        self.client = None
+    def __init__(self, config: CDNSettings, env: str):
         self.bucket = None
         self.endpoint = None
         self.env = env
 
         try:
-            import boto3
 
             assert config, "set CDN"
 
@@ -31,10 +23,8 @@ class CDNClient:
             self.bucket = config.bucket
         except KeyError:
             print("CDN configuration is not full")
-        except ImportError:
-            print("Install boto3 in order to work with upload/download files.")
 
-    def upload(self, path, body: io.BytesIO, content_type):
+    def upload(self, path, body: io.BytesIO):
 
         if self.env == "testing":
             # filename = path.split("/")[-1]
@@ -45,7 +35,6 @@ class CDNClient:
             body,
             Key=path,
             Bucket=self.bucket,
-            ExtraArgs={"ContentType": content_type},
         )
 
     @staticmethod

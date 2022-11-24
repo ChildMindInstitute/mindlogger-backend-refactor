@@ -2,10 +2,11 @@ import datetime
 import typing
 
 import aioredis
-from config.redis import RedisSettings
+from config import settings
+from sentry_sdk import capture_exception
 
 
-class _Cache(aioredis.Redis):
+class _Cache:
     _storage = dict()
 
     async def get(self, key: str):
@@ -27,6 +28,10 @@ class _Cache(aioredis.Redis):
 
 
 class RedisCache:
+    """Singleton Redis cache client"""
+
+    _initialized: bool = False
+    _instance: None = None
     configuration = dict()
     _cache: typing.Optional[aioredis.Redis] = None
     host: typing.Optional[str] = None
@@ -35,7 +40,16 @@ class RedisCache:
     expire_duration: typing.Optional[int] = None
     env = None
 
-    def __init__(self, config: RedisSettings, env, **kwargs):
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, config: settings.redis, env, **kwargs):
+
+        if self._initialized:
+            return
+
         self.configuration = dict()
         self.env = env
         self.host = config.host
@@ -47,6 +61,8 @@ class RedisCache:
             self.configuration[key.lower()] = val
 
         self._start()
+
+        self._initialized = True
 
     def _start(self):
         if self.env == "testing":
@@ -63,8 +79,6 @@ class RedisCache:
             )
         except aioredis.exceptions.ConnectionError as e:
             try:
-                from sentry_sdk import capture_exception
-
                 capture_exception(e)
             except ImportError:
                 print(e)

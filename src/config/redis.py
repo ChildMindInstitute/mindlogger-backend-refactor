@@ -1,11 +1,11 @@
 from pydantic import BaseModel
+import typing
 
 
 class RedisSettings(BaseModel):
     """Configure redis settings"""
 
-    dsn: str = ""
     host: str = ""
     port: str = ""
     db: str = ""
-    expire_duration: int = None
+    expire_duration: typing.Optional[int]
