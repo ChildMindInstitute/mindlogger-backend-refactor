@@ -3,6 +3,8 @@ from pathlib import Path
 
 from pydantic import BaseSettings
 
+from config.cdn import CDNSettings
+from config.redis import RedisSettings
 from config.sentry import SentrySettings
 from config.service import ServiceSettings, ServiceUrlsSettings
 
@@ -35,6 +37,12 @@ class Settings(BaseSettings):
 
     # Sentry stuff
     sentry: SentrySettings = SentrySettings()
+
+    # Redis configs
+    redis: RedisSettings = RedisSettings()
+
+    # CDN configs
+    cdn: CDNSettings = CDNSettings()
 
     # Providers
 
