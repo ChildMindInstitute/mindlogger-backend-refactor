@@ -1,8 +1,8 @@
+from contextlib import suppress
 from typing import Any
 
-from apps.users.db.schemas import UserCreate
-from apps.users.domain.models import UserSchema
-from apps.users.domain.models import User, UsersError
+from apps.users.db import UserSchema
+from apps.users.domain import UserCreate, User, UserInDB, UsersError
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = "UsersCRUD"
@@ -34,8 +34,15 @@ class UsersCRUD(BaseCRUD[UserSchema]):
     async def get_by_email(self, email: str) -> User:
         return await self._fetch(key="email", value=email)
 
-    async def save_user(self, schema: UserCreate) -> tuple[User, bool]:
+    # async def get_by_username(self, username: str) -> User:
+    #     return await self._fetch(key="username", value=username)
+
+    async def save_user(self, schema: UserInDB) -> tuple[User, bool]:
         """Return user instance and the created information."""
+
+        with suppress(UsersError):
+            user: User = await self.get_by_email(schema.email)
+            return user, False
 
         # Save user into the database
         instance: UserSchema = await self._create(UserSchema(**schema.dict()))

@@ -1,10 +1,12 @@
-from pydantic import EmailStr
+from sqlalchemy import Column, String
 
-from apps.shared.domain import Model
+from infrastructure.database.base import Base
 
 
 # Properties to receive via API on creation
-class UserCreate(Model):
-    email: EmailStr
-    password: str
-    fullname: str
+class UserSchema(Base):
+    __tablename__ = "users"
+
+    email = Column(String(length=100))
+    username = Column(String(length=100))
+    hashed_password = Column(String(length=100))

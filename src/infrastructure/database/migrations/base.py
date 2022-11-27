@@ -7,5 +7,5 @@ when it imports the declarative 'Base' from this module.
 Import all SQLAlchemy models here
 """
 
-from apps.users.domain.models import *  # noqa: F401, F403
+from apps.users.db.schemas import *  # noqa: F401, F403
 from infrastructure.database import Base  # noqa: F401, F403
