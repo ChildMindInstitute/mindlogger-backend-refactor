@@ -95,6 +95,6 @@ class BaseCRUD(Generic[ConcreteSchema]):
         query: Query = delete(self.schema_class).where(
             self.schema_class.id == schema.id
         )
-        await self._execute(query)
+        await self._execute_commit(query)
 
         return None

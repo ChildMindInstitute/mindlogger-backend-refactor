@@ -5,11 +5,10 @@ from fastapi.routing import APIRouter
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from typing import Any
-from fastapi import Depends
-from fastapi.responses import JSONResponse
 
-from apps.authentication.db.schemas import TokenData
+from apps.authentication.domain import TokenData, Token, TokenInDB, TokenLogin
 from apps.authentication.services import get_password_hash, verify_password, create_access_token, create_refresh_token
+from apps.authentication.services.crud import TokensCRUD
 from apps.users.services.crud import UsersCRUD
 from apps.users.domain import User, UserCreate, UserInDB, UsersError, UserLogin
 from config import settings
@@ -25,8 +24,8 @@ def get_for_test():
     return Response("Test - OK!")
 
 
-@router.post("/login/test-token", response_model=User, tags=["Authentication"])
-async def test_token_get_current_user(token: str = Body(...)) -> Any:
+@router.post("/users/me/", response_model=User, tags=["Authentication"])
+async def token_test_get_current_user(token: Token = Body(...)) -> Any:
     """
     Test access token
     """
@@ -36,7 +35,11 @@ async def test_token_get_current_user(token: str = Body(...)) -> Any:
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, settings.authentication.secret_key, algorithms=[settings.authentication.algorithm])
+        payload = jwt.decode(
+            token.access_token,
+            settings.authentication.secret_key,
+            algorithms=[settings.authentication.algorithm]
+        )
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
@@ -46,7 +49,11 @@ async def test_token_get_current_user(token: str = Body(...)) -> Any:
     current_user: User = await UsersCRUD().get_by_email(email=token_data.email)
     if current_user is None:
         raise credentials_exception
-    return current_user
+    try:
+        await TokensCRUD().get_by_email(email=current_user.email)
+        return current_user
+    except credentials_exception:
+        return None
 
 
 @router.post("/user/signup", tags=["Authentication"])
@@ -100,4 +107,47 @@ async def login_for_access_token(user_login_schema: UserLogin = Body(...)):
     refresh_token = create_refresh_token(
         data={"sub": user.email}, expires_delta=refresh_token_expires
     )
-    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+    try:
+        await TokensCRUD().delete_token(key="email", value=user_login_schema.email)
+        token, is_created = await TokensCRUD().save_token(TokenInDB(
+            email=user_login_schema.email,
+            access_token=access_token,
+            refresh_token=refresh_token)
+        )
+    except UsersError:
+        token, is_created = await TokensCRUD().save_token(TokenInDB(
+            email=user_login_schema.email,
+            access_token=access_token,
+            refresh_token=refresh_token)
+        )
+    token_login = TokenLogin(
+        access_token=token.access_token,
+        refresh_token=token.refresh_token,
+        token_type="bearer"
+    )
+    return token_login
+
+
+@router.post("/user/sign_out", tags=["Authentication"])
+async def sign_out_for_access_token_dell(token: Token = Body(...)) -> Any:
+    """
+    Test access token
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token.access_token, settings.authentication.secret_key, algorithms=[settings.authentication.algorithm])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    try:
+        await TokensCRUD().get_by_email(email=email)
+        await TokensCRUD().delete_token(key="email", value=email)
+    except UsersError:
+        raise credentials_exception
+    return {"sign out": "successful"}

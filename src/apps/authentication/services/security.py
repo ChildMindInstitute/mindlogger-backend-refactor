@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Any, Union
 
 from jose import jwt
 from passlib.context import CryptContext
@@ -37,6 +36,7 @@ def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
         algorithm=settings.authentication.algorithm
     )
     return encoded_jwt
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)

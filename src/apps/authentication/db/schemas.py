@@ -1,10 +1,12 @@
-from pydantic import BaseModel
+from sqlalchemy import Column, String
+
+from infrastructure.database.base import Base
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+# Properties to receive via API on creation
+class TokenSchema(Base):
+    __tablename__ = "tokens"
 
-
-class TokenData(BaseModel):
-    email: str | None = None
+    email = Column(String(length=100))
+    access_token = Column(String(length=256))
+    refresh_token = Column(String(length=256))
