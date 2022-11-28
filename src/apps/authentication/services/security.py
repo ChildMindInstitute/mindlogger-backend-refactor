@@ -18,7 +18,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt = jwt.encode(
         to_encode,
         settings.authentication.secret_key,
-        algorithm=settings.authentication.algorithm
+        algorithm=settings.authentication.algorithm,
     )
     return encoded_jwt
 
@@ -33,7 +33,7 @@ def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt = jwt.encode(
         to_encode,
         settings.authentication.refresh_secret_key,
-        algorithm=settings.authentication.algorithm
+        algorithm=settings.authentication.algorithm,
     )
     return encoded_jwt
 

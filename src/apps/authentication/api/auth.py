@@ -1,20 +1,22 @@
 from datetime import timedelta
+from typing import Any
+
 from fastapi import Body, HTTPException, status
 from fastapi.responses import Response
 from fastapi.routing import APIRouter
-from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from typing import Any
 
-from apps.authentication.domain import TokenData, Token, TokenInDB, TokenLogin
-from apps.authentication.services import get_password_hash, verify_password, create_access_token, create_refresh_token
+from apps.authentication.domain import Token, TokenData, TokenInDB, TokenLogin
+from apps.authentication.services import (
+    create_access_token,
+    create_refresh_token,
+    get_password_hash,
+    verify_password,
+)
 from apps.authentication.services.crud import TokensCRUD
+from apps.users.domain import User, UserCreate, UserInDB, UserLogin, UsersError
 from apps.users.services.crud import UsersCRUD
-from apps.users.domain import User, UserCreate, UserInDB, UsersError, UserLogin
 from config import settings
-
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 router = APIRouter(tags=["Authentication"])
 
@@ -25,7 +27,7 @@ def get_for_test():
 
 
 @router.post("/users/me/", response_model=User, tags=["Authentication"])
-async def token_test_get_current_user(token: Token = Body(...)) -> Any:
+async def token_test_get_current_user(token: Token = Body(...)) -> User | None:
     """
     Test access token
     """
@@ -38,9 +40,9 @@ async def token_test_get_current_user(token: Token = Body(...)) -> Any:
         payload = jwt.decode(
             token.access_token,
             settings.authentication.secret_key,
-            algorithms=[settings.authentication.algorithm]
+            algorithms=[settings.authentication.algorithm],
         )
-        email: str = payload.get("sub")
+        email: Any = payload.get("sub")
         if email is None:
             raise credentials_exception
         token_data = TokenData(email=email)
@@ -59,17 +61,20 @@ async def token_test_get_current_user(token: Token = Body(...)) -> Any:
 @router.post("/user/signup", tags=["Authentication"])
 async def create_user(user_create_schema: UserCreate = Body(...)):
     try:
-        user: User = await UsersCRUD().get_by_email(email=user_create_schema.email)
+        user: User = await UsersCRUD().get_by_email(
+            email=user_create_schema.email
+        )
         if user:
             raise HTTPException(
                 status_code=400,
-                detail=f"The user with email={user_create_schema.email} already exists in the system.",
+                detail=f"The user with email={user_create_schema.email} "
+                f"already exists in the system.",
             )
     except UsersError:
         user_in_db = UserInDB(
             email=user_create_schema.email,
             username=user_create_schema.username,
-            hashed_password=get_password_hash(user_create_schema.password)
+            hashed_password=get_password_hash(user_create_schema.password),
         )
         user, is_created = await UsersCRUD().save_user(schema=user_in_db)
 
@@ -78,16 +83,19 @@ async def create_user(user_create_schema: UserCreate = Body(...)):
 
 async def authenticate_user(user_login_schema: UserLogin = Body(...)):
     try:
-        user: User = await UsersCRUD().get_by_email(email=user_login_schema.email)
+        user: User = await UsersCRUD().get_by_email(
+            email=user_login_schema.email
+        )
     except UsersError:
         raise HTTPException(
             status_code=400,
-            detail=f"The user with email={user_login_schema.email} not exists in the system.",
+            detail=f"The user with email={user_login_schema.email} "
+            f"not exists in the system.",
         )
     if not verify_password(user_login_schema.password, user.hashed_password):
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid password",
+            detail="Invalid password",
         )
     return user
 
@@ -108,22 +116,28 @@ async def login_for_access_token(user_login_schema: UserLogin = Body(...)):
         data={"sub": user.email}, expires_delta=refresh_token_expires
     )
     try:
-        await TokensCRUD().delete_token(key="email", value=user_login_schema.email)
-        token, is_created = await TokensCRUD().save_token(TokenInDB(
-            email=user_login_schema.email,
-            access_token=access_token,
-            refresh_token=refresh_token)
+        await TokensCRUD().delete_token(
+            key="email", value=user_login_schema.email
+        )
+        token, is_created = await TokensCRUD().save_token(
+            TokenInDB(
+                email=user_login_schema.email,
+                access_token=access_token,
+                refresh_token=refresh_token,
+            )
         )
     except UsersError:
-        token, is_created = await TokensCRUD().save_token(TokenInDB(
-            email=user_login_schema.email,
-            access_token=access_token,
-            refresh_token=refresh_token)
+        token, is_created = await TokensCRUD().save_token(
+            TokenInDB(
+                email=user_login_schema.email,
+                access_token=access_token,
+                refresh_token=refresh_token,
+            )
         )
     token_login = TokenLogin(
         access_token=token.access_token,
         refresh_token=token.refresh_token,
-        token_type="bearer"
+        token_type="bearer",
     )
     return token_login
 
@@ -139,8 +153,12 @@ async def sign_out_for_access_token_dell(token: Token = Body(...)) -> Any:
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token.access_token, settings.authentication.secret_key, algorithms=[settings.authentication.algorithm])
-        email: str = payload.get("sub")
+        payload = jwt.decode(
+            token.access_token,
+            settings.authentication.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        email: Any = payload.get("sub")
         if email is None:
             raise credentials_exception
     except JWTError:

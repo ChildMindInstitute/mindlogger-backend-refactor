@@ -32,7 +32,7 @@ class UserLogin(UserBase):
 class UsersError(BaseError):
     def __init__(self, message: str | None = None, *args, **kwargs) -> None:
         message = (
-                message
-                or "Can not find your user in the database. Please register first."
+            message
+            or "Can not find your user in the database. Please register first."
         )
         super().__init__(message, *args, **kwargs)
