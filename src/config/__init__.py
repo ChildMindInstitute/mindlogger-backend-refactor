@@ -2,6 +2,8 @@ from pathlib import Path
 
 from pydantic import BaseSettings
 
+from config.cdn import CDNSettings
+from config.redis import RedisSettings
 from config.authentication import AuthenticationSettings
 from config.database import DatabaseSettings
 from config.sentry import SentrySettings
@@ -28,10 +30,15 @@ class Settings(BaseSettings):
     database = DatabaseSettings()
 
     # Authentication
-    authentication = AuthenticationSettings()
 
     # Sentry stuff
     sentry: SentrySettings = SentrySettings()
+
+    # Redis configs
+    redis: RedisSettings = RedisSettings()
+
+    # CDN configs
+    cdn: CDNSettings = CDNSettings()
 
     class Config:
         env_nested_delimiter = "__"
