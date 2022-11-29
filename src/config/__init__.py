@@ -7,6 +7,7 @@ from config.cdn import CDNSettings
 from config.redis import RedisSettings
 from config.sentry import SentrySettings
 from config.service import ServiceSettings, ServiceUrlsSettings
+from config.notification import NotificationSettings
 
 
 # NOTE: Settings powered by pydantic
@@ -43,6 +44,9 @@ class Settings(BaseSettings):
 
     # CDN configs
     cdn: CDNSettings = CDNSettings()
+
+    # FCM NOtification configs
+    notification: NotificationSettings = NotificationSettings()
 
     # Providers
 
