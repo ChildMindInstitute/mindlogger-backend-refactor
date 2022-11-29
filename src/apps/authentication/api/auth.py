@@ -1,12 +1,9 @@
-from datetime import timedelta
-
 from fastapi import Body
 from fastapi.routing import APIRouter
 from jose import JWTError, jwt
 
 from apps.authentication.domain import (
     RefreshAcceessTokenRequest,
-    RefreshAcceessToken,
     Token,
     TokenCreate,
     TokenDeleteRequest,
@@ -131,7 +128,7 @@ async def access_token_delete(token: TokenDeleteRequest = Body(...)) -> None:
 @router.post("/refresh-access-token", tags=["Authentication"])
 async def refresh_access_token(
     token: RefreshAcceessTokenRequest = Body(...),
-) -> Response[RefreshAcceessToken]:
+) -> Response[Token]:
     """Refresh access token."""
     refresh_token_not_correct = BadCredentials(
         message="Access token is not correct"
@@ -152,8 +149,9 @@ async def refresh_access_token(
 
     try:
         instance: Token = await TokensCRUD().get_by_email(email=email)
-        refreshed_access_token: Token = await TokensCRUD().refresh_access_token(instance.id)
-        access_token = RefreshAcceessToken(**refreshed_access_token.dict())
-        return Response(result=access_token)
+        refreshed_access_token: Token = await TokensCRUD().\
+            refresh_access_token(instance.id)
+        # access_token = Token(**refreshed_access_token.dict())
+        return Response(result=refreshed_access_token)
     except UsersError:
         raise refresh_token_not_correct

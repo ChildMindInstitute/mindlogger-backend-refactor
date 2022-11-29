@@ -1,6 +1,5 @@
 import boto3
 import io
-import uuid
 from config.cdn import CDNSettings
 
 
