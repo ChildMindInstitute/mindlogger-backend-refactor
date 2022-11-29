@@ -4,7 +4,12 @@ from fastapi import Body
 from fastapi.routing import APIRouter
 from jose import JWTError, jwt
 
-from apps.authentication.domain import Token, TokenCreate, TokenDeleteRequest
+from apps.authentication.domain import (
+    RefreshAcceessTokenRequest,
+    Token,
+    TokenCreate,
+    TokenDeleteRequest,
+)
 from apps.authentication.errors import BadCredentials
 from apps.authentication.services.crud import TokensCRUD
 from apps.authentication.services.security import AuthenticationService
@@ -126,3 +131,12 @@ async def access_token_delete(token: TokenDeleteRequest = Body(...)) -> None:
         await TokensCRUD().delete(instance.id)
     except UsersError:
         raise access_token_not_correct
+
+
+@router.post("/refresh-access-token", tags=["Authentication"])
+async def refresh_access_token(
+    token: RefreshAcceessTokenRequest = Body(...),
+) -> Response[Token]:
+    """Refresh access token."""
+
+    pass

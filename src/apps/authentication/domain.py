@@ -13,5 +13,9 @@ class TokenDeleteRequest(PublicModel):
     access_token: str
 
 
+class RefreshAcceessTokenRequest(PublicModel):
+    refresh_token: str
+
+
 class Token(TokenCreate):
     id: int
