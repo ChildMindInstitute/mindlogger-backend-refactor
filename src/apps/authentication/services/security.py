@@ -10,15 +10,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class AuthenticationService:
     @staticmethod
-    def create_access_token(
-        data: dict, expires_delta: timedelta | None = None
-    ):
+    def create_access_token(data: dict):
         to_encode = data.copy()
-
-        if expires_delta:
-            expire = datetime.utcnow() + expires_delta
-        else:
-            expire = datetime.utcnow() + timedelta(minutes=15)
+        expires_delta = timedelta(
+            minutes=settings.authentication.access_token_expire_minutes
+        )
+        expire = datetime.utcnow() + expires_delta
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(
             to_encode,
@@ -28,14 +25,12 @@ class AuthenticationService:
         return encoded_jwt
 
     @staticmethod
-    def create_refresh_token(
-        data: dict, expires_delta: timedelta | None = None
-    ):
+    def create_refresh_token(data: dict):
         to_encode = data.copy()
-        if expires_delta:
-            expire = datetime.utcnow() + expires_delta
-        else:
-            expire = datetime.utcnow() + timedelta(minutes=15)
+        expires_delta = timedelta(
+            minutes=settings.authentication.refresh_token_expire_minutes
+        )
+        expire = datetime.utcnow() + expires_delta
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(
             to_encode,

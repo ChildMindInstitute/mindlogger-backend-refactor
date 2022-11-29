@@ -6,6 +6,7 @@ from jose import JWTError, jwt
 
 from apps.authentication.domain import (
     RefreshAcceessTokenRequest,
+    RefreshAcceessToken,
     Token,
     TokenCreate,
     TokenDeleteRequest,
@@ -72,17 +73,11 @@ async def get_access_token(
 ) -> Response[Token]:
     user: User = await authenticate_user(user_login_schema)
 
-    access_token_expires = timedelta(
-        minutes=settings.authentication.access_token_expire_minutes
-    )
-    refresh_token_expires = timedelta(
-        minutes=settings.authentication.refresh_token_expire_minutes
-    )
     access_token = AuthenticationService.create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
+        data={"sub": user.email}
     )
     refresh_token = AuthenticationService.create_refresh_token(
-        data={"sub": user.email}, expires_delta=refresh_token_expires
+        data={"sub": user.email}
     )
 
     try:
@@ -136,7 +131,29 @@ async def access_token_delete(token: TokenDeleteRequest = Body(...)) -> None:
 @router.post("/refresh-access-token", tags=["Authentication"])
 async def refresh_access_token(
     token: RefreshAcceessTokenRequest = Body(...),
-) -> Response[Token]:
+) -> Response[RefreshAcceessToken]:
     """Refresh access token."""
+    refresh_token_not_correct = BadCredentials(
+        message="Access token is not correct"
+    )
 
-    pass
+    try:
+        payload = jwt.decode(
+            token.refresh_token,
+            settings.authentication.refresh_secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+
+        if not (email := payload.get("sub")):
+            raise refresh_token_not_correct
+
+    except JWTError:
+        raise refresh_token_not_correct
+
+    try:
+        instance: Token = await TokensCRUD().get_by_email(email=email)
+        refreshed_access_token: Token = await TokensCRUD().refresh_access_token(instance.id)
+        access_token = RefreshAcceessToken(**refreshed_access_token.dict())
+        return Response(result=access_token)
+    except UsersError:
+        raise refresh_token_not_correct

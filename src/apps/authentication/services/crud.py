@@ -1,8 +1,11 @@
+from datetime import timedelta
 from typing import Any
 
 from apps.authentication.db.schemas import TokenSchema
 from apps.authentication.domain import Token, TokenCreate
+from apps.authentication.services.security import AuthenticationService
 from apps.users.domain import UsersError
+from config import settings
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["TokensCRUD"]
@@ -41,3 +44,12 @@ class TokensCRUD(BaseCRUD[TokenSchema]):
 
     async def delete(self, id_: int):
         await self._delete(key="id", value=id_)
+
+    async def refresh_access_token(self, id_: int) -> Token:
+        instance: Token = await self._fetch(key="id", value=id_)
+        access_token = AuthenticationService.create_access_token(
+            data={"sub": instance.email}
+        )
+        await self._update(lookup=("id", id_), payload={"access_token": access_token})
+        instance: Token = await self._fetch(key="id", value=id_)
+        return instance
