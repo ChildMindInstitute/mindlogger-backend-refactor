@@ -2,8 +2,9 @@ import datetime
 import typing
 
 import aioredis
-from config import settings
 from sentry_sdk import capture_exception
+
+from config import settings
 
 
 class _Cache:

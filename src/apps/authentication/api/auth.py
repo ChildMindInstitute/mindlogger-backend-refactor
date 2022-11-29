@@ -149,9 +149,9 @@ async def refresh_access_token(
 
     try:
         instance: Token = await TokensCRUD().get_by_email(email=email)
-        refreshed_access_token: Token = await TokensCRUD().\
-            refresh_access_token(instance.id)
-        # access_token = Token(**refreshed_access_token.dict())
+        refreshed_access_token: Token = (
+            await TokensCRUD().refresh_access_token(instance.id)
+        )
         return Response(result=refreshed_access_token)
     except UsersError:
         raise refresh_token_not_correct

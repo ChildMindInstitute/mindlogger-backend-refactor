@@ -49,8 +49,7 @@ class TokensCRUD(BaseCRUD[TokenSchema]):
             data={"sub": instance.email}
         )
         await self._update(
-            lookup=("id", id_),
-            payload={"access_token": access_token}
+            lookup=("id", id_), payload={"access_token": access_token}
         )
         instance: Token = await self._fetch(key="id", value=id_)
         return instance

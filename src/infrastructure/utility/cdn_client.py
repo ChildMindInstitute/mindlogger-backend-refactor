@@ -1,5 +1,7 @@
-import boto3
 import io
+
+import boto3
+
 from config.cdn import CDNSettings
 
 

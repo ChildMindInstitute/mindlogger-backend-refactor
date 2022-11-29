@@ -2,10 +2,10 @@ from pathlib import Path
 
 from pydantic import BaseSettings
 
-from config.cdn import CDNSettings
-from config.redis import RedisSettings
 from config.authentication import AuthenticationSettings
+from config.cdn import CDNSettings
 from config.database import DatabaseSettings
+from config.redis import RedisSettings
 from config.sentry import SentrySettings
 from config.service import ServiceSettings, ServiceUrlsSettings
 
