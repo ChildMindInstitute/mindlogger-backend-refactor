@@ -27,9 +27,10 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis"
 
     # DataBase
-    database = DatabaseSettings()
+    database: DatabaseSettings = DatabaseSettings()
 
     # Authentication
+    authentication: AuthenticationSettings = AuthenticationSettings()
 
     # Sentry stuff
     sentry: SentrySettings = SentrySettings()
