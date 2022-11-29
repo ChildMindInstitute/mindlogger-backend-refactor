@@ -1,24 +1,17 @@
 from pydantic import EmailStr
 
-from apps.shared.domain import Model
+from apps.shared.domain import PublicModel
 
 
-class Token(Model):
-    access_token: str
-    token_type: str
-
-
-class TokenData(Model):
-    email: str | None = None
-
-
-class TokenInDB(Model):
+class TokenCreate(PublicModel):
     email: EmailStr
     access_token: str
     refresh_token: str
 
 
-class TokenLogin(Model):
+class TokenDeleteRequest(PublicModel):
     access_token: str
-    refresh_token: str
-    token_type: str
+
+
+class Token(TokenCreate):
+    id: int

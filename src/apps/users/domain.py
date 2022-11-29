@@ -1,38 +1,48 @@
-from pydantic import EmailStr
+from pydantic import BaseModel, EmailStr
 from pydantic.types import PositiveInt
 
-from apps.shared.domain import BaseError, Model
+from apps.shared.domain import BaseError, InternalModel, PublicModel
+
+__all__ = [
+    "UserCreate",
+    "UserLoginRequest",
+    "UserCreate",
+    "User",
+    "UsersError",
+]
 
 
-class UserBase(Model):
+class _UserBase(BaseModel):
     email: EmailStr
 
     def __str__(self) -> str:
         return self.email
 
 
-class UserCreate(UserBase):
+class UserSignUpRequest(_UserBase, PublicModel):
     username: str
     password: str
 
 
-class UserInDB(UserBase):
+class UserLoginRequest(_UserBase, PublicModel):
+    password: str
+
+
+class UserCreate(InternalModel):
+    email: EmailStr
     username: str
     hashed_password: str
 
 
-class User(UserInDB):
+class User(UserCreate):
     id: PositiveInt
 
 
-class UserLogin(UserBase):
-    password: str
+class PublicUser(_UserBase, PublicModel):
+    """Public user data model."""
+
+    id: PositiveInt
 
 
 class UsersError(BaseError):
-    def __init__(self, message: str | None = None, *args, **kwargs) -> None:
-        message = (
-            message
-            or "Can not find your user in the database. Please register first."
-        )
-        super().__init__(message, *args, **kwargs)
+    pass

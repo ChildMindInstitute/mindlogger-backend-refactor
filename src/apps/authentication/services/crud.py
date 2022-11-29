@@ -1,17 +1,17 @@
 from typing import Any
 
 from apps.authentication.db.schemas import TokenSchema
-from apps.authentication.domain import TokenInDB
+from apps.authentication.domain import Token, TokenCreate
 from apps.users.domain import UsersError
 from infrastructure.database.crud import BaseCRUD
 
-__all__ = "TokensCRUD"
+__all__ = ["TokensCRUD"]
 
 
 class TokensCRUD(BaseCRUD[TokenSchema]):
     schema_class = TokenSchema
 
-    async def _fetch(self, key: str, value: Any) -> TokenInDB:
+    async def _fetch(self, key: str, value: Any) -> Token:
         """Fetch token by email from the database."""
 
         # Get token from the database
@@ -19,14 +19,14 @@ class TokensCRUD(BaseCRUD[TokenSchema]):
             raise UsersError(f"No such token with {key}={value}.")
 
         # Get internal model
-        token: TokenInDB = TokenInDB.from_orm(instance)
+        token: Token = Token.from_orm(instance)
 
         return token
 
-    async def get_by_email(self, email: str) -> TokenInDB:
+    async def get_by_email(self, email: str) -> Token:
         return await self._fetch(key="email", value=email)
 
-    async def save_token(self, schema: TokenInDB) -> tuple[TokenInDB, bool]:
+    async def save(self, schema: TokenCreate) -> tuple[Token, bool]:
         """Return token instance and the created information."""
 
         # Save token into the database
@@ -35,13 +35,9 @@ class TokensCRUD(BaseCRUD[TokenSchema]):
         )
 
         # Create internal data model
-        token = TokenInDB.from_orm(instance)
+        token: Token = Token.from_orm(instance)
 
         return token, True
 
-    async def delete_token(self, key: str, value: str) -> bool:
-
-        # Delete token from the database
-        await self._delete(key=key, value=value)
-
-        return True
+    async def delete(self, id_: int):
+        await self._delete(key="id", value=id_)
