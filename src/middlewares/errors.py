@@ -4,7 +4,11 @@ from starlette.middleware.base import (
     RequestResponseEndpoint,
 )
 
-from apps.authentication.errors import AuthenticationError, BadCredentials
+from apps.authentication.errors import (
+    AuthenticationError,
+    BadCredentials,
+    TokenNotFoundError,
+)
 from apps.shared.domain import BaseError, ErrorResponse
 from apps.users.domain import UsersError
 
@@ -31,6 +35,13 @@ class ErrorsHandlingMiddleware(BaseHTTPMiddleware):
             return Response(
                 resp.json(),
                 status_code=status.HTTP_400_BAD_REQUEST,
+                headers=self.headers,
+            )
+        except TokenNotFoundError as error:
+            resp = ErrorResponse(messages=[str(error)])
+            return Response(
+                resp.json(),
+                status_code=status.HTTP_404_NOT_FOUND,
                 headers=self.headers,
             )
         except BaseError as error:

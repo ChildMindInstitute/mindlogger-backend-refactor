@@ -9,7 +9,7 @@ __all__ = ["UsersCRUD"]
 
 
 class UsersCRUD(BaseCRUD[UserSchema]):
-    schema_class = UserSchema
+    schema_class = UserSchema  # type: ignore[assignment]
 
     async def _fetch(self, key: str, value: Any) -> User:
         """Fetch user by id or email from the database."""

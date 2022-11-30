@@ -1,6 +1,11 @@
 from apps.shared.domain.base import BaseError
 
 
+class TokenNotFoundError(BaseError):
+    def __init__(self, *args) -> None:
+        super().__init__("Token not found", *args)
+
+
 class AuthenticationError(BaseError):
     def __init__(self, message="", *args) -> None:
         fallback = "Authentication service error"

@@ -77,24 +77,15 @@ async def get_access_token(
         data={"sub": user.email}
     )
 
-    try:
-        await TokensCRUD()._delete(key="email", value=user_login_schema.email)
+    await TokensCRUD().delete_by_email(user.email)
 
-        token, _ = await TokensCRUD().save(
-            TokenCreate(
-                email=user_login_schema.email,
-                access_token=access_token,
-                refresh_token=refresh_token,
-            )
+    token, _ = await TokensCRUD().save(
+        TokenCreate(
+            email=user_login_schema.email,
+            access_token=access_token,
+            refresh_token=refresh_token,
         )
-    except UsersError:
-        token, _ = await TokensCRUD().save(
-            TokenCreate(
-                email=user_login_schema.email,
-                access_token=access_token,
-                refresh_token=refresh_token,
-            )
-        )
+    )
 
     return Response(result=token)
 
@@ -120,23 +111,27 @@ async def access_token_delete(token: TokenDeleteRequest = Body(...)) -> None:
 
     try:
         instance: Token = await TokensCRUD().get_by_email(email=email)
-        await TokensCRUD().delete(instance.id)
+        await TokensCRUD().delete_by_id(instance.id)
     except UsersError:
         raise access_token_not_correct
 
 
+# TODO: Override with deps after implementing applets permissions
+#       In order to be able to update the access token
+#       we just need to be authenticated
 @router.post("/refresh-access-token", tags=["Authentication"])
 async def refresh_access_token(
-    token: RefreshAcceessTokenRequest = Body(...),
+    refresh_access_token_schema: RefreshAcceessTokenRequest = Body(...),
 ) -> Response[Token]:
     """Refresh access token."""
+
     refresh_token_not_correct = BadCredentials(
         message="Access token is not correct"
     )
 
     try:
         payload = jwt.decode(
-            token.refresh_token,
+            refresh_access_token_schema.refresh_token,
             settings.authentication.refresh_secret_key,
             algorithms=[settings.authentication.algorithm],
         )
@@ -147,11 +142,7 @@ async def refresh_access_token(
     except JWTError:
         raise refresh_token_not_correct
 
-    try:
-        instance: Token = await TokensCRUD().get_by_email(email=email)
-        refreshed_access_token: Token = (
-            await TokensCRUD().refresh_access_token(instance.id)
-        )
-        return Response(result=refreshed_access_token)
-    except UsersError:
-        raise refresh_token_not_correct
+    instance: Token = await TokensCRUD().get_by_email(email=email)
+    token: Token = await TokensCRUD().refresh_access_token(instance.id)
+
+    return Response(result=token)
