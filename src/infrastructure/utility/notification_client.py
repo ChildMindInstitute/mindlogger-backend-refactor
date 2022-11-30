@@ -51,15 +51,43 @@ class Notification:
 
         self._initialized = True
 
-    async def notify(self, devices: list = None, *args, **kwargs):
+    async def notify(
+        self,
+        devices: list = None,
+        message_title: str = None,
+        message_body: str = None,
+        time_to_live: int = None,
+        data_message: dict = None,
+        badge: str = None,
+        extra_kwargs: dict = None,
+        *args,
+        **kwargs,
+    ):
+
         try:
             if len(devices) > 1:
                 self.client.notify_multiple_devices(
-                    registration_ids=devices, *args, **kwargs
+                    registration_ids=devices,
+                    message_title=message_title,
+                    message_body=message_body,
+                    time_to_live=time_to_live,
+                    data_message=data_message,
+                    badge=badge,
+                    extra_kwargs=extra_kwargs,
+                    *args,
+                    **kwargs,
                 )
             else:
                 self.client.notify_single_device(
-                    registration_id=devices[0], *args, **kwargs
+                    registration_id=devices[0],
+                    message_title=message_title,
+                    message_body=message_body,
+                    time_to_live=time_to_live,
+                    data_message=data_message,
+                    badge=badge,
+                    extra_kwargs=extra_kwargs,
+                    *args,
+                    **kwargs,
                 )
         except RetryException as ex:
             await asyncio.sleep(ex.timeout)
