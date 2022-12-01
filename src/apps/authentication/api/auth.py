@@ -1,9 +1,9 @@
-from fastapi import Body
+from fastapi import Body, Depends
 from fastapi.routing import APIRouter
 from jose import JWTError, jwt
 
+from apps.authentication.deps import get_current_user
 from apps.authentication.domain import (
-    RefreshAcceessTokenRequest,
     Token,
     TokenCreate,
     TokenDeleteRequest,
@@ -116,33 +116,11 @@ async def access_token_delete(token: TokenDeleteRequest = Body(...)) -> None:
         raise access_token_not_correct
 
 
-# TODO: Override with deps after implementing applets permissions
-#       In order to be able to update the access token
-#       we just need to be authenticated
 @router.post("/refresh-access-token", tags=["Authentication"])
-async def refresh_access_token(
-    refresh_access_token_schema: RefreshAcceessTokenRequest = Body(...),
+async def refresh_access_token(user: User = Depends(get_current_user)
 ) -> Response[Token]:
     """Refresh access token."""
-
-    refresh_token_not_correct = BadCredentials(
-        message="Access token is not correct"
-    )
-
-    try:
-        payload = jwt.decode(
-            refresh_access_token_schema.refresh_token,
-            settings.authentication.refresh_secret_key,
-            algorithms=[settings.authentication.algorithm],
-        )
-
-        if not (email := payload.get("sub")):
-            raise refresh_token_not_correct
-
-    except JWTError:
-        raise refresh_token_not_correct
-
-    instance: Token = await TokensCRUD().get_by_email(email=email)
+    instance: Token = await TokensCRUD().get_by_email(email=user.email)
     token: Token = await TokensCRUD().refresh_access_token(instance.id)
 
     return Response(result=token)

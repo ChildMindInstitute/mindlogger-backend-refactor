@@ -17,5 +17,10 @@ class RefreshAcceessTokenRequest(PublicModel):
     refresh_token: str
 
 
+class TokenPayload(PublicModel):
+    sub: EmailStr = None
+    exp: int = None
+
+
 class Token(TokenCreate):
     id: int
