@@ -2,7 +2,8 @@ from contextlib import suppress
 from typing import Any
 
 from apps.users.db import UserSchema
-from apps.users.domain import User, UserCreate, UsersError
+from apps.users.domain import User, UserCreate
+from apps.users.errors import UserNotFound, UsersError
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["UsersCRUD"]
@@ -19,7 +20,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
         # Get user from the database
         if not (instance := await self._get(key, value)):
-            raise UsersError(
+            raise UserNotFound(
                 f"No such user with {key}={value}. \n" f"Are you registered?"
             )
 

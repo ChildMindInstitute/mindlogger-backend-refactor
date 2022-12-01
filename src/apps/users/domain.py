@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from pydantic.types import PositiveInt
 
-from apps.shared.domain import BaseError, InternalModel, PublicModel
+from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
     "PublicUser",
@@ -9,7 +9,6 @@ __all__ = [
     "UserLoginRequest",
     "UserCreate",
     "User",
-    "UsersError",
     "UserSignUpRequest",
 ]
 
@@ -44,7 +43,3 @@ class PublicUser(_UserBase, PublicModel):
     """Public user data model."""
 
     id: PositiveInt
-
-
-class UsersError(BaseError):
-    pass
