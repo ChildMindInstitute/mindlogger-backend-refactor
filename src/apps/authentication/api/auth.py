@@ -40,7 +40,7 @@ async def create_user(
     except UsersError:
         user_in_db = UserCreate(
             email=user_create_schema.email,
-            username=user_create_schema.username,
+            full_name=user_create_schema.full_name,
             hashed_password=AuthenticationService.get_password_hash(
                 user_create_schema.password
             ),

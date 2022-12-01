@@ -7,6 +7,6 @@ from infrastructure.database.base import Base
 class UserSchema(Base):
     __tablename__ = "users"
 
-    email = Column(String(length=100))
-    username = Column(String(length=100))
+    email = Column(String(length=100), unique=True)
+    full_name = Column(String(length=100))
     hashed_password = Column(String(length=100))
