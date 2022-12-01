@@ -1,9 +1,9 @@
-from fastapi import Body
+from fastapi import Body, Depends
 from fastapi.routing import APIRouter
 from jose import JWTError, jwt
 
+from apps.authentication.deps import get_current_user
 from apps.authentication.domain import (
-    RefreshAcceessTokenRequest,
     Token,
     TokenCreate,
     TokenDeleteRequest,
@@ -40,7 +40,7 @@ async def create_user(
     except UsersError:
         user_in_db = UserCreate(
             email=user_create_schema.email,
-            username=user_create_schema.username,
+            full_name=user_create_schema.full_name,
             hashed_password=AuthenticationService.get_password_hash(
                 user_create_schema.password
             ),
@@ -77,24 +77,15 @@ async def get_access_token(
         data={"sub": user.email}
     )
 
-    try:
-        await TokensCRUD()._delete(key="email", value=user_login_schema.email)
+    await TokensCRUD().delete_by_email(user.email)
 
-        token, _ = await TokensCRUD().save(
-            TokenCreate(
-                email=user_login_schema.email,
-                access_token=access_token,
-                refresh_token=refresh_token,
-            )
+    token, _ = await TokensCRUD().save(
+        TokenCreate(
+            email=user_login_schema.email,
+            access_token=access_token,
+            refresh_token=refresh_token,
         )
-    except UsersError:
-        token, _ = await TokensCRUD().save(
-            TokenCreate(
-                email=user_login_schema.email,
-                access_token=access_token,
-                refresh_token=refresh_token,
-            )
-        )
+    )
 
     return Response(result=token)
 
@@ -120,38 +111,16 @@ async def access_token_delete(token: TokenDeleteRequest = Body(...)) -> None:
 
     try:
         instance: Token = await TokensCRUD().get_by_email(email=email)
-        await TokensCRUD().delete(instance.id)
+        await TokensCRUD().delete_by_id(instance.id)
     except UsersError:
         raise access_token_not_correct
 
 
 @router.post("/refresh-access-token", tags=["Authentication"])
-async def refresh_access_token(
-    token: RefreshAcceessTokenRequest = Body(...),
+async def refresh_access_token(user: User = Depends(get_current_user)
 ) -> Response[Token]:
     """Refresh access token."""
-    refresh_token_not_correct = BadCredentials(
-        message="Access token is not correct"
-    )
+    instance: Token = await TokensCRUD().get_by_email(email=user.email)
+    token: Token = await TokensCRUD().refresh_access_token(instance.id)
 
-    try:
-        payload = jwt.decode(
-            token.refresh_token,
-            settings.authentication.refresh_secret_key,
-            algorithms=[settings.authentication.algorithm],
-        )
-
-        if not (email := payload.get("sub")):
-            raise refresh_token_not_correct
-
-    except JWTError:
-        raise refresh_token_not_correct
-
-    try:
-        instance: Token = await TokensCRUD().get_by_email(email=email)
-        refreshed_access_token: Token = (
-            await TokensCRUD().refresh_access_token(instance.id)
-        )
-        return Response(result=refreshed_access_token)
-    except UsersError:
-        raise refresh_token_not_correct
+    return Response(result=token)

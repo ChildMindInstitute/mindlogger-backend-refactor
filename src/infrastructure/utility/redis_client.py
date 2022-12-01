@@ -8,7 +8,7 @@ from config import settings
 
 
 class _Cache:
-    _storage = dict()
+    _storage: dict = {}
 
     async def get(self, key: str):
         now = datetime.datetime.now()
@@ -33,7 +33,7 @@ class RedisCache:
 
     _initialized: bool = False
     _instance: None = None
-    configuration = dict()
+    configuration: dict = {}
     _cache: typing.Optional[aioredis.Redis] = None
     host: typing.Optional[str] = None
     port: typing.Optional[str] = None
@@ -46,17 +46,17 @@ class RedisCache:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, config: settings.redis, env, **kwargs):
+    def __init__(self, env, **kwargs):
 
         if self._initialized:
             return
 
         self.configuration = dict()
         self.env = env
-        self.host = config.host
-        self.port = config.port
-        self.db = config.db
-        self.expire_duration = config.expire_duration
+        self.host = settings.redis.host
+        self.port = settings.redis.port
+        self.db = settings.redis.db
+        self.expire_duration = settings.redis.expire_duration
 
         for key, val in kwargs.items():
             self.configuration[key.lower()] = val

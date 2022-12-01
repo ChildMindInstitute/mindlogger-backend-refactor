@@ -2,22 +2,22 @@ from typing import Any
 
 from apps.authentication.db.schemas import TokenSchema
 from apps.authentication.domain import Token, TokenCreate
+from apps.authentication.errors import TokenNotFoundError
 from apps.authentication.services.security import AuthenticationService
-from apps.users.domain import UsersError
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["TokensCRUD"]
 
 
 class TokensCRUD(BaseCRUD[TokenSchema]):
-    schema_class = TokenSchema
+    schema_class = TokenSchema  # type: ignore[assignment]
 
     async def _fetch(self, key: str, value: Any) -> Token:
         """Fetch token by email from the database."""
 
         # Get token from the database
         if not (instance := await self._get(key, value)):
-            raise UsersError(f"No such token with {key}={value}.")
+            raise TokenNotFoundError()
 
         # Get internal model
         token: Token = Token.from_orm(instance)
@@ -40,8 +40,15 @@ class TokensCRUD(BaseCRUD[TokenSchema]):
 
         return token, True
 
-    async def delete(self, id_: int):
+    async def delete_by_id(self, id_: int):
+        """Delete token by id."""
+
         await self._delete(key="id", value=id_)
+
+    async def delete_by_email(self, email: str):
+        """Delete token by user email."""
+
+        await self._delete(key="email", value=email)
 
     async def refresh_access_token(self, id_: int) -> Token:
         instance: Token = await self._fetch(key="id", value=id_)
@@ -51,5 +58,6 @@ class TokensCRUD(BaseCRUD[TokenSchema]):
         await self._update(
             lookup=("id", id_), payload={"access_token": access_token}
         )
-        instance: Token = await self._fetch(key="id", value=id_)
+        instance = await self._fetch(key="id", value=id_)
+
         return instance
