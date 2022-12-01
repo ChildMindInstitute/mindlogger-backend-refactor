@@ -1,8 +1,9 @@
 import asyncio
+from concurrent.futures.thread import ThreadPoolExecutor
+
+from pyfcm import FCMNotification
 
 from config import settings
-from pyfcm import FCMNotification
-from concurrent.futures.thread import ThreadPoolExecutor
 
 
 class RetryException(Exception):

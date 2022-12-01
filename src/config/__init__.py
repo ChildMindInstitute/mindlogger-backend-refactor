@@ -5,10 +5,10 @@ from pydantic import BaseSettings
 from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
 from config.database import DatabaseSettings
+from config.notification import NotificationSettings
 from config.redis import RedisSettings
 from config.sentry import SentrySettings
 from config.service import ServiceSettings, ServiceUrlsSettings
-from config.notification import NotificationSettings
 
 
 # NOTE: Settings powered by pydantic
