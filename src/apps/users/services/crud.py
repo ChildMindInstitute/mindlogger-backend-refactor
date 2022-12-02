@@ -1,4 +1,3 @@
-from contextlib import suppress
 from typing import Any
 
 from apps.users.db import UserSchema
