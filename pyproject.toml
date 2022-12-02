@@ -65,6 +65,7 @@ follow_imports = 'silent'
 module = [
     'mixer.*',
     'sqlalchemy.*',
-    'boto3'
+    'boto3',
+    'pyfcm'
 ]
 ignore_missing_imports = true
