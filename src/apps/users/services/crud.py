@@ -38,10 +38,6 @@ class UsersCRUD(BaseCRUD[UserSchema]):
     async def save_user(self, schema: UserCreate) -> tuple[User, bool]:
         """Return user instance and the created information."""
 
-        with suppress(UsersError):
-            user: User = await self.get_by_email(schema.email)
-            return user, False
-
         # Save user into the database
         instance: UserSchema = await self._create(UserSchema(**schema.dict()))
 
