@@ -4,9 +4,10 @@ from jose import JWTError, jwt
 
 from apps.authentication.deps import get_current_user
 from apps.authentication.domain import (
+    RefreshAccessTokenRequest,
     Token,
     TokenCreate,
-    TokenDeleteRequest,
+    TokenRefresh,
 )
 from apps.authentication.errors import BadCredentials
 from apps.authentication.services.crud import TokensCRUD
@@ -17,9 +18,9 @@ from apps.users.domain import (
     User,
     UserCreate,
     UserLoginRequest,
-    UsersError,
     UserSignUpRequest,
 )
+from apps.users.errors import UserNotFound, UsersError
 from apps.users.services import UsersCRUD
 from config import settings
 
@@ -31,13 +32,9 @@ async def create_user(
     user_create_schema: UserSignUpRequest = Body(...),
 ) -> Response[PublicUser]:
     try:
-        # TODO: Change the email to unique
-        user: User = await UsersCRUD().get_by_email(
-            email=user_create_schema.email
-        )
-        if user:
-            raise UsersError(message="User already exist")
-    except UsersError:
+        await UsersCRUD().get_by_email(email=user_create_schema.email)
+        raise UsersError("User already exist")
+    except UserNotFound:
         user_in_db = UserCreate(
             email=user_create_schema.email,
             full_name=user_create_schema.full_name,
@@ -91,36 +88,42 @@ async def get_access_token(
 
 
 @router.post("/signout", tags=["Authentication"])
-async def access_token_delete(token: TokenDeleteRequest = Body(...)) -> None:
+async def access_token_delete(user: User = Depends(get_current_user)) -> None:
     access_token_not_correct = BadCredentials(
         message="Access token is not correct"
     )
-
     try:
-        payload = jwt.decode(
-            token.access_token,
-            settings.authentication.secret_key,
-            algorithms=[settings.authentication.algorithm],
-        )
-
-        if not (email := payload.get("sub")):
-            raise access_token_not_correct
-
-    except JWTError:
-        raise access_token_not_correct
-
-    try:
-        instance: Token = await TokensCRUD().get_by_email(email=email)
+        instance: Token = await TokensCRUD().get_by_email(email=user.email)
         await TokensCRUD().delete_by_id(instance.id)
     except UsersError:
         raise access_token_not_correct
 
 
 @router.post("/refresh-access-token", tags=["Authentication"])
-async def refresh_access_token(user: User = Depends(get_current_user)
-) -> Response[Token]:
+async def refresh_access_token(
+    refresh_access_token_schema: RefreshAccessTokenRequest = Body(...),
+) -> Response[TokenRefresh]:
     """Refresh access token."""
-    instance: Token = await TokensCRUD().get_by_email(email=user.email)
-    token: Token = await TokensCRUD().refresh_access_token(instance.id)
 
-    return Response(result=token)
+    refresh_token_not_correct = BadCredentials(
+        message="Access token is not correct"
+    )
+
+    try:
+        payload = jwt.decode(
+            refresh_access_token_schema.refresh_token,
+            settings.authentication.refresh_secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+
+        if not (email := payload.get("sub")):
+            raise refresh_token_not_correct
+
+    except JWTError:
+        raise refresh_token_not_correct
+
+    instance: Token = await TokensCRUD().get_by_email(email=email)
+    token: Token = await TokensCRUD().refresh_access_token(instance.id)
+    token_refresh = TokenRefresh(**token.dict())
+
+    return Response(result=token_refresh)

@@ -10,7 +10,7 @@ from apps.authentication.errors import (
     TokenNotFoundError,
 )
 from apps.shared.domain import BaseError, ErrorResponse
-from apps.users.domain import UsersError
+from apps.users.errors import UsersError
 
 __all__ = ["ErrorsHandlingMiddleware"]
 
