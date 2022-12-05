@@ -1,8 +1,8 @@
 """Applets and Permissions
 
-Revision ID: 23391735c89d
+Revision ID: db518b6ad4d5
 Revises: ba9e58c6b7ef
-Create Date: 2022-12-05 09:45:07.131334
+Create Date: 2022-12-05 11:16:13.857667
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "23391735c89d"
+revision = "db518b6ad4d5"
 down_revision = "ba9e58c6b7ef"
 branch_labels = None
 depends_on = None
@@ -24,10 +24,10 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
-        sa.Column("displayName", sa.String(length=100), nullable=True),
+        sa.Column("display_name", sa.String(length=100), nullable=True),
         sa.Column("description", sa.String(length=100), nullable=True),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("displayName"),
+        sa.UniqueConstraint("display_name"),
     )
     op.create_table(
         "user_applet_accesses",
@@ -37,22 +37,7 @@ def upgrade() -> None:
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("applet_id", sa.Integer(), nullable=False),
-        sa.Column(
-            "role",
-            sa.Enum(
-                "ADMIN",
-                "CONTENT_MANAGER",
-                "DATA_MANAGER",
-                "CASE_MANAGER",
-                "RESPONDENTS_MANAGER",
-                "REVIEWERS_MANAGER",
-                "MANAGERS_MANAGER",
-                "REVIEWER",
-                "RESPONDENT",
-                name="role",
-            ),
-            nullable=False,
-        ),
+        sa.Column("role", sa.String(length=20), nullable=False),
         sa.ForeignKeyConstraint(
             ["applet_id"],
             ["applets.id"],
@@ -61,7 +46,7 @@ def upgrade() -> None:
             ["user_id"],
             ["users.id"],
         ),
-        sa.PrimaryKeyConstraint("id", "user_id", "applet_id", "role"),
+        sa.PrimaryKeyConstraint("id"),
     )
     # ### end Alembic commands ###
 
