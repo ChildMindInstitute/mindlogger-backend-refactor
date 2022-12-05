@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 
 from pydantic import BaseSettings
 
@@ -26,6 +27,13 @@ class Settings(BaseSettings):
 
     # Cache
     redis_url: str = "redis://redis"
+
+    apps: List[str] = [
+        "authentication",
+        "healthcheck",
+        "shared",
+        "users",
+    ]
 
     # DataBase
     database: DatabaseSettings = DatabaseSettings()
