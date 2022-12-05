@@ -3,7 +3,6 @@ from sqlalchemy import Column, ForeignKey, String
 from infrastructure.database.base import Base
 
 
-# Properties to receive via API on creation
 class UserSchema(Base):
     __tablename__ = "users"
 

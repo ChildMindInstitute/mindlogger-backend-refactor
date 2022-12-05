@@ -4,20 +4,14 @@ from starlette.middleware.base import (
     RequestResponseEndpoint,
 )
 
-from apps.applets.errors import AppletsError, AppletsNotFoundError
-from apps.authentication.errors import (
-    AuthenticationError,
-    BadCredentials,
-    TokenNotFoundError,
+from apps.authentication.errors import AuthenticationError
+from apps.shared.domain import ErrorResponse
+from apps.shared.errors import (
+    BaseError,
+    NotContentError,
+    NotFoundError,
+    ValidationError,
 )
-from apps.shared.domain import BaseError, ErrorResponse
-from apps.users.errors import (
-    UserAppletAccessesError,
-    UserAppletAccessesNotFound,
-    UsersError,
-)
-
-__all__ = ["ErrorsHandlingMiddleware"]
 
 
 class ErrorsHandlingMiddleware(BaseHTTPMiddleware):
@@ -35,46 +29,24 @@ class ErrorsHandlingMiddleware(BaseHTTPMiddleware):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 headers=self.headers,
             )
-        except (UsersError, BadCredentials) as error:
+        except ValidationError as error:
             resp = ErrorResponse(messages=[str(error)])
             return Response(
                 resp.json(),
                 status_code=status.HTTP_400_BAD_REQUEST,
                 headers=self.headers,
             )
-        except TokenNotFoundError as error:
+        except NotFoundError as error:
             resp = ErrorResponse(messages=[str(error)])
             return Response(
                 resp.json(),
                 status_code=status.HTTP_404_NOT_FOUND,
                 headers=self.headers,
             )
-        except AppletsError as error:
-            resp = ErrorResponse(messages=[str(error)])
+        except NotContentError:
             return Response(
-                resp.json(),
-                status_code=status.HTTP_400_BAD_REQUEST,
-                headers=self.headers,
-            )
-        except AppletsNotFoundError as error:
-            resp = ErrorResponse(messages=[str(error)])
-            return Response(
-                resp.json(),
-                status_code=status.HTTP_404_NOT_FOUND,
-                headers=self.headers,
-            )
-        except UserAppletAccessesError as error:
-            resp = ErrorResponse(messages=[str(error)])
-            return Response(
-                resp.json(),
-                status_code=status.HTTP_400_BAD_REQUEST,
-                headers=self.headers,
-            )
-        except UserAppletAccessesNotFound as error:
-            resp = ErrorResponse(messages=[str(error)])
-            return Response(
-                resp.json(),
-                status_code=status.HTTP_404_NOT_FOUND,
+                None,
+                status_code=status.HTTP_204_NO_CONTENT,
                 headers=self.headers,
             )
         except BaseError as error:

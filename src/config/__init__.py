@@ -24,9 +24,6 @@ class Settings(BaseSettings):
     # Service
     service: ServiceSettings = ServiceSettings()
 
-    # Cache
-    redis_url: str = "redis://redis"
-
     # DataBase
     database: DatabaseSettings = DatabaseSettings()
 
@@ -36,7 +33,7 @@ class Settings(BaseSettings):
     # Sentry stuff
     sentry: SentrySettings = SentrySettings()
 
-    # Redis configs
+    # Redis
     redis: RedisSettings = RedisSettings()
 
     # CDN configs
@@ -44,6 +41,9 @@ class Settings(BaseSettings):
 
     # FCM NOtification configs
     notification: NotificationSettings = NotificationSettings()
+
+    # NOTE: This config is used by SQLAlchemy for imports
+    migrations_apps: list[str]
 
     class Config:
         env_nested_delimiter = "__"
@@ -60,4 +60,8 @@ settings = Settings(
             openapi="/openapi.json",
         ),
     ),
+    migrations_apps=[
+        "authentication",
+        "users",
+    ],
 )

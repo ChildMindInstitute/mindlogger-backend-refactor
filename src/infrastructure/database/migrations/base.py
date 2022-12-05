@@ -8,7 +8,22 @@ Import all SQLAlchemy models here
 """
 
 
-from apps.applets.db.schemas import *  # noqa: F401, F403
-from apps.authentication.db.schemas import *  # noqa: F401, F403
-from apps.users.db.schemas import *  # noqa: F401, F403
+import os
+
+from config import settings
 from infrastructure.database import Base  # noqa: F401, F403
+
+
+def import_db_schemas():
+    """This function is used in order to achieve auto imports
+    of database schemas that are used by SQLAlchemy.
+    """
+
+    for app in os.listdir(settings.apps_dir):
+        if app not in settings.migrations_apps:
+            continue
+
+        __import__(f"apps.{app}.db.schemas")
+
+
+import_db_schemas()

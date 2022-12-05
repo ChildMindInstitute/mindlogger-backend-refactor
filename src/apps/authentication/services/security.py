@@ -3,6 +3,9 @@ from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
 
+from apps.authentication.errors import BadCredentials
+from apps.users.domain import User, UserLoginRequest
+from apps.users.services.crud import UsersCRUD
 from config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -46,3 +49,16 @@ class AuthenticationService:
     @staticmethod
     def get_password_hash(password: str) -> str:
         return pwd_context.hash(password)
+
+    @staticmethod
+    async def authenticate_user(user_login_schema: UserLoginRequest):
+        user: User = await UsersCRUD().get_by_email(
+            email=user_login_schema.email
+        )
+
+        if not AuthenticationService.verify_password(
+            user_login_schema.password, user.hashed_password
+        ):
+            raise BadCredentials("Invalid password")
+
+        return user

@@ -4,7 +4,6 @@ from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
-from apps.users.db import Role, UserAppletAccessSchema, UserSchema
 from apps.users.domain import (
     User,
     UserAppletAccess,
@@ -16,6 +15,9 @@ from apps.users.errors import (
     UserNotFound,
     UsersError,
 )
+from apps.users.db.schemas import UserSchema, Role, UserAppletAccessSchema
+from apps.users.domain import User, UserCreate
+from apps.users.errors import UserNotFound, UsersError
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = [

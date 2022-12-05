@@ -1,15 +1,15 @@
-"""Initial
+"""authentication
 
-Revision ID: ba9e58c6b7ef
+Revision ID: 00d6c68a3b4e
 Revises: 
-Create Date: 2022-12-01 12:02:40.769270
+Create Date: 2022-12-05 23:48:46.299774
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "ba9e58c6b7ef"
+revision = "00d6c68a3b4e"
 down_revision = None
 branch_labels = None
 depends_on = None

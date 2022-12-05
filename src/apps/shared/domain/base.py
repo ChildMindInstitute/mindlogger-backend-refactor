@@ -1,12 +1,6 @@
 from pydantic import BaseModel, Extra
 
 
-class BaseError(Exception):
-    def __init__(self, message="", *args, **kwargs) -> None:
-        fallback = "Unhandled error"
-        super().__init__(message or fallback, *args, **kwargs)
-
-
 class InternalModel(BaseModel):
     class Config:
         extra = Extra.forbid
