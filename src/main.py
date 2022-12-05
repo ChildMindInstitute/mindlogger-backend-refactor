@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.security import OAuth2PasswordBearer
 
 from apps.authentication.api.auth import router as authentication_router
+from apps.applets.api.applets import router as applets_router
 from apps.healthcheck.api import router as healthcheck_router
 from middlewares import ErrorsHandlingMiddleware
 
@@ -12,6 +13,7 @@ def create_app():
     # Routers include
     app.include_router(healthcheck_router)
     app.include_router(authentication_router)
+    app.include_router(applets_router)
 
     # Middlewares configuration
     app.add_middleware(ErrorsHandlingMiddleware)

@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr
 from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
+from apps.users.db import Role
 
 __all__ = [
     "PublicUser",
@@ -10,6 +11,9 @@ __all__ = [
     "UserCreate",
     "User",
     "UserSignUpRequest",
+    "UserAppletAccessCreate",
+    "UserAppletAccess",
+    "PublicUserAppletAccess",
 ]
 
 
@@ -29,8 +33,7 @@ class UserLoginRequest(_UserBase, PublicModel):
     password: str
 
 
-class UserCreate(InternalModel):
-    email: EmailStr
+class UserCreate(_UserBase, InternalModel):
     full_name: str
     hashed_password: str
 
@@ -43,3 +46,22 @@ class PublicUser(_UserBase, PublicModel):
     """Public user data model."""
 
     id: PositiveInt
+
+
+class UserAppletAccessCreate(InternalModel):
+    user_id: PositiveInt
+    applet_id: PositiveInt
+    role: Role
+
+
+class UserAppletAccess(UserAppletAccessCreate):
+    id: PositiveInt
+
+
+class PublicUserAppletAccess(PublicModel):
+    """Public UserAppletAccess data model."""
+
+    id: PositiveInt
+    user_id: PositiveInt
+    applet_id: PositiveInt
+    role: Role

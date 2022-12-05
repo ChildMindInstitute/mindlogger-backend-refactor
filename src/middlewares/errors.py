@@ -4,13 +4,18 @@ from starlette.middleware.base import (
     RequestResponseEndpoint,
 )
 
+from apps.applets.errors import AppletsError, AppletsNotFoundError
 from apps.authentication.errors import (
     AuthenticationError,
     BadCredentials,
     TokenNotFoundError,
 )
 from apps.shared.domain import BaseError, ErrorResponse
-from apps.users.errors import UsersError
+from apps.users.errors import (
+    UserAppletAccessesError,
+    UserAppletAccessesNotFound,
+    UsersError,
+)
 
 __all__ = ["ErrorsHandlingMiddleware"]
 
@@ -38,6 +43,34 @@ class ErrorsHandlingMiddleware(BaseHTTPMiddleware):
                 headers=self.headers,
             )
         except TokenNotFoundError as error:
+            resp = ErrorResponse(messages=[str(error)])
+            return Response(
+                resp.json(),
+                status_code=status.HTTP_404_NOT_FOUND,
+                headers=self.headers,
+            )
+        except AppletsError as error:
+            resp = ErrorResponse(messages=[str(error)])
+            return Response(
+                resp.json(),
+                status_code=status.HTTP_400_BAD_REQUEST,
+                headers=self.headers,
+            )
+        except AppletsNotFoundError as error:
+            resp = ErrorResponse(messages=[str(error)])
+            return Response(
+                resp.json(),
+                status_code=status.HTTP_404_NOT_FOUND,
+                headers=self.headers,
+            )
+        except UserAppletAccessesError as error:
+            resp = ErrorResponse(messages=[str(error)])
+            return Response(
+                resp.json(),
+                status_code=status.HTTP_400_BAD_REQUEST,
+                headers=self.headers,
+            )
+        except UserAppletAccessesNotFound as error:
             resp = ErrorResponse(messages=[str(error)])
             return Response(
                 resp.json(),
