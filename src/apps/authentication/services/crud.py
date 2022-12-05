@@ -1,8 +1,8 @@
 from typing import Any
 
+from apps.authentication.db.schemas import TokenSchema
 from apps.authentication.domain import Token, TokenCreate
 from apps.authentication.errors import TokenNotFoundError
-from apps.authentication.models import TokenSchema
 from apps.authentication.services.security import AuthenticationService
 from infrastructure.database.crud import BaseCRUD
 

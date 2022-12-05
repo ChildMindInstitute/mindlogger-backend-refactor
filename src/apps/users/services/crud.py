@@ -1,8 +1,8 @@
 from typing import Any
 
+from apps.users.db.schemas import UserSchema
 from apps.users.domain import User, UserCreate
 from apps.users.errors import UserNotFound, UsersError
-from apps.users.models import UserSchema
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["UsersCRUD"]

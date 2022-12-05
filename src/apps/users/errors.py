@@ -1,9 +1,9 @@
-from apps.shared.domain import BaseError
+from apps.shared.errors import BaseError, NotFoundError
 
 
 class UsersError(BaseError):
     pass
 
 
-class UserNotFound(BaseError):
+class UserNotFound(NotFoundError):
     pass

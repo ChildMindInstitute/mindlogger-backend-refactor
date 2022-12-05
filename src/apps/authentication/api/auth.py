@@ -1,5 +1,4 @@
 from fastapi import Body, Depends
-from fastapi.routing import APIRouter
 from jose import JWTError, jwt
 
 from apps.authentication.deps import get_current_user
@@ -13,6 +12,7 @@ from apps.authentication.errors import BadCredentials
 from apps.authentication.services.crud import TokensCRUD
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
+from apps.shared.errors import NotContentError
 from apps.users.domain import (
     PublicUser,
     User,
@@ -24,10 +24,7 @@ from apps.users.errors import UserNotFound, UsersError
 from apps.users.services import UsersCRUD
 from config import settings
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-
-@router.post("/signup", tags=["Authentication"])
 async def create_user(
     user_create_schema: UserSignUpRequest = Body(...),
 ) -> Response[PublicUser]:
@@ -50,22 +47,12 @@ async def create_user(
     return Response(result=public_user)
 
 
-async def authenticate_user(user_login_schema: UserLoginRequest = Body(...)):
-    user: User = await UsersCRUD().get_by_email(email=user_login_schema.email)
-
-    if not AuthenticationService.verify_password(
-        user_login_schema.password, user.hashed_password
-    ):
-        raise BadCredentials("Invalid password")
-
-    return user
-
-
-@router.post("/access-token", tags=["Authentication"])
 async def get_access_token(
     user_login_schema: UserLoginRequest = Body(...),
 ) -> Response[Token]:
-    user: User = await authenticate_user(user_login_schema)
+    user: User = await AuthenticationService.authenticate_user(
+        user_login_schema
+    )
 
     access_token = AuthenticationService.create_access_token(
         data={"sub": user.email}
@@ -87,19 +74,19 @@ async def get_access_token(
     return Response(result=token)
 
 
-@router.post("/signout", tags=["Authentication"])
-async def access_token_delete(user: User = Depends(get_current_user)) -> None:
-    access_token_not_correct = BadCredentials(
+async def access_token_delete(user: User = Depends(get_current_user)):
+    access_token_not_correct: Exception = BadCredentials(
         message="Access token is not correct"
     )
+
     try:
         instance: Token = await TokensCRUD().get_by_email(email=user.email)
         await TokensCRUD().delete_by_id(instance.id)
+        raise NotContentError
     except UsersError:
         raise access_token_not_correct
 
 
-@router.post("/refresh-access-token", tags=["Authentication"])
 async def refresh_access_token(
     refresh_access_token_schema: RefreshAccessTokenRequest = Body(...),
 ) -> Response[TokenRefresh]:
