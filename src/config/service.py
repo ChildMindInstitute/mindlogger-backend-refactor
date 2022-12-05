@@ -6,9 +6,9 @@ from pydantic import BaseModel
 class ServiceUrlsSettings(BaseModel):
     """Configure all public urls."""
 
-    docs: Optional[str] = "/docs"
+    docs: str = "/docs"
     openapi: Optional[str] = None
-    redoc: Optional[str] = "/redoc"
+    redoc: str = "/redoc"
 
 
 class ServiceSettings(BaseModel):

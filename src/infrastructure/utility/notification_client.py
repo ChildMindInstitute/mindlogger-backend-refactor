@@ -1,8 +1,9 @@
 import asyncio
+from concurrent.futures.thread import ThreadPoolExecutor
+
+from pyfcm import FCMNotification
 
 from config import settings
-from pyfcm import FCMNotification
-from concurrent.futures.thread import ThreadPoolExecutor
 
 
 class RetryException(Exception):
@@ -33,62 +34,67 @@ class _FirebaseNotification(FCMNotification):
 class Notification:
     """SIngleton FCM Notification client"""
 
-    _initialized: bool = False
-    _instance: None = None
-    client: _FirebaseNotification = None
+    _initialized = False
+    _instance = None
+    client: _FirebaseNotification | None = None
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, config: settings.notification, **kwargs):
+    def __init__(self, **kwargs):
 
         if self._initialized:
             return
 
-        self.client = _FirebaseNotification(api_key=config.api_key)
+        self.client = _FirebaseNotification(
+            api_key=settings.notification.api_key
+        )
 
         self._initialized = True
 
     async def notify(
         self,
-        devices: list = None,
-        message_title: str = None,
-        message_body: str = None,
-        time_to_live: int = None,
-        data_message: dict = None,
-        badge: str = None,
-        extra_kwargs: dict = None,
+        devices: list | None = None,
+        message_title: str | None = None,
+        message_body: str | None = None,
+        time_to_live: int | None = None,
+        data_message: dict | None = None,
+        badge: str | None = None,
+        extra_kwargs: dict | None = None,
         *args,
         **kwargs,
     ):
 
         try:
-            if len(devices) > 1:
-                self.client.notify_multiple_devices(
-                    registration_ids=devices,
-                    message_title=message_title,
-                    message_body=message_body,
-                    time_to_live=time_to_live,
-                    data_message=data_message,
-                    badge=badge,
-                    extra_kwargs=extra_kwargs,
-                    *args,
-                    **kwargs,
-                )
+            if devices and len(devices) > 1:
+                if self.client:
+                    self.client.notify_multiple_devices(
+                        registration_ids=devices,
+                        message_title=message_title,
+                        message_body=message_body,
+                        time_to_live=time_to_live,
+                        data_message=data_message,
+                        badge=badge,
+                        extra_kwargs=extra_kwargs,
+                        *args,
+                        **kwargs,
+                    )
             else:
-                self.client.notify_single_device(
-                    registration_id=devices[0],
-                    message_title=message_title,
-                    message_body=message_body,
-                    time_to_live=time_to_live,
-                    data_message=data_message,
-                    badge=badge,
-                    extra_kwargs=extra_kwargs,
-                    *args,
-                    **kwargs,
-                )
+                if self.client:
+                    assert devices
+                    self.client.notify_single_device(
+                        registration_id=devices[0],
+                        message_title=message_title,
+                        message_body=message_body,
+                        time_to_live=time_to_live,
+                        data_message=data_message,
+                        badge=badge,
+                        extra_kwargs=extra_kwargs,
+                        *args,
+                        **kwargs,
+                    )
         except RetryException as ex:
             await asyncio.sleep(ex.timeout)
-            self.notify(devices, *args, **kwargs)
+            await self.notify(devices, *args, **kwargs)

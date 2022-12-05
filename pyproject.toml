@@ -64,7 +64,8 @@ follow_imports = 'silent'
 [[tool.mypy.overrides]]
 module = [
     'mixer.*',
-    'sqlalchemy.*'
+    'sqlalchemy.*',
+    'boto3',
+    'pyfcm'
 ]
 ignore_missing_imports = true
-

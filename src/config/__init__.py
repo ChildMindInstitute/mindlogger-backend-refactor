@@ -1,13 +1,14 @@
-from os import getenv
 from pathlib import Path
 
 from pydantic import BaseSettings
 
+from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
+from config.database import DatabaseSettings
+from config.notification import NotificationSettings
 from config.redis import RedisSettings
 from config.sentry import SentrySettings
 from config.service import ServiceSettings, ServiceUrlsSettings
-from config.notification import NotificationSettings
 
 
 # NOTE: Settings powered by pydantic
@@ -23,23 +24,16 @@ class Settings(BaseSettings):
     # Service
     service: ServiceSettings = ServiceSettings()
 
-    database_url = getenv(
-        "DATABASE_URL",
-        default=(
-            "postgresql+asyncpg://"
-            "postgres:postgres@postgres:5432/mindlogger_backend"
-        ),
-    )
-
-    # Cache
-    redis_url: str = "redis://redis"
+    # DataBase
+    database: DatabaseSettings = DatabaseSettings()
 
     # Authentication
+    authentication: AuthenticationSettings = AuthenticationSettings()
 
     # Sentry stuff
     sentry: SentrySettings = SentrySettings()
 
-    # Redis configs
+    # Redis
     redis: RedisSettings = RedisSettings()
 
     # CDN configs
@@ -48,7 +42,8 @@ class Settings(BaseSettings):
     # FCM NOtification configs
     notification: NotificationSettings = NotificationSettings()
 
-    # Providers
+    # NOTE: This config is used by SQLAlchemy for imports
+    migrations_apps: list[str]
 
     class Config:
         env_nested_delimiter = "__"
@@ -65,4 +60,8 @@ settings = Settings(
             openapi="/openapi.json",
         ),
     ),
+    migrations_apps=[
+        "authentication",
+        "users",
+    ],
 )

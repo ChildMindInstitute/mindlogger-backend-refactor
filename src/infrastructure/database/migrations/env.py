@@ -30,7 +30,7 @@ target_metadata = Base.metadata
 # ... etc.
 
 # Override alembic.ini option
-config.set_main_option("sqlalchemy.url", settings.database_url)
+config.set_main_option("sqlalchemy.url", settings.database.url)
 
 
 def run_migrations_offline() -> None:
@@ -46,7 +46,7 @@ def run_migrations_offline() -> None:
 
     """
     context.configure(
-        url=settings.database_url,
+        url=settings.database.url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
