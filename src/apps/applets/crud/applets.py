@@ -4,17 +4,16 @@ from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
-from apps.applets.db.schemas import AppletSchema
+from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
 from apps.applets.domain import Applet, AppletCreate, AppletUpdate
 from apps.applets.errors import AppletsError, AppletsNotFoundError
-from apps.authentication.db.schemas import TokenSchema
-from apps.users.db import Role, UserAppletAccessSchema
+from apps.applets.services.constants import Role
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["AppletsCRUD"]
 
 
-class AppletsCRUD(BaseCRUD[TokenSchema]):
+class AppletsCRUD(BaseCRUD[AppletSchema]):
     schema_class = AppletSchema  # type: ignore[assignment]
 
     async def _fetch(self, key: str, value: Any) -> Applet:
@@ -41,12 +40,14 @@ class AppletsCRUD(BaseCRUD[TokenSchema]):
         return await self._fetch(key="display_name", value=display_name)
 
     async def get_by_user_id_role_admin(self, user_id_: int) -> list[Applet]:
-        sub_query: Query = select(UserAppletAccessSchema.applet_id).filter(
-            UserAppletAccessSchema.user_id == user_id_
-            and UserAppletAccessSchema.role == Role("admin")
-        )
-        query: Query = select(self.schema_class).where(
-            self.schema_class.id in sub_query
+        query: Query = (
+            select(self.schema_class)
+            .join_from(UserAppletAccessSchema, self.schema_class)
+            .where(
+                UserAppletAccessSchema.user_id == user_id_
+                and UserAppletAccessSchema.role == Role("admin")
+            )
+            .order_by(self.schema_class.id)
         )
 
         result: Result = await self._execute(query)
@@ -72,7 +73,7 @@ class AppletsCRUD(BaseCRUD[TokenSchema]):
 
         await self._delete(key="id", value=id_)
 
-    async def delete_by_email(self, display_name: str):
+    async def delete_by_display_name(self, display_name: str):
         """Delete applet by display_name."""
 
         await self._delete(key="display_name", value=display_name)

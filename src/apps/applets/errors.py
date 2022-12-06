@@ -1,4 +1,4 @@
-from apps.shared.domain import BaseError
+from apps.shared.errors import BaseError
 
 
 class AppletsError(BaseError):

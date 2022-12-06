@@ -4,8 +4,8 @@ from jose import jwt
 from passlib.context import CryptContext
 
 from apps.authentication.errors import BadCredentials
+from apps.users.crud import UsersCRUD
 from apps.users.domain import User, UserLoginRequest
-from apps.users.services.crud import UsersCRUD
 from config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

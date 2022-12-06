@@ -1,6 +1,7 @@
 from fastapi import Body, Depends
-from fastapi.routing import APIRouter
 
+from apps.applets.crud.applets import AppletsCRUD
+from apps.applets.crud.roles import UserAppletAccessCRUD
 from apps.applets.domain import (
     Applet,
     AppletCreate,
@@ -8,20 +9,15 @@ from apps.applets.domain import (
     PublicApplet,
 )
 from apps.applets.errors import AppletsError, AppletsNotFoundError
-from apps.applets.services.crud import AppletsCRUD
+from apps.applets.services.constants import Role
+from apps.authentication.crud import TokensCRUD
 from apps.authentication.deps import get_current_user
 from apps.authentication.errors import BadCredentials
-from apps.authentication.services.crud import TokensCRUD
-from apps.shared.domain.response import Response
-from apps.users.db import Role
-from apps.users.domain import User, UserAppletAccessCreate
+from apps.shared.domain.response import Response, ResponseMulti
+from apps.users.domain import User, UserAppletAccess, UserAppletAccessCreate
 from apps.users.errors import UsersError
-from apps.users.services import PermissionsCRUD
-
-router = APIRouter(tags=["Applets"])
 
 
-@router.post("/applet/create", tags=["Applets"])
 async def create_applet(
     user: User = Depends(get_current_user),
     applet_create_schema: AppletCreateRequest = Body(...),
@@ -47,7 +43,7 @@ async def create_applet(
         # Save UserAppletAccess into the database
         applet, _ = await AppletsCRUD().save_applet(schema=applet_in_db)
 
-        await PermissionsCRUD().save_user_permission(
+        await UserAppletAccessCRUD().save_user_applet_access(
             schema=UserAppletAccessCreate(
                 user_id=user.id, applet_id=applet.id, role=Role("admin")
             )
@@ -57,11 +53,10 @@ async def create_applet(
     return Response(result=public_applet)
 
 
-@router.get("/applet/{id}", tags=["Applets"])
 async def get_applet_by_id(
     id: int,
     user: User = Depends(get_current_user),
-) -> Response[list[PublicApplet]]:
+) -> Response[PublicApplet]:
     access_token_not_correct = BadCredentials(
         message="Access token is not correct"
     )
@@ -78,10 +73,9 @@ async def get_applet_by_id(
         raise AppletsNotFoundError(f"Applet with id={id} not found.")
 
 
-@router.get("/applets", tags=["Applets"])
-async def get_applet_user_admin(
+async def get_user_applet_accesses_for_user_admin(
     user: User = Depends(get_current_user),
-) -> Response[list[Applet]]:
+) -> ResponseMulti[list[UserAppletAccess]]:
     access_token_not_correct = BadCredentials(
         message="Access token is not correct"
     )
@@ -90,7 +84,26 @@ async def get_applet_user_admin(
     except UsersError:
         raise access_token_not_correct
 
-    applets: list[Applet] = await AppletsCRUD().get_by_user_id_role_admin(
-        user.id
+    user_applet_accesses: list[
+        UserAppletAccess
+    ] = await UserAppletAccessCRUD().get_by_user_id_role_admin(user.id)
+
+    return ResponseMulti(results=user_applet_accesses)
+
+
+async def get_applets_user_admin(
+    user: User = Depends(get_current_user),
+) -> ResponseMulti[list[Applet]]:
+    access_token_not_correct = BadCredentials(
+        message="Access token is not correct"
     )
-    return Response(result=applets)
+    try:
+        await TokensCRUD().get_by_email(email=user.email)
+    except UsersError:
+        raise access_token_not_correct
+
+    user_applet_accesses: list[
+        Applet
+    ] = await AppletsCRUD().get_by_user_id_role_admin(user.id)
+
+    return ResponseMulti(results=user_applet_accesses)

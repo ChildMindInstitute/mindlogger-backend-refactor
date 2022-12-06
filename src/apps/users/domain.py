@@ -1,8 +1,8 @@
 from pydantic import BaseModel, EmailStr
 from pydantic.types import PositiveInt
 
+from apps.applets.services.constants import Role
 from apps.shared.domain import InternalModel, PublicModel
-from apps.users.db import Role
 
 __all__ = [
     "PublicUser",
