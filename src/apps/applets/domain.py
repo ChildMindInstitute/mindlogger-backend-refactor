@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from pydantic.types import PositiveInt
 
+from apps.applets.constants import Role
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
@@ -9,6 +10,9 @@ __all__ = [
     "AppletUpdate",
     "Applet",
     "PublicApplet",
+    "UserAppletAccessCreate",
+    "UserAppletAccess",
+    "PublicUserAppletAccess",
 ]
 
 
@@ -39,3 +43,22 @@ class AppletUpdate(_AppletBase, InternalModel):
 
 class Applet(AppletCreate):
     id: PositiveInt
+
+
+class UserAppletAccessCreate(InternalModel):
+    user_id: PositiveInt
+    applet_id: PositiveInt
+    role: Role
+
+
+class UserAppletAccess(UserAppletAccessCreate):
+    id: PositiveInt
+
+
+class PublicUserAppletAccess(PublicModel):
+    """Public UserAppletAccess data model."""
+
+    id: PositiveInt
+    user_id: PositiveInt
+    applet_id: PositiveInt
+    role: Role

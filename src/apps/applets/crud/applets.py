@@ -2,19 +2,24 @@ from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.engine import Result
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
+from apps.applets.constants import Role
 from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
 from apps.applets.domain import Applet, AppletCreate, AppletUpdate
-from apps.applets.errors import AppletsError, AppletsNotFoundError
-from apps.applets.services.constants import Role
+from apps.applets.errors import (
+    AppletAlreadyExist,
+    AppletNotFoundError,
+    AppletsError,
+)
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["AppletsCRUD"]
 
 
 class AppletsCRUD(BaseCRUD[AppletSchema]):
-    schema_class = AppletSchema  # type: ignore[assignment]
+    schema_class: AppletSchema = AppletSchema  # type: ignore[assignment]
 
     async def _fetch(self, key: str, value: Any) -> Applet:
         """Fetch applet by id or display_name from the database."""
@@ -26,7 +31,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         # Get applet from the database
         if not (instance := await self._get(key, value)):
-            raise AppletsNotFoundError(f"No such applet with {key}={value}.")
+            raise AppletNotFoundError(f"No such applet with {key}={value}.")
 
         # Get internal model
         applet: Applet = Applet.from_orm(instance)
@@ -39,13 +44,13 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     async def get_by_display_name(self, display_name: str) -> Applet:
         return await self._fetch(key="display_name", value=display_name)
 
-    async def get_by_user_id_role_admin(self, user_id_: int) -> list[Applet]:
+    async def get_admin_applets(self, user_id_: int) -> list[Applet]:
         query: Query = (
             select(self.schema_class)
             .join_from(UserAppletAccessSchema, self.schema_class)
             .where(
                 UserAppletAccessSchema.user_id == user_id_
-                and UserAppletAccessSchema.role == Role("admin")
+                and UserAppletAccessSchema.role == Role.ADMIN
             )
             .order_by(self.schema_class.id)
         )
@@ -55,18 +60,21 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         return [Applet.from_orm(applet) for applet in results]
 
-    async def save_applet(self, schema: AppletCreate) -> tuple[Applet, bool]:
+    async def save(self, schema: AppletCreate) -> Applet:
         """Return applet instance and the created information."""
 
         # Save applet into the database
-        instance: AppletSchema = await self._create(
-            AppletSchema(**schema.dict())
-        )
+        try:
+            instance: AppletSchema = await self._create(
+                AppletSchema(**schema.dict())
+            )
+        except IntegrityError:
+            raise AppletAlreadyExist()
 
         # Create internal data model
         applet: Applet = Applet.from_orm(instance)
 
-        return applet, True
+        return applet
 
     async def delete_by_id(self, id_: int):
         """Delete applet by id."""

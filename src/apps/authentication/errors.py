@@ -1,4 +1,4 @@
-from apps.shared.errors import BaseError, NotFoundError, ValidationError
+from apps.shared.errors import NotFoundError, PermissionsError, ValidationError
 
 
 class TokenNotFoundError(NotFoundError):
@@ -6,7 +6,7 @@ class TokenNotFoundError(NotFoundError):
         super().__init__("Token not found", *args)
 
 
-class AuthenticationError(BaseError):
+class AuthenticationError(PermissionsError):
     def __init__(self, message="", *args) -> None:
         fallback = "Authentication service error"
         super().__init__(message or fallback, *args)

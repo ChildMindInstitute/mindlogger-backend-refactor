@@ -5,13 +5,9 @@ from apps.users.domain import User, UserCreate
 from apps.users.errors import UserNotFound, UsersError
 from infrastructure.database.crud import BaseCRUD
 
-__all__ = [
-    "UsersCRUD",
-]
-
 
 class UsersCRUD(BaseCRUD[UserSchema]):
-    schema_class = UserSchema  # type: ignore[assignment]
+    schema_class = UserSchema
 
     async def _fetch(self, key: str, value: Any) -> User:
         """Fetch user by id or email from the database."""

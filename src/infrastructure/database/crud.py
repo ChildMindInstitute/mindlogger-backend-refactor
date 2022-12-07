@@ -1,4 +1,4 @@
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Type, TypeVar
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.engine import Result
@@ -12,7 +12,7 @@ ConcreteSchema = TypeVar("ConcreteSchema", bound=Base)
 
 
 class BaseCRUD(Generic[ConcreteSchema]):
-    schema_class: ConcreteSchema
+    schema_class: Type[ConcreteSchema]
 
     def __init__(self, session: AsyncSession | None = None) -> None:
         self._session = session or get_session()

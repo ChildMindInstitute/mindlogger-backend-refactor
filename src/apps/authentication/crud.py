@@ -6,11 +6,9 @@ from apps.authentication.errors import TokenNotFoundError
 from apps.authentication.services.security import AuthenticationService
 from infrastructure.database.crud import BaseCRUD
 
-__all__ = ["TokensCRUD"]
-
 
 class TokensCRUD(BaseCRUD[TokenSchema]):
-    schema_class = TokenSchema  # type: ignore[assignment]
+    schema_class = TokenSchema
 
     async def _fetch(self, key: str, value: Any) -> Token:
         """Fetch token by email from the database."""

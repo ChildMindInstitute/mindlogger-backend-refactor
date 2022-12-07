@@ -2,17 +2,17 @@ from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
+from apps.applets.constants import Role
 from apps.applets.db.schemas import UserAppletAccessSchema
-from apps.applets.services.constants import Role
-from apps.users.domain import UserAppletAccess, UserAppletAccessCreate
-from apps.users.errors import UserAppletAccessesNotFound
+from apps.applets.domain import UserAppletAccess, UserAppletAccessCreate
+from apps.applets.errors import UserAppletAccessesNotFound
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["UserAppletAccessCRUD"]
 
 
 class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
-    schema_class = UserAppletAccessSchema  # type: ignore[assignment]
+    schema_classUserAppletAccessSchema = UserAppletAccessSchema
 
     async def get_by_id(self, id_: int) -> UserAppletAccess:
         """Fetch UserAppletAccess by id from the database."""
@@ -73,9 +73,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     async def update_role(self, id_: int, role: Role) -> None:
         await self._update(lookup=("id", id_), payload={"role": role})
 
-    async def save_user_applet_access(
-        self, schema: UserAppletAccessCreate
-    ) -> tuple[UserAppletAccess, bool]:
+    async def save(self, schema: UserAppletAccessCreate) -> UserAppletAccess:
         """Return UserAppletAccess instance and the created information."""
 
         # Save UserAppletAccess into the database
@@ -86,4 +84,4 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         # Create internal data model
         user_applet_access = UserAppletAccess.from_orm(instance)
 
-        return user_applet_access, True
+        return user_applet_access
