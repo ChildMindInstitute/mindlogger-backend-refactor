@@ -12,6 +12,7 @@ from apps.applets.domain import (
 )
 from apps.authentication.deps import get_current_user
 from apps.shared.domain.response import Response, ResponseMulti
+from apps.shared.errors import NotContentError
 from apps.users.domain import User
 
 
@@ -48,3 +49,9 @@ async def get_applets(
     applets: list[Applet] = await AppletsCRUD().get_admin_applets(user.id)
 
     return ResponseMulti(results=applets)
+
+
+async def delete_applet_by_id(id: int, user: User = Depends(get_current_user)):
+    await AppletsCRUD().get_by_id(id_=id)
+    await AppletsCRUD().delete_by_id(id_=id)
+    raise NotContentError

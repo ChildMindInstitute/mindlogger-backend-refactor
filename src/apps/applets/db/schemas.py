@@ -13,6 +13,10 @@ class AppletSchema(Base):
 class UserAppletAccessSchema(Base):
     __tablename__ = "user_applet_accesses"
 
-    user_id = Column(ForeignKey("users.id"), nullable=False)
-    applet_id = Column(ForeignKey("applets.id"), nullable=False)
+    user_id = Column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    applet_id = Column(
+        ForeignKey("applets.id", ondelete="CASCADE"), nullable=False
+    )
     role = Column(String(length=20), nullable=False)

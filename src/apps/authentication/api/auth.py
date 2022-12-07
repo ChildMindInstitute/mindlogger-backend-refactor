@@ -93,7 +93,7 @@ async def refresh_access_token(
     """Refresh access token."""
 
     refresh_token_not_correct = BadCredentials(
-        message="Access token is not correct"
+        message="Refresh token is not correct"
     )
 
     try:
