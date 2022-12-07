@@ -19,7 +19,7 @@ __all__ = ["AppletsCRUD"]
 
 
 class AppletsCRUD(BaseCRUD[AppletSchema]):
-    schema_class: AppletSchema = AppletSchema  # type: ignore[assignment]
+    schema_class = AppletSchema
 
     async def _fetch(self, key: str, value: Any) -> Applet:
         """Fetch applet by id or display_name from the database."""

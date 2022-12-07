@@ -12,7 +12,7 @@ __all__ = ["UserAppletAccessCRUD"]
 
 
 class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
-    schema_classUserAppletAccessSchema = UserAppletAccessSchema
+    schema_class = UserAppletAccessSchema
 
     async def get_by_id(self, id_: int) -> UserAppletAccess:
         """Fetch UserAppletAccess by id from the database."""
