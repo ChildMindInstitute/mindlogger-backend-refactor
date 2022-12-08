@@ -48,6 +48,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_nested_delimiter = "__"
+        env_file = f'.env.{os.environ.get("env", "dev")}'
 
 
 # Load settings
@@ -65,5 +66,4 @@ settings = Settings(
         "authentication",
         "users",
     ],
-    _env_file=f'.env.{os.environ.get("env", "dev")}',
 )

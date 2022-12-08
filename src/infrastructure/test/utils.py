@@ -1,7 +1,6 @@
 from sqlalchemy import text
 
-from infrastructure.database import session_manager
-from src.infrastructure.database import Base
+from infrastructure.database import Base, session_manager
 
 
 async def update_sequence():

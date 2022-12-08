@@ -9,6 +9,8 @@ from infrastructure.database.core import session_manager
 
 ConcreteSchema = TypeVar("ConcreteSchema", bound=Base)
 
+__all__ = ["BaseCRUD"]
+
 
 class BaseCRUD(Generic[ConcreteSchema]):
     schema_class: ConcreteSchema

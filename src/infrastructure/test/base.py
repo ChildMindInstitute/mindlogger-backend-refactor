@@ -11,7 +11,7 @@ from .utils import truncate_tables, update_sequence
 
 
 class BaseTest:
-    fixtures = []
+    fixtures: list[str] = []
     client = TestClient()
 
     @pytest.fixture(scope="class", autouse=True)

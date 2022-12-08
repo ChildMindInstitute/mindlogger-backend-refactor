@@ -5,16 +5,16 @@ import pytest
 from alembic import command
 from alembic.config import Config
 
-alembic_cfg = Config('alembic.ini')
-os.environ.setdefault('env', 'testing')
+alembic_cfg = Config("alembic.ini")
+os.environ.setdefault("env", "testing")
 
 
 def before():
-    command.upgrade(alembic_cfg, 'head')
+    command.upgrade(alembic_cfg, "head")
 
 
 def after():
-    command.downgrade(alembic_cfg, 'base')
+    command.downgrade(alembic_cfg, "base")
 
 
 @pytest.fixture(scope="session")
