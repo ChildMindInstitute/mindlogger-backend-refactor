@@ -65,5 +65,5 @@ settings = Settings(
         "authentication",
         "users",
     ],
-    _env_file=f'.env.{os.environ.get("env", "dev")}'
+    _env_file=f'.env.{os.environ.get("env", "dev")}',
 )

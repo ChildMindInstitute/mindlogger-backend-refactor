@@ -9,10 +9,12 @@ async def update_sequence():
     for name, table in Base.metadata.tables.items():
         if not table.c.id.autoincrement:
             continue
-        query = text(f"""
+        query = text(
+            f"""
         SELECT SETVAL('{name}_id_seq',
             (SELECT COALESCE(MAX(id), 1) FROM "{name}"))
-        """)
+        """
+        )
         await session.execute(query)
     await session.commit()
 

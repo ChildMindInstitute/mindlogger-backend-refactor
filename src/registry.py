@@ -7,6 +7,4 @@ routers = (
     auth.router,
 )
 
-middlewares = (
-    middlewares_.ErrorsHandlingMiddleware,
-)
+middlewares = (middlewares_.ErrorsHandlingMiddleware,)

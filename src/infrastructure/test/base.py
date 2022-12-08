@@ -33,9 +33,11 @@ class BaseTest:
                 map(lambda field: f'"{field}"', datum["fields"].keys())
             )
             values = ",".join(map(_str_caster, datum["fields"].values()))
-            query = text(f"""
+            query = text(
+                f"""
             insert into "{datum['table']}"({columns}) values ({values})
-            """)
+            """
+            )
             await session.execute(query)
         await session.commit()
 
