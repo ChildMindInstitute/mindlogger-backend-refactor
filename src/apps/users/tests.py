@@ -3,7 +3,7 @@ from apps.users.services import UsersCRUD
 from infrastructure.test import BaseTest, rollback
 
 
-class TestApplet(BaseTest):
+class TestUser(BaseTest):
     fixtures = ["users/fixtures/users.json"]
 
     @rollback
