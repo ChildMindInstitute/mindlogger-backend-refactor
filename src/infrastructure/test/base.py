@@ -29,9 +29,13 @@ class BaseTest:
         file = open(os.path.join(settings.apps_dir, relative_path), "r")
         data = json.load(file)
         for datum in data:
-            columns = ",".join(map(lambda field: f'"{field}"', datum["fields"].keys()))
+            columns = ",".join(
+                map(lambda field: f'"{field}"', datum["fields"].keys())
+            )
             values = ",".join(map(_str_caster, datum["fields"].values()))
-            query = text(f"""insert into "{datum['table']}"({columns}) values ({values})""")
+            query = text(
+                f"""insert into "{datum['table']}"({columns}) values ({values})"""
+            )
             await session.execute(query)
         await session.commit()
 

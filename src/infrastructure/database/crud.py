@@ -21,9 +21,9 @@ class BaseCRUD(Generic[ConcreteSchema]):
         return await self.session.execute(query)
 
     async def _update(
-            self,
-            lookup: tuple[str, Any],
-            payload: dict[str, Any],
+        self,
+        lookup: tuple[str, Any],
+        payload: dict[str, Any],
     ) -> None:
         """Updates an existed instance of the model in the related table"""
 
