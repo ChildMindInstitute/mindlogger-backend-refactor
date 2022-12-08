@@ -49,6 +49,8 @@ docker-compose.local.yaml
 
 ## Project configurations
 .env
+.env.dev
+.env.testing
 
 # Virtual environments
 .venv

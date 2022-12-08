@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from pydantic import BaseSettings
@@ -19,7 +20,7 @@ class Settings(BaseSettings):
 
     debug: bool = True
 
-    env: str = "local"
+    env: str = "dev"
 
     # Service
     service: ServiceSettings = ServiceSettings()
@@ -64,4 +65,5 @@ settings = Settings(
         "authentication",
         "users",
     ],
+    _env_file=f'.env.{os.environ.get("env", "dev")}'
 )
