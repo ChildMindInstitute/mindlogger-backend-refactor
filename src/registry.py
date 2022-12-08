@@ -1,5 +1,5 @@
-import apps.healthcheck.router as healthcheck
 import apps.authentication.router as auth
+import apps.healthcheck.router as healthcheck
 from infrastructure import middlewares as middlewares_
 
 routers = (
