@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import ValidationError
 
-from apps.authentication.domain import TokenPayload
+from apps.authentication.domain import TokenPayload, TokenRichPayload
 from apps.users.domain import User
 from apps.users.services import UsersCRUD
 from config import settings
@@ -46,3 +46,31 @@ async def get_current_user(token: str = Depends(oauth2_oauth)) -> User:
         )
 
     return user
+
+
+async def get_current_token(
+    token: str = Depends(oauth2_oauth),
+) -> TokenRichPayload:
+    try:
+        payload = jwt.decode(
+            token,
+            settings.authentication.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+
+        token_payload = TokenPayload(**payload)
+
+        if datetime.fromtimestamp(token_payload.exp) < datetime.now():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except (JWTError, ValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return TokenRichPayload(payload=token_payload, raw_token=token)

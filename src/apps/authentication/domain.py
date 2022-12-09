@@ -1,32 +1,20 @@
 from pydantic import EmailStr
 
 from apps.shared.domain import PublicModel
+from apps.shared.domain.base import InternalModel
+from config import settings
 
 
-class TokenCreate(PublicModel):
-    email: EmailStr
+class Token(PublicModel):
     access_token: str
-    refresh_token: str
+    token_type: str = settings.authentication.token_type
 
 
-class TokenRefresh(PublicModel):
-    email: EmailStr
-    access_token: str
-    refresh_token: str
-
-
-class TokenDeleteRequest(PublicModel):
-    access_token: str
-
-
-class RefreshAccessTokenRequest(PublicModel):
-    refresh_token: str
-
-
-class TokenPayload(PublicModel):
+class TokenPayload(InternalModel):
     sub: EmailStr
     exp: int
 
 
-class Token(TokenCreate):
-    id: int
+class TokenRichPayload(InternalModel):
+    payload: TokenPayload
+    raw_token: str
