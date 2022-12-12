@@ -63,5 +63,6 @@ settings = Settings(
     migrations_apps=[
         "users",
         "applets",
+        "activities",
     ],
 )
