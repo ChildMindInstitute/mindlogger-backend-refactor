@@ -1,15 +1,15 @@
 from fastapi import Body, Depends
 
-from apps.applets.constants import Role
 from apps.applets.crud.applets import AppletsCRUD
 from apps.applets.crud.roles import UserAppletAccessCRUD
-from apps.applets.domain import (
+from apps.applets.domain.applets import (
     Applet,
     AppletCreate,
     AppletCreateRequest,
     PublicApplet,
     UserAppletAccessCreate,
 )
+from apps.applets.domain.constants import Role
 from apps.authentication.deps import get_current_user
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.errors import NotContentError

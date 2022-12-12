@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from pydantic.types import PositiveInt
 
-from apps.applets.constants import Role
+from apps.applets.domain.constants import Role
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [

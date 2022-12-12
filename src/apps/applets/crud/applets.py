@@ -5,9 +5,9 @@ from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
-from apps.applets.constants import Role
 from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
-from apps.applets.domain import Applet, AppletCreate, AppletUpdate
+from apps.applets.domain.applets import Applet, AppletCreate, AppletUpdate
+from apps.applets.domain.constants import Role
 from apps.applets.errors import (
     AppletAlreadyExist,
     AppletNotFoundError,
