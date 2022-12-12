@@ -5,6 +5,7 @@ from apps.authentication.domain import InternalToken, Token
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.errors import NotContentError
+from apps.users.crud import UsersCRUD
 from apps.users.domain import (
     PublicUser,
     User,
@@ -13,7 +14,6 @@ from apps.users.domain import (
     UserSignUpRequest,
 )
 from apps.users.errors import UserNotFound, UsersError
-from apps.users.services import UsersCRUD
 
 
 async def create_user(

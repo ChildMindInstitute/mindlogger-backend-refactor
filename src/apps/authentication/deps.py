@@ -6,8 +6,8 @@ from jose import JWTError, jwt
 from pydantic import ValidationError
 
 from apps.authentication.domain import InternalToken, TokenPayload
+from apps.users.crud import UsersCRUD
 from apps.users.domain import User
-from apps.users.services import UsersCRUD
 from config import settings
 
 oauth2_oauth = OAuth2PasswordBearer(
