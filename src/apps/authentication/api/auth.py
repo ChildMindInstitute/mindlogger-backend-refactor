@@ -1,7 +1,7 @@
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_token
-from apps.authentication.domain import Token, TokenRichPayload
+from apps.authentication.domain import InternalToken, Token
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.errors import NotContentError
@@ -53,7 +53,7 @@ async def get_access_token(
 
 
 async def access_token_delete(
-    token: TokenRichPayload = Depends(get_current_token),
+    token: InternalToken = Depends(get_current_token),
 ):
     await AuthenticationService.add_access_token_to_blacklist(token)
     raise NotContentError

@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import ValidationError
 
-from apps.authentication.domain import TokenPayload, TokenRichPayload
+from apps.authentication.domain import InternalToken, TokenPayload
 from apps.users.domain import User
 from apps.users.services import UsersCRUD
 from config import settings
@@ -50,7 +50,7 @@ async def get_current_user(token: str = Depends(oauth2_oauth)) -> User:
 
 async def get_current_token(
     token: str = Depends(oauth2_oauth),
-) -> TokenRichPayload:
+) -> InternalToken:
     try:
         payload = jwt.decode(
             token,
@@ -73,4 +73,4 @@ async def get_current_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return TokenRichPayload(payload=token_payload, raw_token=token)
+    return InternalToken(payload=token_payload, raw_token=token)

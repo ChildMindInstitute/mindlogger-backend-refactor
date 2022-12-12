@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
 
-from apps.authentication.domain import TokenRichPayload
+from apps.authentication.domain import InternalToken
 from apps.authentication.errors import BadCredentials
 from apps.shared.errors import BaseError
 from apps.users.domain import User, UserLoginRequest
@@ -48,7 +48,7 @@ class AuthenticationService:
         return user
 
     @staticmethod
-    async def add_access_token_to_blacklist(token: TokenRichPayload):
+    async def add_access_token_to_blacklist(token: InternalToken):
         """Currently we do not check if the token is in that blacklist
         as far as the redis client implementation is not working.
         """
