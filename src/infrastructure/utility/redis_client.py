@@ -13,10 +13,10 @@ class _Cache:
     async def get(self, key: str):
         now = datetime.datetime.now()
         value, expiry = self._storage.get(key, [None, None])
-        if not value:
+
+        if not value or (expiry and now > expiry):
             return None
-        if expiry and now > expiry:
-            return None
+
         return value
 
     async def set(self, name, value, ex=None, **kwargs):
@@ -39,14 +39,14 @@ class RedisCache:
     port: typing.Optional[str] = None
     db: typing.Optional[str] = None
     expire_duration: typing.Optional[int] = None
-    env = None
+    env: str | None = None
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, env, **kwargs):
+    def __init__(self, env: str = "", **kwargs):
 
         if self._initialized:
             return
