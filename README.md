@@ -72,11 +72,7 @@ git clone git@github.com:ChildMindInstitute/mindlogger-backend-refactor.git
 It is hightly recommended to create `.env` file as far as it is needed for setting up the project with Local and Docker approaches.
 
 ```bash
-# Development environment
-cp .env.default .env.dev
-
-# Testing environment
-cp .env.default .env.testing
+cp .env.default .env
 ```
 
 

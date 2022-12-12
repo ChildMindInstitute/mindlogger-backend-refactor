@@ -1,6 +1,6 @@
+from apps.shared.test import BaseTest, rollback
 from apps.users.domain import UserCreate
 from apps.users.services import UsersCRUD
-from infrastructure.test import BaseTest, rollback
 
 
 class TestUser(BaseTest):

@@ -37,6 +37,13 @@ cache_dir = '/tmp'
 python_files = 'tests.py test_*.py *_test.py'
 python_functions = 'test_* *_test'
 filterwarnings = ['ignore::RuntimeWarning', 'ignore::UserWarning']
+env = [
+    "DATABASE__POSTGRES_HOST=localhost",
+    "DATABASE__POSTGRES_PORT=5432",
+    "DATABASE__POSTGRES_PASSWORD=test",
+    "DATABASE__POSTGRES_USER=test",
+    "DATABASE__POSTGRES_DB=test",
+]
 
 [tool.coverage.run]
 omit = [

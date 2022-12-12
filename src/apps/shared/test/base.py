@@ -4,10 +4,10 @@ import os
 import pytest
 from sqlalchemy import text
 
+from apps.shared.test.client import TestClient
+from apps.shared.test.utils import truncate_tables, update_sequence
 from config import settings
 from infrastructure.database import session_manager
-from infrastructure.test.client import TestClient
-from infrastructure.test.utils import truncate_tables, update_sequence
 
 
 class BaseTest:

@@ -1,4 +1,4 @@
-from infrastructure.test import BaseTest
+from apps.shared.test import BaseTest
 
 
 class TestHealthcheck(BaseTest):

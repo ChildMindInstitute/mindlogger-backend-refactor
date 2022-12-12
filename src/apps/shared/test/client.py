@@ -8,7 +8,6 @@ from infrastructure.app import create_app
 
 class TestClient:
     def __init__(self):
-
         app = create_app(registry.routers, registry.middlewares)
         self.client = AsyncClient(app=app, base_url="http://test.com")
 

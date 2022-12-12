@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from pydantic import BaseSettings
@@ -48,7 +47,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_nested_delimiter = "__"
-        env_file = f'.env.{os.environ.get("env", "dev")}'
+        env_file = ".env"
 
 
 # Load settings
