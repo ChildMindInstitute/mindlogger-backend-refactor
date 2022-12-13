@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
 
 from apps.applets.router import router as applets_router
 from apps.authentication.router import router as authentication_router
@@ -17,6 +18,15 @@ def create_app():
 
     # Middlewares configuration
     app.add_middleware(ErrorsHandlingMiddleware)
+
+    # Enable CORS for requests from frontend domains
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex='https://.*\.cmiml\.net',
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     return app
 
