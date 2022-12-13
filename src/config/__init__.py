@@ -62,7 +62,7 @@ settings = Settings(
         ),
     ),
     migrations_apps=[
-        "authentication",
         "users",
+        "applets",
     ],
 )

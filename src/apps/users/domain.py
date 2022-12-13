@@ -29,8 +29,7 @@ class UserLoginRequest(_UserBase, PublicModel):
     password: str
 
 
-class UserCreate(InternalModel):
-    email: EmailStr
+class UserCreate(_UserBase, InternalModel):
     full_name: str
     hashed_password: str
 
