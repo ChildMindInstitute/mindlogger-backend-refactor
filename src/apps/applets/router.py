@@ -13,4 +13,3 @@ router.get("")(get_applets)
 router.post("")(create_applet)
 router.get("/{id_}")(get_applet_by_id)
 router.delete("/{id_}")(delete_applet_by_id)
-
