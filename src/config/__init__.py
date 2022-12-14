@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     debug: bool = True
 
-    env: str = "local"
+    env: str = "dev"
 
     # Service
     service: ServiceSettings = ServiceSettings()
@@ -47,6 +47,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_nested_delimiter = "__"
+        env_file = ".env"
 
 
 # Load settings

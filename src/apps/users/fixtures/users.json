@@ -1,0 +1,11 @@
+[
+  {
+    "table": "users",
+    "fields": {
+      "id": 1,
+      "email": "qwe@gmail.com",
+      "full_name": "Tom Isaak",
+      "hashed_password": "Password hashed"
+    }
+  }
+]
