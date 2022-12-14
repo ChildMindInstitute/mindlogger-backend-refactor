@@ -5,7 +5,6 @@ from apps.applets.domain.constants import Role
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
-    "AppletCreateRequest",
     "AppletCreate",
     "AppletUpdate",
     "Applet",
@@ -21,10 +20,6 @@ class _AppletBase(BaseModel):
 
     def __str__(self) -> str:
         return self.display_name
-
-
-class AppletCreateRequest(_AppletBase, PublicModel):
-    description: str
 
 
 class PublicApplet(_AppletBase, PublicModel):
