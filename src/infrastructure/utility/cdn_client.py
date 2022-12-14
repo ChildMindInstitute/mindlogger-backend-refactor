@@ -1,6 +1,7 @@
 import io
 import mimetypes
 from typing import BinaryIO
+
 import boto3  # type: ignore
 
 from config.cdn import CDNSettings
