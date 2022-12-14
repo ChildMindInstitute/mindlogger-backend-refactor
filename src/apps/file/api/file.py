@@ -1,6 +1,6 @@
 import uuid
 
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError  # type: ignore
 from fastapi import Body, File, UploadFile
 from fastapi.responses import StreamingResponse
 

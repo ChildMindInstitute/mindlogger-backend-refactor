@@ -1,7 +1,7 @@
 import io
 import mimetypes
-
-import boto3
+from typing import BinaryIO
+import boto3  # type: ignore
 
 from config.cdn import CDNSettings
 
@@ -26,7 +26,7 @@ class CDNClient:
         except KeyError:
             print("CDN configuration is not full")
 
-    def upload(self, path, body: io.BinaryIO):
+    def upload(self, path, body: BinaryIO):
 
         if self.env == "testing":
             # filename = path.split("/")[-1]
