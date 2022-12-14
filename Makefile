@@ -19,6 +19,10 @@ DOCKER_EXEC = docker-compose exec fastapi
 run:
 	uvicorn src.main:app --proxy-headers --host ${HOST} --port ${PORT} --reload
 
+.PHONY: run_with_migrations
+run_with_migrations:
+	alembic upgrade head && uvicorn src.main:app --proxy-headers --host ${HOST} --port ${PORT} --reload
+
 .PHONY: run_storages
 run_storages:
 	docker-compose up -d redis postgres
