@@ -1,7 +1,7 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
 
-from pyfcm import FCMNotification  # type: ignore
+from pyfcm import FCMNotification
 
 from config import settings
 
