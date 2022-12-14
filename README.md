@@ -127,6 +127,8 @@ export BASIC_AUTH__PASSWORD=1234
 set -o allexport; source .env; set +o allexport
 ```
 
+> 🛑 **NOTE:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
+
 </br>
 
 
@@ -257,6 +259,25 @@ make test
 make check
 
 ...
+```
+💡 If you want run web-app locally you can use the next commands
+
+> 🛑 **NOTE:** Before these commands, the storages must be started.
+
+If you want, you can start storage with the command:
+```bash
+make run_storages
+```
+
+Run web-app locally (Don't forget to use the environment - pipenv)
+```bash
+make run
+```
+
+Run web-app locally with Alembic migrations
+> 🛑 **NOTE:** It is recommended to use the first time you run it, as this command applies the already created migration files to the database. This command does not create migration files, but only applies existing ones.
+```bash
+make run_with_migrations
 ```
 
 ## <span style="color:#9DB7FF">Alembic (migration)</span>
