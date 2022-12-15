@@ -2,7 +2,7 @@ from typing import Any
 
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import User, UserCreate, UserIsDeleted
-from apps.users.errors import UserNotFound, UsersError, UserIsDeletedError
+from apps.users.errors import UserIsDeletedError, UserNotFound, UsersError
 from infrastructure.database.crud import BaseCRUD
 
 
@@ -21,14 +21,12 @@ class UsersCRUD(BaseCRUD[UserSchema]):
                 f"No such user with {key}={value}. \n" f"Are you registered?"
             )
 
-        user: UserIsDeleted = UserIsDeleted.from_orm(instance)
-        if user.is_deleted:
-            raise UserIsDeletedError(
-                f"User with {key}={value} is deleted"
-            )
+        user_with_flag: UserIsDeleted = UserIsDeleted.from_orm(instance)
+        if user_with_flag.is_deleted:
+            raise UserIsDeletedError(f"User with {key}={value} is deleted")
 
         # Get internal model
-        user: User = User.from_orm(instance)
+        user = User.from_orm(instance)
 
         return user
 
@@ -55,9 +53,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         payloads: list[dict[str, Any]],
     ) -> User:
         for payload in payloads:
-            await self._update(
-                lookup=lookup, payload=payload
-            )
+            await self._update(lookup=lookup, payload=payload)
         user = await self._fetch(key=lookup[0], value=lookup[1])
 
         return user

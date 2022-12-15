@@ -1,10 +1,6 @@
 from fastapi.routing import APIRouter
 
-from apps.users.api import (
-    get_user_me,
-    update_user_me,
-    delete_user_me,
-)
+from apps.users.api import delete_user_me, get_user_me, update_user_me
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
