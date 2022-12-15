@@ -7,3 +7,7 @@ class UsersError(BaseError):
 
 class UserNotFound(NotFoundError):
     pass
+
+
+class UserIsDeletedError(NotFoundError):
+    pass

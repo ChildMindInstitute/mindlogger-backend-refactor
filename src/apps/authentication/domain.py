@@ -1,5 +1,3 @@
-from pydantic import EmailStr
-
 from apps.shared.domain import PublicModel
 from apps.shared.domain.base import InternalModel
 from config import settings
@@ -13,7 +11,7 @@ class Token(PublicModel):
 
 
 class TokenPayload(InternalModel):
-    sub: EmailStr
+    sub: int
     exp: int
 
 

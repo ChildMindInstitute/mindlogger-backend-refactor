@@ -36,4 +36,4 @@ RUN pipenv sync --system ${PIPENV_EXTRA_ARGS}
 COPY ./ ./
 
 # Run the application
-CMD ["uvicorn", "src.main:app", "--proxy-headers"]
+CMD ["alembic", "upgrade", "head", "&&", "uvicorn", "src.main:app", "--proxy-headers"]
