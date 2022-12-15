@@ -13,42 +13,19 @@ from apps.users.domain import (
     UserLoginRequest,
     UserSignUpRequest,
 )
-from apps.users.errors import UserIsDeletedError, UserNotFound, UsersError
 
 
 async def create_user(
     user_create_schema: UserSignUpRequest = Body(...),
 ) -> Response[PublicUser]:
-    try:
-        await UsersCRUD().get_by_email(email=user_create_schema.email)
-        raise UsersError("User already exist")
-    except UserIsDeletedError:
-        await UsersCRUD().update(
-            lookup=("email", user_create_schema.email),
-            payloads=[
-                {"is_deleted": False},
-                {"full_name": user_create_schema.full_name},
-                {
-                    "hashed_password": AuthenticationService.get_password_hash(
-                        user_create_schema.password
-                    )
-                },
-            ],
-        )
-        user: User = await UsersCRUD().get_by_email(
-            email=user_create_schema.email
-        )
-        public_user = PublicUser(**user.dict())
-        return Response(result=public_user)
-    except UserNotFound:
-        user_in_db = UserCreate(
-            email=user_create_schema.email,
-            full_name=user_create_schema.full_name,
-            hashed_password=AuthenticationService.get_password_hash(
-                user_create_schema.password
-            ),
-        )
-        user, _ = await UsersCRUD().save(schema=user_in_db)
+    user_create = UserCreate(
+        email=user_create_schema.email,
+        full_name=user_create_schema.full_name,
+        hashed_password=AuthenticationService.get_password_hash(
+            user_create_schema.password
+        ),
+    )
+    user, _ = await UsersCRUD().save(schema=user_create)
 
     # Create public user model in order to avoid password sharing
     public_user = PublicUser(**user.dict())

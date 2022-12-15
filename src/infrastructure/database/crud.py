@@ -4,6 +4,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
+from apps.shared.domain import InternalModel
 from infrastructure.database.base import Base
 from infrastructure.database.core import session_manager
 
@@ -22,21 +23,34 @@ class BaseCRUD(Generic[ConcreteSchema]):
         """Executes the specified query and returns the result"""
         return await self.session.execute(query)
 
+    async def _execute_commit(self, query: Query) -> Result:
+        """Executes the specified query and returns the result"""
+
+        result: Result = await self._execute(query)
+        await self.session.commit()
+
+        return result
+
     async def _update(
-        self,
-        lookup: tuple[str, Any],
-        payload: dict[str, Any],
-    ) -> None:
+        self, lookup: str, value: Any, update_schema: InternalModel
+    ) -> ConcreteSchema:
         """Updates an existed instance of the model in the related table"""
 
         query: Query = (
             update(self.schema_class)
-            .where(getattr(self.schema_class, lookup[0]) == lookup[1])
-            .values(
-                **payload,
-            )
+            .where(getattr(self.schema_class, lookup) == value)
+            .values(**update_schema.dict())
+            .returning(self.schema_class.id)
         )
-        await self._execute(query)
+        result: Result = await self._execute_commit(query)
+        instance_id: int = result.scalar_one()
+
+        if not (
+            instance_schema := await self._get(key="id", value=instance_id)
+        ):
+            raise Exception("Can not fetch the updated instance.")
+
+        return instance_schema
 
     async def _get(self, key: str, value: Any) -> ConcreteSchema | None:
         """Return only one result by filters"""
@@ -50,14 +64,16 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
     async def _create(self, schema: ConcreteSchema) -> ConcreteSchema:
         """Creates a new instance of the model in the related table"""
+
         self.session.add(schema)
         await self.session.flush()
         await self.session.refresh(schema)
+
         return schema
 
     async def all(self) -> list[ConcreteSchema]:
-        query = select(self.schema_class)
-        results = await self._execute(query=query)
+        query: Query = select(self.schema_class)
+        results: Result = await self._execute(query=query)
 
         return results.scalars().all()
 
