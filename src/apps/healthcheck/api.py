@@ -6,4 +6,4 @@ def readiness():
 
 
 def liveness():
-    return Response("liveness - OK!")
+    return Response("Liveness - OK!")

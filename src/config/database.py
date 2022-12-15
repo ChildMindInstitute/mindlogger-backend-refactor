@@ -7,6 +7,7 @@ class DatabaseSettings(BaseModel):
     postgres_password: str = "postgres"
     postgres_user: str = "postgres"
     postgres_db: str = "mindlogger_backend"
+    pool_size: int = 2
 
     @property
     def url(self) -> str:
