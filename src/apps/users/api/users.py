@@ -23,7 +23,7 @@ async def update_user_me(
     user: User = Depends(get_current_user),
     payloads: list[dict[str, Any]] = Body(...),
 ) -> Response[PublicUser]:
-    await UsersCRUD().update(id_=user.id, payloads=payloads)
+    await UsersCRUD().update(lookup=("id", user.id), payloads=payloads)
     user: User = await UsersCRUD().get_by_id(id_=user.id)
     public_user = PublicUser(**user.dict())
     return Response(result=public_user)
@@ -32,5 +32,5 @@ async def update_user_me(
 async def delete_user_me(
     user: User = Depends(get_current_user)
 ) -> None:
-    await UsersCRUD().update(id_=user.id, payloads=[{"is_deleted": True}])
+    await UsersCRUD().update(lookup=("id", user.id), payloads=[{"is_deleted": True}])
     raise NotContentError

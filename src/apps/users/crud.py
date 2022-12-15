@@ -1,8 +1,8 @@
 from typing import Any
 
 from apps.users.db.schemas import UserSchema
-from apps.users.domain import User, UserCreate, UserUpdate
-from apps.users.errors import UserNotFound, UsersError
+from apps.users.domain import User, UserCreate, UserIsDeleted
+from apps.users.errors import UserNotFound, UsersError, UserIsDeletedError
 from infrastructure.database.crud import BaseCRUD
 
 
@@ -19,6 +19,12 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         if not (instance := await self._get(key, value)):
             raise UserNotFound(
                 f"No such user with {key}={value}. \n" f"Are you registered?"
+            )
+
+        user: UserIsDeleted = UserIsDeleted.from_orm(instance)
+        if user.is_deleted:
+            raise UserIsDeletedError(
+                f"User with {key}={value} is deleted"
             )
 
         # Get internal model
@@ -43,19 +49,15 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
         return user, True
 
-    # async def update(self, schema: UserUpdate) -> User:
-    #     return await self._update(key="email", value=email)
-
     async def update(
         self,
-        id_: int,
+        lookup: tuple[str, Any],
         payloads: list[dict[str, Any]],
     ) -> User:
-        await self._fetch(key="id", value=id_)
         for payload in payloads:
             await self._update(
-                lookup=("id", id_), payload=payload
+                lookup=lookup, payload=payload
             )
-        user = await self._fetch(key="id", value=id_)
+        user = await self._fetch(key=lookup[0], value=lookup[1])
 
         return user

@@ -13,7 +13,7 @@ from apps.users.domain import (
     UserLoginRequest,
     UserSignUpRequest,
 )
-from apps.users.errors import UserNotFound, UsersError
+from apps.users.errors import UserNotFound, UsersError, UserIsDeletedError
 
 
 async def create_user(
@@ -22,6 +22,21 @@ async def create_user(
     try:
         await UsersCRUD().get_by_email(email=user_create_schema.email)
         raise UsersError("User already exist")
+    except UserIsDeletedError:
+        await UsersCRUD().update(
+            lookup=("email", user_create_schema.email),
+            payloads=[
+                {"is_deleted": False},
+                {"full_name": user_create_schema.full_name},
+                {"hashed_password": AuthenticationService.get_password_hash(
+                    user_create_schema.password
+                )
+                },
+            ]
+        )
+        user: User = await UsersCRUD().get_by_email(email=user_create_schema.email)
+        public_user = PublicUser(**user.dict())
+        return Response(result=public_user)
     except UserNotFound:
         user_in_db = UserCreate(
             email=user_create_schema.email,

@@ -10,7 +10,7 @@ __all__ = [
     "UserCreate",
     "User",
     "UserSignUpRequest",
-    "UserUpdate",
+    "UserIsDeleted",
 ]
 
 
@@ -35,6 +35,11 @@ class UserCreate(_UserBase, InternalModel):
     hashed_password: str
 
 
+class UserIsDeleted(_UserBase, InternalModel):
+    is_deleted: bool
+    id: PositiveInt
+
+
 class User(UserCreate):
     id: PositiveInt
 
@@ -44,8 +49,3 @@ class PublicUser(_UserBase, PublicModel):
 
     full_name: str
     id: PositiveInt
-
-
-class UserUpdate(_UserBase, PublicModel):
-
-    full_name: str
