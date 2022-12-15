@@ -1,19 +1,21 @@
 import uuid
 
 from botocore.exceptions import ClientError  # type: ignore
-from fastapi import Body, File, UploadFile
+from fastapi import Body, Depends, File, UploadFile
 from fastapi.responses import StreamingResponse
 
+from apps.authentication.deps import get_current_user
 from apps.file.domain import FileDownloadRequest, UploadedFile
 from apps.file.errors import FileNotFoundError
 from apps.shared.domain.response import Response
+from apps.users.domain import User
 from config import settings
 from infrastructure.utility.cdn_client import CDNClient
 
 
-# TODO: Require Authentication
 async def upload(
     file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
 ) -> Response[UploadedFile]:
     cdn_client = CDNClient(settings.cdn, env=settings.env)
 
@@ -30,9 +32,9 @@ async def upload(
     return Response(result=result)
 
 
-# TODO: Require Authentication
 async def download(
     request: FileDownloadRequest = Body(...),
+    user: User = Depends(get_current_user),
 ) -> StreamingResponse:
 
     # download file by given key
