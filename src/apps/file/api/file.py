@@ -11,6 +11,7 @@ from config import settings
 from infrastructure.utility.cdn_client import CDNClient
 
 
+# TODO: Require Authentication
 async def upload(
     file: UploadFile = File(...),
 ) -> Response[UploadedFile]:
@@ -29,6 +30,7 @@ async def upload(
     return Response(result=result)
 
 
+# TODO: Require Authentication
 async def download(
     request: FileDownloadRequest = Body(...),
 ) -> StreamingResponse:
