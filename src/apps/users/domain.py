@@ -10,6 +10,7 @@ __all__ = [
     "UserCreate",
     "User",
     "UserSignUpRequest",
+    "UserUpdate",
 ]
 
 
@@ -41,4 +42,10 @@ class User(UserCreate):
 class PublicUser(_UserBase, PublicModel):
     """Public user data model."""
 
+    full_name: str
     id: PositiveInt
+
+
+class UserUpdate(_UserBase, PublicModel):
+
+    full_name: str

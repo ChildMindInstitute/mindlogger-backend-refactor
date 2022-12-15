@@ -1,7 +1,7 @@
 from typing import Any
 
 from apps.users.db.schemas import UserSchema
-from apps.users.domain import User, UserCreate
+from apps.users.domain import User, UserCreate, UserUpdate
 from apps.users.errors import UserNotFound, UsersError
 from infrastructure.database.crud import BaseCRUD
 
@@ -32,7 +32,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
     async def get_by_email(self, email: str) -> User:
         return await self._fetch(key="email", value=email)
 
-    async def save_user(self, schema: UserCreate) -> tuple[User, bool]:
+    async def save(self, schema: UserCreate) -> tuple[User, bool]:
         """Return user instance and the created information."""
 
         # Save user into the database
@@ -42,3 +42,20 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         user = User.from_orm(instance)
 
         return user, True
+
+    # async def update(self, schema: UserUpdate) -> User:
+    #     return await self._update(key="email", value=email)
+
+    async def update(
+        self,
+        id_: int,
+        payloads: list[dict[str, Any]],
+    ) -> User:
+        await self._fetch(key="id", value=id_)
+        for payload in payloads:
+            await self._update(
+                lookup=("id", id_), payload=payload
+            )
+        user = await self._fetch(key="id", value=id_)
+
+        return user

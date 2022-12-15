@@ -37,7 +37,7 @@ async def get_current_user(token: str = Depends(oauth2_oauth)) -> User:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user: User = await UsersCRUD().get_by_email(email=token_data.sub)
+    user: User = await UsersCRUD().get_by_id(id_=token_data.sub)
 
     if user is None:
         raise HTTPException(

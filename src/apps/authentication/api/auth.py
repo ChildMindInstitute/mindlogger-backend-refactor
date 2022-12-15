@@ -30,7 +30,7 @@ async def create_user(
                 user_create_schema.password
             ),
         )
-        user, _ = await UsersCRUD().save_user(schema=user_in_db)
+        user, _ = await UsersCRUD().save(schema=user_in_db)
 
     # Create public user model in order to avoid password sharing
     public_user = PublicUser(**user.dict())
@@ -46,7 +46,7 @@ async def get_access_token(
     )
 
     access_token = AuthenticationService.create_access_token(
-        {"sub": user.email}
+        {"sub": str(user.id)}
     )
 
     return Response(result=Token(access_token=access_token))
