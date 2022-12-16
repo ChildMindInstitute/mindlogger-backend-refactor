@@ -56,12 +56,12 @@ class ErrorsHandlingMiddleware(BaseHTTPMiddleware):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 headers=self.headers,
             )
-        # except Exception as error:
-        #     resp = ErrorResponse(messages=[f"Unhandled error: {error}"])
-        #     return Response(
-        #         resp.json(),
-        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        #         headers=self.headers,
-        #     )
+        except Exception as error:
+            resp = ErrorResponse(messages=[f"Unhandled error: {error}"])
+            return Response(
+                resp.json(),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                headers=self.headers,
+            )
 
         return response
