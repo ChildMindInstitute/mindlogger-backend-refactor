@@ -73,9 +73,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             for user_applet_access in results
         ]
 
-    async def update_role(self, id_: int, role: Role) -> None:
-        await self._update(lookup=("id", id_), payload={"role": role})
-
     async def save(self, schema: UserAppletAccessCreate) -> UserAppletAccess:
         """Return UserAppletAccess instance and the created information."""
 
