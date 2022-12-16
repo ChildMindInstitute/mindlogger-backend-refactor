@@ -10,6 +10,6 @@ from apps.applets.api.applets import (
 router = APIRouter(prefix="/applets", tags=["Applets"])
 
 router.get("")(get_applets)
-router.post("/create")(create_applet)
+router.post("")(create_applet)
 router.get("/{id_}")(get_applet_by_id)
-router.delete("/delete/{id_}")(delete_applet_by_id)
+router.delete("/{id_}")(delete_applet_by_id)
