@@ -38,5 +38,11 @@ services:
     volumes:
       - ./:/app/
 
+  mailhog:
+    image: mailhog/mailhog:v1.0.0
+    container_name: mailhog
+    ports:
+      - "8025:8025"
+
 volumes:
   pg_data: {}

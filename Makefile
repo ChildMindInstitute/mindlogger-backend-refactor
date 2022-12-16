@@ -27,6 +27,10 @@ run_with_migrations:
 run_storages:
 	docker-compose up -d redis postgres
 
+.PHONY: run_mailhog
+run_mailhog:
+	docker-compose up -d mailhog
+
 .PHONY: test
 test:
 	${TEST_COMMAND} ./
