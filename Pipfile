@@ -22,7 +22,6 @@ pydantic = {extras = ["email"], version = "~=1.10.2"}
 python-jose = {version = "~=3.3.0", extras = ["cryptography"]}
 sentry-sdk = "~=1.6"
 sqlalchemy = {extras = ["asyncio"], version = "~=1.4.43"}
-# 
 uvicorn = {extras = ["standard"], version = "==0.19"}
 
 [dev-packages]
@@ -34,6 +33,7 @@ mixer = "~=7.2"
 mypy = "~=0.960"
 pre-commit = "~=2.7.1"
 pudb = "~=2022.1"
+pyfcm = "~=1.5.4"
 pytest = "~=7.1"
 pytest-asyncio = "~=0.19"
 pytest-cov = "~=3.0"
