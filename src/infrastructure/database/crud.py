@@ -68,6 +68,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         self.session.add(schema)
         await self.session.flush()
         await self.session.refresh(schema)
+        await self.session.commit()
 
         return schema
 

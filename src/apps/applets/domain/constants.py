@@ -1,4 +1,4 @@
-from enum import Enum
+from apps.shared.domain import Enum
 
 
 class Role(str, Enum):

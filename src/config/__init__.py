@@ -5,6 +5,7 @@ from pydantic import BaseSettings
 from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
 from config.database import DatabaseSettings
+from config.mailing import MailingSettings
 from config.notification import NotificationSettings
 from config.redis import RedisSettings
 from config.sentry import SentrySettings
@@ -35,6 +36,9 @@ class Settings(BaseSettings):
 
     # Redis
     redis: RedisSettings = RedisSettings()
+
+    # Mailing
+    mailing: MailingSettings = MailingSettings()
 
     # CDN configs
     cdn: CDNSettings = CDNSettings()

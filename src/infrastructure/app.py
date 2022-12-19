@@ -1,18 +1,39 @@
+from typing import Iterable, Type
+
 from fastapi import FastAPI
+from fastapi.routing import APIRouter
+from starlette.middleware.base import BaseHTTPMiddleware
+
+import apps.applets.router as applets
+import apps.authentication.router as auth
+import apps.healthcheck.router as healthcheck
+import apps.invitations.router as invitations
+import apps.users.router as users
+from middlewares import ErrorsHandlingMiddleware
+
+# Declare your routers here
+routers: Iterable[APIRouter] = (
+    healthcheck.router,
+    auth.router,
+    applets.router,
+    users.router,
+    invitations.router,
+)
+
+# Declare your middlewares here
+middlewares: Iterable[Type[BaseHTTPMiddleware]] = (ErrorsHandlingMiddleware,)
 
 
-def create_app(routers=None, middlewares=None):
-    if not routers:
-        routers = []
-    if not middlewares:
-        middlewares = []
+def create_app():
+    # Create base FastAPI application
     app = FastAPI()
 
-    # Routers include
+    # Include routers
     for router in routers:
         app.include_router(router)
 
-    # Middlewares configuration
+    # Include middlewares
     for middleware in middlewares:
         app.add_middleware(middleware)
+
     return app

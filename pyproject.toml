@@ -73,6 +73,6 @@ module = [
     'mixer.*',
     'sqlalchemy.*',
     'boto3',
-    'pyfcm'
+    'fastapi_mail',
 ]
 ignore_missing_imports = true

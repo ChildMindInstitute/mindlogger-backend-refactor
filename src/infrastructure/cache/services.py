@@ -1,0 +1,84 @@
+from abc import ABC, abstractmethod
+from datetime import datetime
+from typing import Generic
+
+from aioredis import from_url
+
+from config import settings
+from infrastructure.cache.domain import CacheEntry, RawEntry
+from infrastructure.cache.types import _InputObject
+
+__all__ = ["BaseCacheService"]
+
+
+class BaseCacheService(ABC, Generic[_InputObject]):
+    """The base cache abstract class.
+
+    The example of the subclass usage:
+
+        [In 0]: john = User(...)
+
+        [In 1]: class UsersCache(BaseCacheService[Invitation]):
+                    async def get(self, id_: int) -> CacheEntry[Invitation]:
+                        if cache_entry := await self.redis_client.get(
+                            name=self._get_key(key=str(id_))
+                        ):
+                        return CacheEntry[User].parse_obj(cache_entry)
+
+                    raise CacheNotFound(id_)
+
+        [In 2]: cache_entry: CacheEntry[User] = UsersCache().set(id_, john)
+        [In 3]: cache_entry: CacheEntry[User] = UsersCache().get(id_)
+    """
+
+    def __init__(self):
+        self.redis_client = self.__get_redis_client()
+        self.default_ttl = settings.redis.default_ttl
+
+    @staticmethod
+    def __get_redis_client():
+        """Returns an instance of redis client.
+
+        Instance is created only once and then the same instance is returned
+        """
+
+        reference = "_redis_client_instance"
+
+        try:
+            return getattr(BaseCacheService, reference)
+        except AttributeError:
+            redis_client = from_url(settings.redis.url)
+            setattr(BaseCacheService, reference, redis_client)
+            return redis_client
+
+    def _get_key(self, key: str):
+        """Returns a key with the additional namespace for this cache"""
+
+        return f"{self.__class__.__name__}:{key}"
+
+    @abstractmethod
+    async def get(self, key: str) -> CacheEntry[_InputObject]:
+        """Returns an instance by the key from the cache.
+        This method is abstract in order to provide better
+        type annotations experience.
+        """
+
+        pass
+
+    async def set(
+        self, key: str, instance: _InputObject
+    ) -> CacheEntry[_InputObject]:
+        enhanced_cache_entry: CacheEntry[_InputObject] = CacheEntry(
+            instance=instance, created_at=datetime.now()
+        )
+
+        await self.redis_client.set(
+            *RawEntry(
+                key=self._get_key(key=key),
+                value=enhanced_cache_entry.json(),
+            ),
+            ex=self.default_ttl,
+        )
+
+        # Return another rich data model after saving into the cache
+        return enhanced_cache_entry
