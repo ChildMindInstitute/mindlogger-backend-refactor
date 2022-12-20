@@ -2,7 +2,7 @@ from uuid import UUID
 
 from pydantic import EmailStr
 
-from apps.applets.domain import Role
+from apps.applets.domain import Applet, Role
 from apps.shared.domain import InternalModel, PublicModel
 
 
@@ -27,12 +27,19 @@ class Invitation(InternalModel):
 
 
 class InvitationResponse(PublicModel):
-    """This model will be returned to the user on the invitation request."""
+    """This model is returned to the user on the invitation request."""
 
     email: EmailStr
     applet_id: int
     role: Role
     key: UUID
+
+
+class InviteApproveResponse(PublicModel):
+    """This model is returned on the applet invitation approval."""
+
+    applet: Applet
+    role: Role
 
 
 INVITE_USER_TEMPLATE = """

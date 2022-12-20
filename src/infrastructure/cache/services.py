@@ -1,3 +1,4 @@
+import json
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Generic
@@ -6,6 +7,7 @@ from aioredis import from_url
 
 from config import settings
 from infrastructure.cache.domain import CacheEntry, RawEntry
+from infrastructure.cache.errors import CacheNotFound
 from infrastructure.cache.types import _InputObject
 
 __all__ = ["BaseCacheService"]
@@ -20,12 +22,8 @@ class BaseCacheService(ABC, Generic[_InputObject]):
 
         [In 1]: class UsersCache(BaseCacheService[Invitation]):
                     async def get(self, id_: int) -> CacheEntry[Invitation]:
-                        if cache_entry := await self.redis_client.get(
-                            name=self._get_key(key=str(id_))
-                        ):
-                        return CacheEntry[User].parse_obj(cache_entry)
-
-                    raise CacheNotFound(id_)
+                        cache_entry: dict = await self._get(id_)
+                        return CacheEntry[User](**cache_entry)
 
         [In 2]: cache_entry: CacheEntry[User] = UsersCache().set(id_, john)
         [In 3]: cache_entry: CacheEntry[User] = UsersCache().get(id_)
@@ -55,6 +53,12 @@ class BaseCacheService(ABC, Generic[_InputObject]):
         """Returns a key with the additional namespace for this cache"""
 
         return f"{self.__class__.__name__}:{key}"
+
+    async def _get(self, key: str) -> dict:
+        if result := await self.redis_client.get(name=self._get_key(key=key)):
+            return json.loads(result)
+
+        raise CacheNotFound(key)
 
     @abstractmethod
     async def get(self, key: str) -> CacheEntry[_InputObject]:

@@ -1,10 +1,14 @@
+from uuid import UUID
+
 from fastapi import Body, Depends
 
+from apps.applets.crud import AppletsCRUD
 from apps.authentication.deps import get_current_user
 from apps.invitations.domain import (
     Invitation,
     InvitationRequest,
     InvitationResponse,
+    InviteApproveResponse,
 )
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response
@@ -19,6 +23,10 @@ async def send_invitation(
     for the concrete user giving him a role.
     """
 
+    # TODO: Replace with `await BaseCRUD().exists()`
+    # Check if applet exists in the database
+    await AppletsCRUD().get_by_id(invitation_schema.applet_id)
+
     # Send the invitation using the internal Invitation service
     invitation: Invitation = await InvitationsService(user).send_invitation(
         invitation_schema
@@ -27,3 +35,15 @@ async def send_invitation(
     return Response[InvitationResponse](
         result=InvitationResponse(**invitation.dict())
     )
+
+
+async def approve_invite(
+    key: UUID, user: User = Depends(get_current_user)
+) -> Response[InviteApproveResponse]:
+    """General endpoint to approve the applet invitation."""
+
+    # Approve the invitaiton for the specific applet
+    # if data exists tokens are not expired
+    result: InviteApproveResponse = await InvitationsService(user).approve(key)
+
+    return Response[InviteApproveResponse](result=result)

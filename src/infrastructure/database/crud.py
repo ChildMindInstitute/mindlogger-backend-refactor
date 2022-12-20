@@ -72,7 +72,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
         return schema
 
-    async def all(self) -> list[ConcreteSchema]:
+    async def _all(self) -> list[ConcreteSchema]:
         query: Query = select(self.schema_class)
         results: Result = await self._execute(query=query)
 
