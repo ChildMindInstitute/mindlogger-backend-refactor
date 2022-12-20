@@ -1,8 +1,8 @@
 from typing import Any
 
 from apps.users.db.schemas import UserSchema
-from apps.users.domain import User, UserCreate
-from apps.users.errors import UserNotFound, UsersError
+from apps.users.domain import User, UserCreate, UserDelete, UserUpdate
+from apps.users.errors import UserIsDeletedError, UserNotFound, UsersError
 from infrastructure.database.crud import BaseCRUD
 
 
@@ -21,8 +21,15 @@ class UsersCRUD(BaseCRUD[UserSchema]):
                 f"No such user with {key}={value}. \n" f"Are you registered?"
             )
 
+        # TODO: Align with client about the business logic
+        if instance.is_deleted:
+            raise UserIsDeletedError(
+                "This user is deleted. "
+                "The recovery logic is not implemented yet."
+            )
+
         # Get internal model
-        user: User = User.from_orm(instance)
+        user = User.from_orm(instance)
 
         return user
 
@@ -32,13 +39,35 @@ class UsersCRUD(BaseCRUD[UserSchema]):
     async def get_by_email(self, email: str) -> User:
         return await self._fetch(key="email", value=email)
 
-    async def save_user(self, schema: UserCreate) -> tuple[User, bool]:
-        """Return user instance and the created information."""
-
+    async def save(self, schema: UserCreate) -> tuple[User, bool]:
         # Save user into the database
-        instance: UserSchema = await self._create(UserSchema(**schema.dict()))
+        instance: UserSchema = await self._create(
+            self.schema_class(**schema.dict())
+        )
 
         # Create internal data model
         user = User.from_orm(instance)
 
         return user, True
+
+    async def update(self, user: User, update_schema: UserUpdate) -> User:
+        # Update user in database
+        instance: UserSchema = await self._update(
+            lookup="id", value=user.id, update_schema=update_schema
+        )
+
+        # Create internal data model
+        user = User.from_orm(instance)
+
+        return user
+
+    async def delete(self, user: User) -> User:
+        # Update user in database
+        instance: UserSchema = await self._update(
+            lookup="id", value=user.id, update_schema=UserDelete()
+        )
+
+        # Create internal data model
+        user = User.from_orm(instance)
+
+        return user

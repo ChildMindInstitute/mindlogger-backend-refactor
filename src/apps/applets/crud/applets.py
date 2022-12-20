@@ -86,11 +86,13 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         await self._delete(key="display_name", value=display_name)
 
-    async def update_applet(self, id_: int, schema: AppletUpdate) -> Applet:
-        await self.get_by_id(id_)
-        await self._update(
-            lookup=("id", id_), payload=AppletSchema(**schema.dict())
+    async def update(self, id_: int, update_schema: AppletUpdate) -> Applet:
+        # Update applet in database
+        instance: AppletSchema = await self._update(
+            lookup="id", value=id_, update_schema=update_schema
         )
-        instance = await self._fetch(key="id", value=id_)
 
-        return instance
+        # Create internal data model
+        applet = Applet.from_orm(instance)
+
+        return applet

@@ -34,6 +34,18 @@ class UserCreate(_UserBase, InternalModel):
     hashed_password: str
 
 
+class UserUpdate(InternalModel):
+    """This model represents user `update request` data model."""
+
+    full_name: str
+
+
+class UserDelete(InternalModel):
+    """This model is used in order to represent internal user delete DTO."""
+
+    is_deleted: bool = True
+
+
 class User(UserCreate):
     id: PositiveInt
 
@@ -41,4 +53,5 @@ class User(UserCreate):
 class PublicUser(_UserBase, PublicModel):
     """Public user data model."""
 
+    full_name: str
     id: PositiveInt

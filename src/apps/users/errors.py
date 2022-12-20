@@ -1,4 +1,4 @@
-from apps.shared.errors import BaseError, NotFoundError
+from apps.shared.errors import BaseError, NotFoundError, ValidationError
 
 
 class UsersError(BaseError):
@@ -6,4 +6,8 @@ class UsersError(BaseError):
 
 
 class UserNotFound(NotFoundError):
+    pass
+
+
+class UserIsDeletedError(ValidationError):
     pass
