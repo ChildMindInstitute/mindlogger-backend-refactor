@@ -21,13 +21,10 @@ async def upload(
 
     # generate key
     key = CDNClient.generate_key(str(uuid.uuid4()), file.filename)
-    print(file.content_type)
 
     # upload file
-    try:
-        cdn_client.upload(key, file.file)
-    except Exception as e:
-        raise e
+    cdn_client.upload(key, file.file)
+
     result = UploadedFile(key=key)
     return Response(result=result)
 

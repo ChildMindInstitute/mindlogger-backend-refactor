@@ -43,7 +43,7 @@ types-passlib = "==1.7.7.1"
 types-python-jose = "==3.3.4"
 uvicorn = {extras = ["standard"], version = "==0.19"}
 pytest-env = "*"
-python-multipart = "==0.0.5"
+python-multipart = "~=0.0.5"
 
 [dev-packages]
 black = "~=22.6"
