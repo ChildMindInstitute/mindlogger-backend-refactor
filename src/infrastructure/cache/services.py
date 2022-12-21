@@ -27,6 +27,9 @@ class BaseCacheService(ABC, Generic[_InputObject]):
 
         [In 2]: cache_entry: CacheEntry[User] = UsersCache().set(id_, john)
         [In 3]: cache_entry: CacheEntry[User] = UsersCache().get(id_)
+
+    NOTE: The example of a cache record key: `UsersCache:13`
+          where UsersCache is __class__.__name__ and 13 is a user's id
     """
 
     def __init__(self):
@@ -49,19 +52,25 @@ class BaseCacheService(ABC, Generic[_InputObject]):
             setattr(BaseCacheService, reference, redis_client)
             return redis_client
 
-    def _get_key(self, key: str):
-        """Returns a key with the additional namespace for this cache"""
+    def _build_key(self, key: str) -> str:
+        """Returns a key with the additional namespace for this cache.
+
+        Example of usage:
+            [In 1]:  _get_key("john@email.com")
+            [Out 1]: ConcreteCache:john@email.com
+
+        """
 
         return f"{self.__class__.__name__}:{key}"
 
     async def _get(self, key: str) -> dict:
-        if result := await self.redis_client.get(name=self._get_key(key=key)):
+        if result := await self.redis_client.get(name=self._build_key(key)):
             return json.loads(result)
 
         raise CacheNotFound(key)
 
     @abstractmethod
-    async def get(self, key: str) -> CacheEntry[_InputObject]:
+    async def get(self, *args, **kwargs) -> CacheEntry[_InputObject]:
         """Returns an instance by the key from the cache.
         This method is abstract in order to provide better
         type annotations experience.
@@ -78,7 +87,7 @@ class BaseCacheService(ABC, Generic[_InputObject]):
 
         await self.redis_client.set(
             *RawEntry(
-                key=self._get_key(key=key),
+                key=self._build_key(key=key),
                 value=enhanced_cache_entry.json(),
             ),
             ex=self.default_ttl,
@@ -86,3 +95,6 @@ class BaseCacheService(ABC, Generic[_InputObject]):
 
         # Return another rich data model after saving into the cache
         return enhanced_cache_entry
+
+    async def _delete(self, key: str) -> None:
+        await self.redis_client.delete(self._build_key(key))

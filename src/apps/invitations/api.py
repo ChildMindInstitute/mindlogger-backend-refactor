@@ -11,8 +11,23 @@ from apps.invitations.domain import (
     InviteApproveResponse,
 )
 from apps.invitations.services import InvitationsService
-from apps.shared.domain import Response
+from apps.shared.domain import Response, ResponseMulti
 from apps.users.domain import User
+
+
+async def invitations(
+    user: User = Depends(get_current_user),
+) -> ResponseMulti[InvitationResponse]:
+    """Fetch all invitations for the specific user."""
+
+    invitations: list[Invitation] = await InvitationsService(user).fetch_all()
+
+    return ResponseMulti[InvitationResponse](
+        results=[
+            InvitationResponse(**invitation.dict())
+            for invitation in invitations
+        ]
+    )
 
 
 async def send_invitation(
