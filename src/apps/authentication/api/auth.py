@@ -5,37 +5,14 @@ from apps.authentication.domain import InternalToken, Token
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.errors import NotContentError
-from apps.users.crud import UsersCRUD
-from apps.users.domain import (
-    PublicUser,
-    User,
-    UserCreate,
-    UserLoginRequest,
-    UserSignUpRequest,
-)
-
-
-async def create_user(
-    user_create_schema: UserSignUpRequest = Body(...),
-) -> Response[PublicUser]:
-    user_create = UserCreate(
-        email=user_create_schema.email,
-        full_name=user_create_schema.full_name,
-        hashed_password=AuthenticationService.get_password_hash(
-            user_create_schema.password
-        ),
-    )
-    user, _ = await UsersCRUD().save(schema=user_create)
-
-    # Create public user model in order to avoid password sharing
-    public_user = PublicUser(**user.dict())
-
-    return Response(result=public_user)
+from apps.users.domain import User, UserLoginRequest
 
 
 async def get_access_token(
     user_login_schema: UserLoginRequest = Body(...),
 ) -> Response[Token]:
+    """Generate the JWT access token."""
+
     user: User = await AuthenticationService.authenticate_user(
         user_login_schema
     )
@@ -50,5 +27,7 @@ async def get_access_token(
 async def access_token_delete(
     token: InternalToken = Depends(get_current_token),
 ):
+    """Add token to the blacklist."""
+
     await AuthenticationService.add_access_token_to_blacklist(token)
     raise NotContentError
