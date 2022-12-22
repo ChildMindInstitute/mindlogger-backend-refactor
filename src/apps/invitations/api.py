@@ -12,6 +12,7 @@ from apps.invitations.domain import (
 )
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.errors import NotContentError
 from apps.users.domain import User
 
 
@@ -62,3 +63,13 @@ async def approve_invite(
     result: InviteApproveResponse = await InvitationsService(user).approve(key)
 
     return Response[InviteApproveResponse](result=result)
+
+
+async def decline_invite(
+    key: UUID, user: User = Depends(get_current_user)
+) -> Response[InviteApproveResponse]:
+    """General endpoint to declnie the applet invitation."""
+
+    await InvitationsService(user).decline(key)
+
+    raise NotContentError

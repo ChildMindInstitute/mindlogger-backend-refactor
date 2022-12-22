@@ -72,9 +72,9 @@ class InvitationsCache(BaseCacheService[Invitation]):
 
 
 class InvitationsService:
-    def __init__(self, user: User) -> None:
+    def __init__(self, user: User):
         self._user: User = user
-        self._cache = InvitationsCache()
+        self._cache: InvitationsCache = InvitationsCache()
 
     async def fetch_all(self) -> list[Invitation]:
         cache_entries: list[CacheEntry[Invitation]] = await self._cache.all(
@@ -121,10 +121,6 @@ class InvitationsService:
         return invitation
 
     async def approve(self, key: uuid.UUID) -> InviteApproveResponse:
-        # TODO: Remove record from the cache after approval.
-        # TODO: Discuss how to store the data in the cache to handle
-        #       a lot of invitations for different applets
-
         error: Exception = NotFoundError("No invitations found.")
 
         try:
@@ -132,10 +128,6 @@ class InvitationsService:
                 self._user.email, key
             )
         except CacheNotFound:
-            raise error
-
-        # Validate the requested invitaiton key
-        if cache_entry.instance.key != key:
             raise error
 
         # Get applet from the database
@@ -158,4 +150,19 @@ class InvitationsService:
 
         return InviteApproveResponse(
             applet=applet, role=user_applet_access.role
+        )
+
+    async def decline(self, key: uuid.UUID):
+        error: Exception = NotFoundError("No invitations found.")
+
+        try:
+            cache_entry: CacheEntry[Invitation] = await self._cache.get(
+                self._user.email, key
+            )
+        except CacheNotFound:
+            raise error
+
+        # Delete cache entry
+        await self._cache.delete(
+            email=cache_entry.instance.email, key=cache_entry.instance.key
         )
