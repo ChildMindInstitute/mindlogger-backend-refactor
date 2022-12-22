@@ -24,7 +24,7 @@ async def get_access_token(
     return Response(result=Token(access_token=access_token))
 
 
-async def access_token_delete(
+async def delete_access_token(
     token: InternalToken = Depends(get_current_token),
 ):
     """Add token to the blacklist."""
