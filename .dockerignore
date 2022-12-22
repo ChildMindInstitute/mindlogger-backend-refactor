@@ -6,7 +6,5 @@ docker-compose.yaml
 .env
 *.md
 *.rst
-compose/
 venv*/
 Makefile
-
