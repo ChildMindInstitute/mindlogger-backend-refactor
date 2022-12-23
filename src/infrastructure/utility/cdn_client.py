@@ -1,4 +1,6 @@
 import io
+import mimetypes
+from typing import BinaryIO
 
 import boto3
 
@@ -25,7 +27,7 @@ class CDNClient:
         except KeyError:
             print("CDN configuration is not full")
 
-    def upload(self, path, body: io.BytesIO):
+    def upload(self, path, body: BinaryIO):
 
         if self.env == "testing":
             # filename = path.split("/")[-1]
@@ -39,8 +41,8 @@ class CDNClient:
         )
 
     @staticmethod
-    def generate_key(unique, filename, ext):
-        return f"mindlogger/{unique}/{filename}.{ext}"
+    def generate_key(unique, filename):
+        return f"mindlogger/{unique}/{filename}"
 
     def download(self, key):
         file = io.BytesIO()
@@ -51,4 +53,9 @@ class CDNClient:
         else:
             self.client.download_fileobj(self.bucket, key, file)
         file.seek(0)
-        return file
+        media_type = (
+            mimetypes.guess_type(key)[0]
+            if mimetypes.guess_type(key)[0]
+            else "application/octet-stream"
+        )
+        return file, media_type

@@ -23,6 +23,7 @@ python-jose = {version = "~=3.3.0", extras = ["cryptography"]}
 sentry-sdk = "~=1.6"
 sqlalchemy = {extras = ["asyncio"], version = "~=1.4.43"}
 uvicorn = {extras = ["standard"], version = "==0.19"}
+python-multipart = "~=0.0.5"
 
 [dev-packages]
 black = "~=22.6"

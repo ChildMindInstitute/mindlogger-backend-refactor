@@ -29,6 +29,8 @@ services:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
     container_name: mindlogger_webapp
+    entrypoint: /fastapi-entrypoint
+    command: /fastapi-start
     env_file: .env
     depends_on:
       - postgres
