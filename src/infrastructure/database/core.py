@@ -122,7 +122,7 @@ class TransactionManager:
         async def test_action(*args, **kwargs):
             pass
 
-        This decorator forcibly rollback the database session.
+        This decorator forcibly rollbacks the database session.
         Use it in tests to rollback.
         Transaction counter is used to close session
         """
