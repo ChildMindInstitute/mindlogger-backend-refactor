@@ -69,7 +69,7 @@ class TransactionManager:
         Use it in initial database interaction(ex. in middlewares) to open
          session.
         Transaction counter is used to understand when to commit changes and
-         close session
+         close session.
         """
 
         async def _wrap(*args, **kwargs):
@@ -124,7 +124,7 @@ class TransactionManager:
 
         This decorator forcibly rollbacks the database session.
         Use it in tests to rollback.
-        Transaction counter is used to close session
+        Transaction counter is used to close session.
         """
 
         async def _wrap(*args, **kwargs):
