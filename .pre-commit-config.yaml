@@ -29,11 +29,3 @@ repos:
         entry: mypy
         language: system
         types: [python]
-
-      - id: unittests
-        name: unittests
-        entry: pytest
-        language: system
-        types: [python]
-        pass_filenames: false
-

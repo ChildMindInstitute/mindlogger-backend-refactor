@@ -7,4 +7,8 @@ class RedisSettings(BaseModel):
     host: str = "redis"
     port: str = "6379"
     db: str = "db0"
-    expire_duration: int | None = None
+    default_ttl: int = 3600
+
+    @property
+    def url(self) -> str:
+        return f"redis://{self.host}:{self.port}/{self.db}"

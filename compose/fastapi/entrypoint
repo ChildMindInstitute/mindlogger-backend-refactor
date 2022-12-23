@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+redis_ready() {
+python << END
+import asyncio
+import sys
+import os
+
+from aioredis import from_url
+from config import settings
+
+client = from_url(url=settings.redis.url)
+
+try:
+    asyncio.run(client.echo("Hello"))
+except ConnectionError:
+    sys.exit(-1)
+sys.exit(0)
+
+END
+}
+
+until redis_ready; do
+  >&2 echo 'Waiting for Redis to become available...'
+  sleep 1
+done
+>&2 echo '>>> Redis is available <<<'
+
+exec "$@"
+

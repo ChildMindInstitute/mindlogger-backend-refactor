@@ -44,6 +44,19 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     async def get_by_display_name(self, display_name: str) -> Applet:
         return await self._fetch(key="display_name", value=display_name)
 
+    async def all(self, user_id: int) -> list[Applet]:
+        query: Query = (
+            select(self.schema_class)
+            .join_from(UserAppletAccessSchema, self.schema_class)
+            .where(UserAppletAccessSchema.user_id == user_id)
+            .order_by(self.schema_class.id)
+        )
+
+        result: Result = await self._execute(query)
+        results: list[Applet] = result.scalars().all()
+
+        return [Applet.from_orm(applet) for applet in results]
+
     async def get_admin_applets(self, user_id_: int) -> list[Applet]:
         query: Query = (
             select(self.schema_class)

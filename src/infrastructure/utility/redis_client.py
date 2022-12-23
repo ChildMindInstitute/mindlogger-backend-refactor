@@ -56,7 +56,7 @@ class RedisCache:
         self.host = settings.redis.host
         self.port = settings.redis.port
         self.db = settings.redis.db
-        self.expire_duration = settings.redis.expire_duration
+        self.expire_duration = settings.redis.default_ttl
 
         for key, val in kwargs.items():
             self.configuration[key.lower()] = val

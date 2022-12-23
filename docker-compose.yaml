@@ -29,6 +29,8 @@ services:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
     container_name: mindlogger_webapp
+    entrypoint: /fastapi-entrypoint
+    command: /fastapi-start
     env_file: .env
     depends_on:
       - postgres
@@ -37,6 +39,13 @@ services:
       - 8000:80
     volumes:
       - ./:/app/
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.0
+    container_name: mindlogger_mailhog
+    ports:
+      - 8025:8025
+      - 1025:1025
 
 volumes:
   pg_data: {}

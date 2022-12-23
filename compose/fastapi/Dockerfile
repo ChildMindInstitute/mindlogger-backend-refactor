@@ -2,10 +2,6 @@ FROM --platform=linux/x86_64 python:3.10.8-slim
 
 ARG PIPENV_EXTRA_ARGS
 
-# https://www.uvicorn.org/settings/
-ENV UVICORN_HOST="0.0.0.0"
-ENV UVICORN_PORT=80
-
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH="src/"
 
@@ -35,5 +31,14 @@ RUN pipenv sync --system ${PIPENV_EXTRA_ARGS}
 # Copy the whole project project
 COPY ./ ./
 
-# Run the application
-CMD ["alembic", "upgrade", "head", "&&", "uvicorn", "src.main:app", "--proxy-headers"]
+# Copy infrustructure scripts
+
+# Application scripts
+COPY --chown=code:code ./compose/fastapi/entrypoint /fastapi-entrypoint
+RUN sed -i 's/\r$//g' /fastapi-entrypoint && chmod +x /fastapi-entrypoint
+
+COPY --chown=code:code ./compose/fastapi/start /fastapi-start
+RUN sed -i 's/\r$//g' /fastapi-start && chmod +x /fastapi-start
+
+# Select internal user
+USER code
