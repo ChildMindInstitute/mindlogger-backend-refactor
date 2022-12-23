@@ -15,8 +15,6 @@ from apps.shared.errors import NotContentError
 from apps.users.domain import User
 
 
-# TODO: Add logic to allow create applets by permissions
-# TODO: Restrict by admin
 async def create_applet(
     user: User = Depends(get_current_user),
     schema: AppletCreate = Body(...),
@@ -34,20 +32,21 @@ async def create_applet(
     return Response(result=PublicApplet(**applet.dict()))
 
 
-# TODO: Add logic to return concrete applet by user
 async def get_applet_by_id(
     id_: int, user: User = Depends(get_current_user)
 ) -> Response[PublicApplet]:
     applet: Applet = await AppletsCRUD().get_by_id(id_=id_)
     public_applet = PublicApplet(**applet.dict())
+
     return Response(result=public_applet)
 
 
-# TODO: Add logic to return applets by user
 async def get_applets(
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[Applet]:
-    applets: list[Applet] = await AppletsCRUD().get_admin_applets(user.id)
+    """Returns all applets where the current user exists."""
+
+    applets: list[Applet] = await AppletsCRUD().all(user.id)
 
     return ResponseMulti(results=applets)
 

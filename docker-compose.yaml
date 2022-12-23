@@ -40,5 +40,12 @@ services:
     volumes:
       - ./:/app/
 
+  mailhog:
+    image: mailhog/mailhog:v1.0.0
+    container_name: mindlogger_mailhog
+    ports:
+      - 8025:8025
+      - 1025:1025
+
 volumes:
   pg_data: {}

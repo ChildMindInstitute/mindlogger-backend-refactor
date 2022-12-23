@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Extra
 
+__all__ = ["InternalModel", "PublicModel"]
+
 
 class InternalModel(BaseModel):
     class Config:
