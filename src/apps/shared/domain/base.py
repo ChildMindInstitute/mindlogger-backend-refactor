@@ -1,8 +1,6 @@
-from enum import Enum as _Enum
-
 from pydantic import BaseModel, Extra
 
-__all__ = ["InternalModel", "PublicModel", "Enum"]
+__all__ = ["InternalModel", "PublicModel"]
 
 
 class InternalModel(BaseModel):
@@ -21,9 +19,3 @@ class PublicModel(BaseModel):
         use_enum_values = True
         allow_population_by_field_name = True
         validate_assignment = True
-
-
-class Enum(_Enum):
-    @classmethod
-    def values(cls):
-        return [element.value for element in cls]
