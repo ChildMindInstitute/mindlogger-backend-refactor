@@ -9,7 +9,7 @@ import apps.authentication.router as auth
 import apps.healthcheck.router as healthcheck
 import apps.invitations.router as invitations
 import apps.users.router as users
-from middlewares import ErrorsHandlingMiddleware
+import middlewares as middlewares_
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -21,7 +21,10 @@ routers: Iterable[APIRouter] = (
 )
 
 # Declare your middlewares here
-middlewares: Iterable[Type[BaseHTTPMiddleware]] = (ErrorsHandlingMiddleware,)
+middlewares: Iterable[Type[BaseHTTPMiddleware]] = (
+    middlewares_.ErrorsHandlingMiddleware,
+    middlewares_.DatabaseTransactionMiddleware,
+)
 
 
 def create_app():
