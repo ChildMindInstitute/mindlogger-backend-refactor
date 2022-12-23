@@ -9,7 +9,7 @@ __all__ = [
     "UserLoginRequest",
     "UserCreate",
     "User",
-    "UserSignUpRequest",
+    "UserCreateRequest",
 ]
 
 
@@ -20,7 +20,7 @@ class _UserBase(BaseModel):
         return self.email
 
 
-class UserSignUpRequest(_UserBase, PublicModel):
+class UserCreateRequest(_UserBase, PublicModel):
     full_name: str
     password: str
 
