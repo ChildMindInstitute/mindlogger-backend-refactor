@@ -13,4 +13,7 @@ routers = (
     file.router,
 )
 
-middlewares = (middlewares_.ErrorsHandlingMiddleware,)
+middlewares = (
+    middlewares_.ErrorsHandlingMiddleware,
+    middlewares_.DatabaseTransactionMiddleware,
+)
