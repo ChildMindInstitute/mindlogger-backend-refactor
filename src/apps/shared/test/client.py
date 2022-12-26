@@ -2,7 +2,6 @@ import json
 import urllib.parse
 
 from httpx import AsyncClient, Response
-from pydantic.types import Optional
 
 from infrastructure.app import create_app
 
@@ -17,14 +16,14 @@ class TestClient:
     def _prepare_url(url, query):
         return f"{url}{urllib.parse.urlencode(query)}"
 
-    def _get_headers(self, headers: Optional[dict] = None) -> dict:
+    def _get_updated_headers(self, headers: dict | None = None) -> dict:
         headers_ = dict(self.headers)
         if headers:
             headers_.update(headers)
         return headers_
 
     @staticmethod
-    def _get_body(data: Optional[dict] = None):
+    def _get_body(data: dict | None = None):
         if data:
             return json.dumps(data)
         return {}
@@ -32,54 +31,58 @@ class TestClient:
     async def post(
         self,
         url: str,
-        data: Optional[dict] = None,
-        query: Optional[dict] = None,
-        headers: Optional[dict] = None,
+        data: dict | None = None,
+        query: dict | None = None,
+        headers: dict | None = None,
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
         response = await self.client.post(
-            url, data=self._get_body(data), headers=self._get_headers(headers)
+            url,
+            data=self._get_body(data),
+            headers=self._get_updated_headers(headers),
         )
         return response
 
     async def put(
         self,
         url: str,
-        data: Optional[dict] = None,
-        query: Optional[dict] = None,
-        headers: Optional[dict] = None,
+        data: dict | None = None,
+        query: dict | None = None,
+        headers: dict | None = None,
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
         response = await self.client.put(
-            url, data=self._get_body(data), headers=self._get_headers(headers)
+            url,
+            data=self._get_body(data),
+            headers=self._get_updated_headers(headers),
         )
         return response
 
     async def get(
         self,
         url: str,
-        query: Optional[dict] = None,
-        headers: Optional[dict] = None,
+        query: dict | None = None,
+        headers: dict | None = None,
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
         response = await self.client.get(
-            url, headers=self._get_headers(headers)
+            url, headers=self._get_updated_headers(headers)
         )
         return response
 
     async def delete(
         self,
         url: str,
-        query: Optional[dict] = None,
-        headers: Optional[dict] = None,
+        query: dict | None = None,
+        headers: dict | None = None,
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
         response = await self.client.delete(
-            url, headers=self._get_headers(headers)
+            url, headers=self._get_updated_headers(headers)
         )
         return response
 
