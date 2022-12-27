@@ -1,3 +1,5 @@
+import traceback
+
 from fastapi import Request, Response, status
 from starlette.middleware.base import (
     BaseHTTPMiddleware,
@@ -57,6 +59,8 @@ class ErrorsHandlingMiddleware(BaseHTTPMiddleware):
                 headers=self.headers,
             )
         except Exception as error:
+            if __debug__:
+                traceback.print_exc()
             resp = ErrorResponse(messages=[f"Unhandled error: {error}"])
             return Response(
                 resp.json(),

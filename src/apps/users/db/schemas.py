@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String
+import sqlalchemy as sa
 
 from infrastructure.database.base import Base
 
@@ -6,6 +6,6 @@ from infrastructure.database.base import Base
 class UserSchema(Base):
     __tablename__ = "users"
 
-    email = Column(String(length=100), unique=True)
-    full_name = Column(String(length=100))
-    hashed_password = Column(String(length=100))
+    email = sa.Column(sa.String(length=100), unique=True)
+    full_name = sa.Column(sa.String(length=100))
+    hashed_password = sa.Column(sa.String(length=100))

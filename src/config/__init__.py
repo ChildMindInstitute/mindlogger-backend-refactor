@@ -61,9 +61,5 @@ settings = Settings(
             openapi="/openapi.json",
         ),
     ),
-    migrations_apps=[
-        "users",
-        "applets",
-        "activities",
-    ],
+    migrations_apps=["users", "applets", "activities", "activity_flows"],
 )

@@ -1,6 +1,7 @@
 from typing import Any, Generic, Type, TypeVar
 
 from sqlalchemy import delete, func, select, update
+from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
@@ -20,7 +21,10 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
     async def _execute(self, query: Query) -> Result:
         """Executes the specified query and returns the result"""
-        return await self.session.execute(query)
+        return await self.session.execute(
+            query,
+            execution_options=immutabledict({"synchronize_session": "fetch"}),
+        )
 
     async def _update(
         self,
@@ -54,6 +58,16 @@ class BaseCRUD(Generic[ConcreteSchema]):
         await self.session.flush()
         await self.session.refresh(schema)
         return schema
+
+    async def _create_many(
+        self, schemas: list[ConcreteSchema]
+    ) -> list[ConcreteSchema]:
+        """Creates a new instance of the model in the related table"""
+        self.session.add_all(schemas)
+        await self.session.flush()
+        for schema in schemas:
+            await self.session.refresh(schema)
+        return schemas
 
     async def all(self) -> list[ConcreteSchema]:
         query = select(self.schema_class)
