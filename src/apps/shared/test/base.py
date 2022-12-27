@@ -53,14 +53,3 @@ def _str_caster(val):
         val = {True: "true", False: "false"}[val]
         return val
     return str(val)
-
-
-def rollback(func):
-    async def _wrap(*args, **kwargs):
-        session = session_manager.get_session()
-        async with session.begin():
-            await func(*args, **kwargs)
-            await session.rollback()
-        await session.close()
-
-    return _wrap

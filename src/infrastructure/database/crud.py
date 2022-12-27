@@ -1,10 +1,10 @@
 from typing import Any, Generic, Type, TypeVar
 
 from sqlalchemy import delete, func, select, update
+from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
-from apps.shared.domain import InternalModel
 from infrastructure.database.base import Base
 from infrastructure.database.core import session_manager
 
@@ -21,36 +21,26 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
     async def _execute(self, query: Query) -> Result:
         """Executes the specified query and returns the result"""
-        return await self.session.execute(query)
-
-    async def _execute_commit(self, query: Query) -> Result:
-        """Executes the specified query and returns the result"""
-
-        result: Result = await self._execute(query)
-        await self.session.commit()
-
-        return result
+        return await self.session.execute(
+            query,
+            execution_options=immutabledict({"synchronize_session": "fetch"}),
+        )
 
     async def _update(
-        self, lookup: str, value: Any, update_schema: InternalModel
-    ) -> ConcreteSchema:
+        self,
+        lookup: tuple[str, Any],
+        payload: dict[str, Any],
+    ) -> None:
         """Updates an existed instance of the model in the related table"""
 
         query: Query = (
             update(self.schema_class)
-            .where(getattr(self.schema_class, lookup) == value)
-            .values(**update_schema.dict())
-            .returning(self.schema_class.id)
+            .where(getattr(self.schema_class, lookup[0]) == lookup[1])
+            .values(
+                **payload,
+            )
         )
-        result: Result = await self._execute_commit(query)
-        instance_id: int = result.scalar_one()
-
-        if not (
-            instance_schema := await self._get(key="id", value=instance_id)
-        ):
-            raise Exception("Can not fetch the updated instance.")
-
-        return instance_schema
+        await self._execute(query)
 
     async def _get(self, key: str, value: Any) -> ConcreteSchema | None:
         """Return only one result by filters"""
@@ -64,24 +54,24 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
     async def _create(self, schema: ConcreteSchema) -> ConcreteSchema:
         """Creates a new instance of the model in the related table"""
-
-        try:
-            self.session.add(schema)
-            await self.session.flush()
-            await self.session.refresh(schema)
-        except Exception:
-            await self.session.rollback()
-            raise Exception("For some reason operation failed.")
-        else:
-            await self.session.commit()
-
-        await self.session.close()
-
+        self.session.add(schema)
+        await self.session.flush()
+        await self.session.refresh(schema)
         return schema
 
-    async def _all(self) -> list[ConcreteSchema]:
-        query: Query = select(self.schema_class)
-        results: Result = await self._execute(query=query)
+    async def _create_many(
+        self, schemas: list[ConcreteSchema]
+    ) -> list[ConcreteSchema]:
+        """Creates a new instance of the model in the related table"""
+        self.session.add_all(schemas)
+        await self.session.flush()
+        for schema in schemas:
+            await self.session.refresh(schema)
+        return schemas
+
+    async def all(self) -> list[ConcreteSchema]:
+        query = select(self.schema_class)
+        results = await self._execute(query=query)
 
         return results.scalars().all()
 
