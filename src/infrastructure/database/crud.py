@@ -65,9 +65,19 @@ class BaseCRUD(Generic[ConcreteSchema]):
     async def _create(self, schema: ConcreteSchema) -> ConcreteSchema:
         """Creates a new instance of the model in the related table"""
 
-        self.session.add(schema)
-        await self.session.flush()
-        await self.session.refresh(schema)
+        try:
+            self.session.add(schema)
+            await self.session.flush()
+            await self.session.refresh(schema)
+        except:
+            await self.session.rollback()
+            raise Exception(
+                "For some reason operation failed."
+            )
+        else:
+            await self.session.commit()
+
+        await self.session.close()
 
         return schema
 
