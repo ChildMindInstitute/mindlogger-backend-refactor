@@ -69,11 +69,9 @@ class BaseCRUD(Generic[ConcreteSchema]):
             self.session.add(schema)
             await self.session.flush()
             await self.session.refresh(schema)
-        except:
+        except Exception:
             await self.session.rollback()
-            raise Exception(
-                "For some reason operation failed."
-            )
+            raise Exception("For some reason operation failed.")
         else:
             await self.session.commit()
 

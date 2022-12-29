@@ -30,6 +30,21 @@ class AuthenticationService:
         return encoded_jwt
 
     @staticmethod
+    def create_refresh_token(data: dict):
+        to_encode = data.copy()
+        expires_delta = timedelta(
+            minutes=settings.authentication.refresh_token_expire_minutes
+        )
+        expire = datetime.utcnow() + expires_delta
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(
+            to_encode,
+            settings.authentication.refresh_secret_key,
+            algorithm=settings.authentication.algorithm,
+        )
+        return encoded_jwt
+
+    @staticmethod
     def verify_password(plain_password: str, hashed_password: str):
         if not pwd_context.verify(plain_password, hashed_password):
             raise BadCredentials("Invalid password")

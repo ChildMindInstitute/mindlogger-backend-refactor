@@ -1,11 +1,18 @@
 from fastapi import Body, Depends
+from jose import JWTError, jwt
 
 from apps.authentication.deps import get_current_token
-from apps.authentication.domain import InternalToken, Token
+from apps.authentication.domain import (
+    InternalToken,
+    RefreshAccessTokenRequest,
+    Token,
+)
+from apps.authentication.errors import BadCredentials
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.errors import NotContentError
 from apps.users.domain import User, UserLoginRequest
+from config import settings
 
 
 async def get_access_token(
@@ -21,7 +28,46 @@ async def get_access_token(
         {"sub": str(user.id)}
     )
 
-    return Response(result=Token(access_token=access_token))
+    refresh_token = AuthenticationService.create_refresh_token(
+        {"sub": str(user.id)}
+    )
+
+    return Response(
+        result=Token(access_token=access_token, refresh_token=refresh_token)
+    )
+
+
+async def refresh_access_token(
+    schema: RefreshAccessTokenRequest = Body(...),
+) -> Response[Token]:
+    """Refresh access token."""
+
+    refresh_token_not_correct = BadCredentials(
+        message="Refresh token is not correct"
+    )
+
+    try:
+        payload = jwt.decode(
+            schema.refresh_token,
+            settings.authentication.refresh_secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+
+        if not (user_id := payload.get("sub")):
+            raise refresh_token_not_correct
+
+    except JWTError:
+        raise refresh_token_not_correct
+
+    access_token = AuthenticationService.create_access_token(
+        {"sub": str(user_id)}
+    )
+
+    return Response(
+        result=Token(
+            access_token=access_token, refresh_token=schema.refresh_token
+        )
+    )
 
 
 async def delete_access_token(
