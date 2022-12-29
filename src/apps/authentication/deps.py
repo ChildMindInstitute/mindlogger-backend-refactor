@@ -19,7 +19,7 @@ async def get_current_user(token: str = Depends(oauth2_oauth)) -> User:
     try:
         payload = jwt.decode(
             token,
-            settings.authentication.secret_key,
+            settings.authentication.secret_keys.authentication,
             algorithms=[settings.authentication.algorithm],
         )
         token_data = TokenPayload(**payload)
@@ -54,7 +54,7 @@ async def get_current_token(
     try:
         payload = jwt.decode(
             token,
-            settings.authentication.secret_key,
+            settings.authentication.secret_keys.authentication,
             algorithms=[settings.authentication.algorithm],
         )
 

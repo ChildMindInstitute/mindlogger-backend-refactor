@@ -13,6 +13,6 @@ class AuthenticationError(PermissionsError):
 
 
 class BadCredentials(ValidationError):
-    def __init__(self, message="", *args) -> None:
+    def __init__(self, message="", error="", *args) -> None:
         fallback = "Bad credentials"
-        super().__init__(message or fallback, *args)
+        super().__init__(message or fallback, error, *args)

@@ -18,13 +18,13 @@ class AuthenticationService:
     def create_access_token(data: dict):
         to_encode = data.copy()
         expires_delta = timedelta(
-            minutes=settings.authentication.access_token_expire_minutes
+            minutes=settings.authentication.expire_minutes.access_token
         )
         expire = datetime.utcnow() + expires_delta
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(
             to_encode,
-            settings.authentication.secret_key,
+            settings.authentication.secret_keys.authentication,
             algorithm=settings.authentication.algorithm,
         )
         return encoded_jwt
@@ -33,13 +33,13 @@ class AuthenticationService:
     def create_refresh_token(data: dict):
         to_encode = data.copy()
         expires_delta = timedelta(
-            minutes=settings.authentication.refresh_token_expire_minutes
+            minutes=settings.authentication.expire_minutes.refresh_token
         )
         expire = datetime.utcnow() + expires_delta
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(
             to_encode,
-            settings.authentication.refresh_secret_key,
+            settings.authentication.secret_keys.refresh,
             algorithm=settings.authentication.algorithm,
         )
         return encoded_jwt

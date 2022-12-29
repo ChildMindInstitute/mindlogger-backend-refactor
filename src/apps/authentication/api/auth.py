@@ -15,7 +15,7 @@ from apps.users.domain import User, UserLoginRequest
 from config import settings
 
 
-async def get_access_token(
+async def get_token(
     user_login_schema: UserLoginRequest = Body(...),
 ) -> Response[Token]:
     """Generate the JWT access token."""
@@ -43,21 +43,23 @@ async def refresh_access_token(
     """Refresh access token."""
 
     refresh_token_not_correct = BadCredentials(
-        message="Refresh token is not correct"
+        message="Refresh token is invalid"
     )
 
     try:
         payload = jwt.decode(
             schema.refresh_token,
-            settings.authentication.refresh_secret_key,
+            settings.authentication.secret_keys.refresh,
             algorithms=[settings.authentication.algorithm],
         )
 
         if not (user_id := payload.get("sub")):
             raise refresh_token_not_correct
 
-    except JWTError:
-        raise refresh_token_not_correct
+    except JWTError as error:
+        raise BadCredentials(
+            message="Refresh token is invalid", error=str(error)
+        )
 
     access_token = AuthenticationService.create_access_token(
         {"sub": str(user_id)}
