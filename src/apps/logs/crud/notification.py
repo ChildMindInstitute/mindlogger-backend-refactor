@@ -7,7 +7,6 @@ from sqlalchemy.orm import Query
 
 from apps.logs.db.schemas import NotificationLogSchema
 from apps.logs.domain import (
-    NotificationLog,
     NotificationLogCreate,
     NotificationLogQuery,
     PublicNotificationLog,
