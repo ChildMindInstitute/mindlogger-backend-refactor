@@ -11,6 +11,7 @@ __all__ = [
     "ThemeCreate",
     "PublicTheme",
     "Theme",
+    "ThemeUpdate",
 ]
 
 

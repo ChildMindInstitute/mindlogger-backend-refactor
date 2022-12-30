@@ -1,10 +1,10 @@
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
-from apps.shared.domain.response import Response, ResponseMulti
+from apps.shared.domain import Response, ResponseMulti
 from apps.shared.errors import NotContentError
-from apps.themes.crud.themes import ThemesCRUD
-from apps.themes.domain.themes import (
+from apps.themes.crud import ThemesCRUD
+from apps.themes.domain import (
     PublicTheme,
     Theme,
     ThemeCreate,

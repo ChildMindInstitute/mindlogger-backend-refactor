@@ -6,12 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
 from apps.themes.db.schemas import ThemeSchema
-from apps.themes.domain.themes import (
-    PublicTheme,
-    Theme,
-    ThemeCreate,
-    ThemeUpdate,
-)
+from apps.themes.domain import PublicTheme, Theme, ThemeCreate, ThemeUpdate
 from apps.themes.errors import (
     ThemeAlreadyExist,
     ThemeNotFoundError,
