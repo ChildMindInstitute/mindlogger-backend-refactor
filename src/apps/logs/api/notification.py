@@ -1,8 +1,8 @@
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
-from apps.notification.crud.notification import NotificationLogCRUD
-from apps.notification.domain import (
+from apps.logs.crud.notification import NotificationLogCRUD
+from apps.logs.domain import (
     NotificationLog,
     NotificationLogCreate,
     NotificationLogQuery,
@@ -13,7 +13,7 @@ from apps.shared.errors import NotContentError
 from apps.users.domain import User
 
 
-async def create_log(
+async def create_notification_log(
     schema: NotificationLogCreate = Body(...),
 ) -> Response[PublicNotificationLog]:
     """Creates a new notification log."""
@@ -24,7 +24,7 @@ async def create_log(
     return Response(result=PublicNotificationLog(**notification_log.dict()))
 
 
-async def get_logs(
+async def get_notification_logs(
     query: NotificationLogQuery = Depends(NotificationLogQuery),
 ) -> ResponseMulti[PublicNotificationLog]:
     """Returns all notification logs where the current user and device exists."""

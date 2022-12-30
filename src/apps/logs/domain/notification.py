@@ -1,7 +1,8 @@
 from typing import Union
-
-from pydantic import BaseModel, root_validator
-from pydantic.types import PositiveInt
+from typing import List
+from pydantic import BaseModel, validator
+from pydantic.types import PositiveInt, Json
+import json
 
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -38,6 +39,17 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
     notification_in_queue: Union[str, None]
     scheduled_notifications: Union[str, None]
 
+    @validator(
+        "notification_descriptions",
+        "notification_in_queue",
+        "scheduled_notifications",
+    )
+    def validate_json(cls, v):
+        try:
+            return json.dumps(json.loads(v))
+        except Exception:
+            raise ValueError("Invalid JSON")
+
     def __init__(self, **data: dict):
         if not any(
             [
@@ -46,9 +58,15 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
                 "scheduled_notifications" in data,
             ]
         ):
-            raise TypeError(
-                """Value needed for at least one field ('notification_descriptions', 'notification_in_queue', 'scheduled_notifications')"""
+            error = (
+                "Value needed for at least field ("
+                "'notification_descriptions',"
+                " 'notification_in_queue',"
+                " 'scheduled_notifications')"
             )
+
+            raise TypeError(error)
+
         super().__init__(**data)
 
 

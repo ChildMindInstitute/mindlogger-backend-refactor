@@ -1,16 +1,16 @@
 """notification log schema
 
-Revision ID: 79ecca6511a0
+Revision ID: 98bd718c656c
 Revises: b195b72b002f
-Create Date: 2022-12-29 13:23:28.039194
+Create Date: 2022-12-30 06:57:53.883306
 
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "79ecca6511a0"
+revision = "98bd718c656c"
 down_revision = "b195b72b002f"
 branch_labels = None
 depends_on = None
@@ -24,12 +24,24 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
-        sa.Column("user_id", sa.String(), nullable=True),
-        sa.Column("device_id", sa.String(), nullable=True),
-        sa.Column("action_type", sa.String(), nullable=True),
-        sa.Column("notification_descriptions", sa.String(), nullable=True),
-        sa.Column("notification_in_queue", sa.String(), nullable=True),
-        sa.Column("scheduled_notifications", sa.String(), nullable=True),
+        sa.Column("user_id", sa.String(), nullable=False),
+        sa.Column("device_id", sa.String(), nullable=False),
+        sa.Column("action_type", sa.String(), nullable=False),
+        sa.Column(
+            "notification_descriptions",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=True,
+        ),
+        sa.Column(
+            "notification_in_queue",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=True,
+        ),
+        sa.Column(
+            "scheduled_notifications",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=True,
+        ),
         sa.Column(
             "notification_descriptions_updated", sa.Boolean(), nullable=True
         ),
