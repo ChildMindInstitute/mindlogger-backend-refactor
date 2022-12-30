@@ -1,5 +1,5 @@
-from typing import Any
 import json
+
 from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
@@ -15,7 +15,7 @@ from apps.logs.domain import (
 from apps.logs.errors import NotificationLogAlreadyExist
 from infrastructure.database.crud import BaseCRUD
 
-__all__ = ["NotificationLogsCRUD"]
+__all__ = ["NotificationLogCRUD"]
 
 
 class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
@@ -34,19 +34,21 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
             .order_by(self.schema_class.created_at.desc())
         )
         if query_set.limit:
-            query.limit(query_set.limit)
+            query = query.limit(query_set.limit)
 
         result: Result = await self._execute(query)
         results: list[PublicNotificationLog] = result.scalars().all()
 
-        return [NotificationLog.from_orm(log) for log in results]
+        return [PublicNotificationLog.from_orm(log) for log in results]
 
-    async def save(self, schema: NotificationLogCreate) -> NotificationLog:
+    async def save(
+        self, schema: NotificationLogCreate
+    ) -> PublicNotificationLog:
         """Return notification log instance and the created information."""
 
-        notification_descriptions_updated = True
-        notifications_in_queue_updated = True
-        scheduled_notifications_updated = True
+        notif_desc_upd = True
+        notif_in_queue_upd = True
+        sched_notif_upd = True
 
         logs = await self.all(
             NotificationLogQuery(
@@ -64,19 +66,19 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
             schema.notification_descriptions = previous.get(
                 "notification_descriptions", json.dumps(None)
             )
-            notification_descriptions_updated = False
+            notif_desc_upd = False
 
         if not schema.notification_in_queue:
             schema.notification_in_queue = previous.get(
                 "notifications_in_queue", json.dumps(None)
             )
-            notifications_in_queue_updated = False
+            notif_in_queue_upd = False
 
         if not schema.scheduled_notifications:
             schema.scheduled_notifications = previous.get(
                 "scheduled_notifications", json.dumps(None)
             )
-            scheduled_notifications_updated = False
+            sched_notif_upd = False
 
         # Save notification logs into the database
         try:
@@ -84,15 +86,17 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
             instance: NotificationLogSchema = await self._create(
                 NotificationLogSchema(
                     **schema.dict(),
-                    notification_descriptions_updated=notification_descriptions_updated,
-                    notifications_in_queue_updated=notifications_in_queue_updated,
-                    scheduled_notifications_updated=scheduled_notifications_updated,
+                    notif_desc_updated=notif_desc_upd,
+                    notif_in_queue_updated=notif_in_queue_upd,
+                    sched_notif_updated=sched_notif_upd,
                 )
             )
         except IntegrityError:
             raise NotificationLogAlreadyExist()
 
         # Create internal data model
-        notification_log: NotificationLog = NotificationLog.from_orm(instance)
+        notification_log: PublicNotificationLog = (
+            PublicNotificationLog.from_orm(instance)
+        )
 
         return notification_log

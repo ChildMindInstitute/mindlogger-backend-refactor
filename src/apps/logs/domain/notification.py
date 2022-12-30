@@ -1,8 +1,8 @@
-from typing import Union
-from typing import List
-from pydantic import BaseModel, validator
-from pydantic.types import PositiveInt, Json
 import json
+from typing import Union
+
+from pydantic import BaseModel, validator
+from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
 
