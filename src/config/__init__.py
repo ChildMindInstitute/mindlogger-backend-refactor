@@ -69,5 +69,6 @@ settings = Settings(
         "users",
         "applets",
         "activities",
+        "notification",
     ],
 )
