@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 
 from apps.authentication.domain import InternalToken
 from apps.authentication.errors import BadCredentials
-from apps.shared.errors import BaseError
+from apps.authentication.services.redis import TokensService
 from apps.users.crud import UsersCRUD
 from apps.users.domain import User, UserLoginRequest
 from config import settings
@@ -67,11 +67,4 @@ class AuthenticationService:
         """Currently we do not check if the token is in that blacklist
         as far as the redis client implementation is not working.
         """
-        # key = "tokens-blacklist"
-        # cache = RedisCache()
-        # await cache.set(
-        #     key=f"{key}:{token.raw_token}",
-        #     val="",
-        #     expire_after=token.payload.exp,
-        # )
-        raise BaseError("Currently this feature is not implemented.")
+        await TokensService().add_access_token_to_blacklist(token)

@@ -1,3 +1,5 @@
+from pydantic import EmailStr
+
 from apps.shared.domain import PublicModel
 from apps.shared.domain.base import InternalModel
 from config import settings
@@ -27,3 +29,14 @@ class InternalToken(InternalModel):
 
 class RefreshAccessTokenRequest(PublicModel):
     refresh_token: str
+
+
+class TokenInfo(InternalModel):
+    """This is used for internal needs.
+    raw_token -- the raw value of the JWT token.
+    """
+
+    email: EmailStr
+    user_id: int
+    token_purpose: str
+    raw_token: str
