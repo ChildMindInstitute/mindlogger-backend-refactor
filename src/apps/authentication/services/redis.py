@@ -91,7 +91,8 @@ class TokensService:
                 user_id=schema.payload.sub,
             )
 
-            # Build the cache key that consist of identifier - "tokens-blacklist",
+            # Build the cache key that consist of
+            # identifier - "tokens-blacklist",
             # email, token_purpose - "access_token", raw_token.
             key: str = self._cache.build_key(
                 user.email, token_purpose, schema.raw_token
