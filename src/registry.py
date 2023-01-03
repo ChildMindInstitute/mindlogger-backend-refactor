@@ -1,3 +1,4 @@
+import apps.activities.router as activities
 import apps.applets.router as applets
 import apps.authentication.router as auth
 import apps.healthcheck.router as healthcheck
@@ -9,6 +10,7 @@ routers = (
     auth.router,
     applets.router,
     users.router,
+    activities.router,
 )
 
 middlewares = (
