@@ -1,7 +1,7 @@
 import datetime
 import json
 
-from apps.authentication.domain import InternalToken, TokenInfo
+from apps.authentication.domain.token import InternalToken, TokenInfo
 from apps.users.crud import UsersCRUD
 from apps.users.domain import User
 from infrastructure.cache import BaseCacheService
@@ -10,19 +10,28 @@ from infrastructure.cache.errors import CacheNotFound
 
 
 class TokensCache(BaseCacheService[TokenInfo]):
-    """The concrete class that realized invitations cache engine.
-    In order to be able to save multiple invitations for a single user
+    """The concrete class that realized tokens cache engine.
+    In order to be able to save multiple tokens for a single user
     the specific key builder is used.
 
     The example of a key:
-        __classname__:john@email.com:fe46c05a-1790-4bea-8066-5e2572b4b413
+        __classname__:tokens-blacklist:john@email.com:access_token:
+        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+        eyJzdWIiOiI1IiwiZXhwIjoxNjcyNzQ1ODIxfQ.
+        inB6EtnmyCx7x1GATrsiNSLp1ikHUop4jgx4uXTVxgY
 
     __classname__ -- is taken from the parent class key builder
+    tokens-blacklist -- blacklist identifier
     john@email.com -- user's email
-    fe46c05a-1790-4bea-8066-5e2572b4b413 -- invitaiton UUID
+    access_token -- purpose of the token
+    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+    eyJzdWIiOiI1IiwiZXhwIjoxNjcyNzQ1ODIxfQ.
+    inB6EtnmyCx7x1GATrsiNSLp1ikHUop4jgx4uXTVxgY -- token body
 
     This strategy is taken in order to create unique pairs
-    that consist of user's email and unique invitation's identifier
+    that consist of "tokens-blacklist", user's email,
+    purpose of the token - for example "access_token"
+    and token body.
     """
 
     def build_key(self, email: str, token_purpose: str, raw_token: str) -> str:

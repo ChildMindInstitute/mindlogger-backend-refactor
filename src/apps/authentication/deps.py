@@ -5,7 +5,11 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import ValidationError
 
-from apps.authentication.domain import InternalToken, TokenInfo, TokenPayload
+from apps.authentication.domain.token import (
+    InternalToken,
+    TokenInfo,
+    TokenPayload,
+)
 from apps.authentication.services import AuthenticationService
 from apps.users.crud import UsersCRUD
 from apps.users.domain import User

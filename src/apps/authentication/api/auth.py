@@ -2,7 +2,7 @@ from fastapi import Body, Depends
 from jose import JWTError, jwt
 
 from apps.authentication.deps import get_current_token
-from apps.authentication.domain import (
+from apps.authentication.domain.token import (
     InternalToken,
     RefreshAccessTokenRequest,
     Token,

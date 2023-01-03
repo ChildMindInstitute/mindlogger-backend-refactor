@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
 
-from apps.authentication.domain import InternalToken
+from apps.authentication.domain.token import InternalToken
 from apps.authentication.errors import BadCredentials
 from apps.authentication.services.redis import TokensService
 from apps.users.crud import UsersCRUD
