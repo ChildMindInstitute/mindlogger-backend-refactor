@@ -56,10 +56,10 @@ git clone git@github.com:ChildMindInstitute/mindlogger-backend-refactor.git
 | DATABASE__USER | postgres | User name for Postgresql Database user |
 | DATABASE__PASSWORD | postgres | Password for Postgresql Database user |
 | DATABASE__DB | mindlogger_backend | Database name |
-| CORS__ALLOW_ORIGIN_REGEX | `.*` | Set the `Access-Control-Allow-Origin` header |
+| CORS__ALLOW_ORIGINS | `*` | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000` |
 | CORS__ALLOW_CREDENTIALS | true | Set the `Access-Control-Allow-Credentials` header |
-| CORS__ALLOW_METHODS | true | Set the `Access-Control-Allow-Methods` header |
-| CORS__ALLOW_HEADERS | true | Set the `Access-Control-Allow-Headers` header |
+| CORS__ALLOW_METHODS | `*` | Set the `Access-Control-Allow-Methods` header |
+| CORS__ALLOW_HEADERS | `*` | Set the `Access-Control-Allow-Headers` header |
 | AUTHENTICATION__SECRET_KEY | e51bcf5f4cb8550ff3f6a8bb4dfe112a | Access token's salt |
 | AUTHENTICATION__REFRESH_SECRET_KEY | 5da342d54ed5659f123cdd1cefe439c5aaf7e317a0aba1405375c07d32e097cc | Refresh token salt |
 | AUTHENTICATION__ALGORITHM | HS256 | The JWT's algorithm |

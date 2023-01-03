@@ -21,9 +21,9 @@ routers: Iterable[APIRouter] = (
 
 # Declare your middlewares and their options here
 middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
+    (middlewares_.CORSMiddleware, middlewares_.cors_options),
     (middlewares_.ErrorsHandlingMiddleware, {}),
     (middlewares_.DatabaseTransactionMiddleware, {}),
-    (middlewares_.CORSMiddleware, middlewares_.cors_options),
 )
 
 
