@@ -65,23 +65,23 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
         return theme
 
-    async def delete_by_id(self, id_: int, creator_id: int):
+    async def delete_by_id(self, pk: int, creator_id: int):
         """Delete theme by id."""
-        instance: Theme = await self._fetch(key="id", value=id_)
+        instance: Theme = await self._fetch(key="id", value=pk)
 
         if instance.creator != creator_id:
 
             raise ThemePermissionsError(
                 "You do not have permissions to delete this theme."
             )
-        await self._delete(key="id", value=id_)
+        await self._delete(key="id", value=pk)
 
     async def update(
-        self, id_: int, update_schema: ThemeUpdate, creator_id: int
+        self, pk: int, update_schema: ThemeUpdate, creator_id: int
     ) -> Theme:
         # Update theme in database
 
-        instance: Theme = await self._fetch(key="id", value=id_)
+        instance: Theme = await self._fetch(key="id", value=pk)
 
         if instance.creator != creator_id:
             raise ThemePermissionsError(

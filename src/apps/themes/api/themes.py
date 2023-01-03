@@ -37,17 +37,17 @@ async def get_themes(
     return ResponseMulti(results=themes)
 
 
-async def delete_theme_by_id(id_: int, user: User = Depends(get_current_user)):
-    await ThemesCRUD().delete_by_id(id_=id_, creator_id=user.id)
+async def delete_theme_by_id(pk: int, user: User = Depends(get_current_user)):
+    await ThemesCRUD().delete_by_id(pk=pk, creator_id=user.id)
     raise NotContentError
 
 
 async def update_theme_by_id(
-    id_: int,
+    pk: int,
     user: User = Depends(get_current_user),
     schema: ThemeUpdate = Body(...),
 ) -> Response[PublicTheme]:
     theme: Theme = await ThemesCRUD().update(
-        id_=id_, update_schema=schema, creator_id=user.id
+        pk=pk, update_schema=schema, creator_id=user.id
     )
     return Response(result=PublicTheme(**theme.dict()))
