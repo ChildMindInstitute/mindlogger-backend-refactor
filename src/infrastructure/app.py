@@ -2,7 +2,6 @@ from typing import Iterable, Type
 
 from fastapi import FastAPI
 from fastapi.routing import APIRouter
-from starlette.middleware.base import BaseHTTPMiddleware
 
 import apps.applets.router as applets
 import apps.authentication.router as auth
@@ -20,10 +19,11 @@ routers: Iterable[APIRouter] = (
     invitations.router,
 )
 
-# Declare your middlewares here
-middlewares: Iterable[Type[BaseHTTPMiddleware]] = (
-    middlewares_.ErrorsHandlingMiddleware,
-    middlewares_.DatabaseTransactionMiddleware,
+# Declare your middlewares and their options here
+middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
+    (middlewares_.ErrorsHandlingMiddleware, {}),
+    (middlewares_.DatabaseTransactionMiddleware, {}),
+    (middlewares_.CORSMiddleware, middlewares_.cors_options),
 )
 
 
@@ -36,7 +36,7 @@ def create_app():
         app.include_router(router)
 
     # Include middlewares
-    for middleware in middlewares:
-        app.add_middleware(middleware)
+    for middleware, options in middlewares:
+        app.add_middleware(middleware, **options)
 
     return app
