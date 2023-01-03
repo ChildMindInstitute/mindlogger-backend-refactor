@@ -38,8 +38,8 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
         return theme
 
-    async def get_by_id(self, id_: int) -> Theme:
-        return await self._fetch(key="id", value=id_)
+    async def get_by_id(self, pk: int) -> Theme:
+        return await self._fetch(key="id", value=pk)
 
     async def all(self) -> list[PublicTheme]:
         query: Query = select(self.schema_class).order_by(self.schema_class.id)
@@ -88,7 +88,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
                 "You do not have permissions to update this theme."
             )
         instance = await self._update(
-            lookup="id", value=id_, update_schema=update_schema
+            lookup="id", value=pk, update_schema=update_schema
         )
 
         # Create internal data model
