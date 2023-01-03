@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import ValidationError
 
-from apps.authentication.domain import InternalToken, TokenPayload, TokenInfo
+from apps.authentication.domain import InternalToken, TokenInfo, TokenPayload
 from apps.authentication.services import AuthenticationService
 from apps.users.crud import UsersCRUD
 from apps.users.domain import User
@@ -47,7 +47,9 @@ async def get_current_user(token: str = Depends(oauth2_oauth)) -> User:
         )
 
     # Checking if the token is blacklisted.
-    cache_entries: list[TokenInfo] = await AuthenticationService().fetch_all(user.email)
+    cache_entries: list[TokenInfo] = await AuthenticationService().fetch_all(
+        user.email
+    )
 
     if cache_entries:
         for entry in cache_entries:

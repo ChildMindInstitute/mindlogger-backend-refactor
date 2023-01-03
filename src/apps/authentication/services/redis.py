@@ -99,5 +99,7 @@ class TokensService:
 
             # Save token to the cache blacklist
             _: CacheEntry[TokenInfo] = await self._cache.set(
-                key=key, instance=token_info, ttl=ttl,
+                key=key,
+                instance=token_info,
+                ttl=ttl,
             )
