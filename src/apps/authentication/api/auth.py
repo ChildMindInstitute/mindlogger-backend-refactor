@@ -49,7 +49,7 @@ async def refresh_access_token(
     try:
         payload = jwt.decode(
             schema.refresh_token,
-            settings.authentication.secret_keys.refresh,
+            settings.authentication.refresh_token.secret_key,
             algorithms=[settings.authentication.algorithm],
         )
 

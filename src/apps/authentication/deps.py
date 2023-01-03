@@ -10,6 +10,7 @@ from apps.authentication.services import AuthenticationService
 from apps.users.crud import UsersCRUD
 from apps.users.domain import User
 from config import settings
+from infrastructure.cache.errors import CacheNotFound
 
 oauth2_oauth = OAuth2PasswordBearer(
     tokenUrl="/refresh-access-token", scheme_name="Bearer"
@@ -20,7 +21,7 @@ async def get_current_user(token: str = Depends(oauth2_oauth)) -> User:
     try:
         payload = jwt.decode(
             token,
-            settings.authentication.secret_keys.authentication,
+            settings.authentication.access_token.secret_key,
             algorithms=[settings.authentication.algorithm],
         )
         token_data = TokenPayload(**payload)
@@ -47,18 +48,20 @@ async def get_current_user(token: str = Depends(oauth2_oauth)) -> User:
         )
 
     # Checking if the token is blacklisted.
-    cache_entries: list[TokenInfo] = await AuthenticationService().fetch_all(
-        user.email
-    )
-
-    if cache_entries:
-        for entry in cache_entries:
-            if entry.raw_token == token:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Token is invalid",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
+    try:
+        cache_entries: list[
+            TokenInfo
+        ] = await AuthenticationService().fetch_all(user.email)
+        if cache_entries:
+            for entry in cache_entries:
+                if entry.raw_token == token:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Token is invalid",
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+    except CacheNotFound:
+        return user
 
     return user
 
@@ -69,7 +72,7 @@ async def get_current_token(
     try:
         payload = jwt.decode(
             token,
-            settings.authentication.secret_keys.authentication,
+            settings.authentication.access_token.secret_key,
             algorithms=[settings.authentication.algorithm],
         )
 
