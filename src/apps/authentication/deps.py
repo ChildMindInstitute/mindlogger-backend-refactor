@@ -5,7 +5,8 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import ValidationError
 
-from apps.authentication.domain import InternalToken, TokenPayload
+from apps.authentication.domain import InternalToken, TokenPayload, TokenInfo
+from apps.authentication.services import AuthenticationService
 from apps.users.crud import UsersCRUD
 from apps.users.domain import User
 from config import settings
@@ -44,6 +45,18 @@ async def get_current_user(token: str = Depends(oauth2_oauth)) -> User:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Could not find user",
         )
+
+    # Checking if the token is blacklisted.
+    cache_entries: list[TokenInfo] = await AuthenticationService().fetch_all(user.email)
+
+    if cache_entries:
+        for entry in cache_entries:
+            if entry.raw_token == token:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Token is invalid",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
 
     return user
 

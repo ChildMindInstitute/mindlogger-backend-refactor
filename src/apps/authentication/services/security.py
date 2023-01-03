@@ -64,7 +64,12 @@ class AuthenticationService:
 
     @staticmethod
     async def add_access_token_to_blacklist(token: InternalToken):
-        """Currently we do not check if the token is in that blacklist
-        as far as the redis client implementation is not working.
+        """Add access token to blacklist in Redis.
         """
         await TokensService().add_access_token_to_blacklist(token)
+
+    @staticmethod
+    async def fetch_all(email: str):
+        """Finds all records for the specified Email.
+        """
+        return await TokensService().fetch_all(email)

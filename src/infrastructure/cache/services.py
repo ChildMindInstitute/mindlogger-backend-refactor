@@ -79,7 +79,10 @@ class BaseCacheService(ABC, Generic[_InputObject]):
         pass
 
     async def set(
-        self, key: str, instance: _InputObject
+        self,
+        key: str,
+        instance: _InputObject,
+        ttl: int | None = None,
     ) -> CacheEntry[_InputObject]:
         enhanced_cache_entry: CacheEntry[_InputObject] = CacheEntry(
             instance=instance, created_at=datetime.now()
@@ -90,7 +93,7 @@ class BaseCacheService(ABC, Generic[_InputObject]):
                 key=self._build_key(key=key),
                 value=enhanced_cache_entry.json(),
             ),
-            ex=self.default_ttl,
+            ex=(ttl or self.default_ttl),
         )
 
         # Return another rich data model after saving into the cache

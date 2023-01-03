@@ -1,3 +1,4 @@
+import datetime
 import json
 
 from apps.authentication.domain import InternalToken, TokenInfo
@@ -77,22 +78,26 @@ class TokensService:
     async def add_access_token_to_blacklist(
         self, schema: InternalToken
     ) -> None:
-        # Create internal TokenInfo object
-        token_purpose = "access_token"
-        user: User = await UsersCRUD().get_by_id(schema.payload.sub)
-        token_info = TokenInfo(
-            email=user.email,
-            token_purpose=token_purpose,
-            raw_token=schema.raw_token,
-            user_id=schema.payload.sub,
-        )
+        now = datetime.datetime.now()
+        ttl = schema.payload.exp - int(now.timestamp())
+        if ttl > 1:
+            # Create internal TokenInfo object
+            token_purpose = "access_token"
+            user: User = await UsersCRUD().get_by_id(schema.payload.sub)
+            token_info = TokenInfo(
+                email=user.email,
+                token_purpose=token_purpose,
+                raw_token=schema.raw_token,
+                user_id=schema.payload.sub,
+            )
 
-        # Build the cache key that consis of user's email and applet's id
-        key: str = self._cache.build_key(
-            user.email, token_purpose, schema.raw_token
-        )
+            # Build the cache key that consist of identifier - "tokens-blacklist",
+            # email, token_purpose - "access_token", raw_token.
+            key: str = self._cache.build_key(
+                user.email, token_purpose, schema.raw_token
+            )
 
-        # Save invitation to the cache
-        _: CacheEntry[TokenInfo] = await self._cache.set(
-            key=key, instance=token_info
-        )
+            # Save token to the cache blacklist
+            _: CacheEntry[TokenInfo] = await self._cache.set(
+                key=key, instance=token_info, ttl=ttl,
+            )
