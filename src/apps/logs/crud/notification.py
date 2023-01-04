@@ -47,14 +47,6 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         notif_desc_upd = True
         notif_in_queue_upd = True
         sched_notif_upd = True
-        if not any(
-            [
-                schema.notification_descriptions,
-                schema.notification_in_queue,
-                schema.scheduled_notifications,
-            ]
-        ):
-            return dict()
 
         logs = await self.filter(
             NotificationLogQuery(

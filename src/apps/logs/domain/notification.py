@@ -1,13 +1,12 @@
 import json
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, root_validator, validator
 from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
     "NotificationLogCreate",
-    "NotificationLog",
     "PublicNotificationLog",
     "NotificationLogQuery",
 ]
@@ -22,7 +21,7 @@ class NotificationLogQuery(_NotificationLogBase):
     limit: PositiveInt | None
 
 
-class NotificationLogCreate(_NotificationLogBase, InternalModel):
+class _NotificationLogInit(_NotificationLogBase):
     action_type: str
     notification_descriptions: str | None
     notification_in_queue: str | None
@@ -39,15 +38,29 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
         except Exception:
             raise ValueError("Invalid JSON")
 
+    @root_validator
+    def validate_json_fields(cls, values):
+        if not any(
+            [
+                values.get("notification_descriptions"),
+                values.get("notification_in_queue"),
+                values.get("scheduled_notifications"),
+            ]
+        ):
+            raise ValueError(
+                """At least one of 3 optional fields
+                (notification_descriptions,
+                notification_in_queue,
+                scheduled_notifications) must be provided"""
+            )
+        return values
 
-class NotificationLog(NotificationLogCreate):
-    id: PositiveInt
-    notification_descriptions_updated: bool
-    notifications_in_queue_updated: bool
-    scheduled_notifications_updated: bool
+
+class NotificationLogCreate(_NotificationLogInit, InternalModel):
+    pass
 
 
-class PublicNotificationLog(NotificationLogCreate, PublicModel):
+class PublicNotificationLog(_NotificationLogInit, PublicModel):
     """Public NotificationLog model."""
 
     id: PositiveInt

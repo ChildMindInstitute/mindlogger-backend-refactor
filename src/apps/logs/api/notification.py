@@ -11,10 +11,10 @@ from apps.shared.domain import Response, ResponseMulti
 
 async def create_notification_log(
     schema: NotificationLogCreate = Body(...),
-) -> Response[PublicNotificationLog | dict]:
+) -> Response[PublicNotificationLog]:
     """Creates a new NotificationLog."""
-    notification_log: PublicNotificationLog | dict = (
-        await NotificationLogCRUD().save(schema=schema)
+    notification_log: PublicNotificationLog = await NotificationLogCRUD().save(
+        schema=schema
     )
 
     return Response(result=notification_log)
