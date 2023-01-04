@@ -11,22 +11,22 @@ from apps.shared.domain import Response, ResponseMulti
 
 async def create_notification_log(
     schema: NotificationLogCreate = Body(...),
-) -> Response[PublicNotificationLog]:
-    """Creates a new notification log."""
-    notification_log: PublicNotificationLog = await NotificationLogCRUD().save(
-        schema=schema
+) -> Response[PublicNotificationLog | dict]:
+    """Creates a new NotificationLog."""
+    notification_log: PublicNotificationLog | dict = (
+        await NotificationLogCRUD().save(schema=schema)
     )
 
-    return Response(result=PublicNotificationLog(**notification_log.dict()))
+    return Response(result=notification_log)
 
 
 async def get_notification_logs(
     query: NotificationLogQuery = Depends(NotificationLogQuery),
 ) -> ResponseMulti[PublicNotificationLog]:
-    """Returns notification logs of user and device"""
+    """Returns NotificationLogs of user and device"""
 
     notification_logs: list[
         PublicNotificationLog
-    ] = await NotificationLogCRUD().all(query)
+    ] = await NotificationLogCRUD().filter(query)
 
     return ResponseMulti(results=notification_logs)

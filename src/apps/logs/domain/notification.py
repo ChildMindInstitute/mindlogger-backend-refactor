@@ -1,5 +1,4 @@
 import json
-from typing import Union
 
 from pydantic import BaseModel, validator
 from pydantic.types import PositiveInt
@@ -20,24 +19,14 @@ class _NotificationLogBase(BaseModel):
 
 
 class NotificationLogQuery(_NotificationLogBase):
-    limit: Union[PositiveInt, None]
-
-
-class PublicNotificationLog(_NotificationLogBase, PublicModel):
-    """Public notification log model."""
-
-    id: PositiveInt
-    action_type: str
-    notification_descriptions: Union[str, None]
-    notification_in_queue: Union[str, None]
-    scheduled_notifications: Union[str, None]
+    limit: PositiveInt | None
 
 
 class NotificationLogCreate(_NotificationLogBase, InternalModel):
     action_type: str
-    notification_descriptions: Union[str, None]
-    notification_in_queue: Union[str, None]
-    scheduled_notifications: Union[str, None]
+    notification_descriptions: str | None
+    notification_in_queue: str | None
+    scheduled_notifications: str | None
 
     @validator(
         "notification_descriptions",
@@ -50,28 +39,15 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
         except Exception:
             raise ValueError("Invalid JSON")
 
-    def __init__(self, **data: dict):
-        if not any(
-            [
-                "notification_descriptions" in data,
-                "notification_in_queue" in data,
-                "scheduled_notifications" in data,
-            ]
-        ):
-            error = (
-                "Value needed for at least field ("
-                "'notification_descriptions',"
-                " 'notification_in_queue',"
-                " 'scheduled_notifications')"
-            )
-
-            raise TypeError(error)
-
-        super().__init__(**data)
-
 
 class NotificationLog(NotificationLogCreate):
     id: PositiveInt
     notification_descriptions_updated: bool
     notifications_in_queue_updated: bool
     scheduled_notifications_updated: bool
+
+
+class PublicNotificationLog(NotificationLogCreate, PublicModel):
+    """Public NotificationLog model."""
+
+    id: PositiveInt

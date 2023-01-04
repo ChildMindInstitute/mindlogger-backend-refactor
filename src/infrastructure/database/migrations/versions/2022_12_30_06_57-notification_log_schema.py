@@ -43,13 +43,13 @@ def upgrade() -> None:
             nullable=True,
         ),
         sa.Column(
-            "notification_descriptions_updated", sa.Boolean(), nullable=True
+            "notification_descriptions_updated", sa.Boolean(), nullable=False
         ),
         sa.Column(
-            "notifications_in_queue_updated", sa.Boolean(), nullable=True
+            "notifications_in_queue_updated", sa.Boolean(), nullable=False
         ),
         sa.Column(
-            "scheduled_notifications_updated", sa.Boolean(), nullable=True
+            "scheduled_notifications_updated", sa.Boolean(), nullable=False
         ),
         sa.PrimaryKeyConstraint("id"),
     )
