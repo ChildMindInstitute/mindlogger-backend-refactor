@@ -56,7 +56,7 @@ class BaseCacheService(ABC, Generic[_InputObject]):
         """Returns a key with the additional namespace for this cache.
 
         Example of usage:
-            [In 1]:  _get_key("john@email.com")
+            [In 1]:  _build_key("john@email.com")
             [Out 1]: ConcreteCache:john@email.com
 
         """

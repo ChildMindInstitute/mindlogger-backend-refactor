@@ -1,6 +1,15 @@
+from enum import Enum
+
 from pydantic import EmailStr
 
 from apps.shared.domain.base import InternalModel
+
+
+class TokenPurpose(str, Enum):
+    """This enumeration is used for internal needs (cache, ...)."""
+
+    ACCESS = "access"
+    REFRESH = "refresh"
 
 
 class TokenPayload(InternalModel):

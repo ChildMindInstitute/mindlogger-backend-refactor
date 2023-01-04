@@ -1,7 +1,7 @@
 from fastapi import Body, Depends
 from jose import JWTError, jwt
 
-from apps.authentication.deps import get_current_token
+from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.token import (
     InternalToken,
     RefreshAccessTokenRequest,
@@ -74,6 +74,7 @@ async def refresh_access_token(
 
 async def delete_access_token(
     token: InternalToken = Depends(get_current_token),
+    _: User = Depends(get_current_user),
 ):
     """Add token to the blacklist."""
 

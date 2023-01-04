@@ -5,10 +5,13 @@ from passlib.context import CryptContext
 
 from apps.authentication.domain.token import InternalToken
 from apps.authentication.errors import BadCredentials
-from apps.authentication.services.redis import TokensService
+from apps.authentication.services.core import TokensService
 from apps.users.crud import UsersCRUD
 from apps.users.domain import User, UserLoginRequest
 from config import settings
+
+__all__ = ["AuthenticationService"]
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -68,6 +71,6 @@ class AuthenticationService:
         await TokensService().add_access_token_to_blacklist(token)
 
     @staticmethod
-    async def fetch_all(email: str):
+    async def fetch_all_tokens(email: str):
         """Finds all records for the specified Email."""
         return await TokensService().fetch_all(email)

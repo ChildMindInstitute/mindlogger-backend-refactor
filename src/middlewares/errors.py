@@ -4,12 +4,12 @@ from starlette.middleware.base import (
     RequestResponseEndpoint,
 )
 
+from apps.authentication.errors import AuthenticationError, PermissionsError
 from apps.shared.domain import ErrorResponse
 from apps.shared.errors import (
     BaseError,
     NotContentError,
     NotFoundError,
-    PermissionsError,
     ValidationError,
 )
 
@@ -22,12 +22,19 @@ class ErrorsHandlingMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         try:
             response: Response = await call_next(request)
-        except PermissionsError as error:
+        except AuthenticationError as error:
             resp = ErrorResponse(messages=[str(error)])
             return Response(
                 resp.json(),
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                headers=self.headers,
+                headers=self.headers | {"WWW-Authenticate": "Bearer"},
+            )
+        except PermissionsError as error:
+            resp = ErrorResponse(messages=[str(error)])
+            return Response(
+                resp.json(),
+                status_code=status.HTTP_403_FORBIDDEN,
+                headers=self.headers | {"WWW-Authenticate": "Bearer"},
             )
         except ValidationError as error:
             resp = ErrorResponse(messages=[str(error)])
