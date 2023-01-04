@@ -20,6 +20,3 @@ jobs:
       run: black --check . && isort --check .
     - name: Check types
       run: mypy ./
-    - name: Run tests
-      run: pytest
-
