@@ -2,10 +2,10 @@ from fastapi.routing import APIRouter
 
 from apps.applets.api.applets import (
     create_applet,
-    update_applet,
     delete_applet_by_id,
     get_applet_by_id,
     get_applets,
+    update_applet,
 )
 
 router = APIRouter(prefix="/applets", tags=["Applets"])

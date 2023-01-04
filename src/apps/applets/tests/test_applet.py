@@ -74,7 +74,8 @@ class TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
-                            activity_guid="577dbbda-3afc-4962-842b-8d8d11588bfe"
+                            activity_guid="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
                         )
                     ],
                 )
@@ -148,7 +149,8 @@ class TestApplet(BaseTest):
                     items=[
                         dict(
                             id=2,
-                            activity_guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                            activity_guid="577dbbda-"
+                            "3afc-4962-842b-8d8d11588bfe",
                         )
                     ],
                 )
