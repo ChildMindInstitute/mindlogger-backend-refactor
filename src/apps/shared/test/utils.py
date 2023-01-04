@@ -11,7 +11,7 @@ async def update_sequence():
         query = text(
             f"""
         SELECT SETVAL('{name}_id_seq',
-            (SELECT COALESCE(MAX(id), 1) FROM "{name}"))
+            (SELECT COALESCE(MAX(id), 1) FROM "{name}"), false)
         """
         )
         await session.execute(query)

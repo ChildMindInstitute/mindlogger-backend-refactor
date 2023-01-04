@@ -33,8 +33,7 @@ class ActivityItemsCRUD(BaseCRUD[schemas.ActivityItemSchema]):
                         has_alert=item_create.has_alert,
                         has_score=item_create.has_score,
                         is_random=item_create.is_random,
-                        is_able_to_move_to_previous=item_create
-                        .is_able_to_move_to_previous,
+                        is_able_to_move_to_previous=item_create.is_able_to_move_to_previous,
                         has_text_response=item_create.has_text_response,
                         ordering=index + 1,
                     )

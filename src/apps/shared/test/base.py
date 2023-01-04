@@ -18,6 +18,9 @@ class BaseTest:
     async def initialize(self):
         await truncate_tables()
         await self.populate_db()
+
+    @pytest.fixture(autouse=True)
+    async def update_sequence(self):
         await update_sequence()
 
     async def populate_db(self):
