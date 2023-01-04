@@ -1,16 +1,16 @@
 """initial
 
-Revision ID: f98e76b4a5f2
+Revision ID: 548a51232367
 Revises: 
-Create Date: 2022-12-26 17:10:40.458276
+Create Date: 2023-01-04 11:58:28.396753
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "f98e76b4a5f2"
+revision = "548a51232367"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -70,7 +70,6 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
-        sa.Column("applet_id", sa.Integer(), nullable=False),
         sa.Column("guid", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("name", sa.String(length=100), nullable=True),
         sa.Column(
@@ -85,6 +84,7 @@ def upgrade() -> None:
         sa.Column("is_reviewable", sa.Boolean(), nullable=True),
         sa.Column("response_is_editable", sa.Boolean(), nullable=True),
         sa.Column("ordering", sa.REAL(), nullable=True),
+        sa.Column("applet_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
             ["applet_id"], ["applets.id"], ondelete="RESTRICT"
         ),
@@ -103,10 +103,10 @@ def upgrade() -> None:
             postgresql.JSONB(astext_type=sa.Text()),
             nullable=True,
         ),
-        sa.Column("applet_id", sa.Integer(), nullable=True),
         sa.Column("is_single_report", sa.Boolean(), nullable=True),
         sa.Column("hide_badge", sa.Boolean(), nullable=True),
         sa.Column("ordering", sa.REAL(), nullable=True),
+        sa.Column("applet_id", sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(
             ["applet_id"], ["applets.id"], ondelete="RESTRICT"
         ),
@@ -135,7 +135,6 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
-        sa.Column("activity_id", sa.Integer(), nullable=False),
         sa.Column(
             "question", postgresql.JSONB(astext_type=sa.Text()), nullable=True
         ),
@@ -153,6 +152,7 @@ def upgrade() -> None:
         sa.Column("is_able_to_move_to_previous", sa.Boolean(), nullable=True),
         sa.Column("has_text_response", sa.Boolean(), nullable=True),
         sa.Column("ordering", sa.REAL(), nullable=True),
+        sa.Column("activity_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
             ["activity_id"], ["activities.id"], ondelete="CASCADE"
         ),
@@ -164,9 +164,9 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
+        sa.Column("ordering", sa.REAL(), nullable=True),
         sa.Column("activity_flow_id", sa.Integer(), nullable=True),
         sa.Column("activity_id", sa.Integer(), nullable=True),
-        sa.Column("ordering", sa.REAL(), nullable=True),
         sa.ForeignKeyConstraint(
             ["activity_flow_id"], ["flows.id"], ondelete="RESTRICT"
         ),

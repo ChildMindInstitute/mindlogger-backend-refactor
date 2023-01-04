@@ -17,14 +17,14 @@ class TestClient:
     def _prepare_url(url, query):
         return f"{url}{urllib.parse.urlencode(query)}"
 
-    def _get_headers(self, headers: dict = None) -> dict:
+    def _get_headers(self, headers: dict | None = None) -> dict:
         headers_ = dict(self.headers)
         if headers:
             headers_.update(headers)
         return headers_
 
     @staticmethod
-    def _get_body(data: dict = None):
+    def _get_body(data: dict | None = None):
         if data:
             return json.dumps(data)
         return {}
@@ -32,9 +32,9 @@ class TestClient:
     async def post(
         self,
         url: str,
-        data: dict = None,
-        query: dict = None,
-        headers: dict = None,
+        data: dict | None = None,
+        query: dict | None = None,
+        headers: dict | None = None,
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
@@ -48,9 +48,9 @@ class TestClient:
     async def put(
         self,
         url: str,
-        data: dict = None,
-        query: dict = None,
-        headers: dict = None,
+        data: dict | None = None,
+        query: dict | None = None,
+        headers: dict | None = None,
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
@@ -62,7 +62,7 @@ class TestClient:
         return response
 
     async def get(
-        self, url: str, query: dict = None, headers: dict = None
+        self, url: str, query: dict | None = None, headers: dict | None = None
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
@@ -72,7 +72,7 @@ class TestClient:
         return response
 
     async def delete(
-        self, url: str, query: dict = None, headers: dict = None
+        self, url: str, query: dict | None = None, headers: dict | None = None
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)

@@ -1,14 +1,13 @@
 import uuid
 
+import sqlalchemy as sa
 from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Query
 
 import apps.activity_flows.db.schemas as schemas
 import apps.activity_flows.domain as domain
 from apps.activity_flows.crud.flow_item import FlowItemsCRUD
 from infrastructure.database import BaseCRUD
-import sqlalchemy as sa
 
 
 class FlowsCRUD(BaseCRUD[schemas.ActivityFlowSchema]):
@@ -153,7 +152,7 @@ class FlowsCRUD(BaseCRUD[schemas.ActivityFlowSchema]):
                 self.schema_class.applet_id == applet_id
             )
         )
-        query: Query = delete(self.schema_class).where(
+        query = delete(self.schema_class).where(
             self.schema_class.applet_id == applet_id
         )
         await self._execute(query)

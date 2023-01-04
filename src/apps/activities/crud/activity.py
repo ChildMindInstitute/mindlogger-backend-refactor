@@ -3,21 +3,70 @@ import uuid
 import pydantic.types as types
 import sqlalchemy as sa
 from sqlalchemy import delete
-from sqlalchemy.orm import Query
 
 import apps.activities.db.schemas as schemas
 import apps.activities.domain as domain
+from apps.activities.crud.activity_item import ActivityItemsCRUD
 from infrastructure.database import BaseCRUD
-from .activity_item import ActivityItemsCRUD
 
 
 class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
     schema_class = schemas.ActivitySchema
 
+    async def create_many(
+        self,
+        applet_id: int,
+        activities_create: types.List[domain.ActivityCreate],
+    ) -> list[domain.Activity]:
+        activity_schemas = []
+        activity_schema_map: dict[
+            uuid.UUID, list[domain.ActivityItemCreate]
+        ] = dict()
+        for index, activity_create in enumerate(activities_create):
+            activity_schema_map[activity_create.guid] = activity_create.items
+            activity_schemas.append(
+                schemas.ActivitySchema(
+                    applet_id=applet_id,
+                    guid=activity_create.guid,
+                    name=activity_create.name,
+                    description=activity_create.description,
+                    splash_screen=activity_create.splash_screen,
+                    image=activity_create.image,
+                    show_all_at_once=activity_create.show_all_at_once,
+                    is_skippable=activity_create.is_skippable,
+                    is_reviewable=activity_create.is_reviewable,
+                    response_is_editable=activity_create.response_is_editable,
+                    ordering=index + 1,
+                )
+            )
+
+        instances: list[schemas.ActivitySchema] = await self._create_many(
+            activity_schemas
+        )
+        activities: list[domain.Activity] = []
+        activity_guid_id_map: dict[uuid.UUID, int] = dict()
+        activity_id_map: dict[int, domain.Activity] = dict()
+
+        for instance in instances:
+            activity: domain.Activity = domain.Activity.from_orm(instance)
+            activities.append(activity)
+            activity_guid_id_map[activity.guid] = activity.id
+            activity_id_map[activity.id] = activity
+
+        items: list[
+            domain.ActivityItem
+        ] = await ActivityItemsCRUD().create_many(
+            activity_guid_id_map, activity_schema_map
+        )
+        for item in items:
+            activity_id_map[item.activity_id].items.append(item)
+
+        return activities
+
     async def update_many(
-            self,
-            applet_id: int,
-            activities_update: types.List[domain.ActivityUpdate],
+        self,
+        applet_id: int,
+        activities_update: types.List[domain.ActivityUpdate],
     ) -> list[domain.Activity]:
         await self.clear_applet_activities(applet_id)
 
@@ -65,16 +114,14 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
                 self.schema_class.applet_id == applet_id
             )
         )
-        query: Query = delete(self.schema_class).where(
+        query = delete(self.schema_class).where(
             self.schema_class.applet_id == applet_id
         )
         await self._execute(query)
 
     def _update_to_schema(
-            self,
-            applet_id: int,
-            index: int,
-            schema: domain.ActivityUpdate):
+        self, applet_id: int, index: int, schema: domain.ActivityUpdate
+    ):
         return self.schema_class(
             id=self._get_id_or_sequence(schema.id),
             applet_id=applet_id,

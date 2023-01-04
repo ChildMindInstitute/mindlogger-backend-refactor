@@ -4,11 +4,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from infrastructure.database.base import Base
 
 
-class AppletSchema(Base):
-    __tablename__ = "applets"
-
-    RETENTION_UNLIMITED = -1
-
+class _BaseAppletSchema:
     display_name = sa.Column(sa.String(length=100), unique=True)
     description = sa.Column(JSONB())
     about = sa.Column(JSONB())
@@ -27,3 +23,7 @@ class AppletSchema(Base):
     report_include_user_id = sa.Column(sa.Boolean(), default=False)
     report_include_case_id = sa.Column(sa.Boolean(), default=False)
     report_email_body = sa.Column(sa.Text())
+
+
+class AppletSchema(_BaseAppletSchema, Base):
+    __tablename__ = "applets"

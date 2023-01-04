@@ -1,13 +1,12 @@
 import uuid
 
-from sqlalchemy import delete
-from sqlalchemy.orm import Query
-
-from infrastructure.database import BaseCRUD
-import apps.activity_flows.db.schemas as schemas
-import apps.activity_flows.domain as domain
 import pydantic.types as types
 import sqlalchemy as sa
+from sqlalchemy import delete
+
+import apps.activity_flows.db.schemas as schemas
+import apps.activity_flows.domain as domain
+from infrastructure.database import BaseCRUD
 
 
 class FlowItemsCRUD(BaseCRUD[schemas.ActivityFlowItemSchema]):
@@ -82,7 +81,7 @@ class FlowItemsCRUD(BaseCRUD[schemas.ActivityFlowItemSchema]):
         return id_ or sa.Sequence(self.schema_class.sequence_name).next_value()
 
     async def clear_applet_flow_items(self, flow_id_query):
-        query: Query = delete(self.schema_class).where(
+        query = delete(self.schema_class).where(
             self.schema_class.activity_flow_id.in_(flow_id_query)
         )
         await self._execute(query)

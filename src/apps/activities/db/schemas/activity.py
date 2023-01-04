@@ -4,13 +4,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from infrastructure.database.base import Base
 
 
-class ActivitySchema(Base):
-    __tablename__ = "activities"
-
-    applet_id = sa.Column(
-        sa.ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
-    )
-
+class _BaseActivitySchema:
     guid = sa.Column(UUID(as_uuid=True))
     name = sa.Column(sa.String(length=100))
     description = sa.Column(JSONB())
@@ -21,3 +15,11 @@ class ActivitySchema(Base):
     is_reviewable = sa.Column(sa.Boolean(), default=False)
     response_is_editable = sa.Column(sa.Boolean(), default=False)
     ordering = sa.Column(sa.REAL())
+
+
+class ActivitySchema(Base, _BaseActivitySchema):
+    __tablename__ = "activities"
+
+    applet_id = sa.Column(
+        sa.ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
+    )
