@@ -1,5 +1,3 @@
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -11,7 +9,6 @@ class TestApplet(BaseTest):
     create_url = "applets/create"
     update_url = "applets/update"
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_creating_applet(self):
         await self.client.login(
@@ -86,7 +83,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 201, response.json()
 
         update_data = dict(
-            id=2,
+            id=1,
             display_name="User daily behave",
             description=dict(
                 en="Understand users behave",
@@ -98,7 +95,7 @@ class TestApplet(BaseTest):
             ),
             activities=[
                 dict(
-                    id=2,
+                    id=1,
                     name="Morning activity",
                     guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
                     description=dict(
@@ -140,7 +137,7 @@ class TestApplet(BaseTest):
             ],
             activity_flows=[
                 dict(
-                    id=2,
+                    id=1,
                     name="Morning questionnaire",
                     description=dict(
                         en="Understand how was the morning",
