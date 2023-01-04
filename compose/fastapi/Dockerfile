@@ -9,10 +9,7 @@ WORKDIR /app/
 
 RUN apt-get update \
     # dependencies for building Python packages
-    && apt-get install -y build-essential \
-    # Install prerequisites:
-    # curl
-    && apt-get install -y curl \
+    && apt-get install -y build-essential curl \
     # cleaning up unused files
     && rm -rf /var/lib/apt/lists/*
 
