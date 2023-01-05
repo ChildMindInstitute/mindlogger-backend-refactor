@@ -1,9 +1,4 @@
-from apps.shared.errors import (
-    BaseError,
-    NotFoundError,
-    PermissionsError,
-    ValidationError,
-)
+from apps.shared.errors import BaseError, NotFoundError, ValidationError
 
 
 class ThemesError(BaseError):
@@ -24,7 +19,7 @@ class ThemeNotFoundError(NotFoundError):
         super().__init__(message or fallback, *args)
 
 
-class ThemePermissionsError(PermissionsError):
+class ThemePermissionsError(BaseError):
     def __init__(self, message="", *args) -> None:
         fallback = "Not enough permissions"
         super().__init__(message or fallback, *args)

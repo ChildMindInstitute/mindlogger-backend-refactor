@@ -42,7 +42,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
     async def get_by_id(self, pk: int) -> Theme:
         return await self._fetch(key="id", value=pk)
 
-    async def all(self) -> list[PublicTheme]:
+    async def get_all(self) -> list[PublicTheme]:
         query: Query = select(self.schema_class).order_by(self.schema_class.id)
 
         result: Result = await self._execute(query)

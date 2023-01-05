@@ -32,7 +32,7 @@ async def get_themes(
 ) -> ResponseMulti[PublicTheme]:
     """Returns all themes."""
 
-    themes: list[PublicTheme] = await ThemesCRUD().all()
+    themes: list[PublicTheme] = await ThemesCRUD().get_all()
 
     return ResponseMulti(results=themes)
 
