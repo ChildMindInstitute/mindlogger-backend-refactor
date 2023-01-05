@@ -35,7 +35,7 @@ class _Cache:
 
     async def keys(self, pattern: str | None = None) -> list[str]:
         if pattern is None:
-            pattern = '.+'
+            pattern = ".+"
         keys = list(self._storage.keys())
         filtered_keys = []
         for key in keys:
@@ -131,7 +131,11 @@ class RedisCache:
         return True
 
     async def keys(self, key: str) -> list[str]:
+        if not self._cache:
+            return []
         return await self._cache.keys(key)
 
     async def mget(self, keys: list[str]) -> list[typing.Any]:
+        if not self._cache:
+            return []
         return await self._cache.mget(keys)

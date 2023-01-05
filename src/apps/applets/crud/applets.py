@@ -127,7 +127,8 @@ class AppletsCRUD(BaseCRUD[schemas.AppletSchema]):
     ) -> domain.applet.Applet:
         applet: domain.applet.Applet = await self.get_by_id(schema.id)
         await self._update(
-            lookup=("id", schema.id),
+            lookup="id",
+            value=schema.id,
             payload=dict(
                 display_name=schema.display_name,
                 description=schema.description,

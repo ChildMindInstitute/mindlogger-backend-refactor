@@ -5,6 +5,7 @@ from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
+from apps.shared.domain import InternalModel
 from infrastructure.database.base import Base
 from infrastructure.database.core import session_manager
 
@@ -27,20 +28,27 @@ class BaseCRUD(Generic[ConcreteSchema]):
         )
 
     async def _update(
-        self,
-        lookup: tuple[str, Any],
-        payload: dict[str, Any],
-    ) -> None:
+            self,
+            lookup: str,
+            value: Any,
+            update_schema: InternalModel | None = None,
+            payload: dict[str, Any] | None = None,
+    ) -> list:
         """Updates an existed instance of the model in the related table"""
 
-        query: Query = (
-            update(self.schema_class)
-            .where(getattr(self.schema_class, lookup[0]) == lookup[1])
-            .values(
-                **payload,
-            )
-        )
-        await self._execute(query)
+        query = update(self.schema_class)
+        query = query.where(getattr(self.schema_class, lookup) == value)
+        if update_schema:
+            query = query.values(**update_schema.dict())
+        elif payload:
+            query = query.values(**payload)
+        else:
+            return []
+
+        query = query.returning(self.schema_class.id)
+
+        result = await self._execute(query)
+        return result.fetchall()
 
     async def _get(self, key: str, value: Any) -> ConcreteSchema | None:
         """Return only one result by filters"""
@@ -60,7 +68,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         return schema
 
     async def _create_many(
-        self, schemas: list[ConcreteSchema]
+            self, schemas: list[ConcreteSchema]
     ) -> list[ConcreteSchema]:
         """Creates a new instance of the model in the related table"""
         self.session.add_all(schemas)

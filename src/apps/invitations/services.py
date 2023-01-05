@@ -36,7 +36,7 @@ class InvitationsCache(BaseCacheService[invitation_domain.Invitation]):
         return f"{email}:{key}"
 
     async def get(
-            self, email: str, key: uuid.UUID | str
+        self, email: str, key: uuid.UUID | str
     ) -> CacheEntry[invitation_domain.Invitation]:
         cache_record: dict = await self._get(self.build_key(email, key))
 
@@ -46,9 +46,9 @@ class InvitationsCache(BaseCacheService[invitation_domain.Invitation]):
         _key = self.build_key(email, key)
         await self._delete(_key)
 
-    async def all(self, email: str) -> list[
-        CacheEntry[invitation_domain.Invitation]
-    ]:
+    async def all(
+        self, email: str
+    ) -> list[CacheEntry[invitation_domain.Invitation]]:
         # Create a key to fetch all records for
         # the specific email prefix in a cache key
         key = f"{email}:*"
@@ -73,15 +73,12 @@ class InvitationsService:
     async def fetch_all(self) -> list[invitation_domain.Invitation]:
         cache_entries: list[
             CacheEntry[invitation_domain.Invitation]
-        ] = await self._cache.all(
-            email=self._user.email
-        )
+        ] = await self._cache.all(email=self._user.email)
 
         return [entry.instance for entry in cache_entries]
 
     async def send_invitation(
-            self,
-            schema: invitation_domain.InvitationRequest
+        self, schema: invitation_domain.InvitationRequest
     ) -> invitation_domain.Invitation:
         # Create internal Invitation object
         invitation = invitation_domain.Invitation(
@@ -120,17 +117,14 @@ class InvitationsService:
         return invitation
 
     async def approve(
-            self,
-            key: uuid.UUID
+        self, key: uuid.UUID
     ) -> invitation_domain.InviteApproveResponse:
         error: Exception = NotFoundError("No invitations found.")
 
         try:
             cache_entry: CacheEntry[
                 invitation_domain.Invitation
-            ] = await self._cache.get(
-                self._user.email, key
-            )
+            ] = await self._cache.get(self._user.email, key)
         except CacheNotFound:
             raise error
 
@@ -164,9 +158,7 @@ class InvitationsService:
         try:
             cache_entry: CacheEntry[
                 invitation_domain.Invitation
-            ] = await self._cache.get(
-                self._user.email, key
-            )
+            ] = await self._cache.get(self._user.email, key)
         except CacheNotFound:
             raise error
 
