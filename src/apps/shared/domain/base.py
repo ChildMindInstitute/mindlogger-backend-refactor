@@ -1,6 +1,16 @@
-from pydantic import BaseModel, Extra
+from pydantic import BaseConfig, BaseModel, Extra
 
-__all__ = ["InternalModel", "PublicModel"]
+__all__ = ["InternalModel", "PublicModel", "CamelCaseModel"]
+
+
+def to_camelcase(string: str) -> str:
+    resp = "".join(word.capitalize() for word in string.split("_"))
+    return resp
+
+
+class CamelCaseModel(BaseModel):
+    class Config(BaseConfig):
+        alias_generator = to_camelcase
 
 
 class InternalModel(BaseModel):
@@ -12,7 +22,7 @@ class InternalModel(BaseModel):
         validate_assignment = True
 
 
-class PublicModel(BaseModel):
+class PublicModel(CamelCaseModel):
     class Config:
         extra = Extra.ignore
         orm_mode = True
