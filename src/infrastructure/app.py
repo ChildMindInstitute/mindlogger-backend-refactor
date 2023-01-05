@@ -8,6 +8,7 @@ import apps.applets.router as applets
 import apps.authentication.router as auth
 import apps.healthcheck.router as healthcheck
 import apps.invitations.router as invitations
+import apps.themes.router as themes
 import apps.users.router as users
 import middlewares as middlewares_
 
@@ -17,6 +18,7 @@ routers: Iterable[APIRouter] = (
     auth.router,
     applets.router,
     users.router,
+    themes.router,
     invitations.router,
 )
 
