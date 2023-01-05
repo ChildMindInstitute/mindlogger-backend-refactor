@@ -23,7 +23,12 @@ routers: Iterable[APIRouter] = (
 # Declare your middlewares here
 middlewares: Iterable[Type[BaseHTTPMiddleware]] = (
     middlewares_.ErrorsHandlingMiddleware,
-    middlewares_.DatabaseTransactionMiddleware,
+    # TODO: Fix the transaction.commit decorator
+    # NOTE: This transaction manager makes the BaseCRUD service fail
+    #       Error: Can't operate on closed transaction inside context manager.
+    #              Please complete the context manager
+    #              before emitting further commands
+    # middlewares_.DatabaseTransactionMiddleware,
 )
 
 

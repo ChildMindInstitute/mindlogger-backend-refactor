@@ -64,7 +64,7 @@ class PublicUser(_UserBase, PublicModel):
 class ChangePasswordRequest(InternalModel):
     """This model represents change password data model."""
 
-    new_password: str
+    password: str
 
 
 class UserChangePassword(InternalModel):

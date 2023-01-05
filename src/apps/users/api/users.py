@@ -16,7 +16,7 @@ from apps.users.domain import (
 )
 
 
-async def create_user(
+async def user_create(
     user_create_schema: UserCreateRequest = Body(...),
 ) -> Response[PublicUser]:
     user_create = UserCreate(
@@ -34,7 +34,7 @@ async def create_user(
     return Response(result=public_user)
 
 
-async def get_user(
+async def user_retrieve(
     user: User = Depends(get_current_user),
 ) -> Response[PublicUser]:
     # Get public representation of the authenticated user
@@ -43,7 +43,7 @@ async def get_user(
     return Response(result=public_user)
 
 
-async def update_user(
+async def user_update(
     user: User = Depends(get_current_user),
     user_update_schema: UserUpdate = Body(...),
 ) -> Response[PublicUser]:
@@ -55,18 +55,23 @@ async def update_user(
     return Response(result=public_user)
 
 
-async def delete_user(user: User = Depends(get_current_user)) -> None:
+async def user_delete(user: User = Depends(get_current_user)) -> None:
     await UsersCRUD().delete(user)
     raise NotContentError
 
 
-async def change_password(
+async def password_update(
     user: User = Depends(get_current_user),
     schema: ChangePasswordRequest = Body(...),
-) -> None:
-    if schema.new_password:
-        password_hash: str = AuthenticationService.get_password_hash(
-            schema.new_password
-        )
-        hashed_password = UserChangePassword(hashed_password=password_hash)
-        await UsersCRUD().change_password(user, hashed_password)
+) -> Response[PublicUser]:
+    password_hash: str = AuthenticationService.get_password_hash(
+        schema.password
+    )
+    password = UserChangePassword(hashed_password=password_hash)
+
+    updated_user: User = await UsersCRUD().change_password(user, password)
+
+    # Create public representation of the internal user
+    public_user = PublicUser(**updated_user.dict())
+
+    return Response[PublicUser](result=public_user)
