@@ -10,7 +10,6 @@ import apps.healthcheck.router as healthcheck
 import apps.invitations.router as invitations
 import apps.themes.router as themes
 import apps.users.router as users
-import apps.activities.router as activities
 import middlewares as middlewares_
 
 # Declare your routers here
