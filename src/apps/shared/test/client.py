@@ -39,7 +39,7 @@ class TestClient:
             url = self._prepare_url(url, query)
         response = await self.client.post(
             url,
-            data=self._get_body(data),
+            content=self._get_body(data),
             headers=self._get_updated_headers(headers),
         )
         return response
@@ -55,7 +55,7 @@ class TestClient:
             url = self._prepare_url(url, query)
         response = await self.client.put(
             url,
-            data=self._get_body(data),
+            content=self._get_body(data),
             headers=self._get_updated_headers(headers),
         )
         return response

@@ -5,7 +5,7 @@ from infrastructure.database import transaction
 class TestApplet(BaseTest):
     fixtures = ["users/fixtures/users.json"]
 
-    login_url = "/auth/access-token"
+    login_url = "/auth/token"
     create_url = "applets/create"
     update_url = "applets/update"
 

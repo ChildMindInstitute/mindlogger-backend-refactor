@@ -1,16 +1,16 @@
 """initial
 
-Revision ID: 07915d7e47e9
+Revision ID: 701da205e3b7
 Revises: 
-Create Date: 2023-01-04 15:15:45.990604
+Create Date: 2023-01-05 14:04:27.706435
 
 """
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "07915d7e47e9"
+revision = "701da205e3b7"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -135,6 +135,26 @@ def upgrade() -> None:
         ),
     )
     op.create_table(
+        "themes",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), nullable=True),
+        sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column("is_deleted", sa.Boolean(), nullable=True),
+        sa.Column("name", sa.String(length=100), nullable=False),
+        sa.Column("logo", sa.String(length=100), nullable=True),
+        sa.Column("background_image", sa.String(length=100), nullable=True),
+        sa.Column("primary_color", sa.String(length=100), nullable=True),
+        sa.Column("secondary_color", sa.String(length=100), nullable=True),
+        sa.Column("tertiary_color", sa.String(length=100), nullable=True),
+        sa.Column("public", sa.Boolean(), nullable=True),
+        sa.Column("allow_rename", sa.Boolean(), nullable=True),
+        sa.Column("creator", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["creator"], ["users.id"], ondelete="RESTRICT"
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
         "user_applet_accesses",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=True),
@@ -202,6 +222,7 @@ def downgrade() -> None:
     op.drop_table("flow_items")
     op.drop_table("activity_items")
     op.drop_table("user_applet_accesses")
+    op.drop_table("themes")
     op.drop_table("reusable_item_choices")
     op.drop_table("flows")
     op.drop_table("activities")
