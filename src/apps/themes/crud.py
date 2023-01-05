@@ -24,7 +24,8 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
     async def _fetch(self, key: str, value: Any) -> Theme:
         """Fetch theme by id or display_name from the database."""
 
-        if key not in {"id"}:
+        ALLOWED_FIELDS = {"id"}
+        if key not in ALLOWED_FIELDS:
             raise ThemesError(
                 f"Can not make the looking up theme by {key} {value}"
             )
