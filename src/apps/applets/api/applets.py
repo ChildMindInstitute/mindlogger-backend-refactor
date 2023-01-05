@@ -32,11 +32,12 @@ async def create_applet(
 
 
 async def update_applet(
+    id_: int,
     user: User = Depends(get_current_user),
     schema: domain.applet_update.AppletUpdate = Body(...),
 ) -> Response[domain.applet.Applet]:
     applet: domain.applet.Applet = await AppletsCRUD().update_applet(
-        user.id, schema
+        user.id, id_, schema
     )
 
     return Response(result=domain.applet.Applet(**applet.dict()))

@@ -52,7 +52,9 @@ class AppletsCRUD(BaseCRUD[schemas.AppletSchema]):
         return applet
 
     async def get_by_id(self, id_: int) -> domain.applet.Applet:
-        return await self._fetch(key="id", value=id_)
+        applet = await self._fetch(key="id", value=id_)
+
+        return applet
 
     async def get_admin_applets(
         self, user_id_: int
@@ -117,18 +119,13 @@ class AppletsCRUD(BaseCRUD[schemas.AppletSchema]):
 
         await self._delete(key="id", value=id_)
 
-    async def delete_by_display_name(self, display_name: str):
-        """Delete applets by display_name."""
-
-        await self._delete(key="display_name", value=display_name)
-
     async def update_applet(
-        self, user_id: int, schema: domain.applet_update.AppletUpdate
+        self, user_id: int, pk: int, schema: domain.applet_update.AppletUpdate
     ) -> domain.applet.Applet:
-        applet: domain.applet.Applet = await self.get_by_id(schema.id)
+        applet: domain.applet.Applet = await self.get_by_id(pk)
         await self._update(
             lookup="id",
-            value=schema.id,
+            value=pk,
             payload=dict(
                 display_name=schema.display_name,
                 description=schema.description,
@@ -148,7 +145,7 @@ class AppletsCRUD(BaseCRUD[schemas.AppletSchema]):
             ),
         )
         instance = domain.applet.Applet(
-            id=schema.id,
+            id=pk,
             display_name=schema.display_name,
             description=schema.description,
             about=schema.about,

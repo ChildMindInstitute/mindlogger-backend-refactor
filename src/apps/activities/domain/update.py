@@ -5,7 +5,7 @@ __all__ = ["ActivityUpdate", "ActivityItemUpdate"]
 
 
 class ActivityItemUpdate(BaseModel):
-    id: int
+    id: int | None
     question: types.Dict[str, str]
     response_type: str
     answers: types.List[types.Any]
@@ -21,7 +21,7 @@ class ActivityItemUpdate(BaseModel):
 
 
 class ActivityUpdate(BaseModel):
-    id: int
+    id: int | None
     guid: types.UUID4
     name: str
     description: types.Dict[str, str]

@@ -1,6 +1,5 @@
 import uuid
 
-import sqlalchemy as sa
 from sqlalchemy import delete
 
 import apps.activities.db.schemas as schemas
@@ -64,9 +63,6 @@ class ActivityItemsCRUD(BaseCRUD[schemas.ActivityItemSchema]):
             items.append(domain.ActivityItem.from_orm(instance))
         return items
 
-    def _get_id_or_sequence(self, id_: int | None = None):
-        return id_ or sa.Sequence(self.schema_class.sequence_name).next_value()
-
     async def clear_applet_activity_items(self, activity_id_query):
         query = delete(self.schema_class).where(
             self.schema_class.activity_id.in_(activity_id_query)
@@ -77,7 +73,7 @@ class ActivityItemsCRUD(BaseCRUD[schemas.ActivityItemSchema]):
         self, activity_id: int, index: int, schema: domain.ActivityItemUpdate
     ):
         return self.schema_class(
-            id=self._get_id_or_sequence(schema.id),
+            id=schema.id or None,
             activity_id=activity_id,
             question=schema.question,
             response_type=schema.response_type,

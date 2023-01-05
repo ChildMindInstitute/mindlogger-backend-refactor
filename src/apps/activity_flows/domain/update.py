@@ -10,7 +10,7 @@ class ActivityFlowItemUpdate(BaseModel):
 
 
 class ActivityFlowUpdate(BaseModel):
-    id: int
+    id: int | None
     name: str
     description: types.Dict[str, str]
     is_single_report: bool = False

@@ -18,7 +18,7 @@ engine = create_async_engine(
     pool_pre_ping=True,
     echo=False,
     pool_size=settings.database.pool_size,
-    json_serializer=lambda x: json.dumps(x, ensure_ascii=False),
+    json_serializer=lambda x: json.dumps(x),
     json_deserializer=lambda x: json.loads(x),
 )
 
