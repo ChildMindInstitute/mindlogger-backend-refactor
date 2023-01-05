@@ -28,11 +28,11 @@ class BaseCRUD(Generic[ConcreteSchema]):
         )
 
     async def _update(
-            self,
-            lookup: str,
-            value: Any,
-            update_schema: InternalModel | None = None,
-            payload: dict[str, Any] | None = None,
+        self,
+        lookup: str,
+        value: Any,
+        update_schema: InternalModel | None = None,
+        payload: dict[str, Any] | None = None,
     ) -> list:
         """Updates an existed instance of the model in the related table"""
 
@@ -68,7 +68,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         return schema
 
     async def _create_many(
-            self, schemas: list[ConcreteSchema]
+        self, schemas: list[ConcreteSchema]
     ) -> list[ConcreteSchema]:
         """Creates a new instance of the model in the related table"""
         self.session.add_all(schemas)
