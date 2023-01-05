@@ -8,8 +8,12 @@ __all__ = [
     "UserCreate",
     "UserLoginRequest",
     "UserCreate",
+    "UserDelete",
     "User",
     "UserCreateRequest",
+    "UserUpdate",
+    "ChangePasswordRequest",
+    "UserChangePassword",
 ]
 
 
@@ -55,3 +59,15 @@ class PublicUser(_UserBase, PublicModel):
 
     full_name: str
     id: PositiveInt
+
+
+class ChangePasswordRequest(InternalModel):
+    """This model represents change password data model."""
+
+    new_password: str
+
+
+class UserChangePassword(InternalModel):
+    """This model represents user `update request` data model."""
+
+    hashed_password: str
