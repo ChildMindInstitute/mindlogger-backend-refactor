@@ -24,7 +24,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         """Executes the specified query and returns the result"""
         return await self.session.execute(
             query,
-            execution_options=immutabledict({"synchronize_session": "fetch"}),
+            execution_options=immutabledict({"synchronize_session": False}),
         )
 
     async def _update(

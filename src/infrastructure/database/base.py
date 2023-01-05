@@ -16,9 +16,5 @@ class _Base:
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
     is_deleted = Column(Boolean, default=False)
 
-    @classmethod
-    def sequence_name(cls):
-        return f"{cls.__tablename__}_id_seq"
-
 
 Base = declarative_base(cls=_Base, bind=engine.sync_engine)

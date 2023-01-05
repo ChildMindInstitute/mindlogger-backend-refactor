@@ -110,7 +110,7 @@ class FlowsCRUD(BaseCRUD[schemas.ActivityFlowSchema]):
             flow_schemas_map[guid] = flow_update.items
             flow_schemas.append(
                 schemas.ActivityFlowSchema(
-                    id=self._get_id_or_sequence(flow_update.id),
+                    id=flow_update.id or None,
                     name=flow_update.name,
                     guid=guid,
                     description=flow_update.description,
@@ -142,9 +142,6 @@ class FlowsCRUD(BaseCRUD[schemas.ActivityFlowSchema]):
         for item in items:
             flow_id_map[item.activity_flow_id].items.append(item)
         return flows
-
-    def _get_id_or_sequence(self, id_: int | None = None):
-        return id_ or sa.Sequence(self.schema_class.sequence_name).next_value()
 
     async def clear_applet_flows(self, applet_id):
         await FlowItemsCRUD().clear_applet_flow_items(

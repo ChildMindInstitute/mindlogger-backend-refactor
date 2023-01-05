@@ -77,10 +77,9 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
 
         for index, activity_update in enumerate(activities_update):
             activity_schema_map[activity_update.guid] = activity_update.items
-            if activity_update.id:
-                activity_schemas.append(
-                    self._update_to_schema(applet_id, index, activity_update)
-                )
+            activity_schemas.append(
+                self._update_to_schema(applet_id, index, activity_update)
+            )
 
         instances: list[schemas.ActivitySchema] = await self._create_many(
             activity_schemas
@@ -105,9 +104,6 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
 
         return activities
 
-    def _get_id_or_sequence(self, id_: int | None = None):
-        return id_ or sa.Sequence(self.schema_class.sequence_name).next_value()
-
     async def clear_applet_activities(self, applet_id):
         await ActivityItemsCRUD().clear_applet_activity_items(
             sa.select(self.schema_class.id).where(
@@ -123,7 +119,7 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
         self, applet_id: int, index: int, schema: domain.ActivityUpdate
     ):
         return self.schema_class(
-            id=self._get_id_or_sequence(schema.id),
+            id=schema.id or None,
             applet_id=applet_id,
             guid=schema.guid,
             name=schema.name,
@@ -136,3 +132,7 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
             response_is_editable=schema.response_is_editable,
             ordering=index + 1,
         )
+
+    async def get_by_applet_id(self, id_: int) -> list[domain.Activity]:
+
+        pass

@@ -7,7 +7,6 @@ from apps.shared.domain import InternalModel
 
 
 class AppletUpdate(InternalModel):
-    id: int
     display_name: str
     description: types.Dict[str, types.Any]
     about: types.Dict[str, types.Any]
