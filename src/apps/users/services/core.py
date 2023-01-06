@@ -31,7 +31,7 @@ class PasswordRecoveryService:
         ] = await self._cache.all(email=email)
 
         return [entry.instance for entry in cache_entries]
-
+    
     async def send_password_recovery(
         self, schema: PasswordRecoveryRequest
     ) -> PasswordRecoveryInfo:

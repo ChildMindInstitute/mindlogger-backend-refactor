@@ -50,7 +50,7 @@ class AuthenticationService:
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str):
         if not pwd_context.verify(plain_password, hashed_password):
-            raise BadCredentials("Invalid password")
+            raise BadCredentials
 
     @staticmethod
     def get_password_hash(password: str) -> str:

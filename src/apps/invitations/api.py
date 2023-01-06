@@ -71,5 +71,4 @@ async def decline_invite(
     """General endpoint to declnie the applet invitation."""
 
     await InvitationsService(user).decline(key)
-
     raise NotContentError

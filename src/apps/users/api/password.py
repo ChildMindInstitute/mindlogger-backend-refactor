@@ -20,9 +20,8 @@ async def password_update(
     user: User = Depends(get_current_user),
     schema: ChangePasswordRequest = Body(...),
 ) -> Response[PublicUser]:
-    """General endpoint for update password
-    for signin.
-    """
+    """General endpoint for update password for signin."""
+
     password_hash: str = AuthenticationService.get_password_hash(
         schema.password
     )
@@ -57,7 +56,7 @@ async def password_recovery_approve(
     """General endpoint to approve the password recovery."""
 
     # Approve the password recovery
-    # if data exists tokens are not expired
+    # NOTE: also check if the data exists and tokens are not expired
     user: User = await PasswordRecoveryService().approve(schema)
     public_user = PublicUser(**user.dict())
 
