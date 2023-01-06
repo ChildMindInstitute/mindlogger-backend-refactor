@@ -1,13 +1,13 @@
 from fastapi.routing import APIRouter
 
 from apps.users.api import (
+    password_recovery,
+    password_recovery_approve,
+    password_update,
     user_create,
     user_delete,
     user_retrieve,
     user_update,
-    password_update,
-    password_recovery,
-    password_recovery_approve,
 )
 
 router = APIRouter(prefix="/users", tags=["Users"])

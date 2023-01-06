@@ -4,10 +4,10 @@ from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.users.crud import UsersCRUD
 from apps.users.domain import (
-    User,
+    PASSWORD_RECOVERY_TEMPLATE,
     PasswordRecoveryInfo,
     PasswordRecoveryRequest,
-    PASSWORD_RECOVERY_TEMPLATE,
+    User,
 )
 from apps.users.services import PasswordRecoveryCache
 from config import settings
@@ -21,9 +21,9 @@ class PasswordRecoveryService:
         self._cache: PasswordRecoveryCache = PasswordRecoveryCache()
 
     async def fetch_all(self, email: str) -> list[PasswordRecoveryInfo]:
-        cache_entries: list[CacheEntry[PasswordRecoveryInfo]] = await self._cache.all(
-            email=email
-        )
+        cache_entries: list[
+            CacheEntry[PasswordRecoveryInfo]
+        ] = await self._cache.all(email=email)
 
         return [entry.instance for entry in cache_entries]
 
@@ -70,35 +70,3 @@ class PasswordRecoveryService:
         await service.send(message)
 
         return password_recovery_info
-
-    # async def approve(self, key: uuid.UUID) -> InviteApproveResponse:
-    #     error: Exception = NotFoundError("No invitations found.")
-    #
-    #     try:
-    #         cache_entry: CacheEntry[Invitation] = await self._cache.get(
-    #             self._user.email, key
-    #         )
-    #     except CacheNotFound:
-    #         raise error
-    #
-    #     # Get applet from the database
-    #     applet: Applet = await AppletsCRUD().get_by_id(
-    #         cache_entry.instance.applet_id
-    #     )
-    #
-    #     # Create a user_applet_access record
-    #     user_applet_access_create_schema = UserAppletAccessCreate(
-    #         user_id=self._user.id,
-    #         applet_id=cache_entry.instance.applet_id,
-    #         role=cache_entry.instance.role,
-    #     )
-    #     user_applet_access: UserAppletAccess = (
-    #         await UserAppletAccessCRUD().save(user_applet_access_create_schema)
-    #     )
-    #
-    #     # Delete cache entry
-    #     await self._cache.delete(email=self._user.email, key=key)
-    #
-    #     return InviteApproveResponse(
-    #         applet=applet, role=user_applet_access.role
-    #     )

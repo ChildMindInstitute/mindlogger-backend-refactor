@@ -6,12 +6,12 @@ from apps.shared.domain.response import Response
 from apps.users.crud import UsersCRUD
 from apps.users.domain import (
     ChangePasswordRequest,
+    PasswordRecoveryApproveRequest,
+    PasswordRecoveryInfo,
+    PasswordRecoveryRequest,
     PublicUser,
     User,
     UserChangePassword,
-    PasswordRecoveryInfo,
-    PasswordRecoveryRequest,
-    PasswordRecoveryApproveRequest,
 )
 from apps.users.services import PasswordRecoveryService
 
@@ -37,23 +37,21 @@ async def password_update(
 
 
 async def password_recovery(
-    schema: PasswordRecoveryRequest = Body(...)
+    schema: PasswordRecoveryRequest = Body(...),
 ) -> Response[PasswordRecoveryInfo]:
     """General endpoint for sending password recovery email
     and stored info in Redis.
     """
 
     # Send the password recovery the internal password recovery service
-    password_recovery_info: PasswordRecoveryInfo = await PasswordRecoveryService().send_password_recovery(
-        schema
+    password_recovery_info: PasswordRecoveryInfo = (
+        await PasswordRecoveryService().send_password_recovery(schema)
     )
 
-    return Response[PasswordRecoveryInfo](
-        result=password_recovery_info
-    )
+    return Response[PasswordRecoveryInfo](result=password_recovery_info)
 
 
 async def password_recovery_approve(
-    schema: PasswordRecoveryApproveRequest = Body(...)
+    schema: PasswordRecoveryApproveRequest = Body(...),
 ):
     pass
