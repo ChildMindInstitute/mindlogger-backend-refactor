@@ -45,9 +45,13 @@ async def delete_theme_by_id(pk: int, user: User = Depends(get_current_user)):
 async def update_theme_by_id(
     pk: int,
     user: User = Depends(get_current_user),
-    schema: ThemeUpdate = Body(...),
+    schema: ThemeRequest = Body(...),
 ) -> Response[PublicTheme]:
     theme: Theme = await ThemesCRUD().update(
-        pk=pk, update_schema=schema, creator_id=user.id
+        pk=pk,
+        update_schema=ThemeUpdate(
+            **schema.dict(), public=False, allow_rename=False
+        ),
+        creator_id=user.id,
     )
     return Response(result=PublicTheme(**theme.dict()))
