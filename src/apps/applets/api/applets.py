@@ -47,7 +47,7 @@ async def update_applet(
 async def get_applet_by_id(
     id_: int, user: User = Depends(get_current_user)
 ) -> Response[domain.applet.Applet]:
-    applet: domain.applet.Applet = await AppletsCRUD().get_by_id(id_=id_)
+    applet: domain.applet.Applet = await AppletsCRUD().get_full_by_id(id_=id_)
     public_applet = domain.applet.PublicApplet(**applet.dict())
     return Response(result=public_applet)
 

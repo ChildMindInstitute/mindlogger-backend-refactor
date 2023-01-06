@@ -58,9 +58,9 @@ class RedisCache:
     _instance: None = None
     configuration: dict = {}
     _cache: typing.Optional[aioredis.Redis] = None
-    host: typing.Optional[str] = None
-    port: typing.Optional[str] = None
-    db: typing.Optional[str] = None
+    host: str
+    port: int
+    db: int
     expire_duration: typing.Optional[int] = None
     env: str | None = None
 

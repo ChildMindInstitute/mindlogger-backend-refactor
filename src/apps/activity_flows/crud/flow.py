@@ -153,3 +153,19 @@ class FlowsCRUD(BaseCRUD[schemas.ActivityFlowSchema]):
             self.schema_class.applet_id == applet_id
         )
         await self._execute(query)
+
+    async def get_by_applet_id(self, applet_id) -> list[domain.ActivityFlow]:
+        flows: list[domain.ActivityFlow] = []
+        flow_map = dict()
+        items = await FlowItemsCRUD().get_by_applet_id(applet_id)
+
+        for item in items:
+            flow_id = item.activity_flow_id
+            if flow_id not in flow_map:
+                flow = domain.ActivityFlow.from_orm(item.activity_flow)
+                flow_map[flow_id] = flow
+                flows.append(flow)
+            flow_map[flow_id].items.append(
+                domain.ActivityFlowItem.from_orm(item)
+            )
+        return flows

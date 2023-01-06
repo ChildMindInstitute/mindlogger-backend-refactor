@@ -2,10 +2,12 @@ import uuid
 
 import pydantic.types as types
 import sqlalchemy as sa
+import sqlalchemy.orm
 from sqlalchemy import delete
 
 import apps.activity_flows.db.schemas as schemas
 import apps.activity_flows.domain as domain
+import apps.applets.db.schemas as applet_schemas
 from infrastructure.database import BaseCRUD
 
 
@@ -85,3 +87,31 @@ class FlowItemsCRUD(BaseCRUD[schemas.ActivityFlowItemSchema]):
             self.schema_class.activity_flow_id.in_(flow_id_query)
         )
         await self._execute(query)
+
+    async def get_by_applet_id(self, applet_id) -> list:
+        query: sa.orm.Query = sa.select(schemas.ActivityFlowItemSchema)
+        query = query.join(
+            schemas.ActivityFlowSchema,
+            (
+                schemas.ActivityFlowSchema.id
+                == schemas.ActivityFlowItemSchema.activity_flow_id
+            ),
+        )
+        query = query.join(
+            applet_schemas.AppletSchema,
+            (
+                applet_schemas.AppletSchema.id
+                == schemas.ActivityFlowSchema.applet_id
+            ),
+        )
+        query = query.where(applet_schemas.AppletSchema.id == applet_id)
+        query = query.order_by(
+            schemas.ActivityFlowSchema.ordering.asc(),
+            schemas.ActivityFlowItemSchema.ordering.asc(),
+        )
+        query = query.options(
+            sa.orm.joinedload(schemas.ActivityFlowItemSchema.activity_flow)
+        )
+        result = await self._execute(query)
+        results = result.scalars().all()
+        return results

@@ -53,7 +53,12 @@ class AppletsCRUD(BaseCRUD[schemas.AppletSchema]):
 
     async def get_by_id(self, id_: int) -> domain.applet.Applet:
         applet = await self._fetch(key="id", value=id_)
+        return applet
 
+    async def get_full_by_id(self, id_: int) -> domain.applet.Applet:
+        applet = await self._fetch(key="id", value=id_)
+        applet.activities = await ActivitiesCRUD().get_by_applet_id(id_)
+        applet.activity_flows = await FlowsCRUD().get_by_applet_id(id_)
         return applet
 
     async def get_admin_applets(

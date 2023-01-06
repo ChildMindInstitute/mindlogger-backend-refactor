@@ -2,7 +2,6 @@ import uuid
 
 import pydantic.types as types
 import sqlalchemy as sa
-from sqlalchemy import delete
 
 import apps.activities.db.schemas as schemas
 import apps.activities.domain as domain
@@ -110,7 +109,7 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
                 self.schema_class.applet_id == applet_id
             )
         )
-        query = delete(self.schema_class).where(
+        query = sa.delete(self.schema_class).where(
             self.schema_class.applet_id == applet_id
         )
         await self._execute(query)
@@ -134,5 +133,19 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
         )
 
     async def get_by_applet_id(self, id_: int) -> list[domain.Activity]:
+        activities = []
+        activity_maps = dict()
+        activity_items = await ActivityItemsCRUD().get_by_applet_id(id_)
 
-        pass
+        for activity_item in activity_items:
+            activity_id = activity_item.activity.id
+            if activity_id not in activity_maps:
+                activity = domain.Activity.from_orm(activity_item.activity)
+                activity_maps[activity_id] = activity
+                activities.append(activity)
+
+            activity_maps[activity_id].items.append(
+                domain.ActivityItem.from_orm(activity_item)
+            )
+
+        return activities

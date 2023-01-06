@@ -1,9 +1,11 @@
 import uuid
 
-from sqlalchemy import delete
+import sqlalchemy as sa
+import sqlalchemy.orm
 
 import apps.activities.db.schemas as schemas
 import apps.activities.domain as domain
+import apps.applets.db.schemas as applet_schemas
 from infrastructure.database import BaseCRUD
 
 
@@ -64,7 +66,7 @@ class ActivityItemsCRUD(BaseCRUD[schemas.ActivityItemSchema]):
         return items
 
     async def clear_applet_activity_items(self, activity_id_query):
-        query = delete(self.schema_class).where(
+        query = sa.delete(self.schema_class).where(
             self.schema_class.activity_id.in_(activity_id_query)
         )
         await self._execute(query)
@@ -72,7 +74,7 @@ class ActivityItemsCRUD(BaseCRUD[schemas.ActivityItemSchema]):
     def _update_to_schema(
         self, activity_id: int, index: int, schema: domain.ActivityItemUpdate
     ):
-        return self.schema_class(
+        return schemas.ActivityItemSchema(
             id=schema.id or None,
             activity_id=activity_id,
             question=schema.question,
@@ -89,3 +91,26 @@ class ActivityItemsCRUD(BaseCRUD[schemas.ActivityItemSchema]):
             has_text_response=schema.has_text_response,
             ordering=index + 1,
         )
+
+    async def get_by_applet_id(self, applet_id):
+        query = sa.select(schemas.ActivityItemSchema)
+        query = query.join(
+            schemas.ActivitySchema,
+            schemas.ActivitySchema.id
+            == schemas.ActivityItemSchema.activity_id,
+        )
+        query = query.join(
+            applet_schemas.AppletSchema,
+            applet_schemas.AppletSchema.id == schemas.ActivitySchema.applet_id,
+        )
+        query = query.where(applet_schemas.AppletSchema.id == applet_id)
+        query = query.order_by(
+            schemas.ActivitySchema.ordering.asc(),
+            schemas.ActivityItemSchema.ordering.asc(),
+        )
+        query = query.options(
+            sa.orm.joinedload(schemas.ActivityItemSchema.activity),
+        )
+        result = await self._execute(query)
+        results = result.scalars().all()
+        return results

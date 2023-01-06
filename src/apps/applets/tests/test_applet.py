@@ -1,5 +1,3 @@
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -11,6 +9,8 @@ class TestApplet(BaseTest):
         "applets/fixtures/applet_user_accesses.json",
         "activities/fixtures/activities.json",
         "activities/fixtures/activity_items.json",
+        "activity_flows/fixtures/activity_flows.json",
+        "activity_flows/fixtures/activity_flow_items.json",
     ]
 
     login_url = "/auth/token"
@@ -266,7 +266,6 @@ class TestApplet(BaseTest):
         assert response.json()["results"][0]["id"] == 1
         assert response.json()["results"][1]["id"] == 2
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_applet_detail(self):
         await self.client.login(
@@ -278,5 +277,8 @@ class TestApplet(BaseTest):
         result = response.json()["result"]
         assert result["id"] == 1
         assert result["display_name"] == "Applet 1"
-        # assert len(result['activities']) == 2
-        # assert len(result['activity_flows']) == 0
+        assert len(result["activities"]) == 1
+        assert len(result["activities"][0]["items"]) == 2
+        assert len(result["activity_flows"]) == 2
+        assert len(result["activity_flows"][0]["items"]) == 1
+        assert len(result["activity_flows"][1]["items"]) == 1

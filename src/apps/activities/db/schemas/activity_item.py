@@ -1,6 +1,8 @@
 import sqlalchemy as sa
+import sqlalchemy.orm
 from sqlalchemy.dialects.postgresql import JSONB
 
+from apps.activities.db.schemas.activity import ActivitySchema
 from infrastructure.database.base import Base
 
 
@@ -26,3 +28,4 @@ class ActivityItemSchema(_BaseActivityItemSchema, Base):
     activity_id = sa.Column(
         sa.ForeignKey("activities.id", ondelete="CASCADE"), nullable=False
     )
+    activity = sa.orm.relationship(ActivitySchema)

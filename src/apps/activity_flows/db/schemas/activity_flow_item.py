@@ -1,5 +1,7 @@
 import sqlalchemy as sa
+import sqlalchemy.orm
 
+from apps.activity_flows.db.schemas.activity_flow import ActivityFlowSchema
 from infrastructure.database import Base
 
 
@@ -14,3 +16,4 @@ class ActivityFlowItemSchema(_BaseActivityFlow, Base):
         sa.ForeignKey("flows.id", ondelete="RESTRICT")
     )
     activity_id = sa.Column(sa.Integer())
+    activity_flow = sa.orm.relation(ActivityFlowSchema)
