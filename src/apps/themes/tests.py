@@ -1,6 +1,7 @@
+from pydantic.color import Color
+
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
-from pydantic.color import Color
 
 
 class TestThemes(BaseTest):
