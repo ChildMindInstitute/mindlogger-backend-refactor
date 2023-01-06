@@ -6,10 +6,8 @@ from apps.shared.domain.response import Response
 from apps.shared.errors import NotContentError
 from apps.users.crud import UsersCRUD
 from apps.users.domain import (
-    ChangePasswordRequest,
     PublicUser,
     User,
-    UserChangePassword,
     UserCreate,
     UserCreateRequest,
     UserUpdate,
@@ -58,20 +56,3 @@ async def user_update(
 async def user_delete(user: User = Depends(get_current_user)) -> None:
     await UsersCRUD().delete(user)
     raise NotContentError
-
-
-async def password_update(
-    user: User = Depends(get_current_user),
-    schema: ChangePasswordRequest = Body(...),
-) -> Response[PublicUser]:
-    password_hash: str = AuthenticationService.get_password_hash(
-        schema.password
-    )
-    password = UserChangePassword(hashed_password=password_hash)
-
-    updated_user: User = await UsersCRUD().change_password(user, password)
-
-    # Create public representation of the internal user
-    public_user = PublicUser(**updated_user.dict())
-
-    return Response[PublicUser](result=public_user)

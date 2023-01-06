@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, EmailStr
 from pydantic.types import PositiveInt
 
@@ -14,6 +16,10 @@ __all__ = [
     "UserUpdate",
     "ChangePasswordRequest",
     "UserChangePassword",
+    "PasswordRecoveryRequest",
+    "PasswordRecoveryInfo",
+    "PASSWORD_RECOVERY_TEMPLATE",
+    "PasswordRecoveryApproveRequest",
 ]
 
 
@@ -71,3 +77,36 @@ class UserChangePassword(InternalModel):
     """This model represents user `update request` data model."""
 
     hashed_password: str
+
+
+class PasswordRecoveryRequest(InternalModel):
+    """This model represents password recovery request
+    for password recover.
+    """
+
+    email: EmailStr
+
+
+class PasswordRecoveryInfo(InternalModel):
+    """This is a password recovery representation
+    for internal needs.
+    """
+
+    email: EmailStr
+    user_id: int
+    key: UUID
+
+
+PASSWORD_RECOVERY_TEMPLATE = """
+You have received this email to recovery your password.
+Please follow the link: {link}
+"""
+
+
+class PasswordRecoveryApproveRequest(InternalModel):
+    """This model represents password recovery approve request
+    for password recover.
+    """
+
+    token: UUID
+    password: str
