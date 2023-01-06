@@ -108,5 +108,6 @@ class PasswordRecoveryApproveRequest(InternalModel):
     for password recover.
     """
 
-    token: UUID
+    email: EmailStr
+    key: UUID
     password: str

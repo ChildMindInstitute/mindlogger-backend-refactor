@@ -67,7 +67,7 @@ async def approve_invite(
 
 async def decline_invite(
     key: UUID, user: User = Depends(get_current_user)
-) -> Response[InviteApproveResponse]:
+) -> None:
     """General endpoint to declnie the applet invitation."""
 
     await InvitationsService(user).decline(key)

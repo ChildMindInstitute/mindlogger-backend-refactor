@@ -53,5 +53,12 @@ async def password_recovery(
 
 async def password_recovery_approve(
     schema: PasswordRecoveryApproveRequest = Body(...),
-):
-    pass
+) -> Response[PublicUser]:
+    """General endpoint to approve the password recovery."""
+
+    # Approve the password recovery
+    # if data exists tokens are not expired
+    user: User = await PasswordRecoveryService().approve(schema)
+    public_user = PublicUser(**user.dict())
+
+    return Response[PublicUser](result=public_user)
