@@ -3,6 +3,11 @@ from pydantic import BaseModel, Extra
 __all__ = ["InternalModel", "PublicModel"]
 
 
+def to_camelcase(string: str) -> str:
+    resp = "".join(word.capitalize() for word in string.split("_"))
+    return resp
+
+
 class InternalModel(BaseModel):
     class Config:
         extra = Extra.forbid
@@ -19,3 +24,4 @@ class PublicModel(BaseModel):
         use_enum_values = True
         allow_population_by_field_name = True
         validate_assignment = True
+        alias_generator = to_camelcase
