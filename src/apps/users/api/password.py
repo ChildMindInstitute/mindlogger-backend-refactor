@@ -7,7 +7,6 @@ from apps.users.crud import UsersCRUD
 from apps.users.domain import (
     ChangePasswordRequest,
     PasswordRecoveryApproveRequest,
-    PasswordRecoveryInfo,
     PasswordRecoveryRequest,
     PublicUser,
     User,
@@ -37,17 +36,17 @@ async def password_update(
 
 async def password_recovery(
     schema: PasswordRecoveryRequest = Body(...),
-) -> Response[PasswordRecoveryInfo]:
+) -> Response[PublicUser]:
     """General endpoint for sending password recovery email
     and stored info in Redis.
     """
 
     # Send the password recovery the internal password recovery service
-    password_recovery_info: PasswordRecoveryInfo = (
+    public_user: PublicUser = (
         await PasswordRecoveryService().send_password_recovery(schema)
     )
 
-    return Response[PasswordRecoveryInfo](result=password_recovery_info)
+    return Response[PublicUser](result=public_user)
 
 
 async def password_recovery_approve(
@@ -57,7 +56,6 @@ async def password_recovery_approve(
 
     # Approve the password recovery
     # NOTE: also check if the data exists and tokens are not expired
-    user: User = await PasswordRecoveryService().approve(schema)
-    public_user = PublicUser(**user.dict())
+    public_user: PublicUser = await PasswordRecoveryService().approve(schema)
 
     return Response[PublicUser](result=public_user)

@@ -1,3 +1,4 @@
+from typing import NoReturn
 from uuid import UUID
 
 from fastapi import Body, Depends
@@ -67,7 +68,7 @@ async def approve_invite(
 
 async def decline_invite(
     key: UUID, user: User = Depends(get_current_user)
-) -> None:
+) -> NoReturn:
     """General endpoint to declnie the applet invitation."""
 
     await InvitationsService(user).decline(key)

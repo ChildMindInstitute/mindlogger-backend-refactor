@@ -10,6 +10,7 @@ from apps.users.domain import (
     PasswordRecoveryApproveRequest,
     PasswordRecoveryInfo,
     PasswordRecoveryRequest,
+    PublicUser,
     User,
     UserChangePassword,
 )
@@ -31,16 +32,19 @@ class PasswordRecoveryService:
         ] = await self._cache.all(email=email)
 
         return [entry.instance for entry in cache_entries]
-    
+
     async def send_password_recovery(
         self, schema: PasswordRecoveryRequest
-    ) -> PasswordRecoveryInfo:
+    ) -> PublicUser:
 
         user: User = await UsersCRUD().get_by_email(schema.email)
 
         # If already exist password recovery for this user in Redis,
         # delete old password recovery, before generate and send new.
-        await self._cache.delete(email=user.email)
+        try:
+            await self._cache.delete_all_entries(email=schema.email)
+        except CacheNotFound:
+            pass
 
         password_recovery_info = PasswordRecoveryInfo(
             email=user.email,
@@ -69,14 +73,19 @@ class PasswordRecoveryService:
                 link=(
                     f"{settings.service.urls.frontend.base}"
                     f"/{settings.service.urls.frontend.password_recovery_send}"
+                    f"/{password_recovery_info.key}"
                 ),
             ),
         )
         await service.send(message)
 
-        return password_recovery_info
+        public_user = PublicUser(**user.dict())
 
-    async def approve(self, schema: PasswordRecoveryApproveRequest) -> User:
+        return public_user
+
+    async def approve(
+        self, schema: PasswordRecoveryApproveRequest
+    ) -> PublicUser:
         error: Exception = NotFoundError("Password recovery key not found")
 
         try:
@@ -99,7 +108,12 @@ class PasswordRecoveryService:
             user, user_change_password_schema
         )
 
-        # Delete cache entry
-        await self._cache.delete(email=user.email)
+        public_user = PublicUser(**user.dict())
 
-        return user
+        # Delete cache entries
+        try:
+            await self._cache.delete_all_entries(email=schema.email)
+        except CacheNotFound:
+            pass
+
+        return public_user

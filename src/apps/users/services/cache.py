@@ -25,11 +25,6 @@ class PasswordRecoveryCache(BaseCacheService[PasswordRecoveryInfo]):
 
         return f"{email}:{key}"
 
-    def build_key_for_delete(self, email: str) -> str:
-        """Returns a key with the additional namespace for this cache."""
-
-        return f"{email}:*"
-
     async def get(
         self,
         email: str,
@@ -39,9 +34,8 @@ class PasswordRecoveryCache(BaseCacheService[PasswordRecoveryInfo]):
 
         return CacheEntry[PasswordRecoveryInfo](**cache_record)
 
-    async def delete(self, email: str) -> None:
-        _key = self.build_key_for_delete(email)
-        await self._delete(_key)
+    async def delete(self, email: str, key: uuid.UUID | str):
+        await self._delete(self.build_key(email, key))
 
     async def all(self, email: str) -> list[CacheEntry[PasswordRecoveryInfo]]:
         # Create a key to fetch all records for
@@ -50,7 +44,7 @@ class PasswordRecoveryCache(BaseCacheService[PasswordRecoveryInfo]):
 
         # Fetch keys for retrieving
         if not (keys := await self.redis_client.keys(self._build_key(key))):
-            raise CacheNotFound(f"There is no invitations for {email}")
+            raise CacheNotFound(f"There is no password recovery for {email}")
 
         results: list[bytes] = await self.redis_client.mget(keys)
 
@@ -58,3 +52,15 @@ class PasswordRecoveryCache(BaseCacheService[PasswordRecoveryInfo]):
             CacheEntry[PasswordRecoveryInfo](**json.loads(result))
             for result in results
         ]
+
+    async def delete_all_entries(self, email: str):
+        try:
+            cache_entries: list[
+                CacheEntry[PasswordRecoveryInfo]
+            ] = await self.all(email=email)
+        except CacheNotFound:
+            raise
+        for cache_entry in cache_entries:
+            await self.delete(
+                email=cache_entry.instance.email, key=cache_entry.instance.key
+            )

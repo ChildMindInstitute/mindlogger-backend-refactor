@@ -97,6 +97,7 @@ class PasswordRecoveryInfo(InternalModel):
     key: UUID
 
 
+# NOTE: This message is not aligned yet. So, the mocked is used.
 PASSWORD_RECOVERY_TEMPLATE = """
 You have received this email to recovery your password.
 Please follow the link: {link}
