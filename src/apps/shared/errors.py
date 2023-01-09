@@ -25,3 +25,9 @@ class ValidationError(BaseError):
     def __init__(self, message="", *args) -> None:
         fallback = "Validation error"
         super().__init__(message or fallback, *args)
+
+
+class PermissionsError(BaseError):
+    def __init__(self, message="", *args) -> None:
+        fallback = "Permissions error"
+        super().__init__(message or fallback, *args)
