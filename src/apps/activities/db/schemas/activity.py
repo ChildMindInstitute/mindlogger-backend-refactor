@@ -23,3 +23,14 @@ class ActivitySchema(Base, _BaseActivitySchema):
     applet_id = sa.Column(
         sa.ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
     )
+
+
+class ActivityHistorySchema(Base, _BaseActivitySchema):
+    __tablename__ = 'activity_histories'
+
+    id = sa.Column(sa.Integer())
+    id_version = sa.Column(sa.String, primary_key=True)
+    applet_id = sa.Column(
+        sa.ForeignKey("applet_histories.id_version", ondelete="RESTRICT"),
+        nullable=False
+    )

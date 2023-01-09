@@ -27,3 +27,11 @@ class _BaseAppletSchema:
 
 class AppletSchema(_BaseAppletSchema, Base):
     __tablename__ = "applets"
+
+
+class AppletHistorySchema(_BaseAppletSchema, Base):
+    __tablename__ = "applet_histories"
+
+    id_version = sa.Column(sa.String(), primary_key=True)
+    id = sa.Column(sa.Integer())
+    display_name = sa.Column(sa.String(length=100))

@@ -17,3 +17,14 @@ class ActivityFlowItemSchema(_BaseActivityFlow, Base):
     )
     activity_id = sa.Column(sa.Integer())
     activity_flow = sa.orm.relation(ActivityFlowSchema)
+
+
+class ActivityFlowItemHistorySchema(_BaseActivityFlow, Base):
+    __tablename__ = "flow_item_histories"
+
+    id_version = sa.Column(sa.String(), primary_key=True)
+    id = sa.Column(sa.Integer())
+    activity_flow_id = sa.Column(
+        sa.ForeignKey("flow_histories.id_version", ondelete="RESTRICT")
+    )
+    activity_id = sa.Column(sa.String())
