@@ -41,10 +41,7 @@ class PasswordRecoveryService:
 
         # If already exist password recovery for this user in Redis,
         # delete old password recovery, before generate and send new.
-        try:
-            await self._cache.delete_all_entries(email=schema.email)
-        except CacheNotFound:
-            pass
+        await self._cache.delete_all_entries(email=schema.email)
 
         password_recovery_info = PasswordRecoveryInfo(
             email=user.email,
@@ -111,9 +108,6 @@ class PasswordRecoveryService:
         public_user = PublicUser(**user.dict())
 
         # Delete cache entries
-        try:
-            await self._cache.delete_all_entries(email=schema.email)
-        except CacheNotFound:
-            pass
+        await self._cache.delete_all_entries(email=schema.email)
 
         return public_user

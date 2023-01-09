@@ -58,9 +58,10 @@ class PasswordRecoveryCache(BaseCacheService[PasswordRecoveryInfo]):
             cache_entries: list[
                 CacheEntry[PasswordRecoveryInfo]
             ] = await self.all(email=email)
+            for cache_entry in cache_entries:
+                await self.delete(
+                    email=cache_entry.instance.email,
+                    key=cache_entry.instance.key,
+                )
         except CacheNotFound:
-            raise
-        for cache_entry in cache_entries:
-            await self.delete(
-                email=cache_entry.instance.email, key=cache_entry.instance.key
-            )
+            pass
