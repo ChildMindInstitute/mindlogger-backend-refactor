@@ -70,5 +70,7 @@ settings = Settings(
         "applets",
         "activities",
         "logs",
+        "activity_flows",
+        "themes",
     ],
 )

@@ -1,7 +1,9 @@
 import datetime
+import re
 import typing
 
 import aioredis
+from aioredis.connection import EncodableT
 from sentry_sdk import capture_exception
 
 from config import settings
@@ -27,6 +29,27 @@ class _Cache:
         ]
         return True
 
+    async def delete(self, key: str) -> bool:
+        self._storage.pop(key)
+        return True
+
+    async def keys(self, pattern: str | None = None) -> list[str]:
+        if pattern is None:
+            pattern = ".+"
+        keys = list(self._storage.keys())
+        filtered_keys = []
+        for key in keys:
+            is_match = re.match(pattern, key)
+            if is_match:
+                filtered_keys.append(key)
+        return filtered_keys
+
+    async def mget(self, keys) -> list[typing.Any]:
+        results = []
+        for key in keys:
+            results.append(self._storage.get(key))
+        return results
+
 
 class RedisCache:
     """Singleton Redis cache client"""
@@ -46,13 +69,13 @@ class RedisCache:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, env: str = "", **kwargs):
+    def __init__(self, **kwargs):
 
         if self._initialized:
             return
 
         self.configuration = dict()
-        self.env = env
+        self.env = settings.env
         self.host = settings.redis.host
         self.port = settings.redis.port
         self.db = settings.redis.db
@@ -93,10 +116,26 @@ class RedisCache:
         except aioredis.RedisError:
             return None
 
-    async def set(self, key: str, val: str, expire_after=None) -> bool:
+    async def set(self, key: str, value: EncodableT, ex=None) -> bool:
         if not self._cache:
             return False
-        if not expire_after:
-            expire_after = self.expire_duration
-        result = await self._cache.set(key, val, ex=expire_after)
+        if not ex:
+            ex = self.expire_duration
+        result = await self._cache.set(key, value, ex=ex)
         return result
+
+    async def delete(self, key) -> bool:
+        if not self._cache:
+            return False
+        await self._cache.delete(key)
+        return True
+
+    async def keys(self, key: str) -> list[str]:
+        if not self._cache:
+            return []
+        return await self._cache.keys(key)
+
+    async def mget(self, keys: list[str]) -> list[typing.Any]:
+        if not self._cache:
+            return []
+        return await self._cache.mget(keys)
