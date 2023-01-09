@@ -56,10 +56,8 @@ async def refresh_access_token(
         if not (user_id := payload.get("sub")):
             raise refresh_token_not_correct
 
-    except JWTError as error:
-        raise BadCredentials(
-            message="Refresh token is invalid", error=str(error)
-        )
+    except JWTError:
+        raise BadCredentials(message="Refresh token is invalid")
 
     access_token = AuthenticationService.create_access_token(
         {"sub": str(user_id)}

@@ -19,6 +19,6 @@ class PermissionsError(BaseError):
 
 
 class BadCredentials(ValidationError):
-    def __init__(self, message="", error="", *args) -> None:
+    def __init__(self, message="", *args) -> None:
         fallback = "Bad credentials"
-        super().__init__(message or fallback, error, *args)
+        super().__init__(message or fallback, *args)

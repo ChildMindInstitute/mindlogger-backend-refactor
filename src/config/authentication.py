@@ -17,8 +17,14 @@ class RefreshTokenSettings(BaseModel):
     expiration: int = 540
 
 
+class PasswordRecoverSettings(BaseModel):
+    # Set in seconds
+    expiration: int = 600
+
+
 class AuthenticationSettings(BaseModel):
     access_token: AccessTokenSettings = AccessTokenSettings()
     refresh_token: RefreshTokenSettings = RefreshTokenSettings()
     algorithm: str = "HS256"
     token_type: str = "Bearer"
+    password_recover: PasswordRecoverSettings = PasswordRecoverSettings()
