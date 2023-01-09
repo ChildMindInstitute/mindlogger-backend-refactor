@@ -1,7 +1,13 @@
 from typing import Any
 
 from apps.users.db.schemas import UserSchema
-from apps.users.domain import User, UserCreate, UserDelete, UserUpdate
+from apps.users.domain import (
+    User,
+    UserChangePassword,
+    UserCreate,
+    UserDelete,
+    UserUpdate,
+)
 from apps.users.errors import UserIsDeletedError, UserNotFound, UsersError
 from infrastructure.database.crud import BaseCRUD
 
@@ -70,4 +76,14 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         # Create internal data model
         user = await self.get_by_id(pk)
 
+        return user
+
+    async def change_password(
+        self, user: User, update_schema: UserChangePassword
+    ) -> User:
+        # Update user in database
+        instance: UserSchema = await self._update(
+            lookup="id", value=user.id, update_schema=update_schema
+        )
+        user = User.from_orm(instance)
         return user
