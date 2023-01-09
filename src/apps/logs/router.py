@@ -7,5 +7,5 @@ from apps.logs.api.notification import (
 
 router = APIRouter(prefix="/logs", tags=["Logs"])
 
-router.get("/notification")(get_notification_logs)
-router.post("/notification")(create_notification_log)
+router.get("/notification", status_code=200)(get_notification_logs)
+router.post("/notification", status_code=201)(create_notification_log)

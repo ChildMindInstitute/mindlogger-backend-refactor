@@ -1,7 +1,7 @@
 """notification log schema
 
 Revision ID: 98bd718c656c
-Revises: b195b72b002f
+Revises: 701da205e3b7
 Create Date: 2022-12-30 06:57:53.883306
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "98bd718c656c"
-down_revision = "b195b72b002f"
+down_revision = "701da205e3b7"
 branch_labels = None
 depends_on = None
 
