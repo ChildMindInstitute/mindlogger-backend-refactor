@@ -1,8 +1,8 @@
 from pydantic import Field
 from pydantic.types import PositiveInt
 
-from apps.activities.domain import Activity
-from apps.activity_flows.domain import ActivityFlow
+from apps.activities.domain import Activity, PublicActivity
+from apps.activity_flows.domain import ActivityFlow, PublicActivityFlow
 from apps.shared import domain
 
 
@@ -44,8 +44,8 @@ class PublicApplet(domain.PublicModel):
     report_include_case_id: bool = False
     report_email_body: str = ""
 
-    activities: list[Activity] = Field(default_factory=list)
-    activity_flows: list[ActivityFlow] = Field(default_factory=list)
+    activities: list[PublicActivity] = Field(default_factory=list)
+    activity_flows: list[PublicActivityFlow] = Field(default_factory=list)
 
     def __str__(self) -> str:
         return self.display_name

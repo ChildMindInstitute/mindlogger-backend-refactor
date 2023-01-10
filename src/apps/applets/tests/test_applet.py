@@ -262,9 +262,9 @@ class TestApplet(BaseTest):
         response = await self.client.get(self.applet_list_url)
 
         assert response.status_code == 200
-        assert len(response.json()["results"]) == 2
-        assert response.json()["results"][0]["id"] == 1
-        assert response.json()["results"][1]["id"] == 2
+        assert len(response.json()["Results"]) == 2
+        assert response.json()["Results"][0]["Id"] == 1
+        assert response.json()["Results"][1]["Id"] == 2
 
     @transaction.rollback
     async def test_applet_detail(self):
@@ -274,11 +274,11 @@ class TestApplet(BaseTest):
         response = await self.client.get(self.applet_detail_url.format(pk=1))
 
         assert response.status_code == 200
-        result = response.json()["result"]
-        assert result["id"] == 1
-        assert result["display_name"] == "Applet 1"
-        assert len(result["activities"]) == 1
-        assert len(result["activities"][0]["items"]) == 2
-        assert len(result["activity_flows"]) == 2
-        assert len(result["activity_flows"][0]["items"]) == 1
-        assert len(result["activity_flows"][1]["items"]) == 1
+        result = response.json()["Result"]
+        assert result["Id"] == 1
+        assert result["DisplayName"] == "Applet 1"
+        assert len(result["Activities"]) == 1
+        assert len(result["Activities"][0]["Items"]) == 2
+        assert len(result["ActivityFlows"]) == 2
+        assert len(result["ActivityFlows"][0]["Items"]) == 1
+        assert len(result["ActivityFlows"][1]["Items"]) == 1

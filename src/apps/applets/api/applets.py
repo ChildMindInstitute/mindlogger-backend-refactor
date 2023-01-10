@@ -4,6 +4,7 @@ from apps.applets.crud.applets import AppletsCRUD
 from apps.applets.crud.roles import UserAppletAccessCRUD
 from apps.applets.domain import (
     Applet,
+    PublicApplet,
     AppletCreate,
     AppletUpdate,
     UserAppletAccessCreate,
@@ -18,9 +19,9 @@ from apps.users.domain import User
 # TODO: Add logic to allow to create applets by permissions
 # TODO: Restrict by admin
 async def applet_create(
-    user: User = Depends(get_current_user),
-    schema: AppletCreate = Body(...),
-) -> Response[Applet]:
+        user: User = Depends(get_current_user),
+        schema: AppletCreate = Body(...),
+) -> Response[PublicApplet]:
     applet: Applet = await AppletsCRUD().save(user.id, schema=schema)
 
     await UserAppletAccessCRUD().save(
@@ -31,33 +32,35 @@ async def applet_create(
         )
     )
 
-    return Response(result=Applet(**applet.dict()))
+    return Response(result=PublicApplet(**applet.dict()))
 
 
 async def applet_update(
-    id_: int,
-    user: User = Depends(get_current_user),
-    schema: AppletUpdate = Body(...),
-) -> Response[Applet]:
+        id_: int,
+        user: User = Depends(get_current_user),
+        schema: AppletUpdate = Body(...),
+) -> Response[PublicApplet]:
     applet: Applet = await AppletsCRUD().update_applet(user.id, id_, schema)
 
-    return Response(result=Applet(**applet.dict()))
+    return Response(result=PublicApplet(**applet.dict()))
 
 
 # TODO: Add logic to return concrete applets by user
 async def applet_retrieve(
-    id_: int, user: User = Depends(get_current_user)
-) -> Response[Applet]:
+        id_: int, user: User = Depends(get_current_user)
+) -> Response[PublicApplet]:
     applet: Applet = await AppletsCRUD().get_full_by_id(id_=id_)
-    return Response(result=applet)
+    return Response(result=PublicApplet(**applet.dict()))
 
 
 async def applet_list(
-    user: User = Depends(get_current_user),
+        user: User = Depends(get_current_user),
 ) -> ResponseMulti[Applet]:
     applets: list[Applet] = await AppletsCRUD().get_admin_applets(user.id)
-
-    return ResponseMulti(results=applets)
+    public_applets: list[PublicApplet] = []
+    for applet in applets:
+        public_applets.append(PublicApplet(**applet.dict()))
+    return ResponseMulti(results=public_applets)
 
 
 # TODO: Restrict by permissions
