@@ -82,8 +82,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         self, user: User, update_schema: UserChangePassword
     ) -> User:
         # Update user in database
-        instance: UserSchema = await self._update(
+        [pk] = await self._update(
             lookup="id", value=user.id, update_schema=update_schema
         )
-        user = User.from_orm(instance)
-        return user
+        return await self._fetch("id", pk)

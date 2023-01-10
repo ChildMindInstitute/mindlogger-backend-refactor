@@ -4,9 +4,9 @@ from apps.applets.crud.applets import AppletsCRUD
 from apps.applets.crud.roles import UserAppletAccessCRUD
 from apps.applets.domain import (
     Applet,
-    PublicApplet,
     AppletCreate,
     AppletUpdate,
+    PublicApplet,
     UserAppletAccessCreate,
 )
 from apps.applets.domain.constants import Role
@@ -19,8 +19,8 @@ from apps.users.domain import User
 # TODO: Add logic to allow to create applets by permissions
 # TODO: Restrict by admin
 async def applet_create(
-        user: User = Depends(get_current_user),
-        schema: AppletCreate = Body(...),
+    user: User = Depends(get_current_user),
+    schema: AppletCreate = Body(...),
 ) -> Response[PublicApplet]:
     applet: Applet = await AppletsCRUD().save(user.id, schema=schema)
 
@@ -36,9 +36,9 @@ async def applet_create(
 
 
 async def applet_update(
-        id_: int,
-        user: User = Depends(get_current_user),
-        schema: AppletUpdate = Body(...),
+    id_: int,
+    user: User = Depends(get_current_user),
+    schema: AppletUpdate = Body(...),
 ) -> Response[PublicApplet]:
     applet: Applet = await AppletsCRUD().update_applet(user.id, id_, schema)
 
@@ -47,14 +47,14 @@ async def applet_update(
 
 # TODO: Add logic to return concrete applets by user
 async def applet_retrieve(
-        id_: int, user: User = Depends(get_current_user)
+    id_: int, user: User = Depends(get_current_user)
 ) -> Response[PublicApplet]:
     applet: Applet = await AppletsCRUD().get_full_by_id(id_=id_)
     return Response(result=PublicApplet(**applet.dict()))
 
 
 async def applet_list(
-        user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> ResponseMulti[Applet]:
     applets: list[Applet] = await AppletsCRUD().get_admin_applets(user.id)
     public_applets: list[PublicApplet] = []

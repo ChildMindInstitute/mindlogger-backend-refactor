@@ -4,8 +4,12 @@ from pydantic import Field
 
 from apps.shared.domain import InternalModel, PublicModel
 
-__all__ = ["ActivityFlow", "ActivityFlowItem", "PublicActivityFlow",
-           "PublicActivityFlowItem"]
+__all__ = [
+    "ActivityFlow",
+    "ActivityFlowItem",
+    "PublicActivityFlow",
+    "PublicActivityFlowItem",
+]
 
 
 class ActivityFlowItem(InternalModel):
