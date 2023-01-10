@@ -3,9 +3,44 @@
     "table": "users",
     "fields": {
       "id": 1,
-      "email": "qwe@gmail.com",
+      "email": "tom@mindlogger.com",
       "full_name": "Tom Isaak",
-      "hashed_password": "Password hashed"
-    }
+      "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
+      "is_deleted": false
+    },
+    "note": "Password is Test1234!"
+  },
+  {
+    "table": "users",
+    "fields": {
+      "id": 2,
+      "email": "lucy@gmail.com",
+      "full_name": "Lucy Gabel",
+      "hashed_password": "$2b$12$rq9CeizkJSdjbEeK0.jFYOgSd37rCbu/e7UNCC7YL5ZwTs4wTGuy.",
+      "is_deleted": false
+    },
+    "note": "Password is Test123"
+  },
+  {
+    "table": "users",
+    "fields": {
+      "id": 3,
+      "email": "bob@gmail.com",
+      "full_name": "Bob Martin",
+      "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
+      "is_deleted": false
+    },
+    "note": "Password is Test1234!"
+  },
+  {
+    "table": "users",
+    "fields": {
+      "id": 4,
+      "email": "mike@gmail.com",
+      "full_name": "Mike Samuel",
+      "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
+      "is_deleted": false
+    },
+    "note": "Password is Test1234"
   }
 ]

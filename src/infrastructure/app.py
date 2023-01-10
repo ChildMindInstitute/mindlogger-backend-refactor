@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.routing import APIRouter
 from starlette.middleware.base import BaseHTTPMiddleware
 
+import apps.activities.router as activities
 import apps.applets.router as applets
 import apps.authentication.router as auth
 import apps.healthcheck.router as healthcheck
@@ -15,6 +16,7 @@ import middlewares as middlewares_
 # Declare your routers here
 routers: Iterable[APIRouter] = (
     healthcheck.router,
+    activities.router,
     auth.router,
     applets.router,
     users.router,

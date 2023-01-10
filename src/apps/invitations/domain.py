@@ -2,7 +2,8 @@ from uuid import UUID
 
 from pydantic import EmailStr
 
-from apps.applets.domain import Applet, Role
+from apps.applets.domain import Role
+from apps.applets.domain.applets.get import Applet
 from apps.shared.domain import InternalModel, PublicModel
 
 
