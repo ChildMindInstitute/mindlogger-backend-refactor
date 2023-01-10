@@ -12,7 +12,7 @@ class AppletUpdate(InternalModel):
     about: dict[str, str]
     image: str = ""
     watermark: str = ""
-    theme_id: PositiveInt = 0
+    theme_id: PositiveInt | None = None
     report_server_ip: str = ""  # Fixme: ip address
     report_public_key: str = ""
     report_recipients: list[str] = Field(default_factory=list)

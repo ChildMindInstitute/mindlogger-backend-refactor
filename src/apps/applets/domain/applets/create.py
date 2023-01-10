@@ -1,5 +1,5 @@
 from pydantic import Field
-from pydantic.types import NonNegativeInt
+from pydantic.types import PositiveInt
 
 from apps.activities.domain import ActivityCreate
 from apps.activity_flows.domain import ActivityFlowCreate
@@ -12,7 +12,7 @@ class AppletCreate(InternalModel):
     about: dict[str, str] = Field(default_factory=dict)
     image: str = ""
     watermark: str = ""
-    theme_id: NonNegativeInt = 0
+    theme_id: PositiveInt | None = None
     report_server_ip: str = ""  # Fixme: ip address
     report_public_key: str = ""
     report_recipients: list[str] = Field(default_factory=list)
