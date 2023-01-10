@@ -1,2 +1,3 @@
-from apps.applets.domain.applets import *  # noqa: F401, F403
-from apps.applets.domain.constants import *  # noqa: F401, F403
+from .applets import *  # noqa: F401, F403
+from .constants import *  # noqa: F401, F403
+from .user_applet_access import *  # noqa: F401, F403

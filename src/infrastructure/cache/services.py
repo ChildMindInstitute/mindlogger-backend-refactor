@@ -3,14 +3,14 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Generic
 
-from aioredis import from_url
-
 from config import settings
-from infrastructure.cache.domain import CacheEntry, RawEntry
+from infrastructure.cache.domain import CacheEntry
 from infrastructure.cache.errors import CacheNotFound
 from infrastructure.cache.types import _InputObject
 
 __all__ = ["BaseCacheService"]
+
+from infrastructure.utility import RedisCache
 
 
 class BaseCacheService(ABC, Generic[_InputObject]):
@@ -48,7 +48,7 @@ class BaseCacheService(ABC, Generic[_InputObject]):
         try:
             return getattr(BaseCacheService, reference)
         except AttributeError:
-            redis_client = from_url(settings.redis.url)
+            redis_client = RedisCache()
             setattr(BaseCacheService, reference, redis_client)
             return redis_client
 
@@ -64,7 +64,7 @@ class BaseCacheService(ABC, Generic[_InputObject]):
         return f"{self.__class__.__name__}:{key}"
 
     async def _get(self, key: str) -> dict:
-        if result := await self.redis_client.get(name=self._build_key(key)):
+        if result := await self.redis_client.get(self._build_key(key)):
             return json.loads(result)
 
         raise CacheNotFound(key)
@@ -89,10 +89,8 @@ class BaseCacheService(ABC, Generic[_InputObject]):
         )
 
         await self.redis_client.set(
-            *RawEntry(
-                key=self._build_key(key=key),
-                value=enhanced_cache_entry.json(),
-            ),
+            key=self._build_key(key=key),
+            value=enhanced_cache_entry.json(),
             ex=(ttl or self.default_ttl),
         )
 

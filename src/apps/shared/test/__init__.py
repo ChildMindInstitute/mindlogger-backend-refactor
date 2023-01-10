@@ -1,1 +1,1 @@
-from .base import BaseTest, rollback  # noqa: F401, F403
+from .base import BaseTest  # noqa: F401, F403

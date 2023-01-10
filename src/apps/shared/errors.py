@@ -15,6 +15,12 @@ class NotContentError(BaseError):
         super().__init__("", *args)
 
 
+class PermissionsError(BaseError):
+    def __init__(self, message="", *args) -> None:
+        fallback = "Not enough permissions"
+        super().__init__(message or fallback, *args)
+
+
 class NotFoundError(BaseError):
     def __init__(self, message="", *args) -> None:
         fallback = "Not found error"

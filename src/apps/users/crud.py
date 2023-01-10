@@ -58,23 +58,23 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
     async def update(self, user: User, update_schema: UserUpdate) -> User:
         # Update user in database
-        instance: UserSchema = await self._update(
+        [pk] = await self._update(
             lookup="id", value=user.id, update_schema=update_schema
         )
 
         # Create internal data model
-        user = User.from_orm(instance)
+        user = await self.get_by_id(pk)
 
         return user
 
     async def delete(self, user: User) -> User:
         # Update user in database
-        instance: UserSchema = await self._update(
+        [pk] = await self._update(
             lookup="id", value=user.id, update_schema=UserDelete()
         )
 
         # Create internal data model
-        user = User.from_orm(instance)
+        user = await self.get_by_id(pk)
 
         return user
 
@@ -82,8 +82,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         self, user: User, update_schema: UserChangePassword
     ) -> User:
         # Update user in database
-        instance: UserSchema = await self._update(
+        [pk] = await self._update(
             lookup="id", value=user.id, update_schema=update_schema
         )
-        user = User.from_orm(instance)
-        return user
+        return await self._fetch("id", pk)

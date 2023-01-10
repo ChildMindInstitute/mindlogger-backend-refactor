@@ -18,6 +18,9 @@ class BaseTest:
     async def initialize(self):
         await truncate_tables()
         await self.populate_db()
+
+    @pytest.fixture(autouse=True)
+    async def update_sequence(self):
         await update_sequence()
 
     async def populate_db(self):
@@ -53,14 +56,3 @@ def _str_caster(val):
         val = {True: "true", False: "false"}[val]
         return val
     return str(val)
-
-
-def rollback(func):
-    async def _wrap(*args, **kwargs):
-        session = session_manager.get_session()
-        async with session.begin():
-            await func(*args, **kwargs)
-            await session.rollback()
-        await session.close()
-
-    return _wrap
