@@ -183,6 +183,8 @@ DATABASE__POSTGRES_DB=test
 
 #### Adjust your database for using with tests
 
+⚠️️ Remember that you have to do this only once before the first test.
+
 ```base
 # Connect to the database with Docker
 docker-compose exec postgres psql -U postgres postgres
