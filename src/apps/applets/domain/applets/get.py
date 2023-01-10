@@ -1,59 +1,51 @@
-import pydantic.types as types
 from pydantic import Field
+from pydantic.types import PositiveInt
 
-import apps.activities.domain as activity_domain
-import apps.activity_flows.domain as flow_domain
-import apps.shared.domain as base_domain
+from apps.activities.domain import Activity
+from apps.activity_flows.domain import ActivityFlow
+from apps.shared import domain
 
 
-class Applet(base_domain.InternalModel):
+class Applet(domain.InternalModel):
     id: int
     display_name: str
     version: str
-    description: types.Dict[str, str] = dict()
-    about: types.Dict[str, str] = dict()
+    description: dict[str, str] = Field(default_factory=dict)
+    about: dict[str, str] = Field(default_factory=dict)
     image: str = ""
     watermark: str = ""
-    theme_id: types.NonNegativeInt = 0
+    theme_id: PositiveInt = 0
     report_server_ip: str = ""  # Fixme: ip address
     report_public_key: str = ""
-    report_recipients: types.List[str] = Field(default_factory=list)
+    report_recipients: list[str] = Field(default_factory=list)
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
 
-    activities: types.List[activity_domain.Activity] = Field(
-        default_factory=list
-    )
-    activity_flows: types.List[flow_domain.ActivityFlow] = Field(
-        default_factory=list
-    )
+    activities: list[Activity] = Field(default_factory=list)
+    activity_flows: list[ActivityFlow] = Field(default_factory=list)
 
 
-class PublicApplet(base_domain.PublicModel):
+class PublicApplet(domain.PublicModel):
     """Public user data model."""
 
     id: int
     display_name: str
     version: str
-    description: types.Dict[str, str] = dict()
-    about: types.Dict[str, str] = dict()
+    description: dict[str, str] = Field(default_factory=dict)
+    about: dict[str, str] = Field(default_factory=dict)
     image: str = ""
     watermark: str = ""
-    theme_id: types.NonNegativeInt = 0
+    theme_id: PositiveInt = 0
     report_server_ip: str = ""  # Fixme: ip address
     report_public_key: str = ""
-    report_recipients: types.List[str] = Field(default_factory=list)
+    report_recipients: list[str] = Field(default_factory=list)
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
 
-    activities: types.List[activity_domain.Activity] = Field(
-        default_factory=list
-    )
-    activity_flows: types.List[flow_domain.ActivityFlow] = Field(
-        default_factory=list
-    )
+    activities: list[Activity] = Field(default_factory=list)
+    activity_flows: list[ActivityFlow] = Field(default_factory=list)
 
     def __str__(self) -> str:
         return self.display_name

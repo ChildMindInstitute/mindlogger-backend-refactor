@@ -1,47 +1,53 @@
 import uuid
 
-import pydantic.types as types
 import sqlalchemy as sa
 import sqlalchemy.orm
 from sqlalchemy import delete
 
-import apps.activity_flows.db.schemas as schemas
-import apps.activity_flows.domain as domain
-import apps.applets.db.schemas as applet_schemas
+from apps.activity_flows.db.schemas import (
+    ActivityFlowItemSchema,
+    ActivityFlowSchema,
+)
+from apps.activity_flows.domain import (
+    ActivityFlowItem,
+    ActivityFlowItemCreate,
+    ActivityFlowItemUpdate,
+)
+from apps.applets.db.schemas import AppletSchema
 from infrastructure.database import BaseCRUD
 
 
-class FlowItemsCRUD(BaseCRUD[schemas.ActivityFlowItemSchema]):
-    schema_class = schemas.ActivityFlowItemSchema
+class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
+    schema_class = ActivityFlowItemSchema
 
     async def create(
         self,
         flow_id: int,
-        item_create: domain.ActivityFlowItemCreate,
+        item_create: ActivityFlowItemCreate,
         ordering: int,
-        activity_map: types.Dict[types.UUID4, int],
-    ) -> domain.ActivityFlowItem:
-        instance: schemas.ActivityFlowItemSchema = await self._create(
-            schemas.ActivityFlowItemSchema(
+        activity_map: dict[uuid.UUID, int],
+    ) -> ActivityFlowItem:
+        instance: ActivityFlowItemSchema = await self._create(
+            ActivityFlowItemSchema(
                 activity_flow_id=flow_id,
                 activity_id=activity_map[item_create.activity_guid],
                 ordering=ordering,
             )
         )
-        return domain.ActivityFlowItem.from_orm(instance)
+        return ActivityFlowItem.from_orm(instance)
 
     async def create_many(
         self,
         flows_map: dict[uuid.UUID, int],
-        items_map: dict[uuid.UUID, list[domain.ActivityFlowItemCreate]],
+        items_map: dict[uuid.UUID, list[ActivityFlowItemCreate]],
         activity_map: dict[uuid.UUID, int],
-    ) -> list[domain.ActivityFlowItem]:
-        items_schemas: list[schemas.ActivityFlowItemSchema] = []
+    ) -> list[ActivityFlowItem]:
+        items_schemas: list[ActivityFlowItemSchema] = []
         for flow_guid, items_create in items_map.items():
             flow_id: int = flows_map[flow_guid]
             for index, item_crete in enumerate(items_create):
                 items_schemas.append(
-                    schemas.ActivityFlowItemSchema(
+                    ActivityFlowItemSchema(
                         activity_flow_id=flow_id,
                         activity_id=activity_map[item_crete.activity_guid],
                         ordering=index + 1,
@@ -49,24 +55,24 @@ class FlowItemsCRUD(BaseCRUD[schemas.ActivityFlowItemSchema]):
                 )
 
         instances = await self._create_many(items_schemas)
-        items: list[domain.ActivityFlowItem] = []
+        items: list[ActivityFlowItem] = []
         for instance in instances:
-            items.append(domain.ActivityFlowItem.from_orm(instance))
+            items.append(ActivityFlowItem.from_orm(instance))
         return items
 
     async def update_many(
         self,
         flows_map: dict[uuid.UUID, int],
-        items_map: dict[uuid.UUID, list[domain.ActivityFlowItemUpdate]],
+        items_map: dict[uuid.UUID, list[ActivityFlowItemUpdate]],
         activity_map: dict[uuid.UUID, int],
-    ) -> list[domain.ActivityFlowItem]:
-        items_schemas: list[schemas.ActivityFlowItemSchema] = []
-        for flow_guid, items_create in items_map.items():
+    ) -> list[ActivityFlowItem]:
+        items_schemas: list[ActivityFlowItemSchema] = []
+        for flow_guid, items_update in items_map.items():
             flow_id: int = flows_map[flow_guid]
-            for index, item_update in enumerate(items_create):
+            for index, item_update in enumerate(items_update):
                 items_schemas.append(
-                    schemas.ActivityFlowItemSchema(
-                        id=self._get_id_or_sequence(item_update.id),
+                    ActivityFlowItemSchema(
+                        id=item_update.id,
                         activity_flow_id=flow_id,
                         activity_id=activity_map[item_update.activity_guid],
                         ordering=index + 1,
@@ -74,9 +80,9 @@ class FlowItemsCRUD(BaseCRUD[schemas.ActivityFlowItemSchema]):
                 )
 
         instances = await self._create_many(items_schemas)
-        items: list[domain.ActivityFlowItem] = []
+        items: list[ActivityFlowItem] = []
         for instance in instances:
-            items.append(domain.ActivityFlowItem.from_orm(instance))
+            items.append(ActivityFlowItem.from_orm(instance))
         return items
 
     def _get_id_or_sequence(self, id_: int | None = None):
@@ -89,28 +95,22 @@ class FlowItemsCRUD(BaseCRUD[schemas.ActivityFlowItemSchema]):
         await self._execute(query)
 
     async def get_by_applet_id(self, applet_id) -> list:
-        query: sa.orm.Query = sa.select(schemas.ActivityFlowItemSchema)
+        query: sa.orm.Query = sa.select(ActivityFlowItemSchema)
         query = query.join(
-            schemas.ActivityFlowSchema,
-            (
-                schemas.ActivityFlowSchema.id
-                == schemas.ActivityFlowItemSchema.activity_flow_id
-            ),
+            ActivityFlowSchema,
+            (ActivityFlowSchema.id == ActivityFlowItemSchema.activity_flow_id),
         )
         query = query.join(
-            applet_schemas.AppletSchema,
-            (
-                applet_schemas.AppletSchema.id
-                == schemas.ActivityFlowSchema.applet_id
-            ),
+            AppletSchema,
+            (AppletSchema.id == ActivityFlowSchema.applet_id),
         )
-        query = query.where(applet_schemas.AppletSchema.id == applet_id)
+        query = query.where(AppletSchema.id == applet_id)
         query = query.order_by(
-            schemas.ActivityFlowSchema.ordering.asc(),
-            schemas.ActivityFlowItemSchema.ordering.asc(),
+            ActivityFlowSchema.ordering.asc(),
+            ActivityFlowItemSchema.ordering.asc(),
         )
         query = query.options(
-            sa.orm.joinedload(schemas.ActivityFlowItemSchema.activity_flow)
+            sa.orm.joinedload(ActivityFlowItemSchema.activity_flow)
         )
         result = await self._execute(query)
         results = result.scalars().all()

@@ -1,13 +1,14 @@
-import pydantic.types as types
-from pydantic import BaseModel
+import uuid
+
+from pydantic import BaseModel, Field
 
 __all__ = ["ActivityCreate", "ActivityItemCreate"]
 
 
 class ActivityItemCreate(BaseModel):
-    question: types.Dict[str, str]
+    question: dict[str, str]
     response_type: str
-    answers: types.List[types.Any]
+    answers: list
     color_palette: str = ""
     timer: int = 0
     has_token_value: bool = False
@@ -21,12 +22,12 @@ class ActivityItemCreate(BaseModel):
 
 class ActivityCreate(BaseModel):
     name: str
-    guid: types.UUID4
-    description: types.Dict[str, str]
+    guid: uuid.UUID
+    description: dict[str, str] = Field(default_factory=dict)
     splash_screen: str = ""
     image: str = ""
     show_all_at_once: bool = False
     is_skippable: bool = False
     is_reviewable: bool = False
     response_is_editable: bool = False
-    items: types.List[ActivityItemCreate]
+    items: list[ActivityItemCreate]

@@ -1,30 +1,34 @@
 import uuid
 
-import pydantic.types as types
 import sqlalchemy as sa
 
-import apps.activities.db.schemas as schemas
-import apps.activities.domain as domain
 from apps.activities.crud.activity_item import ActivityItemsCRUD
+from apps.activities.db.schemas import ActivitySchema
+from apps.activities.domain import (
+    Activity,
+    ActivityCreate,
+    ActivityItem,
+    ActivityItemCreate,
+    ActivityItemUpdate,
+    ActivityUpdate,
+)
 from infrastructure.database import BaseCRUD
 
 
-class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
-    schema_class = schemas.ActivitySchema
+class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
+    schema_class = ActivitySchema
 
     async def create_many(
         self,
         applet_id: int,
-        activities_create: types.List[domain.ActivityCreate],
-    ) -> list[domain.Activity]:
+        activities_create: list[ActivityCreate],
+    ) -> list[Activity]:
         activity_schemas = []
-        activity_schema_map: dict[
-            uuid.UUID, list[domain.ActivityItemCreate]
-        ] = dict()
+        activity_schema_map: dict[uuid.UUID, list[ActivityItemCreate]] = dict()
         for index, activity_create in enumerate(activities_create):
             activity_schema_map[activity_create.guid] = activity_create.items
             activity_schemas.append(
-                schemas.ActivitySchema(
+                ActivitySchema(
                     applet_id=applet_id,
                     guid=activity_create.guid,
                     name=activity_create.name,
@@ -39,22 +43,20 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
                 )
             )
 
-        instances: list[schemas.ActivitySchema] = await self._create_many(
+        instances: list[ActivitySchema] = await self._create_many(
             activity_schemas
         )
-        activities: list[domain.Activity] = []
+        activities: list[Activity] = []
         activity_guid_id_map: dict[uuid.UUID, int] = dict()
-        activity_id_map: dict[int, domain.Activity] = dict()
+        activity_id_map: dict[int, Activity] = dict()
 
         for instance in instances:
-            activity: domain.Activity = domain.Activity.from_orm(instance)
+            activity: Activity = Activity.from_orm(instance)
             activities.append(activity)
             activity_guid_id_map[activity.guid] = activity.id
             activity_id_map[activity.id] = activity
 
-        items: list[
-            domain.ActivityItem
-        ] = await ActivityItemsCRUD().create_many(
+        items: list[ActivityItem] = await ActivityItemsCRUD().create_many(
             activity_guid_id_map, activity_schema_map
         )
         for item in items:
@@ -65,14 +67,12 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
     async def update_many(
         self,
         applet_id: int,
-        activities_update: types.List[domain.ActivityUpdate],
-    ) -> list[domain.Activity]:
+        activities_update: list[ActivityUpdate],
+    ) -> list[Activity]:
         await self.clear_applet_activities(applet_id)
 
         activity_schemas = []
-        activity_schema_map: dict[
-            uuid.UUID, list[domain.ActivityItemUpdate]
-        ] = dict()
+        activity_schema_map: dict[uuid.UUID, list[ActivityItemUpdate]] = dict()
 
         for index, activity_update in enumerate(activities_update):
             activity_schema_map[activity_update.guid] = activity_update.items
@@ -80,22 +80,20 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
                 self._update_to_schema(applet_id, index, activity_update)
             )
 
-        instances: list[schemas.ActivitySchema] = await self._create_many(
+        instances: list[ActivitySchema] = await self._create_many(
             activity_schemas
         )
-        activities: list[domain.Activity] = []
+        activities: list[Activity] = []
         activity_guid_id_map: dict[uuid.UUID, int] = dict()
-        activity_id_map: dict[int, domain.Activity] = dict()
+        activity_id_map: dict[int, Activity] = dict()
 
         for instance in instances:
-            activity: domain.Activity = domain.Activity.from_orm(instance)
+            activity: Activity = Activity.from_orm(instance)
             activities.append(activity)
             activity_guid_id_map[activity.guid] = activity.id
             activity_id_map[activity.id] = activity
 
-        items: list[
-            domain.ActivityItem
-        ] = await ActivityItemsCRUD().update_many(
+        items: list[ActivityItem] = await ActivityItemsCRUD().update_many(
             activity_guid_id_map, activity_schema_map
         )
         for item in items:
@@ -115,7 +113,7 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
         await self._execute(query)
 
     def _update_to_schema(
-        self, applet_id: int, index: int, schema: domain.ActivityUpdate
+        self, applet_id: int, index: int, schema: ActivityUpdate
     ):
         return self.schema_class(
             id=schema.id or None,
@@ -132,7 +130,7 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
             ordering=index + 1,
         )
 
-    async def get_by_applet_id(self, id_: int) -> list[domain.Activity]:
+    async def get_by_applet_id(self, id_: int) -> list[Activity]:
         activities = []
         activity_maps = dict()
         activity_items = await ActivityItemsCRUD().get_by_applet_id(id_)
@@ -140,12 +138,12 @@ class ActivitiesCRUD(BaseCRUD[schemas.ActivitySchema]):
         for activity_item in activity_items:
             activity_id = activity_item.activity.id
             if activity_id not in activity_maps:
-                activity = domain.Activity.from_orm(activity_item.activity)
+                activity = Activity.from_orm(activity_item.activity)
                 activity_maps[activity_id] = activity
                 activities.append(activity)
 
             activity_maps[activity_id].items.append(
-                domain.ActivityItem.from_orm(activity_item)
+                ActivityItem.from_orm(activity_item)
             )
 
         return activities

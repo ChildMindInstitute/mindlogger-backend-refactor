@@ -1,4 +1,5 @@
-import pydantic.types as types
+import uuid
+
 from pydantic import BaseModel
 
 __all__ = ["ActivityUpdate", "ActivityItemUpdate"]
@@ -6,9 +7,9 @@ __all__ = ["ActivityUpdate", "ActivityItemUpdate"]
 
 class ActivityItemUpdate(BaseModel):
     id: int | None
-    question: types.Dict[str, str]
+    question: dict[str, str]
     response_type: str
-    answers: types.List[types.Any]
+    answers: list
     color_palette: str = ""
     timer: int = 0
     has_token_value: bool = False
@@ -22,13 +23,13 @@ class ActivityItemUpdate(BaseModel):
 
 class ActivityUpdate(BaseModel):
     id: int | None
-    guid: types.UUID4
+    guid: uuid.UUID
     name: str
-    description: types.Dict[str, str]
+    description: dict[str, str]
     splash_screen: str = ""
     image: str = ""
     show_all_at_once: bool = False
     is_skippable: bool = False
     is_reviewable: bool = False
     response_is_editable: bool = False
-    items: types.List[ActivityItemUpdate]
+    items: list[ActivityItemUpdate]

@@ -3,26 +3,30 @@ import uuid
 import sqlalchemy as sa
 import sqlalchemy.orm
 
-import apps.activities.db.schemas as schemas
-import apps.activities.domain as domain
-import apps.applets.db.schemas as applet_schemas
+from apps.activities.db.schemas import ActivityItemSchema, ActivitySchema
+from apps.activities.domain import (
+    ActivityItem,
+    ActivityItemCreate,
+    ActivityItemUpdate,
+)
+from apps.applets.db.schemas import AppletSchema
 from infrastructure.database import BaseCRUD
 
 
-class ActivityItemsCRUD(BaseCRUD[schemas.ActivityItemSchema]):
-    schema_class = schemas.ActivityItemSchema
+class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
+    schema_class = ActivityItemSchema
 
     async def create_many(
         self,
         activities_map: dict[uuid.UUID, int],
-        items_map: dict[uuid.UUID, list[domain.ActivityItemCreate]],
-    ) -> list[domain.ActivityItem]:
-        items_schemas: list[schemas.ActivityItemSchema] = []
+        items_map: dict[uuid.UUID, list[ActivityItemCreate]],
+    ) -> list[ActivityItem]:
+        items_schemas: list[ActivityItemSchema] = []
         for activity_guid, items_create in items_map.items():
             activity_id: int = activities_map[activity_guid]
             for index, item_create in enumerate(items_create):
                 items_schemas.append(
-                    schemas.ActivityItemSchema(
+                    ActivityItemSchema(
                         activity_id=activity_id,
                         question=item_create.question,
                         response_type=item_create.response_type,
@@ -42,17 +46,17 @@ class ActivityItemsCRUD(BaseCRUD[schemas.ActivityItemSchema]):
                     )
                 )
         instances = await self._create_many(items_schemas)
-        items: list[domain.ActivityItem] = []
+        items: list[ActivityItem] = []
         for instance in instances:
-            items.append(domain.ActivityItem.from_orm(instance))
+            items.append(ActivityItem.from_orm(instance))
         return items
 
     async def update_many(
         self,
         activities_map: dict[uuid.UUID, int],
-        items_map: dict[uuid.UUID, list[domain.ActivityItemUpdate]],
-    ) -> list[domain.ActivityItem]:
-        items_schemas: list[schemas.ActivityItemSchema] = []
+        items_map: dict[uuid.UUID, list[ActivityItemUpdate]],
+    ) -> list[ActivityItem]:
+        items_schemas: list[ActivityItemSchema] = []
         for activity_guid, items_update in items_map.items():
             activity_id: int = activities_map[activity_guid]
             for index, item_update in enumerate(items_update):
@@ -60,9 +64,9 @@ class ActivityItemsCRUD(BaseCRUD[schemas.ActivityItemSchema]):
                     self._update_to_schema(activity_id, index, item_update)
                 )
         instances = await self._create_many(items_schemas)
-        items: list[domain.ActivityItem] = []
+        items: list[ActivityItem] = []
         for instance in instances:
-            items.append(domain.ActivityItem.from_orm(instance))
+            items.append(ActivityItem.from_orm(instance))
         return items
 
     async def clear_applet_activity_items(self, activity_id_query):
@@ -72,9 +76,9 @@ class ActivityItemsCRUD(BaseCRUD[schemas.ActivityItemSchema]):
         await self._execute(query)
 
     def _update_to_schema(
-        self, activity_id: int, index: int, schema: domain.ActivityItemUpdate
+        self, activity_id: int, index: int, schema: ActivityItemUpdate
     ):
-        return schemas.ActivityItemSchema(
+        return ActivityItemSchema(
             id=schema.id or None,
             activity_id=activity_id,
             question=schema.question,
@@ -93,23 +97,22 @@ class ActivityItemsCRUD(BaseCRUD[schemas.ActivityItemSchema]):
         )
 
     async def get_by_applet_id(self, applet_id):
-        query = sa.select(schemas.ActivityItemSchema)
+        query = sa.select(ActivityItemSchema)
         query = query.join(
-            schemas.ActivitySchema,
-            schemas.ActivitySchema.id
-            == schemas.ActivityItemSchema.activity_id,
+            ActivitySchema,
+            ActivitySchema.id == ActivityItemSchema.activity_id,
         )
         query = query.join(
-            applet_schemas.AppletSchema,
-            applet_schemas.AppletSchema.id == schemas.ActivitySchema.applet_id,
+            AppletSchema,
+            AppletSchema.id == ActivitySchema.applet_id,
         )
-        query = query.where(applet_schemas.AppletSchema.id == applet_id)
+        query = query.where(AppletSchema.id == applet_id)
         query = query.order_by(
-            schemas.ActivitySchema.ordering.asc(),
-            schemas.ActivityItemSchema.ordering.asc(),
+            ActivitySchema.ordering.asc(),
+            ActivityItemSchema.ordering.asc(),
         )
         query = query.options(
-            sa.orm.joinedload(schemas.ActivityItemSchema.activity),
+            sa.orm.joinedload(ActivityItemSchema.activity),
         )
         result = await self._execute(query)
         results = result.scalars().all()

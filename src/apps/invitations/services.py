@@ -1,9 +1,18 @@
 import json
 import uuid
 
-import apps.applets.domain as applet_domain
-import apps.invitations.domain as invitation_domain
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.applets.domain import (
+    Applet,
+    UserAppletAccess,
+    UserAppletAccessCreate,
+)
+from apps.invitations.domain import (
+    INVITE_USER_TEMPLATE,
+    Invitation,
+    InvitationRequest,
+    InviteApproveResponse,
+)
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.errors import NotFoundError
@@ -14,7 +23,7 @@ from infrastructure.cache.domain import CacheEntry
 from infrastructure.cache.errors import CacheNotFound
 
 
-class InvitationsCache(BaseCacheService[invitation_domain.Invitation]):
+class InvitationsCache(BaseCacheService[Invitation]):
     """The concrete class that realized invitations cache engine.
     In order to be able to save multiple invitations for a single user
     the specific key builder is used.
@@ -37,18 +46,16 @@ class InvitationsCache(BaseCacheService[invitation_domain.Invitation]):
 
     async def get(
         self, email: str, key: uuid.UUID | str
-    ) -> CacheEntry[invitation_domain.Invitation]:
+    ) -> CacheEntry[Invitation]:
         cache_record: dict = await self._get(self.build_key(email, key))
 
-        return CacheEntry[invitation_domain.Invitation](**cache_record)
+        return CacheEntry[Invitation](**cache_record)
 
     async def delete(self, email: str, key: uuid.UUID | str) -> None:
         _key = self.build_key(email, key)
         await self._delete(_key)
 
-    async def all(
-        self, email: str
-    ) -> list[CacheEntry[invitation_domain.Invitation]]:
+    async def all(self, email: str) -> list[CacheEntry[Invitation]]:
         # Create a key to fetch all records for
         # the specific email prefix in a cache key
         key = f"{email}:*"
@@ -60,8 +67,7 @@ class InvitationsCache(BaseCacheService[invitation_domain.Invitation]):
         results: list[bytes] = await self.redis_client.mget(keys)
 
         return [
-            CacheEntry[invitation_domain.Invitation](**json.loads(result))
-            for result in results
+            CacheEntry[Invitation](**json.loads(result)) for result in results
         ]
 
 
@@ -70,18 +76,16 @@ class InvitationsService:
         self._user: User = user
         self._cache: InvitationsCache = InvitationsCache()
 
-    async def fetch_all(self) -> list[invitation_domain.Invitation]:
-        cache_entries: list[
-            CacheEntry[invitation_domain.Invitation]
-        ] = await self._cache.all(email=self._user.email)
+    async def fetch_all(self) -> list[Invitation]:
+        cache_entries: list[CacheEntry[Invitation]] = await self._cache.all(
+            email=self._user.email
+        )
 
         return [entry.instance for entry in cache_entries]
 
-    async def send_invitation(
-        self, schema: invitation_domain.InvitationRequest
-    ) -> invitation_domain.Invitation:
+    async def send_invitation(self, schema: InvitationRequest) -> Invitation:
         # Create internal Invitation object
-        invitation = invitation_domain.Invitation(
+        invitation = Invitation(
             email=schema.email,
             applet_id=schema.applet_id,
             role=schema.role,
@@ -94,7 +98,7 @@ class InvitationsService:
         key: str = self._cache.build_key(invitation.email, invitation.key)
 
         # Save invitation to the cache
-        _: CacheEntry[invitation_domain.Invitation] = await self._cache.set(
+        _: CacheEntry[Invitation] = await self._cache.set(
             key=key, instance=invitation
         )
 
@@ -103,7 +107,7 @@ class InvitationsService:
         message = MessageSchema(
             recipients=[schema.email],
             subject="Invitation to the FCM",
-            body=invitation_domain.INVITE_USER_TEMPLATE.format(
+            body=INVITE_USER_TEMPLATE.format(
                 applet=invitation.applet_id,
                 role=invitation.role,
                 link=(
@@ -116,39 +120,35 @@ class InvitationsService:
 
         return invitation
 
-    async def approve(
-        self, key: uuid.UUID
-    ) -> invitation_domain.InviteApproveResponse:
+    async def approve(self, key: uuid.UUID) -> InviteApproveResponse:
         error: Exception = NotFoundError("No invitations found.")
 
         try:
-            cache_entry: CacheEntry[
-                invitation_domain.Invitation
-            ] = await self._cache.get(self._user.email, key)
+            cache_entry: CacheEntry[Invitation] = await self._cache.get(
+                self._user.email, key
+            )
         except CacheNotFound:
             raise error
 
         # Get applet from the database
-        applet: applet_domain.applet.Applet = await AppletsCRUD().get_by_id(
+        applet: Applet = await AppletsCRUD().get_by_id(
             cache_entry.instance.applet_id
         )
 
         # Create a user_applet_access record
-        user_applet_access_create_schema = (
-            applet_domain.UserAppletAccessCreate(
-                user_id=self._user.id,
-                applet_id=cache_entry.instance.applet_id,
-                role=cache_entry.instance.role,
-            )
+        user_applet_access_create_schema = UserAppletAccessCreate(
+            user_id=self._user.id,
+            applet_id=cache_entry.instance.applet_id,
+            role=cache_entry.instance.role,
         )
-        user_applet_access: applet_domain.UserAppletAccess = (
+        user_applet_access: UserAppletAccess = (
             await UserAppletAccessCRUD().save(user_applet_access_create_schema)
         )
 
         # Delete cache entry
         await self._cache.delete(email=self._user.email, key=key)
 
-        return invitation_domain.InviteApproveResponse(
+        return InviteApproveResponse(
             applet=applet, role=user_applet_access.role
         )
 
@@ -156,9 +156,9 @@ class InvitationsService:
         error: Exception = NotFoundError("No invitations found.")
 
         try:
-            cache_entry: CacheEntry[
-                invitation_domain.Invitation
-            ] = await self._cache.get(self._user.email, key)
+            cache_entry: CacheEntry[Invitation] = await self._cache.get(
+                self._user.email, key
+            )
         except CacheNotFound:
             raise error
 

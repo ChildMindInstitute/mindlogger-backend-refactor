@@ -5,19 +5,19 @@ from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 
-import apps.applets.db.schemas as schemas
-import apps.applets.domain as domain
-import apps.applets.errors as errors
 from apps.activities.crud.activity import ActivitiesCRUD
 from apps.activity_flows.crud.flow import FlowsCRUD
+from apps.applets import errors
+from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
+from apps.applets.domain.applets import Applet, AppletCreate, AppletUpdate
 from apps.applets.domain.constants import Role
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["AppletsCRUD"]
 
 
-class AppletsCRUD(BaseCRUD[schemas.AppletSchema]):
-    schema_class = schemas.AppletSchema
+class AppletsCRUD(BaseCRUD[AppletSchema]):
+    schema_class = AppletSchema
     initial_version = "1.0.0"
     version_difference = 0.01
 
@@ -32,7 +32,7 @@ class AppletsCRUD(BaseCRUD[schemas.AppletSchema]):
         v2 %= 10
         return f"{v1}.{v2}.{v3}"
 
-    async def _fetch(self, key: str, value: Any) -> domain.applet.Applet:
+    async def _fetch(self, key: str, value: Any) -> Applet:
         """Fetch applets by id or display_name from the database."""
 
         if key not in {"id", "display_name"}:
@@ -47,44 +47,38 @@ class AppletsCRUD(BaseCRUD[schemas.AppletSchema]):
             )
 
         # Get internal model
-        applet: domain.applet.Applet = domain.applet.Applet.from_orm(instance)
+        applet: Applet = Applet.from_orm(instance)
 
         return applet
 
-    async def get_by_id(self, id_: int) -> domain.applet.Applet:
+    async def get_by_id(self, id_: int) -> Applet:
         applet = await self._fetch(key="id", value=id_)
         return applet
 
-    async def get_full_by_id(self, id_: int) -> domain.applet.Applet:
+    async def get_full_by_id(self, id_: int) -> Applet:
         applet = await self._fetch(key="id", value=id_)
         applet.activities = await ActivitiesCRUD().get_by_applet_id(id_)
         applet.activity_flows = await FlowsCRUD().get_by_applet_id(id_)
         return applet
 
-    async def get_admin_applets(
-        self, user_id_: int
-    ) -> list[domain.applet.Applet]:
+    async def get_admin_applets(self, user_id_: int) -> list[Applet]:
         query = select(self.schema_class)
-        query = query.join_from(
-            schemas.UserAppletAccessSchema, self.schema_class
-        )
-        query = query.where(schemas.UserAppletAccessSchema.user_id == user_id_)
-        query = query.where(schemas.UserAppletAccessSchema.role == Role.ADMIN)
+        query = query.join_from(UserAppletAccessSchema, self.schema_class)
+        query = query.where(UserAppletAccessSchema.user_id == user_id_)
+        query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
         query = query.order_by(self.schema_class.id)
         result: Result = await self._execute(query)
 
-        results: list[domain.applet.Applet] = result.scalars().all()
+        results: list[Applet] = result.scalars().all()
 
-        return [domain.applet.Applet.from_orm(applet) for applet in results]
+        return [Applet.from_orm(applet) for applet in results]
 
-    async def save(
-        self, user_id: int, schema: domain.applet_create.AppletCreate
-    ) -> domain.applet.Applet:
+    async def save(self, user_id: int, schema: AppletCreate) -> Applet:
         """Return applets instance and the created information."""
 
         try:
-            instance: schemas.AppletSchema = await self._create(
-                schemas.AppletSchema(
+            instance: AppletSchema = await self._create(
+                AppletSchema(
                     display_name=schema.display_name,
                     description=schema.description,
                     about=schema.about,
@@ -105,7 +99,7 @@ class AppletsCRUD(BaseCRUD[schemas.AppletSchema]):
         except IntegrityError:
             raise errors.AppletAlreadyExist()
 
-        applet: domain.applet.Applet = domain.applet.Applet.from_orm(instance)
+        applet: Applet = Applet.from_orm(instance)
         activity_map: dict[uuid.UUID, int] = dict()
         applet.activities = await ActivitiesCRUD().create_many(
             applet.id, schema.activities
@@ -125,9 +119,9 @@ class AppletsCRUD(BaseCRUD[schemas.AppletSchema]):
         await self._delete(key="id", value=id_)
 
     async def update_applet(
-        self, user_id: int, pk: int, schema: domain.applet_update.AppletUpdate
-    ) -> domain.applet.Applet:
-        applet: domain.applet.Applet = await self.get_by_id(pk)
+        self, user_id: int, pk: int, schema: AppletUpdate
+    ) -> Applet:
+        applet: Applet = await self.get_by_id(pk)
         await self._update(
             lookup="id",
             value=pk,
@@ -149,7 +143,7 @@ class AppletsCRUD(BaseCRUD[schemas.AppletSchema]):
                 report_email_body=schema.report_email_body,
             ),
         )
-        instance = domain.applet.Applet(
+        instance = Applet(
             id=pk,
             display_name=schema.display_name,
             description=schema.description,

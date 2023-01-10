@@ -1,4 +1,5 @@
-import pydantic.types as types
+import uuid
+
 from pydantic import BaseModel
 
 __all__ = ["ActivityFlowUpdate", "ActivityFlowItemUpdate"]
@@ -6,13 +7,13 @@ __all__ = ["ActivityFlowUpdate", "ActivityFlowItemUpdate"]
 
 class ActivityFlowItemUpdate(BaseModel):
     id: int | None = None
-    activity_guid: types.UUID4
+    activity_guid: uuid.UUID
 
 
 class ActivityFlowUpdate(BaseModel):
     id: int | None
     name: str
-    description: types.Dict[str, str]
+    description: dict[str, str]
     is_single_report: bool = False
     hide_badge: bool = False
-    items: types.List[ActivityFlowItemUpdate]
+    items: list[ActivityFlowItemUpdate]

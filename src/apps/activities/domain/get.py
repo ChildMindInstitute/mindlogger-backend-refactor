@@ -1,4 +1,5 @@
-import pydantic.types as types
+import uuid
+
 from pydantic import Field
 
 from apps.shared.domain import InternalModel
@@ -9,9 +10,9 @@ __all__ = ["Activity", "ActivityItem"]
 class ActivityItem(InternalModel):
     id: int
     activity_id: int
-    question: types.Dict[str, str]
+    question: dict[str, str]
     response_type: str
-    answers: types.List[types.Any]
+    answers: list
     color_palette: str = ""
     timer: int = 0
     has_token_value: bool = False
@@ -26,9 +27,9 @@ class ActivityItem(InternalModel):
 
 class Activity(InternalModel):
     id: int
-    guid: types.UUID4
+    guid: uuid.UUID
     name: str
-    description: types.Dict[str, str]
+    description: dict[str, str] = Field(default_factory=dict)
     splash_screen: str = ""
     image: str = ""
     show_all_at_once: bool = False
@@ -36,4 +37,4 @@ class Activity(InternalModel):
     is_reviewable: bool = False
     response_is_editable: bool = False
     ordering: float
-    items: types.List[ActivityItem] = Field(default_factory=list)
+    items: list[ActivityItem] = Field(default_factory=list)

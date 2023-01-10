@@ -13,7 +13,7 @@ from apps.shared.errors import NotContentError
 from apps.users.domain import User
 
 
-async def create_item_choice(
+async def item_choice_create(
     user: User = Depends(get_current_user),
     schema: ReusableItemChoiceInitializeCreate = Body(...),
 ) -> Response[PublicReusableItemChoice]:
@@ -25,14 +25,12 @@ async def create_item_choice(
     return Response(result=PublicReusableItemChoice(**item_template.dict()))
 
 
-async def delete_item_choice_by_id(
-    id_: int, user: User = Depends(get_current_user)
-):
+async def item_choice_delete(id_: int, user: User = Depends(get_current_user)):
     await ReusabelItemChoiceCRUD().delete_by_id(id_=id_)
     raise NotContentError
 
 
-async def get_item_choices(
+async def item_choice_retrieve(
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[PublicReusableItemChoice]:
     item_templates: list[

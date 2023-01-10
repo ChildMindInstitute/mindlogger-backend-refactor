@@ -1,4 +1,6 @@
-import pydantic.types as types
+import uuid
+
+from pydantic import Field
 
 from apps.shared.domain import InternalModel
 
@@ -14,9 +16,9 @@ class ActivityFlowItem(InternalModel):
 
 class ActivityFlow(InternalModel):
     id: int
-    guid: types.UUID4
+    guid: uuid.UUID
     name: str
-    description: types.Dict[str, str]
+    description: dict[str, str]
     is_single_report: bool = False
     hide_badge: bool = False
-    items: types.List[ActivityFlowItem] = []
+    items: list[ActivityFlowItem] = Field(default_factory=list)
