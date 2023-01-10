@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class FrontendUrlsSettings(BaseModel):
     base: str = "frontend.com"
     invitation_send: str = "invite"
+    password_recovery_send: str = "password-recovery"
 
 
 class ServiceUrlsSettings(BaseModel):

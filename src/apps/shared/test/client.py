@@ -39,7 +39,7 @@ class TestClient:
             url = self._prepare_url(url, query)
         response = await self.client.post(
             url,
-            data=self._get_body(data),
+            content=self._get_body(data),
             headers=self._get_updated_headers(headers),
         )
         return response
@@ -55,7 +55,7 @@ class TestClient:
             url = self._prepare_url(url, query)
         response = await self.client.put(
             url,
-            data=self._get_body(data),
+            content=self._get_body(data),
             headers=self._get_updated_headers(headers),
         )
         return response
@@ -91,7 +91,7 @@ class TestClient:
             url, data=dict(email=username, password=password)
         )
         assert response.status_code == 200, response.json()
-        access_token = response.json()["result"]["access_token"]
+        access_token = response.json()["Result"]["AccessToken"]
         self.headers["Authorization"] = f"Bearer {access_token}"
 
     async def logout(self):

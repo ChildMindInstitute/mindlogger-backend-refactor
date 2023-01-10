@@ -14,7 +14,7 @@ from apps.users.domain import (
 )
 
 
-async def create_user(
+async def user_create(
     user_create_schema: UserCreateRequest = Body(...),
 ) -> Response[PublicUser]:
     user_create = UserCreate(
@@ -32,7 +32,7 @@ async def create_user(
     return Response(result=public_user)
 
 
-async def get_user(
+async def user_retrieve(
     user: User = Depends(get_current_user),
 ) -> Response[PublicUser]:
     # Get public representation of the authenticated user
@@ -41,7 +41,7 @@ async def get_user(
     return Response(result=public_user)
 
 
-async def update_user(
+async def user_update(
     user: User = Depends(get_current_user),
     user_update_schema: UserUpdate = Body(...),
 ) -> Response[PublicUser]:
@@ -53,6 +53,6 @@ async def update_user(
     return Response(result=public_user)
 
 
-async def delete_user(user: User = Depends(get_current_user)) -> None:
+async def user_delete(user: User = Depends(get_current_user)) -> None:
     await UsersCRUD().delete(user)
     raise NotContentError

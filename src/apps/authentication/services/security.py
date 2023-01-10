@@ -3,12 +3,15 @@ from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
 
-from apps.authentication.domain import InternalToken
+from apps.authentication.domain.token import InternalToken
 from apps.authentication.errors import BadCredentials
-from apps.shared.errors import BaseError
+from apps.authentication.services.core import TokensService
 from apps.users.crud import UsersCRUD
 from apps.users.domain import User, UserLoginRequest
 from config import settings
+
+__all__ = ["AuthenticationService"]
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -18,13 +21,28 @@ class AuthenticationService:
     def create_access_token(data: dict):
         to_encode = data.copy()
         expires_delta = timedelta(
-            minutes=settings.authentication.access_token_expire_minutes
+            minutes=settings.authentication.access_token.expiration
         )
         expire = datetime.utcnow() + expires_delta
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(
             to_encode,
-            settings.authentication.secret_key,
+            settings.authentication.access_token.secret_key,
+            algorithm=settings.authentication.algorithm,
+        )
+        return encoded_jwt
+
+    @staticmethod
+    def create_refresh_token(data: dict):
+        to_encode = data.copy()
+        expires_delta = timedelta(
+            minutes=settings.authentication.refresh_token.expiration
+        )
+        expire = datetime.utcnow() + expires_delta
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(
+            to_encode,
+            settings.authentication.refresh_token.secret_key,
             algorithm=settings.authentication.algorithm,
         )
         return encoded_jwt
@@ -32,7 +50,7 @@ class AuthenticationService:
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str):
         if not pwd_context.verify(plain_password, hashed_password):
-            raise BadCredentials("Invalid password")
+            raise BadCredentials
 
     @staticmethod
     def get_password_hash(password: str) -> str:
@@ -49,14 +67,10 @@ class AuthenticationService:
 
     @staticmethod
     async def add_access_token_to_blacklist(token: InternalToken):
-        """Currently we do not check if the token is in that blacklist
-        as far as the redis client implementation is not working.
-        """
-        # key = "tokens-blacklist"
-        # cache = RedisCache()
-        # await cache.set(
-        #     key=f"{key}:{token.raw_token}",
-        #     val="",
-        #     expire_after=token.payload.exp,
-        # )
-        raise BaseError("Currently this feature is not implemented.")
+        """Add access token to blacklist in Redis."""
+        await TokensService().add_access_token_to_blacklist(token)
+
+    @staticmethod
+    async def fetch_all_tokens(email: str):
+        """Finds all records for the specified Email."""
+        return await TokensService().fetch_all(email)

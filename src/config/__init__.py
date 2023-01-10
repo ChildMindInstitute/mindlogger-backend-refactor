@@ -73,5 +73,7 @@ settings = Settings(
         "users",
         "applets",
         "activities",
+        "activity_flows.json",
+        "themes",
     ],
 )

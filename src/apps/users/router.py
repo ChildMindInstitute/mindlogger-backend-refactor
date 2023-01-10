@@ -1,15 +1,22 @@
 from fastapi.routing import APIRouter
+from starlette import status
 
-from apps.users.api.users import (
-    create_user,
-    delete_user,
-    get_user,
-    update_user,
+from apps.users.api import (
+    password_recovery,
+    password_recovery_approve,
+    password_update,
+    user_create,
+    user_delete,
+    user_retrieve,
+    user_update,
 )
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-router.post("")(create_user)
-router.get("/me")(get_user)
-router.put("/me")(update_user)
-router.delete("/me")(delete_user)
+router.post("", status_code=status.HTTP_201_CREATED)(user_create)
+router.get("/me")(user_retrieve)
+router.put("/me")(user_update)
+router.delete("/me")(user_delete)
+router.put("/me/password")(password_update)
+router.post("/me/password/recover")(password_recovery)
+router.post("/me/password/recover/approve")(password_recovery_approve)
