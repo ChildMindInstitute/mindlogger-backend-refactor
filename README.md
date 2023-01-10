@@ -166,7 +166,40 @@ P.S. You don't need to do this additional step if you run application via Docker
 uvicorn src.main:app --proxy-headers --port {PORT} --reload
 ```
 
+</br>
 
+### 5. Running Tests ▶️
+
+The `pytest` framework is using in order to write unit tests.
+Currently postgresql is used as a database for tests with running configurations that are defined in `pyproject.toml`
+
+```toml
+DATABASE__POSTGRES_HOST=localhost
+DATABASE__POSTGRES_PORT=5432
+DATABASE__POSTGRES_PASSWORD=test
+DATABASE__POSTGRES_USER=test
+DATABASE__POSTGRES_DB=test
+```
+
+#### Adjust your database for using with tests
+
+```base
+# Connect to the database with Docker
+docker-compose exec postgres psql -U postgres postgres
+
+# Or connect to the database locally
+psql -U postgres postgres
+
+
+# Create user's database
+psql# create database test;
+
+# Create user test
+psql# create user test;
+
+# Set password for the user
+psql# alter user test with password 'test';
+```
 </br>
 </br>
 
