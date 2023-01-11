@@ -1,12 +1,14 @@
 from typing import Any
 
+from sqlalchemy.exc import IntegrityError
+
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import (
     User,
     UserChangePassword,
     UserCreate,
     UserDelete,
-    UserUpdate,
+    UserUpdateRequest,
 )
 from apps.users.errors import UserIsDeletedError, UserNotFound, UsersError
 from infrastructure.database.crud import BaseCRUD
@@ -47,36 +49,36 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
     async def save(self, schema: UserCreate) -> tuple[User, bool]:
         # Save user into the database
-        instance: UserSchema = await self._create(
-            self.schema_class(**schema.dict())
-        )
+        try:
+            instance: UserSchema = await self._create(
+                self.schema_class(**schema.dict())
+            )
+        except IntegrityError:
+            raise UsersError(message="User already exists")
 
         # Create internal data model
         user = User.from_orm(instance)
 
         return user, True
 
-    async def update(self, user: User, update_schema: UserUpdate) -> User:
+    async def update(
+        self, user: User, update_schema: UserUpdateRequest
+    ) -> User:
         # Update user in database
         [pk] = await self._update(
             lookup="id", value=user.id, update_schema=update_schema
         )
 
         # Create internal data model
-        user = await self.get_by_id(pk)
+        user = await self.get_by_id(pk.id)
 
         return user
 
-    async def delete(self, user: User) -> User:
+    async def delete(self, user: User):
         # Update user in database
-        [pk] = await self._update(
+        await self._update(
             lookup="id", value=user.id, update_schema=UserDelete()
         )
-
-        # Create internal data model
-        user = await self.get_by_id(pk)
-
-        return user
 
     async def change_password(
         self, user: User, update_schema: UserChangePassword

@@ -32,7 +32,7 @@ middlewares: Iterable[Type[BaseHTTPMiddleware]] = (
     #       Error: Can't operate on closed transaction inside context manager.
     #              Please complete the context manager
     #              before emitting further commands
-    # middlewares_.DatabaseTransactionMiddleware,
+    middlewares_.DatabaseTransactionMiddleware,
 )
 
 
