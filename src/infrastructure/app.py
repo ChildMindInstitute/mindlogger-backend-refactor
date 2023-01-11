@@ -2,7 +2,6 @@ from typing import Iterable, Type
 
 from fastapi import FastAPI
 from fastapi.routing import APIRouter
-from starlette.middleware.base import BaseHTTPMiddleware
 
 import apps.activities.router as activities
 import apps.applets.router as applets
@@ -25,14 +24,10 @@ routers: Iterable[APIRouter] = (
 )
 
 # Declare your middlewares here
-middlewares: Iterable[Type[BaseHTTPMiddleware]] = (
-    middlewares_.ErrorsHandlingMiddleware,
-    # TODO: Fix the transaction.commit decorator
-    # NOTE: This transaction manager makes the BaseCRUD service fail
-    #       Error: Can't operate on closed transaction inside context manager.
-    #              Please complete the context manager
-    #              before emitting further commands
-    # middlewares_.DatabaseTransactionMiddleware,
+middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
+    (middlewares_.CORSMiddleware, middlewares_.cors_options),
+    (middlewares_.ErrorsHandlingMiddleware, {}),
+    (middlewares_.DatabaseTransactionMiddleware, {}),
 )
 
 
@@ -45,7 +40,7 @@ def create_app():
         app.include_router(router)
 
     # Include middlewares
-    for middleware in middlewares:
-        app.add_middleware(middleware)
+    for middleware, options in middlewares:
+        app.add_middleware(middleware, **options)
 
     return app
