@@ -71,5 +71,6 @@ settings = Settings(
         "activities",
         "activity_flows.json",
         "themes",
+        "logs",
     ],
 )
