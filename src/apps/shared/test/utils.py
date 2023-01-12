@@ -1,4 +1,4 @@
-from sqlalchemy import text
+from sqlalchemy import text, Integer
 
 from infrastructure.database import Base, session_manager
 
@@ -6,15 +6,18 @@ from infrastructure.database import Base, session_manager
 async def update_sequence():
     session = session_manager.get_session()
     for name, table in Base.metadata.tables.items():
-        if not table.c.id.autoincrement:
-            continue
-        query = text(
-            f"""
-        SELECT SETVAL('{name}_id_seq',
-            (SELECT COALESCE(MAX(id), 0) FROM "{name}") + 1, false)
-        """
-        )
-        await session.execute(query)
+        for primary_key in table.primary_key.columns:
+            if not isinstance(primary_key.type, Integer):
+                continue
+            if primary_key.autoincrement not in ('auto', True):
+                continue
+            query = text(
+                f"""
+            SELECT SETVAL('{name}_{primary_key.name}_seq',
+                (SELECT COALESCE(MAX(id), 0) FROM "{name}") + 1, false)
+            """
+            )
+            await session.execute(query)
     await session.commit()
 
 
