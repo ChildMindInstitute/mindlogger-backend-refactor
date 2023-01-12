@@ -13,7 +13,7 @@ __all__ = [
     "UserDelete",
     "User",
     "UserCreateRequest",
-    "UserUpdate",
+    "UserUpdateRequest",
     "ChangePasswordRequest",
     "UserChangePassword",
     "PasswordRecoveryRequest",
@@ -44,7 +44,7 @@ class UserCreate(_UserBase, InternalModel):
     hashed_password: str
 
 
-class UserUpdate(InternalModel):
+class UserUpdateRequest(InternalModel):
     """This model represents user `update request` data model."""
 
     full_name: str

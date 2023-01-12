@@ -10,7 +10,7 @@ from apps.users.domain import (
     User,
     UserCreate,
     UserCreateRequest,
-    UserUpdate,
+    UserUpdateRequest,
 )
 
 
@@ -43,7 +43,7 @@ async def user_retrieve(
 
 async def user_update(
     user: User = Depends(get_current_user),
-    user_update_schema: UserUpdate = Body(...),
+    user_update_schema: UserUpdateRequest = Body(...),
 ) -> Response[PublicUser]:
     updated_user: User = await UsersCRUD().update(user, user_update_schema)
 
