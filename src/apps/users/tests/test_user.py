@@ -5,19 +5,22 @@ from apps.shared.domain import Response
 from apps.shared.test import BaseTest
 from apps.users import UserSchema, UsersCRUD
 from apps.users.domain import (
-    ChangePasswordRequest,
+    PasswordRecoveryRequest,
     PublicUser,
     User,
     UserLoginRequest,
-    UserUpdateRequest,
 )
 from apps.users.router import router as user_router
-from apps.users.tests.factories import UserCreateRequestFactory
+from apps.users.tests.factories import (
+    PasswordUpdateRequestFactory,
+    UserCreateRequestFactory,
+    UserUpdateRequestFactory,
+)
 from infrastructure.database import transaction
 
 
 class TestUser(BaseTest):
-    fixtures = ["users/fixtures/users.json"]
+    # fixtures = ["users/fixtures/users.json"]
 
     get_token_url = auth_router.url_path_for("get_token")
     user_create_url = user_router.url_path_for("user_create")
@@ -31,18 +34,11 @@ class TestUser(BaseTest):
     )
 
     create_request_user = UserCreateRequestFactory.build()
+    user_update_request = UserUpdateRequestFactory.build()
+    password_update_request = PasswordUpdateRequestFactory.build()
 
-    login_request_user: UserLoginRequest = UserLoginRequest(
-        email="tom@mindlogger.com",
-        password="Test1234!",
-    )
-
-    user_update_request: UserUpdateRequest = UserUpdateRequest(
-        full_name="Isaak Tom"
-    )
-
-    password_update_request: ChangePasswordRequest = ChangePasswordRequest(
-        password="password_new"
+    password_recovery_request: PasswordRecoveryRequest = (
+        PasswordRecoveryRequest(email="tom@mindlogger.com")
     )
 
     @transaction.rollback
@@ -51,6 +47,7 @@ class TestUser(BaseTest):
         response = await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
+        # Get  created user by email
         created_user: User = await UsersCRUD().get_by_email(
             self.create_request_user.email
         )
@@ -62,7 +59,7 @@ class TestUser(BaseTest):
         count = await UsersCRUD().count()
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.json() == expected_result.dict()
+        assert response.json() == expected_result.dict(by_alias=True)
         assert count == expected_result.result.id
 
     @transaction.rollback
@@ -76,10 +73,7 @@ class TestUser(BaseTest):
             self.user_create_url, data=self.create_request_user.dict()
         )
 
-        expected_result = {"messages": ["User already exists"]}
-
-        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-        assert response.json() == expected_result
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @transaction.rollback
     async def test_retrieving_user(self):
@@ -87,18 +81,16 @@ class TestUser(BaseTest):
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
-        # User get token
-        response = await self.client.post(
-            url=self.get_token_url,
-            data=dict(
-                email=self.create_request_user.email,
-                password=self.create_request_user.password,
-            ),
+
+        login_request_user: UserLoginRequest = UserLoginRequest(
+            **self.create_request_user.dict()
         )
 
-        access_token = response.json()["Result"]["AccessToken"]
-        token_type = response.json()["Result"]["TokenType"]
-        self.client.headers["Authorization"] = f"{token_type} {access_token}"
+        # User get token
+        await self.client.get_token(
+            url=self.get_token_url,
+            user_login_request=login_request_user,
+        )
 
         # User retrieve
         response = await self.client.get(self.user_retrieve_url)
@@ -112,23 +104,33 @@ class TestUser(BaseTest):
         expected_result: Response[PublicUser] = Response(result=public_user)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == expected_result.dict()
+        assert response.json() == expected_result.dict(by_alias=True)
         assert response.json()["Result"]["Id"] == expected_result.result.id
 
     @transaction.rollback
     async def test_updating_user(self):
-        await self.client.login(
-            self.get_token_url,
-            self.login_request_user.email,
-            self.login_request_user.password,
+        # Creating new user
+        await self.client.post(
+            self.user_create_url, data=self.create_request_user.dict()
         )
 
+        login_request_user: UserLoginRequest = UserLoginRequest(
+            **self.create_request_user.dict()
+        )
+
+        # User get token
+        await self.client.get_token(
+            url=self.get_token_url,
+            user_login_request=login_request_user,
+        )
+
+        # User update
         response = await self.client.put(
             self.user_update_url, data=self.user_update_request.dict()
         )
 
         updated_user: User = await UsersCRUD().get_by_email(
-            self.login_request_user.email
+            self.create_request_user.email
         )
 
         public_user = PublicUser(**updated_user.dict())
@@ -136,15 +138,24 @@ class TestUser(BaseTest):
         expected_result: Response[PublicUser] = Response(result=public_user)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == expected_result.dict()
+        assert response.json() == expected_result.dict(by_alias=True)
         assert response.json()["Result"]["Id"] == expected_result.result.id
 
     @transaction.rollback
     async def test_deleting_user(self):
-        await self.client.login(
-            self.get_token_url,
-            self.login_request_user.email,
-            self.login_request_user.password,
+        # Creating new user
+        await self.client.post(
+            self.user_create_url, data=self.create_request_user.dict()
+        )
+
+        login_request_user: UserLoginRequest = UserLoginRequest(
+            **self.create_request_user.dict()
+        )
+
+        # User get token
+        await self.client.get_token(
+            url=self.get_token_url,
+            user_login_request=login_request_user,
         )
 
         response = await self.client.delete(
@@ -152,7 +163,7 @@ class TestUser(BaseTest):
         )
 
         instance: UserSchema = await UsersCRUD()._get(
-            key="email", value=self.login_request_user.email
+            key="email", value=login_request_user.email
         )
 
         assert instance.is_deleted
@@ -161,18 +172,28 @@ class TestUser(BaseTest):
 
     @transaction.rollback
     async def test_updating_password(self):
-        await self.client.login(
-            self.get_token_url,
-            self.login_request_user.email,
-            self.login_request_user.password,
+        # Creating new user
+        await self.client.post(
+            self.user_create_url, data=self.create_request_user.dict()
         )
 
+        login_request_user: UserLoginRequest = UserLoginRequest(
+            **self.create_request_user.dict()
+        )
+
+        # User get token
+        await self.client.get_token(
+            url=self.get_token_url,
+            user_login_request=login_request_user,
+        )
+
+        # Password update
         response = await self.client.put(
             self.password_update_url, data=self.password_update_request.dict()
         )
 
         updated_user: User = await UsersCRUD().get_by_email(
-            self.login_request_user.email
+            login_request_user.email
         )
 
         public_user = PublicUser(**updated_user.dict())
@@ -180,4 +201,23 @@ class TestUser(BaseTest):
         expected_result: Response[PublicUser] = Response(result=public_user)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == expected_result.dict()
+        assert response.json() == expected_result.dict(by_alias=True)
+
+        # User get token with new password
+        login_request_user: UserLoginRequest = UserLoginRequest(
+            email=self.create_request_user.dict()["email"],
+            password=self.password_update_request.dict()["password"],
+        )
+
+        response = await self.client.get_token(
+            url=self.get_token_url,
+            user_login_request=login_request_user,
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+    async def test_recovery_password(self):
+        pass
+
+    async def test_recovery_password_approve(self):
+        pass

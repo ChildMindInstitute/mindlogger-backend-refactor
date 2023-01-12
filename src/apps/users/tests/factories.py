@@ -1,37 +1,25 @@
 from pydantic_factories import ModelFactory
 
 from apps.users.domain import (
-    PublicUser,
-    User,
+    ChangePasswordRequest,
     UserCreateRequest,
-    UserLoginRequest,
     UserUpdateRequest,
 )
 
 __all__ = [
-    "PublicUserFactory",
-    "UserFactory",
     "UserCreateRequestFactory",
-    "UserLoginRequestFactory",
     "UserUpdateRequestFactory",
+    "PasswordUpdateRequestFactory",
 ]
-
-
-class PublicUserFactory(ModelFactory):
-    __model__ = PublicUser
-
-
-class UserFactory(ModelFactory):
-    __model__ = User
 
 
 class UserCreateRequestFactory(ModelFactory):
     __model__ = UserCreateRequest
 
 
-class UserLoginRequestFactory(ModelFactory):
-    __model__ = UserLoginRequest
-
-
 class UserUpdateRequestFactory(ModelFactory):
     __model__ = UserUpdateRequest
+
+
+class PasswordUpdateRequestFactory(ModelFactory):
+    __model__ = ChangePasswordRequest
