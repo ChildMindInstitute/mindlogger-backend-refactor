@@ -21,14 +21,14 @@ services:
     ports:
       - 6379:6379
 
-  webapp:
+  app:
     stdin_open: true
     tty: true
     image: mindlogger_webapp
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-    container_name: mindlogger_webapp
+    container_name: mindlogger_app
     entrypoint: /fastapi-entrypoint
     command: /fastapi-start
     env_file: .env

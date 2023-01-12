@@ -4,6 +4,7 @@ from pydantic import BaseSettings
 
 from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
+from config.cors import CorsSettings
 from config.database import DatabaseSettings
 from config.mailing import MailingSettings
 from config.notification import NotificationSettings
@@ -25,14 +26,14 @@ class Settings(BaseSettings):
     # Service
     service: ServiceSettings = ServiceSettings()
 
-    # DataBase
-    database: DatabaseSettings = DatabaseSettings()
-
     # Authentication
     authentication: AuthenticationSettings = AuthenticationSettings()
 
-    # Sentry stuff
-    sentry: SentrySettings = SentrySettings()
+    # CORS policy
+    cors: CorsSettings = CorsSettings()
+
+    # Database
+    database: DatabaseSettings = DatabaseSettings()
 
     # Redis
     redis: RedisSettings = RedisSettings()
@@ -43,7 +44,10 @@ class Settings(BaseSettings):
     # CDN configs
     cdn: CDNSettings = CDNSettings()
 
-    # FCM NOtification configs
+    # Sentry stuff
+    sentry: SentrySettings = SentrySettings()
+
+    # FCM Notification configs
     notification: NotificationSettings = NotificationSettings()
 
     # NOTE: This config is used by SQLAlchemy for imports
