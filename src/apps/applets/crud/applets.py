@@ -122,10 +122,10 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         self, user_id: int, pk: int, schema: AppletUpdate
     ) -> Applet:
         applet: Applet = await self.get_by_id(pk)
-        await self._update(
+        instance = await self._update_one(
             lookup="id",
             value=pk,
-            payload=dict(
+            schema=AppletSchema(
                 display_name=schema.display_name,
                 description=schema.description,
                 about=schema.about,
@@ -143,33 +143,18 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 report_email_body=schema.report_email_body,
             ),
         )
-        instance = Applet(
-            id=pk,
-            display_name=schema.display_name,
-            description=schema.description,
-            about=schema.about,
-            image=schema.image,
-            watermark=schema.watermark,
-            theme_id=schema.theme_id,
-            version=self._get_version(applet.version),
-            report_server_ip=schema.report_server_ip,
-            report_public_key=schema.report_public_key,
-            report_recipients=schema.report_recipients,
-            report_include_user_id=schema.report_include_user_id,
-            report_include_case_id=schema.report_include_case_id,
-            report_email_body=schema.report_email_body,
-        )
+        applet = Applet.from_orm(instance)
 
-        instance.activities = await ActivitiesCRUD().update_many(
+        applet.activities = await ActivitiesCRUD().update_many(
             applet.id, schema.activities
         )
 
         activity_map: dict[uuid.UUID, int] = dict()
-        for activity in instance.activities:
+        for activity in applet.activities:
             activity_map[activity.guid] = activity.id
 
-        instance.activity_flows = await FlowsCRUD().update_many(
+        applet.activity_flows = await FlowsCRUD().update_many(
             applet.id, schema.activity_flows, activity_map
         )
 
-        return instance
+        return applet

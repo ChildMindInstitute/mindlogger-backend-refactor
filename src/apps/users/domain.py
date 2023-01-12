@@ -10,7 +10,6 @@ __all__ = [
     "UserCreate",
     "UserLoginRequest",
     "UserCreate",
-    "UserDelete",
     "User",
     "UserCreateRequest",
     "UserUpdate",
@@ -48,12 +47,6 @@ class UserUpdate(InternalModel):
     """This model represents user `update request` data model."""
 
     full_name: str
-
-
-class UserDelete(InternalModel):
-    """This model is used in order to represent internal user delete DTO."""
-
-    is_deleted: bool = True
 
 
 class User(UserCreate):
