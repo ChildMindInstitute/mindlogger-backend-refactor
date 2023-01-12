@@ -87,4 +87,4 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         [pk] = await self._update(
             lookup="id", value=user.id, update_schema=update_schema
         )
-        return await self._fetch("id", pk)
+        return await self._fetch("id", pk.id)

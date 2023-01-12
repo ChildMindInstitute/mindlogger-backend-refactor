@@ -5,6 +5,7 @@ from apps.shared.domain import Response
 from apps.shared.test import BaseTest
 from apps.users import UserSchema, UsersCRUD
 from apps.users.domain import (
+    ChangePasswordRequest,
     PublicUser,
     User,
     UserLoginRequest,
@@ -40,6 +41,10 @@ class TestUser(BaseTest):
         full_name="Isaak Tom"
     )
 
+    password_update_request: ChangePasswordRequest = ChangePasswordRequest(
+        password="password_new"
+    )
+
     @transaction.rollback
     async def test_creating_user(self):
         # Creating new user
@@ -57,7 +62,7 @@ class TestUser(BaseTest):
         count = await UsersCRUD().count()
 
         assert response.status_code == status.HTTP_201_CREATED
-        # assert response.json() == expected_result.dict()
+        assert response.json() == expected_result.dict()
         assert count == expected_result.result.id
 
     @transaction.rollback
@@ -153,3 +158,26 @@ class TestUser(BaseTest):
         assert instance.is_deleted
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not response.content
+
+    @transaction.rollback
+    async def test_updating_password(self):
+        await self.client.login(
+            self.get_token_url,
+            self.login_request_user.email,
+            self.login_request_user.password,
+        )
+
+        response = await self.client.put(
+            self.password_update_url, data=self.password_update_request.dict()
+        )
+
+        updated_user: User = await UsersCRUD().get_by_email(
+            self.login_request_user.email
+        )
+
+        public_user = PublicUser(**updated_user.dict())
+
+        expected_result: Response[PublicUser] = Response(result=public_user)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == expected_result.dict()
