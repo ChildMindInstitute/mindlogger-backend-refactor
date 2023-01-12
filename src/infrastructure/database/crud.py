@@ -3,9 +3,9 @@ from typing import Any, Generic, Type, TypeVar
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.engine import Result
+from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Query
 
-from apps.shared.domain import InternalModel
 from infrastructure.database.base import Base
 from infrastructure.database.core import session_manager
 
@@ -27,28 +27,50 @@ class BaseCRUD(Generic[ConcreteSchema]):
             execution_options=immutabledict({"synchronize_session": False}),
         )
 
+    async def _update_one(
+        self, lookup: str, value: Any, schema: ConcreteSchema
+    ) -> ConcreteSchema:
+        """
+        Updates records by lookup and return one record wrapped to schema
+        Error cases:
+         1. If there is no record to return then raise
+                sqlalchemy.exc.NoResultFound
+         2. If there is more than 1 record is updated then raise
+                sqlalchemy.exc.MultipleResultsFound
+        """
+        query = update(self.schema_class)
+        query = query.where(getattr(self.schema_class, lookup) == value)
+        query = query.values(**dict(schema))
+        query = query.returning(self.schema_class)
+        db_result = await self._execute(query)
+        results = db_result.fetchall()
+        if len(results) == 0:
+            raise NoResultFound()
+        elif len(results) > 1:
+            raise MultipleResultsFound()
+        return self.schema_class(**dict(zip(results[0].keys(), results[0])))
+
     async def _update(
         self,
         lookup: str,
         value: Any,
-        update_schema: InternalModel | None = None,
-        payload: dict[str, Any] | None = None,
-    ) -> list:
-        """Updates an existed instance of the model in the related table"""
+        schema: ConcreteSchema,
+    ) -> list[ConcreteSchema]:
+        """
+        Update records by lookup and return records wrapped to schema
+        """
 
         query = update(self.schema_class)
         query = query.where(getattr(self.schema_class, lookup) == value)
-        if update_schema:
-            query = query.values(**update_schema.dict())
-        elif payload:
-            query = query.values(**payload)
-        else:
-            return []
+        query = query.values(**dict(schema))
+        query = query.returning(self.schema_class)
 
-        query = query.returning(self.schema_class.id)
-
-        result = await self._execute(query)
-        return result.fetchall()
+        db_result = await self._execute(query)
+        results = db_result.fetchall()
+        return [
+            self.schema_class(**dict(zip(result.keys(), result)))
+            for result in results
+        ]
 
     async def _get(self, key: str, value: Any) -> ConcreteSchema | None:
         """Return only one result by filters"""

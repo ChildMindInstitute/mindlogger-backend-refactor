@@ -88,14 +88,19 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
             raise ThemePermissionsError(
                 "You do not have permissions to update this theme."
             )
-        await self._update(
+        instance = await self._update_one(
             lookup="id",
             value=pk,
-            update_schema=update_schema,
+            schema=ThemeSchema(
+                name=update_schema.name,
+                logo=update_schema.logo,
+                background_image=update_schema.background_image,
+                primary_color=str(update_schema.primary_color),
+                secondary_color=str(update_schema.secondary_color),
+                tertiary_color=str(update_schema.tertiary_color),
+                public=update_schema.public,
+                allow_rename=update_schema.allow_rename,
+            ),
         )
 
-        # Create internal data model
-
-        theme = await self.get_by_id(pk)
-
-        return theme
+        return Theme.from_orm(instance)

@@ -16,5 +16,12 @@ class _Base:
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
     is_deleted = Column(Boolean, default=False)
 
+    def __iter__(self):
+        return (
+            (key, val)
+            for key, val in self.__dict__.items()
+            if not key.startswith("_")
+        )
+
 
 Base = declarative_base(cls=_Base, bind=engine.sync_engine)
