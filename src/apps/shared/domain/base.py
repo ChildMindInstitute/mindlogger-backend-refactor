@@ -4,7 +4,10 @@ __all__ = ["InternalModel", "PublicModel"]
 
 
 def to_camelcase(string: str) -> str:
-    resp = "".join(word.capitalize() for word in string.split("_"))
+    resp = "".join(
+        word.capitalize() if index else word
+        for index, word in enumerate(string.split("_"))
+    )
     return resp
 
 
