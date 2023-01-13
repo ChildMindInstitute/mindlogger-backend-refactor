@@ -2,9 +2,8 @@ import uuid
 
 import sqlalchemy as sa
 from sqlalchemy import delete
-from sqlalchemy.exc import IntegrityError
 
-from apps.activity_flows.crud.flow_item import FlowItemsCRUD
+from apps.activity_flows.crud import FlowItemsCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.activity_flows.domain import (
     ActivityFlow,
@@ -19,37 +18,6 @@ from infrastructure.database import BaseCRUD
 
 class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
     schema_class = ActivityFlowSchema
-
-    async def create(
-        self,
-        applet_id: int,
-        flow_create: ActivityFlowCreate,
-        ordering: int,
-        activity_map: dict[uuid.UUID, int],
-    ) -> ActivityFlow:
-        try:
-            instance: ActivityFlowSchema = await self._create(
-                ActivityFlowSchema(
-                    name=flow_create.name,
-                    description=flow_create.description,
-                    applet_id=applet_id,
-                    is_single_report=flow_create.is_single_report,
-                    hide_badge=flow_create.hide_badge,
-                    ordering=ordering,
-                )
-            )
-        except IntegrityError:
-            raise
-
-        flow: ActivityFlow = ActivityFlow.from_orm(instance)
-
-        for index, item in enumerate(flow_create.items):
-            flow.items.append(
-                await FlowItemsCRUD().create(
-                    flow.id, item, index + 1, activity_map
-                )
-            )
-        return flow
 
     async def create_many(
         self,

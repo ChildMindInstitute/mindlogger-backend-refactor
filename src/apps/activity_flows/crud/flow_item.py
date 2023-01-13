@@ -20,22 +20,6 @@ from infrastructure.database import BaseCRUD
 class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
     schema_class = ActivityFlowItemSchema
 
-    async def create(
-        self,
-        flow_id: int,
-        item_create: ActivityFlowItemCreate,
-        ordering: int,
-        activity_map: dict[uuid.UUID, int],
-    ) -> ActivityFlowItem:
-        instance: ActivityFlowItemSchema = await self._create(
-            ActivityFlowItemSchema(
-                activity_flow_id=flow_id,
-                activity_id=activity_map[item_create.activity_guid],
-                ordering=ordering,
-            )
-        )
-        return ActivityFlowItem.from_orm(instance)
-
     async def create_many(
         self,
         flows_map: dict[uuid.UUID, int],

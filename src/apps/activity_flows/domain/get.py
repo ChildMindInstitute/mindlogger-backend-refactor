@@ -33,6 +33,7 @@ class ActivityFlow(InternalModel):
     description: dict[str, str]
     is_single_report: bool = False
     hide_badge: bool = False
+    ordering: int
     items: list[ActivityFlowItem] = Field(default_factory=list)
 
 

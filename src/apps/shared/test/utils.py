@@ -1,4 +1,4 @@
-from sqlalchemy import text, Integer
+from sqlalchemy import Integer, text
 
 from infrastructure.database import Base, session_manager
 
@@ -9,7 +9,7 @@ async def update_sequence():
         for primary_key in table.primary_key.columns:
             if not isinstance(primary_key.type, Integer):
                 continue
-            if primary_key.autoincrement not in ('auto', True):
+            if primary_key.autoincrement not in ("auto", True):
                 continue
             query = text(
                 f"""

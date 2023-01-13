@@ -91,7 +91,7 @@ class TestClient:
             url, data=dict(email=username, password=password)
         )
         assert response.status_code == 200, response.json()
-        access_token = response.json()["Result"]["AccessToken"]
+        access_token = response.json()["result"]["accessToken"]
         self.headers["Authorization"] = f"Bearer {access_token}"
 
     async def logout(self):

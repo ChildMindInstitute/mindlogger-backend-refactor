@@ -1,6 +1,6 @@
 from fastapi import Body, Depends
 
-from apps.activities.crud.reusable_item_choices import ReusabelItemChoiceCRUD
+from apps.activities.crud import ReusabelItemChoiceCRUD
 from apps.activities.domain.reusable_item_choices import (
     PublicReusableItemChoice,
     ReusableItemChoice,

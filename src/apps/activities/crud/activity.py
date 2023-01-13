@@ -2,7 +2,7 @@ import uuid
 
 import sqlalchemy as sa
 
-from apps.activities.crud.activity_item import ActivityItemsCRUD
+from apps.activities.crud import ActivityItemsCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain import (
     Activity,
