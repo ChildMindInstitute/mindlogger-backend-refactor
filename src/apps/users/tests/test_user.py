@@ -25,7 +25,7 @@ class TestUser(BaseTest):
     user_update_request = UserUpdateRequestFactory.build()
 
     @transaction.rollback
-    async def test_creating_user(self):
+    async def test_user_create(self):
         # Creating new user
         response = await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -46,7 +46,7 @@ class TestUser(BaseTest):
         assert count == expected_result.result.id
 
     @transaction.rollback
-    async def test_creating_user_exist(self):
+    async def test_user_create_exist(self):
         # Creating new user
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -59,7 +59,7 @@ class TestUser(BaseTest):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @transaction.rollback
-    async def test_retrieving_user(self):
+    async def test_user_retrieve(self):
         # Creating new user
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -91,7 +91,7 @@ class TestUser(BaseTest):
         assert response.json()["Result"]["Id"] == expected_result.result.id
 
     @transaction.rollback
-    async def test_updating_user(self):
+    async def test_user_update(self):
         # Creating new user
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -125,7 +125,7 @@ class TestUser(BaseTest):
         assert response.json()["Result"]["Id"] == expected_result.result.id
 
     @transaction.rollback
-    async def test_deleting_user(self):
+    async def test_user_delete(self):
         # Creating new user
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()

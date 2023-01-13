@@ -37,7 +37,7 @@ class TestPassword(BaseTest):
     )
 
     @transaction.rollback
-    async def test_updating_password(self):
+    async def test_password_update(self):
         # Creating new user
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -82,8 +82,45 @@ class TestPassword(BaseTest):
 
         assert response.status_code == status.HTTP_200_OK
 
-    async def test_recovery_password(self):
-        pass
+    async def test_password_recovery(self, mocker):
+        # Creating new user
+        await self.client.post(
+            self.user_create_url, data=self.create_request_user.dict()
+        )
 
-    async def test_recovery_password_approve(self):
+        login_request_user: UserLoginRequest = UserLoginRequest(
+            **self.create_request_user.dict()
+        )
+        await self.client.get_token(
+            url=self.get_token_url,
+            user_login_request=login_request_user,
+        )
+        cache_delete_all_entries = mocker.patch(
+            "apps.users.services.core.PasswordRecoveryService._cache.delete_all_entries"
+        )
+        cache_set = mocker.patch(
+            "apps.users.services.core.PasswordRecoveryService._cache.set"
+        )
+        mail_send = mocker.patch(
+            "apps.users.services.core.MailingService.send"
+        )
+
+        response = await self.client.put(
+            self.password_recovery_url,
+            data=self.password_recovery_request.dict(),
+        )
+
+        internal_response: Response[PublicUser] = Response[PublicUser](
+            **response.json()
+        )
+        
+        # TODO: Add user here
+        # expected_result = Response[PublicUser]()
+
+        assert cache_delete_all_entries.call_count == 1
+        assert cache_set.call_count == 1
+        assert mail_send.call_count == 1
+        # assert internal_response.result == expected_result
+
+    async def test_password_recovery_approve(self):
         pass
