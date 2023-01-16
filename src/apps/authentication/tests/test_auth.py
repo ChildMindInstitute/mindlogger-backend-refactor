@@ -4,7 +4,7 @@ from starlette import status
 
 from apps.authentication.domain.token import Token
 from apps.authentication.router import router as auth_router
-from apps.authentication.services import AuthenticationService, TokensService
+from apps.authentication.services import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
@@ -61,29 +61,26 @@ class TestAuthentication(BaseTest):
         assert response.json() == expected_result.dict(by_alias=True)
 
     @transaction.rollback
-    @patch(
-        "apps.authentication.services.core.TokensService.add_access_token_to_blacklist"
-    )
+    @patch("apps.authentication.services.core.TokensBlacklistCache.set")
     async def test_delete_access_token(
         self,
-        mock_object_set,
+        cache_set_mock,
     ):
-
         # Creating new user
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
-        login_request_user: UserLoginRequest = UserLoginRequest(
+        # Authorize user
+        login_request_user = UserLoginRequest(
             **self.create_request_user.dict()
         )
-
-        # User get token
-        internal_response = await self.client.get_token(
+        await self.client.get_token(
             url=self.get_token_url,
             user_login_request=login_request_user,
         )
 
-        response = await self.client.post(url=self.delete_token_url)
+        response = await self.client.delete(url=self.delete_token_url)
 
-        assert mock_object_set is TokensService.add_access_token_to_blacklist
+        assert cache_set_mock.call_count == 1
+        assert response.status_code == status.HTTP_204_NO_CONTENT

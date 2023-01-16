@@ -2,10 +2,10 @@ from pydantic_factories import ModelFactory
 
 from apps.users.domain import (
     ChangePasswordRequest,
-    UserCreateRequest,
-    UserUpdateRequest,
     PasswordRecoveryApproveRequest,
     PasswordRecoveryInfo,
+    UserCreateRequest,
+    UserUpdateRequest,
 )
 from infrastructure.cache.domain import CacheEntry
 

@@ -18,10 +18,10 @@ from apps.users.domain import (
 from apps.users.router import router as user_router
 from apps.users.services import PasswordRecoveryCache
 from apps.users.tests.factories import (
-    PasswordUpdateRequestFactory,
-    UserCreateRequestFactory,
     CacheEntryFactory,
     PasswordRecoveryInfoFactory,
+    PasswordUpdateRequestFactory,
+    UserCreateRequestFactory,
 )
 from infrastructure.database import transaction
 
