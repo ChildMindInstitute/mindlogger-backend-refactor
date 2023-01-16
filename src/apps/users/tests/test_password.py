@@ -98,9 +98,9 @@ class TestPassword(BaseTest):
     @patch("apps.users.services.core.PasswordRecoveryCache.delete_all_entries")
     async def test_password_recovery(
         self,
-        mock_object_delete_all_entries,
-        mock_object_set,
-        mock_object_send,
+        cache_delete_all_entries_mock,
+        cache_set_mock,
+        mailing_send_mock,
     ):
         # Creating new user
         internal_response: Response[PublicUser] = await self.client.post(
@@ -122,14 +122,14 @@ class TestPassword(BaseTest):
         )
 
         assert (
-            mock_object_delete_all_entries
+            cache_delete_all_entries_mock
             is PasswordRecoveryCache.delete_all_entries
         )
-        assert mock_object_set is PasswordRecoveryCache.set
-        assert mock_object_send is MailingService.send
-        assert mock_object_delete_all_entries.call_count == 1
-        assert mock_object_set.call_count == 1
-        assert mock_object_send.call_count == 1
+        assert cache_set_mock is PasswordRecoveryCache.set
+        assert mailing_send_mock is MailingService.send
+        assert cache_delete_all_entries_mock.call_count == 1
+        assert cache_set_mock.call_count == 1
+        assert mailing_send_mock.call_count == 1
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == expected_result
 
@@ -141,8 +141,8 @@ class TestPassword(BaseTest):
     )
     async def test_password_recovery_approve(
         self,
-        mock_object_get,
-        mock_object_delete_all_entries,
+        cache_get_mock,
+        cache_delete_all_entries_mock,
     ):
         # Creating new user
         internal_response: Response[PublicUser] = await self.client.post(
@@ -166,12 +166,12 @@ class TestPassword(BaseTest):
             data=data,
         )
 
-        assert mock_object_get is PasswordRecoveryCache.get
+        assert cache_get_mock is PasswordRecoveryCache.get
         assert (
-            mock_object_delete_all_entries
+            cache_delete_all_entries_mock
             is PasswordRecoveryCache.delete_all_entries
         )
-        assert mock_object_get.call_count == 1
-        assert mock_object_delete_all_entries.call_count == 1
+        assert cache_get_mock.call_count == 1
+        assert cache_delete_all_entries_mock.call_count == 1
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == expected_result

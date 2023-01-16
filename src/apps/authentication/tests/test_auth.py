@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from starlette import status
 
-from apps.authentication.domain.token import Token
+from apps.authentication.domain.token import RefreshAccessTokenRequest, Token
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
 from apps.shared.domain.response import Response
@@ -29,11 +29,10 @@ class TestAuthentication(BaseTest):
             self.user_create_url, data=self.create_request_user.dict()
         )
 
+        # Authorize user
         login_request_user: UserLoginRequest = UserLoginRequest(
             **self.create_request_user.dict()
         )
-
-        # User get token
         response = await self.client.post(
             url=self.get_token_url,
             data=login_request_user.dict(),
@@ -84,3 +83,26 @@ class TestAuthentication(BaseTest):
 
         assert cache_set_mock.call_count == 1
         assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    @transaction.rollback
+    async def test_refresh_access_token(self):
+        # Creating new user
+        internal_response = await self.client.post(
+            self.user_create_url, data=self.create_request_user.dict()
+        )
+
+        # Creating Refresh access token
+        refresh_access_token_request = RefreshAccessTokenRequest(
+            refresh_token=AuthenticationService.create_refresh_token(
+                {"sub": str(internal_response.json()["Result"]["Id"])}
+            )
+        )
+
+        print(refresh_access_token_request.dict())
+        response = await self.client.post(
+            url=self.get_token_url,
+            data=refresh_access_token_request.dict(),
+        )
+        print("!!!!!!!####@#@#@#@@### ", response.json())
+
+        assert response.status_code == status.HTTP_200_OK
