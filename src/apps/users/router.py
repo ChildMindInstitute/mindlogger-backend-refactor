@@ -53,7 +53,6 @@ router.delete(
     status_code=status.HTTP_204_NO_CONTENT,
     response_model=None,
     responses={
-        **NO_CONTENT_ERROR_RESPONSES,
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },

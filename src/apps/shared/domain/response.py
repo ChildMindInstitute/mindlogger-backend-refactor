@@ -1,4 +1,5 @@
-from typing import Generic
+from collections.abc import Mapping
+from typing import Any, Generic
 
 from pydantic import conlist
 from pydantic.generics import GenericModel
@@ -27,15 +28,18 @@ class ErrorResponse(PublicModel):
 
 
 # NOTE: This constant represents the default error response for each request
-__DEFAULT_ERROR_RESPONSE = {"model": ErrorResponse}
-NO_CONTENT_ERROR_RESPONSES = {
+__DEFAULT_ERROR_RESPONSE: dict[str, Any] = {"model": ErrorResponse}
+
+ResopnseType = Mapping[int | str, dict[str, Any]]
+
+NO_CONTENT_ERROR_RESPONSES: ResopnseType = {
     status.HTTP_404_NOT_FOUND: {},
 }
-AUTHENTICATION_ERROR_RESPONSES = {
+AUTHENTICATION_ERROR_RESPONSES: ResopnseType = {
     status.HTTP_401_UNAUTHORIZED: __DEFAULT_ERROR_RESPONSE,
     status.HTTP_403_FORBIDDEN: __DEFAULT_ERROR_RESPONSE,
 }
-DEFAULT_OPENAPI_RESPONSE: dict[int, dict] = {
+DEFAULT_OPENAPI_RESPONSE: ResopnseType = {
     status.HTTP_500_INTERNAL_SERVER_ERROR: __DEFAULT_ERROR_RESPONSE,
     status.HTTP_400_BAD_REQUEST: __DEFAULT_ERROR_RESPONSE,
     status.HTTP_422_UNPROCESSABLE_ENTITY: {},
