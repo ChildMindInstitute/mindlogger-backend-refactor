@@ -1,10 +1,12 @@
+import pytest
 from starlette import status
 
 from apps.authentication.router import router as auth_router
 from apps.shared.domain import Response
 from apps.shared.test import BaseTest
-from apps.users import UserSchema, UsersCRUD
+from apps.users import UsersCRUD
 from apps.users.domain import PublicUser, User, UserLoginRequest
+from apps.users.errors import UserIsDeletedError
 from apps.users.router import router as user_router
 from apps.users.tests.factories import (
     UserCreateRequestFactory,
@@ -126,29 +128,29 @@ class TestUser(BaseTest):
 
     @transaction.rollback
     async def test_user_delete(self):
+        """UsersCRUD.get_by_email should raise an error
+        if user is deleted.
+        """
         # Creating new user
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
+        # Authorize user
         login_request_user: UserLoginRequest = UserLoginRequest(
             **self.create_request_user.dict()
         )
-
-        # User get token
         await self.client.get_token(
             url=self.get_token_url,
             user_login_request=login_request_user,
         )
 
+        # Delete user
         response = await self.client.delete(
             self.user_delete_url,
         )
 
-        instance: UserSchema = await UsersCRUD()._get(
-            key="email", value=login_request_user.email
-        )
+        with pytest.raises(UserIsDeletedError):
+            await UsersCRUD().get_by_email(login_request_user.email)
 
-        assert instance.is_deleted
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not response.content

@@ -63,8 +63,8 @@ class User(UserCreate):
 class PublicUser(_UserBase, PublicModel):
     """Public user data model."""
 
-    full_name: str
     id: PositiveInt
+    full_name: str
 
 
 class ChangePasswordRequest(InternalModel):
