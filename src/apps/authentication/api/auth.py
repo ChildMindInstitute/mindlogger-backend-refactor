@@ -11,7 +11,7 @@ from apps.authentication.errors import BadCredentials
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.errors import NotContentError
-from apps.users.domain import DeviceIdRequest, User, UserLoginRequest
+from apps.users.domain import User, UserLoginRequest, UserLogoutRequest
 from config import settings
 
 
@@ -73,7 +73,7 @@ async def refresh_access_token(
 async def delete_access_token(
     token: InternalToken = Depends(get_current_token),
     _: User = Depends(get_current_user),
-    schema: DeviceIdRequest = Body(...),
+    schema: UserLogoutRequest = Body(...),
 ):
     """Add token to the blacklist."""
 

@@ -6,7 +6,6 @@ from pydantic.types import PositiveInt
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
-    "DeviceIdRequest",
     "PublicUser",
     "UserCreate",
     "UserLoginRequest",
@@ -14,6 +13,7 @@ __all__ = [
     "User",
     "UserCreateRequest",
     "UserUpdate",
+    "UserLogoutRequest",
     "ChangePasswordRequest",
     "UserChangePassword",
     "PasswordRecoveryRequest",
@@ -109,5 +109,5 @@ class PasswordRecoveryApproveRequest(InternalModel):
     password: str
 
 
-class DeviceIdRequest(InternalModel):
+class UserLogoutRequest(InternalModel):
     device_id: str
