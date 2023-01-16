@@ -1,13 +1,10 @@
 from typing import Any
 
-from sqlalchemy.exc import IntegrityError
-
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import (
     User,
     UserChangePassword,
     UserCreate,
-    UserDelete,
     UserUpdateRequest,
 )
 from apps.users.errors import UserIsDeletedError, UserNotFound, UsersError
@@ -49,12 +46,9 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
     async def save(self, schema: UserCreate) -> tuple[User, bool]:
         # Save user into the database
-        try:
-            instance: UserSchema = await self._create(
-                self.schema_class(**schema.dict())
-            )
-        except IntegrityError:
-            raise UsersError(message="User already exists")
+        instance: UserSchema = await self._create(
+            self.schema_class(**schema.dict())
+        )
 
         # Create internal data model
         user = User.from_orm(instance)
@@ -65,26 +59,35 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         self, user: User, update_schema: UserUpdateRequest
     ) -> User:
         # Update user in database
-        [pk] = await self._update(
-            lookup="id", value=user.id, update_schema=update_schema
+        instance = await self._update_one(
+            lookup="id",
+            value=user.id,
+            schema=UserSchema(full_name=update_schema.full_name),
         )
 
         # Create internal data model
-        user = await self.get_by_id(pk.id)
+        user = User.from_orm(instance)
 
         return user
 
-    async def delete(self, user: User):
+    async def delete(self, user: User) -> User:
         # Update user in database
-        await self._update(
-            lookup="id", value=user.id, update_schema=UserDelete()
+        instance = await self._update_one(
+            lookup="id", value=user.id, schema=UserSchema(is_deleted=True)
         )
+
+        # Create internal data model
+        user = User.from_orm(instance)
+
+        return user
 
     async def change_password(
         self, user: User, update_schema: UserChangePassword
     ) -> User:
         # Update user in database
-        [pk] = await self._update(
-            lookup="id", value=user.id, update_schema=update_schema
+        instance = await self._update_one(
+            lookup="id",
+            value=user.id,
+            schema=UserSchema(hashed_password=update_schema.hashed_password),
         )
-        return await self._fetch("id", pk.id)
+        return User.from_orm(instance)
