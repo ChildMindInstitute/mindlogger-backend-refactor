@@ -1,5 +1,7 @@
 from typing import Any
 
+from sqlalchemy.exc import IntegrityError
+
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import (
     User,
@@ -9,8 +11,6 @@ from apps.users.domain import (
 )
 from apps.users.errors import UserIsDeletedError, UserNotFound, UsersError
 from infrastructure.database.crud import BaseCRUD
-
-from sqlalchemy.exc import IntegrityError
 
 
 class UsersCRUD(BaseCRUD[UserSchema]):
