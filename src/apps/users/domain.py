@@ -36,6 +36,7 @@ class UserCreateRequest(_UserBase, PublicModel):
 
 class UserLoginRequest(_UserBase, PublicModel):
     password: str
+    device_id: str | None = None
 
 
 class UserCreate(_UserBase, InternalModel):
