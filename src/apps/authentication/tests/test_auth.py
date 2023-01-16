@@ -98,11 +98,9 @@ class TestAuthentication(BaseTest):
             )
         )
 
-        print(refresh_access_token_request.dict())
         response = await self.client.post(
-            url=self.get_token_url,
+            url=self.refresh_access_token_url,
             data=refresh_access_token_request.dict(),
         )
-        print("!!!!!!!####@#@#@#@@### ", response.json())
 
         assert response.status_code == status.HTTP_200_OK
