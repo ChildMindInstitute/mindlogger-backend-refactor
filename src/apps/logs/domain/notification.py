@@ -18,7 +18,7 @@ class _NotificationLogBase(BaseModel):
 
 
 class NotificationLogQuery(_NotificationLogBase):
-    limit: PositiveInt | None
+    limit: PositiveInt = 1
 
 
 class _NotificationLogInit(_NotificationLogBase):
