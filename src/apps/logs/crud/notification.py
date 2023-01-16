@@ -30,9 +30,8 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
                 and self.schema_class.device_id == query_set.device_id
             )
             .order_by(self.schema_class.created_at.desc())
+            .limit(query_set.limit)
         )
-        if query_set.limit:
-            query = query.limit(query_set.limit)
 
         result: Result = await self._execute(query)
         results: list[PublicNotificationLog] = result.scalars().all()
