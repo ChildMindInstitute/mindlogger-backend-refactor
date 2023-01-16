@@ -42,7 +42,7 @@ async def send_invitation(
 
     # TODO: Replace with `await BaseCRUD().exists()`
     # Check if applet exists in the database
-    await AppletsCRUD().get_by_id(invitation_schema.applet_id)
+    await AppletsCRUD().get_applet(invitation_schema.applet_id)
 
     # Send the invitation using the internal Invitation service
     invitation: Invitation = await InvitationsService(user).send_invitation(

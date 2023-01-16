@@ -1,9 +1,53 @@
+import uuid
+
 from pydantic import Field
 from pydantic.types import PositiveInt
 
-from apps.activities.domain import ActivityUpdate
-from apps.activity_flows.domain import ActivityFlowUpdate
 from apps.shared.domain import InternalModel
+
+
+class ActivityItemUpdate(InternalModel):
+    id: int | None
+    question: dict[str, str]
+    response_type: str
+    answers: list
+    color_palette: str = ""
+    timer: int = 0
+    has_token_value: bool = False
+    is_skippable: bool = False
+    has_alert: bool = False
+    has_score: bool = False
+    is_random: bool = False
+    is_able_to_move_to_previous: bool = False
+    has_text_response: bool = False
+
+
+class ActivityUpdate(InternalModel):
+    id: int | None
+    guid: uuid.UUID
+    name: str
+    description: dict[str, str]
+    splash_screen: str = ""
+    image: str = ""
+    show_all_at_once: bool = False
+    is_skippable: bool = False
+    is_reviewable: bool = False
+    response_is_editable: bool = False
+    items: list[ActivityItemUpdate]
+
+
+class ActivityFlowItemUpdate(InternalModel):
+    id: int | None = None
+    activity_guid: uuid.UUID
+
+
+class ActivityFlowUpdate(InternalModel):
+    id: int | None
+    name: str
+    description: dict[str, str]
+    is_single_report: bool = False
+    hide_badge: bool = False
+    items: list[ActivityFlowItemUpdate]
 
 
 class AppletUpdate(InternalModel):

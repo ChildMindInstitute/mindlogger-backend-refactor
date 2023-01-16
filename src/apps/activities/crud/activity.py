@@ -2,15 +2,13 @@ import uuid
 
 import sqlalchemy as sa
 
-from apps.activities.crud import ActivityItemsCRUD
+from apps.activities.crud.activity_item import ActivityItemsCRUD
 from apps.activities.db.schemas import ActivitySchema
-from apps.activities.domain import (
-    Activity,
-    ActivityCreate,
-    ActivityItem,
-    ActivityItemCreate,
-    ActivityItemUpdate,
-    ActivityUpdate,
+from apps.applets.domain import (
+    creating_applet,
+    detailing_applet,
+    fetching_applet,
+    updating_applet,
 )
 from infrastructure.database import BaseCRUD
 
@@ -21,10 +19,14 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
     async def create_many(
         self,
         applet_id: int,
-        activities_create: list[ActivityCreate],
-    ) -> list[Activity]:
+        activities_create: list[creating_applet.ActivityCreate],
+    ) -> tuple[
+        list[fetching_applet.Activity], list[fetching_applet.ActivityItem]
+    ]:
         activity_schemas = []
-        activity_schema_map: dict[uuid.UUID, list[ActivityItemCreate]] = dict()
+        activity_schema_map: dict[
+            uuid.UUID, list[creating_applet.ActivityItemCreate]
+        ] = dict()
         for index, activity_create in enumerate(activities_create):
             activity_schema_map[activity_create.guid] = activity_create.items
             activity_schemas.append(
@@ -43,36 +45,31 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
                 )
             )
 
-        instances: list[ActivitySchema] = await self._create_many(
-            activity_schemas
-        )
-        activities: list[Activity] = []
+        instances = await self._create_many(activity_schemas)
+        activities: list[fetching_applet.Activity] = []
         activity_guid_id_map: dict[uuid.UUID, int] = dict()
-        activity_id_map: dict[int, Activity] = dict()
 
         for instance in instances:
-            activity: Activity = Activity.from_orm(instance)
-            activities.append(activity)
-            activity_guid_id_map[activity.guid] = activity.id
-            activity_id_map[activity.id] = activity
+            activities.append(fetching_applet.Activity.from_orm(instance))
+            activity_guid_id_map[instance.guid] = instance.id
 
-        items: list[ActivityItem] = await ActivityItemsCRUD().create_many(
+        items = await ActivityItemsCRUD().create_many(
             activity_guid_id_map, activity_schema_map
         )
-        for item in items:
-            activity_id_map[item.activity_id].items.append(item)
 
-        return activities
+        return activities, items
 
     async def update_many(
         self,
         applet_id: int,
-        activities_update: list[ActivityUpdate],
-    ) -> list[Activity]:
-        await self.clear_applet_activities(applet_id)
-
+        activities_update: list[updating_applet.ActivityUpdate],
+    ) -> tuple[
+        list[fetching_applet.Activity], list[fetching_applet.ActivityItem]
+    ]:
         activity_schemas = []
-        activity_schema_map: dict[uuid.UUID, list[ActivityItemUpdate]] = dict()
+        activity_schema_map: dict[
+            uuid.UUID, list[updating_applet.ActivityItemUpdate]
+        ] = dict()
 
         for index, activity_update in enumerate(activities_update):
             activity_schema_map[activity_update.guid] = activity_update.items
@@ -83,23 +80,18 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         instances: list[ActivitySchema] = await self._create_many(
             activity_schemas
         )
-        activities: list[Activity] = []
+        activities: list[fetching_applet.Activity] = []
         activity_guid_id_map: dict[uuid.UUID, int] = dict()
-        activity_id_map: dict[int, Activity] = dict()
 
         for instance in instances:
-            activity: Activity = Activity.from_orm(instance)
-            activities.append(activity)
-            activity_guid_id_map[activity.guid] = activity.id
-            activity_id_map[activity.id] = activity
+            activities.append(fetching_applet.Activity.from_orm(instance))
+            activity_guid_id_map[instance.guid] = instance.id
 
-        items: list[ActivityItem] = await ActivityItemsCRUD().update_many(
+        items = await ActivityItemsCRUD().update_many(
             activity_guid_id_map, activity_schema_map
         )
-        for item in items:
-            activity_id_map[item.activity_id].items.append(item)
 
-        return activities
+        return activities, items
 
     async def clear_applet_activities(self, applet_id):
         await ActivityItemsCRUD().clear_applet_activity_items(
@@ -113,24 +105,31 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         await self._execute(query)
 
     def _update_to_schema(
-        self, applet_id: int, index: int, schema: ActivityUpdate
+        self,
+        applet_id: int,
+        index: int,
+        activity_update: updating_applet.ActivityUpdate,
     ):
         return self.schema_class(
-            id=schema.id or None,
+            id=activity_update.id or None,
             applet_id=applet_id,
-            guid=schema.guid,
-            name=schema.name,
-            description=schema.description,
-            splash_screen=schema.splash_screen,
-            image=schema.image,
-            show_all_at_once=schema.show_all_at_once,
-            is_skippable=schema.is_skippable,
-            is_reviewable=schema.is_reviewable,
-            response_is_editable=schema.response_is_editable,
+            guid=activity_update.guid,
+            name=activity_update.name,
+            description=activity_update.description,
+            splash_screen=activity_update.splash_screen,
+            image=activity_update.image,
+            show_all_at_once=activity_update.show_all_at_once,
+            is_skippable=activity_update.is_skippable,
+            is_reviewable=activity_update.is_reviewable,
+            response_is_editable=activity_update.response_is_editable,
             ordering=index + 1,
         )
 
-    async def get_by_applet_id(self, id_: int) -> list[Activity]:
+    async def get_by_applet_id(
+        self, id_: int
+    ) -> tuple[
+        list[detailing_applet.Activity], dict[int, detailing_applet.Activity]
+    ]:
         activities = []
         activity_maps = dict()
         activity_items = await ActivityItemsCRUD().get_by_applet_id(id_)
@@ -138,12 +137,14 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         for activity_item in activity_items:
             activity_id = activity_item.activity.id
             if activity_id not in activity_maps:
-                activity = Activity.from_orm(activity_item.activity)
+                activity = detailing_applet.Activity.from_orm(
+                    activity_item.activity
+                )
                 activity_maps[activity_id] = activity
                 activities.append(activity)
 
             activity_maps[activity_id].items.append(
-                ActivityItem.from_orm(activity_item)
+                detailing_applet.ActivityItem.from_orm(activity_item)
             )
 
-        return activities
+        return activities, activity_maps

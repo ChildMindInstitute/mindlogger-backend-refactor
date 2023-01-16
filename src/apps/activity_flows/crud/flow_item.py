@@ -8,12 +8,12 @@ from apps.activity_flows.db.schemas import (
     ActivityFlowItemSchema,
     ActivityFlowSchema,
 )
-from apps.activity_flows.domain import (
-    ActivityFlowItem,
-    ActivityFlowItemCreate,
-    ActivityFlowItemUpdate,
-)
 from apps.applets.db.schemas import AppletSchema
+from apps.applets.domain import (
+    creating_applet,
+    fetching_applet,
+    updating_applet,
+)
 from infrastructure.database import BaseCRUD
 
 
@@ -23,33 +23,40 @@ class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
     async def create_many(
         self,
         flows_map: dict[uuid.UUID, int],
-        items_map: dict[uuid.UUID, list[ActivityFlowItemCreate]],
-        activity_map: dict[uuid.UUID, int],
-    ) -> list[ActivityFlowItem]:
+        items_map: dict[
+            uuid.UUID, list[creating_applet.ActivityFlowItemCreate]
+        ],
+        activity_map: dict[uuid.UUID, fetching_applet.Activity],
+    ) -> list[fetching_applet.ActivityFlowItem]:
+
         items_schemas: list[ActivityFlowItemSchema] = []
         for flow_guid, items_create in items_map.items():
             flow_id: int = flows_map[flow_guid]
             for index, item_crete in enumerate(items_create):
+                activity = activity_map[item_crete.activity_guid]
                 items_schemas.append(
                     ActivityFlowItemSchema(
                         activity_flow_id=flow_id,
-                        activity_id=activity_map[item_crete.activity_guid],
+                        activity_id=activity.id,
                         ordering=index + 1,
                     )
                 )
 
         instances = await self._create_many(items_schemas)
-        items: list[ActivityFlowItem] = []
+        items: list[fetching_applet.ActivityFlowItem] = []
         for instance in instances:
-            items.append(ActivityFlowItem.from_orm(instance))
+            flow_item = fetching_applet.ActivityFlowItem.from_orm(instance)
+            items.append(flow_item)
         return items
 
     async def update_many(
         self,
         flows_map: dict[uuid.UUID, int],
-        items_map: dict[uuid.UUID, list[ActivityFlowItemUpdate]],
+        items_map: dict[
+            uuid.UUID, list[updating_applet.ActivityFlowItemUpdate]
+        ],
         activity_map: dict[uuid.UUID, int],
-    ) -> list[ActivityFlowItem]:
+    ) -> list[fetching_applet.ActivityFlowItem]:
         items_schemas: list[ActivityFlowItemSchema] = []
         for flow_guid, items_update in items_map.items():
             flow_id: int = flows_map[flow_guid]
@@ -64,13 +71,10 @@ class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
                 )
 
         instances = await self._create_many(items_schemas)
-        items: list[ActivityFlowItem] = []
+        items: list[fetching_applet.ActivityFlowItem] = []
         for instance in instances:
-            items.append(ActivityFlowItem.from_orm(instance))
+            items.append(fetching_applet.ActivityFlowItem.from_orm(instance))
         return items
-
-    def _get_id_or_sequence(self, id_: int | None = None):
-        return id_ or sa.Sequence(self.schema_class.sequence_name).next_value()
 
     async def clear_applet_flow_items(self, flow_id_query):
         query = delete(self.schema_class).where(
@@ -78,7 +82,9 @@ class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
         )
         await self._execute(query)
 
-    async def get_by_applet_id(self, applet_id) -> list:
+    async def get_by_applet_id(
+        self, applet_id
+    ) -> list[ActivityFlowItemSchema]:
         query: sa.orm.Query = sa.select(ActivityFlowItemSchema)
         query = query.join(
             ActivityFlowSchema,

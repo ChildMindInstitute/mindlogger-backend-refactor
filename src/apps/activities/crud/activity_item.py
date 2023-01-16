@@ -4,12 +4,12 @@ import sqlalchemy as sa
 import sqlalchemy.orm
 
 from apps.activities.db.schemas import ActivityItemSchema, ActivitySchema
-from apps.activities.domain import (
-    ActivityItem,
-    ActivityItemCreate,
-    ActivityItemUpdate,
-)
 from apps.applets.db.schemas import AppletSchema
+from apps.applets.domain import (
+    creating_applet,
+    fetching_applet,
+    updating_applet,
+)
 from infrastructure.database import BaseCRUD
 
 
@@ -19,8 +19,8 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
     async def create_many(
         self,
         activities_map: dict[uuid.UUID, int],
-        items_map: dict[uuid.UUID, list[ActivityItemCreate]],
-    ) -> list[ActivityItem]:
+        items_map: dict[uuid.UUID, list[creating_applet.ActivityItemCreate]],
+    ) -> list[fetching_applet.ActivityItem]:
         items_schemas: list[ActivityItemSchema] = []
         for activity_guid, items_create in items_map.items():
             activity_id: int = activities_map[activity_guid]
@@ -46,16 +46,16 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
                     )
                 )
         instances = await self._create_many(items_schemas)
-        items: list[ActivityItem] = []
+        items: list[fetching_applet.ActivityItem] = []
         for instance in instances:
-            items.append(ActivityItem.from_orm(instance))
+            items.append(fetching_applet.ActivityItem.from_orm(instance))
         return items
 
     async def update_many(
         self,
         activities_map: dict[uuid.UUID, int],
-        items_map: dict[uuid.UUID, list[ActivityItemUpdate]],
-    ) -> list[ActivityItem]:
+        items_map: dict[uuid.UUID, list[updating_applet.ActivityItemUpdate]],
+    ) -> list[fetching_applet.ActivityItem]:
         items_schemas: list[ActivityItemSchema] = []
         for activity_guid, items_update in items_map.items():
             activity_id: int = activities_map[activity_guid]
@@ -64,9 +64,9 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
                     self._update_to_schema(activity_id, index, item_update)
                 )
         instances = await self._create_many(items_schemas)
-        items: list[ActivityItem] = []
+        items: list[fetching_applet.ActivityItem] = []
         for instance in instances:
-            items.append(ActivityItem.from_orm(instance))
+            items.append(fetching_applet.ActivityItem.from_orm(instance))
         return items
 
     async def clear_applet_activity_items(self, activity_id_query):
@@ -76,27 +76,31 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
         await self._execute(query)
 
     def _update_to_schema(
-        self, activity_id: int, index: int, schema: ActivityItemUpdate
+        self,
+        activity_id: int,
+        index: int,
+        update_item: updating_applet.ActivityItemUpdate,
     ):
         return ActivityItemSchema(
-            id=schema.id or None,
             activity_id=activity_id,
-            question=schema.question,
-            response_type=schema.response_type,
-            answers=schema.answers,
-            color_palette=schema.color_palette,
-            timer=schema.timer,
-            has_token_value=schema.has_token_value,
-            is_skippable=schema.is_skippable,
-            has_alert=schema.has_alert,
-            has_score=schema.has_score,
-            is_random=schema.is_random,
-            is_able_to_move_to_previous=schema.is_able_to_move_to_previous,
-            has_text_response=schema.has_text_response,
+            question=update_item.question,
+            response_type=update_item.response_type,
+            answers=update_item.answers,
+            color_palette=update_item.color_palette,
+            timer=update_item.timer,
+            has_token_value=update_item.has_token_value,
+            is_skippable=update_item.is_skippable,
+            has_alert=update_item.has_alert,
+            has_score=update_item.has_score,
+            is_random=update_item.is_random,
+            has_text_response=update_item.has_text_response,
             ordering=index + 1,
+            is_able_to_move_to_previous=(
+                update_item.is_able_to_move_to_previous
+            ),
         )
 
-    async def get_by_applet_id(self, applet_id):
+    async def get_by_applet_id(self, applet_id) -> list[ActivityItemSchema]:
         query = sa.select(ActivityItemSchema)
         query = query.join(
             ActivitySchema,

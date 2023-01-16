@@ -129,9 +129,7 @@ class InvitationsService:
             raise error
 
         # Get applet from the database
-        applet: applet_domain.applet.Applet = await AppletsCRUD().get_by_id(
-            cache_entry.instance.applet_id
-        )
+        applet = await AppletsCRUD().get_applet(cache_entry.instance.applet_id)
 
         # Create a user_applet_access record
         user_applet_access_create_schema = (

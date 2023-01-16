@@ -1,13 +1,14 @@
 from fastapi import Body, Depends
 
-from apps.applets.crud.applets import AppletsCRUD
+from apps.applets.crud import AppletHistoryCRUD, AppletsCRUD
 from apps.applets.crud.roles import UserAppletAccessCRUD
 from apps.applets.domain import (
-    Applet,
-    AppletCreate,
-    AppletUpdate,
-    PublicApplet,
+    PublicHistory,
     UserAppletAccessCreate,
+    creating_applet,
+    detailing_public_applet,
+    detailing_public_history,
+    updating_applet,
 )
 from apps.applets.domain.constants import Role
 from apps.authentication.deps import get_current_user
@@ -20,9 +21,9 @@ from apps.users.domain import User
 # TODO: Restrict by admin
 async def applet_create(
     user: User = Depends(get_current_user),
-    schema: AppletCreate = Body(...),
-) -> Response[PublicApplet]:
-    applet: Applet = await AppletsCRUD().save(user.id, schema=schema)
+    schema: creating_applet.AppletCreate = Body(...),
+) -> Response[detailing_public_applet.Applet]:
+    applet = await AppletsCRUD().save(user.id, schema=schema)
 
     await UserAppletAccessCRUD().save(
         schema=UserAppletAccessCreate(
@@ -32,34 +33,50 @@ async def applet_create(
         )
     )
 
-    return Response(result=PublicApplet(**applet.dict()))
+    return Response(result=detailing_public_applet.Applet(**applet.dict()))
 
 
 async def applet_update(
     id_: int,
     user: User = Depends(get_current_user),
-    schema: AppletUpdate = Body(...),
-) -> Response[PublicApplet]:
-    applet: Applet = await AppletsCRUD().update_applet(user.id, id_, schema)
+    schema: updating_applet.AppletUpdate = Body(...),
+) -> Response[detailing_public_applet.Applet]:
+    applet = await AppletsCRUD().update_applet(user.id, id_, schema)
 
-    return Response(result=PublicApplet(**applet.dict()))
+    return Response(result=detailing_public_applet.Applet(**applet.dict()))
 
 
 # TODO: Add logic to return concrete applets by user
 async def applet_retrieve(
     id_: int, user: User = Depends(get_current_user)
-) -> Response[PublicApplet]:
-    applet: Applet = await AppletsCRUD().get_full_by_id(id_=id_)
-    return Response(result=PublicApplet(**applet.dict()))
+) -> Response[detailing_public_applet.Applet]:
+    applet = await AppletsCRUD().get_full(applet_id=id_)
+    return Response(result=detailing_public_applet.Applet(**applet.dict()))
+
+
+async def applet_versions_retrieve(
+    id_: int, user: User = Depends(get_current_user)
+) -> ResponseMulti[PublicHistory]:
+    histories = await AppletHistoryCRUD().histories_by_applet_id(id_)
+    return ResponseMulti(
+        results=[PublicHistory(**h.dict()) for h in histories]
+    )
+
+
+async def applet_version_retrieve(
+    id_: int, version: str, user: User = Depends(get_current_user)
+) -> Response[detailing_public_history.Applet]:
+    applet = await AppletHistoryCRUD().get_full(id_, version)
+    return Response(result=detailing_public_history.Applet(**applet.dict()))
 
 
 async def applet_list(
     user: User = Depends(get_current_user),
-) -> ResponseMulti[Applet]:
-    applets: list[Applet] = await AppletsCRUD().get_admin_applets(user.id)
-    public_applets: list[PublicApplet] = []
+) -> ResponseMulti[detailing_public_applet.Applet]:
+    applets = await AppletsCRUD().get_admin_applets(user.id)
+    public_applets: list[detailing_public_applet.Applet] = []
     for applet in applets:
-        public_applets.append(PublicApplet(**applet.dict()))
+        public_applets.append(detailing_public_applet.Applet(**applet.dict()))
     return ResponseMulti(results=public_applets)
 
 

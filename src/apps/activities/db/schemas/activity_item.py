@@ -2,7 +2,10 @@ import sqlalchemy as sa
 import sqlalchemy.orm
 from sqlalchemy.dialects.postgresql import JSONB
 
-from apps.activities.db.schemas.activity import ActivitySchema
+from apps.activities.db.schemas.activity import (
+    ActivityHistorySchema,
+    ActivitySchema,
+)
 from infrastructure.database.base import Base
 
 
@@ -40,3 +43,4 @@ class ActivityItemHistorySchema(_BaseActivityItemSchema, Base):
         sa.ForeignKey("activity_histories.id_version", ondelete="CASCADE"),
         nullable=False,
     )
+    activity = sa.orm.relationship(ActivityHistorySchema)
