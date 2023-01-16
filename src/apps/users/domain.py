@@ -13,6 +13,7 @@ __all__ = [
     "User",
     "UserCreateRequest",
     "UserUpdate",
+    "UserLogoutRequest",
     "ChangePasswordRequest",
     "UserChangePassword",
     "PasswordRecoveryRequest",
@@ -36,6 +37,7 @@ class UserCreateRequest(_UserBase, PublicModel):
 
 class UserLoginRequest(_UserBase, PublicModel):
     password: str
+    device_id: str | None = None
 
 
 class UserCreate(_UserBase, InternalModel):
@@ -105,3 +107,7 @@ class PasswordRecoveryApproveRequest(InternalModel):
     email: EmailStr
     key: UUID
     password: str
+
+
+class UserLogoutRequest(InternalModel):
+    device_id: str
