@@ -10,6 +10,8 @@ from apps.users.domain import (
 from apps.users.errors import UserIsDeletedError, UserNotFound, UsersError
 from infrastructure.database.crud import BaseCRUD
 
+from sqlalchemy.exc import IntegrityError
+
 
 class UsersCRUD(BaseCRUD[UserSchema]):
     schema_class = UserSchema
@@ -46,9 +48,12 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
     async def save(self, schema: UserCreate) -> tuple[User, bool]:
         # Save user into the database
-        instance: UserSchema = await self._create(
-            self.schema_class(**schema.dict())
-        )
+        try:
+            instance: UserSchema = await self._create(
+                self.schema_class(**schema.dict())
+            )
+        except IntegrityError:
+            raise UsersError(message="User already exists")
 
         # Create internal data model
         user = User.from_orm(instance)

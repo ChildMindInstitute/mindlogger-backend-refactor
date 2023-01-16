@@ -90,7 +90,7 @@ class TestUser(BaseTest):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == expected_result.dict(by_alias=True)
-        assert response.json()["Result"]["Id"] == expected_result.result.id
+        assert response.json()["result"]["id"] == expected_result.result.id
 
     @transaction.rollback
     async def test_user_update(self):
@@ -124,7 +124,7 @@ class TestUser(BaseTest):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == expected_result.dict(by_alias=True)
-        assert response.json()["Result"]["Id"] == expected_result.result.id
+        assert response.json()["result"]["id"] == expected_result.result.id
 
     @transaction.rollback
     async def test_user_delete(self):

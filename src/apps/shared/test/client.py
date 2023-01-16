@@ -98,8 +98,8 @@ class TestClient:
     async def get_token(self, url: str, user_login_request: UserLoginRequest):
         response = await self.post(url, data=user_login_request.dict())
         assert response.status_code == 200, response.json()
-        access_token = response.json()["Result"]["AccessToken"]
-        token_type = response.json()["Result"]["TokenType"]
+        access_token = response.json()["result"]["accessToken"]
+        token_type = response.json()["result"]["tokenType"]
         self.headers["Authorization"] = f"{token_type} {access_token}"
         return response
 

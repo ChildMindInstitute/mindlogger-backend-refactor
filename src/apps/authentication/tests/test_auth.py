@@ -94,7 +94,7 @@ class TestAuthentication(BaseTest):
         # Creating Refresh access token
         refresh_access_token_request = RefreshAccessTokenRequest(
             refresh_token=AuthenticationService.create_refresh_token(
-                {"sub": str(internal_response.json()["Result"]["Id"])}
+                {"sub": str(internal_response.json()["result"]["id"])}
             )
         )
 
