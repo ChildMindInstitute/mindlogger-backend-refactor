@@ -4,12 +4,18 @@ from apps.users.domain import (
     ChangePasswordRequest,
     UserCreateRequest,
     UserUpdateRequest,
+    PasswordRecoveryApproveRequest,
+    PasswordRecoveryInfo,
 )
+from infrastructure.cache.domain import CacheEntry
 
 __all__ = [
     "UserCreateRequestFactory",
     "UserUpdateRequestFactory",
     "PasswordUpdateRequestFactory",
+    "PasswordRecoveryApproveRequestFactory",
+    "CacheEntryFactory",
+    "PasswordRecoveryInfoFactory",
 ]
 
 
@@ -23,3 +29,15 @@ class UserUpdateRequestFactory(ModelFactory):
 
 class PasswordUpdateRequestFactory(ModelFactory):
     __model__ = ChangePasswordRequest
+
+
+class PasswordRecoveryApproveRequestFactory(ModelFactory):
+    __model__ = PasswordRecoveryApproveRequest
+
+
+class PasswordRecoveryInfoFactory(ModelFactory):
+    __model__ = PasswordRecoveryInfo
+
+
+class CacheEntryFactory(ModelFactory):
+    __model__ = CacheEntry
