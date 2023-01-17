@@ -1,6 +1,12 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
+from apps.shared.domain import Response
+from apps.shared.domain.response import (
+    AUTHENTICATION_ERROR_RESPONSES,
+    DEFAULT_OPENAPI_RESPONSE,
+    NO_CONTENT_ERROR_RESPONSES,
+)
 from apps.users.api import (
     password_recovery,
     password_recovery_approve,
@@ -10,13 +16,78 @@ from apps.users.api import (
     user_retrieve,
     user_update,
 )
+from apps.users.domain import PublicUser
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-router.post("", status_code=status.HTTP_201_CREATED)(user_create)
-router.get("/me")(user_retrieve)
-router.put("/me")(user_update)
-router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)(user_delete)
-router.put("/me/password")(password_update)
-router.post("/me/password/recover")(password_recovery)
-router.post("/me/password/recover/approve")(password_recovery_approve)
+# User create
+router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=Response[PublicUser],
+)(user_create)
+
+# User retrieve
+router.get(
+    "/me",
+    response_model=Response[PublicUser],
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicUser]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_retrieve)
+
+# User update
+router.put(
+    "/me",
+    response_model=Response[PublicUser],
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicUser]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_update)
+
+# User delete
+router.delete(
+    "/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+    responses={
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_delete)
+
+# Password update
+router.put(
+    "/me/password",
+    response_model=Response[PublicUser],
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicUser]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(password_update)
+
+# Password recovery
+router.post(
+    "/me/password/recover",
+    response_model=Response[PublicUser],
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicUser]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(password_recovery)
+
+# Password recovery approve
+router.post(
+    "/me/password/recover/approve",
+    response_model=Response[PublicUser],
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicUser]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **NO_CONTENT_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(password_recovery_approve)

@@ -5,6 +5,7 @@ from starlette import status
 from apps.authentication.domain.token import RefreshAccessTokenRequest, Token
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
+from apps.authentication.tests.factories import UserLogoutRequestFactory
 from apps.shared.domain.response import Response
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
@@ -21,6 +22,7 @@ class TestAuthentication(BaseTest):
     refresh_access_token_url = auth_router.url_path_for("refresh_access_token")
 
     create_request_user = UserCreateRequestFactory.build()
+    create_request_logout_user = UserLogoutRequestFactory.build()
 
     @transaction.rollback
     async def test_get_token(self):
@@ -65,6 +67,7 @@ class TestAuthentication(BaseTest):
         self,
         cache_set_mock,
     ):
+        print(self.delete_token_url)
         # Creating new user
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -79,7 +82,10 @@ class TestAuthentication(BaseTest):
             user_login_request=login_request_user,
         )
 
-        response = await self.client.delete(url=self.delete_token_url)
+        response = await self.client.post(
+            url=self.delete_token_url,
+            data=self.create_request_logout_user.dict()
+        )
 
         assert cache_set_mock.call_count == 1
         assert response.status_code == status.HTTP_204_NO_CONTENT
