@@ -8,6 +8,7 @@ from apps.authentication.errors import BadCredentials
 from apps.authentication.services.core import TokensService
 from apps.users.crud import UsersCRUD
 from apps.users.domain import User, UserLoginRequest
+from apps.users.errors import PasswordIsInvalidError
 from config import settings
 
 __all__ = ["AuthenticationService"]
@@ -55,6 +56,15 @@ class AuthenticationService:
     @staticmethod
     def get_password_hash(password: str) -> str:
         return pwd_context.hash(password)
+
+    @staticmethod
+    def validate_password(password: str, prev_password: str) -> str:
+        if password == prev_password:
+            return password
+        else:
+            raise PasswordIsInvalidError(
+                "Password does not match the re-entered password"
+            )
 
     @classmethod
     async def authenticate_user(cls, user_login_schema: UserLoginRequest):
