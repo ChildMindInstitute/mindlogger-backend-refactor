@@ -84,7 +84,7 @@ class TestAuthentication(BaseTest):
 
         response = await self.client.post(
             url=self.delete_token_url,
-            data=self.create_request_logout_user.dict()
+            data=self.create_request_logout_user.dict(),
         )
 
         assert cache_set_mock.call_count == 1
