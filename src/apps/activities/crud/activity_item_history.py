@@ -23,12 +23,13 @@ class ActivityItemsHistoryCRUD(BaseCRUD[ActivityItemHistorySchema]):
     ) -> tuple[
         list[detailing_history.Activity], dict[str, detailing_history.Activity]
     ]:
-        query: Query = select(self.schema_class)
+        query: Query = select(ActivityItemHistorySchema)
         query = query.join(
             ActivityHistorySchema,
-            ActivityHistorySchema.id_version == self.schema_class.activity_id,
+            ActivityHistorySchema.id_version
+            == ActivityItemHistorySchema.activity_id,
         )
-        query = query.options(joinedload(self.schema_class.activity))
+        query = query.options(joinedload(ActivityItemHistorySchema.activity))
         query = query.filter(
             ActivityHistorySchema.applet_id == applet_id_version
         )

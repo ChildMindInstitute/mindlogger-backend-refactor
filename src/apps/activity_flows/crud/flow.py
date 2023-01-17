@@ -111,12 +111,12 @@ class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
 
     async def clear_applet_flows(self, applet_id):
         await FlowItemsCRUD().clear_applet_flow_items(
-            sa.select(self.schema_class.id).where(
-                self.schema_class.applet_id == applet_id
+            sa.select(ActivityFlowSchema.id).where(
+                ActivityFlowSchema.applet_id == applet_id
             )
         )
-        query = delete(self.schema_class).where(
-            self.schema_class.applet_id == applet_id
+        query = delete(ActivityFlowSchema).where(
+            ActivityFlowSchema.applet_id == applet_id
         )
         await self._execute(query)
 

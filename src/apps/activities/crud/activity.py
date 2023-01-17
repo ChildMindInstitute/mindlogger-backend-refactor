@@ -95,12 +95,12 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
 
     async def clear_applet_activities(self, applet_id):
         await ActivityItemsCRUD().clear_applet_activity_items(
-            sa.select(self.schema_class.id).where(
-                self.schema_class.applet_id == applet_id
+            sa.select(ActivitySchema.id).where(
+                ActivitySchema.applet_id == applet_id
             )
         )
-        query = sa.delete(self.schema_class).where(
-            self.schema_class.applet_id == applet_id
+        query = sa.delete(ActivitySchema).where(
+            ActivitySchema.applet_id == applet_id
         )
         await self._execute(query)
 
@@ -110,7 +110,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         index: int,
         activity_update: updating_applet.ActivityUpdate,
     ):
-        return self.schema_class(
+        return ActivitySchema(
             id=activity_update.id or None,
             applet_id=applet_id,
             guid=activity_update.guid,

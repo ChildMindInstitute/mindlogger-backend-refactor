@@ -23,13 +23,15 @@ class FlowItemsHistoryCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
         applet_id_version: str,
         activities_map: dict[str, detailing_history.Activity],
     ) -> list[detailing_history.ActivityFlow]:
-        query: Query = select(self.schema_class)
+        query: Query = select(ActivityFlowItemHistorySchema)
         query = query.join(
             ActivityFlowHistoriesSchema,
             ActivityFlowHistoriesSchema.id_version
-            == self.schema_class.activity_flow_id,
+            == ActivityFlowItemHistorySchema.activity_flow_id,
         )
-        query = query.options(selectinload(self.schema_class.activity_flow))
+        query = query.options(
+            selectinload(ActivityFlowItemHistorySchema.activity_flow)
+        )
         query = query.where(
             ActivityFlowHistoriesSchema.applet_id == applet_id_version
         )

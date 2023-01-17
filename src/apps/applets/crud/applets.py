@@ -192,11 +192,11 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     async def get_admin_applets(
         self, user_id_: int
     ) -> list[detailing_applet.Applet]:
-        query = select(self.schema_class)
-        query = query.join_from(UserAppletAccessSchema, self.schema_class)
+        query = select(AppletSchema)
+        query = query.join_from(UserAppletAccessSchema, AppletSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id_)
         query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
-        query = query.order_by(self.schema_class.id)
+        query = query.order_by(AppletSchema.id)
         result: Result = await self._execute(query)
 
         results: list[AppletSchema] = result.scalars().all()

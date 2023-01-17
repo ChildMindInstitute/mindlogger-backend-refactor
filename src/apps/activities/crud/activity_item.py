@@ -70,8 +70,8 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
         return items
 
     async def clear_applet_activity_items(self, activity_id_query):
-        query = sa.delete(self.schema_class).where(
-            self.schema_class.activity_id.in_(activity_id_query)
+        query = sa.delete(ActivityItemSchema).where(
+            ActivityItemSchema.activity_id.in_(activity_id_query)
         )
         await self._execute(query)
 

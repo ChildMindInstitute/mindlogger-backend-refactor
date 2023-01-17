@@ -21,17 +21,17 @@ class AppletHistoryCRUD(BaseCRUD[AppletHistorySchema]):
         await self._create(schema)
 
     async def histories_by_applet_id(self, applet_id: int) -> list[History]:
-        query: Query = select(self.schema_class)
+        query: Query = select(AppletHistorySchema)
         query = query.execution_options(populate_existing=True)
-        query = query.where(self.schema_class.id == applet_id)
+        query = query.where(AppletHistorySchema.id == applet_id)
         query = query.join(
             UserSchema,
-            UserSchema.id == self.schema_class.creator_id,
+            UserSchema.id == AppletHistorySchema.creator_id,
         )
         query = query.options(
-            joinedload(self.schema_class.creator),
+            joinedload(AppletHistorySchema.creator),
         )
-        query = query.order_by(self.schema_class.created_at.desc())
+        query = query.order_by(AppletHistorySchema.created_at.desc())
         result = await self._execute(query)
         results = result.scalars().all()
         histories = []

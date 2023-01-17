@@ -77,8 +77,8 @@ class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
         return items
 
     async def clear_applet_flow_items(self, flow_id_query):
-        query = delete(self.schema_class).where(
-            self.schema_class.activity_flow_id.in_(flow_id_query)
+        query = delete(ActivityFlowItemSchema).where(
+            ActivityFlowItemSchema.activity_flow_id.in_(flow_id_query)
         )
         await self._execute(query)
 
