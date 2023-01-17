@@ -67,6 +67,7 @@ class PasswordRecoveryService:
             recipients=[user.email],
             subject="Password recovery for Mindlogger",
             body=PASSWORD_RECOVERY_TEMPLATE.format(
+                email=user.email,
                 link=(
                     f"{settings.service.urls.frontend.base}"
                     f"/{settings.service.urls.frontend.password_recovery_send}"
