@@ -1,7 +1,7 @@
-from apps.shared.errors import BaseError, NotFoundError, ValidationError
+from apps.shared.errors import NotFoundError, ValidationError
 
 
-class UsersError(BaseError):
+class UsersError(ValidationError):
     pass
 
 
