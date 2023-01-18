@@ -11,7 +11,3 @@ class UserNotFound(NotFoundError):
 
 class UserIsDeletedError(ValidationError):
     pass
-
-
-class PasswordIsInvalidError(ValidationError):
-    pass
