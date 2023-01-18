@@ -21,6 +21,11 @@ async def password_update(
 ) -> Response[PublicUser]:
     """General endpoint for update password for signin."""
 
+    AuthenticationService.verify_password(
+        schema.prev_password,
+        user.hashed_password,
+    )
+
     password_hash: str = AuthenticationService.get_password_hash(
         schema.password
     )
