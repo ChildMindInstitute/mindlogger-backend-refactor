@@ -1,5 +1,6 @@
 import traceback
 
+import pydantic
 from fastapi import Request, Response, status
 from starlette.middleware.base import (
     BaseHTTPMiddleware,
@@ -25,28 +26,28 @@ class ErrorsHandlingMiddleware(BaseHTTPMiddleware):
         try:
             response: Response = await call_next(request)
         except AuthenticationError as error:
-            resp = ErrorResponse(messages=[str(error)])
+            resp = ErrorResponse(message=[str(error)])
             return Response(
                 resp.json(),
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 headers=self.headers | {"WWW-Authenticate": "Bearer"},
             )
         except PermissionsError as error:
-            resp = ErrorResponse(messages=[str(error)])
+            resp = ErrorResponse(message=[str(error)])
             return Response(
                 resp.json(),
                 status_code=status.HTTP_403_FORBIDDEN,
                 headers=self.headers | {"WWW-Authenticate": "Bearer"},
             )
         except ValidationError as error:
-            resp = ErrorResponse(messages=[str(error)])
+            resp = ErrorResponse(message=[str(error)])
             return Response(
                 resp.json(),
                 status_code=status.HTTP_400_BAD_REQUEST,
                 headers=self.headers,
             )
         except NotFoundError as error:
-            resp = ErrorResponse(messages=[str(error)])
+            resp = ErrorResponse(message=[str(error)])
             return Response(
                 resp.json(),
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -59,7 +60,7 @@ class ErrorsHandlingMiddleware(BaseHTTPMiddleware):
                 headers=self.headers,
             )
         except BaseError as error:
-            resp = ErrorResponse(messages=[str(error)])
+            resp = ErrorResponse(message=[str(error)])
             return Response(
                 resp.json(),
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -68,10 +69,17 @@ class ErrorsHandlingMiddleware(BaseHTTPMiddleware):
         except Exception as error:
             if __debug__:
                 traceback.print_exc()
-            resp = ErrorResponse(messages=[f"Unhandled error: {error}"])
+            resp = ErrorResponse(message=[f"Unhandled error: {error}"])
             return Response(
                 resp.json(),
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                headers=self.headers,
+            )
+        except pydantic.ValidationError as error:
+            resp = ErrorResponse(message=[str(error)])
+            return Response(
+                resp.json(),
+                status_code=status.HTTP_400_BAD_REQUEST,
                 headers=self.headers,
             )
 
