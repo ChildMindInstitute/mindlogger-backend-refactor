@@ -2,11 +2,8 @@ import json
 import uuid
 
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
-from apps.applets.domain import (
-    Applet,
-    UserAppletAccess,
-    UserAppletAccessCreate,
-)
+from apps.applets.domain import UserAppletAccess, UserAppletAccessCreate
+from apps.applets.domain.applets.fetch import Applet
 from apps.invitations.domain import (
     INVITE_USER_TEMPLATE,
     Invitation,
@@ -131,9 +128,11 @@ class InvitationsService:
             raise error
 
         # Get applet from the database
-        applet: Applet = await AppletsCRUD().get_by_id(
+        applet_schema = await AppletsCRUD().get_by_id(
             cache_entry.instance.applet_id
         )
+
+        applet = Applet.from_orm(applet_schema)
 
         # Create a user_applet_access record
         user_applet_access_create_schema = UserAppletAccessCreate(
