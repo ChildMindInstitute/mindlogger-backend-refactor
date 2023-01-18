@@ -21,6 +21,7 @@ class TestApplet(BaseTest):
     applet_histories_url = f"{applet_detail_url}/versions"
     applet_history_url = f"{applet_detail_url}/versions/{{version}}"
 
+    @pytest.mark.main
     @transaction.rollback
     async def test_creating_applet(self):
         await self.client.login(
@@ -96,6 +97,7 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 201, response.json()
 
+    @pytest.mark.main
     @transaction.rollback
     async def test_create_duplicate_name_applet(self):
         await self.client.login(
@@ -172,6 +174,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 400, response.json()
         assert response.json()["messages"][0] == "Applet already exist"
 
+    @pytest.mark.main
     @transaction.rollback
     async def test_update_applet(self):
         await self.client.login(
@@ -374,7 +377,6 @@ class TestApplet(BaseTest):
         assert len(versions) == 1
         assert versions[0]["version"] == version
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_updating_applet_history(self):
         await self.client.login(

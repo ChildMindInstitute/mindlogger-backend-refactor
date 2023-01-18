@@ -1,6 +1,7 @@
-from apps.activities.crud.activity_item_history import ActivityItemsHistoryCRUD
+from sqlalchemy import select
+from sqlalchemy.orm import Query
+
 from apps.activities.db.schemas import ActivityHistorySchema
-from apps.applets.domain import detailing_history
 from infrastructure.database import BaseCRUD
 
 
@@ -13,12 +14,11 @@ class ActivitiesHistoryCRUD(BaseCRUD[ActivityHistorySchema]):
     ):
         await self._create_many(activities)
 
-    @staticmethod
-    async def list(
-        applet_id_version: str,
-    ) -> tuple[
-        list[detailing_history.Activity], dict[str, detailing_history.Activity]
-    ]:
-        return await ActivityItemsHistoryCRUD().list_by_applet_id_version(
-            applet_id_version
-        )
+    async def retrieve_by_applet_version(
+        self, id_version
+    ) -> list[ActivityHistorySchema]:
+        query: Query = select(ActivityHistorySchema)
+        query = query.where(ActivityHistorySchema.applet_id == id_version)
+        query = query.order_by(ActivityHistorySchema.ordering.asc())
+        result = await self._execute(query)
+        return result.scalars().all()

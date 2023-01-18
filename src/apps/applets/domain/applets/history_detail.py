@@ -8,6 +8,7 @@ from apps.shared.domain import InternalModel
 
 class ActivityItem(InternalModel):
     id: int
+    id_version: str
     activity_id: str
     question: dict[str, str]
     response_type: str
@@ -26,6 +27,7 @@ class ActivityItem(InternalModel):
 
 class Activity(InternalModel):
     id: int
+    id_version: str
     applet_id: str
     guid: uuid.UUID
     name: str
@@ -42,6 +44,7 @@ class Activity(InternalModel):
 
 class ActivityFlowItem(InternalModel):
     id: int
+    id_version: str
     activity_flow_id: str
     activity_id: str
     ordering: int
@@ -50,6 +53,7 @@ class ActivityFlowItem(InternalModel):
 
 class ActivityFlow(InternalModel):
     id: int
+    id_version: str
     guid: uuid.UUID
     name: str
     applet_id: str
@@ -62,6 +66,7 @@ class ActivityFlow(InternalModel):
 
 class Applet(InternalModel):
     id: int
+    id_version: str
     display_name: str
     version: str
     description: dict[str, str] = Field(default_factory=dict)

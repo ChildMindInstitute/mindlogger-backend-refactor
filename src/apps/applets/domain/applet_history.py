@@ -4,10 +4,11 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class User(InternalModel):
+    id: int
     full_name: str
 
 
-class UserPublic(InternalModel):
+class UserPublic(PublicModel):
     full_name: str
 
 

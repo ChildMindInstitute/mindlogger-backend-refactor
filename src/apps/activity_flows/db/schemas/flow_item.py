@@ -1,38 +1,27 @@
-import sqlalchemy as sa
-import sqlalchemy.orm
+from sqlalchemy import REAL, Column, ForeignKey, Integer, String
 
-from apps.activity_flows.db.schemas.flow import (
-    ActivityFlowHistoriesSchema,
-    ActivityFlowSchema,
-)
 from infrastructure.database import Base
 
 
 class _BaseActivityFlow:
-    ordering = sa.Column(sa.REAL())
+    ordering = Column(REAL())
 
 
 class ActivityFlowItemSchema(_BaseActivityFlow, Base):
     __tablename__ = "flow_items"
 
-    activity_flow_id = sa.Column(
-        sa.ForeignKey("flows.id", ondelete="RESTRICT")
-    )
-    activity_id = sa.Column(
-        sa.ForeignKey("activities.id", ondelete="RESTRICT")
-    )
-    activity_flow = sa.orm.relationship(ActivityFlowSchema)
+    activity_flow_id = Column(ForeignKey("flows.id", ondelete="RESTRICT"))
+    activity_id = Column(ForeignKey("activities.id", ondelete="RESTRICT"))
 
 
 class ActivityFlowItemHistorySchema(_BaseActivityFlow, Base):
     __tablename__ = "flow_item_histories"
 
-    id_version = sa.Column(sa.String(), primary_key=True)
-    id = sa.Column(sa.Integer())
-    activity_flow_id = sa.Column(
-        sa.ForeignKey("flow_histories.id_version", ondelete="RESTRICT")
+    id_version = Column(String(), primary_key=True)
+    id = Column(Integer())
+    activity_flow_id = Column(
+        ForeignKey("flow_histories.id_version", ondelete="RESTRICT")
     )
-    activity_id = sa.Column(
-        sa.ForeignKey("activity_histories.id_version", ondelete="RESTRICT")
+    activity_id = Column(
+        ForeignKey("activity_histories.id_version", ondelete="RESTRICT")
     )
-    activity_flow = sa.orm.relationship(ActivityFlowHistoriesSchema)
