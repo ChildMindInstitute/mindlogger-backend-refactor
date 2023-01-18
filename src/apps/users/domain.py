@@ -66,6 +66,7 @@ class ChangePasswordRequest(InternalModel):
     """This model represents change password data model."""
 
     password: str
+    prev_password: str
 
 
 class UserChangePassword(InternalModel):
@@ -94,7 +95,8 @@ class PasswordRecoveryInfo(InternalModel):
 
 # NOTE: This message is not aligned yet. So, the mocked is used.
 PASSWORD_RECOVERY_TEMPLATE = """
-You have received this email to recovery your password.
+You have received this this message to your
+email: {email} to recovery your password.
 Please follow the link: {link}
 """
 
