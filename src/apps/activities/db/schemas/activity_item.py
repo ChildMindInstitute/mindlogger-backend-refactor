@@ -32,7 +32,7 @@ class ActivityItemHistorySchema(_BaseActivityItemSchema, Base):
     __tablename__ = "activity_item_histories"
 
     id = Column(Integer())
-    id_version = Column(String, primary_key=True)
+    id_version = Column(String(), primary_key=True)
     activity_id = Column(
         ForeignKey("activity_histories.id_version", ondelete="CASCADE"),
         nullable=False,

@@ -29,7 +29,7 @@ class ActivityHistorySchema(Base, _BaseActivitySchema):
     __tablename__ = "activity_histories"
 
     id = Column(Integer())
-    id_version = Column(String, primary_key=True)
+    id_version = Column(String(), primary_key=True)
     applet_id = Column(
         ForeignKey("applet_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
