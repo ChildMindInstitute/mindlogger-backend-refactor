@@ -10,10 +10,10 @@ __all__ = [
     "UserCreate",
     "UserLoginRequest",
     "UserCreate",
-    "UserDelete",
     "User",
     "UserCreateRequest",
     "UserUpdate",
+    "UserLogoutRequest",
     "ChangePasswordRequest",
     "UserChangePassword",
     "PasswordRecoveryRequest",
@@ -37,6 +37,7 @@ class UserCreateRequest(_UserBase, PublicModel):
 
 class UserLoginRequest(_UserBase, PublicModel):
     password: str
+    device_id: str | None = None
 
 
 class UserCreate(_UserBase, InternalModel):
@@ -48,12 +49,6 @@ class UserUpdate(InternalModel):
     """This model represents user `update request` data model."""
 
     full_name: str
-
-
-class UserDelete(InternalModel):
-    """This model is used in order to represent internal user delete DTO."""
-
-    is_deleted: bool = True
 
 
 class User(UserCreate):
@@ -71,6 +66,7 @@ class ChangePasswordRequest(InternalModel):
     """This model represents change password data model."""
 
     password: str
+    prev_password: str
 
 
 class UserChangePassword(InternalModel):
@@ -99,7 +95,8 @@ class PasswordRecoveryInfo(InternalModel):
 
 # NOTE: This message is not aligned yet. So, the mocked is used.
 PASSWORD_RECOVERY_TEMPLATE = """
-You have received this email to recovery your password.
+You have received this this message to your
+email: {email} to recovery your password.
 Please follow the link: {link}
 """
 
@@ -112,3 +109,7 @@ class PasswordRecoveryApproveRequest(InternalModel):
     email: EmailStr
     key: UUID
     password: str
+
+
+class UserLogoutRequest(InternalModel):
+    device_id: str
