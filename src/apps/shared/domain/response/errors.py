@@ -1,10 +1,16 @@
+from enum import Enum
 from typing import Any
 
-from pydantic import Field
+from pydantic import Field, conlist
 from starlette import status
 
 from apps.shared.domain.base import PublicModel
 from apps.shared.domain.types import ResponseType
+
+
+class ErrorResponseType(str, Enum):
+    UNDEFINED = "UNDEFINED"
+    ANOTHER = "ANOTHER"
 
 
 class ErrorResponseMessage(PublicModel):
@@ -23,12 +29,21 @@ class ErrorResponse(PublicModel):
         description="This field represent the objects "
         "with language-specific errors"
     )
-    type: str = Field(default_factory=str)
+    type_: ErrorResponseType = Field(
+        description="This field represents the business-specific error type",
+        default=ErrorResponseType.UNDEFINED,
+    )
     path: list = Field(default_factory=list)
 
 
+class ErrorResponseMulti(PublicModel):
+    """The public error respnse model that includes multiple objects."""
+
+    results: conlist(ErrorResponse)  # type: ignore
+
+
 # NOTE: This constant represents the default error response for each request
-__DEFAULT_ERROR_RESPONSE: dict[str, Any] = {"model": ErrorResponse}
+__DEFAULT_ERROR_RESPONSE: dict[str, Any] = {"model": ErrorResponseMulti}
 
 NO_CONTENT_ERROR_RESPONSES: ResponseType = {
     status.HTTP_404_NOT_FOUND: {},

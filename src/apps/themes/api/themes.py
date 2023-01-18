@@ -2,7 +2,7 @@ from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.errors import NotContentError
+from apps.shared.errors import NoContentError
 from apps.themes.crud import ThemesCRUD
 from apps.themes.domain import (
     PublicTheme,
@@ -39,7 +39,7 @@ async def get_themes(
 
 async def delete_theme_by_id(pk: int, user: User = Depends(get_current_user)):
     await ThemesCRUD().delete_by_id(pk=pk, creator_id=user.id)
-    raise NotContentError
+    raise NoContentError
 
 
 async def update_theme_by_id(

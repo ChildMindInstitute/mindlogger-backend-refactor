@@ -42,9 +42,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         # Get applets from the database
         if not (instance := await self._get(key, value)):
-            raise errors.AppletNotFoundError(
-                f"No such applets with {key}={value}."
-            )
+            raise errors.AppletNotFoundError(key=key, value=value)
 
         # Get internal model
         applet: Applet = Applet.from_orm(instance)
