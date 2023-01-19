@@ -18,7 +18,7 @@ class TestClient:
         return f"{url}{urllib.parse.urlencode(query)}"
 
     def _get_updated_headers(self, headers: dict | None = None) -> dict:
-        headers_ = self.headers
+        headers_ = dict(self.headers)
         if headers:
             headers_.update(headers)
         return headers_
