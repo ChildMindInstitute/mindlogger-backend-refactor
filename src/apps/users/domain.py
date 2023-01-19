@@ -8,11 +8,9 @@ from apps.shared.domain import InternalModel, PublicModel
 __all__ = [
     "PublicUser",
     "UserCreate",
-    "UserLoginRequest",
     "UserCreate",
     "User",
     "UserCreateRequest",
-    "UserLogoutRequest",
     "UserUpdateRequest",
     "ChangePasswordRequest",
     "UserChangePassword",
@@ -33,11 +31,6 @@ class _UserBase(BaseModel):
 class UserCreateRequest(_UserBase, PublicModel):
     full_name: str
     password: str
-
-
-class UserLoginRequest(_UserBase, PublicModel):
-    password: str
-    device_id: str | None = None
 
 
 class UserCreate(_UserBase, InternalModel):
@@ -109,7 +102,3 @@ class PasswordRecoveryApproveRequest(InternalModel):
     email: EmailStr
     key: UUID
     password: str
-
-
-class UserLogoutRequest(InternalModel):
-    device_id: str

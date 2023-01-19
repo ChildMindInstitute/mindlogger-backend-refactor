@@ -3,7 +3,7 @@ import urllib.parse
 
 from httpx import AsyncClient, Response
 
-from apps.users.domain import UserLoginRequest
+from apps.authentication.domain.login import UserLoginRequest
 from infrastructure.app import create_app
 
 

@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from starlette import status
 
+from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import RefreshAccessTokenRequest, Token
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
@@ -9,7 +10,6 @@ from apps.authentication.tests.factories import UserLogoutRequestFactory
 from apps.shared.domain.response import Response
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
-from apps.users.domain import UserLoginRequest
 from apps.users.router import router as user_router
 from apps.users.tests import UserCreateRequestFactory
 from infrastructure.database import transaction
