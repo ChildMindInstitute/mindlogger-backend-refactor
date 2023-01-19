@@ -5,12 +5,12 @@ from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
+from apps.authentication.errors import PermissionsError
 from apps.themes.db.schemas import ThemeSchema
 from apps.themes.domain import PublicTheme, Theme, ThemeCreate, ThemeUpdate
 from apps.themes.errors import (
     ThemeAlreadyExist,
     ThemeNotFoundError,
-    ThemePermissionsError,
     ThemesError,
 )
 from infrastructure.database.crud import BaseCRUD
@@ -32,7 +32,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
         # Get theme from the database
         if not (instance := await self._get(key, value)):
-            raise ThemeNotFoundError(f"No such theme with {key}={value}.")
+            raise ThemeNotFoundError(key, value)
 
         # Get internal model
         theme: Theme = Theme.from_orm(instance)
@@ -72,7 +72,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
         if instance.creator != creator_id:
 
-            raise ThemePermissionsError(
+            raise PermissionsError(
                 "You do not have permissions to delete this theme."
             )
         await self._delete(key="id", value=pk)
@@ -85,7 +85,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
         instance: Theme = await self._fetch(key="id", value=pk)
 
         if instance.creator != creator_id:
-            raise ThemePermissionsError(
+            raise PermissionsError(
                 "You do not have permissions to update this theme."
             )
         instance = await self._update_one(

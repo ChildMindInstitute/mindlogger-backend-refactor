@@ -2,24 +2,15 @@ from apps.shared.errors import BaseError, NotFoundError, ValidationError
 
 
 class ThemesError(BaseError):
-    def __init__(self, message="", *args) -> None:
-        fallback = "Themes service error"
-        super().__init__(message or fallback, *args)
+    def __init__(self, message: str = "Themes service error") -> None:
+        super().__init__(message=message)
 
 
 class ThemeAlreadyExist(ValidationError):
-    def __init__(self, *args) -> None:
-        message = "Theme already exist"
-        super().__init__(message, *args)
+    def __init__(self, message: str = "Theme already exist") -> None:
+        super().__init__(message=message)
 
 
 class ThemeNotFoundError(NotFoundError):
-    def __init__(self, message="", *args) -> None:
-        fallback = "Theme service error"
-        super().__init__(message or fallback, *args)
-
-
-class ThemePermissionsError(BaseError):
-    def __init__(self, message="", *args) -> None:
-        fallback = "Not enough permissions"
-        super().__init__(message or fallback, *args)
+    def __init__(self, key: str, value: str) -> None:
+        super().__init__(message=f"No such theme with {key}={value}.")
