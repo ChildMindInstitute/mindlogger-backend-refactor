@@ -6,7 +6,8 @@ from apps.authentication.api.auth import (
     get_token,
     refresh_access_token,
 )
-from apps.authentication.domain.token.public import Login, Token
+from apps.authentication.domain.login import UserLogin
+from apps.authentication.domain.token.public import Token
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
@@ -19,9 +20,9 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # Get token
 router.post(
     "/login",
-    response_model=Response[Login],
+    response_model=Response[UserLogin],
     responses={
-        status.HTTP_200_OK: {"model": Response[Login]},
+        status.HTTP_200_OK: {"model": Response[UserLogin]},
         **NO_CONTENT_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
