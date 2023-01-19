@@ -71,6 +71,17 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             for user_applet_access in results
         ]
 
+    async def get_by_admin_user_and_applet(
+        self, user_id: int, applet_id: int
+    ) -> list[UserAppletAccessSchema]:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
+        result = await self._execute(query)
+        results = result.scalars().all()
+        return results
+
     async def save(self, schema: UserAppletAccessCreate) -> UserAppletAccess:
         """Return UserAppletAccess instance and the created information."""
 

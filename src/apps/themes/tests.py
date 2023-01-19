@@ -27,7 +27,7 @@ class TestThemes(BaseTest):
 
         response = await self.client.post(self.list_url, data=create_data)
         assert response.status_code == 201, response.json()
-        assert response.json()["Result"]["Id"] == 1
+        assert response.json()["result"]["id"] == 1
 
     @transaction.rollback
     async def test_delete_theme(self):
@@ -46,7 +46,7 @@ class TestThemes(BaseTest):
         response = await self.client.post(self.list_url, data=create_data)
 
         assert response.status_code == 201, response.json()
-        assert response.json()["Result"]["Id"] == 1
+        assert response.json()["result"]["id"] == 1
 
         response = await self.client.delete(self.detail_url.format(id=1))
 
@@ -69,7 +69,7 @@ class TestThemes(BaseTest):
         response = await self.client.post(self.list_url, data=create_data)
 
         assert response.status_code == 201, response.json()
-        assert response.json()["Result"]["Id"] == 1
+        assert response.json()["result"]["id"] == 1
 
         update_data = dict(
             name="Test theme 2",
@@ -84,23 +84,23 @@ class TestThemes(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["Result"]["Id"] == 1
-        assert response.json()["Result"]["Name"] == update_data["name"]
-        assert response.json()["Result"]["Logo"] == update_data["logo"]
+        assert response.json()["result"]["id"] == 1
+        assert response.json()["result"]["name"] == update_data["name"]
+        assert response.json()["result"]["logo"] == update_data["logo"]
         assert (
-            response.json()["Result"]["BackgroundImage"]
+            response.json()["result"]["backgroundImage"]
             == update_data["background_image"]
         )
         assert (
-            response.json()["Result"]["PrimaryColor"]
+            response.json()["result"]["primaryColor"]
             == Color(update_data["primary_color"]).as_hex()
         )
         assert (
-            response.json()["Result"]["SecondaryColor"]
+            response.json()["result"]["secondaryColor"]
             == Color(update_data["secondary_color"]).as_hex()
         )
         assert (
-            response.json()["Result"]["TertiaryColor"]
+            response.json()["result"]["tertiaryColor"]
             == Color(update_data["tertiary_color"]).as_hex()
         )
 
@@ -112,4 +112,4 @@ class TestThemes(BaseTest):
         response = await self.client.get(self.list_url)
 
         assert response.status_code == 200
-        assert type(response.json()["Results"]) == list
+        assert type(response.json()["results"]) == list

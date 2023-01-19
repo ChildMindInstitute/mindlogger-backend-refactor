@@ -16,6 +16,8 @@ class TestApplet(BaseTest):
     login_url = "/auth/token"
     applet_list_url = "applets"
     applet_detail_url = "applets/{pk}"
+    applet_histories_url = f"{applet_detail_url}/versions"
+    applet_history_url = f"{applet_detail_url}/versions/{{version}}"
 
     @transaction.rollback
     async def test_creating_applet(self):
@@ -165,8 +167,11 @@ class TestApplet(BaseTest):
             self.applet_list_url, data=create_data
         )
 
-        assert response.status_code == 400, response.json()
-        assert response.json()["messages"][0] == "Applet already exist"
+        assert response.status_code == 422, response.json()
+        assert (
+            response.json()["results"][0]["message"]["en"]
+            == "Applet already exist"
+        )
 
     @transaction.rollback
     async def test_update_applet(self):
@@ -262,9 +267,9 @@ class TestApplet(BaseTest):
         response = await self.client.get(self.applet_list_url)
 
         assert response.status_code == 200
-        assert len(response.json()["Results"]) == 2
-        assert response.json()["Results"][0]["Id"] == 1
-        assert response.json()["Results"][1]["Id"] == 2
+        assert len(response.json()["results"]) == 2
+        assert response.json()["results"][0]["id"] == 1
+        assert response.json()["results"][1]["id"] == 2
 
     @transaction.rollback
     async def test_applet_detail(self):
@@ -274,11 +279,203 @@ class TestApplet(BaseTest):
         response = await self.client.get(self.applet_detail_url.format(pk=1))
 
         assert response.status_code == 200
-        result = response.json()["Result"]
-        assert result["Id"] == 1
-        assert result["DisplayName"] == "Applet 1"
-        assert len(result["Activities"]) == 1
-        assert len(result["Activities"][0]["Items"]) == 2
-        assert len(result["ActivityFlows"]) == 2
-        assert len(result["ActivityFlows"][0]["Items"]) == 1
-        assert len(result["ActivityFlows"][1]["Items"]) == 1
+        result = response.json()["result"]
+        assert result["id"] == 1
+        assert result["displayName"] == "Applet 1"
+        assert len(result["activities"]) == 1
+        assert len(result["activities"][0]["items"]) == 2
+        assert len(result["activityFlows"]) == 2
+        assert len(result["activityFlows"][0]["items"]) == 1
+        assert len(result["activityFlows"][1]["items"]) == 1
+
+    @transaction.rollback
+    async def test_creating_applet_history(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            display_name="User daily behave",
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    name="Morning activity",
+                    guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="choices",
+                            answers=["Bad", "Normal", "Good"],
+                        ),
+                    ],
+                ),
+                dict(
+                    name="Evening activity",
+                    guid="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    description=dict(
+                        en="Understand evening feelings.",
+                        fr="Understand evening feelings.",
+                    ),
+                    items=[
+                        dict(
+                            question=dict(
+                                en="How had you spent your time?",
+                                fr="How had you spent your time?",
+                            ),
+                            response_type="choices",
+                            answers=["Bad", "Normal", "Good"],
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="Morning questionnaire",
+                    description=dict(
+                        en="Understand how was the morning",
+                        fr="Understand how was the morning",
+                    ),
+                    items=[
+                        dict(
+                            activity_guid="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_list_url, data=create_data
+        )
+        assert response.status_code == 201, response.json()
+
+        version = response.json()["result"]["version"]
+        applet_id = response.json()["result"]["id"]
+
+        response = await self.client.get(
+            self.applet_histories_url.format(pk=applet_id)
+        )
+
+        assert response.status_code == 200, response.json()
+        versions = response.json()["results"]
+        assert len(versions) == 1
+        assert versions[0]["version"] == version
+
+    @transaction.rollback
+    async def test_updating_applet_history(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        update_data = dict(
+            display_name="Applet 1",
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    id=1,
+                    name="Morning activity",
+                    guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            id=1,
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="choices",
+                            answers=["Bad", "Normal", "Good"],
+                        ),
+                        dict(
+                            question=dict(
+                                en="How was your breakfast?",
+                                fr="How was your breakfast?",
+                            ),
+                            response_type="choices",
+                            answers=["Bad", "Normal", "Good"],
+                        ),
+                    ],
+                ),
+                dict(
+                    name="Evening activity",
+                    guid="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    description=dict(
+                        en="Understand evening feelings.",
+                        fr="Understand evening feelings.",
+                    ),
+                    items=[
+                        dict(
+                            question=dict(
+                                en="How had you spent your time?",
+                                fr="How had you spent your time?",
+                            ),
+                            response_type="choices",
+                            answers=["Bad", "Normal", "Good"],
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="Morning questionnaire",
+                    description=dict(
+                        en="Understand how was the morning",
+                        fr="Understand how was the morning",
+                    ),
+                    items=[
+                        dict(
+                            id=2,
+                            activity_guid="577dbbda-"
+                            "3afc-4962-842b-8d8d11588bfe",
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.put(
+            self.applet_detail_url.format(pk=1), data=update_data
+        )
+
+        assert response.status_code == 200, response.json()
+
+        version = response.json()["result"]["version"]
+        applet_id = response.json()["result"]["id"]
+
+        response = await self.client.get(
+            self.applet_histories_url.format(pk=applet_id)
+        )
+
+        assert response.status_code == 200, response.json()
+        versions = response.json()["results"]
+        assert len(versions) == 1
+        assert versions[0]["version"] == version
+
+        response = await self.client.get(
+            self.applet_history_url.format(pk=applet_id, version=version)
+        )
+
+        assert response.status_code == 200, response.json()
+        applet = response.json()["result"]
+        assert applet["version"] == version
