@@ -3,10 +3,10 @@ from starlette import status
 
 from apps.authentication.api.auth import (
     delete_access_token,
-    get_token,
+    login,
     refresh_access_token,
 )
-from apps.authentication.domain.token.public import Token
+from apps.authentication.domain.token.public import Login, Token
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
@@ -18,14 +18,14 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 # Get token
 router.post(
-    "/token",
-    response_model=Response[Token],
+    "/login",
+    response_model=Response[Login],
     responses={
-        status.HTTP_200_OK: {"model": Response[Token]},
+        status.HTTP_200_OK: {"model": Response[Login]},
         **NO_CONTENT_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(get_token)
+)(login)
 
 # Add token to the blacklist
 router.post(

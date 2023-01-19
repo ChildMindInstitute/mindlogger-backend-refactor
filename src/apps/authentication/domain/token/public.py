@@ -1,3 +1,6 @@
+from pydantic import EmailStr
+from pydantic.types import PositiveInt
+
 from apps.shared.domain import PublicModel
 from config import settings
 
@@ -8,3 +11,12 @@ class Token(PublicModel):
     access_token: str
     refresh_token: str
     token_type: str = settings.authentication.token_type
+
+
+class Login(PublicModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = settings.authentication.token_type
+    full_name: str
+    id: PositiveInt
+    email: EmailStr

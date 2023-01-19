@@ -4,6 +4,7 @@ from jose import JWTError, jwt
 from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.token import (
     InternalToken,
+    Login,
     RefreshAccessTokenRequest,
     Token,
 )
@@ -15,9 +16,9 @@ from apps.users.domain import User, UserLoginRequest, UserLogoutRequest
 from config import settings
 
 
-async def get_token(
+async def login(
     user_login_schema: UserLoginRequest = Body(...),
-) -> Response[Token]:
+) -> Response[Login]:
     """Generate the JWT access token."""
 
     user: User = await AuthenticationService.authenticate_user(
@@ -33,7 +34,13 @@ async def get_token(
     )
 
     return Response(
-        result=Token(access_token=access_token, refresh_token=refresh_token)
+        result=Login(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            full_name=user.full_name,
+            id=user.id,
+            email=user.email,
+        )
     )
 
 
