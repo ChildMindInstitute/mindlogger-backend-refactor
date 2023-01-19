@@ -24,6 +24,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 router.post(
     "",
     response_model=Response[PublicUser],
+    status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {"model": Response[PublicUser]},
         **DEFAULT_OPENAPI_RESPONSE,

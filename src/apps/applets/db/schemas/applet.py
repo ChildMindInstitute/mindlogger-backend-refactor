@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from infrastructure.database.base import Base
 
-__all__ = ['AppletSchema', 'AppletHistorySchema']
+__all__ = ["AppletSchema", "AppletHistorySchema"]
 
 
 class _BaseAppletSchema:

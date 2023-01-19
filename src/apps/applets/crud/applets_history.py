@@ -50,8 +50,8 @@ class AppletHistoryCRUD(BaseCRUD[AppletHistorySchema]):
     async def _fetch(self, applet_id_version: str) -> AppletHistorySchema:
         if not (instance := await self._get("id_version", applet_id_version)):
             raise errors.AppletNotFoundError(
-                "No such applet's history "
-                f"with id_version={applet_id_version}."
+                key="id_version",
+                value=applet_id_version,
             )
 
         return instance

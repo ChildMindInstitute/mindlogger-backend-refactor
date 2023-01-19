@@ -26,9 +26,8 @@ async def item_choice_create(
 
 
 async def item_choice_delete(id_: int, user: User = Depends(get_current_user)):
-    await ReusabelItemChoiceCRUD().delete_by_id(id_=id_)
+    await ReusableItemChoiceCRUD().delete_by_id(id_=id_)
     raise NoContentError
-
 
 
 async def item_choice_retrieve(
