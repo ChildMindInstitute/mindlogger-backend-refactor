@@ -1,11 +1,12 @@
 import pytest
 from starlette import status
 
+from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.router import router as auth_router
 from apps.shared.domain import Response
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
-from apps.users.domain import PublicUser, User, UserLoginRequest
+from apps.users.domain import PublicUser, User
 from apps.users.errors import UserIsDeletedError
 from apps.users.router import router as user_router
 from apps.users.tests.factories import (

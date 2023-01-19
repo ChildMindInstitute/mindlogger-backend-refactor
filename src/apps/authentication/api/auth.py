@@ -2,7 +2,8 @@ from fastapi import Body, Depends
 from jose import JWTError, jwt
 
 from apps.authentication.deps import get_current_token, get_current_user
-from apps.authentication.domain.login import UserLogin
+from apps.authentication.domain.login import UserLogin, UserLoginRequest
+from apps.authentication.domain.logout import UserLogoutRequest
 from apps.authentication.domain.token import (
     InternalToken,
     RefreshAccessTokenRequest,
@@ -12,12 +13,7 @@ from apps.authentication.errors import BadCredentials
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.errors import NoContentError
-from apps.users.domain import (
-    PublicUser,
-    User,
-    UserLoginRequest,
-    UserLogoutRequest,
-)
+from apps.users.domain import PublicUser, User
 from config import settings
 
 

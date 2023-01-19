@@ -1,6 +1,6 @@
 from pydantic_factories import ModelFactory
 
-from apps.users.domain import UserLogoutRequest
+from apps.authentication.domain.logout import UserLogoutRequest
 
 __all__ = [
     "UserLogoutRequestFactory",
