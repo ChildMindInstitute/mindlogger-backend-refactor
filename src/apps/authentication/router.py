@@ -3,7 +3,7 @@ from starlette import status
 
 from apps.authentication.api.auth import (
     delete_access_token,
-    login,
+    get_token,
     refresh_access_token,
 )
 from apps.authentication.domain.token.public import Login, Token
@@ -25,7 +25,7 @@ router.post(
         **NO_CONTENT_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(login)
+)(get_token)
 
 # Add token to the blacklist
 router.post(

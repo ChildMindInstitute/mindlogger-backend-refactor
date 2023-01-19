@@ -12,11 +12,16 @@ from apps.authentication.errors import BadCredentials
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.errors import NotContentError
-from apps.users.domain import User, UserLoginRequest, UserLogoutRequest
+from apps.users.domain import (
+    PublicUser,
+    User,
+    UserLoginRequest,
+    UserLogoutRequest,
+)
 from config import settings
 
 
-async def login(
+async def get_token(
     user_login_schema: UserLoginRequest = Body(...),
 ) -> Response[Login]:
     """Generate the JWT access token."""
@@ -33,13 +38,13 @@ async def login(
         {"sub": str(user.id)}
     )
 
+    token = Token(access_token=access_token, refresh_token=refresh_token)
+    public_user = PublicUser(**user.dict())
+
     return Response(
         result=Login(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            full_name=user.full_name,
-            id=user.id,
-            email=user.email,
+            token=token,
+            user=public_user,
         )
     )
 
