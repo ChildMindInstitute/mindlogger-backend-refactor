@@ -10,7 +10,6 @@ from apps.shared.domain.types import ResponseType
 
 class ErrorResponseType(str, Enum):
     UNDEFINED = "UNDEFINED"
-    ANOTHER = "ANOTHER"
 
 
 class ErrorResponseMessage(PublicModel):
@@ -33,7 +32,10 @@ class ErrorResponse(PublicModel):
         description="This field represents the business-specific error type",
         default=ErrorResponseType.UNDEFINED,
     )
-    path: list = Field(default_factory=list)
+    path: list = Field(
+        description="The path to the field that raised the error",
+        default_factory=list,
+    )
 
 
 class ErrorResponseMulti(PublicModel):
