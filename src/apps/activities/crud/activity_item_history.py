@@ -7,6 +7,8 @@ from apps.activities.db.schemas import (
 )
 from infrastructure.database import BaseCRUD
 
+__all__ = ["ActivityItemsHistoryCRUD"]
+
 
 class ActivityItemsHistoryCRUD(BaseCRUD[ActivityItemHistorySchema]):
     schema_class = ActivityItemHistorySchema

@@ -4,6 +4,8 @@ from apps.activities.db.schemas import ActivityItemSchema, ActivitySchema
 from apps.applets.db.schemas import AppletSchema
 from infrastructure.database import BaseCRUD
 
+__all__ = ["ActivityItemsCRUD"]
+
 
 class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
     schema_class = ActivityItemSchema

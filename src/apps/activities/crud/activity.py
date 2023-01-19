@@ -4,6 +4,8 @@ from sqlalchemy.orm import Query
 from apps.activities.db.schemas import ActivitySchema
 from infrastructure.database import BaseCRUD
 
+__all__ = ["ActivitiesCRUD"]
+
 
 class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
     schema_class = ActivitySchema

@@ -3,9 +3,11 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from infrastructure.database.base import Base
 
+__all__ = ['AppletSchema', 'AppletHistorySchema']
+
 
 class _BaseAppletSchema:
-    display_name = Column(String(length=100), unique=True)
+    display_name = Column(String(100), unique=True)
     description = Column(JSONB())
     about = Column(JSONB())
     image = Column(String(255))

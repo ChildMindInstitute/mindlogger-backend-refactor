@@ -3,6 +3,8 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
 
+__all__ = ["ActivitySchema", "ActivityHistorySchema"]
+
 
 class _BaseActivitySchema:
     guid = Column(UUID(as_uuid=True))

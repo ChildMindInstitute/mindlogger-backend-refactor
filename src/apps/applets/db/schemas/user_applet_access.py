@@ -2,6 +2,8 @@ from sqlalchemy import Column, ForeignKey, String
 
 from infrastructure.database.base import Base
 
+__all__ = ['UserAppletAccessSchema']
+
 
 class UserAppletAccessSchema(Base):
     __tablename__ = "user_applet_accesses"

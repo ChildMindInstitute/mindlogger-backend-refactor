@@ -2,6 +2,8 @@ from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint
 
 from infrastructure.database.base import Base
 
+__all__ = ["ReusableItemChoiceSchema"]
+
 
 class ReusableItemChoiceSchema(Base):
     __tablename__ = "reusable_item_choices"

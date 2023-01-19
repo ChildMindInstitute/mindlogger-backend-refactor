@@ -2,6 +2,8 @@ from sqlalchemy import REAL, Column, ForeignKey, Integer, String
 
 from infrastructure.database import Base
 
+__all__ = ["ActivityFlowItemSchema", "ActivityFlowItemHistorySchema"]
+
 
 class _BaseActivityFlow:
     ordering = Column(REAL())

@@ -4,6 +4,8 @@ from sqlalchemy.orm import Query
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from infrastructure.database import BaseCRUD
 
+__all__ = ["FlowsHistoryCRUD"]
+
 
 class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
     schema_class = ActivityFlowHistoriesSchema

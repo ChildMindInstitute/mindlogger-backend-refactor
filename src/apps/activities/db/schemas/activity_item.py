@@ -3,6 +3,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from infrastructure.database.base import Base
 
+__all__ = ["ActivityItemSchema", "ActivityItemHistorySchema"]
+
 
 class _BaseActivityItemSchema:
     question = Column(JSONB())

@@ -20,6 +20,16 @@ from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.errors import NotContentError
 from apps.users.domain import User
 
+__all__ = [
+    "applet_create",
+    "applet_update",
+    "applet_retrieve",
+    "applet_versions_retrieve",
+    "applet_version_retrieve",
+    "applet_list",
+    "applet_delete",
+]
+
 
 # TODO: Add logic to allow to create applets by permissions
 # TODO: Restrict by admin

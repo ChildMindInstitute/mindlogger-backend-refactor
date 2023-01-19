@@ -7,6 +7,8 @@ from apps.activity_flows.db.schemas import (
 from apps.applets.db.schemas import AppletSchema
 from infrastructure.database import BaseCRUD
 
+__all__ = ["FlowItemsCRUD"]
+
 
 class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
     schema_class = ActivityFlowItemSchema

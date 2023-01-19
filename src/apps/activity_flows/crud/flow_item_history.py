@@ -7,6 +7,8 @@ from apps.activity_flows.db.schemas import (
 )
 from infrastructure.database import BaseCRUD
 
+__all__ = ["FlowItemsHistoryCRUD"]
+
 
 class FlowItemsHistoryCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
     schema_class = ActivityFlowItemHistorySchema

@@ -1,6 +1,6 @@
 from fastapi import Body, Depends
 
-from apps.activities.crud import ReusabelItemChoiceCRUD
+from apps.activities.crud import ReusableItemChoiceCRUD
 from apps.activities.domain.reusable_item_choices import (
     PublicReusableItemChoice,
     ReusableItemChoice,
@@ -18,7 +18,7 @@ async def item_choice_create(
     schema: ReusableItemChoiceInitializeCreate = Body(...),
 ) -> Response[PublicReusableItemChoice]:
 
-    item_template: ReusableItemChoice = await ReusabelItemChoiceCRUD().save(
+    item_template: ReusableItemChoice = await ReusableItemChoiceCRUD().save(
         schema=ReusableItemChoiceCreate(**schema.dict(), user_id=user.id)
     )
 
@@ -26,7 +26,7 @@ async def item_choice_create(
 
 
 async def item_choice_delete(id_: int, user: User = Depends(get_current_user)):
-    await ReusabelItemChoiceCRUD().delete_by_id(id_=id_)
+    await ReusableItemChoiceCRUD().delete_by_id(id_=id_)
     raise NotContentError
 
 
@@ -35,6 +35,6 @@ async def item_choice_retrieve(
 ) -> ResponseMulti[PublicReusableItemChoice]:
     item_templates: list[
         PublicReusableItemChoice
-    ] = await ReusabelItemChoiceCRUD().get_item_templates(user.id)
+    ] = await ReusableItemChoiceCRUD().get_item_templates(user.id)
 
     return ResponseMulti(results=item_templates)

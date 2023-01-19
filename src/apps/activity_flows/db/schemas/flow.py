@@ -3,6 +3,8 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database import Base
 
+__all__ = ["ActivityFlowSchema", "ActivityFlowHistoriesSchema"]
+
 
 class _BaseActivityFlowSchema:
     name = Column(Text())
