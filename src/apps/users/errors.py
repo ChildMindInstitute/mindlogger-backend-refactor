@@ -1,8 +1,18 @@
-from apps.shared.errors import BadRequestError, BaseError, NotFoundError
+from apps.shared.errors import (
+    BadRequestError,
+    BaseError,
+    ConflictError,
+    NotFoundError,
+)
 
 
 class UsersError(BaseError):
     def __init__(self, *_, message="Users error") -> None:
+        super().__init__(message=message)
+
+
+class UserAlreadyExistError(ConflictError):
+    def __init__(self, *_, message="User already exist") -> None:
         super().__init__(message=message)
 
 

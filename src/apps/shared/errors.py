@@ -39,6 +39,18 @@ class BadRequestError(BaseError):
         )
 
 
+class ConflictError(BaseError):
+    def __init__(
+        self,
+        *_,
+        message: str = (
+            "The request cannot be completed due "
+            "to a conflict in the request parameters"
+        ),
+    ) -> None:
+        super().__init__(message=message, status_code=status.HTTP_409_CONFLICT)
+
+
 class ValidationError(BaseError):
     def __init__(self, *_, message="Validation error") -> None:
         super().__init__(

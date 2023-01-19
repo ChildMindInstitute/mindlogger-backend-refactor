@@ -179,11 +179,11 @@ The `pytest` framework is using in order to write unit tests.
 Currently postgresql is used as a database for tests with running configurations that are defined in `pyproject.toml`
 
 ```toml
-DATABASE__POSTGRES_HOST=localhost
-DATABASE__POSTGRES_PORT=5432
-DATABASE__POSTGRES_PASSWORD=test
-DATABASE__POSTGRES_USER=test
-DATABASE__POSTGRES_DB=test
+DATABASE__HOST=localhost
+DATABASE__PORT=5432
+DATABASE__PASSWORD=test
+DATABASE__USER=test
+DATABASE__DB=test
 ```
 
 #### Adjust your database for using with tests
