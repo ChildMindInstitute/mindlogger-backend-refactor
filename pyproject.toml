@@ -38,11 +38,11 @@ python_files = 'tests.py test_*.py *_test.py'
 python_functions = 'test_* *_test'
 filterwarnings = ['ignore::RuntimeWarning', 'ignore::UserWarning']
 env = [
-    "DATABASE__POSTGRES_HOST=localhost",
-    "DATABASE__POSTGRES_PORT=5432",
-    "DATABASE__POSTGRES_PASSWORD=test",
-    "DATABASE__POSTGRES_USER=test",
-    "DATABASE__POSTGRES_DB=test",
+    "DATABASE__HOST=localhost",
+    "DATABASE__PORT=5432",
+    "DATABASE__PASSWORD=test",
+    "DATABASE__USER=test",
+    "DATABASE__DB=test",
 ]
 
 [tool.coverage.run]
