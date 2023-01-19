@@ -7,10 +7,10 @@ from apps.activity_flows.db.schemas import (
 )
 from infrastructure.database import BaseCRUD
 
-__all__ = ["FlowItemsHistoryCRUD"]
+__all__ = ["FlowItemHistoriesCRUD"]
 
 
-class FlowItemsHistoryCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
+class FlowItemHistoriesCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
     schema_class = ActivityFlowItemHistorySchema
 
     async def create_many(

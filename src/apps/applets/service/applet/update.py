@@ -3,9 +3,9 @@ from collections import defaultdict
 
 from apps.activities.crud import (
     ActivitiesCRUD,
-    ActivitiesHistoryCRUD,
+    ActivityHistoriesCRUD,
     ActivityItemsCRUD,
-    ActivityItemsHistoryCRUD,
+    ActivityItemHistoriesCRUD,
 )
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
@@ -15,7 +15,7 @@ from apps.activities.db.schemas import (
 )
 from apps.activity_flows.crud import (
     FlowItemsCRUD,
-    FlowItemsHistoryCRUD,
+    FlowItemHistoriesCRUD,
     FlowsCRUD,
     FlowsHistoryCRUD,
 )
@@ -26,7 +26,7 @@ from apps.activity_flows.db.schemas import (
     ActivityFlowSchema,
 )
 from apps.applets.crud import (
-    AppletHistoryCRUD,
+    AppletHistoriesCRUD,
     AppletsCRUD,
     UserAppletAccessCRUD,
 )
@@ -233,7 +233,7 @@ async def _add_history(
     flow_items: list[fetch.ActivityFlowItem],
 ):
     applet_id_version = f"{applet.id}_{applet.version}"
-    await AppletHistoryCRUD().save(
+    await AppletHistoriesCRUD().save(
         AppletHistorySchema(
             id_version=applet_id_version,
             id=applet.id,
@@ -332,7 +332,7 @@ async def _add_history(
                 ordering=f_item.ordering,
             )
         )
-    await ActivitiesHistoryCRUD().create_many(activity_schemas)
-    await ActivityItemsHistoryCRUD().create_many(activity_item_schemas)
+    await ActivityHistoriesCRUD().create_many(activity_schemas)
+    await ActivityItemHistoriesCRUD().create_many(activity_item_schemas)
     await FlowsHistoryCRUD().create_many(activity_flow_schemas)
-    await FlowItemsHistoryCRUD().create_many(activity_flow_item_schemas)
+    await FlowItemHistoriesCRUD().create_many(activity_flow_item_schemas)

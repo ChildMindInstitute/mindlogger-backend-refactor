@@ -7,10 +7,10 @@ from apps.activities.db.schemas import (
 )
 from infrastructure.database import BaseCRUD
 
-__all__ = ["ActivityItemsHistoryCRUD"]
+__all__ = ["ActivityItemHistoriesCRUD"]
 
 
-class ActivityItemsHistoryCRUD(BaseCRUD[ActivityItemHistorySchema]):
+class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
     schema_class = ActivityItemHistorySchema
 
     async def create_many(

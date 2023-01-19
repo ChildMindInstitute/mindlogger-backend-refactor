@@ -8,17 +8,17 @@ from apps.applets.db.schemas import AppletHistorySchema
 from apps.users.db.schemas import UserSchema
 from infrastructure.database.crud import BaseCRUD
 
-__all__ = ["AppletHistoryCRUD"]
+__all__ = ["AppletHistoriesCRUD"]
 
 
-class AppletHistoryCRUD(BaseCRUD[AppletHistorySchema]):
+class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
     schema_class = AppletHistorySchema
 
     async def save(self, schema: AppletHistorySchema):
         await self._create(schema)
 
     async def retrieve_versions_by_applet_id(
-        self, applet_id: int
+            self, applet_id: int
     ) -> list[tuple[str, datetime.datetime, UserSchema]]:
         """
         Retrieve versions by applet id
@@ -40,7 +40,7 @@ class AppletHistoryCRUD(BaseCRUD[AppletHistorySchema]):
         ]
 
     async def retrieve_by_applet_version(
-        self, id_version: str
+            self, id_version: str
     ) -> AppletHistorySchema | None:
         query: Query = select(AppletHistorySchema)
         query = query.where(AppletHistorySchema.id_version == id_version)
@@ -55,3 +55,9 @@ class AppletHistoryCRUD(BaseCRUD[AppletHistorySchema]):
             )
 
         return instance
+
+    async def fetch_by_id_version(self, value: str) -> AppletHistorySchema:
+        schema = await self._get('id_version', value)
+        if not schema:
+            raise
+        return schema

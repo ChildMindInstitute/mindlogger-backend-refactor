@@ -1,9 +1,9 @@
 from apps.activities.crud import (
-    ActivitiesHistoryCRUD,
-    ActivityItemsHistoryCRUD,
+    ActivityHistoriesCRUD,
+    ActivityItemHistoriesCRUD,
 )
-from apps.activity_flows.crud import FlowItemsHistoryCRUD, FlowsHistoryCRUD
-from apps.applets.crud import AppletHistoryCRUD
+from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsHistoryCRUD
+from apps.applets.crud import AppletHistoriesCRUD
 from apps.applets.domain.applets.history_detail import (
     Activity,
     ActivityFlow,
@@ -18,22 +18,22 @@ async def retrieve_applet_by_version(
 ) -> None | Applet:
     id_version = f"{applet_id}_{version}"
 
-    applet_schema = await AppletHistoryCRUD().retrieve_by_applet_version(
+    applet_schema = await AppletHistoriesCRUD().retrieve_by_applet_version(
         id_version
     )
     if not applet_schema:
         return None
     activity_schemas = (
-        await ActivitiesHistoryCRUD().retrieve_by_applet_version(id_version)
+        await ActivityHistoriesCRUD().retrieve_by_applet_version(id_version)
     )
     activity_item_schemas = (
-        await ActivityItemsHistoryCRUD().retrieve_by_applet_version(id_version)
+        await ActivityItemHistoriesCRUD().retrieve_by_applet_version(id_version)
     )
     flow_schemas = await FlowsHistoryCRUD().retrieve_by_applet_version(
         id_version
     )
     flow_item_schemas = (
-        await FlowItemsHistoryCRUD().retrieve_by_applet_version(id_version)
+        await FlowItemHistoriesCRUD().retrieve_by_applet_version(id_version)
     )
     applet = Applet.from_orm(applet_schema)
 
