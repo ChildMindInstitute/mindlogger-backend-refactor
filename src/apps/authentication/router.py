@@ -33,7 +33,6 @@ router.post(
     "/token/delete",
     response_model=Response[Token],
     responses={
-        status.HTTP_204_NO_CONTENT: {},
         **AUTHENTICATION_ERROR_RESPONSES,
         **NO_CONTENT_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,

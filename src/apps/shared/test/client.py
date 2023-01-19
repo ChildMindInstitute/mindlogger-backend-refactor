@@ -11,7 +11,7 @@ class TestClient:
     def __init__(self):
         app = create_app()
         self.client = AsyncClient(app=app, base_url="http://test.com")
-        self.headers = dict()
+        self.headers = {}
 
     @staticmethod
     def _prepare_url(url, query):
@@ -89,10 +89,11 @@ class TestClient:
 
     async def login(self, url: str, username: str, password: str):
         response = await self.post(
-            url, data=dict(email=username, password=password)
+            url,
+            data={"email": username, "password": password},
         )
         assert response.status_code == 200, response.json()
-        access_token = response.json()["Result"]["AccessToken"]
+        access_token = response.json()["result"]["accessToken"]
         self.headers["Authorization"] = f"Bearer {access_token}"
 
     async def get_token(self, url: str, user_login_request: UserLoginRequest):
@@ -104,4 +105,4 @@ class TestClient:
         return response
 
     async def logout(self):
-        self.headers = dict()
+        self.headers = {}

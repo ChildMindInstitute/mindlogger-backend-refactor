@@ -12,10 +12,10 @@ from apps.activities.domain.reusable_item_choices import (
 from apps.activities.errors import ReusableItemChoiceAlreadyExist
 from infrastructure.database.crud import BaseCRUD
 
-__all__ = ["ReusabelItemChoiceCRUD"]
+__all__ = ["ReusableItemChoiceCRUD"]
 
 
-class ReusabelItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
+class ReusableItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
     schema_class = ReusableItemChoiceSchema
 
     async def get_item_templates(

@@ -13,7 +13,7 @@ from apps.invitations.domain import (
 )
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.errors import NotContentError
+from apps.shared.errors import NoContentError
 from apps.users.domain import User
 
 
@@ -72,4 +72,4 @@ async def decline_invite(
     """General endpoint to declnie the applet invitation."""
 
     await InvitationsService(user).decline(key)
-    raise NotContentError
+    raise NoContentError

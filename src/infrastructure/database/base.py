@@ -11,10 +11,12 @@ __all__ = ["Base"]
 class _Base:
     """Base class for all database models."""
 
-    id = Column(Integer, primary_key=True)
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
-    is_deleted = Column(Boolean, default=False)
+    id = Column(Integer(), primary_key=True)
+    created_at = Column(DateTime(), default=datetime.now)
+    updated_at = Column(
+        DateTime(), default=datetime.now, onupdate=datetime.now
+    )
+    is_deleted = Column(Boolean(), default=False)
 
     def __iter__(self):
         return (

@@ -1,6 +1,7 @@
 from typing import Iterable, Type
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRouter
 
 import apps.activities.router as activities
@@ -12,6 +13,12 @@ import apps.logs.router as logs
 import apps.themes.router as themes
 import apps.users.router as users
 import middlewares as middlewares_
+from apps.shared.errors import BaseError
+from infrastructure.errors import (
+    custom_base_errors_handler,
+    pydantic_validation_errors_handler,
+    python_base_error_handler,
+)
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -28,7 +35,6 @@ routers: Iterable[APIRouter] = (
 # Declare your middlewares here
 middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
     (middlewares_.CORSMiddleware, middlewares_.cors_options),
-    (middlewares_.ErrorsHandlingMiddleware, {}),
     (middlewares_.DatabaseTransactionMiddleware, {}),
 )
 
@@ -44,5 +50,12 @@ def create_app():
     # Include middlewares
     for middleware, options in middlewares:
         app.add_middleware(middleware, **options)
+
+    # Error handling
+    app.exception_handler(RequestValidationError)(
+        pydantic_validation_errors_handler
+    )
+    app.exception_handler(BaseError)(custom_base_errors_handler)
+    app.exception_handler(Exception)(python_base_error_handler)
 
     return app

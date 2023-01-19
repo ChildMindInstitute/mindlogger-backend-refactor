@@ -9,7 +9,12 @@ from apps.users.domain import (
     UserCreate,
     UserUpdateRequest,
 )
-from apps.users.errors import UserIsDeletedError, UserNotFound, UsersError
+from apps.users.errors import (
+    UserAlreadyExistError,
+    UserIsDeletedError,
+    UserNotFound,
+    UsersError,
+)
 from infrastructure.database.crud import BaseCRUD
 
 
@@ -53,7 +58,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
                 self.schema_class(**schema.dict())
             )
         except IntegrityError:
-            raise UsersError(message="User already exists")
+            raise UserAlreadyExistError
 
         # Create internal data model
         user = User.from_orm(instance)

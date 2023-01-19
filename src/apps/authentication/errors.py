@@ -1,24 +1,22 @@
-from apps.shared.errors import BaseError, NotFoundError, ValidationError
+from starlette import status
 
-
-class TokenNotFoundError(NotFoundError):
-    def __init__(self, *args) -> None:
-        super().__init__("Token not found", *args)
+from apps.shared.errors import BadRequestError, BaseError
 
 
 class AuthenticationError(BaseError):
-    def __init__(self, *args) -> None:
-        fallback = "Could not validate credentials"
-        super().__init__(fallback, *args)
+    def __init__(self, message="Could not validate credentials") -> None:
+        super().__init__(
+            message=message, status_code=status.HTTP_401_UNAUTHORIZED
+        )
 
 
 class PermissionsError(BaseError):
-    def __init__(self, message="", *args) -> None:
-        fallback = "Not enough permissions"
-        super().__init__(message or fallback, *args)
+    def __init__(self, message="Not enough permissions") -> None:
+        super().__init__(
+            message=message, status_code=status.HTTP_403_FORBIDDEN
+        )
 
 
-class BadCredentials(ValidationError):
-    def __init__(self, message="", *args) -> None:
-        fallback = "Bad credentials"
-        super().__init__(message or fallback, *args)
+class BadCredentials(BadRequestError):
+    def __init__(self, message="Bad credentials") -> None:
+        super().__init__(message=message)

@@ -6,11 +6,11 @@ services:
     image: postgres:14
     container_name: mindlogger_postgres
     environment:
-      POSTGRES_HOST: ${DATABASE__POSTGRES_HOST}
-      POSTGRES_PORT: ${DATABASE__POSTGRES_PORT}
-      POSTGRES_PASSWORD: ${DATABASE__POSTGRES_PASSWORD}
-      POSTGRES_USER: ${DATABASE__POSTGRES_USER}
-      POSTGRES_DB: ${DATABASE__POSTGRES_DB}
+      POSTGRES_HOST: ${DATABASE__HOST}
+      POSTGRES_PORT: ${DATABASE__PORT}
+      POSTGRES_PASSWORD: ${DATABASE__PASSWORD}
+      POSTGRES_USER: ${DATABASE__USER}
+      POSTGRES_DB: ${DATABASE__DB}
     ports:
       - 5432:5432
     volumes:
