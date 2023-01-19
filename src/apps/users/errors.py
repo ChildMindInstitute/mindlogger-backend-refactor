@@ -1,13 +1,16 @@
-from apps.shared.errors import BaseError, NotFoundError, ValidationError
+from apps.shared.errors import BadRequestError, BaseError, NotFoundError
 
 
 class UsersError(BaseError):
-    pass
+    def __init__(self, *_, message="Users error") -> None:
+        super().__init__(message=message)
 
 
 class UserNotFound(NotFoundError):
-    pass
+    def __init__(self, *_, message="User not found") -> None:
+        super().__init__(message=message)
 
 
-class UserIsDeletedError(ValidationError):
-    pass
+class UserIsDeletedError(BadRequestError):
+    def __init__(self, *_, message="User is deleted") -> None:
+        super().__init__(message=message)

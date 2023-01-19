@@ -34,9 +34,9 @@ async def get_current_user(token: str = Depends(oauth2_oauth)) -> User:
         token_data = TokenPayload(**payload)
 
         if datetime.fromtimestamp(token_data.exp) < datetime.now():
-            raise AuthenticationError()
+            raise AuthenticationError
     except (JWTError, ValidationError):
-        raise AuthenticationError()
+        raise AuthenticationError
 
     if not (user := await UsersCRUD().get_by_id(id_=token_data.sub)):
         raise UserNotFound()
@@ -49,7 +49,7 @@ async def get_current_user(token: str = Depends(oauth2_oauth)) -> User:
 
         for entry in cache_entries:
             if entry.raw_token == token:
-                raise AuthenticationError()
+                raise AuthenticationError
 
     return user
 
@@ -67,8 +67,8 @@ async def get_current_token(
         token_payload = TokenPayload(**payload)
 
         if datetime.fromtimestamp(token_payload.exp) < datetime.now():
-            raise AuthenticationError()
+            raise AuthenticationError
     except (JWTError, ValidationError):
-        raise AuthenticationError()
+        raise AuthenticationError
 
     return InternalToken(payload=token_payload, raw_token=token)

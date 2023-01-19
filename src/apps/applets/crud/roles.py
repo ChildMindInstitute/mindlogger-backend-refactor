@@ -22,9 +22,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         # Get UserAppletAccess from the database
         if not (instance := await self._get("id", id_)):
-            raise UserAppletAccessesNotFound(
-                f"No such UserAppletAccess with id={id_}."
-            )
+            raise UserAppletAccessesNotFound(id_=id_)
 
         # Get internal model
         user_applet_access: UserAppletAccess = UserAppletAccess.from_orm(

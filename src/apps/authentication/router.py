@@ -28,11 +28,10 @@ router.post(
 )(get_token)
 
 # Add token to the blacklist
-router.delete(
-    "/token",
+router.post(
+    "/token/delete",
     response_model=Response[Token],
     responses={
-        status.HTTP_200_OK: {"model": Response[Token]},
         **AUTHENTICATION_ERROR_RESPONSES,
         **NO_CONTENT_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,

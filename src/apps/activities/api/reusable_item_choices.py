@@ -9,7 +9,7 @@ from apps.activities.domain.reusable_item_choices import (
 )
 from apps.authentication.deps import get_current_user
 from apps.shared.domain.response import Response, ResponseMulti
-from apps.shared.errors import NotContentError
+from apps.shared.errors import NoContentError
 from apps.users.domain import User
 
 
@@ -26,8 +26,9 @@ async def item_choice_create(
 
 
 async def item_choice_delete(id_: int, user: User = Depends(get_current_user)):
-    await ReusableItemChoiceCRUD().delete_by_id(id_=id_)
-    raise NotContentError
+    await ReusabelItemChoiceCRUD().delete_by_id(id_=id_)
+    raise NoContentError
+
 
 
 async def item_choice_retrieve(
