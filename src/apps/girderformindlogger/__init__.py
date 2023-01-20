@@ -1,3 +1,12 @@
+"""
+This module is used only as a temporary solution in order
+to implement the migrator from the old structure to the new one.
+
+IMPORTANT!
+---------
+Do not use this sub-application in your code
+"""
+
 from pkg_resources import DistributionNotFound, get_distribution
 
 try:
