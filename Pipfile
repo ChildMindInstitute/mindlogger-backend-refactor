@@ -23,7 +23,6 @@ python-jose = {version = "~=3.3.0", extras = ["cryptography"]}
 sentry-sdk = "~=1.6"
 sqlalchemy = {extras = ["asyncio"], version = "~=1.4.43"}
 uvicorn = {extras = ["standard"], version = "==0.19"}
-python-multipart = "~=0.0.5"
 
 [dev-packages]
 black = "~=22.6"
@@ -49,6 +48,13 @@ types-python-jose = "==3.3.4"
 typing-extensions = "~=4.4.0"
 # https://github.com/sqlalchemy/sqlalchemy/issues/7714
 greenlet = "~=2.0.1"
+
+# Old project requirements
+pymongo = "==3.7.1"
+cherrypy = "==11.0.0"
+"dogpile.cache" = "==0.7.1"
+six = "==1.12.0"
+types-six = "==1.16.21.4"
 
 [requires]
 python_version = "3.10"
