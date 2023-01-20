@@ -3,7 +3,6 @@ import urllib.parse
 
 from httpx import AsyncClient, Response
 
-from apps.authentication.domain.login import UserLoginRequest
 from infrastructure.app import create_app
 
 
@@ -87,10 +86,16 @@ class TestClient:
         )
         return response
 
-    async def login(self, url: str, email: str, password: str, device_id:str|None=None):
+    async def login(
+        self, url: str, email: str, password: str, device_id: str | None = None
+    ):
         response = await self.post(
             url,
-            data={"email": email, "password": password, "device_id": device_id},
+            data={
+                "email": email,
+                "password": password,
+                "device_id": device_id,
+            },
         )
         assert response.status_code == 200, response.json()
         access_token = response.json()["result"]["token"]["accessToken"]

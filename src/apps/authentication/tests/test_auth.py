@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from starlette import status
 
-from apps.authentication.domain.login import UserLoginRequest, UserLogin
+from apps.authentication.domain.login import UserLogin, UserLoginRequest
 from apps.authentication.domain.token import RefreshAccessTokenRequest, Token
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
@@ -58,7 +58,7 @@ class TestAuthentication(BaseTest):
                 token=Token(
                     access_token=access_token, refresh_token=refresh_token
                 ),
-                user=PublicUser.from_orm(user)
+                user=PublicUser.from_orm(user),
             ),
         )
 
@@ -68,8 +68,8 @@ class TestAuthentication(BaseTest):
     @transaction.rollback
     @patch("apps.authentication.services.core.TokensBlacklistCache.set")
     async def test_delete_access_token(
-            self,
-            cache_set_mock,
+        self,
+        cache_set_mock,
     ):
         print(self.delete_token_url)
         # Creating new user
