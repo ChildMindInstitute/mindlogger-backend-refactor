@@ -24,7 +24,7 @@ class TestReusableItem(BaseTest):
         response = await self.client.post(self.create_url, data=create_data)
 
         assert response.status_code == 201, response.json()
-        assert response.json()["Result"]["Id"] == 1
+        assert response.json()["result"]["id"] == 1
 
     @transaction.rollback
     async def test_recreate_item_choice(self):
@@ -40,7 +40,7 @@ class TestReusableItem(BaseTest):
         response = await self.client.post(self.create_url, data=create_data)
 
         assert response.status_code == 201, response.json()
-        assert response.json()["Result"]["Id"] == 1
+        assert response.json()["result"]["id"] == 1
 
         create_data = dict(
             token_name="Average age",
@@ -52,7 +52,10 @@ class TestReusableItem(BaseTest):
 
         res_data = response.json()
         assert response.status_code == 400, res_data
-        assert res_data["messages"][0] == "Reusable item choice already exist"
+        assert (
+            res_data["results"][0]["message"]["en"]
+            == "Reusable item choice already exist"
+        )
 
     @transaction.rollback
     async def test_delete_item_choice(self):
@@ -68,7 +71,7 @@ class TestReusableItem(BaseTest):
         response = await self.client.post(self.create_url, data=create_data)
 
         assert response.status_code == 201, response.json()
-        assert response.json()["Result"]["Id"] == 1
+        assert response.json()["result"]["id"] == 1
 
         response = await self.client.delete(self.delete_url.format(id=1))
 

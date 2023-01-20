@@ -3,6 +3,7 @@ import urllib.parse
 
 from httpx import AsyncClient, Response
 
+from apps.authentication.domain.login import UserLoginRequest
 from infrastructure.app import create_app
 
 
@@ -10,7 +11,7 @@ class TestClient:
     def __init__(self):
         app = create_app()
         self.client = AsyncClient(app=app, base_url="http://test.com")
-        self.headers = dict()
+        self.headers = {}
 
     @staticmethod
     def _prepare_url(url, query):
@@ -88,11 +89,20 @@ class TestClient:
 
     async def login(self, url: str, username: str, password: str):
         response = await self.post(
-            url, data=dict(email=username, password=password)
+            url,
+            data={"email": username, "password": password},
         )
         assert response.status_code == 200, response.json()
-        access_token = response.json()["Result"]["AccessToken"]
+        access_token = response.json()["result"]["accessToken"]
         self.headers["Authorization"] = f"Bearer {access_token}"
 
+    async def get_token(self, url: str, user_login_request: UserLoginRequest):
+        response = await self.post(url, data=user_login_request.dict())
+        assert response.status_code == 200, response.json()
+        access_token = response.json()["result"]["accessToken"]
+        token_type = response.json()["result"]["tokenType"]
+        self.headers["Authorization"] = f"{token_type} {access_token}"
+        return response
+
     async def logout(self):
-        self.headers = dict()
+        self.headers = {}

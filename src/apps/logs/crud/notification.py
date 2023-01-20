@@ -79,7 +79,6 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
 
         # Save NotificationLogs into the database
         try:
-
             instance: NotificationLogSchema = await self._create(
                 NotificationLogSchema(
                     **schema.dict(),
@@ -88,8 +87,8 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
                     scheduled_notifications_updated=sched_notif_upd,
                 )
             )
-        except Exception as e:
-            raise NotificationLogError(e)
+        except Exception as error:
+            raise NotificationLogError(str(error))
 
         # Create internal data model
         notification_log: PublicNotificationLog = (

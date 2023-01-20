@@ -1,5 +1,6 @@
 import json
 import uuid
+from contextlib import suppress
 
 from apps.users.domain import PasswordRecoveryInfo
 from infrastructure.cache import BaseCacheService, CacheNotFound
@@ -54,7 +55,7 @@ class PasswordRecoveryCache(BaseCacheService[PasswordRecoveryInfo]):
         ]
 
     async def delete_all_entries(self, email: str):
-        try:
+        with suppress(CacheNotFound):
             cache_entries: list[
                 CacheEntry[PasswordRecoveryInfo]
             ] = await self.all(email=email)
@@ -63,5 +64,3 @@ class PasswordRecoveryCache(BaseCacheService[PasswordRecoveryInfo]):
                     email=cache_entry.instance.email,
                     key=cache_entry.instance.key,
                 )
-        except CacheNotFound:
-            pass

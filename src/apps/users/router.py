@@ -23,8 +23,12 @@ router = APIRouter(prefix="/users", tags=["Users"])
 # User create
 router.post(
     "",
-    status_code=status.HTTP_201_CREATED,
     response_model=Response[PublicUser],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"model": Response[PublicUser]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
 )(user_create)
 
 # User retrieve

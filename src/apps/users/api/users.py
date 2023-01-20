@@ -3,20 +3,21 @@ from fastapi import Body, Depends
 from apps.authentication.deps import get_current_user
 from apps.authentication.services import AuthenticationService
 from apps.shared.domain.response import Response
-from apps.shared.errors import NotContentError
+from apps.shared.errors import NoContentError
 from apps.users.crud import UsersCRUD
 from apps.users.domain import (
     PublicUser,
     User,
     UserCreate,
     UserCreateRequest,
-    UserUpdate,
+    UserUpdateRequest,
 )
 
 
 async def user_create(
     user_create_schema: UserCreateRequest = Body(...),
 ) -> Response[PublicUser]:
+
     user_create = UserCreate(
         email=user_create_schema.email,
         full_name=user_create_schema.full_name,
@@ -43,7 +44,7 @@ async def user_retrieve(
 
 async def user_update(
     user: User = Depends(get_current_user),
-    user_update_schema: UserUpdate = Body(...),
+    user_update_schema: UserUpdateRequest = Body(...),
 ) -> Response[PublicUser]:
     updated_user: User = await UsersCRUD().update(user, user_update_schema)
 
@@ -55,4 +56,4 @@ async def user_update(
 
 async def user_delete(user: User = Depends(get_current_user)) -> None:
     await UsersCRUD().delete(user)
-    raise NotContentError
+    raise NoContentError

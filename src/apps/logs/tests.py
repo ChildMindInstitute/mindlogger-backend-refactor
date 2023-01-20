@@ -21,7 +21,7 @@ class TestNotificationLogs(BaseTest):
             self.create_log_url, data=create_data
         )
         assert response.status_code == 201, response.json()
-        assert response.json()["Result"]["Id"] == 1
+        assert response.json()["result"]["id"] == 1
 
     @transaction.rollback
     async def test_retrieve_log(self):
@@ -30,7 +30,7 @@ class TestNotificationLogs(BaseTest):
         response = await self.client.get(self.query_log_url, query=query)
 
         assert response.status_code == 200, response.json()
-        assert type(response.json()["Results"]) == list
+        assert type(response.json()["results"]) == list
 
         create_data = dict(
             user_id="test@test.com",
@@ -45,7 +45,7 @@ class TestNotificationLogs(BaseTest):
             self.create_log_url, data=create_data
         )
         assert response.status_code == 201, response.json()
-        assert response.json()["Result"]["Id"] == 1
+        assert response.json()["result"]["id"] == 1
 
         query = dict(
             user_id="test@test.com", device_id="test_device_id", limit=10
@@ -54,4 +54,4 @@ class TestNotificationLogs(BaseTest):
         response = await self.client.get(self.query_log_url, query=query)
 
         assert response.status_code == 200, response.json()
-        assert len(response.json()["Results"]) == 1
+        assert len(response.json()["results"]) == 1
