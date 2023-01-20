@@ -20,7 +20,7 @@ async def custom_base_errors_handler(
     response = ErrorResponseMulti(
         results=[
             ErrorResponse(
-                message=ErrorResponseMessage(en=error._message),
+                message=ErrorResponseMessage(en=error._message.capitalize()),
                 type_=error._type,
             )
         ]
