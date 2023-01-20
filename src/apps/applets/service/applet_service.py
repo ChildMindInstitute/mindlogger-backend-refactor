@@ -1,4 +1,4 @@
-__all__ = ['AppletService']
+__all__ = ["AppletService"]
 
 
 class AppletService:

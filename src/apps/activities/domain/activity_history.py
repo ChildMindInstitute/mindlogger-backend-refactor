@@ -1,9 +1,17 @@
+import datetime
 import uuid
 
 from apps.shared.domain import InternalModel, PublicModel
 
+__all__ = [
+    "ActivityHistory",
+    "ActivityHistoryChange",
+    "PublicActivityHistoryChange",
+]
+
 
 class ActivityHistory(InternalModel):
+    id: int
     applet_id: str
     id_version: str
     guid: uuid.UUID
@@ -16,6 +24,7 @@ class ActivityHistory(InternalModel):
     is_reviewable: bool
     response_is_editable: bool
     ordering: int
+    created_at: datetime.datetime
 
 
 class ActivityHistoryChange(InternalModel):

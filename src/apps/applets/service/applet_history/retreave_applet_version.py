@@ -27,7 +27,9 @@ async def retrieve_applet_by_version(
         await ActivityHistoriesCRUD().retrieve_by_applet_version(id_version)
     )
     activity_item_schemas = (
-        await ActivityItemHistoriesCRUD().retrieve_by_applet_version(id_version)
+        await ActivityItemHistoriesCRUD().retrieve_by_applet_version(
+            id_version
+        )
     )
     flow_schemas = await FlowsHistoryCRUD().retrieve_by_applet_version(
         id_version

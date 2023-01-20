@@ -4,8 +4,8 @@ from collections import defaultdict
 from apps.activities.crud import (
     ActivitiesCRUD,
     ActivityHistoriesCRUD,
-    ActivityItemsCRUD,
     ActivityItemHistoriesCRUD,
+    ActivityItemsCRUD,
 )
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
@@ -14,8 +14,8 @@ from apps.activities.db.schemas import (
     ActivitySchema,
 )
 from apps.activity_flows.crud import (
-    FlowItemsCRUD,
     FlowItemHistoriesCRUD,
+    FlowItemsCRUD,
     FlowsCRUD,
     FlowsHistoryCRUD,
 )
@@ -33,7 +33,7 @@ from apps.applets.crud import (
 from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.applets.domain import Role, UserAppletAccessCreate
 from apps.applets.domain.applets import fetch, update
-from apps.applets.helpers.version import get_next_version
+from apps.shared.version import get_next_version
 
 
 async def update_applet(

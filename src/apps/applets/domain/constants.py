@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class Role(str, Enum):
-    ADMIN = "admin" #
+    ADMIN = "admin"  #
     CONTENT_MANAGER = "content manager"
     DATA_MANAGER = "data manager"
     CASE_MANAGER = "case manager"

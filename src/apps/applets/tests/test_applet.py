@@ -1,3 +1,5 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -19,6 +21,7 @@ class TestApplet(BaseTest):
     applet_histories_url = f"{applet_detail_url}/versions"
     applet_history_url = f"{applet_detail_url}/versions/{{version}}"
 
+    @pytest.mark.main
     @transaction.rollback
     async def test_creating_applet(self):
         await self.client.login(
