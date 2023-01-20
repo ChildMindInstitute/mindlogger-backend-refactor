@@ -1,5 +1,6 @@
 from fastapi import Body, Depends
 from jose import JWTError, jwt
+from starlette import status
 
 from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.login import UserLogin, UserLoginRequest
@@ -12,7 +13,6 @@ from apps.authentication.domain.token import (
 from apps.authentication.errors import BadCredentials
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
-from apps.shared.errors import NoContentError
 from apps.users.domain import PublicUser, User
 from config import settings
 
@@ -86,4 +86,4 @@ async def delete_access_token(
     """Add token to the blacklist."""
 
     await AuthenticationService.add_access_token_to_blacklist(token)
-    raise NoContentError
+    return status.HTTP_200_OK

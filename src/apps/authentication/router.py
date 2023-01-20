@@ -30,11 +30,10 @@ router.post(
 
 # Add token to the blacklist
 router.post(
-    "/token/delete",
-    response_model=Response[Token],
+    "/logout",
     responses={
+        status.HTTP_200_OK: {"model": None},
         **AUTHENTICATION_ERROR_RESPONSES,
-        **NO_CONTENT_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(delete_access_token)
