@@ -2,6 +2,8 @@ from fastapi import Body, Depends
 from jose import JWTError, jwt
 
 from apps.authentication.deps import get_current_token, get_current_user
+from apps.authentication.domain.login import UserLogin, UserLoginRequest
+from apps.authentication.domain.logout import UserLogoutRequest
 from apps.authentication.domain.token import (
     InternalToken,
     RefreshAccessTokenRequest,
@@ -11,13 +13,13 @@ from apps.authentication.errors import BadCredentials
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.errors import NoContentError
-from apps.users.domain import User, UserLoginRequest, UserLogoutRequest
+from apps.users.domain import PublicUser, User
 from config import settings
 
 
 async def get_token(
     user_login_schema: UserLoginRequest = Body(...),
-) -> Response[Token]:
+) -> Response[UserLogin]:
     """Generate the JWT access token."""
 
     user: User = await AuthenticationService.authenticate_user(
@@ -32,8 +34,14 @@ async def get_token(
         {"sub": str(user.id)}
     )
 
+    token = Token(access_token=access_token, refresh_token=refresh_token)
+    public_user = PublicUser(**user.dict())
+
     return Response(
-        result=Token(access_token=access_token, refresh_token=refresh_token)
+        result=UserLogin(
+            token=token,
+            user=public_user,
+        )
     )
 
 

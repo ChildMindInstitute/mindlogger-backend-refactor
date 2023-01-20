@@ -40,6 +40,7 @@ async def create_applet(
     data: create.AppletCreate, user_id: int
 ) -> fetch.Applet:
     applet = await _create_applet(data, user_id)
+    await _create_access(applet.id, user_id)
     activities, activity_items = await _create_activities(
         applet, data.activities
     )
