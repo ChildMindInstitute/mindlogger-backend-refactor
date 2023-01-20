@@ -1,17 +1,16 @@
 from fastapi import Request
 
-from apps.shared.errors import ForbiddenError
-from infrastructure.http.domain import MindLoggerHeaders
+from infrastructure.http.domain import MindloggerContentSource
 
 
-async def mindlogger_headers(request: Request) -> MindLoggerHeaders:
-    try:
-        mindlogger_content_source = MindLoggerHeaders(
-            mindlogger_content_source=request.headers.get(
-                "mindlogger-content-source"
-            )
-        )
-    except Exception:
-        raise ForbiddenError
+async def get_mindlogger_content_source(
+    request: Request,
+) -> MindloggerContentSource:
+    """Fetch the Mindlogger-Content-Source HTTP header."""
 
-    return mindlogger_content_source
+    return getattr(
+        MindloggerContentSource,
+        request.headers.get(
+            "mindlogger-content-source", MindloggerContentSource.web.name
+        ),
+    )

@@ -1,5 +1,8 @@
-from apps.shared.domain import PublicModel
+from enum import Enum
 
 
-class MindLoggerHeaders(PublicModel):
-    mindlogger_content_source: str
+class MindloggerContentSource(str, Enum):
+    """The allowed values for the Mindlogger-Content-Source HTTP header."""
+
+    web = "web"
+    admin = "admin"
