@@ -52,9 +52,9 @@ class TestPassword(BaseTest):
         )
 
         # User get token
-        await self.client.get_token(
+        await self.client.login(
             url=self.get_token_url,
-            user_login_request=login_request_user,
+            **login_request_user.dict(),
         )
 
         # Password update
@@ -79,9 +79,9 @@ class TestPassword(BaseTest):
             password=password_update_request.dict()["password"],
         )
 
-        internal_response: HttpResponse = await self.client.get_token(
+        internal_response: HttpResponse = await self.client.login(
             url=self.get_token_url,
-            user_login_request=login_request_user,
+            **login_request_user.dict(),
         )
 
         assert response.status_code == status.HTTP_200_OK

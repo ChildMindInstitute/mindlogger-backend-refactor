@@ -87,20 +87,14 @@ class TestClient:
         )
         return response
 
-    async def login(self, url: str, username: str, password: str):
+    async def login(self, url: str, email: str, password: str, device_id:str|None=None):
         response = await self.post(
             url,
-            data={"email": username, "password": password},
+            data={"email": email, "password": password, "device_id": device_id},
         )
         assert response.status_code == 200, response.json()
-        access_token = response.json()["result"]["accessToken"]
-        self.headers["Authorization"] = f"Bearer {access_token}"
-
-    async def get_token(self, url: str, user_login_request: UserLoginRequest):
-        response = await self.post(url, data=user_login_request.dict())
-        assert response.status_code == 200, response.json()
-        access_token = response.json()["result"]["accessToken"]
-        token_type = response.json()["result"]["tokenType"]
+        access_token = response.json()["result"]["token"]["accessToken"]
+        token_type = response.json()["result"]["token"]["tokenType"]
         self.headers["Authorization"] = f"{token_type} {access_token}"
         return response
 

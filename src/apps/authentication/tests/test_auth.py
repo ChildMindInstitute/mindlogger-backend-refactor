@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from starlette import status
 
-from apps.authentication.domain.login import UserLoginRequest
+from apps.authentication.domain.login import UserLoginRequest, UserLogin
 from apps.authentication.domain.token import RefreshAccessTokenRequest, Token
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
@@ -10,6 +10,7 @@ from apps.authentication.tests.factories import UserLogoutRequestFactory
 from apps.shared.domain.response import Response
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
+from apps.users.domain import PublicUser
 from apps.users.router import router as user_router
 from apps.users.tests import UserCreateRequestFactory
 from infrastructure.database import transaction
@@ -53,9 +54,12 @@ class TestAuthentication(BaseTest):
         )
 
         expected_result = Response(
-            result=Token(
-                access_token=access_token, refresh_token=refresh_token
-            )
+            result=UserLogin(
+                token=Token(
+                    access_token=access_token, refresh_token=refresh_token
+                ),
+                user=PublicUser.from_orm(user)
+            ),
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -64,8 +68,8 @@ class TestAuthentication(BaseTest):
     @transaction.rollback
     @patch("apps.authentication.services.core.TokensBlacklistCache.set")
     async def test_delete_access_token(
-        self,
-        cache_set_mock,
+            self,
+            cache_set_mock,
     ):
         print(self.delete_token_url)
         # Creating new user
@@ -77,9 +81,9 @@ class TestAuthentication(BaseTest):
         login_request_user = UserLoginRequest(
             **self.create_request_user.dict()
         )
-        await self.client.get_token(
+        await self.client.login(
             url=self.get_token_url,
-            user_login_request=login_request_user,
+            **login_request_user.dict(),
         )
 
         response = await self.client.post(

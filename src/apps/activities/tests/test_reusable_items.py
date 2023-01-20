@@ -5,7 +5,7 @@ from infrastructure.database import transaction
 class TestReusableItem(BaseTest):
     fixtures = ["users/fixtures/users.json"]
 
-    login_url = "/auth/token"
+    login_url = "/auth/login"
     create_url = "activity/item_choices"
     update_url = "activity/item_choices"
     delete_url = "activity/item_choices/{id}"

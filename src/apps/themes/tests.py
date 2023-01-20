@@ -7,7 +7,7 @@ from infrastructure.database import transaction
 class TestThemes(BaseTest):
     fixtures = ["users/fixtures/users.json"]
 
-    login_url = "/auth/token"
+    login_url = "/auth/login"
     list_url = "/themes"
     detail_url = "themes/{id}"
 
