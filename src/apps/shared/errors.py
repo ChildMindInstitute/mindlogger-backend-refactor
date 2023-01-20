@@ -64,3 +64,10 @@ class NotFoundError(BaseError):
         super().__init__(
             message=message, status_code=status.HTTP_404_NOT_FOUND
         )
+
+
+class ForbiddenError(BaseError):
+    def __init__(self, *_, message="Not found") -> None:
+        super().__init__(
+            message=message, status_code=status.HTTP_403_FORBIDDEN
+        )
