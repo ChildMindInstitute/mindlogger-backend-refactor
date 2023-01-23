@@ -1,3 +1,5 @@
+from typing import Optional
+
 from apps.activities.crud import ActivityHistoriesCRUD
 from apps.activities.domain import ActivityHistory, ActivityHistoryChange
 
@@ -23,8 +25,10 @@ class ActivityHistoryService:
     ) -> list[ActivityHistoryChange]:
         generator = ChangeTextGenerator()
         activity_changes: list[ActivityHistoryChange] = []
-        activity_schemas = await ActivityHistoriesCRUD().retrieve_by_applet_versions_ordered_by_id(
-            [self._applet_id_version, old_applet_id_version]
+        activity_schemas = (
+            await ActivityHistoriesCRUD().retrieve_by_applet_ids(
+                [self._applet_id_version, old_applet_id_version]
+            )
         )
         activities = [
             ActivityHistory.from_orm(schema) for schema in activity_schemas
@@ -32,7 +36,7 @@ class ActivityHistoryService:
 
         activity_groups = self._group_and_sort_activities(activities)
         for _, (prev_activity, new_activity) in activity_groups.items():
-            if not prev_activity:
+            if not prev_activity and new_activity:
                 activity_changes.append(
                     ActivityHistoryChange(
                         name=generator.added_text(
@@ -40,7 +44,7 @@ class ActivityHistoryService:
                         )
                     )
                 )
-            elif not new_activity:
+            elif not new_activity and prev_activity:
                 activity_changes.append(
                     ActivityHistoryChange(
                         name=generator.removed_text(
@@ -48,7 +52,7 @@ class ActivityHistoryService:
                         )
                     )
                 )
-            else:
+            elif new_activity and prev_activity:
                 change = ActivityHistoryChange()
                 has_changes = False
                 if prev_activity.name != new_activity.name:
@@ -109,20 +113,24 @@ class ActivityHistoryService:
 
     def _group_and_sort_activities(
         self, activities: list[ActivityHistory]
-    ) -> dict[int, tuple[ActivityHistory, ActivityHistory]]:
-        groups_map = dict()
+    ) -> dict[
+        int, tuple[Optional[ActivityHistory], Optional[ActivityHistory]]
+    ]:
+        groups_map: dict[
+            int, tuple[ActivityHistory | None, ActivityHistory | None]
+        ] = dict()
         for activity in activities:
-            group = list(groups_map.get(activity.id, ()))
-            if len(group) == 0:
+            group = groups_map.get(activity.id)
+            if not group:
                 if self._version in activity.id_version.split("_"):
-                    group = [None, activity]
+                    group = (None, activity)
                 else:
-                    group = [activity, None]
-            else:
+                    group = (activity, None)
+            elif group:
                 if self._version in activity.id_version.split("_"):
-                    group[1] = activity
+                    group = (group[0], activity)
                 else:
-                    group[0] = activity
-            groups_map[activity.id] = tuple(group)
+                    group = (activity, group[1])
+            groups_map[activity.id] = group
 
         return groups_map

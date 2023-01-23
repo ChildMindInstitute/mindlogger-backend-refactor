@@ -29,7 +29,7 @@ class ActivityHistory(InternalModel):
 
 class ActivityHistoryChange(InternalModel):
     name: str | None
-    description: dict | None
+    description: str | None
     splash_screen: str | None
     image: str | None
     show_all_at_once: str | None
@@ -39,5 +39,13 @@ class ActivityHistoryChange(InternalModel):
     ordering: str | None
 
 
-class PublicActivityHistoryChange(PublicModel, ActivityHistoryChange):
-    pass
+class PublicActivityHistoryChange(PublicModel):
+    name: str | None
+    description: dict | None
+    splash_screen: str | None
+    image: str | None
+    show_all_at_once: str | None
+    is_skippable: str | None
+    is_reviewable: str | None
+    response_is_editable: str | None
+    ordering: str | None

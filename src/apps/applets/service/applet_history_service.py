@@ -1,7 +1,6 @@
 from apps.activities.services import ActivityHistoryService
 from apps.applets.crud import AppletHistoriesCRUD
 from apps.applets.domain import AppletHistory, AppletHistoryChange
-from apps.applets.domain.applets.history_detail import Applet
 
 __all__ = ["AppletHistoryService"]
 
@@ -14,9 +13,6 @@ class AppletHistoryService:
         self._applet_id = applet_id
         self._version = version
         self._id_version = f"{applet_id}_{version}"
-
-    def get_detail(self) -> Applet:
-        pass
 
     async def get_changes(self) -> AppletHistoryChange:
         prev_version = get_prev_version(self._version)

@@ -27,7 +27,7 @@ class AppletHistory(InternalModel):
     report_email_body: str
 
 
-class AppletHistoryChange(AppletHistory):
+class AppletHistoryChange(InternalModel):
     display_name: str | None
     description: dict | None
     about: dict | None
@@ -46,7 +46,22 @@ class AppletHistoryChange(AppletHistory):
     activities: list[ActivityHistoryChange] = Field(default_factory=list)
 
 
-class PublicAppletHistoryChange(PublicModel, AppletHistoryChange):
+class PublicAppletHistoryChange(PublicModel):
+    display_name: str | None
+    description: dict | None
+    about: dict | None
+    image: str | None
+    watermark: str | None
+    theme_id: str | None
+    version: str | None
+    account_id: str | None
+    creator_id: str | None
+    report_server_ip: str | None
+    report_public_key: str | None
+    report_recipients: list[str] | None
+    report_include_user_id: str | None
+    report_include_case_id: str | None
+    report_email_body: str | None
     activity_changes: list[PublicActivityHistoryChange] = Field(
         default_factory=list
     )
