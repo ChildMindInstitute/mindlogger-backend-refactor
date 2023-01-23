@@ -32,7 +32,7 @@ router.post(
 router.post(
     "/logout",
     responses={
-        status.HTTP_200_OK: {"model": None},
+        status.HTTP_200_OK: {"model": str},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
