@@ -1,12 +1,13 @@
 import uuid
 
+from jinja2 import Environment, PackageLoader, select_autoescape
+
 from apps.authentication.services import AuthenticationService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.errors import NotFoundError
 from apps.users.crud import UsersCRUD
 from apps.users.domain import (
-    PASSWORD_RECOVERY_TEMPLATE,
     PasswordRecoveryApproveRequest,
     PasswordRecoveryInfo,
     PasswordRecoveryRequest,
@@ -61,19 +62,29 @@ class PasswordRecoveryService:
             ttl=settings.authentication.password_recover.expiration,
         )
 
+        # Creating the html from a template
+        env = Environment(
+            loader=PackageLoader("apps.mailing", "static/templates"),
+            autoescape=select_autoescape(["html", "xml"]),
+        )
+
+        template = env.get_template("password_recover.html")
+
+        html = template.render(
+            email=user.email,
+            link=(
+                f"{settings.service.urls.frontend.base}"
+                f"/{settings.service.urls.frontend.password_recovery_send}"
+                f"/{password_recovery_info.key}"
+            ),
+        )
+
         # Send email to the user
         service: MailingService = MailingService()
         message = MessageSchema(
             recipients=[user.email],
             subject="Password recovery for Mindlogger",
-            body=PASSWORD_RECOVERY_TEMPLATE.format(
-                email=user.email,
-                link=(
-                    f"{settings.service.urls.frontend.base}"
-                    f"/{settings.service.urls.frontend.password_recovery_send}"
-                    f"/{password_recovery_info.key}"
-                ),
-            ),
+            body=html,
         )
         await service.send(message)
 
