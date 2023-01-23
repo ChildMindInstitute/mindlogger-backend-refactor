@@ -23,7 +23,7 @@ class AppletHistoryService:
         old_id_version = f"{self._applet_id}_{prev_version}"
 
         changes = await self._get_applet_changes(old_id_version)
-        changes.activity_changes = ActivityHistoryService(
+        changes.activities = await ActivityHistoryService(
             self._applet_id, self._version
         ).get_changes()
         return changes
@@ -43,7 +43,7 @@ class AppletHistoryService:
 
         new_history: AppletHistory = AppletHistory.from_orm(new_schema)
         old_history: AppletHistory = AppletHistory.from_orm(old_schema)
-        for field, old_value in old_history.dict():
+        for field, old_value in old_history.dict().items():
             new_value = getattr(new_history, field)
             if not any([old_value, new_value]):
                 continue

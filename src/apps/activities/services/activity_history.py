@@ -16,9 +16,11 @@ class ActivityHistoryService:
     async def get_changes(self):
         prev_version = get_prev_version(self._version)
         old_id_version = f"{self._applet_id}_{prev_version}"
-        await self._get_activity_changes(old_id_version)
+        return await self._get_activity_changes(old_id_version)
 
-    async def _get_activity_changes(self, old_applet_id_version: str):
+    async def _get_activity_changes(
+        self, old_applet_id_version: str
+    ) -> list[ActivityHistoryChange]:
         generator = ChangeTextGenerator()
         activity_changes: list[ActivityHistoryChange] = []
         activity_schemas = await ActivityHistoriesCRUD().retrieve_by_applet_versions_ordered_by_id(
@@ -103,6 +105,7 @@ class ActivityHistoryService:
                     )
                 if has_changes:
                     activity_changes.append(change)
+        return activity_changes
 
     def _group_and_sort_activities(
         self, activities: list[ActivityHistory]

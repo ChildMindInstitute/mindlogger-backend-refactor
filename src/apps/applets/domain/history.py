@@ -21,7 +21,7 @@ class AppletHistory(InternalModel):
     creator_id: int
     report_server_ip: str
     report_public_key: str
-    report_recipients: str
+    report_recipients: list[str]
     report_include_user_id: str
     report_include_case_id: str
     report_email_body: str
@@ -39,11 +39,11 @@ class AppletHistoryChange(AppletHistory):
     creator_id: str | None
     report_server_ip: str | None
     report_public_key: str | None
-    report_recipients: str | None
+    report_recipients: list[str] | None
     report_include_user_id: str | None
     report_include_case_id: str | None
     report_email_body: str | None
-    activity_changes: list[ActivityHistoryChange] = Field(default_factory=list)
+    activities: list[ActivityHistoryChange] = Field(default_factory=list)
 
 
 class PublicAppletHistoryChange(PublicModel, AppletHistoryChange):

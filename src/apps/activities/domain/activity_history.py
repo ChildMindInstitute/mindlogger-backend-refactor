@@ -28,15 +28,15 @@ class ActivityHistory(InternalModel):
 
 
 class ActivityHistoryChange(InternalModel):
-    name: str
-    description: dict
-    splash_screen: str
-    image: str
-    show_all_at_once: str
-    is_skippable: str
-    is_reviewable: str
-    response_is_editable: str
-    ordering: str
+    name: str | None
+    description: dict | None
+    splash_screen: str | None
+    image: str | None
+    show_all_at_once: str | None
+    is_skippable: str | None
+    is_reviewable: str | None
+    response_is_editable: str | None
+    ordering: str | None
 
 
 class PublicActivityHistoryChange(PublicModel, ActivityHistoryChange):

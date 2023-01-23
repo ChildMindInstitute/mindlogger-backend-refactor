@@ -18,10 +18,10 @@ class TestApplet(BaseTest):
     login_url = "/auth/login"
     applet_list_url = "applets"
     applet_detail_url = "applets/{pk}"
-    applet_histories_url = f"{applet_detail_url}/versions"
-    applet_history_url = f"{applet_detail_url}/versions/{{version}}"
+    histories_url = f"{applet_detail_url}/versions"
+    history_url = f"{applet_detail_url}/versions/{{version}}"
+    history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_creating_applet(self):
         await self.client.login(
@@ -369,7 +369,7 @@ class TestApplet(BaseTest):
         applet_id = response.json()["result"]["id"]
 
         response = await self.client.get(
-            self.applet_histories_url.format(pk=applet_id)
+            self.histories_url.format(pk=applet_id)
         )
 
         assert response.status_code == 200, response.json()
@@ -467,18 +467,185 @@ class TestApplet(BaseTest):
         applet_id = response.json()["result"]["id"]
 
         response = await self.client.get(
-            self.applet_histories_url.format(pk=applet_id)
+            self.histories_url.format(pk=applet_id)
         )
 
         assert response.status_code == 200, response.json()
         versions = response.json()["results"]
         assert len(versions) == 1
-        assert versions[0]["version"] == version
+        assert versions[0]["version"] == "1.0.1"
 
         response = await self.client.get(
-            self.applet_history_url.format(pk=applet_id, version=version)
+            self.history_url.format(pk=applet_id, version=version)
         )
 
         assert response.status_code == 200, response.json()
         applet = response.json()["result"]
         assert applet["version"] == version
+
+    @transaction.rollback
+    async def test_history_changes(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            display_name="User daily behave",
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    name="Morning activity",
+                    guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="choices",
+                            answers=["Bad", "Normal", "Good"],
+                        ),
+                    ],
+                ),
+                dict(
+                    name="Evening activity",
+                    guid="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    description=dict(
+                        en="Understand evening feelings.",
+                        fr="Understand evening feelings.",
+                    ),
+                    items=[
+                        dict(
+                            question=dict(
+                                en="How had you spent your time?",
+                                fr="How had you spent your time?",
+                            ),
+                            response_type="choices",
+                            answers=["Bad", "Normal", "Good"],
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="Morning questionnaire",
+                    description=dict(
+                        en="Understand how was the morning",
+                        fr="Understand how was the morning",
+                    ),
+                    items=[
+                        dict(
+                            activity_guid="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_list_url, data=create_data
+        )
+
+        update_data = dict(
+            display_name="User daily behave updated",
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    id=5,
+                    name="Morning activity new",
+                    guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            id=29,
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="choices",
+                            answers=["Bad", "Normal", "Good"],
+                        ),
+                        dict(
+                            question=dict(
+                                en="How was your breakfast?",
+                                fr="How was your breakfast?",
+                            ),
+                            response_type="choices",
+                            answers=["Bad", "Normal", "Good"],
+                        ),
+                    ],
+                ),
+                dict(
+                    name="Evening activity",
+                    guid="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    description=dict(
+                        en="Understand evening feelings.",
+                        fr="Understand evening feelings.",
+                    ),
+                    items=[
+                        dict(
+                            question=dict(
+                                en="How had you spent your time?",
+                                fr="How had you spent your time?",
+                            ),
+                            response_type="choices",
+                            answers=["Bad", "Normal", "Good"],
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="Morning questionnaire",
+                    description=dict(
+                        en="Understand how was the morning",
+                        fr="Understand how was the morning",
+                    ),
+                    items=[
+                        dict(
+                            activity_guid="577dbbda-"
+                            "3afc-4962-842b-8d8d11588bfe",
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.put(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"]),
+            data=update_data,
+        )
+
+        assert response.status_code == 200, response.json()
+
+        version = response.json()["result"]["version"]
+        applet_id = response.json()["result"]["id"]
+
+        response = await self.client.get(
+            self.history_changes_url.format(pk=applet_id, version=version)
+        )
+        assert response.status_code == 200
+        assert (
+            response.json()["result"]["displayName"]
+            == "User daily behave is changed to user daily behave updated."
+        )
+        assert len(response.json()["result"]["activities"]) == 3
