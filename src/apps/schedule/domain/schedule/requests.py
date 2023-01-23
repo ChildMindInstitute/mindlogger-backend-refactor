@@ -11,7 +11,7 @@ class PeriodicityRequest(BasePeriodicity, InternalModel):
 
 
 class EventRequest(BaseEvent, InternalModel):
-    peroidicity: PeriodicityRequest
+    periodicity: PeriodicityRequest
     user_id: int | None
     activity_id: int | None
     flow_id: int | None

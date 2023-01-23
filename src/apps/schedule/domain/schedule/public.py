@@ -9,4 +9,4 @@ class PublicPeriodicity(BasePeriodicity, PublicModel):
 
 
 class PublicEvent(BaseEvent, PublicModel):
-    peroidicity: PublicPeriodicity
+    periodicity: PublicPeriodicity

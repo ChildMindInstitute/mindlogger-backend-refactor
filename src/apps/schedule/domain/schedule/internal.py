@@ -12,7 +12,11 @@ __all__ = [
 ]
 
 
-class Event(BaseEvent, InternalModel):
+class EventCreate(BaseEvent, InternalModel):
+    periodicity_id: PositiveInt
+
+
+class Event(EventCreate, InternalModel):
     id: PositiveInt
 
 
@@ -20,25 +24,34 @@ class Periodicity(BasePeriodicity, InternalModel):
     id: PositiveInt
 
 
-class UserEvent(InternalModel):
-    """UserEvent of a schedule"""
-
+class UserEventCreate(InternalModel):
     user_id: PositiveInt
     event_id: PositiveInt
+
+
+class UserEvent(UserEventCreate, InternalModel):
+    """UserEvent of a schedule"""
+
     id: PositiveInt
 
 
-class ActivityEvent(InternalModel):
-    """ActivityEvent of a schedule"""
-
+class ActivityEventCreate(InternalModel):
     activity_id: PositiveInt
     event_id: PositiveInt
+
+
+class ActivityEvent(ActivityEventCreate, InternalModel):
+    """ActivityEvent of a schedule"""
+
     id: PositiveInt
 
 
-class FlowEvent(InternalModel):
-    """FlowEvent of a schedule"""
-
+class FlowEventCreate(InternalModel):
     flow_id: PositiveInt
     event_id: PositiveInt
+
+
+class FlowEvent(FlowEventCreate, InternalModel):
+    """FlowEvent of a schedule"""
+
     id: PositiveInt

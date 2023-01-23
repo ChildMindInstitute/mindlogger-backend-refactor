@@ -1,8 +1,10 @@
 from datetime import date, time, timedelta
 
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 
 from apps.schedule.domain.constants import PeriodicityType, TimerType
+
+from apps.shared.errors import ValidationError
 
 
 class BasePeriodicity(BaseModel):
@@ -12,6 +14,19 @@ class BasePeriodicity(BaseModel):
     start_date: date
     end_date: date
     interval: int
+
+    @root_validator
+    def validate_periodicity(cls, values):
+        if values.get("type") == PeriodicityType.WEEKLY:
+            if values.get("interval") < 1 or values.get("interval") > 7:
+                raise ValidationError("Interval must be between 1 and 7")
+        elif values.get("type") == PeriodicityType.MONTHLY:
+            if values.get("interval") < 1 or values.get("interval") > 31:
+                raise ValidationError("Interval must be between 1 and 31")
+        else:
+            if values.get("interval") != 0:
+                raise ValidationError("Interval must be 0")
+        return values
 
 
 class BaseEvent(BaseModel):

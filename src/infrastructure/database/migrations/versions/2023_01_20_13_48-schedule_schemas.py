@@ -1,7 +1,7 @@
 """schedule schemas
 
 Revision ID: b27feea58ee9
-Revises: 98bd718c656c
+Revises: eb01de0a06f8
 Create Date: 2023-01-18 13:48:41.848867
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "b27feea58ee9"
-down_revision = "98bd718c656c"
+down_revision = "eb01de0a06f8"
 branch_labels = None
 depends_on = None
 
