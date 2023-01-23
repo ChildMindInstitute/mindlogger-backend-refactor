@@ -62,6 +62,4 @@ class PublicAppletHistoryChange(PublicModel):
     report_include_user_id: str | None
     report_include_case_id: str | None
     report_email_body: str | None
-    activities: list[PublicActivityHistoryChange] = Field(
-        default_factory=list
-    )
+    activities: list[PublicActivityHistoryChange] = Field(default_factory=list)
