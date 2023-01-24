@@ -13,7 +13,7 @@ class TestApplet(BaseTest):
         "activity_flows/fixtures/activity_flow_items.json",
     ]
 
-    login_url = "/auth/token"
+    login_url = "/auth/login"
     applet_list_url = "applets"
     applet_detail_url = "applets/{pk}"
     applet_histories_url = f"{applet_detail_url}/versions"

@@ -73,9 +73,9 @@ class TestUser(BaseTest):
         )
 
         # User get token
-        await self.client.get_token(
+        await self.client.login(
             url=self.get_token_url,
-            user_login_request=login_request_user,
+            **login_request_user.dict(),
         )
 
         # User retrieve
@@ -104,9 +104,9 @@ class TestUser(BaseTest):
         )
 
         # User get token
-        await self.client.get_token(
+        await self.client.login(
             url=self.get_token_url,
-            user_login_request=login_request_user,
+            **login_request_user.dict(),
         )
 
         # User update
@@ -139,9 +139,9 @@ class TestUser(BaseTest):
         login_request_user: UserLoginRequest = UserLoginRequest(
             **self.create_request_user.dict()
         )
-        await self.client.get_token(
+        await self.client.login(
             url=self.get_token_url,
-            user_login_request=login_request_user,
+            **login_request_user.dict(),
         )
 
         # Delete user
