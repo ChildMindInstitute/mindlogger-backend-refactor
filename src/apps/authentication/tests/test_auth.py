@@ -71,7 +71,6 @@ class TestAuthentication(BaseTest):
         self,
         cache_set_mock,
     ):
-        print(self.delete_token_url)
         # Creating new user
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -92,7 +91,7 @@ class TestAuthentication(BaseTest):
         )
 
         assert cache_set_mock.call_count == 1
-        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert response.status_code == status.HTTP_200_OK
 
     @transaction.rollback
     async def test_refresh_access_token(self):
