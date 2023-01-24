@@ -63,8 +63,11 @@ class PasswordRecoveryService:
         # Send email to the user
         service: MailingService = MailingService()
 
+        exp = settings.authentication.password_recover.expiration // 60
+
         html_payload: dict = {
             "email": user.email,
+            "expiration_minutes": exp,
             "link": (
                 f"{settings.service.urls.frontend.base}"
                 f"/{settings.service.urls.frontend.password_recovery_send}"
@@ -74,7 +77,9 @@ class PasswordRecoveryService:
         message = MessageSchema(
             recipients=[user.email],
             subject="Password recovery for Mindlogger",
-            body=service.get_template("password_recovery", **html_payload),
+            body=service.get_template(
+                path="password_recovery", **html_payload
+            ),
         )
         await service.send(message)
 
