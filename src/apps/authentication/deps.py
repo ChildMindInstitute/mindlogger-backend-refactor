@@ -2,11 +2,10 @@ from contextlib import suppress
 from datetime import datetime
 
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import ValidationError
 
-from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import (
     InternalToken,
     TokenInfo,
@@ -21,7 +20,7 @@ from config import settings
 from infrastructure.cache import CacheNotFound
 
 oauth2_oauth = OAuth2PasswordBearer(
-    tokenUrl="/auth/token-swagger/", scheme_name="Bearer"
+    tokenUrl="/auth/login", scheme_name="Bearer"
 )
 
 
@@ -73,23 +72,3 @@ async def get_current_token(
         raise AuthenticationError
 
     return InternalToken(payload=token_payload, raw_token=token)
-
-
-async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-):
-    user_login_schema = UserLoginRequest(
-        email=form_data.username, password=form_data.password
-    )
-    user: User = await AuthenticationService.authenticate_user(
-        user_login_schema
-    )
-
-    access_token = AuthenticationService.create_access_token(
-        {"sub": str(user.id)}
-    )
-
-    return {
-        "access_token": access_token,
-        "token_type": settings.authentication.token_type,
-    }

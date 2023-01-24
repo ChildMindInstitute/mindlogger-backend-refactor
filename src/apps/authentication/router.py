@@ -4,9 +4,9 @@ from starlette import status
 from apps.authentication.api.auth import (
     delete_access_token,
     get_token,
+    openapi_auth,
     refresh_access_token,
 )
-from apps.authentication.deps import login_for_access_token
 from apps.authentication.domain.login import UserLogin
 from apps.authentication.domain.token.public import Token
 from apps.shared.domain.response import (
@@ -53,10 +53,10 @@ router.post(
 
 # Swagger authorizations
 router.post(
-    "/token-swagger",
+    "/docs",
     responses={
         status.HTTP_200_OK: {},
         **NO_CONTENT_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(login_for_access_token)
+)(openapi_auth)
