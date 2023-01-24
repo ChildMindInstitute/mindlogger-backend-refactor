@@ -5,7 +5,6 @@ from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import UserAppletAccess, UserAppletAccessCreate
 from apps.applets.domain.applets.fetch import Applet
 from apps.invitations.domain import (
-    INVITE_USER_TEMPLATE,
     Invitation,
     InvitationRequest,
     InviteApproveResponse,
@@ -13,6 +12,7 @@ from apps.invitations.domain import (
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.errors import NotFoundError
+from apps.users import UsersCRUD
 from apps.users.domain import User
 from config import settings
 from infrastructure.cache import BaseCacheService
@@ -101,18 +101,25 @@ class InvitationsService:
 
         # Send email to the user
         service: MailingService = MailingService()
+
+        user: User = await UsersCRUD().get_by_email(schema.email)
+
+        html_payload: dict = {
+            "coordinator_name": self._user.full_name,
+            "user_name": user.full_name,
+            "applet": invitation.applet_id,
+            "role": invitation.role,
+            "link": (
+                f"{settings.service.urls.frontend.base}"
+                f"/{settings.service.urls.frontend.invitation_send}"
+            ),
+        }
         message = MessageSchema(
             recipients=[schema.email],
             subject="Invitation to the FCM",
-            body=INVITE_USER_TEMPLATE.format(
-                applet=invitation.applet_id,
-                role=invitation.role,
-                link=(
-                    f"{settings.service.urls.frontend.base}"
-                    f"/{settings.service.urls.frontend.invitation_send}"
-                ),
-            ),
+            body=service.get_template(path="invitation", **html_payload),
         )
+
         await service.send(message)
 
         return invitation
