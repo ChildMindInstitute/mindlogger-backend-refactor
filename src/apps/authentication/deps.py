@@ -84,10 +84,7 @@ async def login_for_access_token(
     user: User = await AuthenticationService.authenticate_user(
         user_login_schema
     )
-    if not user:
-        raise AuthenticationError
 
-    user = await AuthenticationService.authenticate_user(user_login_schema)
     access_token = AuthenticationService.create_access_token(
         {"sub": str(user.id)}
     )
