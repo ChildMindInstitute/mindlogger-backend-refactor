@@ -41,10 +41,3 @@ class InviteApproveResponse(PublicModel):
 
     applet: Applet
     role: Role
-
-
-INVITE_USER_TEMPLATE = """
-You was invited to the Mindlogger to manage the applet {applet}.
-Your role is {role}
-Please follow the link: {link}
-"""
