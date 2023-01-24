@@ -4,9 +4,9 @@ from starlette import status
 from apps.authentication.api.auth import (
     delete_access_token,
     get_token,
-    openapi_auth,
     refresh_access_token,
 )
+from apps.authentication.deps import openapi_auth
 from apps.authentication.domain.login import UserLogin
 from apps.authentication.domain.token.public import Token
 from apps.shared.domain.response import (

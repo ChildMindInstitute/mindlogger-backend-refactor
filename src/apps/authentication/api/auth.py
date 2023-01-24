@@ -1,7 +1,5 @@
 from fastapi import Body, Depends
-from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from pydantic import EmailStr
 
 from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.login import UserLogin, UserLoginRequest
@@ -88,23 +86,3 @@ async def delete_access_token(
 
     await AuthenticationService.add_access_token_to_blacklist(token)
     return ""
-
-
-async def openapi_auth(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-):
-    user_login_schema = UserLoginRequest(
-        email=EmailStr(form_data.username), password=form_data.password
-    )
-    user: User = await AuthenticationService.authenticate_user(
-        user_login_schema
-    )
-
-    access_token = AuthenticationService.create_access_token(
-        {"sub": str(user.id)}
-    )
-
-    return {
-        "access_token": access_token,
-        "token_type": settings.authentication.token_type,
-    }
