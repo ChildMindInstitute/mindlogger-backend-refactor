@@ -1,4 +1,5 @@
 from fastapi_mail import ConnectionConfig, FastMail
+from jinja2 import Environment, PackageLoader, select_autoescape
 
 from apps.mailing.domain import MessageSchema
 from config import settings
@@ -29,9 +30,19 @@ class MailingService:
             MAIL_FROM=settings.mailing.mail.from_email,
             MAIL_FROM_NAME=settings.mailing.mail.from_name,
         )
+        self.env = Environment(
+            loader=PackageLoader("apps.mailing", "static/templates"),
+            autoescape=select_autoescape(["html", "xml"]),
+        )
 
         self._initialized = True
 
     async def send(self, message: MessageSchema) -> None:
         fm = FastMail(self._connection)
         await fm.send_message(message)
+
+    def get_template(self, path: str, **kwargs):
+        template = self.env.get_template(f"{path}.html")
+        html = template.render(**kwargs)
+
+        return html
