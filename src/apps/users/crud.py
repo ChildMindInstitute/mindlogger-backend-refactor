@@ -30,7 +30,10 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         # Get user from the database
         if not (instance := await self._get(key, value)):
             raise UserNotFound(
-                f"No such user with {key}={value}. \n" f"Are you registered?"
+                message=(
+                    f"No such user with {key}={value}. \n"
+                    f"Are you registered?"
+                )
             )
 
         # TODO: Align with client about the business logic
