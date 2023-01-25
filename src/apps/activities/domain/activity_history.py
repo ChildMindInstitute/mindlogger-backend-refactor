@@ -28,24 +28,24 @@ class ActivityHistory(InternalModel):
 
 
 class ActivityHistoryChange(InternalModel):
-    name: str | None
-    description: str | None
-    splash_screen: str | None
-    image: str | None
-    show_all_at_once: str | None
-    is_skippable: str | None
-    is_reviewable: str | None
-    response_is_editable: str | None
-    ordering: str | None
+    name: str | None = None
+    description: str | None = None
+    splash_screen: str | None = None
+    image: str | None = None
+    show_all_at_once: str | None = None
+    is_skippable: str | None = None
+    is_reviewable: str | None = None
+    response_is_editable: str | None = None
+    ordering: str | None = None
 
 
 class PublicActivityHistoryChange(PublicModel):
-    name: str | None
-    description: dict | None
-    splash_screen: str | None
-    image: str | None
-    show_all_at_once: str | None
-    is_skippable: str | None
-    is_reviewable: str | None
-    response_is_editable: str | None
-    ordering: str | None
+    name: str | None = None
+    description: dict | None = None
+    splash_screen: str | None = None
+    image: str | None = None
+    show_all_at_once: str | None = None
+    is_skippable: str | None = None
+    is_reviewable: str | None = None
+    response_is_editable: str | None = None
+    ordering: str | None = None

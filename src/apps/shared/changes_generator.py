@@ -1,6 +1,9 @@
 __all__ = ["ChangeTextGenerator"]
 
-DICTIONARY = dict(
+"""
+Dictionary to generate needed text in one format
+"""
+_DICTIONARY = dict(
     en=dict(
         added="New {0} is added.",
         removed="{0} is removed.",
@@ -19,7 +22,7 @@ class ChangeTextGenerator:
         self, language="en", dictionary: dict[str, dict] | None = None
     ):
         if dictionary is None:
-            dictionary = DICTIONARY
+            dictionary = _DICTIONARY
         self._dictionary = dictionary[language]
 
     @classmethod
