@@ -3,9 +3,9 @@ from collections import defaultdict
 
 from apps.activities.crud import (
     ActivitiesCRUD,
-    ActivitiesHistoryCRUD,
+    ActivityHistoriesCRUD,
+    ActivityItemHistoriesCRUD,
     ActivityItemsCRUD,
-    ActivityItemsHistoryCRUD,
 )
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
@@ -14,8 +14,8 @@ from apps.activities.db.schemas import (
     ActivitySchema,
 )
 from apps.activity_flows.crud import (
+    FlowItemHistoriesCRUD,
     FlowItemsCRUD,
-    FlowItemsHistoryCRUD,
     FlowsCRUD,
     FlowsHistoryCRUD,
 )
@@ -26,22 +26,22 @@ from apps.activity_flows.db.schemas import (
     ActivityFlowSchema,
 )
 from apps.applets.crud import (
-    AppletHistoryCRUD,
+    AppletHistoriesCRUD,
     AppletsCRUD,
     UserAppletAccessCRUD,
 )
 from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.applets.domain import Role, UserAppletAccessCreate
 from apps.applets.domain.applets import fetch, update
-from apps.applets.helpers.version import get_next_version
+from apps.shared.version import get_next_version
 
 
 async def update_applet(
     applet_id: int, data: update.AppletUpdate, user_id: int
 ) -> fetch.Applet:
-    await _validate(applet_id, user_id)
+    applet = await _validate(user_id, applet_id)
     await _delete_applet_items(applet_id)
-    applet = await _update_applet(applet_id, data, user_id)
+    applet = await _update_applet(applet, data, user_id)
     activities, activity_items = await _create_activities(
         applet, data.activities
     )
@@ -60,7 +60,8 @@ async def _validate(user_id: int, applet_id: int):
     )
     if not accesses:
         pass
-    await AppletsCRUD().get_by_id(applet_id)
+    applet_schema = await AppletsCRUD().get_by_id(applet_id)
+    return fetch.Applet.from_orm(applet_schema)
 
 
 async def _delete_applet_items(applet_id: int):
@@ -71,26 +72,26 @@ async def _delete_applet_items(applet_id: int):
 
 
 async def _update_applet(
-    applet_id: int, create_data: update.AppletUpdate, user_id
+    applet: fetch.Applet, update_data: update.AppletUpdate, user_id
 ) -> fetch.Applet:
     schema = await AppletsCRUD().update_by_id(
-        applet_id,
+        applet.id,
         AppletSchema(
-            display_name=create_data.display_name,
-            description=create_data.description,
-            about=create_data.about,
-            image=create_data.image,
-            watermark=create_data.watermark,
-            theme_id=create_data.theme_id,
-            version=get_next_version(),
+            display_name=update_data.display_name,
+            description=update_data.description,
+            about=update_data.about,
+            image=update_data.image,
+            watermark=update_data.watermark,
+            theme_id=update_data.theme_id,
+            version=get_next_version(applet.version),
             creator_id=user_id,
             account_id=user_id,
-            report_server_ip=create_data.report_server_ip,
-            report_public_key=create_data.report_public_key,
-            report_recipients=create_data.report_recipients,
-            report_include_user_id=create_data.report_include_user_id,
-            report_include_case_id=create_data.report_include_case_id,
-            report_email_body=create_data.report_email_body,
+            report_server_ip=update_data.report_server_ip,
+            report_public_key=update_data.report_public_key,
+            report_recipients=update_data.report_recipients,
+            report_include_user_id=update_data.report_include_user_id,
+            report_include_case_id=update_data.report_include_case_id,
+            report_email_body=update_data.report_email_body,
         ),
     )
     applet = fetch.Applet.from_orm(schema)
@@ -233,7 +234,7 @@ async def _add_history(
     flow_items: list[fetch.ActivityFlowItem],
 ):
     applet_id_version = f"{applet.id}_{applet.version}"
-    await AppletHistoryCRUD().save(
+    await AppletHistoriesCRUD().save(
         AppletHistorySchema(
             id_version=applet_id_version,
             id=applet.id,
@@ -332,7 +333,7 @@ async def _add_history(
                 ordering=f_item.ordering,
             )
         )
-    await ActivitiesHistoryCRUD().create_many(activity_schemas)
-    await ActivityItemsHistoryCRUD().create_many(activity_item_schemas)
+    await ActivityHistoriesCRUD().create_many(activity_schemas)
+    await ActivityItemHistoriesCRUD().create_many(activity_item_schemas)
     await FlowsHistoryCRUD().create_many(activity_flow_schemas)
-    await FlowItemsHistoryCRUD().create_many(activity_flow_item_schemas)
+    await FlowItemHistoriesCRUD().create_many(activity_flow_item_schemas)

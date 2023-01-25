@@ -8,10 +8,10 @@ from apps.applets.db.schemas import AppletHistorySchema
 from apps.users.db.schemas import UserSchema
 from infrastructure.database.crud import BaseCRUD
 
-__all__ = ["AppletHistoryCRUD"]
+__all__ = ["AppletHistoriesCRUD"]
 
 
-class AppletHistoryCRUD(BaseCRUD[AppletHistorySchema]):
+class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
     schema_class = AppletHistorySchema
 
     async def save(self, schema: AppletHistorySchema):
@@ -47,11 +47,11 @@ class AppletHistoryCRUD(BaseCRUD[AppletHistorySchema]):
         result = await self._execute(query)
         return result.scalars().one_or_none()
 
-    async def _fetch(self, applet_id_version: str) -> AppletHistorySchema:
-        if not (instance := await self._get("id_version", applet_id_version)):
+    async def fetch_by_id_version(self, value: str) -> AppletHistorySchema:
+        schema = await self._get("id_version", value)
+        if not schema:
             raise errors.AppletNotFoundError(
                 key="id_version",
-                value=applet_id_version,
+                value=value,
             )
-
-        return instance
+        return schema
