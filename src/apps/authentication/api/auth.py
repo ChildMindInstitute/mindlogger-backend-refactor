@@ -28,7 +28,8 @@ async def get_token(
     except UserNotFound:
         raise UserNotFound(
             message=(
-                f"Incorrect password for {user_login_schema.email} if that user exists."
+                f"Incorrect password for {user_login_schema.email}"
+                " if that user exists."
             )
         )
 
