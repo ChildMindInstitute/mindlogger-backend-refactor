@@ -1,15 +1,15 @@
-"""schedule schemas
+"""schedule event,periodicy, etc.
 
-Revision ID: b27feea58ee9
+Revision ID: 51379bc60800
 Revises: eb01de0a06f8
-Create Date: 2023-01-18 13:48:41.848867
+Create Date: 2023-01-26 14:35:29.715103
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "b27feea58ee9"
+revision = "51379bc60800"
 down_revision = "eb01de0a06f8"
 branch_labels = None
 depends_on = None
@@ -43,6 +43,10 @@ def upgrade() -> None:
         sa.Column("one_time_completion", sa.Boolean(), nullable=False),
         sa.Column("timer", sa.Interval(), nullable=False),
         sa.Column("timer_type", sa.String(length=10), nullable=False),
+        sa.Column("applet_id", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["applet_id"], ["applets.id"], ondelete="RESTRICT"
+        ),
         sa.ForeignKeyConstraint(
             ["periodicity_id"], ["periodicity.id"], ondelete="RESTRICT"
         ),
