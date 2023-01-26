@@ -26,12 +26,9 @@ async def get_token(
             user_login_schema
         )
     except UserNotFound:
-        raise UserNotFound(
-            message=(
-                f"No such user with {user_login_schema.email}\n"
-                f"Are you registered?"
-            )
-        )
+        raise UserNotFound(message=(
+                    f"Incorrect password for {user_login_schema.email} if that user exists"
+                ))
 
     access_token = AuthenticationService.create_access_token(
         {"sub": str(user.id)}
