@@ -21,9 +21,9 @@ from apps.schedule.domain.schedule.internal import (
 from apps.schedule.errors import (
     ActivityEventAlreadyExists,
     EventError,
+    EventNotFoundError,
     FlowEventAlreadyExists,
     UserEventAlreadyExists,
-    EventNotFoundError,
 )
 from infrastructure.database import BaseCRUD
 
