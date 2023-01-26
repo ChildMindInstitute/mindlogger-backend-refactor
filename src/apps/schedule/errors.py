@@ -15,9 +15,10 @@ class UserEventAlreadyExists(ValidationError):
 
 class ActivityEventAlreadyExists(ValidationError):
     def __init__(self, activity_id: int, event_id: int) -> None:
-        super().__init__(
-            message=f"The event {event_id} for activity {activity_id} already exists."
+        msg = (
+            f"The event {event_id} for activity {activity_id} already exists."
         )
+        super().__init__(message=msg)
 
 
 class FlowEventAlreadyExists(ValidationError):
@@ -30,3 +31,8 @@ class FlowEventAlreadyExists(ValidationError):
 class EventNotFoundError(NotFoundError):
     def __init__(self, key: str, value: str) -> None:
         super().__init__(message=f"No such event with {key}={value}.")
+
+
+class PeriodicityNotFoundError(NotFoundError):
+    def __init__(self, key: str, value: str) -> None:
+        super().__init__(message=f"No such periodicity with {key}={value}.")

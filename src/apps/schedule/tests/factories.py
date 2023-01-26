@@ -1,9 +1,9 @@
-from pydantic_factories import ModelFactory
+# from pydantic_factories import ModelFactory
 
-from apps.schedule.domain.schedule.requests import EventRequest
+# from apps.schedule.domain.schedule.requests import EventRequest
 
-__all__ = ["EventRequestFactory"]
+# __all__ = ["EventRequestFactory"]
 
 
-class EventRequestFactory(ModelFactory):
-    __model__ = EventRequest
+# class EventRequestFactory(ModelFactory):
+#     __model__ = EventRequest

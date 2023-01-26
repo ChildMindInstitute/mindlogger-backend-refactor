@@ -40,6 +40,9 @@ class EventSchema(Base):
     one_time_completion = Column(Boolean, nullable=False)
     timer = Column(Interval, nullable=False)
     timer_type = Column(String(10), nullable=False)  # NOT_SET, TIMER, IDLE
+    applet_id = Column(
+        ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
+    )
 
 
 class UserEventsSchema(Base):

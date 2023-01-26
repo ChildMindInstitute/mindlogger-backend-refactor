@@ -14,6 +14,7 @@ __all__ = [
 
 class EventCreate(BaseEvent, InternalModel):
     periodicity_id: PositiveInt
+    applet_id: PositiveInt
 
 
 class Event(EventCreate, InternalModel):

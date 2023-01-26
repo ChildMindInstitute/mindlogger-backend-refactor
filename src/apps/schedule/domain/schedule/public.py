@@ -10,3 +10,6 @@ class PublicPeriodicity(BasePeriodicity, PublicModel):
 
 class PublicEvent(BaseEvent, PublicModel):
     periodicity: PublicPeriodicity
+    user_ids: list[int] | None
+    activity_id: int | None
+    flow_id: int | None

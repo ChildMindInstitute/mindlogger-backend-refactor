@@ -3,7 +3,6 @@ from datetime import date, time, timedelta
 from pydantic import BaseModel, root_validator
 
 from apps.schedule.domain.constants import PeriodicityType, TimerType
-
 from apps.shared.errors import ValidationError
 
 

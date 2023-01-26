@@ -1,3 +1,7 @@
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Query
+from sqlalchemy.sql import select
+
 from apps.schedule.db.schemas import (
     ActivityEventsSchema,
     EventSchema,
@@ -5,24 +9,23 @@ from apps.schedule.db.schemas import (
     UserEventsSchema,
 )
 from apps.schedule.domain.schedule.internal import (
-    EventCreate,
-    Event,
-    Periodicity,
-    UserEvent,
     ActivityEvent,
-    FlowEvent,
-    UserEventCreate,
     ActivityEventCreate,
+    Event,
+    EventCreate,
+    FlowEvent,
     FlowEventCreate,
+    UserEvent,
+    UserEventCreate,
+)
+from apps.schedule.errors import (
+    ActivityEventAlreadyExists,
+    EventError,
+    FlowEventAlreadyExists,
+    UserEventAlreadyExists,
+    EventNotFoundError,
 )
 from infrastructure.database import BaseCRUD
-
-from sqlalchemy.exc import IntegrityError
-from apps.schedule.errors import (
-    UserEventAlreadyExists,
-    ActivityEventAlreadyExists,
-    FlowEventAlreadyExists,
-)
 
 __all__ = [
     "EventCRUD",
@@ -37,33 +40,53 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
     async def save(self, schema: EventCreate) -> Event:
         """Return event instance and the created information."""
-        instance: EventSchema = await self._create(
-            EventSchema(**schema.dict())
-        )
+
+        try:
+            instance: EventSchema = await self._create(
+                EventSchema(**schema.dict())
+            )
+        # Raise exception if applet doesn't exist
+        except IntegrityError as e:
+            raise EventError(message=str(e))
+
         event: Event = Event.from_orm(instance)
         return event
 
-    async def get_by_id(self, id: int) -> EventSchema:
-        pass
+    async def get_by_id(self, id: int) -> Event:
+        """Return event instance."""
 
-    async def get_by_user_id(self, user_id: int) -> EventSchema:
-        pass
+        # Get UserAppletAccess from the database
+        if not (instance := await self._get("id", id)):
+            raise EventNotFoundError(key="id", value=str(id))
 
-    async def get_by_activity_id(self, activity_id: int) -> EventSchema:
-        pass
+        event: Event = Event.from_orm(instance)
+        return event
 
-    async def get_by_flow_id(self, flow_id: int) -> EventSchema:
-        pass
+    async def get_all_by_applet_id(self, applet_id: int) -> EventSchema:
+        """Return event instance."""
+        query: Query = select(EventSchema)
+        query = query.where(EventSchema.applet_id == applet_id)
+        result = await self._execute(query)
+        return result.scalars().all()
 
-    async def update(self, schema: EventSchema) -> EventSchema:
-        pass
+    # async def get_by_user_id(self, user_id: int) -> EventSchema:
+    #     pass
 
-    async def delete(self, id: int) -> EventSchema:
-        pass
+    # async def get_by_activity_id(self, activity_id: int) -> EventSchema:
+    #     pass
+
+    # async def get_by_flow_id(self, flow_id: int) -> EventSchema:
+    #     pass
+
+    # async def update(self, schema: EventSchema) -> EventSchema:
+    #     pass
+
+    # async def delete(self, id: int) -> EventSchema:
+    #     pass
 
 
 class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
-    async def save(self, schema: UserEventCreate) -> UserEventsSchema:
+    async def save(self, schema: UserEventCreate) -> UserEvent:
         """Return user event instance and the created information."""
         try:
 
@@ -78,14 +101,19 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         user_event: UserEvent = UserEvent.from_orm(instance)
         return user_event
 
-    async def retrieve(self, id: int) -> UserEventsSchema:
-        pass
+    async def get_by_event_id(self, event_id: int) -> list[int]:
+        """Return user event instances."""
+        query: Query = select(UserEventsSchema.user_id)
+        query = query.where(UserEventsSchema.event_id == event_id)
+        result = await self._execute(query)
+        results: list[int] = result.scalars().all()
+        return results
 
-    async def update(self, schema: UserEventsSchema) -> UserEventsSchema:
-        pass
+    # async def update(self, schema: UserEventsSchema) -> UserEventsSchema:
+    #     pass
 
-    async def delete(self, id: int) -> UserEventsSchema:
-        pass
+    # async def delete(self, id: int) -> UserEventsSchema:
+    #     pass
 
 
 class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
@@ -104,16 +132,21 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         activity_event: ActivityEvent = ActivityEvent.from_orm(instance)
         return activity_event
 
-    async def retrieve(self, id: int) -> ActivityEventsSchema:
-        pass
+    async def get_by_event_id(self, event_id: int) -> int:
+        """Return activity event instances."""
+        query: Query = select(ActivityEventsSchema.activity_id)
+        query = query.where(ActivityEventsSchema.event_id == event_id)
+        result = await self._execute(query)
+        activity_id: int = result.scalars().one_or_none()
+        return activity_id
 
-    async def update(
-        self, schema: ActivityEventsSchema
-    ) -> ActivityEventsSchema:
-        pass
+    # async def update(
+    #     self, schema: ActivityEventsSchema
+    # ) -> ActivityEventsSchema:
+    #     pass
 
-    async def delete(self, id: int) -> ActivityEventsSchema:
-        pass
+    # async def delete(self, id: int) -> ActivityEventsSchema:
+    #     pass
 
 
 class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
@@ -131,11 +164,16 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         flow_event: FlowEvent = FlowEvent.from_orm(instance)
         return flow_event
 
-    async def retrieve(self, id: int) -> FlowEventsSchema:
-        pass
+    async def get_by_event_id(self, event_id: int) -> int:
+        """Return flow event instances."""
+        query: Query = select(FlowEventsSchema.flow_id)
+        query = query.where(FlowEventsSchema.event_id == event_id)
+        result = await self._execute(query)
+        flow_id: int = result.scalars().one_or_none()
+        return flow_id
 
-    async def update(self, schema: FlowEventsSchema) -> FlowEventsSchema:
-        pass
+    # async def update(self, schema: FlowEventsSchema) -> FlowEventsSchema:
+    #     pass
 
-    async def delete(self, id: int) -> FlowEventsSchema:
-        pass
+    # async def delete(self, id: int) -> FlowEventsSchema:
+    #     pass

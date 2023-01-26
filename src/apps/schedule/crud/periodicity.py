@@ -1,6 +1,7 @@
 from apps.schedule.db.schemas import PeriodicitySchema
-from apps.schedule.domain.schedule.requests import PeriodicityRequest
 from apps.schedule.domain.schedule.internal import Periodicity
+from apps.schedule.domain.schedule.requests import PeriodicityRequest
+from apps.schedule.errors import PeriodicityNotFoundError
 from infrastructure.database import BaseCRUD
 
 __all__ = ["PeriodicityCRUD"]
@@ -15,11 +16,17 @@ class PeriodicityCRUD(BaseCRUD[PeriodicitySchema]):
         periodicity: Periodicity = Periodicity.from_orm(instance)
         return periodicity
 
-    async def retrieve(self, id: int) -> PeriodicitySchema:
-        pass
+    async def get_by_id(self, id: int) -> Periodicity:
+        """Return periodicity instance."""
 
-    async def update(self, schema: PeriodicitySchema) -> PeriodicitySchema:
-        pass
+        if not (instance := await self._get("id", id)):
+            raise PeriodicityNotFoundError(key="id", value=str(id))
 
-    async def delete(self, id: int) -> PeriodicitySchema:
-        pass
+        periodicity: Periodicity = Periodicity.from_orm(instance)
+        return periodicity
+
+    # async def update(self, schema: PeriodicitySchema) -> PeriodicitySchema:
+    #     pass
+
+    # async def delete(self, id: int) -> PeriodicitySchema:
+    #     pass
