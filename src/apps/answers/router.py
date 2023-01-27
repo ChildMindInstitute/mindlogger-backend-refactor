@@ -14,9 +14,8 @@ router = APIRouter(prefix="/answers", tags=["Answers"])
 # Answers activity item create
 router.post(
     "/activity-items/{id_version}",
-    description="""This endpoint using for adding new respondent answer 
-    to database with linked to an activity-items
-    """,
+    description="""This endpoint using for adding new respondent answer
+                to database with linked to an activity-items""",
     response_model=Response[PublicAnswerActivityItem],
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -28,9 +27,8 @@ router.post(
 # Answers flow item create
 router.post(
     "/flow-items/{id_version}",
-    description="""This endpoint using for adding new respondent answer 
-    to database with linked to an flow-items
-    """,
+    description="""This endpoint using for adding new respondent answer
+                to database with linked to an flow-items""",
     response_model=Response[PublicAnswerFlowItem],
     status_code=status.HTTP_201_CREATED,
     responses={
