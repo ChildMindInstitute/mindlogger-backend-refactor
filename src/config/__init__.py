@@ -76,5 +76,6 @@ settings = Settings(
         "activity_flows",
         "themes",
         "logs",
+        "answers",
     ],
 )

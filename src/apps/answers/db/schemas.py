@@ -4,27 +4,37 @@ from sqlalchemy.dialects.postgresql import JSONB
 from infrastructure.database.base import Base
 
 
-class AnswerSchema(Base):
-    __tablename__ = "answers"
+class AnswerActivityItemsSchema(Base):
+    __tablename__ = "answers_activity_items"
 
-    applet_history_id_version = Column(
-        ForeignKey("applet_history.id_version", ondelete="RESTRICT"),
+    answer = Column(JSONB())
+    applet_id = Column(
+        ForeignKey("applets.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    activity_history_id_version = Column(
-        ForeignKey("activity_history.id_version", ondelete="RESTRICT"),
+    respondent_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
     )
     activity_item_history_id_version = Column(
-        ForeignKey("activity_item_history.id_version", ondelete="RESTRICT"),
+        ForeignKey("activity_item_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
     )
-    flow_history_id_version = Column(
-        ForeignKey("flow_history.id_version", ondelete="RESTRICT"),
+
+
+class AnswerFlowItemsSchema(Base):
+    __tablename__ = "answers_flow_items"
+
+    answer = Column(JSONB())
+    applet_id = Column(
+        ForeignKey("applets.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    respondent_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
     )
     flow_item_history_id_version = Column(
-        ForeignKey("flow_item_history.id_version", ondelete="RESTRICT"),
+        ForeignKey("flow_item_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
     )
-    answer = Column(JSONB())
