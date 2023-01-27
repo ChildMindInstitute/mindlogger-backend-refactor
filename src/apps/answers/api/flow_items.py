@@ -8,7 +8,7 @@ from apps.answers.domain import (
 )
 from apps.answers.errors import UserDoesNotHavePermissionError
 from apps.applets.crud import UserAppletAccessCRUD
-from apps.applets.domain import Role
+from apps.applets.domain import Role, UserAppletAccessItem
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response
 from apps.users.domain import User
@@ -20,13 +20,15 @@ async def answer_flow_item_create(
     schema: AnswerFlowItemsCreateRequest = Body(...),
 ) -> Response[PublicAnswerFlowItem]:
 
+    user_applet_access_item = UserAppletAccessItem(
+        user_id=user.id,
+        applet_id=schema.applet_id,
+        role=Role("respondent"),
+    )
+
     # Checking if the user has responder permission to the given applet
-    user_applet_access = (
-        await UserAppletAccessCRUD().get_by_user_id_applet_id_and_role(
-            user_id_=user.id,
-            applet_id_=schema.applet_id,
-            role=Role("respondent"),
-        )
+    user_applet_access = await UserAppletAccessCRUD().get_by_user_applet_role(
+        **user_applet_access_item.dict()
     )
 
     if not user_applet_access:

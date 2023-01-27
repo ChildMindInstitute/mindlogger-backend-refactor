@@ -2,6 +2,7 @@ from sqlalchemy.exc import IntegrityError
 
 from apps.answers.db.schemas import AnswerActivityItemsSchema
 from apps.answers.domain import AnswerActivityItem, AnswerActivityItemsCreate
+from apps.answers.errors import AnswerError
 from infrastructure.database.crud import BaseCRUD
 
 
@@ -17,7 +18,7 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
                 self.schema_class(**schema.dict())
             )
         except IntegrityError:
-            raise
+            raise AnswerError
 
         # Create internal data model
         answer_activity_item = AnswerActivityItem.from_orm(instance)

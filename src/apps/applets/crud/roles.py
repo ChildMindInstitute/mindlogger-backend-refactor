@@ -7,6 +7,7 @@ from apps.applets.domain.constants import Role
 from apps.applets.domain.user_applet_access import (
     UserAppletAccess,
     UserAppletAccessCreate,
+    UserAppletAccessItem,
 )
 from apps.applets.errors import UserAppletAccessesNotFound
 from infrastructure.database.crud import BaseCRUD
@@ -58,16 +59,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             for user_applet_access in results
         ]
 
-    async def get_by_user_id_applet_id_and_role(
+    async def get_by_user_applet_role(
         self,
-        user_id_: int,
-        applet_id_: int,
-        role: Role,
+        schema: UserAppletAccessItem,
     ) -> UserAppletAccess | None:
         query: Query = select(self.schema_class).filter(
-            self.schema_class.user_id == user_id_
-            and self.schema_class.applet_id == applet_id_
-            and self.schema_class.role == role
+            self.schema_class.user_id == schema.user_id
+            and self.schema_class.applet_id == schema.applet_id
+            and self.schema_class.role == schema.role
         )
         result: Result = await self._execute(query)
 

@@ -5,6 +5,8 @@ from infrastructure.database.base import Base
 
 
 class AnswerActivityItemsSchema(Base):
+    """This table is used as responses to specific activity items"""
+
     __tablename__ = "answers_activity_items"
 
     answer = Column(JSONB())
@@ -23,6 +25,8 @@ class AnswerActivityItemsSchema(Base):
 
 
 class AnswerFlowItemsSchema(Base):
+    """This table is used as responses to specific flow items"""
+
     __tablename__ = "answers_flow_items"
 
     answer = Column(JSONB())
