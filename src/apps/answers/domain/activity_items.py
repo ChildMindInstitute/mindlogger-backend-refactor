@@ -14,8 +14,13 @@ __all__ = [
 class AnswerActivityItemsCreateRequest(InternalModel):
     """This model represents the answer for activity items"""
 
-    answer: dict[str, str]
-    applet_id: int
+    answer: dict[str, str] = Field(
+        description="This field represents the answer "
+        "to a specific activity item"
+    )
+    applet_id: int = Field(
+        description="This field represents the specific applet id"
+    )
 
 
 class AnswerActivityItemsCreate(AnswerActivityItemsCreateRequest):
