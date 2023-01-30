@@ -66,7 +66,13 @@ class ScheduleService:
         # Create event
         event: Event = await EventCRUD().save(
             EventCreate(
-                **schedule.dict(),
+                start_time=schedule.start_time,
+                end_time=schedule.end_time,
+                all_day=schedule.all_day,
+                access_before_schedule=schedule.access_before_schedule,
+                one_time_completion=schedule.one_time_completion,
+                timer=schedule.timer,
+                timer_type=schedule.timer_type,
                 periodicity_id=periodicity.id,
                 applet_id=applet_id,
             )

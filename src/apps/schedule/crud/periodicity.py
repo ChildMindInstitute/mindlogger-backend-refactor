@@ -8,6 +8,8 @@ __all__ = ["PeriodicityCRUD"]
 
 
 class PeriodicityCRUD(BaseCRUD[PeriodicitySchema]):
+    schema_class = PeriodicitySchema
+
     async def save(self, schema: PeriodicityRequest) -> Periodicity:
         """Return periodicity instance and the created information."""
         instance: PeriodicitySchema = await self._create(
@@ -24,9 +26,3 @@ class PeriodicityCRUD(BaseCRUD[PeriodicitySchema]):
 
         periodicity: Periodicity = Periodicity.from_orm(instance)
         return periodicity
-
-    # async def update(self, schema: PeriodicitySchema) -> PeriodicitySchema:
-    #     pass
-
-    # async def delete(self, id: int) -> PeriodicitySchema:
-    #     pass

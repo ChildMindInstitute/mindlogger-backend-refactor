@@ -69,23 +69,10 @@ class EventCRUD(BaseCRUD[EventSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    # async def get_by_user_id(self, user_id: int) -> EventSchema:
-    #     pass
-
-    # async def get_by_activity_id(self, activity_id: int) -> EventSchema:
-    #     pass
-
-    # async def get_by_flow_id(self, flow_id: int) -> EventSchema:
-    #     pass
-
-    # async def update(self, schema: EventSchema) -> EventSchema:
-    #     pass
-
-    # async def delete(self, id: int) -> EventSchema:
-    #     pass
-
 
 class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
+    schema_class = UserEventsSchema
+
     async def save(self, schema: UserEventCreate) -> UserEvent:
         """Return user event instance and the created information."""
         try:
@@ -109,14 +96,10 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         results: list[int] = result.scalars().all()
         return results
 
-    # async def update(self, schema: UserEventsSchema) -> UserEventsSchema:
-    #     pass
-
-    # async def delete(self, id: int) -> UserEventsSchema:
-    #     pass
-
 
 class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
+    schema_class = ActivityEventsSchema
+
     async def save(self, schema: ActivityEventCreate) -> ActivityEvent:
         """Return activity event instance and the created information."""
 
@@ -140,16 +123,10 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         activity_id: int = result.scalars().one_or_none()
         return activity_id
 
-    # async def update(
-    #     self, schema: ActivityEventsSchema
-    # ) -> ActivityEventsSchema:
-    #     pass
-
-    # async def delete(self, id: int) -> ActivityEventsSchema:
-    #     pass
-
 
 class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
+    schema_class = FlowEventsSchema
+
     async def save(self, schema: FlowEventCreate) -> FlowEvent:
         """Return flow event instance and the created information."""
         try:
@@ -171,9 +148,3 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         result = await self._execute(query)
         flow_id: int = result.scalars().one_or_none()
         return flow_id
-
-    # async def update(self, schema: FlowEventsSchema) -> FlowEventsSchema:
-    #     pass
-
-    # async def delete(self, id: int) -> FlowEventsSchema:
-    #     pass

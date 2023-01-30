@@ -1,3 +1,5 @@
+from pydantic import PositiveInt
+
 from apps.schedule.domain.schedule import BaseEvent, BasePeriodicity
 from apps.shared.domain import PublicModel
 
@@ -9,6 +11,7 @@ class PublicPeriodicity(BasePeriodicity, PublicModel):
 
 
 class PublicEvent(BaseEvent, PublicModel):
+    id: PositiveInt
     periodicity: PublicPeriodicity
     user_ids: list[int] | None
     activity_id: int | None

@@ -32,10 +32,5 @@ async def schedule_get_all(
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[PublicEvent]:
     schedules = await ScheduleService().get_all_schedules(applet_id)
-    return ResponseMulti(
-        result=[PublicEvent(**schedule.dict()) for schedule in schedules]
-    )
 
-
-async def schedule_delete():
-    pass
+    return ResponseMulti(results=schedules)
