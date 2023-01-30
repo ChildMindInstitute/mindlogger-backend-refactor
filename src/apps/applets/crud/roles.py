@@ -94,3 +94,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         user_applet_access = UserAppletAccess.from_orm(instance)
 
         return user_applet_access
+
+    # Get by applet id and user id and role respondent
+    async def get_by_applet_and_user_as_respondent(
+        self, applet_id: int, user_id: int
+    ) -> UserAppletAccessSchema:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
+        result = await self._execute(query)
+        return result.scalars().first()
