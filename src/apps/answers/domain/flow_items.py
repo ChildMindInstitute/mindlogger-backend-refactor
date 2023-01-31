@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 
-class AnswerFlow(InternalModel):
+class AnswerFlow(PublicModel):
     """This model represents the answer for specific activity items for flow"""
 
     activity_item_history_id_version: str = Field(
@@ -28,7 +28,7 @@ class AnswerFlow(InternalModel):
     )
 
 
-class AnswerFlowItemsBase(InternalModel):
+class AnswerFlowItemsBase(PublicModel):
     """This model used for internal needs"""
 
     applet_id: int = Field(

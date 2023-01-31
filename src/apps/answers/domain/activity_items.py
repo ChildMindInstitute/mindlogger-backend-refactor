@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 
-class Answer(InternalModel):
+class Answer(PublicModel):
     """This model represents the answer for specific activity items"""
 
     activity_item_history_id_version: str = Field(
@@ -28,7 +28,7 @@ class Answer(InternalModel):
     )
 
 
-class AnswerActivityItemsBase(InternalModel):
+class AnswerActivityItemsBase(PublicModel):
     """This model used for internal needs"""
 
     applet_id: int = Field(

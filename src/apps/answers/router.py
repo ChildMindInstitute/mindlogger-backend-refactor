@@ -16,6 +16,7 @@ router.post(
     "/activity-items",
     description="""This endpoint using for adding new respondent answer
                 to database with linked to an activity-items""",
+    response_model_by_alias=True,
     response_model=ResponseMulti[PublicAnswerActivityItem],
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -31,6 +32,7 @@ router.post(
     "/flow-items",
     description="""This endpoint using for adding new respondent answer
                 to database with linked to an flow-items""",
+    response_model_by_alias=True,
     response_model=ResponseMulti[PublicAnswerFlowItem],
     status_code=status.HTTP_201_CREATED,
     responses={
