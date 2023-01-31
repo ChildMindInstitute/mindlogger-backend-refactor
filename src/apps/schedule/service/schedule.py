@@ -166,3 +166,18 @@ class ScheduleService:
             )
 
         return events
+
+    async def delete_all_schedules(self, applet_id: int):
+        event_schemas: list[
+            EventSchema
+        ] = await EventCRUD().get_all_by_applet_id(applet_id)
+        event_ids = [event_schema.id for event_schema in event_schemas]
+        periodicity_ids = [
+            event_schema.periodicity_id for event_schema in event_schemas
+        ]
+
+        await UserEventsCRUD().delete_all_by_event_ids(event_ids)
+        await ActivityEventsCRUD().delete_all_by_event_ids(event_ids)
+        await FlowEventsCRUD().delete_all_by_event_ids(event_ids)
+        await PeriodicityCRUD().delete_all_by_ids(periodicity_ids)
+        await EventCRUD().delete_all_by_ids(applet_id)

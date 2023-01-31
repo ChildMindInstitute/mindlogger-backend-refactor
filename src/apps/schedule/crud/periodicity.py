@@ -1,3 +1,6 @@
+from sqlalchemy import update
+from sqlalchemy.orm import Query
+
 from apps.schedule.db.schemas import PeriodicitySchema
 from apps.schedule.domain.schedule.internal import Periodicity
 from apps.schedule.domain.schedule.requests import PeriodicityRequest
@@ -26,3 +29,11 @@ class PeriodicityCRUD(BaseCRUD[PeriodicitySchema]):
 
         periodicity: Periodicity = Periodicity.from_orm(instance)
         return periodicity
+
+    async def delete_all_by_ids(self, periodicity_ids: list[int]) -> None:
+        """Delete all periodicities by event ids."""
+        #  Set is_deleted to True for all periodicity if id is in periodicity_ids
+        query: Query = update(PeriodicitySchema)
+        query = query.where(PeriodicitySchema.id.in_(periodicity_ids))
+        query = query.values(is_deleted=True)
+        await self._execute(query)
