@@ -187,8 +187,8 @@ class TestInvite(BaseTest):
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 422
         assert (
-                response.json()["results"][0]["message"]["en"]
-                == "You do not have access to send invitation."
+            response.json()["results"][0]["message"]["en"]
+            == "You do not have access to send invitation."
         )
 
     async def test_editor_invite_any_fail(self):
@@ -204,4 +204,3 @@ class TestInvite(BaseTest):
             response.json()["results"][0]["message"]["en"]
             == "You do not have access to send invitation."
         )
-

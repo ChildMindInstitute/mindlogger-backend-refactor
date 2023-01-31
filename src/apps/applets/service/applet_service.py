@@ -40,7 +40,9 @@ class AppletService:
     async def _validate_delete_applet(self, user_id, applet_id):
         role = await UserAppletAccessService(user_id, applet_id).is_admin()
         if not role:
-            raise DoesNotHaveAccess(message='You do not have access to delete applet.')
+            raise DoesNotHaveAccess(
+                message="You do not have access to delete applet."
+            )
 
     async def get_folder_applets(self, folder_id: int) -> list[Applet]:
         schemas = await AppletsCRUD().get_folder_applets(

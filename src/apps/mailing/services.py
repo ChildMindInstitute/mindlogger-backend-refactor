@@ -9,6 +9,7 @@ class TestMail:
     """
     Mailing class for tests to mock and check emails
     """
+
     mails: list[MessageSchema] = []
 
     def __init__(self, connection):
