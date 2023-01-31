@@ -53,6 +53,14 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         instance = await self._fetch(key="id", value=id_)
         return instance
 
+    async def exist_by_id(self, id_: int) -> bool:
+        query: Query = select(AppletSchema)
+        query = query.where(AppletSchema.id == id_)
+
+        db_result = await self._execute(query)
+
+        return db_result.scalars().one_or_none() is not None
+
     async def get_applets_by_roles(
         self, user_id_: int, roles: list[str]
     ) -> list[AppletSchema]:
@@ -67,7 +75,10 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     async def delete_by_id(self, id_: int):
         """Delete applets by id."""
 
-        await self._delete(key="id", value=id_)
+        query = update(AppletSchema)
+        query = query.where(AppletSchema.id == id_)
+        query = query.values(is_deleted=True)
+        await self._execute(query)
 
     async def check_folder(self, folder_id: int) -> bool:
         """
