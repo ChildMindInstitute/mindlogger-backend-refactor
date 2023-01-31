@@ -13,6 +13,7 @@ from apps.authentication.errors import BadCredentials
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.users.domain import PublicUser, User
+from apps.users.errors import UserNotFound
 from config import settings
 
 
@@ -20,10 +21,17 @@ async def get_token(
     user_login_schema: UserLoginRequest = Body(...),
 ) -> Response[UserLogin]:
     """Generate the JWT access token."""
-
-    user: User = await AuthenticationService.authenticate_user(
-        user_login_schema
-    )
+    try:
+        user: User = await AuthenticationService.authenticate_user(
+            user_login_schema
+        )
+    except UserNotFound:
+        raise UserNotFound(
+            message=(
+                f"Incorrect password for {user_login_schema.email}"
+                " if that user exists."
+            )
+        )
 
     access_token = AuthenticationService.create_access_token(
         {"sub": str(user.id)}

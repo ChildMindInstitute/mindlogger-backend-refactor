@@ -6,7 +6,6 @@ from apps.mailing.services import MailingService
 from apps.shared.errors import NotFoundError
 from apps.users.crud import UsersCRUD
 from apps.users.domain import (
-    PASSWORD_RECOVERY_TEMPLATE,
     PasswordRecoveryApproveRequest,
     PasswordRecoveryInfo,
     PasswordRecoveryRequest,
@@ -63,16 +62,23 @@ class PasswordRecoveryService:
 
         # Send email to the user
         service: MailingService = MailingService()
+
+        exp = settings.authentication.password_recover.expiration // 60
+
+        html_payload: dict = {
+            "email": user.email,
+            "expiration_minutes": exp,
+            "link": (
+                f"{settings.service.urls.frontend.base}"
+                f"/{settings.service.urls.frontend.password_recovery_send}"
+                f"/{password_recovery_info.key}"
+            ),
+        }
         message = MessageSchema(
             recipients=[user.email],
             subject="Password recovery for Mindlogger",
-            body=PASSWORD_RECOVERY_TEMPLATE.format(
-                email=user.email,
-                link=(
-                    f"{settings.service.urls.frontend.base}"
-                    f"/{settings.service.urls.frontend.password_recovery_send}"
-                    f"/{password_recovery_info.key}"
-                ),
+            body=service.get_template(
+                path="password_recovery", **html_payload
             ),
         )
         await service.send(message)

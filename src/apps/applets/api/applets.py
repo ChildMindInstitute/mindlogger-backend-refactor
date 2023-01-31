@@ -1,10 +1,11 @@
 from fastapi import Body, Depends
 
 from apps.applets.crud import AppletsCRUD
-from apps.applets.domain import PublicHistory
+from apps.applets.domain import PublicAppletHistoryChange, PublicHistory
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.applets.create import AppletCreate
 from apps.applets.domain.applets.update import AppletUpdate
+from apps.applets.service import AppletHistoryService
 from apps.applets.service.applet import (
     create_applet,
     get_admin_applets,
@@ -26,6 +27,7 @@ __all__ = [
     "applet_retrieve",
     "applet_versions_retrieve",
     "applet_version_retrieve",
+    "applet_version_changes_retrieve",
     "applet_list",
     "applet_delete",
 ]
@@ -74,6 +76,13 @@ async def applet_version_retrieve(
     if not applet:
         return Response(result=None)
     return Response(result=public_history_detail.Applet(**applet.dict()))
+
+
+async def applet_version_changes_retrieve(
+    id_: int, version: str, user: User = Depends(get_current_user)
+) -> Response[PublicAppletHistoryChange]:
+    changes = await AppletHistoryService(id_, version).get_changes()
+    return Response(result=PublicAppletHistoryChange(**changes.dict()))
 
 
 async def applet_list(

@@ -12,6 +12,7 @@ from apps.users.domain import (
     User,
     UserChangePassword,
 )
+from apps.users.errors import UserNotFound
 from apps.users.services import PasswordRecoveryService
 
 
@@ -45,11 +46,15 @@ async def password_recovery(
     """General endpoint for sending password recovery email
     and stored info in Redis.
     """
-
     # Send the password recovery the internal password recovery service
-    public_user: PublicUser = (
-        await PasswordRecoveryService().send_password_recovery(schema)
-    )
+    try:
+        public_user: PublicUser = (
+            await PasswordRecoveryService().send_password_recovery(schema)
+        )
+    except UserNotFound:
+        raise UserNotFound(
+            message=("That email is not associated with a MindLogger account")
+        )
 
     return Response[PublicUser](result=public_user)
 

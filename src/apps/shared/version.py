@@ -12,6 +12,6 @@ def get_next_version(version: str | None = None):
 
 def get_prev_version(version: str):
     int_version = int(version.replace(".", ""))
-    if int_version < int(INITIAL_VERSION.replace(".", "")):
+    if int_version <= int(INITIAL_VERSION.replace(".", "")):
         return INITIAL_VERSION
     return ".".join(list(str(int_version - VERSION_DIFFERENCE)))
