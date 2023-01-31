@@ -5,8 +5,8 @@ from apps.schedule.domain.schedule.public import PublicEvent
 from apps.schedule.domain.schedule.requests import EventRequest
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.domain import Response, ResponseMulti
-from apps.users.domain import User
 from apps.shared.errors import NoContentError
+from apps.users.domain import User
 
 
 async def schedule_create(
@@ -43,3 +43,12 @@ async def schedule_delete_all(
 ):
     await ScheduleService().delete_all_schedules(applet_id)
     raise NoContentError(message="All schedules are deleted")
+
+
+async def schedule_delete_by_id(
+    applet_id: int,
+    schedule_id: int,
+    user: User = Depends(get_current_user),
+):
+    await ScheduleService().delete_schedule_by_id(schedule_id)
+    raise NoContentError(message="Schedule is deleted")

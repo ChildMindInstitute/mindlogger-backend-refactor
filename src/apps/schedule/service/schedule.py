@@ -175,9 +175,25 @@ class ScheduleService:
         periodicity_ids = [
             event_schema.periodicity_id for event_schema in event_schemas
         ]
+        if not event_ids:
+            raise NotFoundError(f"No schedules found for applet {applet_id}")
 
         await UserEventsCRUD().delete_all_by_event_ids(event_ids)
         await ActivityEventsCRUD().delete_all_by_event_ids(event_ids)
         await FlowEventsCRUD().delete_all_by_event_ids(event_ids)
         await PeriodicityCRUD().delete_all_by_ids(periodicity_ids)
         await EventCRUD().delete_all_by_ids(applet_id)
+
+    async def delete_schedule_by_id(self, schedule_id: int):
+        event: Event = await EventCRUD().get_by_id(id=schedule_id)
+        periodicity_id: int = event.periodicity_id
+        if not event:
+            raise NotFoundError(f"No schedule found with id {schedule_id}")
+
+        await UserEventsCRUD().delete_all_by_event_ids(event_ids=[schedule_id])
+        await ActivityEventsCRUD().delete_all_by_event_ids(
+            event_ids=[schedule_id]
+        )
+        await FlowEventsCRUD().delete_all_by_event_ids(event_ids=[schedule_id])
+        await PeriodicityCRUD().delete_all_by_ids([periodicity_id])
+        await EventCRUD().delete_by_id(id=schedule_id)
