@@ -2,11 +2,7 @@ import json
 import uuid
 
 from apps.applets.crud import AppletsCRUD
-from apps.applets.domain import (
-    Role,
-    RoleLevel,
-    UserAppletAccess,
-)
+from apps.applets.domain import Role, RoleLevel, UserAppletAccess
 from apps.applets.domain.applets.fetch import Applet
 from apps.applets.service import AppletService, UserAppletAccessService
 from apps.invitations.domain import (
@@ -161,7 +157,7 @@ class InvitationsService:
             # Wrong role to invite
             raise DoesNotHaveAccess(
                 message="You can not invite user with "
-                        f"role {invitation_request.role.name}."
+                f"role {invitation_request.role.name}."
             )
 
         if not role:

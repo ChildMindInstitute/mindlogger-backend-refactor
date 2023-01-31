@@ -104,7 +104,8 @@ class UserAppletAccessService:
 
     async def is_reviewer_for_respondent(self):
         """
-        Checks whether user is in reviewer for respondent group and returns role
+        Checks whether user is in reviewer for
+          respondent group and returns role
 
         Permissions:
         - View assigned respondents' data

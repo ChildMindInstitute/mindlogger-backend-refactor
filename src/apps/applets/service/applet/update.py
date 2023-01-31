@@ -25,10 +25,7 @@ from apps.activity_flows.db.schemas import (
     ActivityFlowItemSchema,
     ActivityFlowSchema,
 )
-from apps.applets.crud import (
-    AppletHistoriesCRUD,
-    AppletsCRUD,
-)
+from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
 from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.applets.domain.applets import fetch, update
 from apps.applets.errors import DoesNotHaveAccess
