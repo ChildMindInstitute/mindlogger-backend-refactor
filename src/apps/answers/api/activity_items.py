@@ -10,15 +10,14 @@ from apps.answers.errors import UserDoesNotHavePermissionError
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccessItem
 from apps.authentication.deps import get_current_user
-from apps.shared.domain import Response
+from apps.shared.domain import ResponseMulti
 from apps.users.domain import User
 
 
 async def answer_activity_item_create(
-    id_version: str,
     user: User = Depends(get_current_user),
     schema: AnswerActivityItemsCreateRequest = Body(...),
-) -> Response[PublicAnswerActivityItem]:
+) -> ResponseMulti[PublicAnswerActivityItem]:
 
     user_applet_access_item = UserAppletAccessItem(
         user_id=user.id,
@@ -28,7 +27,7 @@ async def answer_activity_item_create(
 
     # Checking if the user has responder permission to the given applet
     user_applet_access = await UserAppletAccessCRUD().get_by_user_applet_role(
-        **user_applet_access_item.dict()
+        user_applet_access_item
     )
 
     if not user_applet_access:
@@ -36,17 +35,18 @@ async def answer_activity_item_create(
 
     # Create answer activity items and saving it to the database
     # TODO: Align with BA about the "answer" encryption
-    answer = AnswerActivityItemsCreate(
-        activity_item_history_id_version=id_version,
+    answers = AnswerActivityItemsCreate(
         respondent_id=user.id,
         **schema.dict(),
     )
 
-    answer_activity_item = await AnswerActivityItemsCRUD().save(schema=answer)
-
-    # Create public answer activity item model
-    public_answer_activity_item = PublicAnswerActivityItem(
-        **answer_activity_item.dict()
+    answer_activity_items = await AnswerActivityItemsCRUD().save(
+        schema_multiple=answers
     )
 
-    return Response(result=public_answer_activity_item)
+    return ResponseMulti(
+        results=[
+            PublicAnswerActivityItem(**answer_activity_item.dict())
+            for answer_activity_item in answer_activity_items
+        ]
+    )

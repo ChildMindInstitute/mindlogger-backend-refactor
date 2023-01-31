@@ -4,55 +4,133 @@ from pydantic.types import PositiveInt
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
+    "AnswerFlow",
     "AnswerFlowItem",
+    "AnswerFlowItemsBase",
+    "AnswerFlowItemCreate",
     "AnswerFlowItemsCreate",
     "AnswerFlowItemsCreateRequest",
     "PublicAnswerFlowItem",
+    "RespondentFlowIdentifier",
 ]
 
 
-class AnswerFlowItemsCreateRequest(InternalModel):
-    """This model represents the answer for flow items"""
+class AnswerFlow(InternalModel):
+    """This model represents the answer for specific activity items for flow"""
 
+    activity_item_history_id_version: str = Field(
+        description="This field represents the activity item's "
+        "histories id version at a particular moment in history"
+    )
     answer: dict[str, str] = Field(
         description="This field represents the answer "
-        "to a specific flow item"
+        "to a specific activity item"
+    )
+
+
+class AnswerFlowItemsBase(InternalModel):
+    """This model used for internal needs"""
+
+    applet_id: int = Field(
+        description="This field represents the specific applet id"
+    )
+    applet_history_id_version: str = Field(
+        description="This field represents the applet histories id version "
+        "at a particular moment in history"
+    )
+    flow_item_history_id_version: str = Field(
+        description="This field represents the flow item history id version"
+    )
+
+
+class RespondentFlowIdentifier(PublicModel):
+    """This model used for internal needs"""
+
+    respondent_id: int = Field(
+        description="This field represents the user id, "
+        "where the user has the respondent role"
     )
     applet_id: int = Field(
         description="This field represents the specific applet id"
     )
-
-
-class AnswerFlowItemsCreate(AnswerFlowItemsCreateRequest):
-    flow_item_history_id_version: str = Field(
-        description="This field represents the flow item's id version "
+    applet_history_id_version: str = Field(
+        description="This field represents the applet histories id version "
         "at a particular moment in history"
     )
+    flow_item_history_id_version: str = Field(
+        description="This field represents the flow item history id version"
+    )
+
+
+class AnswerFlowItemsCreateRequest(AnswerFlowItemsBase):
+    """This model represents the answer for activity items"""
+
+    answers: list[AnswerFlow] = Field(
+        description="This field represents the list of answers "
+        "to a specific activity"
+    )
+
+
+class AnswerFlowItemsCreate(AnswerFlowItemsBase):
+    """This model using as multiple model"""
+
+    respondent_id: int = Field(
+        description="This field represents the user id, "
+        "where the user has the respondent role"
+    )
+    answers: list[AnswerFlow] = Field(
+        description="This field represents the list of answers "
+        "to a specific activity"
+    )
+
+
+class AnswerFlowItemCreate(AnswerFlowItemsBase):
+    """This model represents the answer for
+    activity items for save in database
+    """
+
     respondent_id: int = Field(
         description="This field represents the user id, "
         "where the user has the respondent role"
     )
 
+    activity_item_history_id_version: str = Field(
+        description="This field represents the activity item's "
+        "histories id version at a particular moment in history"
+    )
+    answer: dict[str, str] = Field(
+        description="This field represents the answer "
+        "to a specific activity item"
+    )
 
-class AnswerFlowItem(AnswerFlowItemsCreate):
+
+class AnswerFlowItem(AnswerFlowItemCreate):
     id: PositiveInt
 
 
 class PublicAnswerFlowItem(PublicModel):
-    """This model represents the answer for flow items"""
+    """This model represents the public answer for activity item"""
 
     id: PositiveInt
-    answer: dict[str, str] = Field(
-        description="This field represents the answer to a specific flow item"
-    )
-    applet_id: int = Field(
-        description="This field represents the specific applet id"
-    )
     respondent_id: int = Field(
         description="This field represents the user id, "
         "where the user has the respondent role"
     )
-    flow_item_history_id_version: str = Field(
-        description="This field represents the flow item's id version "
+    answer: dict[str, str] = Field(
+        description="This field represents the answer "
+        "to a specific activity item"
+    )
+    applet_id: int = Field(
+        description="This field represents the specific applet id"
+    )
+    applet_history_id_version: str = Field(
+        description="This field represents the applet histories id version "
         "at a particular moment in history"
+    )
+    flow_item_history_id_version: str = Field(
+        description="This field represents the flow item history id version"
+    )
+    activity_item_history_id_version: str = Field(
+        description="This field represents the activity item's "
+        "histories id version at a particular moment in history"
     )

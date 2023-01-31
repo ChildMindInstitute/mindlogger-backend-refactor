@@ -10,15 +10,14 @@ from apps.answers.errors import UserDoesNotHavePermissionError
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccessItem
 from apps.authentication.deps import get_current_user
-from apps.shared.domain import Response
+from apps.shared.domain import ResponseMulti
 from apps.users.domain import User
 
 
 async def answer_flow_item_create(
-    id_version: str,
     user: User = Depends(get_current_user),
     schema: AnswerFlowItemsCreateRequest = Body(...),
-) -> Response[PublicAnswerFlowItem]:
+) -> ResponseMulti[PublicAnswerFlowItem]:
 
     user_applet_access_item = UserAppletAccessItem(
         user_id=user.id,
@@ -28,7 +27,7 @@ async def answer_flow_item_create(
 
     # Checking if the user has responder permission to the given applet
     user_applet_access = await UserAppletAccessCRUD().get_by_user_applet_role(
-        **user_applet_access_item.dict()
+        user_applet_access_item
     )
 
     if not user_applet_access:
@@ -36,15 +35,18 @@ async def answer_flow_item_create(
 
     # Create answer flow items and saving it to the database
     # TODO: Align with BA about the "answer" encryption
-    answer = AnswerFlowItemsCreate(
-        flow_item_history_id_version=id_version,
+    answers = AnswerFlowItemsCreate(
         respondent_id=user.id,
         **schema.dict(),
     )
 
-    answer_flow_item = await AnswerFlowItemsCRUD().save(schema=answer)
+    answer_flow_items = await AnswerFlowItemsCRUD().save(
+        schema_multiple=answers
+    )
 
-    # Create public answer flow item model
-    public_answer_flow_item = PublicAnswerFlowItem(**answer_flow_item.dict())
-
-    return Response(result=public_answer_flow_item)
+    return ResponseMulti(
+        results=[
+            PublicAnswerFlowItem(**answer_flow_item.dict())
+            for answer_flow_item in answer_flow_items
+        ]
+    )
