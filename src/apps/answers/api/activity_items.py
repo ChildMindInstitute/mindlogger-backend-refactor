@@ -2,6 +2,7 @@ from fastapi import Body, Depends
 
 from apps.answers.crud import AnswerActivityItemsCRUD
 from apps.answers.domain import (
+    AnswerActivityItem,
     AnswerActivityItemsCreate,
     AnswerActivityItemsCreateRequest,
     PublicAnswerActivityItem,
@@ -40,9 +41,9 @@ async def answer_activity_item_create(
         **schema.dict(),
     )
 
-    answer_activity_items = await AnswerActivityItemsCRUD().save(
-        schema_multiple=answers
-    )
+    answer_activity_items: list[
+        AnswerActivityItem
+    ] = await AnswerActivityItemsCRUD().save(schema_multiple=answers)
 
     return ResponseMulti(
         results=[

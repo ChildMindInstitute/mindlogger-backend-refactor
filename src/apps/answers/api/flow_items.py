@@ -2,6 +2,7 @@ from fastapi import Body, Depends
 
 from apps.answers.crud import AnswerFlowItemsCRUD
 from apps.answers.domain import (
+    AnswerFlowItem,
     AnswerFlowItemsCreate,
     AnswerFlowItemsCreateRequest,
     PublicAnswerFlowItem,
@@ -40,7 +41,7 @@ async def answer_flow_item_create(
         **schema.dict(),
     )
 
-    answer_flow_items = await AnswerFlowItemsCRUD().save(
+    answer_flow_items: list[AnswerFlowItem] = await AnswerFlowItemsCRUD().save(
         schema_multiple=answers
     )
 
