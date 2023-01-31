@@ -4,10 +4,7 @@ from sqlalchemy.orm import Query
 
 from apps.applets.db.schemas import UserAppletAccessSchema
 from apps.applets.domain.constants import Role
-from apps.applets.domain.user_applet_access import (
-    UserAppletAccess,
-    UserAppletAccessCreate,
-)
+from apps.applets.domain.user_applet_access import UserAppletAccess
 from apps.applets.errors import UserAppletAccessesNotFound
 from infrastructure.database.crud import BaseCRUD
 
@@ -82,15 +79,29 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         results = result.scalars().all()
         return results
 
-    async def save(self, schema: UserAppletAccessCreate) -> UserAppletAccess:
+    async def save(
+        self, schema: UserAppletAccessSchema
+    ) -> UserAppletAccessSchema:
         """Return UserAppletAccess instance and the created information."""
+        return await self._create(schema)
 
-        # Save UserAppletAccess into the database
-        instance: UserAppletAccessSchema = await self._create(
-            UserAppletAccessSchema(**schema.dict())
-        )
+    async def get(
+        self, user_id: int, applet_id: int, role: str
+    ) -> UserAppletAccessSchema | None:
+        query: Query = select(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.role == role)
 
-        # Create internal data model
-        user_applet_access = UserAppletAccess.from_orm(instance)
+        result = await self._execute(query)
+        return result.scalars().one_or_none()
 
-        return user_applet_access
+    async def get_by_roles(
+        self, user_id: int, applet_id: int, roles: list[str]
+    ) -> UserAppletAccessSchema | None:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.role.in_(roles))
+
+        result = await self._execute(query)
+        return result.scalars().one_or_none()

@@ -25,14 +25,11 @@ from apps.activity_flows.db.schemas import (
     ActivityFlowItemSchema,
     ActivityFlowSchema,
 )
-from apps.applets.crud import (
-    AppletHistoriesCRUD,
-    AppletsCRUD,
-    UserAppletAccessCRUD,
-)
+from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
 from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
-from apps.applets.domain import Role, UserAppletAccessCreate
+from apps.applets.domain import Role
 from apps.applets.domain.applets import create, fetch
+from apps.applets.service import UserAppletAccessService
 from apps.shared.version import get_next_version
 
 
@@ -80,13 +77,7 @@ async def _create_applet(
 
 
 async def _create_access(applet_id: int, user_id: int):
-    await UserAppletAccessCRUD().save(
-        schema=UserAppletAccessCreate(
-            user_id=user_id,
-            applet_id=applet_id,
-            role=Role.ADMIN,
-        )
-    )
+    await UserAppletAccessService(user_id, applet_id).add_role(Role.ADMIN)
 
 
 async def _create_activities(

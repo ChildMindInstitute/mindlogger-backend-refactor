@@ -1,11 +1,10 @@
 from fastapi import Body, Depends
 
-from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import PublicAppletHistoryChange, PublicHistory
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.applets.create import AppletCreate
 from apps.applets.domain.applets.update import AppletUpdate
-from apps.applets.service import AppletHistoryService
+from apps.applets.service import AppletHistoryService, AppletService
 from apps.applets.service.applet import (
     create_applet,
     get_admin_applets,
@@ -18,7 +17,6 @@ from apps.applets.service.applet_history import (
 )
 from apps.authentication.deps import get_current_user
 from apps.shared.domain.response import Response, ResponseMulti
-from apps.shared.errors import NoContentError
 from apps.users.domain import User
 
 __all__ = [
@@ -95,7 +93,5 @@ async def applet_list(
     return ResponseMulti(results=public_applets)
 
 
-# TODO: Restrict by permissions
 async def applet_delete(id_: int, user: User = Depends(get_current_user)):
-    await AppletsCRUD().delete_by_id(id_=id_)
-    raise NoContentError
+    await AppletService().delete_applet_by_id(user.id, id_)

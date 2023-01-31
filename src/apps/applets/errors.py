@@ -19,3 +19,7 @@ class AppletNotFoundError(NotFoundError):
 class UserAppletAccessesNotFound(BaseError):
     def __init__(self, *_, id_: int) -> None:
         super().__init__(message=f"No such UserAppletAccess with id={id_}.")
+
+
+class DoesNotHaveAccess(ValidationError):
+    pass
