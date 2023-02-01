@@ -429,7 +429,7 @@ Applet_histories }o--|| Users: ""
 
 Answers_activity_items }o--|| Applets: ""
 Answers_activity_items }o--|| Users: ""
-Answers_activity_items }o--o{ Activity_item_histories: ""
+Answers_activity_items }o--|| Activity_item_histories: ""
 
     Answers_activity_items {
         int id
@@ -443,7 +443,7 @@ Answers_activity_items }o--o{ Activity_item_histories: ""
 
 Answers_flow_items }o--|| Applets: ""
 Answers_flow_items }o--|| Users: ""
-Answers_flow_items }o--o{ Flow_item_histories: ""
+Answers_flow_items ||--o{ Flow_item_histories: ""
 
     Answers_flow_items {
         int id
@@ -455,7 +455,7 @@ Answers_flow_items }o--o{ Flow_item_histories: ""
         int flow_item_history_id_version FK
     }
 
-Activities }o--o{ Applets: ""
+Activities }o--|| Applets: ""
 
     Activities {
         int id
@@ -475,7 +475,7 @@ Activities }o--o{ Applets: ""
         int applet_id FK 
     }
 
-Activity_histories }o--o{ Applets: ""
+Activity_histories }o--|| Applets: ""
 
     Activity_histories {
         int id
@@ -495,7 +495,7 @@ Activity_histories }o--o{ Applets: ""
         int applet_id FK
     }
 
-Activity_item_histories ||--o{ Activity_histories: ""
+Activity_item_histories }o--|| Activity_histories: ""
 
     Activity_item_histories {
         int id
@@ -519,7 +519,7 @@ Activity_item_histories ||--o{ Activity_histories: ""
         int activity_id FK
     }
 
-Activity_items ||--o{ Activities: ""
+Activity_items }o--|| Activities: ""
 
     Activity_items {
         int id
@@ -543,7 +543,7 @@ Activity_items ||--o{ Activities: ""
 
     
 
-Flows ||--o{ Applets: ""
+Flows }o--|| Applets: ""
 
     Flows {
         int id
@@ -572,8 +572,8 @@ Flow_items }o--|| Activities: ""
         int activity_id FK
     }
 
-Flow_item_histories ||--o{ Flow_histories: ""
-Flow_item_histories ||--o{ Activity_histories: ""
+Flow_item_histories }o--|| Flow_histories: ""
+Flow_item_histories }o--|| Activity_histories: ""
 
     Flow_item_histories {
         int id
@@ -585,7 +585,7 @@ Flow_item_histories ||--o{ Activity_histories: ""
         int activity_id FK
     }
 
-Flow_histories ||--o{ Applet_histories: ""
+Flow_histories }o--|| Applet_histories: ""
 
     Flow_histories {
         int id
