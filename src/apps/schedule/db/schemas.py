@@ -59,6 +59,7 @@ class UserEventsSchema(Base):
         UniqueConstraint(
             "user_id",
             "event_id",
+            "is_deleted",
             name="_unique_user_events",
         ),
     )
@@ -78,6 +79,7 @@ class ActivityEventsSchema(Base):
         UniqueConstraint(
             "activity_id",
             "event_id",
+            "is_deleted",
             name="_unique_activity_events",
         ),
     )
@@ -97,6 +99,7 @@ class FlowEventsSchema(Base):
         UniqueConstraint(
             "flow_id",
             "event_id",
+            "is_deleted",
             name="_unique_flow_events",
         ),
     )

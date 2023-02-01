@@ -13,6 +13,7 @@ from apps.schedule.domain.schedule.internal import (
     ActivityEventCreate,
     Event,
     EventCreate,
+    EventUpdate,
     FlowEvent,
     FlowEventCreate,
     UserEvent,
@@ -84,6 +85,16 @@ class EventCRUD(BaseCRUD[EventSchema]):
         query = query.where(EventSchema.id == id)
         query = query.values(is_deleted=True)
         await self._execute(query)
+
+    async def update(self, pk: int, schema: EventUpdate) -> Event:
+        """Update event by event id."""
+        instance = await self._update_one(
+            lookup="id",
+            value=pk,
+            schema=EventSchema(**schema.dict()),
+        )
+        event: Event = Event.from_orm(instance)
+        return event
 
 
 class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
