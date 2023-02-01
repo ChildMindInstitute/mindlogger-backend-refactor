@@ -6,6 +6,7 @@ from apps.schedule.api.schedule import (
     schedule_delete_by_id,
     schedule_get_all,
     schedule_get_by_id,
+    schedule_update,
 )
 
 router = APIRouter(prefix="/applets", tags=["Applets"])
@@ -18,4 +19,7 @@ router.get("/{applet_id}/events/{schedule_id}", status_code=200)(
 router.delete("/{applet_id}/events", status_code=204)(schedule_delete_all)
 router.delete("/{applet_id}/events/{schedule_id}", status_code=204)(
     schedule_delete_by_id
+)
+router.put("/{applet_id}/events/{schedule_id}", status_code=200)(
+    schedule_update
 )

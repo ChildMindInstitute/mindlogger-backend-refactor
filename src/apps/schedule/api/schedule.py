@@ -49,3 +49,15 @@ async def schedule_delete_by_id(
     user: User = Depends(get_current_user),
 ):
     await ScheduleService().delete_schedule_by_id(schedule_id)
+
+
+async def schedule_update(
+    applet_id: int,
+    schedule_id: int,
+    user: User = Depends(get_current_user),
+    schema: EventRequest = Body(...),
+) -> Response[PublicEvent]:
+    schedule = await ScheduleService().update_schedule(
+        applet_id, schedule_id, schema
+    )
+    return Response(result=PublicEvent(**schedule.dict()))
