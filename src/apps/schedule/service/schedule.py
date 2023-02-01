@@ -181,8 +181,8 @@ class ScheduleService:
         await UserEventsCRUD().delete_all_by_event_ids(event_ids)
         await ActivityEventsCRUD().delete_all_by_event_ids(event_ids)
         await FlowEventsCRUD().delete_all_by_event_ids(event_ids)
-        await PeriodicityCRUD().delete_all_by_ids(periodicity_ids)
-        await EventCRUD().delete_all_by_ids(applet_id)
+        await PeriodicityCRUD().delete_by_ids(periodicity_ids)
+        await EventCRUD().delete_by_applet_id(applet_id)
 
     async def delete_schedule_by_id(self, schedule_id: int):
         event: Event = await EventCRUD().get_by_id(id=schedule_id)
@@ -195,5 +195,5 @@ class ScheduleService:
             event_ids=[schedule_id]
         )
         await FlowEventsCRUD().delete_all_by_event_ids(event_ids=[schedule_id])
-        await PeriodicityCRUD().delete_all_by_ids([periodicity_id])
+        await PeriodicityCRUD().delete_by_ids([periodicity_id])
         await EventCRUD().delete_by_id(id=schedule_id)

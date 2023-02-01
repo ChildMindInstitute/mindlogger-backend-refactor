@@ -30,8 +30,8 @@ class PeriodicityCRUD(BaseCRUD[PeriodicitySchema]):
         periodicity: Periodicity = Periodicity.from_orm(instance)
         return periodicity
 
-    async def delete_all_by_ids(self, periodicity_ids: list[int]) -> None:
-        """Delete all periodicities by event ids."""
+    async def delete_by_ids(self, periodicity_ids: list[int]) -> None:
+        """Delete all periodicities by if id in list."""
         query: Query = update(PeriodicitySchema)
         query = query.where(PeriodicitySchema.id.in_(periodicity_ids))
         query = query.values(is_deleted=True)

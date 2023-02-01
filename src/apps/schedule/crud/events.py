@@ -71,8 +71,8 @@ class EventCRUD(BaseCRUD[EventSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def delete_all_by_ids(self, applet_id: int) -> None:
-        """Delete all events by event ids."""
+    async def delete_by_applet_id(self, applet_id: int) -> None:
+        """Delete all events by applet id."""
         query: Query = update(EventSchema)
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.values(is_deleted=True)
