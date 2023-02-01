@@ -12,7 +12,10 @@ __all__ = [
     "PublicTheme",
     "Theme",
     "ThemeUpdate",
+    "ThemeQueryParams",
 ]
+
+from apps.shared.query_params import BaseQueryParams
 
 
 class _ThemeBase(BaseModel):
@@ -60,3 +63,9 @@ class PublicTheme(_ThemeBase, PublicModel):
 
 class Theme(ThemeCreate):
     id: PositiveInt
+
+
+class ThemeQueryParams(BaseQueryParams):
+    public: bool | None = None
+    allow_rename: bool | None = None
+    creator: int | None = None

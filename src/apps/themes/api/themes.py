@@ -3,11 +3,13 @@ from fastapi import Body, Depends
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.errors import NoContentError
+from apps.shared.query_params import QueryParams, parse_query_params
 from apps.themes.crud import ThemesCRUD
 from apps.themes.domain import (
     PublicTheme,
     Theme,
     ThemeCreate,
+    ThemeQueryParams,
     ThemeRequest,
     ThemeUpdate,
 )
@@ -28,12 +30,11 @@ async def create_theme(
 
 
 async def get_themes(
+    query_params: QueryParams = Depends(parse_query_params(ThemeQueryParams)),
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[PublicTheme]:
     """Returns all themes."""
-
-    themes: list[PublicTheme] = await ThemesCRUD().get_all()
-
+    themes: list[PublicTheme] = await ThemesCRUD().list(query_params)
     return ResponseMulti(results=themes)
 
 

@@ -6,6 +6,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
 from apps.authentication.errors import PermissionsError
+from apps.shared.filtering import FilterField, Filtering
+from apps.shared.ordering import Ordering
+from apps.shared.query_params import QueryParams
+from apps.shared.searching import Searching
 from apps.themes.db.schemas import ThemeSchema
 from apps.themes.domain import PublicTheme, Theme, ThemeCreate, ThemeUpdate
 from apps.themes.errors import (
@@ -16,6 +20,23 @@ from apps.themes.errors import (
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["ThemesCRUD"]
+
+
+class _ThemeFiltering(Filtering):
+    public = FilterField(ThemeSchema.public)
+    allow_rename = FilterField(ThemeSchema.allow_rename)
+    creator = FilterField(ThemeSchema.creator)
+
+
+class _ThemeSearching(Searching):
+    search_fields = [ThemeSchema.name]
+
+
+class _ThemeOrdering(Ordering):
+    id = ThemeSchema.id
+    name = ThemeSchema.name
+    created_at = ThemeSchema.created_at
+    updated_at = ThemeSchema.updated_at
 
 
 class ThemesCRUD(BaseCRUD[ThemeSchema]):
@@ -42,8 +63,22 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
     async def get_by_id(self, pk: int) -> Theme:
         return await self._fetch(key="id", value=pk)
 
-    async def get_all(self) -> list[PublicTheme]:
-        query: Query = select(self.schema_class).order_by(self.schema_class.id)
+    async def list(self, query_params: QueryParams) -> list[PublicTheme]:
+        query: Query = select(self.schema_class)
+        if query_params.filters:
+            query = query.where(
+                *_ThemeFiltering().get_clauses(**query_params.filters)
+            )
+        if query_params.ordering:
+            query = query.order_by(
+                *_ThemeOrdering().get_clauses(*query_params.ordering)
+            )
+        if query_params.search:
+            query = query.where(
+                _ThemeSearching().get_clauses(query_params.search)
+            )
+        query = query.offset(query_params.page - 1)
+        query = query.limit(query_params.limit)
 
         result: Result = await self._execute(query)
         results: list[PublicTheme] = result.scalars().all()
@@ -71,7 +106,6 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
         instance: Theme = await self._fetch(key="id", value=pk)
 
         if instance.creator != creator_id:
-
             raise PermissionsError(
                 "You do not have permissions to delete this theme."
             )
