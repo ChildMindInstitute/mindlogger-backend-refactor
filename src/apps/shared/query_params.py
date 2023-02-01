@@ -17,7 +17,7 @@ class BaseQueryParams(BaseModel):
 
 class QueryParams(BaseModel):
     """
-    Class to store grouped query parameters
+    Class to group query parameters into single format
     """
 
     filters: dict[str, Any] = Field(default_factory=dict)
@@ -29,7 +29,7 @@ class QueryParams(BaseModel):
 
 def parse_query_params(query_param_class):
     """
-    Parses query parameters and group them
+    Parses query parameters and group them into QueryParams
     """
 
     def _parse(query_params: query_param_class = Depends()):

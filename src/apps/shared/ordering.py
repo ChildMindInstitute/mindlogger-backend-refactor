@@ -5,7 +5,19 @@ __all__ = ["Ordering"]
 from sqlalchemy.orm import InstrumentedAttribute
 
 
-class Ordering(object):
+class Ordering:
+    """
+    Generates clauses for ordering
+    Example:
+        class ExampleOrdering(Ordering):
+            id = Schema.id
+            name = Schema.first_name
+
+        ExampleOrdering().get_clauses('-id', 'name')
+        will give result as sql:
+        select * from schema order by id desc, first_name asc
+    """
+
     actions = {
         "+": asc,
         "-": desc,

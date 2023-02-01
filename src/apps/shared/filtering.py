@@ -10,9 +10,15 @@ lookups = {
 }
 
 
-class FilterField(object):
+class FilterField:
+    """
+    Adds filter field by lookup
+    Example:
+        name = FilterField(Schema.first_name, lookup='eq')
+    """
+
     def __init__(self, field: Column, lookup: str = "eq"):
-        assert lookup is not None and isinstance(lookup, str)
+        assert lookup not in [None, ""] and isinstance(lookup, str)
         self.field = field
         self.lookup = lookup
         self._lookup = lookups.get(lookup, lookups["eq"])
@@ -21,7 +27,18 @@ class FilterField(object):
         return self._lookup(self.field, val)
 
 
-class Filtering(object):
+class Filtering:
+    """
+    Generates filter clauses for query by
+    provided filtering fields and conditions
+    Example:
+        class SchemaFilter(Filtering):
+            name = FilterField(Schema.first_name, lookup='eq')
+
+        SchemaFilter().get_clauses(name='Tom') will generate where clause like
+        select * from schema where first_name='Tom'
+    """
+
     def __init__(self):
         self.fields = dict()
         for name, filter_field in self.__class__.__dict__.items():
