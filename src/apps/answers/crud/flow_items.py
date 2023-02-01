@@ -5,7 +5,7 @@ from apps.answers.domain import (
     AnswerFlowItem,
     AnswerFlowItemCreate,
     AnswerFlowItemsCreate,
-    RespondentFlowIdentifier,
+    FlowIdentifierBase,
 )
 from apps.answers.errors import AnswerError
 from infrastructure.database.crud import BaseCRUD
@@ -18,7 +18,7 @@ class AnswerFlowItemsCRUD(BaseCRUD[AnswerFlowItemsSchema]):
         self, schema_multiple: AnswerFlowItemsCreate
     ) -> list[AnswerFlowItem]:
 
-        respondent_flow_identifier = RespondentFlowIdentifier(
+        respondent_flow_identifier = FlowIdentifierBase(
             **schema_multiple.dict()
         )
         answer_flow_items = []

@@ -5,7 +5,7 @@ from apps.answers.domain import (
     AnswerActivityItem,
     AnswerActivityItemCreate,
     AnswerActivityItemsCreate,
-    RespondentActivityIdentifier,
+    ActivityIdentifierBase,
 )
 from apps.answers.errors import AnswerError
 from infrastructure.database.crud import BaseCRUD
@@ -18,7 +18,7 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         self, schema_multiple: AnswerActivityItemsCreate
     ) -> list[AnswerActivityItem]:
 
-        respondent_activity_identifier = RespondentActivityIdentifier(
+        respondent_activity_identifier = ActivityIdentifierBase(
             **schema_multiple.dict()
         )
         answer_activity_items = []

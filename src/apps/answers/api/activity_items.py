@@ -5,6 +5,7 @@ from apps.answers.domain import (
     AnswerActivityItem,
     AnswerActivityItemsCreate,
     AnswerActivityItemsCreateRequest,
+    AnswerCreate,
     PublicAnswerActivityItem,
 )
 from apps.answers.errors import UserDoesNotHavePermissionError
@@ -36,14 +37,27 @@ async def answer_activity_item_create(
 
     # Create answer activity items and saving it to the database
     # TODO: Align with BA about the "answer" encryption
-    answers = AnswerActivityItemsCreate(
+    answers_with_id_version = AnswerActivityItemsCreate(
+        applet_id=schema.applet_id,
+        activity_id=schema.activity_id,
         respondent_id=user.id,
-        **schema.dict(),
+        applet_history_id_version=f"{schema.applet_id}_"
+        f"{schema.applet_history_version}",
+        answers=[
+            AnswerCreate(
+                **answer.dict(),
+                activity_item_history_id_version=f"{answer.activity_item_history_id}_"
+                f"{schema.applet_history_version}",
+            )
+            for answer in schema.answers
+        ],
     )
 
     answer_activity_items: list[
         AnswerActivityItem
-    ] = await AnswerActivityItemsCRUD().save(schema_multiple=answers)
+    ] = await AnswerActivityItemsCRUD().save(
+        schema_multiple=answers_with_id_version
+    )
 
     return ResponseMulti(
         results=[

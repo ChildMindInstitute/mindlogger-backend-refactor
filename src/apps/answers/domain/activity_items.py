@@ -1,21 +1,54 @@
 from pydantic import Field
 from pydantic.types import PositiveInt
 
-from apps.shared.domain import PublicModel
+from apps.shared.domain import PublicModel, InternalModel
 
 __all__ = [
-    "Answer",
+    "AnswerCreate",
+    "AnswerRequest",
     "AnswerActivityItem",
-    "AnswerActivityItemsBase",
     "AnswerActivityItemCreate",
     "AnswerActivityItemsCreate",
     "AnswerActivityItemsCreateRequest",
     "PublicAnswerActivityItem",
-    "RespondentActivityIdentifier",
+    "ActivityIdentifierBase",
+    "AnswerActivityItemCreateBase",
 ]
 
 
-class Answer(PublicModel):
+class AnswerActivityItemCreateBase(InternalModel):
+    """This model used for internal needs"""
+
+    applet_id: int = Field(
+        description="This field represents the specific applet id"
+    )
+    applet_history_id_version: str = Field(
+        description="This field represents the applet histories id version "
+        "at a particular moment in history"
+    )
+    activity_id: int = Field(
+        description="This field represents the activity id"
+    )
+    respondent_id: int = Field(
+        description="This field represents the user id, "
+        "where the user has the respondent role"
+    )
+
+
+class AnswerRequest(PublicModel):
+    """This model represents the answer for specific activity items"""
+
+    activity_item_history_id: int = Field(
+        description="This field represents the activity item's "
+        "histories id at a particular moment in history"
+    )
+    answer: dict[str, str] = Field(
+        description="This field represents the answer "
+        "to a specific activity item"
+    )
+
+
+class AnswerCreate(PublicModel):
     """This model represents the answer for specific activity items"""
 
     activity_item_history_id_version: str = Field(
@@ -28,71 +61,30 @@ class Answer(PublicModel):
     )
 
 
-class AnswerActivityItemsBase(PublicModel):
-    """This model used for internal needs"""
-
-    applet_id: int = Field(
-        description="This field represents the specific applet id"
-    )
-    applet_history_id_version: str = Field(
-        description="This field represents the applet histories id version "
-        "at a particular moment in history"
-    )
-    activity_id: int = Field(
-        description="This field represents the activity id"
-    )
-
-
-class RespondentActivityIdentifier(PublicModel):
-    """This model used for internal needs"""
-
-    respondent_id: int = Field(
-        description="This field represents the user id, "
-        "where the user has the respondent role"
-    )
-    applet_id: int = Field(
-        description="This field represents the specific applet id"
-    )
-    applet_history_id_version: str = Field(
-        description="This field represents the applet histories id version "
-        "at a particular moment in history"
-    )
-    activity_id: int = Field(
-        description="This field represents the activity id"
-    )
-
-
-class AnswerActivityItemsCreateRequest(AnswerActivityItemsBase):
+class AnswerActivityItemsCreateRequest(PublicModel):
     """This model represents the answer for activity items"""
 
-    answers: list[Answer] = Field(
+    applet_id: int = Field(
+        description="This field represents the specific applet id"
+    )
+    applet_history_version: str = Field(
+        description="This field represents the applet histories version "
+        "at a particular moment in history"
+    )
+    activity_id: int = Field(
+        description="This field represents the activity id"
+    )
+
+    answers: list[AnswerRequest] = Field(
         description="This field represents the list of answers "
         "to a specific activity"
     )
 
 
-class AnswerActivityItemsCreate(AnswerActivityItemsBase):
-    """This model using as multiple model"""
-
-    respondent_id: int = Field(
-        description="This field represents the user id, "
-        "where the user has the respondent role"
-    )
-    answers: list[Answer] = Field(
-        description="This field represents the list of answers "
-        "to a specific activity"
-    )
-
-
-class AnswerActivityItemCreate(AnswerActivityItemsBase):
+class AnswerActivityItemCreate(AnswerActivityItemCreateBase):
     """This model represents the answer for
     activity items for save in database
     """
-
-    respondent_id: int = Field(
-        description="This field represents the user id, "
-        "where the user has the respondent role"
-    )
 
     activity_item_history_id_version: str = Field(
         description="This field represents the activity item's "
@@ -104,21 +96,25 @@ class AnswerActivityItemCreate(AnswerActivityItemsBase):
     )
 
 
+class AnswerActivityItemsCreate(AnswerActivityItemCreateBase):
+    """This model using as multiple model"""
+
+    answers: list[AnswerCreate] = Field(
+        description="This field represents the list of answers "
+        "to a specific activity"
+    )
+
+
 class AnswerActivityItem(AnswerActivityItemCreate):
     id: PositiveInt
 
 
-class PublicAnswerActivityItem(PublicModel):
-    """This model represents the public answer for activity item"""
+class ActivityIdentifierBase(PublicModel):
+    """This model used for internal needs"""
 
-    id: PositiveInt
     respondent_id: int = Field(
         description="This field represents the user id, "
         "where the user has the respondent role"
-    )
-    answer: dict[str, str] = Field(
-        description="This field represents the answer "
-        "to a specific activity item"
     )
     applet_id: int = Field(
         description="This field represents the specific applet id"
@@ -129,6 +125,16 @@ class PublicAnswerActivityItem(PublicModel):
     )
     activity_id: int = Field(
         description="This field represents the activity id"
+    )
+
+
+class PublicAnswerActivityItem(ActivityIdentifierBase):
+    """This model represents the public answer for activity item"""
+
+    id: PositiveInt
+    answer: dict[str, str] = Field(
+        description="This field represents the answer "
+        "to a specific activity item"
     )
     activity_item_history_id_version: str = Field(
         description="This field represents the activity item's "

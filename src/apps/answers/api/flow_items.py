@@ -5,6 +5,7 @@ from apps.answers.domain import (
     AnswerFlowItem,
     AnswerFlowItemsCreate,
     AnswerFlowItemsCreateRequest,
+    AnswerFlowCreate,
     PublicAnswerFlowItem,
 )
 from apps.answers.errors import UserDoesNotHavePermissionError
@@ -36,13 +37,25 @@ async def answer_flow_item_create(
 
     # Create answer flow items and saving it to the database
     # TODO: Align with BA about the "answer" encryption
-    answers = AnswerFlowItemsCreate(
+    answers_with_id_version = AnswerFlowItemsCreate(
+        applet_id=schema.applet_id,
+        flow_item_history_id_version=f"{schema.flow_item_history_id}_"
+        f"{schema.applet_history_version}",
         respondent_id=user.id,
-        **schema.dict(),
+        applet_history_id_version=f"{schema.applet_id}_"
+        f"{schema.applet_history_version}",
+        answers=[
+            AnswerFlowCreate(
+                **answer.dict(),
+                activity_item_history_id_version=f"{answer.activity_item_history_id}_"
+                f"{schema.applet_history_version}",
+            )
+            for answer in schema.answers
+        ],
     )
 
     answer_flow_items: list[AnswerFlowItem] = await AnswerFlowItemsCRUD().save(
-        schema_multiple=answers
+        schema_multiple=answers_with_id_version
     )
 
     return ResponseMulti(
