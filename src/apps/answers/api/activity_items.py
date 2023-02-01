@@ -41,13 +41,16 @@ async def answer_activity_item_create(
         applet_id=schema.applet_id,
         activity_id=schema.activity_id,
         respondent_id=user.id,
-        applet_history_id_version=f"{schema.applet_id}_"
-        f"{schema.applet_history_version}",
+        applet_history_id_version=(
+            f"{schema.applet_id}_{schema.applet_history_version}"
+        ),
         answers=[
             AnswerCreate(
                 **answer.dict(),
-                activity_item_history_id_version=f"{answer.activity_item_history_id}_"
-                f"{schema.applet_history_version}",
+                activity_item_history_id_version=(
+                    f"{answer.activity_item_history_id}_"
+                    f"{schema.applet_history_version}"
+                ),
             )
             for answer in schema.answers
         ],

@@ -1,7 +1,7 @@
 from pydantic import Field
 from pydantic.types import PositiveInt
 
-from apps.shared.domain import PublicModel, InternalModel
+from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
     "AnswerCreate",

@@ -2,10 +2,10 @@ from sqlalchemy.exc import IntegrityError
 
 from apps.answers.db.schemas import AnswerActivityItemsSchema
 from apps.answers.domain import (
+    ActivityIdentifierBase,
     AnswerActivityItem,
     AnswerActivityItemCreate,
     AnswerActivityItemsCreate,
-    ActivityIdentifierBase,
 )
 from apps.answers.errors import AnswerError
 from infrastructure.database.crud import BaseCRUD

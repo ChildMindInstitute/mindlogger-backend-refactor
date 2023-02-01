@@ -2,10 +2,10 @@ from fastapi import Body, Depends
 
 from apps.answers.crud import AnswerFlowItemsCRUD
 from apps.answers.domain import (
+    AnswerFlowCreate,
     AnswerFlowItem,
     AnswerFlowItemsCreate,
     AnswerFlowItemsCreateRequest,
-    AnswerFlowCreate,
     PublicAnswerFlowItem,
 )
 from apps.answers.errors import UserDoesNotHavePermissionError
@@ -39,16 +39,20 @@ async def answer_flow_item_create(
     # TODO: Align with BA about the "answer" encryption
     answers_with_id_version = AnswerFlowItemsCreate(
         applet_id=schema.applet_id,
-        flow_item_history_id_version=f"{schema.flow_item_history_id}_"
-        f"{schema.applet_history_version}",
+        flow_item_history_id_version=(
+            f"{schema.flow_item_history_id}_{schema.applet_history_version}"
+        ),
         respondent_id=user.id,
-        applet_history_id_version=f"{schema.applet_id}_"
-        f"{schema.applet_history_version}",
+        applet_history_id_version=(
+            f"{schema.applet_id}_{schema.applet_history_version}"
+        ),
         answers=[
             AnswerFlowCreate(
                 **answer.dict(),
-                activity_item_history_id_version=f"{answer.activity_item_history_id}_"
-                f"{schema.applet_history_version}",
+                activity_item_history_id_version=(
+                    f"{answer.activity_item_history_id}_"
+                    f"{schema.applet_history_version}"
+                ),
             )
             for answer in schema.answers
         ],
