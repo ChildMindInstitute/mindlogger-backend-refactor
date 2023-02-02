@@ -37,4 +37,4 @@ async def item_choice_retrieve(
         PublicReusableItemChoice
     ] = await ReusableItemChoiceCRUD().get_item_templates(user.id)
 
-    return ResponseMulti(results=item_templates)
+    return ResponseMulti(result=item_templates)

@@ -63,7 +63,7 @@ async def answer_flow_item_create(
     )
 
     return ResponseMulti(
-        results=[
+        result=[
             PublicAnswerFlowItem(**answer_flow_item.dict())
             for answer_flow_item in answer_flow_items
         ]

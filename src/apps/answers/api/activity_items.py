@@ -63,7 +63,7 @@ async def answer_activity_item_create(
     )
 
     return ResponseMulti(
-        results=[
+        result=[
             PublicAnswerActivityItem(**answer_activity_item.dict())
             for answer_activity_item in answer_activity_items
         ]

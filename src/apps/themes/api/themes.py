@@ -34,7 +34,7 @@ async def get_themes(
 
     themes: list[PublicTheme] = await ThemesCRUD().get_all()
 
-    return ResponseMulti(results=themes)
+    return ResponseMulti(result=themes)
 
 
 async def delete_theme_by_id(pk: int, user: User = Depends(get_current_user)):
