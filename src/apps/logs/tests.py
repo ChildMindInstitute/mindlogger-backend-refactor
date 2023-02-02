@@ -30,7 +30,7 @@ class TestNotificationLogs(BaseTest):
         response = await self.client.get(self.query_log_url, query=query)
 
         assert response.status_code == 200, response.json()
-        assert type(response.json()["results"]) == list
+        assert type(response.json()["result"]) == list
 
         create_data = dict(
             user_id="test@test.com",
@@ -54,4 +54,4 @@ class TestNotificationLogs(BaseTest):
         response = await self.client.get(self.query_log_url, query=query)
 
         assert response.status_code == 200, response.json()
-        assert len(response.json()["results"]) == 1
+        assert len(response.json()["result"]) == 1

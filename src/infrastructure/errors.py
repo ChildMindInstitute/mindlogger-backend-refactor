@@ -18,7 +18,7 @@ async def custom_base_errors_handler(
     """This function is called if the BaseError was raised."""
 
     response = ErrorResponseMulti(
-        results=[
+        result=[
             ErrorResponse(
                 message=ErrorResponseMessage(en=error._message.capitalize()),
                 type_=error._type,
@@ -38,7 +38,7 @@ async def python_base_error_handler(
     """This function is called if the Exception was raised."""
 
     response = ErrorResponseMulti(
-        results=[
+        result=[
             ErrorResponse(
                 message=ErrorResponseMessage(en=f"Unhandled error: {error}")
             )
@@ -57,7 +57,7 @@ async def pydantic_validation_errors_handler(
     """This function is called if the Pydantic validation error was raised."""
 
     response = ErrorResponseMulti(
-        results=[
+        result=[
             ErrorResponse(
                 message=ErrorResponseMessage(en=err["msg"]),
                 path=list(err["loc"]),

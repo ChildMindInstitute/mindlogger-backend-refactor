@@ -64,9 +64,7 @@ async def applet_versions_retrieve(
     id_: int, user: User = Depends(get_current_user)
 ) -> ResponseMulti[PublicHistory]:
     histories = await retrieve_versions(id_)
-    return ResponseMulti(
-        results=[PublicHistory(**h.dict()) for h in histories]
-    )
+    return ResponseMulti(result=[PublicHistory(**h.dict()) for h in histories])
 
 
 async def applet_version_retrieve(
@@ -92,7 +90,7 @@ async def applet_list(
     public_applets: list[public_detail.Applet] = []
     for applet in applets:
         public_applets.append(public_detail.Applet(**applet.dict()))
-    return ResponseMulti(results=public_applets)
+    return ResponseMulti(result=public_applets)
 
 
 # TODO: Restrict by permissions
