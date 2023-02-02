@@ -7,9 +7,9 @@ from apps.shared.domain.types import _BaseModel
 
 
 class ResponseMulti(PublicModel, GenericModel, Generic[_BaseModel]):
-    """Generic response model that consist multiple results."""
+    """Generic response model that consist multiple result."""
 
-    results: list[_BaseModel]
+    result: list[_BaseModel]
 
 
 class Response(PublicModel, GenericModel, Generic[_BaseModel]):

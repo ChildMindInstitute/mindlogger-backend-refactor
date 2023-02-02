@@ -29,4 +29,4 @@ async def notification_log_retrieve(
         PublicNotificationLog
     ] = await NotificationLogCRUD().filter(query)
 
-    return ResponseMulti(results=notification_logs)
+    return ResponseMulti(result=notification_logs)

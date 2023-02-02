@@ -34,7 +34,7 @@ async def schedule_get_all(
 ) -> ResponseMulti[PublicEvent]:
     schedules = await ScheduleService().get_all_schedules(applet_id)
 
-    return ResponseMulti(results=schedules)
+    return ResponseMulti(result=schedules)
 
 
 async def schedule_delete_all(

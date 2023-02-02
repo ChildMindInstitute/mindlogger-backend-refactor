@@ -41,7 +41,7 @@ class ErrorResponse(PublicModel):
 class ErrorResponseMulti(PublicModel):
     """The public error respnse model that includes multiple objects."""
 
-    results: conlist(ErrorResponse)  # type: ignore
+    result: conlist(ErrorResponse)  # type: ignore
 
 
 # NOTE: This constant represents the default error response for each request
