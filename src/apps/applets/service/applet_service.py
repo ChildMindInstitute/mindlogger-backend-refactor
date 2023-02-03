@@ -1,5 +1,6 @@
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import AppletFolder
+from apps.applets.domain.applets.fetch import Applet
 from apps.applets.errors import AppletAccessDenied, AppletsFolderAccessDenied
 from apps.folders.crud import FolderCRUD
 
@@ -25,6 +26,12 @@ class AppletService:
         if int_version < int(self.INITIAL_VERSION.replace(".", "")):
             return self.INITIAL_VERSION
         return ".".join(list(str(int_version - self.VERSION_DIFFERENCE)))
+
+    async def get_folder_applets(self, folder_id: int) -> list[Applet]:
+        schemas = await AppletsCRUD().get_folder_applets(
+            self._creator_id, folder_id
+        )
+        return [Applet.from_orm(schema) for schema in schemas]
 
     async def set_applet_folder(self, schema: AppletFolder):
         if schema.folder_id:

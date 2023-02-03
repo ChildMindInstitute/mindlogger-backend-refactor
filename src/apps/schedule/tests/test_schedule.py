@@ -6,6 +6,7 @@ class TestSchedule(BaseTest):
 
     fixtures = [
         "users/fixtures/users.json",
+        "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
         "activities/fixtures/activities.json",
