@@ -17,7 +17,7 @@ async def folder_list(
     user=Depends(get_current_user),
 ) -> ResponseMulti[FolderPublic]:
     folders = await FolderService(user.id).list()
-    return ResponseMulti(results=[FolderPublic.from_orm(f) for f in folders])
+    return ResponseMulti(result=[FolderPublic.from_orm(f) for f in folders])
 
 
 async def folder_create(
