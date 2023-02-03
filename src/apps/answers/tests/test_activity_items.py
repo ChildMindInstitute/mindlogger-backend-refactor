@@ -25,6 +25,9 @@ class TestAnswerActivityItems(BaseTest):
     answer_activity_item_create_url = answer_activity_router.url_path_for(
         "answer_activity_item_create"
     )
+    answer_flow_item_create_url = answer_activity_router.url_path_for(
+        "answer_flow_item_create"
+    )
 
     @transaction.rollback
     async def test_answer_activity_items_create(self):
@@ -50,6 +53,21 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.post(
             self.answer_activity_item_create_url, data=create_data
+        )
+
+        assert response.status_code == 201, response.json()
+
+    @transaction.rollback
+    async def test_answer_flow_items_create(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        # TODO:
+        create_data = dict()
+
+        response = await self.client.post(
+            self.answer_flow_item_create_url, data=create_data
         )
 
         assert response.status_code == 201, response.json()
