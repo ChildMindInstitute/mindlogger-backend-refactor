@@ -74,5 +74,6 @@ settings = Settings(
         "schedule",
         "answers",
         "folders",
+        "answers",
     ],
 )

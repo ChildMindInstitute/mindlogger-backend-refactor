@@ -36,6 +36,7 @@ routers: Iterable[APIRouter] = (
     schedule.router,
     answers.router,
     folders.router,
+    answers.router,
 )
 
 # Declare your middlewares here
