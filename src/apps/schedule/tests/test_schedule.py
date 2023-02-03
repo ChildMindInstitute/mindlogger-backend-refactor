@@ -130,7 +130,7 @@ class TestSchedule(BaseTest):
         response = await self.client.get(self.schedule_url.format(applet_id=1))
 
         assert response.status_code == 200, response.json()
-        events = response.json()["results"]
+        events = response.json()["result"]
         assert len(events) == 0
 
         create_data = {
@@ -159,7 +159,7 @@ class TestSchedule(BaseTest):
         response = await self.client.get(self.schedule_url.format(applet_id=1))
 
         assert response.status_code == 200, response.json()
-        events = response.json()["results"]
+        events = response.json()["result"]
         assert len(events) == 1
 
     @transaction.rollback
