@@ -53,7 +53,7 @@ class TestReusableItem(BaseTest):
         res_data = response.json()
         assert response.status_code == 400, res_data
         assert (
-            res_data["results"][0]["message"]["en"]
+            res_data["result"][0]["message"]["en"]
             == "Reusable item choice already exist"
         )
 

@@ -170,7 +170,7 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 422, response.json()
         assert (
-            response.json()["results"][0]["message"]["en"]
+            response.json()["result"][0]["message"]["en"]
             == "Applet already exist."
         )
 
@@ -268,9 +268,9 @@ class TestApplet(BaseTest):
         response = await self.client.get(self.applet_list_url)
 
         assert response.status_code == 200
-        assert len(response.json()["results"]) == 2
-        assert response.json()["results"][0]["id"] == 1
-        assert response.json()["results"][1]["id"] == 2
+        assert len(response.json()["result"]) == 2
+        assert response.json()["result"][0]["id"] == 1
+        assert response.json()["result"][1]["id"] == 2
 
     @transaction.rollback
     async def test_applet_detail(self):
@@ -371,7 +371,7 @@ class TestApplet(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        versions = response.json()["results"]
+        versions = response.json()["result"]
         assert len(versions) == 1
         assert versions[0]["version"] == version
 
@@ -469,7 +469,7 @@ class TestApplet(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        versions = response.json()["results"]
+        versions = response.json()["result"]
         assert len(versions) == 1
         assert versions[0]["version"] == "1.0.1"
 
