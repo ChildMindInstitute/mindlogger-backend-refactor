@@ -69,7 +69,7 @@ class PasswordRecoveryService:
             "email": user.email,
             "expiration_minutes": exp,
             "link": (
-                f"{settings.service.urls.frontend.base}"
+                f"{settings.service.urls.frontend.web_base}"
                 f"/{settings.service.urls.frontend.password_recovery_send}"
                 f"/{password_recovery_info.key}"
             ),
