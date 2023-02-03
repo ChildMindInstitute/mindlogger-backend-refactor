@@ -171,7 +171,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 422, response.json()
         assert (
             response.json()["results"][0]["message"]["en"]
-            == "Applet already exist"
+            == "Applet already exist."
         )
 
     @transaction.rollback

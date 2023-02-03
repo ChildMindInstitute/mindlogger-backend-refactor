@@ -77,5 +77,6 @@ settings = Settings(
         "themes",
         "logs",
         "schedule",
+        "folders",
     ],
 )

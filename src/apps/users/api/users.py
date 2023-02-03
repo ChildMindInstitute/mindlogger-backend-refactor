@@ -3,7 +3,6 @@ from fastapi import Body, Depends
 from apps.authentication.deps import get_current_user
 from apps.authentication.services import AuthenticationService
 from apps.shared.domain.response import Response
-from apps.shared.errors import NoContentError
 from apps.users.crud import UsersCRUD
 from apps.users.domain import (
     PublicUser,
@@ -56,4 +55,3 @@ async def user_update(
 
 async def user_delete(user: User = Depends(get_current_user)) -> None:
     await UsersCRUD().delete(user)
-    raise NoContentError

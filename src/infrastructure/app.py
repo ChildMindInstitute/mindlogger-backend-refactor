@@ -7,6 +7,7 @@ from fastapi.routing import APIRouter
 import apps.activities.router as activities
 import apps.applets.router as applets
 import apps.authentication.router as auth
+import apps.folders.router as folders
 import apps.healthcheck.router as healthcheck
 import apps.invitations.router as invitations
 import apps.logs.router as logs
@@ -32,6 +33,7 @@ routers: Iterable[APIRouter] = (
     invitations.router,
     logs.router,
     schedule.router,
+    folders.router,
 )
 
 # Declare your middlewares here
