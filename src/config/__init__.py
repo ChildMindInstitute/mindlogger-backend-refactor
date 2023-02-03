@@ -73,5 +73,6 @@ settings = Settings(
         "logs",
         "schedule",
         "answers",
+        "folders",
     ],
 )

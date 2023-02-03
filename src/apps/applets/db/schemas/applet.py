@@ -32,6 +32,7 @@ class AppletSchema(_BaseAppletSchema, Base):
     creator_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
+    folder_id = Column(ForeignKey("folders.id", ondelete="RESTRICT"))
 
 
 class AppletHistorySchema(_BaseAppletSchema, Base):
