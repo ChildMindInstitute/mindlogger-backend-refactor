@@ -2,7 +2,7 @@ import json
 import uuid
 
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
-from apps.applets.domain import UserAppletAccess, UserAppletAccessCreate
+from apps.applets.domain import Role, UserAppletAccess, UserAppletAccessCreate
 from apps.applets.domain.applets.fetch import Applet
 from apps.invitations.domain import (
     Invitation,
@@ -109,10 +109,8 @@ class InvitationsService:
             "user_name": user.full_name,
             "applet": invitation.applet_id,
             "role": invitation.role,
-            "link": (
-                f"{settings.service.urls.frontend.base}"
-                f"/{settings.service.urls.frontend.invitation_send}"
-            ),
+            "key": key,
+            "link": self._get_invitation_url_by_role(invitation.role),
         }
         message = MessageSchema(
             recipients=[schema.email],
@@ -123,6 +121,13 @@ class InvitationsService:
         await service.send(message)
 
         return invitation
+
+    def _get_invitation_url_by_role(self, role: Role):
+        domain = settings.service.urls.frontend.web_base
+        # TODO: uncomment when it will be needed
+        # if Role.RESPONDENT != role:
+        #     domain = settings.service.urls.frontend.admin_base
+        return f"{domain}/{settings.service.urls.frontend.invitation_send}"
 
     async def approve(self, key: uuid.UUID) -> InviteApproveResponse:
         error: Exception = NotFoundError("No invitations found.")

@@ -4,7 +4,8 @@ from pydantic import BaseModel
 
 
 class FrontendUrlsSettings(BaseModel):
-    base: str = "frontend.com"
+    web_base: str = "web.frontend.com"
+    admin_base: str = "admin.frontend.com"
     invitation_send: str = "invite"
     password_recovery_send: str = "password-recovery"
 
