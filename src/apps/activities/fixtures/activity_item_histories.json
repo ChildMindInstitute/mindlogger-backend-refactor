@@ -1,0 +1,130 @@
+[
+  {
+    "table": "activity_item_histories",
+    "fields": {
+      "id": 1,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "activity_id": "1_1.0.0",
+      "question": {
+        "en": "Little interest or pleasure in doing things?",
+        "fr": "Peu dintérêt ou de plaisir à faire les choses ?"
+      },
+      "response_type": "choice",
+      "answers": [
+        "Not at all",
+        "Several days",
+        "More than half the days",
+        "Nearly every day"
+      ],
+      "color_palette": "",
+      "timer": 0,
+      "has_token_value": false,
+      "is_skippable": false,
+      "has_alert": false,
+      "has_score": false,
+      "is_random": false,
+      "is_able_to_move_to_previous": false,
+      "has_text_response": false,
+      "ordering": 1.0,
+      "id_version": "1_1.0.0"
+    }
+  },
+  {
+    "table": "activity_item_histories",
+    "fields": {
+      "id": 3,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "activity_id": "2_1.0.0",
+      "question": {
+        "en": "Little interest or pleasure in doing things?",
+        "fr": "Peu dintérêt ou de plaisir à faire les choses ?"
+      },
+      "response_type": "choice",
+      "answers": [
+        "Not at all",
+        "Several days",
+        "More than half the days",
+        "Nearly every day"
+      ],
+      "color_palette": "",
+      "timer": 0,
+      "has_token_value": false,
+      "is_skippable": false,
+      "has_alert": false,
+      "has_score": false,
+      "is_random": false,
+      "is_able_to_move_to_previous": false,
+      "has_text_response": false,
+      "ordering": 1.0,
+      "id_version": "3_1.0.0"
+    }
+  },
+  {
+    "table": "activity_item_histories",
+    "fields": {
+      "id": 11,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "activity_id": "3_1.0.0",
+      "question": {
+        "en": "Little interest or pleasure in doing things?",
+        "fr": "Peu dintérêt ou de plaisir à faire les choses ?"
+      },
+      "response_type": "choice",
+      "answers": [
+        "Not at all",
+        "Several days",
+        "More than half the days",
+        "Nearly every day"
+      ],
+      "color_palette": "",
+      "timer": 0,
+      "has_token_value": false,
+      "is_skippable": false,
+      "has_alert": false,
+      "has_score": false,
+      "is_random": false,
+      "is_able_to_move_to_previous": false,
+      "has_text_response": false,
+      "ordering": 1.0,
+      "id_version": "11_1.0.0"
+    }
+  },
+  {
+    "table": "activity_item_histories",
+    "fields": {
+      "id": 20,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "activity_id": "4_1.0.0",
+      "question": {
+        "en": "Little interest or pleasure in doing things?",
+        "fr": "Peu dintérêt ou de plaisir à faire les choses ?"
+      },
+      "response_type": "choice",
+      "answers": [
+        "Not at all",
+        "Several days",
+        "More than half the days",
+        "Nearly every day"
+      ],
+      "color_palette": "",
+      "timer": 0,
+      "has_token_value": false,
+      "is_skippable": false,
+      "has_alert": false,
+      "has_score": false,
+      "is_random": false,
+      "is_able_to_move_to_previous": false,
+      "has_text_response": false,
+      "ordering": 1.0,
+      "id_version": "20_1.0.0"
+    }
+  }
+]

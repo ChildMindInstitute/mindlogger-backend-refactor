@@ -1,8 +1,8 @@
 """add applet activity answer
 
-Revision ID: d0fab61b4d4e
-Revises: eb01de0a06f8
-Create Date: 2023-01-31 09:11:17.217808
+Revision ID: 936c2fcb6a4c
+Revises: 51379bc60800
+Create Date: 2023-02-02 16:49:14.550806
 
 """
 import sqlalchemy as sa
@@ -10,8 +10,8 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "d0fab61b4d4e"
-down_revision = "eb01de0a06f8"
+revision = "936c2fcb6a4c"
+down_revision = "51379bc60800"
 branch_labels = None
 depends_on = None
 
