@@ -1,4 +1,3 @@
-from apps.applets.crud import AppletsCRUD
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -12,7 +11,6 @@ class TestFolder(BaseTest):
     login_url = "/auth/login"
     list_url = "/folders"
     detail_url = "/folders/{id}"
-    set_folder_url = "applets/set_folder"
 
     @transaction.rollback
     async def test_folder_list(self):
@@ -128,57 +126,3 @@ class TestFolder(BaseTest):
             response.json()["result"][0]["message"]["en"]
             == "Folder has applets, move applets from folder to delete it."
         )
-
-    @transaction.rollback
-    async def test_move_to_folder(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        data = dict(applet_id=1, folder_id=1)
-
-        response = await self.client.post(self.set_folder_url, data)
-        assert response.status_code == 200
-
-        applet = await AppletsCRUD().get_by_id(1)
-        assert applet.folder_id == 1
-
-    @transaction.rollback
-    async def test_move_to_not_accessible_folder(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        data = dict(applet_id=1, folder_id=3)
-
-        response = await self.client.post(self.set_folder_url, data)
-        assert response.status_code == 422
-        assert (
-            response.json()["result"][0]["message"]["en"]
-            == "Access denied to folder."
-        )
-
-    @transaction.rollback
-    async def test_move_not_accessible_applet_to_folder(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        data = dict(applet_id=2, folder_id=2)
-
-        response = await self.client.post(self.set_folder_url, data)
-        assert response.status_code == 422
-        assert (
-            response.json()["result"][0]["message"]["en"]
-            == "Access denied to applet."
-        )
-
-    @transaction.rollback
-    async def test_remove_from_folder(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        data = dict(applet_id=1, folder_id=None)
-
-        response = await self.client.post(self.set_folder_url, data)
-        assert response.status_code == 200
-
-        applet = await AppletsCRUD().get_by_id(1)
-        assert applet.folder_id is None

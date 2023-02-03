@@ -34,6 +34,7 @@ __all__ = [
     "applet_list",
     "applet_delete",
     "applet_set_folder",
+    "folders_applet_get",
 ]
 
 
@@ -106,3 +107,12 @@ async def applet_set_folder(
     applet_folder: AppletFolder, user: User = Depends(get_current_user)
 ):
     await AppletService(user.id).set_applet_folder(applet_folder)
+
+
+async def folders_applet_get(
+    id_: int, user: User = Depends(get_current_user)
+) -> ResponseMulti[public_detail.Applet]:
+    applets = await AppletService(user.id).get_folder_applets(id_)
+    return ResponseMulti(
+        result=[public_detail.Applet.from_orm(applet) for applet in applets]
+    )

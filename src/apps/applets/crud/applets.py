@@ -1,12 +1,13 @@
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import distinct, select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
 from apps.applets import errors
 from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
+from apps.applets.domain import Role
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["AppletsCRUD"]
@@ -89,3 +90,23 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().one_or_none()
+
+    async def get_folder_applets(
+        self, owner_id: int, folder_id: int
+    ) -> list[AppletSchema]:
+        access_query: Query = select(
+            distinct(UserAppletAccessSchema.applet_id)
+        )
+        access_query = access_query.where(
+            UserAppletAccessSchema.user_id == owner_id
+        )
+        access_query = access_query.where(
+            UserAppletAccessSchema.role.in_([Role.ADMIN])
+        )
+
+        query: Query = select(AppletSchema)
+        query = query.where(AppletSchema.folder_id == folder_id)
+        query = query.where(AppletSchema.id.in_(access_query))
+
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
