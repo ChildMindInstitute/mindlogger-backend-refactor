@@ -1,6 +1,6 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
-from sqlalchemy.sql import select
+from sqlalchemy.sql import select, update
 
 from apps.schedule.db.schemas import (
     ActivityEventsSchema,
@@ -66,8 +66,24 @@ class EventCRUD(BaseCRUD[EventSchema]):
         """Return event instance."""
         query: Query = select(EventSchema)
         query = query.where(EventSchema.applet_id == applet_id)
+        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+
         result = await self._execute(query)
         return result.scalars().all()
+
+    async def delete_by_applet_id(self, applet_id: int) -> None:
+        """Delete all events by applet id."""
+        query: Query = update(EventSchema)
+        query = query.where(EventSchema.applet_id == applet_id)
+        query = query.values(is_deleted=True)
+        await self._execute(query)
+
+    async def delete_by_id(self, id: int) -> None:
+        """Delete event by event id."""
+        query: Query = update(EventSchema)
+        query = query.where(EventSchema.id == id)
+        query = query.values(is_deleted=True)
+        await self._execute(query)
 
 
 class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
@@ -96,6 +112,13 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         results: list[int] = result.scalars().all()
         return results
 
+    async def delete_all_by_event_ids(self, event_ids: list[int]):
+        """Delete all user events by event ids."""
+        query: Query = update(UserEventsSchema)
+        query = query.where(UserEventsSchema.event_id.in_(event_ids))
+        query = query.values(is_deleted=True)
+        await self._execute(query)
+
 
 class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
     schema_class = ActivityEventsSchema
@@ -123,6 +146,13 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         activity_id: int = result.scalars().one_or_none()
         return activity_id
 
+    async def delete_all_by_event_ids(self, event_ids: list[int]):
+        """Delete all activity events by event ids."""
+        query: Query = update(ActivityEventsSchema)
+        query = query.where(ActivityEventsSchema.event_id.in_(event_ids))
+        query = query.values(is_deleted=True)
+        await self._execute(query)
+
 
 class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
     schema_class = FlowEventsSchema
@@ -148,3 +178,10 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         result = await self._execute(query)
         flow_id: int = result.scalars().one_or_none()
         return flow_id
+
+    async def delete_all_by_event_ids(self, event_ids: list[int]):
+        """Delete all flow events by event ids."""
+        query: Query = update(FlowEventsSchema)
+        query = query.where(FlowEventsSchema.event_id.in_(event_ids))
+        query = query.values(is_deleted=True)
+        await self._execute(query)

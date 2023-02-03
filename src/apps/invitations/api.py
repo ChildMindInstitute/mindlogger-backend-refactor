@@ -25,7 +25,7 @@ async def invitations(
     invitations: list[Invitation] = await InvitationsService(user).fetch_all()
 
     return ResponseMulti[InvitationResponse](
-        results=[
+        result=[
             InvitationResponse(**invitation.dict())
             for invitation in invitations
         ]

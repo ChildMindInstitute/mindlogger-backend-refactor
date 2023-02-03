@@ -130,7 +130,7 @@ class TestSchedule(BaseTest):
         response = await self.client.get(self.schedule_url.format(applet_id=1))
 
         assert response.status_code == 200, response.json()
-        events = response.json()["results"]
+        events = response.json()["result"]
         assert len(events) == 0
 
         create_data = {
@@ -159,7 +159,7 @@ class TestSchedule(BaseTest):
         response = await self.client.get(self.schedule_url.format(applet_id=1))
 
         assert response.status_code == 200, response.json()
-        events = response.json()["results"]
+        events = response.json()["result"]
         assert len(events) == 1
 
     @transaction.rollback
@@ -204,3 +204,86 @@ class TestSchedule(BaseTest):
         assert response.status_code == 200, response.json()
         event = response.json()["result"]
         assert event["id"] == 1
+
+    @transaction.rollback
+    async def test_schedule_delete_all(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.delete(
+            self.schedule_url.format(applet_id=1)
+        )
+
+        assert response.status_code == 404
+
+        create_data = {
+            "start_time": "08:00:00",
+            "end_time": "09:00:00",
+            "all_day": False,
+            "access_before_schedule": True,
+            "one_time_completion": True,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "periodicity": {
+                "type": "MONTHLY",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "interval": 1,
+            },
+            "user_ids": [1, 2],
+            "activity_id": None,
+            "flow_id": 1,
+        }
+
+        response = await self.client.post(
+            self.schedule_url.format(applet_id=1), data=create_data
+        )
+
+        response = await self.client.delete(
+            self.schedule_url.format(applet_id=1)
+        )
+
+        assert response.status_code == 204
+
+    @transaction.rollback
+    async def test_schedule_delete_detail(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.delete(
+            self.schedule_detail_url.format(applet_id=1, event_id=1)
+        )
+
+        assert response.status_code == 404
+
+        create_data = {
+            "start_time": "08:00:00",
+            "end_time": "09:00:00",
+            "all_day": False,
+            "access_before_schedule": True,
+            "one_time_completion": True,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "periodicity": {
+                "type": "MONTHLY",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "interval": 1,
+            },
+            "user_ids": [1, 2],
+            "activity_id": None,
+            "flow_id": 1,
+        }
+
+        response = await self.client.post(
+            self.schedule_url.format(applet_id=1), data=create_data
+        )
+        event = response.json()["result"]
+
+        response = await self.client.delete(
+            self.schedule_detail_url.format(applet_id=1, event_id=event["id"])
+        )
+
+        assert response.status_code == 204
