@@ -7,6 +7,7 @@ __all__ = [
     "UserAppletAccessCreate",
     "UserAppletAccess",
     "PublicUserAppletAccess",
+    "UserAppletAccessItem",
 ]
 
 
@@ -24,6 +25,14 @@ class PublicUserAppletAccess(PublicModel):
     """Public UserAppletAccess data model."""
 
     id: PositiveInt
+    user_id: PositiveInt
+    applet_id: PositiveInt
+    role: Role
+
+
+class UserAppletAccessItem(InternalModel):
+    """This is an UserAppletAccess representation for internal needs."""
+
     user_id: PositiveInt
     applet_id: PositiveInt
     role: Role

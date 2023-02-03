@@ -21,7 +21,7 @@ from config import settings
 from infrastructure.cache import CacheNotFound
 
 oauth2_oauth = OAuth2PasswordBearer(
-    tokenUrl="/auth/docs", scheme_name="Bearer"
+    tokenUrl="/auth/openapi/", scheme_name="Bearer"
 )
 
 

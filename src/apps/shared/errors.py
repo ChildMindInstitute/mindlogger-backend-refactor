@@ -56,3 +56,10 @@ class NotFoundError(BaseError):
         super().__init__(
             message=message, status_code=status.HTTP_404_NOT_FOUND
         )
+
+
+class InternalServerError(BaseError):
+    def __init__(self, *_, message="Internal server error") -> None:
+        super().__init__(
+            message=message, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
