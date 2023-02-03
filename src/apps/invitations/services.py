@@ -1,3 +1,4 @@
+import base64
 import json
 import uuid
 
@@ -109,7 +110,7 @@ class InvitationsService:
             "user_name": user.full_name,
             "applet": invitation.applet_id,
             "role": invitation.role,
-            "key": key,
+            "key": invitation.key,
             "link": self._get_invitation_url_by_role(invitation.role),
         }
         message = MessageSchema(
