@@ -1,0 +1,59 @@
+[
+  {
+    "table": "applets",
+    "fields": {
+      "id": 1,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "display_name": "Applet 1",
+      "description": {
+        "en": "Patient Health Questionnaire"
+      },
+      "about": {
+        "en": "Patient Health Questionnaire"
+      },
+      "image": "",
+      "watermark": "",
+      "theme_id": null,
+      "version": "1.0.0",
+      "creator_id": 1,
+      "folder_id": 2,
+      "account_id": 1,
+      "report_server_ip": "",
+      "report_public_key": "",
+      "report_recipients": [],
+      "report_include_user_id": false,
+      "report_include_case_id": false,
+      "report_email_body": ""
+    }
+  },
+  {
+    "table": "applets",
+    "fields": {
+      "id": 2,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "display_name": "Applet 2",
+      "description": {
+        "en": "Patient Health Questionnaire"
+      },
+      "about": {
+        "en": "Patient Health Questionnaire"
+      },
+      "image": "",
+      "watermark": "",
+      "theme_id": null,
+      "version": "1.0.5",
+      "creator_id": 2,
+      "account_id": 2,
+      "report_server_ip": "",
+      "report_public_key": "",
+      "report_recipients": [],
+      "report_include_user_id": false,
+      "report_include_case_id": false,
+      "report_email_body": ""
+    }
+  }
+]
