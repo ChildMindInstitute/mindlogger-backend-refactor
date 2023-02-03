@@ -1,3 +1,5 @@
+import pytest
+
 from apps.answers.router import router as answer_activity_router
 from apps.applets.router import router as applet_router
 from apps.authentication.router import router as auth_router
@@ -13,11 +15,10 @@ class TestAnswerActivityItems(BaseTest):
         "applets/fixtures/applet_user_accesses.json",
         "applets/fixtures/applet_histories.json",
         "activities/fixtures/activities.json",
+        "activities/fixtures/activity_histories.json",
         "activities/fixtures/activity_items.json",
         "activities/fixtures/activity_item_histories.json",
-        "activities/fixtures/activity_histories.json",
         "activity_flows/fixtures/activity_flows.json",
-        "activity_flows/fixtures/activity_flow_items.json",
     ]
 
     login_url = auth_router.url_path_for("get_token")
@@ -29,7 +30,6 @@ class TestAnswerActivityItems(BaseTest):
 
     @transaction.rollback
     async def test_answer_activity_items_create(self):
-        # User respondent login
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )

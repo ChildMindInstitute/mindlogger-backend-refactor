@@ -31,7 +31,7 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "guid": "a5b3241d-388c-4a5a-a128-3b1a4ec12682",
-      "applet_id": "2_1.0.0",
+      "applet_id": "2_2.0.1",
       "name": "PHQ8",
       "description": {
         "en": "PHQ8",
@@ -55,7 +55,7 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "guid": "a5b3241d-388c-4a5a-a128-3b1a4ec12683",
-      "applet_id": "3_1.0.0",
+      "applet_id": "3_1.3.0",
       "name": "PHQ9",
       "description": {
         "en": "PHQ9",
@@ -79,7 +79,7 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "guid": "a5b3241d-388c-4a5a-a128-3b1a4ec12683",
-      "applet_id": "4_1.0.0",
+      "applet_id": "4_1.0.5",
       "name": "PHQ9",
       "description": {
         "en": "PHQ9",
