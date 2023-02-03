@@ -64,9 +64,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         schema: UserAppletAccessItem,
     ) -> UserAppletAccess | None:
         query: Query = select(self.schema_class).filter(
-            self.schema_class.user_id == schema.user_id
-            and self.schema_class.applet_id == schema.applet_id
-            and self.schema_class.role == schema.role
+            self.schema_class.user_id == schema.user_id,
+            self.schema_class.applet_id == schema.applet_id,
+            self.schema_class.role == schema.role,
         )
         result: Result = await self._execute(query)
 

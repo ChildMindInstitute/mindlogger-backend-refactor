@@ -1,5 +1,3 @@
-import pytest
-
 from apps.answers.router import router as answer_activity_router
 from apps.applets.router import router as applet_router
 from apps.authentication.router import router as auth_router
@@ -40,7 +38,7 @@ class TestAnswerActivityItems(BaseTest):
             activityId=1,
             answers=[
                 dict(
-                    activityItemIistoryId=1,
+                    activityItemHistoryId=1,
                     answer=dict(
                         additionalProp1="string",
                         additionalProp2="string",
