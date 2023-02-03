@@ -64,11 +64,6 @@ settings = Settings(
     #       to avoid overridding via environment variables
     root_dir=Path(__file__).parent.parent,
     apps_dir=Path(__file__).parent.parent / "apps",
-    service=ServiceSettings(
-        urls=ServiceUrlsSettings(
-            openapi="/openapi.json",
-        ),
-    ),
     migrations_apps=[
         "users",
         "applets",
