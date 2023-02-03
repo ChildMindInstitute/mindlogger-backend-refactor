@@ -72,5 +72,6 @@ settings = Settings(
         "themes",
         "logs",
         "schedule",
+        "answers",
     ],
 )

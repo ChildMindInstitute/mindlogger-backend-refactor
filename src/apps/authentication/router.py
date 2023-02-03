@@ -53,7 +53,7 @@ router.post(
 
 # Swagger authorizations
 router.post(
-    "/docs",
+    "/openapi",
     responses={
         status.HTTP_200_OK: {},
         **NO_CONTENT_ERROR_RESPONSES,
