@@ -21,6 +21,8 @@ class TestSchedule(BaseTest):
     schedule_url = applet_detail_url + "/events"
     schedule_detail_url = applet_detail_url + "/events/{event_id}"
 
+    count_url = "applets/{applet_id}/events/count"
+
     @transaction.rollback
     async def test_schedule_create_with_activity(self):
 
@@ -345,7 +347,34 @@ class TestSchedule(BaseTest):
         )
         event = response.json()["result"]
 
-        update_data = {
+        create_data["activity_id"] = 1
+        create_data["flow_id"] = None
+        create_data["user_ids"] = [
+            1,
+        ]
+
+        response = await self.client.put(
+            self.schedule_detail_url.format(applet_id=1, event_id=event["id"]),
+            data=create_data,
+        )
+        assert response.status_code == 200
+
+        event = response.json()["result"]
+
+        assert event["flowId"] == create_data["flow_id"]
+        assert event["userIds"] == create_data["user_ids"]
+        assert event["activityId"] == create_data["activity_id"]
+
+    @transaction.rollback
+    async def test_count(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(self.count_url.format(applet_id=1))
+        assert response.status_code == 200
+
+        create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
             "all_day": False,
@@ -364,8 +393,23 @@ class TestSchedule(BaseTest):
             "flow_id": 1,
         }
 
-        response = await self.client.put(
-            self.schedule_detail_url.format(applet_id=1, event_id=event["id"]),
-            data=update_data,
+        response = await self.client.post(
+            self.schedule_url.format(applet_id=1), data=create_data
         )
+
+        create_data["activity_id"] = 1
+        create_data["flow_id"] = None
+        response = await self.client.post(
+            self.schedule_url.format(applet_id=1), data=create_data
+        )
+
+        response = await self.client.get(
+            self.count_url.format(applet_id=1),
+        )
+
         assert response.status_code == 200
+
+        result = response.json()["result"]
+
+        assert result["activityEvents"][0]["count"] == 1
+        assert result["flowEvents"][0]["count"] == 1

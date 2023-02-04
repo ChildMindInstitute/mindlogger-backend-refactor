@@ -1,7 +1,9 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
-from sqlalchemy.sql import select, update
+from sqlalchemy.sql import and_, func, select, update
 
+from apps.activities.db.schemas import ActivitySchema
+from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.schedule.db.schemas import (
     ActivityEventsSchema,
     EventSchema,
@@ -18,6 +20,10 @@ from apps.schedule.domain.schedule.internal import (
     FlowEventCreate,
     UserEvent,
     UserEventCreate,
+)
+from apps.schedule.domain.schedule.public import (
+    ActivityEventCount,
+    FlowEventCount,
 )
 from apps.schedule.errors import (
     ActivityEventAlreadyExists,
@@ -164,6 +170,40 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         query = query.values(is_deleted=True)
         await self._execute(query)
 
+    async def count_by_applet(
+        self, applet_id: int
+    ) -> list[ActivityEventCount]:
+        """Return activity ids with event count."""
+
+        query: Query = select(
+            ActivitySchema.id,
+            func.count(*[ActivityEventsSchema.event_id]).label("count"),
+            ActivitySchema.name,
+        )
+        query = query.select_from(ActivitySchema)
+        query = query.join(
+            ActivityEventsSchema,
+            and_(
+                ActivitySchema.id == ActivityEventsSchema.activity_id,
+                ActivityEventsSchema.is_deleted == False,  # noqa: E712
+            ),
+            isouter=True,
+        )
+        query = query.filter(ActivitySchema.applet_id == applet_id)
+        query = query.group_by(ActivitySchema.applet_id, ActivitySchema.id)
+        result = await self._execute(query)
+
+        activity_event_counts: list[ActivityEventCount] = [
+            ActivityEventCount(
+                activity_id=activity_id,
+                count=count,
+                activity_name=name,
+            )
+            for activity_id, count, name in result
+        ]
+
+        return activity_event_counts
+
 
 class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
     schema_class = FlowEventsSchema
@@ -196,3 +236,39 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         query = query.where(FlowEventsSchema.event_id.in_(event_ids))
         query = query.values(is_deleted=True)
         await self._execute(query)
+
+    async def count_by_applet(self, applet_id: int) -> list[FlowEventCount]:
+        """Return flow ids with event count."""
+
+        query: Query = select(
+            ActivityFlowSchema.id,
+            func.count(*[FlowEventsSchema.id]).label("count"),
+            ActivityFlowSchema.name,
+        )
+        query = query.select_from(ActivityFlowSchema)
+
+        query = query.join(
+            FlowEventsSchema,
+            and_(
+                FlowEventsSchema.flow_id == ActivityFlowSchema.id,
+                FlowEventsSchema.is_deleted == False,  # noqa: E712
+            ),
+            isouter=True,
+        )
+        query = query.filter(ActivityFlowSchema.applet_id == applet_id)
+        query = query.group_by(
+            ActivityFlowSchema.applet_id, ActivityFlowSchema.id
+        )
+
+        result = await self._execute(query)
+
+        flow_event_counts: list[FlowEventCount] = [
+            FlowEventCount(
+                flow_id=flow_id,
+                count=count,
+                flow_name=name,
+            )
+            for flow_id, count, name in result
+        ]
+
+        return flow_event_counts
