@@ -1,7 +1,7 @@
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
-from apps.schedule.domain.schedule.public import PublicEvent
+from apps.schedule.domain.schedule.public import PublicEvent, PublicEventCount
 from apps.schedule.domain.schedule.requests import EventRequest
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.domain import Response, ResponseMulti
@@ -64,3 +64,14 @@ async def schedule_update(
         applet_id, schedule_id, schema
     )
     return Response(result=PublicEvent(**schedule.dict()))
+
+
+async def schedule_count(
+    applet_id: int,
+    user: User = Depends(get_current_user),
+) -> Response[PublicEventCount]:
+
+    count: PublicEventCount = await ScheduleService().count_schedules(
+        applet_id
+    )
+    return Response(result=count)

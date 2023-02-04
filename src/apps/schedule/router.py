@@ -1,6 +1,7 @@
 from fastapi.routing import APIRouter
 
 from apps.schedule.api.schedule import (
+    schedule_count,
     schedule_create,
     schedule_delete_all,
     schedule_delete_by_id,
@@ -13,6 +14,8 @@ router = APIRouter(prefix="/applets", tags=["Applets"])
 
 router.post("/{applet_id}/events", status_code=201)(schedule_create)
 router.get("/{applet_id}/events", status_code=200)(schedule_get_all)
+router.get("/{applet_id}/events/count", status_code=200)(schedule_count)
+
 router.get("/{applet_id}/events/{schedule_id}", status_code=200)(
     schedule_get_by_id
 )

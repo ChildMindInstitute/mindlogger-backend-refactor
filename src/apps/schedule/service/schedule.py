@@ -18,7 +18,11 @@ from apps.schedule.domain.schedule.internal import (
     Periodicity,
     UserEventCreate,
 )
-from apps.schedule.domain.schedule.public import PublicEvent, PublicPeriodicity
+from apps.schedule.domain.schedule.public import (
+    PublicEvent,
+    PublicEventCount,
+    PublicPeriodicity,
+)
 from apps.schedule.domain.schedule.requests import EventRequest
 from apps.shared.errors import NotFoundError
 
@@ -264,3 +268,24 @@ class ScheduleService:
             raise NotFoundError(
                 f"Activity or flow with id {schedule.activity_id or schedule.flow_id} not found inside applet {applet_id}"  # noqa: E501
             )
+
+    async def count_schedules(self, applet_id: int) -> PublicEventCount:
+
+        event_count = PublicEventCount(activity_events=[], flow_events=[])
+
+        # Get list of activity-event ids
+        activity_counts = await ActivityEventsCRUD().count_by_applet(
+            applet_id=applet_id
+        )
+
+        # Get list of flow-event ids
+        flow_counts = await FlowEventsCRUD().count_by_applet(
+            applet_id=applet_id
+        )
+
+        event_count.activity_events = (
+            activity_counts if activity_counts else []
+        )
+        event_count.flow_events = flow_counts if flow_counts else []
+
+        return event_count
