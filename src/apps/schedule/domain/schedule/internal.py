@@ -9,12 +9,21 @@ __all__ = [
     "UserEvent",
     "ActivityEvent",
     "FlowEvent",
+    "EventCreate",
+    "EventUpdate",
+    "UserEventCreate",
+    "ActivityEventCreate",
+    "FlowEventCreate",
 ]
 
 
 class EventCreate(BaseEvent, InternalModel):
     periodicity_id: PositiveInt
     applet_id: PositiveInt
+
+
+class EventUpdate(EventCreate):
+    pass
 
 
 class Event(EventCreate, InternalModel):

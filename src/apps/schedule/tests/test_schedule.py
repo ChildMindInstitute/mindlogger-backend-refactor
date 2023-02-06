@@ -287,3 +287,84 @@ class TestSchedule(BaseTest):
         )
 
         assert response.status_code == 204
+
+    @transaction.rollback
+    async def test_schedule_update(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = {
+            "start_time": "08:00:00",
+            "end_time": "09:00:00",
+            "all_day": False,
+            "access_before_schedule": True,
+            "one_time_completion": True,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "periodicity": {
+                "type": "MONTHLY",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "interval": 1,
+            },
+            "user_ids": [1, 2],
+            "activity_id": None,
+            "flow_id": 1,
+        }
+
+        response = await self.client.put(
+            self.schedule_detail_url.format(applet_id=1, event_id=1),
+            data=create_data,
+        )
+
+        assert response.status_code == 404
+
+        create_data = {
+            "start_time": "08:00:00",
+            "end_time": "09:00:00",
+            "all_day": False,
+            "access_before_schedule": True,
+            "one_time_completion": True,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "periodicity": {
+                "type": "MONTHLY",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "interval": 1,
+            },
+            "user_ids": [1, 2],
+            "activity_id": None,
+            "flow_id": 1,
+        }
+
+        response = await self.client.post(
+            self.schedule_url.format(applet_id=1), data=create_data
+        )
+        event = response.json()["result"]
+
+        update_data = {
+            "start_time": "08:00:00",
+            "end_time": "09:00:00",
+            "all_day": False,
+            "access_before_schedule": True,
+            "one_time_completion": True,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "periodicity": {
+                "type": "MONTHLY",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "interval": 1,
+            },
+            "user_ids": [1, 2],
+            "activity_id": None,
+            "flow_id": 1,
+        }
+
+        response = await self.client.put(
+            self.schedule_detail_url.format(applet_id=1, event_id=event["id"]),
+            data=update_data,
+        )
+        assert response.status_code == 200

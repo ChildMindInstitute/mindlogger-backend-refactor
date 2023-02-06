@@ -68,7 +68,10 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
-            "activity_id", "event_id", name="_unique_activity_events"
+            "activity_id",
+            "event_id",
+            "is_deleted",
+            name="_unique_activity_events",
         ),
     )
     op.create_table(
@@ -86,7 +89,9 @@ def upgrade() -> None:
             ["flow_id"], ["flows.id"], ondelete="RESTRICT"
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("flow_id", "event_id", name="_unique_flow_events"),
+        sa.UniqueConstraint(
+            "flow_id", "event_id", "is_deleted", name="_unique_flow_events"
+        ),
     )
     op.create_table(
         "user_events",
@@ -103,7 +108,9 @@ def upgrade() -> None:
             ["user_id"], ["users.id"], ondelete="RESTRICT"
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("user_id", "event_id", name="_unique_user_events"),
+        sa.UniqueConstraint(
+            "user_id", "event_id", "is_deleted", name="_unique_user_events"
+        ),
     )
     # ### end Alembic commands ###
 

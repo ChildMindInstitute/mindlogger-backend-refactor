@@ -13,6 +13,7 @@ from apps.schedule.domain.schedule.internal import (
     ActivityEventCreate,
     Event,
     EventCreate,
+    EventUpdate,
     FlowEventCreate,
     Periodicity,
     UserEventCreate,
@@ -31,32 +32,8 @@ class ScheduleService:
     async def create_schedule(
         self, schedule: EventRequest, applet_id: int
     ) -> PublicEvent:
-        # Check if user has access to applet
-        if schedule.user_ids:
-            for user_id in schedule.user_ids:
-                user_applet_access = await UserAppletAccessCRUD().get_by_applet_and_user_as_respondent(  # noqa: E501
-                    applet_id=applet_id, user_id=user_id
-                )
-                if not user_applet_access:
-                    raise NotFoundError(
-                        f"User {user_id} does not have access to applet {applet_id}"  # noqa: E501
-                    )
-
-        # Check if activity or flow exists inside applet
-        if schedule.activity_id:
-            activity_or_flow = (
-                await ActivitiesCRUD().get_by_applet_id_and_activity_id(
-                    applet_id=applet_id, activity_id=schedule.activity_id
-                )
-            )
-        if schedule.flow_id:
-            activity_or_flow = await FlowsCRUD().get_by_applet_id_and_flow_id(
-                applet_id=applet_id, flow_id=schedule.flow_id
-            )
-        if not activity_or_flow:
-            raise NotFoundError(
-                f"Activity or flow with id {schedule.activity_id or schedule.flow_id} not found inside applet {applet_id}"  # noqa: E501
-            )
+        # Validate schedule data before saving
+        await self._validate_schedule(applet_id=applet_id, schedule=schedule)
 
         # Create periodicity
         periodicity: Periodicity = await PeriodicityCRUD().save(
@@ -103,12 +80,6 @@ class ScheduleService:
             activity_id=schedule.activity_id,
             flow_id=schedule.flow_id,
         )
-
-    def update_schedule(self, schedule):
-        pass
-
-    def delete_schedule(self, schedule):
-        pass
 
     async def get_schedule_by_id(self, schedule_id: int) -> PublicEvent:
         event: Event = await EventCRUD().get_by_id(id=schedule_id)
@@ -197,3 +168,99 @@ class ScheduleService:
         await FlowEventsCRUD().delete_all_by_event_ids(event_ids=[schedule_id])
         await PeriodicityCRUD().delete_by_ids([periodicity_id])
         await EventCRUD().delete_by_id(id=schedule_id)
+
+    async def update_schedule(
+        self, applet_id: int, schedule_id: int, schedule: EventRequest
+    ) -> PublicEvent:
+        event: Event = await EventCRUD().get_by_id(id=schedule_id)
+        if not event:
+            raise NotFoundError(f"No schedule found with id {schedule_id}")
+
+        await self._validate_schedule(applet_id=applet_id, schedule=schedule)
+
+        # Update periodicity
+        periodicity: Periodicity = await PeriodicityCRUD().get_by_id(
+            event.periodicity_id
+        )
+        periodicity = await PeriodicityCRUD().update(
+            pk=periodicity.id, schema=schedule.periodicity
+        )
+
+        # Update event
+        event = await EventCRUD().update(
+            pk=schedule_id,
+            schema=EventUpdate(
+                start_time=schedule.start_time,
+                end_time=schedule.end_time,
+                all_day=schedule.all_day,
+                access_before_schedule=schedule.access_before_schedule,
+                one_time_completion=schedule.one_time_completion,
+                timer=schedule.timer,
+                timer_type=schedule.timer_type,
+                periodicity_id=periodicity.id,
+                applet_id=applet_id,
+            ),
+        )
+
+        # Update event-user
+        await UserEventsCRUD().delete_all_by_event_ids(event_ids=[schedule_id])
+        if schedule.user_ids:
+            for user_id in schedule.user_ids:
+                await UserEventsCRUD().save(
+                    UserEventCreate(event_id=event.id, user_id=user_id)
+                )
+
+        # Update event-activity or event-flow
+        await ActivityEventsCRUD().delete_all_by_event_ids(
+            event_ids=[schedule_id]
+        )
+        await FlowEventsCRUD().delete_all_by_event_ids(event_ids=[schedule_id])
+        if schedule.activity_id:
+            await ActivityEventsCRUD().save(
+                ActivityEventCreate(
+                    event_id=event.id, activity_id=schedule.activity_id
+                )
+            )
+        else:
+            await FlowEventsCRUD().save(
+                FlowEventCreate(event_id=event.id, flow_id=schedule.flow_id)
+            )
+
+        return PublicEvent(
+            **event.dict(),
+            periodicity=PublicPeriodicity(**periodicity.dict()),
+            user_ids=schedule.user_ids,
+            activity_id=schedule.activity_id,
+            flow_id=schedule.flow_id,
+        )
+
+    async def _validate_schedule(
+        self, applet_id: int, schedule: EventRequest
+    ) -> None:
+        """Validate schedule before saving it to the database."""
+        # Check if user has access to applet
+        if schedule.user_ids:
+            for user_id in schedule.user_ids:
+                user_applet_access = await UserAppletAccessCRUD().get_by_applet_and_user_as_respondent(  # noqa: E501
+                    applet_id=applet_id, user_id=user_id
+                )
+                if not user_applet_access:
+                    raise NotFoundError(
+                        f"User {user_id} does not have access to applet {applet_id}"  # noqa: E501
+                    )
+
+        # Check if activity or flow exists inside applet
+        if schedule.activity_id:
+            activity_or_flow = (
+                await ActivitiesCRUD().get_by_applet_id_and_activity_id(
+                    applet_id=applet_id, activity_id=schedule.activity_id
+                )
+            )
+        if schedule.flow_id:
+            activity_or_flow = await FlowsCRUD().get_by_applet_id_and_flow_id(
+                applet_id=applet_id, flow_id=schedule.flow_id
+            )
+        if not activity_or_flow:
+            raise NotFoundError(
+                f"Activity or flow with id {schedule.activity_id or schedule.flow_id} not found inside applet {applet_id}"  # noqa: E501
+            )
