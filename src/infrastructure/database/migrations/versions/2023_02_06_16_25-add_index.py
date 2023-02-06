@@ -1,16 +1,17 @@
 """add index
 
-Revision ID: 061411f53436
-Revises: eb01de0a06f8
-Create Date: 2023-01-31 10:47:01.946107
+Revision ID: 89a5b28c52ea
+Revises: 936c2fcb6a4c
+Create Date: 2023-02-06 16:25:57.489813
 
 """
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
+
 
 # revision identifiers, used by Alembic.
-revision = "061411f53436"
-down_revision = "eb01de0a06f8"
+revision = "89a5b28c52ea"
+down_revision = "936c2fcb6a4c"
 branch_labels = None
 depends_on = None
 

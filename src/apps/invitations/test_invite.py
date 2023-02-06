@@ -5,6 +5,7 @@ from apps.shared.test import BaseTest
 class TestInvite(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
+        "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
     ]
@@ -187,7 +188,7 @@ class TestInvite(BaseTest):
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 422
         assert (
-            response.json()["results"][0]["message"]["en"]
+            response.json()["result"][0]["message"]["en"]
             == "You do not have access to send invitation."
         )
 
@@ -201,6 +202,6 @@ class TestInvite(BaseTest):
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 422
         assert (
-            response.json()["results"][0]["message"]["en"]
+            response.json()["result"][0]["message"]["en"]
             == "You do not have access to send invitation."
         )

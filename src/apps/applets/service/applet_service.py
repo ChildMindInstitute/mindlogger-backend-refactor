@@ -1,12 +1,13 @@
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import AppletFolder
 from apps.applets.domain.applets.fetch import Applet
-from apps.applets.errors import AppletAccessDenied, AppletsFolderAccessDenied
-from apps.applets.errors import DoesNotHaveAccess
+from apps.applets.errors import AppletAccessDenied
+from apps.applets.errors import AppletsFolderAccessDenied
 from apps.applets.service.user_applet_access import UserAppletAccessService
 from apps.folders.crud import FolderCRUD
 
 __all__ = ["AppletService"]
+
 
 class AppletService:
     INITIAL_VERSION = "1.0.0"
@@ -40,9 +41,7 @@ class AppletService:
     async def _validate_delete_applet(self, user_id, applet_id):
         role = await UserAppletAccessService(user_id, applet_id).get_admins_role()
         if not role:
-            raise DoesNotHaveAccess(
-                message="You do not have access to delete applet."
-            )
+            raise AppletAccessDenied()
 
     async def get_folder_applets(self, folder_id: int) -> list[Applet]:
         schemas = await AppletsCRUD().get_folder_applets(
