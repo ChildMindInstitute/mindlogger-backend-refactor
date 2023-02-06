@@ -42,5 +42,16 @@
       "is_deleted": false
     },
     "note": "Password is Test1234"
+  },
+  {
+    "table": "users",
+    "fields": {
+      "id": 5,
+      "email": "patric@gmail.com",
+      "full_name": "Patric Davidson",
+      "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
+      "is_deleted": false
+    },
+    "note": "Password is Test1234"
   }
 ]

@@ -5,8 +5,26 @@ from apps.mailing.domain import MessageSchema
 from config import settings
 
 
+class TestMail:
+    """
+    Mailing class for tests to mock and check emails
+    """
+
+    mails: list[MessageSchema] = []
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    async def send_message(self, message: MessageSchema):
+        self.mails.insert(0, message)
+
+    @classmethod
+    def clear_mails(cls):
+        cls.mails = []
+
+
 class MailingService:
-    """A singleton realization of a Mailng service."""
+    """A singleton realization of a Mailing service."""
 
     _initialized = False
 
@@ -38,7 +56,10 @@ class MailingService:
         self._initialized = True
 
     async def send(self, message: MessageSchema) -> None:
-        fm = FastMail(self._connection)
+        mailing_class = FastMail
+        if settings.env == "testing":
+            mailing_class = TestMail
+        fm = mailing_class(self._connection)
         await fm.send_message(message)
 
     def get_template(self, path: str, **kwargs):

@@ -25,14 +25,11 @@ from apps.activity_flows.db.schemas import (
     ActivityFlowItemSchema,
     ActivityFlowSchema,
 )
-from apps.applets.crud import (
-    AppletHistoriesCRUD,
-    AppletsCRUD,
-    UserAppletAccessCRUD,
-)
+from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
 from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
-from apps.applets.domain import Role, UserAppletAccessCreate
 from apps.applets.domain.applets import fetch, update
+from apps.applets.errors import AppletAccessDenied
+from apps.applets.service import UserAppletAccessService
 from apps.shared.version import get_next_version
 
 
@@ -55,12 +52,10 @@ async def update_applet(
 
 
 async def _validate(user_id: int, applet_id: int):
-    accesses = await UserAppletAccessCRUD().get_by_admin_user_and_applet(
-        user_id, applet_id
-    )
-    if not accesses:
-        pass
     applet_schema = await AppletsCRUD().get_by_id(applet_id)
+    role = await UserAppletAccessService(user_id, applet_id).get_editors_role()
+    if not role:
+        raise AppletAccessDenied()
     return fetch.Applet.from_orm(applet_schema)
 
 
@@ -96,16 +91,6 @@ async def _update_applet(
     )
     applet = fetch.Applet.from_orm(schema)
     return applet
-
-
-async def _create_access(applet_id: int, user_id: int):
-    await UserAppletAccessCRUD().save(
-        schema=UserAppletAccessCreate(
-            user_id=user_id,
-            applet_id=applet_id,
-            role=Role.ADMIN,
-        )
-    )
 
 
 async def _create_activities(

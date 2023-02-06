@@ -2,6 +2,7 @@ from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import AppletFolder
 from apps.applets.domain.applets.fetch import Applet
 from apps.applets.errors import AppletAccessDenied, AppletsFolderAccessDenied
+from apps.applets.service.user_applet_access import UserAppletAccessService
 from apps.folders.crud import FolderCRUD
 
 __all__ = ["AppletService"]
@@ -10,6 +11,8 @@ __all__ = ["AppletService"]
 class AppletService:
     INITIAL_VERSION = "1.0.0"
     VERSION_DIFFERENCE = 1
+
+    # TODO: implement applet create/update logics here
 
     def __init__(self, creator_id: int):
         self._creator_id = creator_id
@@ -26,6 +29,20 @@ class AppletService:
         if int_version < int(self.INITIAL_VERSION.replace(".", "")):
             return self.INITIAL_VERSION
         return ".".join(list(str(int_version - self.VERSION_DIFFERENCE)))
+
+    async def exist_by_id(self, applet_id: int) -> bool:
+        return await AppletsCRUD().exist_by_id(applet_id)
+
+    async def delete_applet_by_id(self, applet_id: int):
+        await self._validate_delete_applet(self._creator_id, applet_id)
+        await AppletsCRUD().delete_by_id(applet_id)
+
+    async def _validate_delete_applet(self, user_id, applet_id):
+        role = await UserAppletAccessService(
+            user_id, applet_id
+        ).get_admins_role()
+        if not role:
+            raise AppletAccessDenied()
 
     async def get_folder_applets(self, folder_id: int) -> list[Applet]:
         schemas = await AppletsCRUD().get_folder_applets(

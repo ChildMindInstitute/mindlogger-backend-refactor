@@ -1,14 +1,16 @@
 import json
 import uuid
 
-from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
-from apps.applets.domain import Role, UserAppletAccess, UserAppletAccessCreate
+from apps.applets.crud import AppletsCRUD
+from apps.applets.domain import Role, UserAppletAccess
 from apps.applets.domain.applets.fetch import Applet
+from apps.applets.service import AppletService, UserAppletAccessService
 from apps.invitations.domain import (
     Invitation,
     InvitationRequest,
     InviteApproveResponse,
 )
+from apps.invitations.errors import AppletDoesNotExist, DoesNotHaveAccess
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.errors import NotFoundError
@@ -81,6 +83,8 @@ class InvitationsService:
         return [entry.instance for entry in cache_entries]
 
     async def send_invitation(self, schema: InvitationRequest) -> Invitation:
+        await self._validate_invitation(schema)
+
         # Create internal Invitation object
         invitation = Invitation(
             email=schema.email,
@@ -102,6 +106,8 @@ class InvitationsService:
         # Send email to the user
         service: MailingService = MailingService()
 
+        # FIXME: user is not mandatory, as invite can be
+        #  sent to non-registered user
         user: User = await UsersCRUD().get_by_email(schema.email)
 
         html_payload: dict = {
@@ -129,6 +135,48 @@ class InvitationsService:
         #     domain = settings.service.urls.frontend.admin_base
         return f"{domain}/{settings.service.urls.frontend.invitation_send}"
 
+    async def _validate_invitation(
+        self, invitation_request: InvitationRequest
+    ):
+        is_exist = await AppletService(self._user.id).exist_by_id(
+            invitation_request.applet_id
+        )
+        if not is_exist:
+            raise AppletDoesNotExist(
+                f"Applet by id {invitation_request.applet_id} does not exist."
+            )
+
+        access_service = UserAppletAccessService(
+            self._user.id, invitation_request.applet_id
+        )
+        if invitation_request.role == Role.RESPONDENT:
+            role = await access_service.get_respondent_managers_role()
+        elif invitation_request.role in [
+            Role.MANAGER,
+            Role.COORDINATOR,
+            Role.EDITOR,
+            Role.REVIEWER,
+        ]:
+            role = await access_service.get_organizers_role()
+        else:
+            # Wrong role to invite
+            raise DoesNotHaveAccess(
+                message="You can not invite user with "
+                f"role {invitation_request.role.name}."
+            )
+
+        if not role:
+            # Does not have access to send invitation
+            raise DoesNotHaveAccess(
+                message="You do not have access to send invitation."
+            )
+        elif Role(role) < Role(invitation_request.role):
+            # TODO: remove this validation if it is not needed
+            # Can not invite users by roles where own role level is lower.
+            raise DoesNotHaveAccess(
+                message="You do not have access to send invitation."
+            )
+
     async def approve(self, key: uuid.UUID) -> InviteApproveResponse:
         error: Exception = NotFoundError("No invitations found.")
 
@@ -146,15 +194,9 @@ class InvitationsService:
 
         applet = Applet.from_orm(applet_schema)
 
-        # Create a user_applet_access record
-        user_applet_access_create_schema = UserAppletAccessCreate(
-            user_id=self._user.id,
-            applet_id=cache_entry.instance.applet_id,
-            role=cache_entry.instance.role,
-        )
-        user_applet_access: UserAppletAccess = (
-            await UserAppletAccessCRUD().save(user_applet_access_create_schema)
-        )
+        user_applet_access: UserAppletAccess = await UserAppletAccessService(
+            self._user.id, cache_entry.instance.applet_id
+        ).add_role(cache_entry.instance.role)
 
         # Delete cache entry
         await self._cache.delete(email=self._user.email, key=key)

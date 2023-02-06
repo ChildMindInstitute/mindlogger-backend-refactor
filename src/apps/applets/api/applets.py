@@ -1,6 +1,5 @@
 from fastapi import Body, Depends
 
-from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import (
     AppletFolder,
     PublicAppletHistoryChange,
@@ -98,9 +97,8 @@ async def applet_list(
     return ResponseMulti(result=public_applets)
 
 
-# TODO: Restrict by permissions
 async def applet_delete(id_: int, user: User = Depends(get_current_user)):
-    await AppletsCRUD().delete_by_id(id_=id_)
+    await AppletService(user.id).delete_applet_by_id(id_)
 
 
 async def applet_set_folder(
