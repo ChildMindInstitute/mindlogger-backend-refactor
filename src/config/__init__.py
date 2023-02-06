@@ -10,7 +10,7 @@ from config.mailing import MailingSettings
 from config.notification import NotificationSettings
 from config.redis import RedisSettings
 from config.sentry import SentrySettings
-from config.service import ServiceSettings, ServiceUrlsSettings
+from config.service import ServiceSettings
 
 
 # NOTE: Settings powered by pydantic
