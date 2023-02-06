@@ -5,6 +5,7 @@ from infrastructure.database import transaction
 class TestApplet(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
+        "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
         "activities/fixtures/activities.json",
@@ -171,7 +172,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 422, response.json()
         assert (
             response.json()["result"][0]["message"]["en"]
-            == "Applet already exist"
+            == "Applet already exist."
         )
 
     @transaction.rollback

@@ -3,7 +3,6 @@ This module is responsible for describing shared errors
 that are handled on the middleware level.
 """
 
-
 from starlette import status
 
 from apps.shared.domain.response.errors import ErrorResponseType
@@ -22,13 +21,6 @@ class BaseError(Exception):
         self._type: ErrorResponseType = type_
 
         super().__init__(message)
-
-
-class NoContentError(BaseError):
-    def __init__(self, *_, message: str = "Operartion success") -> None:
-        super().__init__(
-            message=message, status_code=status.HTTP_204_NO_CONTENT
-        )
 
 
 class BadRequestError(BaseError):

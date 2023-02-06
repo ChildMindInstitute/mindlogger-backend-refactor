@@ -1,3 +1,4 @@
+from apps.applets.domain.applet_folder import *  # noqa: F401, F403
 from apps.applets.domain.applet_history import (  # noqa: F401, F403
     History,
     PublicHistory,

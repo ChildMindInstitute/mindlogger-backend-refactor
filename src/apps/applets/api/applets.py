@@ -1,11 +1,15 @@
 from fastapi import Body, Depends
 
 from apps.applets.crud import AppletsCRUD
-from apps.applets.domain import PublicAppletHistoryChange, PublicHistory
+from apps.applets.domain import (
+    AppletFolder,
+    PublicAppletHistoryChange,
+    PublicHistory,
+)
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.applets.create import AppletCreate
 from apps.applets.domain.applets.update import AppletUpdate
-from apps.applets.service import AppletHistoryService
+from apps.applets.service import AppletHistoryService, AppletService
 from apps.applets.service.applet import (
     create_applet,
     get_admin_applets,
@@ -18,7 +22,6 @@ from apps.applets.service.applet_history import (
 )
 from apps.authentication.deps import get_current_user
 from apps.shared.domain.response import Response, ResponseMulti
-from apps.shared.errors import NoContentError
 from apps.users.domain import User
 
 __all__ = [
@@ -30,6 +33,8 @@ __all__ = [
     "applet_version_changes_retrieve",
     "applet_list",
     "applet_delete",
+    "applet_set_folder",
+    "folders_applet_get",
 ]
 
 
@@ -96,4 +101,18 @@ async def applet_list(
 # TODO: Restrict by permissions
 async def applet_delete(id_: int, user: User = Depends(get_current_user)):
     await AppletsCRUD().delete_by_id(id_=id_)
-    raise NoContentError
+
+
+async def applet_set_folder(
+    applet_folder: AppletFolder, user: User = Depends(get_current_user)
+):
+    await AppletService(user.id).set_applet_folder(applet_folder)
+
+
+async def folders_applet_get(
+    id_: int, user: User = Depends(get_current_user)
+) -> ResponseMulti[public_detail.Applet]:
+    applets = await AppletService(user.id).get_folder_applets(id_)
+    return ResponseMulti(
+        result=[public_detail.Applet.from_orm(applet) for applet in applets]
+    )
