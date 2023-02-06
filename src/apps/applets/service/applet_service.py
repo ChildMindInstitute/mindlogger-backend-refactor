@@ -38,7 +38,7 @@ class AppletService:
         await AppletsCRUD().delete_by_id(applet_id)
 
     async def _validate_delete_applet(self, user_id, applet_id):
-        role = await UserAppletAccessService(user_id, applet_id).is_admin()
+        role = await UserAppletAccessService(user_id, applet_id).get_admins_role()
         if not role:
             raise DoesNotHaveAccess(
                 message="You do not have access to delete applet."

@@ -53,7 +53,7 @@ async def update_applet(
 
 async def _validate(user_id: int, applet_id: int):
     applet_schema = await AppletsCRUD().get_by_id(applet_id)
-    role = await UserAppletAccessService(user_id, applet_id).is_editor()
+    role = await UserAppletAccessService(user_id, applet_id).get_editors_role()
     if not role:
         raise DoesNotHaveAccess(message="Does not have access to edit applet.")
     return fetch.Applet.from_orm(applet_schema)

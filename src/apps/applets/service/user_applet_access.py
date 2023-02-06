@@ -27,7 +27,7 @@ class UserAppletAccessService:
             role=access_schema.role,
         )
 
-    async def is_admin(self) -> Role | None:
+    async def get_admins_role(self) -> Role | None:
         """
         Checks whether user is in admin group and returns role
 
@@ -40,7 +40,7 @@ class UserAppletAccessService:
         )
         return getattr(access, "role", None)
 
-    async def is_organizer(self) -> Role | None:
+    async def get_organizers_role(self) -> Role | None:
         """
         Checks whether user is in organizer group and returns role
 
@@ -54,7 +54,7 @@ class UserAppletAccessService:
         )
         return getattr(access, "role", None)
 
-    async def is_respondents_manager(self) -> Role | None:
+    async def get_respondent_managers_role(self) -> Role | None:
         """
         Checks whether user is in respondents manager group and returns role
 
@@ -72,7 +72,7 @@ class UserAppletAccessService:
         )
         return getattr(access, "role", None)
 
-    async def is_editor(self) -> Role | None:
+    async def get_editors_role(self) -> Role | None:
         """
         Checks whether user is in editor group and returns role
 
@@ -89,7 +89,7 @@ class UserAppletAccessService:
         )
         return getattr(access, "role", None)
 
-    async def is_reviewer(self):
+    async def get_reviewers_role(self):
         """
         Checks whether user is in reviewer group and returns role
 
@@ -102,7 +102,7 @@ class UserAppletAccessService:
         )
         return getattr(access, "role", None)
 
-    async def is_reviewer_for_respondent(self):
+    async def get_reviewer_for_respondent_role(self):
         """
         Checks whether user is in reviewer for
           respondent group and returns role
@@ -118,7 +118,7 @@ class UserAppletAccessService:
         )
         return getattr(access, "role", None)
 
-    async def is_respondent(self):
+    async def get_respondents_role(self):
         """
         Checks whether user is in respondent group and returns role
 

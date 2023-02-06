@@ -1,4 +1,5 @@
 from enum import Enum
+from functools import lru_cache
 
 
 class Role(str, Enum):
@@ -9,18 +10,11 @@ class Role(str, Enum):
     REVIEWER = "reviewer"
     RESPONDENT = "respondent"
 
-
-class RoleLevel(int, Enum):
-    ADMIN = 1  # the highest
-    MANAGER = 2
-    COORDINATOR = 3
-    EDITOR = 4
-    REVIEWER = 5
-    RESPONDENT = 6  # the lowest
-
     @classmethod
-    def by_role(cls, role: Role):
-        """
-        returns level by role, if not found return the lowest role
-        """
-        return cls._member_map_.get(role.name, 1000)
+    @lru_cache
+    def as_list(cls) -> list[str]:
+        return [role for role in cls]
+
+    def __lt__(self, other):
+        roles = self.as_list()
+        return roles.index(self) > roles.index(other)
