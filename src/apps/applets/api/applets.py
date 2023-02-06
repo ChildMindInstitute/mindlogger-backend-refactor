@@ -1,6 +1,5 @@
 from fastapi import Body, Depends
 
-from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import (
     AppletFolder,
     PublicAppletHistoryChange,

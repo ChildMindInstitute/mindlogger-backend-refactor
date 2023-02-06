@@ -6,7 +6,6 @@ from apps.applets.db.schemas import UserAppletAccessSchema
 from apps.applets.domain.constants import Role
 from apps.applets.domain.user_applet_access import (
     UserAppletAccess,
-    UserAppletAccessCreate,
     UserAppletAccessItem,
 )
 from apps.applets.errors import UserAppletAccessesNotFound

@@ -44,7 +44,7 @@ class InvitationsCache(BaseCacheService[Invitation]):
         return f"{email}:{key}"
 
     async def get(
-            self, email: str, key: uuid.UUID | str
+        self, email: str, key: uuid.UUID | str
     ) -> CacheEntry[Invitation]:
         cache_record: dict = await self._get(self.build_key(email, key))
 
@@ -136,7 +136,7 @@ class InvitationsService:
         return f"{domain}/{settings.service.urls.frontend.invitation_send}"
 
     async def _validate_invitation(
-            self, invitation_request: InvitationRequest
+        self, invitation_request: InvitationRequest
     ):
         is_exist = await AppletService(self._user.id).exist_by_id(
             invitation_request.applet_id
@@ -162,7 +162,7 @@ class InvitationsService:
             # Wrong role to invite
             raise DoesNotHaveAccess(
                 message="You can not invite user with "
-                        f"role {invitation_request.role.name}."
+                f"role {invitation_request.role.name}."
             )
 
         if not role:

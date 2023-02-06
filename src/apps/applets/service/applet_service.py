@@ -1,8 +1,7 @@
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import AppletFolder
 from apps.applets.domain.applets.fetch import Applet
-from apps.applets.errors import AppletAccessDenied
-from apps.applets.errors import AppletsFolderAccessDenied
+from apps.applets.errors import AppletAccessDenied, AppletsFolderAccessDenied
 from apps.applets.service.user_applet_access import UserAppletAccessService
 from apps.folders.crud import FolderCRUD
 
@@ -34,12 +33,14 @@ class AppletService:
     async def exist_by_id(self, applet_id: int) -> bool:
         return await AppletsCRUD().exist_by_id(applet_id)
 
-    async def delete_applet_by_id(self, user_id, applet_id: int):
-        await self._validate_delete_applet(user_id, applet_id)
+    async def delete_applet_by_id(self, applet_id: int):
+        await self._validate_delete_applet(self._creator_id, applet_id)
         await AppletsCRUD().delete_by_id(applet_id)
 
     async def _validate_delete_applet(self, user_id, applet_id):
-        role = await UserAppletAccessService(user_id, applet_id).get_admins_role()
+        role = await UserAppletAccessService(
+            user_id, applet_id
+        ).get_admins_role()
         if not role:
             raise AppletAccessDenied()
 

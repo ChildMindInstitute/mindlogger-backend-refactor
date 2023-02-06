@@ -34,7 +34,7 @@ from apps.shared.version import get_next_version
 
 
 async def update_applet(
-        applet_id: int, data: update.AppletUpdate, user_id: int
+    applet_id: int, data: update.AppletUpdate, user_id: int
 ) -> fetch.Applet:
     applet = await _validate(user_id, applet_id)
     await _delete_applet_items(applet_id)
@@ -67,7 +67,7 @@ async def _delete_applet_items(applet_id: int):
 
 
 async def _update_applet(
-        applet: fetch.Applet, update_data: update.AppletUpdate, user_id
+    applet: fetch.Applet, update_data: update.AppletUpdate, user_id
 ) -> fetch.Applet:
     schema = await AppletsCRUD().update_by_id(
         applet.id,
@@ -94,7 +94,7 @@ async def _update_applet(
 
 
 async def _create_activities(
-        applet: fetch.Applet, create_data: list[update.ActivityUpdate]
+    applet: fetch.Applet, create_data: list[update.ActivityUpdate]
 ) -> tuple[list[fetch.Activity], list[fetch.ActivityItem]]:
     activity_schemas: list[ActivitySchema] = []
     activity_item_schemas: list[ActivityItemSchema] = []
@@ -160,9 +160,9 @@ async def _create_activities(
 
 
 async def _create_flows(
-        applet: fetch.Applet,
-        activities: list[fetch.Activity],
-        create_data: list[update.ActivityFlowUpdate],
+    applet: fetch.Applet,
+    activities: list[fetch.Activity],
+    create_data: list[update.ActivityFlowUpdate],
 ) -> tuple[list[fetch.ActivityFlow], list[fetch.ActivityFlowItem]]:
     flow_schemas = []
     flow_item_schemas = []
@@ -210,13 +210,13 @@ async def _create_flows(
 
 
 async def _add_history(
-        creator_id: int,
-        account_id: int,
-        applet: fetch.Applet,
-        activities: list[fetch.Activity],
-        activity_items: list[fetch.ActivityItem],
-        flows: list[fetch.ActivityFlow],
-        flow_items: list[fetch.ActivityFlowItem],
+    creator_id: int,
+    account_id: int,
+    applet: fetch.Applet,
+    activities: list[fetch.Activity],
+    activity_items: list[fetch.ActivityItem],
+    flows: list[fetch.ActivityFlow],
+    flow_items: list[fetch.ActivityFlowItem],
 ):
     applet_id_version = f"{applet.id}_{applet.version}"
     await AppletHistoriesCRUD().save(
