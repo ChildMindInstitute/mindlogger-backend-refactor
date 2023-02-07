@@ -6,6 +6,7 @@ from apps.applets.api.applets import (
     applet_list,
     applet_retrieve,
     applet_set_folder,
+    applet_unique_name_get,
     applet_update,
     applet_version_changes_retrieve,
     applet_version_retrieve,
@@ -26,6 +27,7 @@ router.get("/{id_}/versions/{version}/changes")(
 
 router.post("", status_code=201)(applet_create)
 router.post("/set_folder", status_code=200)(applet_set_folder)
+router.post("/unique_name", status_code=200)(applet_unique_name_get)
 
 router.put("/{id_}", status_code=200)(applet_update)
 

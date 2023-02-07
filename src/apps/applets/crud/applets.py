@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import distinct, select, update
+from sqlalchemy import distinct, or_, select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
@@ -119,5 +119,25 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.where(AppletSchema.folder_id == folder_id)
         query = query.where(AppletSchema.id.in_(access_query))
 
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
+    async def get_name_duplicates(
+        self, user_id: int, name: str, exclude_applet_id: int | None = None
+    ) -> list[str]:
+        query: Query = select(distinct(AppletSchema.display_name))
+        query = query.join(
+            UserAppletAccessSchema,
+            UserAppletAccessSchema.applet_id == AppletSchema.id,
+        )
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        if exclude_applet_id:
+            query = query.where(AppletSchema.id != exclude_applet_id)
+        query = query.where(
+            or_(
+                AppletSchema.display_name.op("~")(f"{name} \\(\\d+\\)"),
+                AppletSchema.display_name == name,
+            )
+        )
         db_result = await self._execute(query)
         return db_result.scalars().all()
