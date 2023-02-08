@@ -18,6 +18,7 @@ class InternalModel(BaseModel):
         use_enum_values = True
         allow_population_by_field_name = True
         validate_assignment = True
+        alias_generator = to_camelcase
 
 
 class PublicModel(BaseModel):
