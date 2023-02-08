@@ -116,6 +116,7 @@ class InvitationsService:
             "applet": invitation.applet_id,
             "role": invitation.role,
             "key": invitation.key,
+            "email": invitation.email,
             "link": self._get_invitation_url_by_role(invitation.role),
         }
         message = MessageSchema(
