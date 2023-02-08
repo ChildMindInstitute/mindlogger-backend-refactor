@@ -1,5 +1,8 @@
+import re
+
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import AppletFolder
+from apps.applets.domain.applets.applet import AppletName
 from apps.applets.domain.applets.fetch import Applet
 from apps.applets.errors import AppletAccessDenied, AppletsFolderAccessDenied
 from apps.applets.service.user_applet_access import UserAppletAccessService
@@ -11,6 +14,7 @@ __all__ = ["AppletService"]
 class AppletService:
     INITIAL_VERSION = "1.0.0"
     VERSION_DIFFERENCE = 1
+    APPLET_NAME_FORMAT_FOR_DUPLICATES = "{0} ({1})"
 
     # TODO: implement applet create/update logics here
 
@@ -75,3 +79,26 @@ class AppletService:
 
         if folder.creator_id != self._creator_id:
             raise AppletsFolderAccessDenied()
+
+    async def get_unique_name(self, applet_name: AppletName) -> str:
+        duplicate_names = await AppletsCRUD().get_name_duplicates(
+            self._creator_id, applet_name.name, applet_name.exclude_applet_id
+        )
+        if not duplicate_names:
+            return applet_name.name
+
+        greatest_number = 0
+        for duplicate_name in duplicate_names:
+            number = self._get_latest_number(duplicate_name)
+            if number > greatest_number:
+                greatest_number = number
+
+        return self.APPLET_NAME_FORMAT_FOR_DUPLICATES.format(
+            applet_name.name, greatest_number + 1
+        )
+
+    def _get_latest_number(self, text) -> int:
+        numbers = re.findall("\\(\\d+\\)", text)
+        if numbers:
+            return int(numbers[-1][1:-1])
+        return 0

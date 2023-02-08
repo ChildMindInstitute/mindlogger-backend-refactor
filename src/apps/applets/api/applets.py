@@ -6,6 +6,7 @@ from apps.applets.domain import (
     PublicHistory,
 )
 from apps.applets.domain.applets import public_detail, public_history_detail
+from apps.applets.domain.applets.applet import AppletName, AppletUniqueName
 from apps.applets.domain.applets.create import AppletCreate
 from apps.applets.domain.applets.update import AppletUpdate
 from apps.applets.service import AppletHistoryService, AppletService
@@ -34,6 +35,7 @@ __all__ = [
     "applet_delete",
     "applet_set_folder",
     "folders_applet_get",
+    "applet_unique_name_get",
 ]
 
 
@@ -114,3 +116,10 @@ async def folders_applet_get(
     return ResponseMulti(
         result=[public_detail.Applet.from_orm(applet) for applet in applets]
     )
+
+
+async def applet_unique_name_get(
+    schema: AppletName = Body(...), user: User = Depends(get_current_user)
+) -> Response[AppletUniqueName]:
+    new_name = await AppletService(user.id).get_unique_name(schema)
+    return Response(result=AppletUniqueName(name=new_name))

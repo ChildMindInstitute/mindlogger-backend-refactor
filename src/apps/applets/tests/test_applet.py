@@ -16,7 +16,8 @@ class TestApplet(BaseTest):
 
     login_url = "/auth/login"
     applet_list_url = "applets"
-    applet_detail_url = "applets/{pk}"
+    applet_detail_url = f"{applet_list_url}/{{pk}}"
+    applet_unique_name_url = f"{applet_list_url}/unique_name"
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
@@ -648,3 +649,15 @@ class TestApplet(BaseTest):
             == "User daily behave is changed to user daily behave updated."
         )
         assert len(response.json()["result"]["activities"]) == 3
+
+    async def test_get_applet_unique_name(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.applet_unique_name_url, data=dict(name="Applet 1")
+        )
+
+        assert response.status_code == 200
+        assert response.json()["result"]["name"] == "Applet 1 (1)"
