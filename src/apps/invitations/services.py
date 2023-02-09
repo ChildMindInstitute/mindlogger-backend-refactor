@@ -82,6 +82,15 @@ class InvitationsService:
 
         return [entry.instance for entry in cache_entries]
 
+    async def get(self, key: str) -> Invitation | None:
+        cache_entry: CacheEntry[Invitation] = await self._cache.get(
+            self._user.email, key
+        )
+        if not cache_entry:
+            return None
+
+        return cache_entry.instance
+
     async def send_invitation(self, schema: InvitationRequest) -> Invitation:
         await self._validate_invitation(schema)
 

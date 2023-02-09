@@ -2,10 +2,11 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.invitations.api import (
-    approve_invite,
-    decline_invite,
-    invitations,
-    send_invitation,
+    invitation_approve,
+    invitation_decline,
+    invitation_list,
+    invitation_retrieve,
+    invitation_send,
 )
 from apps.invitations.domain import InvitationResponse, InviteApproveResponse
 from apps.shared.domain.response import (
@@ -25,7 +26,7 @@ router.get(
         status.HTTP_200_OK: {"model": ResponseMulti[InvitationResponse]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(invitations)
+)(invitation_list)
 
 # Invitation send
 router.post(
@@ -35,7 +36,7 @@ router.post(
         status.HTTP_200_OK: {"model": Response[InvitationResponse]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(send_invitation)
+)(invitation_send)
 
 # Approve invitation
 router.get(
@@ -45,7 +46,7 @@ router.get(
         status.HTTP_200_OK: {"model": Response[InviteApproveResponse]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(approve_invite)
+)(invitation_approve)
 
 # Decline invitation
 router.delete(
@@ -56,4 +57,13 @@ router.delete(
         **NO_CONTENT_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(decline_invite)
+)(invitation_decline)
+
+router.get(
+    "/{key}",
+    response_model=Response[InvitationResponse],
+    responses={
+        status.HTTP_200_OK: {"model": Response[InvitationResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(invitation_retrieve)

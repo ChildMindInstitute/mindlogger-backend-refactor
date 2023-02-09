@@ -1,5 +1,40 @@
+import datetime
+import json
+
+import pytest
+
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
+from infrastructure.utility import RedisCache
+
+
+@pytest.fixture
+async def create_cache_invitations():
+    cache = RedisCache()
+    invitations = {
+        "InvitationsCache:tom@mindlogger.com:6a3ab8e6-f2fa-49ae-b2db-197136677da6": dict(
+            instance=dict(
+                email="tom@mindlogger.com",
+                applet_id=1,
+                role="manager",
+                key="6a3ab8e6-f2fa-49ae-b2db-197136677da6",
+                invitor_id=1,
+            ),
+            created_at=datetime.datetime.now().isoformat(),
+        ),
+        "InvitationsCache:tom@mindlogger.com:6a3ab8e6-f2fa-49ae-b2db-197136677da7": dict(
+            instance=dict(
+                email="tom@mindlogger.com",
+                applet_id=1,
+                role="reviewer",
+                key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
+                invitor_id=1,
+            ),
+            created_at=datetime.datetime.now().isoformat(),
+        ),
+    }
+    for key, value in invitations.items():
+        await cache.set(key, json.dumps(value))
 
 
 class TestInvite(BaseTest):
@@ -11,8 +46,35 @@ class TestInvite(BaseTest):
     ]
 
     login_url = "/auth/login"
-    invite_url = "/invitations/invite"
-    approve_url = "/invitations/approve/{key}"
+    invitation_list = "/invitations"
+    invitation_detail = f"{invitation_list}/{{key}}"
+    invite_url = f"{invitation_list}/invite"
+    approve_url = f"{invitation_list}/approve/{{key}}"
+
+    async def test_invitation_list(self, create_cache_invitations):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(self.invitation_list)
+        assert response.status_code == 200
+
+        assert len(response.json()["result"]) == 2
+
+    async def test_invitation_retrieve(self, create_cache_invitations):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.invitation_detail.format(
+                key="6a3ab8e6-f2fa-49ae-b2db-197136677da6"
+            )
+        )
+        assert response.status_code == 200
+
+        assert response.json()["result"]["appletId"] == 1
+        assert response.json()["result"]["role"] == "manager"
 
     async def test_admin_invite_manager_success(self):
         await self.client.login(
