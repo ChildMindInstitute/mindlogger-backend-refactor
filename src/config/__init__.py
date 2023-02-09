@@ -75,5 +75,6 @@ settings = Settings(
         "answers",
         "folders",
         "answers",
+        "invitations",
     ],
 )

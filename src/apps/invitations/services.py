@@ -1,116 +1,61 @@
-import json
 import uuid
 
 from apps.applets.crud import AppletsCRUD
-from apps.applets.domain import Role, UserAppletAccess
-from apps.applets.domain.applets.fetch import Applet
+from apps.applets.domain import Role
 from apps.applets.service import AppletService, UserAppletAccessService
+from apps.invitations.constants import InvitationStatus
+from apps.invitations.crud import InvitationCRUD
+from apps.invitations.db import InvitationSchema
 from apps.invitations.domain import (
     Invitation,
+    InvitationDetail,
     InvitationRequest,
-    InviteApproveResponse,
 )
-from apps.invitations.errors import AppletDoesNotExist, DoesNotHaveAccess
+from apps.invitations.errors import (
+    AppletDoesNotExist,
+    DoesNotHaveAccess,
+    InvitationAlreadyProcesses,
+    InvitationDoesNotExist,
+)
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
-from apps.shared.errors import NotFoundError
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from config import settings
-from infrastructure.cache import BaseCacheService
-from infrastructure.cache.domain import CacheEntry
-from infrastructure.cache.errors import CacheNotFound
-
-
-class InvitationsCache(BaseCacheService[Invitation]):
-    """The concrete class that realized invitations cache engine.
-    In order to be able to save multiple invitations for a single user
-    the specific key builder is used.
-
-    The example of a key:
-        __classname__:john@email.com:fe46c05a-1790-4bea-8066-5e2572b4b413
-
-    __classname__ -- is taken from the parent class key builder
-    john@email.com -- user's email
-    fe46c05a-1790-4bea-8066-5e2572b4b413 -- invitaiton UUID
-
-    This strategy is taken in order to create unique pairs
-    that consist of user's email and unique invitation's identifier
-    """
-
-    def build_key(self, email: str, key: uuid.UUID | str) -> str:
-        """Returns a key with the additional namespace for this cache."""
-
-        return f"{email}:{key}"
-
-    async def get(
-        self, email: str, key: uuid.UUID | str
-    ) -> CacheEntry[Invitation]:
-        cache_record: dict = await self._get(self.build_key(email, key))
-
-        return CacheEntry[Invitation](**cache_record)
-
-    async def delete(self, email: str, key: uuid.UUID | str) -> None:
-        _key = self.build_key(email, key)
-        await self._delete(_key)
-
-    async def all(self, email: str) -> list[CacheEntry[Invitation]]:
-        # Create a key to fetch all records for
-        # the specific email prefix in a cache key
-        key = f"{email}:*"
-
-        # Fetch keys for retrieving
-        if not (keys := await self.redis_client.keys(self._build_key(key))):
-            raise CacheNotFound(f"There is no invitations for {email}")
-
-        results: list[bytes] = await self.redis_client.mget(keys)
-
-        return [
-            CacheEntry[Invitation](**json.loads(result)) for result in results
-        ]
 
 
 class InvitationsService:
     def __init__(self, user: User):
         self._user: User = user
-        self._cache: InvitationsCache = InvitationsCache()
 
-    async def fetch_all(self) -> list[Invitation]:
-        cache_entries: list[CacheEntry[Invitation]] = await self._cache.all(
-            email=self._user.email
+    async def fetch_all(self) -> list[InvitationDetail]:
+        return await InvitationCRUD().get_pending_by_invitor_id(self._user.id)
+
+    async def get(self, key: str) -> InvitationDetail | None:
+        return await InvitationCRUD().get_by_email_and_key(
+            self._user.email, uuid.UUID(key)
         )
 
-        return [entry.instance for entry in cache_entries]
-
-    async def get(self, key: str) -> Invitation | None:
-        cache_entry: CacheEntry[Invitation] = await self._cache.get(
-            self._user.email, key
-        )
-        if not cache_entry:
-            return None
-
-        return cache_entry.instance
-
-    async def send_invitation(self, schema: InvitationRequest) -> Invitation:
+    async def send_invitation(
+        self, schema: InvitationRequest
+    ) -> InvitationDetail:
         await self._validate_invitation(schema)
 
-        # Create internal Invitation object
-        invitation = Invitation(
-            email=schema.email,
-            applet_id=schema.applet_id,
-            role=schema.role,
-            # Generate random uuid base on recepient's email salt
-            key=uuid.uuid3(uuid.uuid4(), schema.email),
-            invitor_id=self._user.id,
+        invitation_schema = await InvitationCRUD().save(
+            InvitationSchema(
+                email=schema.email,
+                applet_id=schema.applet_id,
+                role=schema.role,
+                key=uuid.uuid3(uuid.uuid4(), schema.email),
+                invitor_id=self._user.id,
+                title=schema.title,
+                body=schema.body,
+                status=InvitationStatus.PENDING,
+            )
         )
 
-        # Build the cache key that consis of user's email and applet's id
-        key: str = self._cache.build_key(invitation.email, invitation.key)
-
-        # Save invitation to the cache
-        _: CacheEntry[Invitation] = await self._cache.set(
-            key=key, instance=invitation
-        )
+        invitation = Invitation.from_orm(invitation_schema)
+        applet = await AppletsCRUD().get_by_id(invitation.applet_id)
 
         # Send email to the user
         service: MailingService = MailingService()
@@ -122,10 +67,12 @@ class InvitationsService:
         html_payload: dict = {
             "coordinator_name": self._user.full_name,
             "user_name": user.full_name,
-            "applet": invitation.applet_id,
+            "applet": applet.display_name,
             "role": invitation.role,
             "key": invitation.key,
             "email": invitation.email,
+            "title": invitation.title,
+            "body": invitation.body,
             "link": self._get_invitation_url_by_role(invitation.role),
         }
         message = MessageSchema(
@@ -136,14 +83,25 @@ class InvitationsService:
 
         await service.send(message)
 
-        return invitation
+        return InvitationDetail(
+            id=invitation.id,
+            email=invitation.email,
+            applet_id=applet.id,
+            applet_name=applet.display_name,
+            role=invitation.role,
+            status=invitation.status,
+            key=invitation.key,
+            title=invitation.title,
+            body=invitation.body,
+        )
 
     def _get_invitation_url_by_role(self, role: Role):
         domain = settings.service.urls.frontend.web_base
+        url_path = settings.service.urls.frontend.invitation_send
         # TODO: uncomment when it will be needed
         # if Role.RESPONDENT != role:
         #     domain = settings.service.urls.frontend.admin_base
-        return f"{domain}/{settings.service.urls.frontend.invitation_send}"
+        return f"https://{domain}/{url_path}"
 
     async def _validate_invitation(
         self, invitation_request: InvitationRequest
@@ -187,45 +145,31 @@ class InvitationsService:
                 message="You do not have access to send invitation."
             )
 
-    async def approve(self, key: uuid.UUID) -> InviteApproveResponse:
-        error: Exception = NotFoundError("No invitations found.")
-
-        try:
-            cache_entry: CacheEntry[Invitation] = await self._cache.get(
-                self._user.email, key
-            )
-        except CacheNotFound:
-            raise error
-
-        # Get applet from the database
-        applet_schema = await AppletsCRUD().get_by_id(
-            cache_entry.instance.applet_id
+    async def approve(self, key: uuid.UUID):
+        invitation = await InvitationCRUD().get_by_email_and_key(
+            self._user.email, key
         )
+        if not invitation:
+            raise InvitationDoesNotExist()
 
-        applet = Applet.from_orm(applet_schema)
+        if invitation.status != InvitationStatus.PENDING:
+            raise InvitationAlreadyProcesses()
 
-        user_applet_access: UserAppletAccess = await UserAppletAccessService(
-            self._user.id, cache_entry.instance.applet_id
-        ).add_role(cache_entry.instance.role)
+        await UserAppletAccessService(
+            self._user.id, invitation.applet_id
+        ).add_role(invitation.role)
 
-        # Delete cache entry
-        await self._cache.delete(email=self._user.email, key=key)
-
-        return InviteApproveResponse(
-            applet=applet, role=user_applet_access.role
-        )
+        await InvitationCRUD().approve_by_id(invitation.id)
+        return
 
     async def decline(self, key: uuid.UUID):
-        error: Exception = NotFoundError("No invitations found.")
-
-        try:
-            cache_entry: CacheEntry[Invitation] = await self._cache.get(
-                self._user.email, key
-            )
-        except CacheNotFound:
-            raise error
-
-        # Delete cache entry
-        await self._cache.delete(
-            email=cache_entry.instance.email, key=cache_entry.instance.key
+        invitation = await InvitationCRUD().get_by_email_and_key(
+            self._user.email, key
         )
+        if not invitation:
+            raise InvitationDoesNotExist()
+
+        if invitation.status != InvitationStatus.PENDING:
+            raise InvitationAlreadyProcesses()
+
+        await InvitationCRUD().decline_by_id(invitation.id)

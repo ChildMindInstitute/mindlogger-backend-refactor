@@ -3,8 +3,12 @@ from uuid import UUID
 from pydantic import EmailStr
 
 from apps.applets.domain import Role
-from apps.applets.domain.applets.fetch import Applet
 from apps.shared.domain import InternalModel, PublicModel
+
+
+class Applet(PublicModel):
+    id: int
+    display_name: str
 
 
 class InvitationRequest(InternalModel):
@@ -15,16 +19,34 @@ class InvitationRequest(InternalModel):
     email: EmailStr
     applet_id: int
     role: Role = Role.RESPONDENT
+    title: str | None
+    body: str | None
 
 
 class Invitation(InternalModel):
     """This is an invitation representation for internal needs."""
 
+    id: int
     email: EmailStr
     applet_id: int
     role: Role
     key: UUID
+    status: str
     invitor_id: int
+    title: str | None
+    body: str | None
+
+
+class InvitationDetail(InternalModel):
+    id: int
+    email: EmailStr
+    applet_id: int
+    status: str
+    applet_name: str
+    role: Role
+    key: UUID
+    title: str | None
+    body: str | None
 
 
 class InvitationResponse(PublicModel):
@@ -32,12 +54,9 @@ class InvitationResponse(PublicModel):
 
     email: EmailStr
     applet_id: int
+    applet_name: str
     role: Role
     key: UUID
-
-
-class InviteApproveResponse(PublicModel):
-    """This model is returned on the applet invitation approval."""
-
-    applet: Applet
-    role: Role
+    status: str
+    title: str | None
+    body: str | None

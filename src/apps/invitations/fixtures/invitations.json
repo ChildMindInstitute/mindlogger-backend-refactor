@@ -1,0 +1,36 @@
+[
+  {
+    "table": "invitations",
+    "fields": {
+      "id": 1,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "email": "tom@mindlogger.com",
+      "applet_id": 1,
+      "role": "manager",
+      "key": "6a3ab8e6-f2fa-49ae-b2db-197136677da6",
+      "invitor_id": 1,
+      "title": "Some title",
+      "body": "Some body",
+      "status": "pending"
+    }
+  },
+  {
+    "table": "invitations",
+    "fields": {
+      "id": 2,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "email": "tom@mindlogger.com",
+      "applet_id": 1,
+      "role": "reviewer",
+      "key": "6a3ab8e6-f2fa-49ae-b2db-197136677da7",
+      "invitor_id": 1,
+      "title": null,
+      "body": null,
+      "status": "pending"
+    }
+  }
+]

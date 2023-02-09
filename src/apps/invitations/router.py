@@ -8,10 +8,9 @@ from apps.invitations.api import (
     invitation_retrieve,
     invitation_send,
 )
-from apps.invitations.domain import InvitationResponse, InviteApproveResponse
+from apps.invitations.domain import InvitationResponse
 from apps.shared.domain.response import (
     DEFAULT_OPENAPI_RESPONSE,
-    NO_CONTENT_ERROR_RESPONSES,
     Response,
     ResponseMulti,
 )
@@ -39,24 +38,13 @@ router.post(
 )(invitation_send)
 
 # Approve invitation
-router.get(
+router.post(
     "/approve/{key}",
-    response_model=Response[InviteApproveResponse],
-    responses={
-        status.HTTP_200_OK: {"model": Response[InviteApproveResponse]},
-        **DEFAULT_OPENAPI_RESPONSE,
-    },
 )(invitation_approve)
 
 # Decline invitation
-router.delete(
+router.post(
     "/decline/{key}",
-    response_model=None,
-    responses={
-        status.HTTP_200_OK: {},
-        **NO_CONTENT_ERROR_RESPONSES,
-        **DEFAULT_OPENAPI_RESPONSE,
-    },
 )(invitation_decline)
 
 router.get(
