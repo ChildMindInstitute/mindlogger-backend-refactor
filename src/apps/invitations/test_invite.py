@@ -12,7 +12,8 @@ from infrastructure.utility import RedisCache
 async def create_cache_invitations():
     cache = RedisCache()
     invitations = {
-        "InvitationsCache:tom@mindlogger.com:6a3ab8e6-f2fa-49ae-b2db-197136677da6": dict(
+        "InvitationsCache:tom@mindlogger.com:"
+        "6a3ab8e6-f2fa-49ae-b2db-197136677da6": dict(
             instance=dict(
                 email="tom@mindlogger.com",
                 applet_id=1,
@@ -22,7 +23,8 @@ async def create_cache_invitations():
             ),
             created_at=datetime.datetime.now().isoformat(),
         ),
-        "InvitationsCache:tom@mindlogger.com:6a3ab8e6-f2fa-49ae-b2db-197136677da7": dict(
+        "InvitationsCache:tom@mindlogger.com:"
+        "6a3ab8e6-f2fa-49ae-b2db-197136677da7": dict(
             instance=dict(
                 email="tom@mindlogger.com",
                 applet_id=1,
