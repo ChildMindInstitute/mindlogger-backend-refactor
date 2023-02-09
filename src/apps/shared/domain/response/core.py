@@ -15,4 +15,4 @@ class ResponseMulti(PublicModel, GenericModel, Generic[_BaseModel]):
 class Response(PublicModel, GenericModel, Generic[_BaseModel]):
     """Generic response model that consist only one result."""
 
-    result: _BaseModel
+    result: _BaseModel | None

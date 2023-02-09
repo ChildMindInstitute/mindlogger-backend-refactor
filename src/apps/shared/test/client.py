@@ -26,7 +26,7 @@ class TestClient:
     def _get_body(data: dict | None = None):
         if data:
             return json.dumps(data)
-        return {}
+        return None
 
     async def post(
         self,

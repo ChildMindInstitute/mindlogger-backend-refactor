@@ -65,7 +65,10 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         self, user_id_: int, roles: list[str]
     ) -> list[AppletSchema]:
         query = select(AppletSchema)
-        query = query.join(UserAppletAccessSchema, UserAppletAccessSchema.applet_id == AppletSchema.id)
+        query = query.join(
+            UserAppletAccessSchema,
+            UserAppletAccessSchema.applet_id == AppletSchema.id,
+        )
         query = query.where(UserAppletAccessSchema.user_id == user_id_)
         query = query.where(UserAppletAccessSchema.role.in_(roles))
         query = query.order_by(AppletSchema.id)

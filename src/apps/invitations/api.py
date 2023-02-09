@@ -1,14 +1,14 @@
 from uuid import UUID
 
 from fastapi import Body, Depends
+from fastapi import Response as FastApiResponse
+from fastapi import status
 
-from apps.applets.crud import AppletsCRUD
 from apps.authentication.deps import get_current_user
 from apps.invitations.domain import (
-    Invitation,
+    InvitationDetail,
     InvitationRequest,
     InvitationResponse,
-    InviteApproveResponse,
 )
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
@@ -20,7 +20,9 @@ async def invitation_list(
 ) -> ResponseMulti[InvitationResponse]:
     """Fetch all invitations for the specific user."""
 
-    invitations: list[Invitation] = await InvitationsService(user).fetch_all()
+    invitations: list[InvitationDetail] = await InvitationsService(
+        user
+    ).fetch_all()
 
     return ResponseMulti[InvitationResponse](
         result=[
@@ -32,10 +34,14 @@ async def invitation_list(
 
 async def invitation_retrieve(
     key: str,
+    response: FastApiResponse,
     user: User = Depends(get_current_user),
 ) -> Response[InvitationResponse]:
     invitation = await InvitationsService(user).get(key)
-    return Response(result=invitation)
+    if not invitation:
+        response.status_code = status.HTTP_204_NO_CONTENT
+        return Response(result=None)
+    return Response(result=InvitationResponse.from_orm(invitation))
 
 
 async def invitation_send(
@@ -46,14 +52,10 @@ async def invitation_send(
     for the concrete user giving him a role.
     """
 
-    # TODO: Replace with `await BaseCRUD().exists()`
-    # Check if applet exists in the database
-    await AppletsCRUD().get_by_id(invitation_schema.applet_id)
-
     # Send the invitation using the internal Invitation service
-    invitation: Invitation = await InvitationsService(user).send_invitation(
-        invitation_schema
-    )
+    invitation: InvitationDetail = await InvitationsService(
+        user
+    ).send_invitation(invitation_schema)
 
     return Response[InvitationResponse](
         result=InvitationResponse(**invitation.dict())
@@ -62,19 +64,13 @@ async def invitation_send(
 
 async def invitation_approve(
     key: UUID, user: User = Depends(get_current_user)
-) -> Response[InviteApproveResponse]:
+):
     """General endpoint to approve the applet invitation."""
-
-    # Approve the invitaiton for the specific applet
-    # if data exists tokens are not expired
-    result: InviteApproveResponse = await InvitationsService(user).approve(key)
-
-    return Response[InviteApproveResponse](result=result)
+    await InvitationsService(user).approve(key)
 
 
 async def invitation_decline(
     key: UUID, user: User = Depends(get_current_user)
 ):
     """General endpoint to decline the applet invitation."""
-
     await InvitationsService(user).decline(key)
