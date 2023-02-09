@@ -15,7 +15,7 @@ from apps.shared.domain import Response, ResponseMulti
 from apps.users.domain import User
 
 
-async def invitations(
+async def invitation_list(
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[InvitationResponse]:
     """Fetch all invitations for the specific user."""
@@ -30,7 +30,15 @@ async def invitations(
     )
 
 
-async def send_invitation(
+async def invitation_retrieve(
+    key: str,
+    user: User = Depends(get_current_user),
+) -> Response[InvitationResponse]:
+    invitation = await InvitationsService(user).get(key)
+    return Response(result=invitation)
+
+
+async def invitation_send(
     user: User = Depends(get_current_user),
     invitation_schema: InvitationRequest = Body(...),
 ) -> Response[InvitationResponse]:
@@ -52,7 +60,7 @@ async def send_invitation(
     )
 
 
-async def approve_invite(
+async def invitation_approve(
     key: UUID, user: User = Depends(get_current_user)
 ) -> Response[InviteApproveResponse]:
     """General endpoint to approve the applet invitation."""
@@ -64,7 +72,9 @@ async def approve_invite(
     return Response[InviteApproveResponse](result=result)
 
 
-async def decline_invite(key: UUID, user: User = Depends(get_current_user)):
+async def invitation_decline(
+    key: UUID, user: User = Depends(get_current_user)
+):
     """General endpoint to decline the applet invitation."""
 
     await InvitationsService(user).decline(key)

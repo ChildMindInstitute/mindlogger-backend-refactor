@@ -36,9 +36,10 @@ class _Cache:
     async def keys(self, pattern: str | None = None) -> list[str]:
         if pattern is None:
             pattern = ".+"
-        keys = list(self._storage.keys())
         filtered_keys = []
-        for key in keys:
+        for key, [_, expire] in self._storage.items():
+            if expire and expire < datetime.datetime.now():
+                continue
             is_match = re.match(pattern, key)
             if is_match:
                 filtered_keys.append(key)
@@ -47,7 +48,9 @@ class _Cache:
     async def mget(self, keys) -> list[typing.Any]:
         results = []
         for key in keys:
-            results.append(self._storage.get(key))
+            result, expire = self._storage.get(key, [None, None])
+            if expire > datetime.datetime.now():
+                results.append(result)
         return results
 
 
