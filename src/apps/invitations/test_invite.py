@@ -255,7 +255,6 @@ class TestInvite(BaseTest):
             == "You do not have access to send invitation."
         )
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_invitation_approve(self):
         await self.client.login(
@@ -272,7 +271,6 @@ class TestInvite(BaseTest):
         )
         assert invitation.status == InvitationStatus.APPROVED
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_invitation_approve_wrong(self):
         await self.client.login(
@@ -284,7 +282,6 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 422
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_invitation_decline(self):
         await self.client.login(
@@ -301,7 +298,6 @@ class TestInvite(BaseTest):
         )
         assert invitation.status == InvitationStatus.DECLINED
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_invitation_decline_wrong(self):
         await self.client.login(
