@@ -1,18 +1,18 @@
 from pydantic import root_validator
 
 from apps.schedule.domain.schedule.base import BaseEvent, BasePeriodicity
-from apps.shared.domain import InternalModel
+from apps.shared.domain import PublicModel
 
 __all__ = ["EventRequest", "PeriodicityRequest"]
 
 
-class PeriodicityRequest(BasePeriodicity, InternalModel):
+class PeriodicityRequest(BasePeriodicity, PublicModel):
     pass
 
 
-class EventRequest(BaseEvent, InternalModel):
+class EventRequest(BaseEvent, PublicModel):
     periodicity: PeriodicityRequest
-    user_ids: list[int] | None
+    user_id: int | None
     activity_id: int | None
     flow_id: int | None
 

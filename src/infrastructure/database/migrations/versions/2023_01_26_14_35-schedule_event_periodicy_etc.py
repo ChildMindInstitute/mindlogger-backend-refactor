@@ -45,7 +45,7 @@ def upgrade() -> None:
         sa.Column("timer_type", sa.String(length=10), nullable=False),
         sa.Column("applet_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
-            ["applet_id"], ["applets.id"], ondelete="RESTRICT"
+            ["applet_id"], ["applets.id"], ondelete="CASCADE"
         ),
         sa.ForeignKeyConstraint(
             ["periodicity_id"], ["periodicity.id"], ondelete="RESTRICT"
@@ -61,10 +61,10 @@ def upgrade() -> None:
         sa.Column("activity_id", sa.Integer(), nullable=False),
         sa.Column("event_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
-            ["activity_id"], ["activities.id"], ondelete="RESTRICT"
+            ["activity_id"], ["activities.id"], ondelete="NO ACTION"
         ),
         sa.ForeignKeyConstraint(
-            ["event_id"], ["events.id"], ondelete="RESTRICT"
+            ["event_id"], ["events.id"], ondelete="CASCADE"
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
@@ -83,10 +83,10 @@ def upgrade() -> None:
         sa.Column("flow_id", sa.Integer(), nullable=False),
         sa.Column("event_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
-            ["event_id"], ["events.id"], ondelete="RESTRICT"
+            ["event_id"], ["events.id"], ondelete="CASCADE"
         ),
         sa.ForeignKeyConstraint(
-            ["flow_id"], ["flows.id"], ondelete="RESTRICT"
+            ["flow_id"], ["flows.id"], ondelete="NO ACTION"
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
@@ -102,7 +102,7 @@ def upgrade() -> None:
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("event_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
-            ["event_id"], ["events.id"], ondelete="RESTRICT"
+            ["event_id"], ["events.id"], ondelete="CASCADE"
         ),
         sa.ForeignKeyConstraint(
             ["user_id"], ["users.id"], ondelete="RESTRICT"

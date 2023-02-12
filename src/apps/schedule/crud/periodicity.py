@@ -21,10 +21,10 @@ class PeriodicityCRUD(BaseCRUD[PeriodicitySchema]):
         periodicity: Periodicity = Periodicity.from_orm(instance)
         return periodicity
 
-    async def get_by_id(self, id: int) -> Periodicity:
+    async def get_by_id(self, pk: int) -> Periodicity:
         """Return periodicity instance."""
 
-        if not (instance := await self._get("id", id)):
+        if not (instance := await self._get("id", pk)):
             raise PeriodicityNotFoundError(key="id", value=str(id))
 
         periodicity: Periodicity = Periodicity.from_orm(instance)

@@ -30,6 +30,7 @@ from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.applets.domain import Role
 from apps.applets.domain.applets import create, fetch
 from apps.applets.service import UserAppletAccessService
+from apps.schedule.service import ScheduleService
 from apps.shared.version import get_next_version
 
 
@@ -128,6 +129,10 @@ async def _create_activities(
 
     activity_schemas = await ActivitiesCRUD().create_many(activity_schemas)
     activities = []
+    activity_ids = [activity_schema.id for activity_schema in activity_schemas]
+    await ScheduleService().create_default_schedules(
+        applet_id=applet.id, activity_ids=activity_ids, is_activity=True
+    )
 
     for activity_schema in activity_schemas:
         activities.append(fetch.Activity.from_orm(activity_schema))
@@ -178,7 +183,10 @@ async def _create_flows(
             flow_to_items_map[flow_guid].append(flow_item_schema)
 
     flow_schemas = await FlowsCRUD().create_many(flow_schemas)
-
+    flow_ids = [flow_schema.id for flow_schema in flow_schemas]
+    await ScheduleService().create_default_schedules(
+        applet_id=applet.id, activity_ids=flow_ids, is_activity=False
+    )
     flows = []
     for flow_schema in flow_schemas:
         flows.append(fetch.ActivityFlow.from_orm(flow_schema))
