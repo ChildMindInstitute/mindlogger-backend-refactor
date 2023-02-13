@@ -18,7 +18,7 @@ from apps.users.domain import User
 async def create_theme(
     user: User = Depends(get_current_user),
     schema: ThemeRequest = Body(...),
-) -> Response[Theme]:
+) -> Response[PublicTheme]:
     theme: Theme = await ThemesCRUD().save(
         schema=ThemeCreate(
             **schema.dict(), public=False, allow_rename=False, creator=user.id

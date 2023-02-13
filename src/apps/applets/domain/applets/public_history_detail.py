@@ -55,7 +55,7 @@ class ActivityFlow(PublicModel):
     items: list[ActivityFlowItem] = Field(default_factory=list)
 
 
-class Applet(PublicModel):
+class AppletDetailHistory(PublicModel):
     id: int
     display_name: str
     version: str

@@ -75,11 +75,13 @@ async def applet_versions_retrieve(
 
 async def applet_version_retrieve(
     id_: int, version: str, user: User = Depends(get_current_user)
-) -> Response[public_history_detail.Applet]:
+) -> Response[public_history_detail.AppletDetailHistory]:
     applet = await retrieve_applet_by_version(id_, version)
     if not applet:
         return Response(result=None)
-    return Response(result=public_history_detail.Applet(**applet.dict()))
+    return Response(
+        result=public_history_detail.AppletDetailHistory(**applet.dict())
+    )
 
 
 async def applet_version_changes_retrieve(

@@ -1,7 +1,5 @@
 import uuid
 
-import pytest
-
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.mailing.services import TestMail
