@@ -127,7 +127,6 @@ class ScheduleService:
         for event_schema in event_schemas:
 
             event: Event = Event.from_orm(event_schema)
-            print("event_schema2", event_schema)
 
             periodicity: Periodicity = await PeriodicityCRUD().get_by_id(
                 event.periodicity_id
@@ -421,6 +420,24 @@ class ScheduleService:
             await FlowEventsCRUD().delete_all_by_event_ids(event_ids)
             await PeriodicityCRUD().delete_by_ids(periodicity_ids)
             await EventCRUD().delete_by_ids(event_ids)
+
+    async def delete_by_activity_ids(
+        self, applet_id: int, activity_ids: list[int]
+    ) -> None:
+        """Delete schedules by activity id."""
+        for activity_id in activity_ids:
+            await self._delete_by_activity_or_flow(
+                applet_id=applet_id, activity_id=activity_id, flow_id=None
+            )
+
+    async def delete_by_flow_ids(
+        self, applet_id: int, flow_ids: list[int]
+    ) -> None:
+        """Delete schedules by flow id."""
+        for flow_id in flow_ids:
+            await self._delete_by_activity_or_flow(
+                applet_id=applet_id, activity_id=None, flow_id=flow_id
+            )
 
     async def create_default_schedules(
         self, applet_id: int, activity_ids: list[int], is_activity: bool

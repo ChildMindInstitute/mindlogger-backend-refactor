@@ -129,6 +129,8 @@ async def _create_activities(
 
     activity_schemas = await ActivitiesCRUD().create_many(activity_schemas)
     activities = []
+
+    # Create default events for new activities
     activity_ids = [activity_schema.id for activity_schema in activity_schemas]
     await ScheduleService().create_default_schedules(
         applet_id=applet.id, activity_ids=activity_ids, is_activity=True
@@ -183,6 +185,8 @@ async def _create_flows(
             flow_to_items_map[flow_guid].append(flow_item_schema)
 
     flow_schemas = await FlowsCRUD().create_many(flow_schemas)
+
+    # Create default events for new flows
     flow_ids = [flow_schema.id for flow_schema in flow_schemas]
     await ScheduleService().create_default_schedules(
         applet_id=applet.id, activity_ids=flow_ids, is_activity=False

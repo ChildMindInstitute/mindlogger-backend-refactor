@@ -1,3 +1,5 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -482,6 +484,7 @@ class TestApplet(BaseTest):
         applet = response.json()["result"]
         assert applet["version"] == version
 
+    @pytest.mark.run
     @transaction.rollback
     async def test_history_changes(self):
         await self.client.login(
