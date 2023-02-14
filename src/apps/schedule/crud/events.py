@@ -259,7 +259,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
 
         query: Query = select(
             ActivitySchema.id,
-            func.count(*[ActivityEventsSchema.event_id]).label("count"),
+            func.count(ActivityEventsSchema.event_id).label("count"),
             ActivitySchema.name,
         )
         query = query.select_from(ActivitySchema)
@@ -300,7 +300,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         """Return event count."""
 
         query: Query = select(
-            func.count(*[ActivityEventsSchema.event_id]).label("count"),
+            func.count(ActivityEventsSchema.event_id).label("count"),
         )
         query = query.filter(ActivityEventsSchema.activity_id == activity_id)
         query = query.filter(
@@ -357,7 +357,7 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
 
         query: Query = select(
             ActivityFlowSchema.id,
-            func.count(*[FlowEventsSchema.id]).label("count"),
+            func.count(FlowEventsSchema.id).label("count"),
             ActivityFlowSchema.name,
         )
         query = query.select_from(ActivityFlowSchema)
@@ -412,7 +412,7 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         """Return event count."""
 
         query: Query = select(
-            func.count(*[FlowEventsSchema.event_id]).label("count"),
+            func.count(FlowEventsSchema.event_id).label("count"),
         )
         query = query.filter(FlowEventsSchema.flow_id == flow_id)
         query = query.filter(
