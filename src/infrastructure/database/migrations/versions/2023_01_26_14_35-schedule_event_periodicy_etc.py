@@ -61,9 +61,6 @@ def upgrade() -> None:
         sa.Column("activity_id", sa.Integer(), nullable=False),
         sa.Column("event_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
-            ["activity_id"], ["activities.id"], ondelete="NO ACTION"
-        ),
-        sa.ForeignKeyConstraint(
             ["event_id"], ["events.id"], ondelete="CASCADE"
         ),
         sa.PrimaryKeyConstraint("id"),
@@ -84,9 +81,6 @@ def upgrade() -> None:
         sa.Column("event_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
             ["event_id"], ["events.id"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["flow_id"], ["flows.id"], ondelete="NO ACTION"
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(

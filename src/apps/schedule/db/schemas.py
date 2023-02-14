@@ -68,9 +68,7 @@ class UserEventsSchema(Base):
 class ActivityEventsSchema(Base):
     __tablename__ = "activity_events"
 
-    activity_id = Column(
-        ForeignKey("activities.id", ondelete="NO ACTION"), nullable=False
-    )
+    activity_id = Column(Integer, nullable=False)
     event_id = Column(
         ForeignKey("events.id", ondelete="CASCADE"), nullable=False
     )
@@ -88,9 +86,7 @@ class ActivityEventsSchema(Base):
 class FlowEventsSchema(Base):
     __tablename__ = "flow_events"
 
-    flow_id = Column(
-        ForeignKey("flows.id", ondelete="NO ACTION"), nullable=False
-    )
+    flow_id = Column(Integer, nullable=False)
     event_id = Column(
         ForeignKey("events.id", ondelete="CASCADE"), nullable=False
     )
