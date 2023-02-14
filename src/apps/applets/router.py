@@ -1,4 +1,5 @@
 from fastapi.routing import APIRouter
+from starlette import status
 
 from apps.applets.api.applets import (
     applet_create,
@@ -13,22 +14,133 @@ from apps.applets.api.applets import (
     applet_versions_retrieve,
     folders_applet_get,
 )
+from apps.applets.domain import PublicAppletHistoryChange, PublicHistory
+from apps.applets.domain.applets import public_detail, public_history_detail
+from apps.applets.domain.applets.applet import AppletUniqueName
+from apps.shared.domain import Response, ResponseMulti
+from apps.shared.domain.response import (
+    AUTHENTICATION_ERROR_RESPONSES,
+    DEFAULT_OPENAPI_RESPONSE,
+    NO_CONTENT_ERROR_RESPONSES,
+)
 
 router = APIRouter(prefix="/applets", tags=["Applets"])
 
-router.get("")(applet_list)
-router.get("/folders/{id_}", status_code=200)(folders_applet_get)
-router.get("/{id_}")(applet_retrieve)
-router.get("/{id_}/versions")(applet_versions_retrieve)
-router.get("/{id_}/versions/{version}")(applet_version_retrieve)
-router.get("/{id_}/versions/{version}/changes")(
-    applet_version_changes_retrieve
-)
+router.get(
+    "",
+    response_model=ResponseMulti[public_detail.Applet],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[public_detail.Applet]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_list)
 
-router.post("", status_code=201)(applet_create)
-router.post("/set_folder", status_code=200)(applet_set_folder)
-router.post("/unique_name", status_code=200)(applet_unique_name_get)
+router.get(
+    "/folders/{id_}",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[public_detail.Applet],
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[public_detail.Applet]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(folders_applet_get)
 
-router.put("/{id_}", status_code=200)(applet_update)
+router.get(
+    "/{id_}",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[public_detail.Applet],
+    responses={
+        status.HTTP_200_OK: {"model": Response[public_detail.Applet]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_retrieve)
 
-router.delete("/{id_}", status_code=204)(applet_delete)
+router.get(
+    "/{id_}/versions",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[PublicHistory],
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicHistory]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_versions_retrieve)
+
+router.get(
+    "/{id_}/versions/{version}",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[public_history_detail.AppletDetailHistory],
+    responses={
+        status.HTTP_200_OK: {
+            "model": Response[public_history_detail.AppletDetailHistory]
+        },
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_version_retrieve)
+
+router.get(
+    "/{id_}/versions/{version}/changes",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[PublicAppletHistoryChange],
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicAppletHistoryChange]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_version_changes_retrieve)
+
+router.post(
+    "",
+    response_model=Response[public_detail.Applet],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"model": Response[public_detail.Applet]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_create)
+
+router.post(
+    "/set_folder",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_set_folder)
+
+router.post(
+    "/unique_name",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[AppletUniqueName],
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_unique_name_get)
+
+router.put(
+    "/{id_}",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[public_detail.Applet],
+    responses={
+        status.HTTP_200_OK: {"model": Response[public_detail.Applet]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_update)
+
+router.delete(
+    "/{id_}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+    responses={
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **NO_CONTENT_ERROR_RESPONSES,
+    },
+)(applet_delete)

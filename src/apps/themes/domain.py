@@ -42,7 +42,7 @@ class _ThemeBase(BaseModel):
         raise ValueError("Not a color")
 
 
-class ThemeRequest(_ThemeBase):
+class ThemeRequest(_ThemeBase, PublicModel):
     pass
 
 
