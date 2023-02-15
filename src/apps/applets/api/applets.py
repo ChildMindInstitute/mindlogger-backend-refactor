@@ -5,6 +5,7 @@ from apps.applets.domain import (
     PublicAppletHistoryChange,
     PublicHistory,
 )
+from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.applets.applet import AppletName, AppletUniqueName
 from apps.applets.domain.applets.create import AppletCreate
@@ -36,6 +37,7 @@ __all__ = [
     "applet_set_folder",
     "folders_applet_get",
     "applet_unique_name_get",
+    "applet_link_create",
 ]
 
 
@@ -125,3 +127,14 @@ async def applet_unique_name_get(
 ) -> Response[AppletUniqueName]:
     new_name = await AppletService(user.id).get_unique_name(schema)
     return Response(result=AppletUniqueName(name=new_name))
+
+
+async def applet_link_create(
+    id_: int,
+    user: User = Depends(get_current_user),
+    schema: CreateAccessLink = Body(...),
+) -> Response[AppletLink]:
+    access_link = await AppletService().create_access_link(
+        applet_id=id_, create_request=schema
+    )
+    return Response(result=access_link)

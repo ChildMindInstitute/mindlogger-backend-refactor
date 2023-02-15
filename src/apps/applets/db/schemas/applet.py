@@ -33,6 +33,8 @@ class AppletSchema(_BaseAppletSchema, Base):
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     folder_id = Column(ForeignKey("folders.id", ondelete="RESTRICT"))
+    link = Column(String(255), unique=True)
+    require_login = Column(Boolean(), default=True)
 
 
 class AppletHistorySchema(_BaseAppletSchema, Base):

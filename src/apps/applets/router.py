@@ -4,6 +4,7 @@ from starlette import status
 from apps.applets.api.applets import (
     applet_create,
     applet_delete,
+    applet_link_create,
     applet_list,
     applet_retrieve,
     applet_set_folder,
@@ -144,3 +145,14 @@ router.delete(
         **NO_CONTENT_ERROR_RESPONSES,
     },
 )(applet_delete)
+
+router.post(
+    "/{id_}/accessLink",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[public_detail.Applet],
+    responses={
+        status.HTTP_200_OK: {"model": Response[public_detail.Applet]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_link_create)

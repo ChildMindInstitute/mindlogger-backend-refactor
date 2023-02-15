@@ -8,6 +8,7 @@ from sqlalchemy.orm import Query
 from apps.applets import errors
 from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
 from apps.applets.domain import Role
+from apps.applets.domain.applet_link import AppletLink
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["AppletsCRUD"]
@@ -144,3 +145,17 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         )
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def create_access_link(
+        self, applet_id: int, create_access: AppletLink
+    ) -> AppletSchema:
+        query = update(AppletSchema)
+        query = query.values(
+            link=create_access.link,
+            require_login=create_access.require_login,
+        )
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.returning(self.schema_class)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().one_or_none()

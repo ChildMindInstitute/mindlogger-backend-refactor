@@ -1,7 +1,9 @@
 import re
+import uuid
 
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import AppletFolder
+from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applets.applet import AppletName
 from apps.applets.domain.applets.fetch import Applet
 from apps.applets.errors import AppletAccessDenied, AppletsFolderAccessDenied
@@ -102,3 +104,15 @@ class AppletService:
         if numbers:
             return int(numbers[-1][1:-1])
         return 0
+
+    async def create_access_link(
+        self, applet_id: int, create_request: CreateAccessLink
+    ) -> AppletLink:
+        create_access = AppletLink(
+            link=uuid.uuid4(),
+            require_login=create_request.require_login,
+        )
+        applet_link = await AppletsCRUD().create_access_link(
+            applet_id, create_access
+        )
+        return AppletLink.from_orm(applet_link)
