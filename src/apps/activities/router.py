@@ -7,6 +7,7 @@ from apps.activities.api.reusable_item_choices import (
     item_choice_delete,
     item_choice_retrieve,
 )
+from apps.activities.domain.activity import ActivityExtendedDetailPublic
 from apps.activities.domain.reusable_item_choices import (
     PublicReusableItemChoice,
 )
@@ -49,4 +50,13 @@ router.delete(
     },
 )(item_choice_delete)
 
-router.get("/{id_}")(activity_retrieve)
+router.get(
+    "/{id_}",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[ActivityExtendedDetailPublic],
+    responses={
+        status.HTTP_200_OK: {"model": Response[ActivityExtendedDetailPublic]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(activity_retrieve)
