@@ -100,15 +100,11 @@ class ScheduleService:
         periodicity: Periodicity = await PeriodicityCRUD().get_by_id(
             event.periodicity_id
         )
-        user_id: int = await UserEventsCRUD().get_by_event_id(
+        user_id = await UserEventsCRUD().get_by_event_id(event_id=event.id)
+        activity_id = await ActivityEventsCRUD().get_by_event_id(
             event_id=event.id
         )
-        activity_id: int = await ActivityEventsCRUD().get_by_event_id(
-            event_id=event.id
-        )
-        flow_id: int = await FlowEventsCRUD().get_by_event_id(
-            event_id=event.id
-        )
+        flow_id = await FlowEventsCRUD().get_by_event_id(event_id=event.id)
 
         return PublicEvent(
             **event.dict(),
@@ -131,15 +127,11 @@ class ScheduleService:
             periodicity: Periodicity = await PeriodicityCRUD().get_by_id(
                 event.periodicity_id
             )
-            user_id: int = await UserEventsCRUD().get_by_event_id(
+            user_id = await UserEventsCRUD().get_by_event_id(event_id=event.id)
+            activity_id = await ActivityEventsCRUD().get_by_event_id(
                 event_id=event.id
             )
-            activity_id: int = await ActivityEventsCRUD().get_by_event_id(
-                event_id=event.id
-            )
-            flow_id: int = await FlowEventsCRUD().get_by_event_id(
-                event_id=event.id
-            )
+            flow_id = await FlowEventsCRUD().get_by_event_id(event_id=event.id)
 
             events.append(
                 PublicEvent(
@@ -195,12 +187,10 @@ class ScheduleService:
         periodicity_id: int = event.periodicity_id
 
         # Get activity_id or flow_id if exists
-        activity_id: int = await ActivityEventsCRUD().get_by_event_id(
+        activity_id = await ActivityEventsCRUD().get_by_event_id(
             event_id=schedule_id
         )
-        flow_id: int = await FlowEventsCRUD().get_by_event_id(
-            event_id=schedule_id
-        )
+        flow_id = await FlowEventsCRUD().get_by_event_id(event_id=schedule_id)
 
         # Delete event-user, event-activity, event-flow
         await UserEventsCRUD().delete_all_by_event_ids(event_ids=[schedule_id])

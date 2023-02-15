@@ -1,4 +1,4 @@
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import and_, distinct, func, select, update
 
@@ -192,13 +192,22 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         user_event: UserEvent = UserEvent.from_orm(instance)
         return user_event
 
-    async def get_by_event_id(self, event_id: int) -> int:
+    async def get_by_event_id(self, event_id: int) -> int | None:
         """Return user event instances."""
         query: Query = select(distinct(UserEventsSchema.user_id))
         query = query.where(UserEventsSchema.event_id == event_id)
         query = query.where(UserEventsSchema.is_deleted == False)  # noqa: E712
         result = await self._execute(query)
-        results: int = result.scalars().one_or_none()
+
+        try:
+            results: int = result.scalars().one_or_none()
+        except MultipleResultsFound:
+            raise EventError(
+                f"Multiple user events found for event_id: {event_id}".format(
+                    event_id=event_id
+                )
+            )
+
         return results
 
     async def delete_all_by_event_ids(self, event_ids: list[int]):
@@ -237,12 +246,22 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         activity_event: ActivityEvent = ActivityEvent.from_orm(instance)
         return activity_event
 
-    async def get_by_event_id(self, event_id: int) -> int:
+    async def get_by_event_id(self, event_id: int) -> int | None:
         """Return activity event instances."""
         query: Query = select(ActivityEventsSchema.activity_id)
         query = query.where(ActivityEventsSchema.event_id == event_id)
+        query = query.where(
+            ActivityEventsSchema.is_deleted == False  # noqa: E712
+        )
         result = await self._execute(query)
-        activity_id: int = result.scalars().one_or_none()
+
+        try:
+            activity_id: int = result.scalars().one_or_none()
+        except MultipleResultsFound:
+            raise EventError(
+                f"Multiple activity events found for event_id: {event_id}"
+                .format(event_id=event_id)
+            )
         return activity_id
 
     async def delete_all_by_event_ids(self, event_ids: list[int]):
@@ -337,12 +356,22 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         flow_event: FlowEvent = FlowEvent.from_orm(instance)
         return flow_event
 
-    async def get_by_event_id(self, event_id: int) -> int:
+    async def get_by_event_id(self, event_id: int) -> int | None:
         """Return flow event instances."""
         query: Query = select(FlowEventsSchema.flow_id)
         query = query.where(FlowEventsSchema.event_id == event_id)
+        query = query.where(FlowEventsSchema.is_deleted == False)  # noqa: E712
         result = await self._execute(query)
-        flow_id: int = result.scalars().one_or_none()
+
+        try:
+            flow_id: int = result.scalars().one_or_none()
+        except MultipleResultsFound:
+            raise EventError(
+                message=f"Event{event_id} is used in multiple flows".format(
+                    event_id=event_id
+                )
+            )
+
         return flow_id
 
     async def delete_all_by_event_ids(self, event_ids: list[int]):
