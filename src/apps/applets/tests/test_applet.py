@@ -286,10 +286,9 @@ class TestApplet(BaseTest):
         assert result["id"] == 1
         assert result["displayName"] == "Applet 1"
         assert len(result["activities"]) == 1
-        assert len(result["activities"][0]["items"]) == 2
         assert len(result["activityFlows"]) == 2
-        assert len(result["activityFlows"][0]["items"]) == 1
-        assert len(result["activityFlows"][1]["items"]) == 1
+        assert len(result["activityFlows"][0]["activityIds"]) == 1
+        assert len(result["activityFlows"][1]["activityIds"]) == 1
 
     @transaction.rollback
     async def test_creating_applet_history(self):

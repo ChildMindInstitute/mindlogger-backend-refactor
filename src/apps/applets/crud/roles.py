@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import distinct, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
@@ -132,3 +132,13 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
         result = await self._execute(query)
         return result.scalars().first()
+
+    async def get_user_roles_to_applet(
+        self, user_id: int, applet_id
+    ) -> list[str]:
+        query: Query = select(distinct(UserAppletAccessSchema.role))
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()

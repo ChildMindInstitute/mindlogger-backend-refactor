@@ -1,4 +1,5 @@
 from sqlalchemy import delete, select
+from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivityItemSchema, ActivitySchema
 from apps.applets.db.schemas import AppletSchema
@@ -17,8 +18,8 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
         instances = await self._create_many(activity_item_schemas)
         return instances
 
-    async def delete_by_applet_id(self, applet_id):
-        activity_id_query = select(ActivitySchema.id).where(
+    async def delete_by_applet_id(self, applet_id: int):
+        activity_id_query: Query = select(ActivitySchema.id).where(
             ActivitySchema.applet_id == applet_id
         )
         query = delete(ActivityItemSchema).where(
@@ -26,8 +27,10 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
         )
         await self._execute(query)
 
-    async def get_by_applet_id(self, applet_id) -> list[ActivityItemSchema]:
-        query = select(ActivityItemSchema)
+    async def get_by_applet_id(
+        self, applet_id: int
+    ) -> list[ActivityItemSchema]:
+        query: Query = select(ActivityItemSchema)
         query = query.join(
             ActivitySchema,
             ActivitySchema.id == ActivityItemSchema.activity_id,
@@ -37,6 +40,17 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
             AppletSchema.id == ActivitySchema.applet_id,
         )
         query = query.where(AppletSchema.id == applet_id)
+        query = query.order_by(
+            ActivityItemSchema.ordering.asc(),
+        )
+        result = await self._execute(query)
+        return result.scalars().all()
+
+    async def get_by_activity_id(
+        self, activity_id: int
+    ) -> list[ActivityItemSchema]:
+        query: Query = select(ActivityItemSchema)
+        query = query.where(ActivityItemSchema.activity_id == activity_id)
         query = query.order_by(
             ActivityItemSchema.ordering.asc(),
         )

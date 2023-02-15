@@ -6,9 +6,9 @@ class TestReusableItem(BaseTest):
     fixtures = ["users/fixtures/users.json"]
 
     login_url = "/auth/login"
-    create_url = "activity/item_choices"
-    update_url = "activity/item_choices"
-    delete_url = "activity/item_choices/{id}"
+    create_url = "activities/item_choices"
+    update_url = "activities/item_choices"
+    delete_url = "activities/item_choices/{id}"
 
     @transaction.rollback
     async def test_create_item_choice(self):

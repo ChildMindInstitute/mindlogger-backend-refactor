@@ -23,12 +23,26 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         )
         await self._execute(query)
 
-    async def get_by_applet_id(self, applet_id: int) -> list[ActivitySchema]:
+    async def get_by_applet_id(
+        self, user_id: int, applet_id: int
+    ) -> list[ActivitySchema]:
+        # TODO: get by users permission
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.applet_id == applet_id)
         query = query.order_by(ActivitySchema.ordering.asc())
         result = await self._execute(query)
         return result.scalars().all()
+
+    async def get_by_id(self, user_id: int, id_: int) -> ActivitySchema:
+        # TODO: get by users permission
+        query: Query = select(ActivitySchema)
+        query = query.where(ActivitySchema.id == id_)
+        query = query.order_by(ActivitySchema.ordering.asc())
+        result = await self._execute(query)
+        try:
+            return result.scalars().one_or_none()
+        except Exception as e:
+            raise e
 
     # Get by applet id and activity id
     async def get_by_applet_id_and_activity_id(
