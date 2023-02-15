@@ -259,8 +259,9 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
             activity_id: int = result.scalars().one_or_none()
         except MultipleResultsFound:
             raise EventError(
-                f"Multiple activity events found for event_id: {event_id}"
-                .format(event_id=event_id)
+                f"Multiple activity found for event_id: {event_id}".format(
+                    event_id=event_id
+                )
             )
         return activity_id
 
