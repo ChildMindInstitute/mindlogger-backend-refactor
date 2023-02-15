@@ -24,8 +24,6 @@ class Applet(InternalModel):
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
-    activities: list = Field(default_factory=list)
-    activity_flows: list = Field(default_factory=list)
 
 
 class AppletPublic(PublicModel):
@@ -43,8 +41,6 @@ class AppletPublic(PublicModel):
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
-    activities: list = Field(default_factory=list)
-    activity_flows: list = Field(default_factory=list)
 
 
 class AppletDetail(Applet):
