@@ -12,11 +12,10 @@ from apps.applets.api.applets import (
     applet_version_changes_retrieve,
     applet_version_retrieve,
     applet_versions_retrieve,
-    folders_applet_get,
+    folders_applet_list,
 )
-from apps.applets.domain import PublicAppletHistoryChange, PublicHistory
+from apps.applets.domain import PublicAppletHistoryChange, PublicHistory, AppletUniqueName
 from apps.applets.domain.applets import public_detail, public_history_detail
-from apps.applets.domain.applets.applet import AppletUniqueName
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -46,7 +45,7 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(folders_applet_get)
+)(folders_applet_list)
 
 router.get(
     "/{id_}",

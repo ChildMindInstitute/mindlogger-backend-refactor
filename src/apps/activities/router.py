@@ -1,6 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
+from apps.activities.api.activities import activity_retrieve
 from apps.activities.api.reusable_item_choices import (
     item_choice_create,
     item_choice_delete,
@@ -15,7 +16,7 @@ from apps.shared.domain.response import (
     DEFAULT_OPENAPI_RESPONSE,
 )
 
-router = APIRouter(prefix="/activity", tags=["Activities"])
+router = APIRouter(prefix="/activities", tags=["Activities"])
 
 router.post(
     "/item_choices",
@@ -47,3 +48,5 @@ router.delete(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(item_choice_delete)
+
+router.get("/{id_}")(activity_retrieve)

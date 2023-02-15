@@ -1,3 +1,9 @@
+from apps.applets.domain.applet import (  # noqa: F401, F403
+    AppletDetail,
+    AppletInfo,
+    AppletName,
+    AppletUniqueName,
+)
 from apps.applets.domain.applet_folder import *  # noqa: F401, F403
 from apps.applets.domain.applet_history import (  # noqa: F401, F403
     History,
