@@ -3,8 +3,7 @@ from infrastructure.database import transaction
 
 
 class TestNotificationLogs(BaseTest):
-    create_log_url = "/logs/notification"
-    query_log_url = "/logs/notification?"
+    logs_url = "/logs/notification"
 
     @transaction.rollback
     async def test_create_log(self):
@@ -17,9 +16,7 @@ class TestNotificationLogs(BaseTest):
             scheduled_notifications='{"sample":"json"}',
         )
 
-        response = await self.client.post(
-            self.create_log_url, data=create_data
-        )
+        response = await self.client.post(self.logs_url, data=create_data)
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"] == 1
 
@@ -27,7 +24,7 @@ class TestNotificationLogs(BaseTest):
     async def test_retrieve_log(self):
         query = dict(user_id="test@test.com", device_id="test_device_id")
 
-        response = await self.client.get(self.query_log_url, query=query)
+        response = await self.client.get(self.logs_url, query=query)
 
         assert response.status_code == 200, response.json()
         assert type(response.json()["result"]) == list
@@ -41,9 +38,7 @@ class TestNotificationLogs(BaseTest):
             scheduled_notifications='{"sample":"json"}',
         )
 
-        response = await self.client.post(
-            self.create_log_url, data=create_data
-        )
+        response = await self.client.post(self.logs_url, data=create_data)
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"] == 1
 
@@ -51,7 +46,7 @@ class TestNotificationLogs(BaseTest):
             user_id="test@test.com", device_id="test_device_id", limit=10
         )
 
-        response = await self.client.get(self.query_log_url, query=query)
+        response = await self.client.get(self.logs_url, query=query)
 
         assert response.status_code == 200, response.json()
         assert len(response.json()["result"]) == 1

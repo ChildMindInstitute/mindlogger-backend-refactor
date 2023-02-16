@@ -16,6 +16,8 @@ from apps.folders.crud import FolderCRUD
 
 __all__ = ["AppletService"]
 
+from apps.shared.query_params import QueryParams
+
 
 class AppletService:
     INITIAL_VERSION = "1.0.0"
@@ -35,10 +37,12 @@ class AppletService:
         )
 
     async def get_list_by_single_language(
-        self, language: str
+        self, language: str, query_params: QueryParams
     ) -> list[AppletInfo]:
+        roles: str = query_params.filters.pop("roles")
+
         schemas = await AppletsCRUD().get_applets_by_roles(
-            self.user_id, Role.as_list()
+            self.user_id, roles.split(","), query_params
         )
         applets = []
         for schema in schemas:
