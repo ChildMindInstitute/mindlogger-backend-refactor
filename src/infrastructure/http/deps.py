@@ -14,3 +14,7 @@ async def get_mindlogger_content_source(
             "mindlogger-content-source", MindloggerContentSource.web.name
         ),
     )
+
+
+def get_language(request: Request) -> str:
+    return request.headers.get("Content-Language", "en-US").split("-")[0]

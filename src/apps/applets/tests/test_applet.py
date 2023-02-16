@@ -1,3 +1,5 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -262,6 +264,7 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200, response.json()
 
+    @pytest.mark.main
     @transaction.rollback
     async def test_applet_list(self):
         await self.client.login(
@@ -271,8 +274,22 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200
         assert len(response.json()["result"]) == 2
+        assert response.json()["result"][0]["id"] == 2
+        assert response.json()["result"][1]["id"] == 1
+
+    @pytest.mark.main
+    @transaction.rollback
+    async def test_applet_list_by_filters(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.get(
+            self.applet_list_url, dict(ordering="id", owner_id=1, limit=1)
+        )
+
+        assert response.status_code == 200
+        assert len(response.json()["result"]) == 1
         assert response.json()["result"][0]["id"] == 1
-        assert response.json()["result"][1]["id"] == 2
 
     @transaction.rollback
     async def test_applet_detail(self):
@@ -286,10 +303,9 @@ class TestApplet(BaseTest):
         assert result["id"] == 1
         assert result["displayName"] == "Applet 1"
         assert len(result["activities"]) == 1
-        assert len(result["activities"][0]["items"]) == 2
         assert len(result["activityFlows"]) == 2
-        assert len(result["activityFlows"][0]["items"]) == 1
-        assert len(result["activityFlows"][1]["items"]) == 1
+        assert len(result["activityFlows"][0]["activityIds"]) == 1
+        assert len(result["activityFlows"][1]["activityIds"]) == 1
 
     @transaction.rollback
     async def test_creating_applet_history(self):

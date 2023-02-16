@@ -17,14 +17,24 @@ class FilterField:
         name = FilterField(Schema.first_name, lookup='eq')
     """
 
-    def __init__(self, field: Column, lookup: str = "eq"):
+    def __init__(
+        self,
+        field: Column,
+        lookup: str = "eq",
+        cast=lambda x: x,
+        method_name=None,
+    ):
         assert lookup not in [None, ""] and isinstance(lookup, str)
         self.field = field
         self.lookup = lookup
         self._lookup = lookups.get(lookup, lookups["eq"])
+        self.method_name = method_name
+        self.cast = cast
 
-    def generate_filter(self, val):
-        return self._lookup(self.field, val)
+    def generate_filter(self, val, filtering_method):
+        if filtering_method:
+            return filtering_method(self.field, self.cast(val))
+        return self._lookup(self.field, self.cast(val))
 
 
 class Filtering:
@@ -51,5 +61,12 @@ class Filtering:
             filter_field = self.fields.get(name)
             if not filter_field:
                 continue
-            clauses.append(filter_field.generate_filter(value))
+            filtering_method = None
+            if filter_field.method_name:
+                filtering_method = getattr(
+                    self, filter_field.method_name, None
+                )
+            clauses.append(
+                filter_field.generate_filter(value, filtering_method)
+            )
         return clauses

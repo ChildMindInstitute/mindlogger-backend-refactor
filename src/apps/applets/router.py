@@ -15,12 +15,16 @@ from apps.applets.api.applets import (
     applet_version_changes_retrieve,
     applet_version_retrieve,
     applet_versions_retrieve,
-    folders_applet_get,
+    folders_applet_list,
 )
-from apps.applets.domain import PublicAppletHistoryChange, PublicHistory
 from apps.applets.domain.applet_link import AppletLink
+from apps.applets.domain import (
+    AppletUniqueName,
+    PublicAppletHistoryChange,
+    PublicHistory,
+)
+from apps.applets.domain.applet import AppletDetailPublic, AppletInfoPublic
 from apps.applets.domain.applets import public_detail, public_history_detail
-from apps.applets.domain.applets.applet import AppletUniqueName
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -32,10 +36,10 @@ router = APIRouter(prefix="/applets", tags=["Applets"])
 
 router.get(
     "",
-    response_model=ResponseMulti[public_detail.Applet],
+    response_model=ResponseMulti[AppletInfoPublic],
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[public_detail.Applet]},
+        status.HTTP_200_OK: {"model": ResponseMulti[AppletInfoPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -44,20 +48,20 @@ router.get(
 router.get(
     "/folders/{id_}",
     status_code=status.HTTP_200_OK,
-    response_model=ResponseMulti[public_detail.Applet],
+    response_model=ResponseMulti[AppletInfoPublic],
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[public_detail.Applet]},
+        status.HTTP_200_OK: {"model": ResponseMulti[AppletInfoPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(folders_applet_get)
+)(folders_applet_list)
 
 router.get(
     "/{id_}",
     status_code=status.HTTP_200_OK,
-    response_model=Response[public_detail.Applet],
+    response_model=Response[AppletDetailPublic],
     responses={
-        status.HTTP_200_OK: {"model": Response[public_detail.Applet]},
+        status.HTTP_200_OK: {"model": Response[AppletDetailPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
