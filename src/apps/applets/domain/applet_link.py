@@ -1,9 +1,8 @@
 from apps.shared.domain import InternalModel, PublicModel
 
 
-class AppletLink(InternalModel):
-    link: str
-    require_login: bool
+class AppletLink(PublicModel):
+    link: str | None
 
 
 class CreateAccessLink(InternalModel):

@@ -1,14 +1,19 @@
 import re
-import uuid
 
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import AppletFolder
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applets.applet import AppletName
 from apps.applets.domain.applets.fetch import Applet
-from apps.applets.errors import AppletAccessDenied, AppletsFolderAccessDenied
+from apps.applets.errors import (
+    AppletAccessDenied,
+    AppletLinkAlreadyExist,
+    AppletNotFoundError,
+    AppletsFolderAccessDenied,
+)
 from apps.applets.service.user_applet_access import UserAppletAccessService
 from apps.folders.crud import FolderCRUD
+from config import settings
 
 __all__ = ["AppletService"]
 
@@ -108,11 +113,43 @@ class AppletService:
     async def create_access_link(
         self, applet_id: int, create_request: CreateAccessLink
     ) -> AppletLink:
-        create_access = AppletLink(
-            link=uuid.uuid4(),
-            require_login=create_request.require_login,
-        )
+        applet_instance = await AppletsCRUD().get_by_id(applet_id)
+        if applet_instance.link:
+            raise AppletLinkAlreadyExist()
+
         applet_link = await AppletsCRUD().create_access_link(
-            applet_id, create_access
+            applet_id, create_request.require_login
         )
-        return AppletLink.from_orm(applet_link)
+        link = await self._generate_link_url(
+            create_request.require_login, applet_link
+        )
+        return AppletLink(link=link)
+
+    async def get_access_link(self, applet_id: int) -> AppletLink:
+        applet_instance = await AppletsCRUD().get_by_id(applet_id)
+        link = None
+        if applet_instance.link:
+            link = await self._generate_link_url(
+                applet_instance.require_login, applet_instance.link
+            )
+
+        return AppletLink(link=link)
+
+    async def delete_access_link(self, applet_id: int):
+        if not await AppletsCRUD().exist_by_id(applet_id):
+            raise AppletNotFoundError(key="id", value=str(applet_id))
+
+        await AppletsCRUD().delete_access_link(applet_id)
+
+    async def _generate_link_url(self, require_login: bool, link: str) -> str:
+        if require_login:
+            url_path = settings.service.urls.frontend.private_link
+        else:
+            url_path = settings.service.urls.frontend.public_link
+
+        domain = settings.service.urls.frontend.web_base
+        url_path = settings.service.urls.frontend.invitation_send
+
+        url = f"https://{domain}/{url_path}/{str(link)}"
+
+        return url

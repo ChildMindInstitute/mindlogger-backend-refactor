@@ -5,6 +5,8 @@ from apps.applets.api.applets import (
     applet_create,
     applet_delete,
     applet_link_create,
+    applet_link_delete,
+    applet_link_get,
     applet_list,
     applet_retrieve,
     applet_set_folder,
@@ -16,6 +18,7 @@ from apps.applets.api.applets import (
     folders_applet_get,
 )
 from apps.applets.domain import PublicAppletHistoryChange, PublicHistory
+from apps.applets.domain.applet_link import AppletLink
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.applets.applet import AppletUniqueName
 from apps.shared.domain import Response, ResponseMulti
@@ -147,12 +150,33 @@ router.delete(
 )(applet_delete)
 
 router.post(
-    "/{id_}/accessLink",
-    status_code=status.HTTP_200_OK,
-    response_model=Response[public_detail.Applet],
+    "/{id_}/access_link",
+    status_code=status.HTTP_201_CREATED,
+    response_model=Response[AppletLink],
     responses={
-        status.HTTP_200_OK: {"model": Response[public_detail.Applet]},
+        status.HTTP_201_CREATED: {"model": Response[AppletLink]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_link_create)
+
+router.get(
+    "/{id_}/access_link",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[AppletLink],
+    responses={
+        status.HTTP_200_OK: {"model": Response[AppletLink]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_link_get)
+
+router.delete(
+    "/{id_}/access_link",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+    responses={
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **NO_CONTENT_ERROR_RESPONSES,
+    },
+)(applet_link_delete)

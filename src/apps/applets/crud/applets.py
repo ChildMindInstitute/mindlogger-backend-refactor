@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 from sqlalchemy import distinct, or_, select, update
@@ -8,7 +9,6 @@ from sqlalchemy.orm import Query
 from apps.applets import errors
 from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
 from apps.applets.domain import Role
-from apps.applets.domain.applet_link import AppletLink
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["AppletsCRUD"]
@@ -147,15 +147,17 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return db_result.scalars().all()
 
     async def create_access_link(
-        self, applet_id: int, create_access: AppletLink
-    ) -> AppletSchema:
-        query = update(AppletSchema)
-        query = query.values(
-            link=create_access.link,
-            require_login=create_access.require_login,
-        )
+        self, applet_id: int, require_login: bool
+    ) -> str:
+        query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
-        query = query.returning(self.schema_class)
+        query = query.values(link=uuid.uuid4(), require_login=require_login)
+        query = query.returning(AppletSchema.link)
         db_result = await self._execute(query)
+        return db_result.scalars().one()
 
-        return db_result.scalars().one_or_none()
+    async def delete_access_link(self, applet_id: int):
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.values(link=None, require_login=None)
+        await self._execute(query)

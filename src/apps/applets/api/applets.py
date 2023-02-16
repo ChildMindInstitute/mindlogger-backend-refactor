@@ -38,6 +38,8 @@ __all__ = [
     "folders_applet_get",
     "applet_unique_name_get",
     "applet_link_create",
+    "applet_link_get",
+    "applet_link_delete",
 ]
 
 
@@ -134,7 +136,22 @@ async def applet_link_create(
     user: User = Depends(get_current_user),
     schema: CreateAccessLink = Body(...),
 ) -> Response[AppletLink]:
-    access_link = await AppletService().create_access_link(
+    access_link = await AppletService(user.id).create_access_link(
         applet_id=id_, create_request=schema
     )
     return Response(result=access_link)
+
+
+async def applet_link_get(
+    id_: int,
+    user: User = Depends(get_current_user),
+) -> Response[AppletLink]:
+    access_link = await AppletService(user.id).get_access_link(applet_id=id_)
+    return Response(result=access_link)
+
+
+async def applet_link_delete(
+    id_: int,
+    user: User = Depends(get_current_user),
+):
+    await AppletService(user.id).delete_access_link(applet_id=id_)

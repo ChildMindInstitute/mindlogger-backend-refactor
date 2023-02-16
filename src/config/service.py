@@ -8,6 +8,8 @@ class FrontendUrlsSettings(BaseModel):
     admin_base: str = "admin.frontend.com"
     invitation_send: str = "invite"
     password_recovery_send: str = "password-recovery"
+    public_link: str = "public"
+    private_link: str = "join"
 
 
 class ServiceUrlsSettings(BaseModel):
