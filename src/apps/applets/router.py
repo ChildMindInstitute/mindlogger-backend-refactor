@@ -17,13 +17,13 @@ from apps.applets.api.applets import (
     applet_versions_retrieve,
     folders_applet_list,
 )
-from apps.applets.domain.applet_link import AppletLink
 from apps.applets.domain import (
     AppletUniqueName,
     PublicAppletHistoryChange,
     PublicHistory,
 )
 from apps.applets.domain.applet import AppletDetailPublic, AppletInfoPublic
+from apps.applets.domain.applet_link import AppletLink
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import (

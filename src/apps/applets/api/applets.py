@@ -7,8 +7,8 @@ from apps.applets.domain import (
     PublicAppletHistoryChange,
     PublicHistory,
 )
-from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applet import AppletDetailPublic, AppletInfoPublic
+from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.applets.create import AppletCreate
 from apps.applets.domain.applets.update import AppletUpdate

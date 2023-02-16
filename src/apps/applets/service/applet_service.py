@@ -1,13 +1,5 @@
 import re
 
-from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
-from apps.applets.errors import (
-    AppletAccessDenied,
-    AppletLinkAlreadyExist,
-    AppletNotFoundError,
-    AppletsFolderAccessDenied,
-)
-
 from apps.activities.services.activity import ActivityService
 from apps.activity_flows.service.flow import FlowService
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
@@ -17,6 +9,13 @@ from apps.applets.domain import (
     AppletInfo,
     AppletName,
     Role,
+)
+from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
+from apps.applets.errors import (
+    AppletAccessDenied,
+    AppletLinkAlreadyExist,
+    AppletNotFoundError,
+    AppletsFolderAccessDenied,
 )
 from apps.applets.service.user_applet_access import UserAppletAccessService
 from apps.folders.crud import FolderCRUD
