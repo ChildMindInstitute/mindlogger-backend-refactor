@@ -10,7 +10,7 @@ class BaseQueryParams(BaseModel):
     """
 
     search: str | None = None
-    page: int = Field(gt=0, default=10)
+    page: int = Field(gt=0, default=1)
     limit: int = Field(gt=0, default=10)
     ordering: str | None = None
 
@@ -22,7 +22,7 @@ class QueryParams(BaseModel):
 
     filters: dict[str, Any] = Field(default_factory=dict)
     search: str | None = None
-    page: int = Field(gt=0, default=10)
+    page: int = Field(gt=0, default=1)
     limit: int = Field(gt=0, default=10)
     ordering: list[str] = Field(default_factory=list)
 

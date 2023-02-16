@@ -11,6 +11,7 @@ from apps.applets.domain.applet import AppletDetailPublic, AppletInfoPublic
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.applets.create import AppletCreate
 from apps.applets.domain.applets.update import AppletUpdate
+from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.applets.service.applet import create_applet, update_applet
 from apps.applets.service.applet_history import (
@@ -19,6 +20,7 @@ from apps.applets.service.applet_history import (
 )
 from apps.authentication.deps import get_current_user
 from apps.shared.domain.response import Response, ResponseMulti
+from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 
 __all__ = [
@@ -41,9 +43,10 @@ from infrastructure.http import get_language
 async def applet_list(
     user: User = Depends(get_current_user),
     language: str = Depends(get_language),
+    query_params: QueryParams = Depends(parse_query_params(AppletQueryParams)),
 ) -> ResponseMulti[AppletInfoPublic]:
     applets = await AppletService(user.id).get_list_by_single_language(
-        language
+        language, query_params
     )
     return ResponseMulti(
         result=[AppletInfoPublic.from_orm(applet) for applet in applets]
