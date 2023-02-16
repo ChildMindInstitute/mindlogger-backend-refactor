@@ -19,7 +19,7 @@ class RefreshTokenSettings(BaseModel):
 
 class PasswordRecoverSettings(BaseModel):
     # Set in seconds
-    expiration: int = 600
+    expiration: int = 900
 
 
 class AuthenticationSettings(BaseModel):

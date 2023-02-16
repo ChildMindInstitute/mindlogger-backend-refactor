@@ -71,12 +71,13 @@ class PasswordRecoveryService:
             "link": (
                 f"https://{settings.service.urls.frontend.web_base}"
                 f"/{settings.service.urls.frontend.password_recovery_send}"
-                f"?key={password_recovery_info.key}&email={user.email}"
+                f"/{user.id}/token/{password_recovery_info.key}?lang=en"
             ),
         }
         message = MessageSchema(
             recipients=[user.email],
-            subject="Password recovery for Mindlogger",
+            subject="Girder for Mindlogger (development instance): "
+            "Temporary access",
             body=service.get_template(
                 path="password_recovery", **html_payload
             ),
