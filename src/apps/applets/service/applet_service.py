@@ -1,7 +1,6 @@
 import re
 
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
-from apps.applets.domain.applets.fetch import Applet
 from apps.applets.errors import (
     AppletAccessDenied,
     AppletLinkAlreadyExist,
