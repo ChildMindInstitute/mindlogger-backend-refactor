@@ -1,5 +1,3 @@
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -13,7 +11,6 @@ class TestAppletLink(BaseTest):
     login_url = "/auth/login"
     access_link_url = "applets/{applet_id}/access_link"
 
-    @pytest.mark.run
     @transaction.rollback
     async def test_applet_access_link_create(self):
         await self.client.login(
@@ -39,10 +36,8 @@ class TestAppletLink(BaseTest):
         response = await self.client.post(
             self.access_link_url.format(applet_id=3), data=data
         )
-        print(response.json())
         assert response.status_code == 422
 
-    @pytest.mark.run
     @transaction.rollback
     async def test_applet_access_link_get(self):
         await self.client.login(
@@ -61,7 +56,6 @@ class TestAppletLink(BaseTest):
         assert response.status_code == 200
         assert response.json()["result"]["link"] is None
 
-    @pytest.mark.run
     @transaction.rollback
     async def test_applet_access_link_delete(self):
         await self.client.login(

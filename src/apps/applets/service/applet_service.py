@@ -250,7 +250,6 @@ class AppletService:
             url_path = settings.service.urls.frontend.public_link
 
         domain = settings.service.urls.frontend.web_base
-        url_path = settings.service.urls.frontend.invitation_send
 
         url = f"https://{domain}/{url_path}/{str(link)}"
 
