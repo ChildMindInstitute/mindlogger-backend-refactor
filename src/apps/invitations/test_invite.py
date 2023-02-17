@@ -1,7 +1,5 @@
 import uuid
 
-import pytest
-
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.invitations.constants import InvitationStatus

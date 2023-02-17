@@ -88,6 +88,8 @@ class AppletService:
         schema = await AppletsCRUD().get_applet_by_roles(
             self.user_id, applet_id, Role.as_list()
         )
+        if not schema:
+            raise AppletAccessDenied()
         applet = AppletDetail(
             id=schema.id,
             display_name=schema.display_name,
