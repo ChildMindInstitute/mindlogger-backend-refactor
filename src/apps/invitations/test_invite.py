@@ -20,8 +20,8 @@ class TestInvite(BaseTest):
     invitation_list = "/invitations"
     invitation_detail = f"{invitation_list}/{{key}}"
     invite_url = f"{invitation_list}/invite"
-    approve_url = f"{invitation_list}/approve/{{key}}"
-    decline_url = f"{invitation_list}/decline/{{key}}"
+    approve_url = f"{invitation_list}/{{key}}/accept"
+    decline_url = f"{invitation_list}/{{key}}/decline"
 
     async def test_invitation_list(self):
         await self.client.login(

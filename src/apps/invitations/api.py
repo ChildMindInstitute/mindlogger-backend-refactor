@@ -62,7 +62,7 @@ async def invitation_send(
     )
 
 
-async def invitation_approve(
+async def invitation_accept(
     key: UUID, user: User = Depends(get_current_user)
 ):
     """General endpoint to approve the applet invitation."""
