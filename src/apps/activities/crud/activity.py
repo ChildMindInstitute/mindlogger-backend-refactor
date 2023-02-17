@@ -24,7 +24,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         await self._execute(query)
 
     async def get_by_applet_id(
-        self, user_id: int, applet_id: int
+        self, applet_id: int
     ) -> list[ActivitySchema]:
         # TODO: get by users permission
         query: Query = select(ActivitySchema)
