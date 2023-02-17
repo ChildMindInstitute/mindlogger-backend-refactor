@@ -7,6 +7,8 @@ __all__ = [
     "UserAppletAccessesNotFound",
     "AppletAccessDenied",
     "AppletsFolderAccessDenied",
+    "AppletLinkNotFoundError",
+    "AppletLinkAlreadyExist",
 ]
 
 
@@ -37,4 +39,14 @@ class AppletAccessDenied(ValidationError):
 
 class AppletsFolderAccessDenied(ValidationError):
     def __init__(self, *_, message="Access denied to folder.") -> None:
+        super().__init__(message=message)
+
+
+class AppletLinkNotFoundError(NotFoundError):
+    def __init__(self, *_, applet_id: str) -> None:
+        super().__init__(message=f"No such applet link for id={applet_id}.")
+
+
+class AppletLinkAlreadyExist(ValidationError):
+    def __init__(self, *_, message="Applet link already exists.") -> None:
         super().__init__(message=message)
