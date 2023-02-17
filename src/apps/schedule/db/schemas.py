@@ -18,7 +18,7 @@ class PeriodicitySchema(Base):
 
     type = Column(
         String(10), nullable=False
-    )  # Options: ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY
+    )  # Options: ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY, ALWAYS
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     interval = Column(Integer, nullable=False)
@@ -41,7 +41,7 @@ class EventSchema(Base):
     timer = Column(Interval, nullable=False)
     timer_type = Column(String(10), nullable=False)  # NOT_SET, TIMER, IDLE
     applet_id = Column(
-        ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
+        ForeignKey("applets.id", ondelete="CASCADE"), nullable=False
     )
 
 
@@ -52,7 +52,7 @@ class UserEventsSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     event_id = Column(
-        ForeignKey("events.id", ondelete="RESTRICT"), nullable=False
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
     )
 
     __table_args__ = (
@@ -68,11 +68,9 @@ class UserEventsSchema(Base):
 class ActivityEventsSchema(Base):
     __tablename__ = "activity_events"
 
-    activity_id = Column(
-        ForeignKey("activities.id", ondelete="RESTRICT"), nullable=False
-    )
+    activity_id = Column(Integer, nullable=False)
     event_id = Column(
-        ForeignKey("events.id", ondelete="RESTRICT"), nullable=False
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
     )
 
     __table_args__ = (
@@ -88,11 +86,9 @@ class ActivityEventsSchema(Base):
 class FlowEventsSchema(Base):
     __tablename__ = "flow_events"
 
-    flow_id = Column(
-        ForeignKey("flows.id", ondelete="RESTRICT"), nullable=False
-    )
+    flow_id = Column(Integer, nullable=False)
     event_id = Column(
-        ForeignKey("events.id", ondelete="RESTRICT"), nullable=False
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
     )
 
     __table_args__ = (

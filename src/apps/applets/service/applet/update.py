@@ -30,6 +30,7 @@ from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.applets.domain.applets import fetch, update
 from apps.applets.errors import AppletAccessDenied
 from apps.applets.service import UserAppletAccessService
+from apps.schedule.service import ScheduleService
 from apps.shared.version import get_next_version
 
 
@@ -100,7 +101,17 @@ async def _create_activities(
     activity_item_schemas: list[ActivityItemSchema] = []
     activity_to_items_map = defaultdict(list)
 
+    # Save existing activities to avoid creating default schedules for them
+    all_activities = [
+        activity.id
+        for activity in await ActivitiesCRUD().get_by_applet_id(applet.id)
+    ]
+    existing_activities = []
+
     for index, activity_data in enumerate(create_data):
+        if activity_data.id:
+            existing_activities.append(activity_data.id)
+
         activity_schemas.append(
             ActivitySchema(
                 id=activity_data.id or None,
@@ -144,6 +155,24 @@ async def _create_activities(
     activity_schemas = await ActivitiesCRUD().create_many(activity_schemas)
     activities = []
 
+    # Create default events for new activities
+    activity_ids = [
+        activity_schema.id
+        for activity_schema in activity_schemas
+        if activity_schema.id is not None
+    ]
+    new_activity_ids = set(activity_ids) - set(existing_activities)
+    deleted_activity_ids = set(all_activities) - set(existing_activities)
+    await ScheduleService().delete_by_activity_ids(
+        applet_id=applet.id, activity_ids=list(deleted_activity_ids)
+    )
+    if new_activity_ids:
+        await ScheduleService().create_default_schedules(
+            applet_id=applet.id,
+            activity_ids=list(new_activity_ids),
+            is_activity=True,
+        )
+
     for activity_schema in activity_schemas:
         activities.append(fetch.Activity.from_orm(activity_schema))
         activity_item_schemas = activity_to_items_map[activity_schema.guid]
@@ -171,8 +200,16 @@ async def _create_flows(
         (activity.guid, activity.id) for activity in activities
     )
 
+    # Save existing flows to avoid creating default schedules for them
+    all_flows = [
+        flow.id for flow in await FlowsCRUD().get_by_applet_id(applet.id)
+    ]
+    existing_flows = []
     for index, flow_data in enumerate(create_data):
         flow_guid = uuid.uuid4()
+        if flow_data.id:
+            existing_flows.append(flow_data.id)
+
         flow_schemas.append(
             ActivityFlowSchema(
                 id=flow_data.id or None,
@@ -194,8 +231,26 @@ async def _create_flows(
             flow_item_schemas.append(flow_item_schema)
             flow_to_items_map[flow_guid].append(flow_item_schema)
 
-    flow_schemas = await FlowsCRUD().create_many(flow_schemas)
+    # Create default events for new flows
+    flow_ids = [
+        flow_schema.id
+        for flow_schema in flow_schemas
+        if flow_schema.id is not None
+    ]
+    new_flow_ids = set(flow_ids) - set(existing_flows)
+    deleted_flows = set(all_flows) - set(existing_flows)
 
+    await ScheduleService().delete_by_flow_ids(
+        applet_id=applet.id, flow_ids=list(deleted_flows)
+    )
+    if new_flow_ids:
+        await ScheduleService().create_default_schedules(
+            applet_id=applet.id,
+            activity_ids=list(new_flow_ids),
+            is_activity=False,
+        )
+
+    flow_schemas = await FlowsCRUD().create_many(flow_schemas)
     flows = []
     for flow_schema in flow_schemas:
         flows.append(fetch.ActivityFlow.from_orm(flow_schema))
