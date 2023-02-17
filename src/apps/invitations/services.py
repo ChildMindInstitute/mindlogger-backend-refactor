@@ -36,6 +36,24 @@ class InvitationsService:
             self._user.email, uuid.UUID(key)
         )
 
+    async def get_private_invitation(
+        self, link: uuid.UUID
+    ) -> InvitationDetail | None:
+        applet = await AppletService(self._user.id).get_by_link(link, True)
+        if not applet:
+            return None
+        return InvitationDetail(
+            id=applet.id,
+            email=self._user.email,
+            applet_id=applet.id,
+            status=InvitationStatus.PENDING,
+            applet_name=applet.display_name,
+            role=Role.RESPONDENT,
+            key=link,
+            title=None,
+            body=None,
+        )
+
     async def send_invitation(
         self, schema: InvitationRequest
     ) -> InvitationDetail:
@@ -145,7 +163,7 @@ class InvitationsService:
                 message="You do not have access to send invitation."
             )
 
-    async def approve(self, key: uuid.UUID):
+    async def accept(self, key: uuid.UUID):
         invitation = await InvitationCRUD().get_by_email_and_key(
             self._user.email, key
         )
@@ -161,6 +179,14 @@ class InvitationsService:
 
         await InvitationCRUD().approve_by_id(invitation.id)
         return
+
+    async def accept_private_invitation(self, link: uuid.UUID):
+        applet = await AppletService(self._user.id).get_by_link(link, True)
+        if not applet:
+            raise InvitationDoesNotExist()
+        await UserAppletAccessService(self._user.id, applet.id).add_role(
+            Role.RESPONDENT
+        )
 
     async def decline(self, key: uuid.UUID):
         invitation = await InvitationCRUD().get_by_email_and_key(

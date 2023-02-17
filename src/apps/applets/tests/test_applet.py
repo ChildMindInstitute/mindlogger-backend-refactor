@@ -1,5 +1,3 @@
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -264,7 +262,6 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200, response.json()
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_applet_list(self):
         await self.client.login(
@@ -277,7 +274,6 @@ class TestApplet(BaseTest):
         assert response.json()["result"][0]["id"] == 2
         assert response.json()["result"][1]["id"] == 1
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_applet_list_by_filters(self):
         await self.client.login(

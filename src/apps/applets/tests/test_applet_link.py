@@ -7,6 +7,7 @@ class TestAppletLink(BaseTest):
         "users/fixtures/users.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
+        "applets/fixtures/applet_user_accesses.json",
     ]
     login_url = "/auth/login"
     access_link_url = "applets/{applet_id}/access_link"
@@ -19,14 +20,14 @@ class TestAppletLink(BaseTest):
 
         data = {"require_login": True}
         response = await self.client.post(
-            self.access_link_url.format(applet_id=3), data=data
+            self.access_link_url.format(applet_id=2), data=data
         )
 
         assert response.status_code == 201
         assert type(response.json()["result"]["link"]) == str
 
         response = await self.client.get(
-            self.access_link_url.format(applet_id=3)
+            self.access_link_url.format(applet_id=2)
         )
 
         assert response.status_code == 200, response.json()
@@ -34,7 +35,7 @@ class TestAppletLink(BaseTest):
         assert type(response.json()["result"]["link"]) == str
 
         response = await self.client.post(
-            self.access_link_url.format(applet_id=3), data=data
+            self.access_link_url.format(applet_id=2), data=data
         )
         assert response.status_code == 422
 
@@ -51,7 +52,7 @@ class TestAppletLink(BaseTest):
         assert type(response.json()["result"]["link"]) == str
 
         response = await self.client.get(
-            self.access_link_url.format(applet_id=3)
+            self.access_link_url.format(applet_id=2)
         )
         assert response.status_code == 200
         assert response.json()["result"]["link"] is None
