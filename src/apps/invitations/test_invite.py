@@ -1,5 +1,9 @@
 import uuid
 
+import pytest
+
+from apps.applets.crud import UserAppletAccessCRUD
+from apps.applets.domain import Role
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.mailing.services import TestMail
@@ -19,8 +23,10 @@ class TestInvite(BaseTest):
     login_url = "/auth/login"
     invitation_list = "/invitations"
     invitation_detail = f"{invitation_list}/{{key}}"
+    private_invitation_detail = f"{invitation_list}/private/{{key}}"
     invite_url = f"{invitation_list}/invite"
-    approve_url = f"{invitation_list}/{{key}}/accept"
+    accept_url = f"{invitation_list}/{{key}}/accept"
+    accept_private_url = f"{invitation_list}/private/{{key}}/accept"
     decline_url = f"{invitation_list}/{{key}}/decline"
 
     async def test_invitation_list(self):
@@ -46,7 +52,20 @@ class TestInvite(BaseTest):
         assert response.status_code == 200
 
         assert response.json()["result"]["appletId"] == 1
-        assert response.json()["result"]["role"] == "manager"
+        assert response.json()["result"]["role"] == Role.MANAGER
+
+    async def test_private_invitation_retrieve(self):
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+
+        response = await self.client.get(
+            self.private_invitation_detail.format(
+                key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa7"
+            )
+        )
+        assert response.status_code == 200
+
+        assert response.json()["result"]["appletId"] == 3
+        assert response.json()["result"]["role"] == Role.RESPONDENT
 
     @transaction.rollback
     async def test_admin_invite_manager_success(self):
@@ -56,7 +75,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="reviewer",
+            role=Role.REVIEWER,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 200
@@ -73,7 +92,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="coordinator",
+            role=Role.COORDINATOR,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 200
@@ -90,7 +109,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="editor",
+            role=Role.EDITOR,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 200
@@ -107,7 +126,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="reviewer",
+            role=Role.REVIEWER,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 200
@@ -124,7 +143,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="respondent",
+            role=Role.RESPONDENT,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 200
@@ -139,7 +158,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="manager",
+            role=Role.MANAGER,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 200
@@ -154,7 +173,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="coordinator",
+            role=Role.COORDINATOR,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 200
@@ -169,7 +188,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="editor",
+            role=Role.EDITOR,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 200
@@ -184,7 +203,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="reviewer",
+            role=Role.REVIEWER,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 200
@@ -199,7 +218,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="respondent",
+            role=Role.RESPONDENT,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 200
@@ -214,7 +233,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="respondent",
+            role=Role.RESPONDENT,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 200
@@ -229,7 +248,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="manager",
+            role=Role.MANAGER,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 422
@@ -244,7 +263,7 @@ class TestInvite(BaseTest):
         request_data = dict(
             email="patric@gmail.com",
             applet_id=1,
-            role="respondent",
+            role=Role.RESPONDENT,
         )
         response = await self.client.post(self.invite_url, request_data)
         assert response.status_code == 422
@@ -254,13 +273,13 @@ class TestInvite(BaseTest):
         )
 
     @transaction.rollback
-    async def test_invitation_approve(self):
+    async def test_invitation_accept(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
         response = await self.client.post(
-            self.approve_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6")
+            self.accept_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6")
         )
         assert response.status_code == 200
         invitation = await InvitationCRUD().get_by_email_and_key(
@@ -270,13 +289,30 @@ class TestInvite(BaseTest):
         assert invitation.status == InvitationStatus.APPROVED
 
     @transaction.rollback
-    async def test_invitation_approve_wrong(self):
+    async def test_private_invitation_accept(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
         response = await self.client.post(
-            self.approve_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da9")
+            self.accept_private_url.format(
+                key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa7"
+            )
+        )
+        assert response.status_code == 200
+        access = await UserAppletAccessCRUD().get_by_roles(
+            user_id=1, applet_id=3, roles=[Role.RESPONDENT]
+        )
+        assert access.role == Role.RESPONDENT
+
+    @transaction.rollback
+    async def test_invitation_accept_wrong(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.accept_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da9")
         )
         assert response.status_code == 422
 
