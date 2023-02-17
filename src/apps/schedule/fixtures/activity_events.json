@@ -1,0 +1,46 @@
+[
+    {
+        "table": "activity_events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 1,
+            "activity_id": 1,
+            "event_id": 3
+        }
+    },
+    {
+        "table": "activity_events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 2,
+            "activity_id": 2,
+            "event_id": 4
+        }
+    },
+    {
+        "table": "activity_events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 3,
+            "activity_id": 3,
+            "event_id": 5
+        }
+    },
+    {
+        "table": "activity_events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 4,
+            "activity_id": 4,
+            "event_id": 6
+        }
+    }
+]

@@ -1,0 +1,110 @@
+[
+    {
+        "table": "events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 1,
+            "periodicity_id": 1,
+            "start_time": "00:00:00",
+            "end_time": "00:00:00",
+            "all_day": false,
+            "access_before_schedule": false,
+            "one_time_completion": false,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "applet_id": 1
+        }
+    },
+    {
+        "table": "events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 2,
+            "periodicity_id": 2,
+            "start_time": "00:00:00",
+            "end_time": "00:00:00",
+            "all_day": false,
+            "access_before_schedule": false,
+            "one_time_completion": false,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "applet_id": 1
+        }
+    },
+    {
+        "table": "events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 3,
+            "periodicity_id": 3,
+            "start_time": "00:00:00",
+            "end_time": "00:00:00",
+            "all_day": false,
+            "access_before_schedule": false,
+            "one_time_completion": false,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "applet_id": 1
+        }
+    },
+    {
+        "table": "events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 4,
+            "periodicity_id": 4,
+            "start_time": "00:00:00",
+            "end_time": "00:00:00",
+            "all_day": false,
+            "access_before_schedule": false,
+            "one_time_completion": false,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "applet_id": 2
+        }
+    },
+    {
+        "table": "events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 5,
+            "periodicity_id": 5,
+            "start_time": "00:00:00",
+            "end_time": "00:00:00",
+            "all_day": false,
+            "access_before_schedule": false,
+            "one_time_completion": false,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "applet_id": 3
+        }
+    },
+    {
+        "table": "events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 6,
+            "periodicity_id": 6,
+            "start_time": "00:00:00",
+            "end_time": "00:00:00",
+            "all_day": false,
+            "access_before_schedule": false,
+            "one_time_completion": false,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "applet_id": 4
+        }
+    }
+]

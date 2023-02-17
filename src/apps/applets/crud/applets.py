@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 from sqlalchemy import distinct, or_, select, update
@@ -8,9 +9,36 @@ from sqlalchemy.orm import Query
 from apps.applets import errors
 from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
 from apps.applets.domain import Role
+from apps.shared.filtering import FilterField, Filtering
+from apps.shared.ordering import Ordering
+from apps.shared.query_params import QueryParams
+from apps.shared.searching import Searching
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["AppletsCRUD"]
+
+
+class _AppletFiltering(Filtering):
+    owner_id = FilterField(
+        AppletSchema.id, cast=int, method_name="filter_by_owner"
+    )
+
+    def filter_by_owner(self, field, value: int):
+        query: Query = select(UserAppletAccessSchema.applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == value)
+        query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
+        return field.in_(query)
+
+
+class _AppletSearching(Searching):
+    search_fields = [AppletSchema.display_name]
+
+
+class _AppletOrdering(Ordering):
+    id = AppletSchema.id
+    display_name = AppletSchema.display_name
+    created_at = AppletSchema.created_at
+    updated_at = AppletSchema.updated_at
 
 
 class AppletsCRUD(BaseCRUD[AppletSchema]):
@@ -62,7 +90,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return db_result.scalars().one_or_none() is not None
 
     async def get_applets_by_roles(
-        self, user_id: int, roles: list[str]
+        self, user_id: int, roles: list[str], query_params: QueryParams
     ) -> list[AppletSchema]:
         accessible_applets_query = select(UserAppletAccessSchema.applet_id)
         accessible_applets_query = accessible_applets_query.where(
@@ -73,8 +101,21 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         )
 
         query = select(AppletSchema)
+        if query_params.filters:
+            query = query.where(
+                *_AppletFiltering().get_clauses(**query_params.filters)
+            )
+        if query_params.search:
+            query = query.where(
+                _AppletSearching().get_clauses(query_params.search)
+            )
+        if query_params.ordering:
+            query = query.order_by(
+                *_AppletOrdering().get_clauses(*query_params.ordering)
+            )
         query = query.where(AppletSchema.id.in_(accessible_applets_query))
-        query = query.order_by(AppletSchema.id)
+        query = query.limit(query_params.limit)
+        query = query.offset(query_params.page - 1)
         result: Result = await self._execute(query)
         return result.scalars().all()
 
@@ -162,3 +203,19 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         )
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def create_access_link(
+        self, applet_id: int, require_login: bool
+    ) -> str:
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.values(link=uuid.uuid4(), require_login=require_login)
+        query = query.returning(AppletSchema.link)
+        db_result = await self._execute(query)
+        return db_result.scalars().one()
+
+    async def delete_access_link(self, applet_id: int):
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.values(link=None, require_login=None)
+        await self._execute(query)

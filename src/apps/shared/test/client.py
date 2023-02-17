@@ -14,7 +14,7 @@ class TestClient:
 
     @staticmethod
     def _prepare_url(url, query):
-        return f"{url}{urllib.parse.urlencode(query)}"
+        return f"{url}?{urllib.parse.urlencode(query)}"
 
     def _get_updated_headers(self, headers: dict | None = None) -> dict:
         headers_ = dict(self.headers)

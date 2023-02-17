@@ -1,0 +1,80 @@
+[
+    {
+        "table": "periodicity",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 1,
+            "type": "ALWAYS",
+            "start_date": "1980-01-05",
+            "end_date": "2096-01-05",
+            "interval": 0
+        }
+    },
+    {
+        "table": "periodicity",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 2,
+            "type": "ALWAYS",
+            "start_date": "1980-01-05",
+            "end_date": "2096-01-05",
+            "interval": 0
+        }
+    },
+    {
+        "table": "periodicity",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 3,
+            "type": "ALWAYS",
+            "start_date": "1980-01-05",
+            "end_date": "2096-01-05",
+            "interval": 0
+        }
+    },
+    {
+        "table": "periodicity",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 4,
+            "type": "ALWAYS",
+            "start_date": "1980-01-05",
+            "end_date": "2096-01-05",
+            "interval": 0
+        }
+    },
+    {
+        "table": "periodicity",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 5,
+            "type": "ALWAYS",
+            "start_date": "1980-01-05",
+            "end_date": "2096-01-05",
+            "interval": 0
+        }
+    },
+    {
+        "table": "periodicity",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 6,
+            "type": "ALWAYS",
+            "start_date": "1980-01-05",
+            "end_date": "2096-01-05",
+            "interval": 0
+        }
+    }
+]

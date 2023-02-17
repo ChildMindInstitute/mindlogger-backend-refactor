@@ -12,14 +12,14 @@ __all__ = [
 ]
 
 
-class PublicPeriodicity(BasePeriodicity, PublicModel):
+class PublicPeriodicity(PublicModel, BasePeriodicity):
     pass
 
 
-class PublicEvent(BaseEvent, PublicModel):
+class PublicEvent(PublicModel, BaseEvent):
     id: PositiveInt
     periodicity: PublicPeriodicity
-    user_ids: list[int] | None
+    user_id: int | None
     activity_id: int | None
     flow_id: int | None
 
