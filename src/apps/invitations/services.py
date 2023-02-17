@@ -187,7 +187,6 @@ class InvitationsService:
         await UserAppletAccessService(self._user.id, applet.id).add_role(
             Role.RESPONDENT
         )
-        return
 
     async def decline(self, key: uuid.UUID):
         invitation = await InvitationCRUD().get_by_email_and_key(

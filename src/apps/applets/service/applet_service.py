@@ -80,11 +80,9 @@ class AppletService:
     async def get_single_language_by_id(
         self, applet_id: int, language: str
     ) -> AppletDetail:
-        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
-            self.user_id, applet_id
-        )
-        if not roles:
-            raise AppletAccessDenied()
+        applet_exists = await AppletsCRUD().exist_by_id(applet_id)
+        if not applet_exists:
+            raise AppletNotFoundError(key="id", value=str(applet_id))
         schema = await AppletsCRUD().get_applet_by_roles(
             self.user_id, applet_id, Role.as_list()
         )
@@ -275,8 +273,12 @@ class AppletService:
 
         return url
 
-    async def get_by_link(self, link: uuid.UUID, is_private=False) -> Applet:
+    async def get_by_link(
+        self, link: uuid.UUID, is_private=False
+    ) -> Applet | None:
         schema = await AppletsCRUD().get_by_link(link, is_private)
+        if not schema:
+            return None
         return Applet.from_orm(schema)
 
     @staticmethod

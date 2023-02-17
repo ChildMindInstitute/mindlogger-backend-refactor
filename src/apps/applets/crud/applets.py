@@ -97,7 +97,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         db_result = await self._execute(query)
 
-        return db_result.scalars().one_or_none() is not None
+        return db_result.scalars().first() is not None
 
     async def get_applets_by_roles(
         self, user_id: int, roles: list[str], query_params: QueryParams
