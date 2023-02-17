@@ -13,9 +13,7 @@ class ActivityService:
     async def get_single_language_by_applet_id(
         self, applet_id: int, language: str
     ) -> list[ActivityDetail]:
-        schemas = await ActivitiesCRUD().get_by_applet_id(
-            self.user_id, applet_id
-        )
+        schemas = await ActivitiesCRUD().get_by_applet_id(applet_id)
         activities = []
         for schema in schemas:
             activities.append(
