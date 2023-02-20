@@ -16,9 +16,9 @@ import apps.logs.router as logs
 import apps.schedule.router as schedule
 import apps.themes.router as themes
 import apps.users.router as users
-from config import settings
 import middlewares as middlewares_
 from apps.shared.errors import BaseError
+from config import settings
 from infrastructure.errors import (
     custom_base_errors_handler,
     pydantic_validation_errors_handler,
@@ -51,10 +51,7 @@ def create_app():
     # Create base FastAPI application
     app = FastAPI()
     if settings.sentry.dsn:
-        sentry_sdk.init(
-            dsn=settings.sentry.dsn,
-            traces_sample_rate=1.0
-        )
+        sentry_sdk.init(dsn=settings.sentry.dsn, traces_sample_rate=1.0)
 
     # Include routers
     for router in routers:
