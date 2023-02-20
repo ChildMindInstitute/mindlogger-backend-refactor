@@ -273,14 +273,6 @@ class AppletService:
 
         return url
 
-    async def get_by_link(
-        self, link: uuid.UUID, is_private=False
-    ) -> Applet | None:
-        schema = await AppletsCRUD().get_by_link(link, is_private)
-        if not schema:
-            return None
-        return Applet.from_orm(schema)
-
     @staticmethod
     def _get_by_language(values: dict, language: str):
         """
@@ -294,3 +286,13 @@ class AppletService:
             for key, val in values.items():
                 return val
             return ""
+
+
+class PublicAppletService:
+    async def get_by_link(
+        self, link: uuid.UUID, is_private=False
+    ) -> Applet | None:
+        schema = await AppletsCRUD().get_by_link(link, is_private)
+        if not schema:
+            return None
+        return Applet.from_orm(schema)

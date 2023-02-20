@@ -10,8 +10,12 @@ from apps.invitations.domain import (
     InvitationDetail,
     InvitationRequest,
     InvitationResponse,
+    PrivateInvitationResponse,
 )
-from apps.invitations.services import InvitationsService
+from apps.invitations.services import (
+    InvitationsService,
+    PrivateInvitationService,
+)
 from apps.shared.domain import Response, ResponseMulti
 from apps.users.domain import User
 
@@ -47,10 +51,9 @@ async def invitation_retrieve(
 
 async def private_invitation_retrieve(
     key: uuid.UUID,
-    user: User = Depends(get_current_user),
-) -> Response[InvitationResponse]:
-    invitation = await InvitationsService(user).get_private_invitation(key)
-    return Response(result=InvitationResponse.from_orm(invitation))
+) -> Response[PrivateInvitationResponse]:
+    invitation = await PrivateInvitationService().get_invitation(key)
+    return Response(result=PrivateInvitationResponse.from_orm(invitation))
 
 
 async def invitation_send(
@@ -80,7 +83,7 @@ async def private_invitation_accept(
     key: uuid.UUID,
     user: User = Depends(get_current_user),
 ):
-    await InvitationsService(user).accept_private_invitation(key)
+    await PrivateInvitationService().accept_invitation(user.id, key)
 
 
 async def invitation_decline(
