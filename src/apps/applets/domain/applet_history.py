@@ -5,11 +5,13 @@ from apps.shared.domain import InternalModel, PublicModel
 
 class User(InternalModel):
     id: int
-    full_name: str
+    first_name: str
+    last_name: str
 
 
 class UserPublic(PublicModel):
-    full_name: str
+    first_name: str
+    last_name: str
 
 
 class History(InternalModel):

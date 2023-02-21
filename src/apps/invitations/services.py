@@ -48,8 +48,6 @@ class InvitationsService:
                 role=schema.role,
                 key=uuid.uuid3(uuid.uuid4(), schema.email),
                 invitor_id=self._user.id,
-                title=schema.title,
-                body=schema.body,
                 status=InvitationStatus.PENDING,
             )
         )
@@ -65,14 +63,13 @@ class InvitationsService:
         user: User = await UsersCRUD().get_by_email(schema.email)
 
         html_payload: dict = {
-            "coordinator_name": self._user.full_name,
-            "user_name": user.full_name,
+            "coordinator_name": f"{self._user.first_name} "
+            f"{self._user.last_name}",
+            "user_name": f"{user.first_name} {user.last_name}",
             "applet": applet.display_name,
             "role": invitation.role,
             "key": invitation.key,
             "email": invitation.email,
-            "title": invitation.title,
-            "body": invitation.body,
             "link": self._get_invitation_url_by_role(invitation.role),
         }
         message = MessageSchema(
@@ -91,8 +88,6 @@ class InvitationsService:
             role=invitation.role,
             status=invitation.status,
             key=invitation.key,
-            title=invitation.title,
-            body=invitation.body,
         )
 
     def _get_invitation_url_by_role(self, role: Role):
