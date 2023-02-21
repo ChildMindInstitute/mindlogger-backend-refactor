@@ -269,3 +269,13 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.where(AppletSchema.folder_id == folder_id)
         query = query.values(pinned_at=None)
         await self._execute(query)
+
+    async def transfer_ownership(
+        self, applet_id: uuid.UUID, new_owner_id: uuid.UUID
+    ) -> AppletSchema:
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.values(creator_id=new_owner_id)
+        query = query.returning(self.schema_class)
+        db_result = await self._execute(query)
+        return db_result.scalars().one_or_none()

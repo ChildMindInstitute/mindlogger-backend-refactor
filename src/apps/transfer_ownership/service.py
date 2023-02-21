@@ -18,7 +18,7 @@ class TransferService:
         self._user = user
 
     async def initiate_transfer(
-        self, applet_id: int, transfer_request: InitiateTransfer
+        self, applet_id: uuid.UUID, transfer_request: InitiateTransfer
     ):
         """Initiate a transfer of ownership of an applet."""
         # check if user is owner of applet
@@ -58,7 +58,7 @@ class TransferService:
 
         await service.send(message)
 
-    async def accept_transfer(self, applet_id: int, key: uuid.UUID):
+    async def accept_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):
         """Respond to a transfer of ownership of an applet."""
         transfer = await TransferCRUD().get_by_key(key=key)
 
@@ -102,7 +102,7 @@ class TransferService:
         url_path = settings.service.urls.frontend.transfer_link
         return f"https://{domain}/{url_path}"
 
-    async def decline_transfer(self, applet_id: int, key: uuid.UUID):
+    async def decline_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):
         """Decline a transfer of ownership of an applet."""
         transfer = await TransferCRUD().get_by_key(key=key)
 
