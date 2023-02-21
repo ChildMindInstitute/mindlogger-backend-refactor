@@ -43,10 +43,27 @@ class InvitationDetail(InternalModel):
     key: UUID
 
 
+class PrivateInvitationDetail(InternalModel):
+    id: int
+    applet_id: int
+    status: str
+    applet_name: str
+    role: Role
+    key: UUID
+
+
 class InvitationResponse(PublicModel):
     """This model is returned to the user on the invitation request."""
 
     email: EmailStr
+    applet_id: int
+    applet_name: str
+    role: Role
+    key: UUID
+    status: str
+
+
+class PrivateInvitationResponse(PublicModel):
     applet_id: int
     applet_name: str
     role: Role

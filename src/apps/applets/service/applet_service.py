@@ -1,4 +1,5 @@
 import re
+import uuid
 
 from apps.activities.services.activity import ActivityService
 from apps.activity_flows.service.flow import FlowService
@@ -10,6 +11,7 @@ from apps.applets.domain import (
     AppletName,
     Role,
 )
+from apps.applets.domain.applet import Applet
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.errors import (
     AppletAccessDenied,
@@ -78,14 +80,14 @@ class AppletService:
     async def get_single_language_by_id(
         self, applet_id: int, language: str
     ) -> AppletDetail:
-        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
-            self.user_id, applet_id
-        )
-        if not roles:
-            raise AppletAccessDenied()
-        schema = await AppletsCRUD().get_applet_by_role(
+        applet_exists = await AppletsCRUD().exist_by_id(applet_id)
+        if not applet_exists:
+            raise AppletNotFoundError(key="id", value=str(applet_id))
+        schema = await AppletsCRUD().get_applet_by_roles(
             self.user_id, applet_id, Role.as_list()
         )
+        if not schema:
+            raise AppletAccessDenied()
         applet = AppletDetail(
             id=schema.id,
             display_name=schema.display_name,
@@ -215,6 +217,11 @@ class AppletService:
     async def create_access_link(
         self, applet_id: int, create_request: CreateAccessLink
     ) -> AppletLink:
+        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
+            self.user_id, applet_id
+        )
+        if Role.ADMIN not in roles:
+            raise AppletAccessDenied()
         applet_instance = await AppletsCRUD().get_by_id(applet_id)
         if applet_instance.link:
             raise AppletLinkAlreadyExist()
@@ -222,28 +229,39 @@ class AppletService:
         applet_link = await AppletsCRUD().create_access_link(
             applet_id, create_request.require_login
         )
-        link = await self._generate_link_url(
+        link = self._generate_link_url(
             create_request.require_login, applet_link
         )
         return AppletLink(link=link)
 
     async def get_access_link(self, applet_id: int) -> AppletLink:
+        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
+            self.user_id, applet_id
+        )
+        if Role.ADMIN not in roles:
+            raise AppletAccessDenied()
         applet_instance = await AppletsCRUD().get_by_id(applet_id)
         link = None
         if applet_instance.link:
-            link = await self._generate_link_url(
+            link = self._generate_link_url(
                 applet_instance.require_login, applet_instance.link
             )
 
         return AppletLink(link=link)
 
     async def delete_access_link(self, applet_id: int):
+        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
+            self.user_id, applet_id
+        )
+        if Role.ADMIN not in roles:
+            raise AppletAccessDenied()
+
         if not await AppletsCRUD().exist_by_id(applet_id):
             raise AppletNotFoundError(key="id", value=str(applet_id))
 
         await AppletsCRUD().delete_access_link(applet_id)
 
-    async def _generate_link_url(self, require_login: bool, link: str) -> str:
+    def _generate_link_url(self, require_login: bool, link: str) -> str:
         if require_login:
             url_path = settings.service.urls.frontend.private_link
         else:
@@ -268,3 +286,13 @@ class AppletService:
             for key, val in values.items():
                 return val
             return ""
+
+
+class PublicAppletService:
+    async def get_by_link(
+        self, link: uuid.UUID, is_private=False
+    ) -> Applet | None:
+        schema = await AppletsCRUD().get_by_link(link, is_private)
+        if not schema:
+            return None
+        return Applet.from_orm(schema)

@@ -56,7 +56,6 @@
       "report_include_user_id": false,
       "report_include_case_id": false,
       "report_email_body": "",
-      "link": "8db24ae8-1d5d-4a70-863b-db40362a782f",
       "require_login": true
     }
   },
@@ -85,7 +84,9 @@
       "report_recipients": [],
       "report_include_user_id": false,
       "report_include_case_id": false,
-      "report_email_body": ""
+      "report_email_body": "",
+      "link": "51857e10-6c05-4fa8-a2c8-725b8c1a0aa7",
+      "require_login": true
     }
   },
   {

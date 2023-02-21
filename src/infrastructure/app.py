@@ -1,5 +1,6 @@
 from typing import Iterable, Type
 
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRouter
@@ -17,6 +18,7 @@ import apps.themes.router as themes
 import apps.users.router as users
 import middlewares as middlewares_
 from apps.shared.errors import BaseError
+from config import settings
 from infrastructure.errors import (
     custom_base_errors_handler,
     pydantic_validation_errors_handler,
@@ -47,7 +49,9 @@ middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
 
 def create_app():
     # Create base FastAPI application
-    app = FastAPI()
+    app = FastAPI(description=f"Commit id: <b>{settings.commit_id}</b>")
+    if settings.sentry.dsn:
+        sentry_sdk.init(dsn=settings.sentry.dsn, traces_sample_rate=1.0)
 
     # Include routers
     for router in routers:

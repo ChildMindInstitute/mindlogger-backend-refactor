@@ -1,3 +1,4 @@
+import uuid
 from uuid import UUID
 
 from fastapi import Body, Depends
@@ -9,8 +10,12 @@ from apps.invitations.domain import (
     InvitationDetail,
     InvitationRequest,
     InvitationResponse,
+    PrivateInvitationResponse,
 )
-from apps.invitations.services import InvitationsService
+from apps.invitations.services import (
+    InvitationsService,
+    PrivateInvitationService,
+)
 from apps.shared.domain import Response, ResponseMulti
 from apps.users.domain import User
 
@@ -44,6 +49,13 @@ async def invitation_retrieve(
     return Response(result=InvitationResponse.from_orm(invitation))
 
 
+async def private_invitation_retrieve(
+    key: uuid.UUID,
+) -> Response[PrivateInvitationResponse]:
+    invitation = await PrivateInvitationService().get_invitation(key)
+    return Response(result=PrivateInvitationResponse.from_orm(invitation))
+
+
 async def invitation_send(
     user: User = Depends(get_current_user),
     invitation_schema: InvitationRequest = Body(...),
@@ -62,11 +74,16 @@ async def invitation_send(
     )
 
 
-async def invitation_approve(
-    key: UUID, user: User = Depends(get_current_user)
-):
+async def invitation_accept(key: UUID, user: User = Depends(get_current_user)):
     """General endpoint to approve the applet invitation."""
-    await InvitationsService(user).approve(key)
+    await InvitationsService(user).accept(key)
+
+
+async def private_invitation_accept(
+    key: uuid.UUID,
+    user: User = Depends(get_current_user),
+):
+    await PrivateInvitationService().accept_invitation(user.id, key)
 
 
 async def invitation_decline(

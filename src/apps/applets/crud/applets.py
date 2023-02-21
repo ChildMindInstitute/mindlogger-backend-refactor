@@ -63,6 +63,16 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         )
         return instance
 
+    async def get_by_link(
+        self, link: uuid.UUID, require_login: bool
+    ) -> AppletSchema | None:
+        query: Query = select(AppletSchema)
+        query = query.where(AppletSchema.link == link)
+        query = query.where(AppletSchema.require_login == require_login)
+
+        db_result = await self._execute(query)
+        return db_result.scalars().first()
+
     async def _fetch(self, key: str, value: Any) -> AppletSchema:
         """Fetch applets by id or display_name from the database."""
 
@@ -87,7 +97,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         db_result = await self._execute(query)
 
-        return db_result.scalars().one_or_none() is not None
+        return db_result.scalars().first() is not None
 
     async def get_applets_by_roles(
         self, user_id: int, roles: list[str], query_params: QueryParams
@@ -119,9 +129,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         result: Result = await self._execute(query)
         return result.scalars().all()
 
-    async def get_applet_by_role(
+    async def get_applet_by_roles(
         self, user_id: int, applet_id: int, roles: list[str]
-    ) -> AppletSchema:
+    ) -> AppletSchema | None:
         query = select(AppletSchema)
         query = query.join_from(UserAppletAccessSchema, AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
@@ -129,10 +139,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.where(UserAppletAccessSchema.role.in_(roles))
         query = query.limit(1)
         result: Result = await self._execute(query)
-        try:
-            return result.scalars().one()
-        except Exception as e:
-            raise e
+        return result.scalars().first()
 
     async def delete_by_id(self, id_: int):
         """Delete applets by id."""

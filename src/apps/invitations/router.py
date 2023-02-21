@@ -2,13 +2,18 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.invitations.api import (
-    invitation_approve,
+    invitation_accept,
     invitation_decline,
     invitation_list,
     invitation_retrieve,
     invitation_send,
+    private_invitation_accept,
+    private_invitation_retrieve,
 )
-from apps.invitations.domain import InvitationResponse
+from apps.invitations.domain import (
+    InvitationResponse,
+    PrivateInvitationResponse,
+)
 from apps.shared.domain.response import (
     DEFAULT_OPENAPI_RESPONSE,
     Response,
@@ -27,6 +32,25 @@ router.get(
     },
 )(invitation_list)
 
+router.get(
+    "/{key}",
+    response_model=Response[InvitationResponse],
+    responses={
+        status.HTTP_200_OK: {"model": Response[InvitationResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(invitation_retrieve)
+
+# Approve invitation
+router.post(
+    "/{key}/accept",
+)(invitation_accept)
+
+# Decline invitation
+router.post(
+    "/{key}/decline",
+)(invitation_decline)
+
 # Invitation send
 router.post(
     "/invite",
@@ -37,21 +61,12 @@ router.post(
     },
 )(invitation_send)
 
-# Approve invitation
-router.post(
-    "/approve/{key}",
-)(invitation_approve)
-
-# Decline invitation
-router.post(
-    "/decline/{key}",
-)(invitation_decline)
-
 router.get(
-    "/{key}",
-    response_model=Response[InvitationResponse],
+    "/private/{key}",
+    response_model=Response[PrivateInvitationResponse],
     responses={
-        status.HTTP_200_OK: {"model": Response[InvitationResponse]},
+        status.HTTP_200_OK: {"model": Response[PrivateInvitationResponse]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(invitation_retrieve)
+)(private_invitation_retrieve)
+router.post("/private/{key}/accept")(private_invitation_accept)
