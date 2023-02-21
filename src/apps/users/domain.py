@@ -30,14 +30,12 @@ class _UserBase(BaseModel):
 class UserCreateRequest(_UserBase, PublicModel):
     first_name: str
     last_name: str
-    nickname: str
     password: str
 
 
 class UserCreate(_UserBase, InternalModel):
     first_name: str
     last_name: str
-    nickname: str
     hashed_password: str
 
 
@@ -46,7 +44,6 @@ class UserUpdateRequest(InternalModel):
 
     first_name: str
     last_name: str
-    nickname: str
 
 
 class User(UserCreate):
@@ -58,7 +55,6 @@ class PublicUser(_UserBase, PublicModel):
 
     first_name: str
     last_name: str
-    nickname: str
     id: uuid.UUID
 
 
