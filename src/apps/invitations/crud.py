@@ -42,8 +42,6 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     role=invitation.role,
                     key=invitation.key,
                     status=invitation.status,
-                    title=invitation.title,
-                    body=invitation.body,
                 )
             )
         return results
@@ -72,8 +70,6 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             role=invitation.role,
             key=invitation.key,
             status=invitation.status,
-            title=invitation.title,
-            body=invitation.body,
         )
 
     async def approve_by_id(self, id_: uuid.UUID):

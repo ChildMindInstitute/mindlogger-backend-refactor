@@ -20,8 +20,6 @@ class InvitationRequest(InternalModel):
     email: EmailStr
     applet_id: uuid.UUID
     role: Role = Role.RESPONDENT
-    title: str | None
-    body: str | None
 
 
 class Invitation(InternalModel):
@@ -34,8 +32,6 @@ class Invitation(InternalModel):
     key: UUID
     status: str
     invitor_id: int
-    title: str | None
-    body: str | None
 
 
 class InvitationDetail(InternalModel):
@@ -57,8 +53,6 @@ class PrivateInvitationDetail(InternalModel):
     applet_name: str
     role: Role
     key: UUID
-    title: str | None
-    body: str | None
 
 
 class InvitationResponse(PublicModel):
@@ -80,5 +74,3 @@ class PrivateInvitationResponse(PublicModel):
     role: Role
     key: UUID
     status: str
-    title: str | None
-    body: str | None
