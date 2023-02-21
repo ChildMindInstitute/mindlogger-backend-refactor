@@ -76,5 +76,6 @@ settings = Settings(
         "folders",
         "answers",
         "invitations",
+        "transfer_ownership",
     ],
 )
