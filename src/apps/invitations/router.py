@@ -8,6 +8,7 @@ from apps.invitations.api import (
     invitation_managers_send,
     invitation_respondent_send,
     invitation_retrieve,
+    invitation_reviewer_send,
     invitation_send,
     private_invitation_accept,
     private_invitation_retrieve,
@@ -16,6 +17,7 @@ from apps.invitations.domain import (
     InvitationManagersResponse,
     InvitationRespondentResponse,
     InvitationResponse,
+    InvitationReviewerResponse,
     PrivateInvitationResponse,
 )
 from apps.shared.domain.response import (
@@ -66,7 +68,6 @@ router.post(
 )(invitation_send)
 
 # Invitation send for Role respondent
-# invitation_respondent_send
 router.post(
     "/{applet_id}/invitations/respondent",
     response_model=Response[InvitationRespondentResponse],
@@ -75,6 +76,16 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(invitation_respondent_send)
+
+# Invitation send for Role reviewer
+router.post(
+    "/{applet_id}/invitations/reviewer",
+    response_model=Response[InvitationReviewerResponse],
+    responses={
+        status.HTTP_200_OK: {"model": Response[InvitationReviewerResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(invitation_reviewer_send)
 
 # Invitation send for other Role ("manager", "coordinator", "editor")
 router.post(
