@@ -12,9 +12,11 @@ from apps.invitations.domain import (
     InvitationDetail,
     InvitationDetailForManagers,
     InvitationDetailForRespondent,
+    InvitationDetailForReviewer,
     InvitationManagersRequest,
     InvitationRequest,
     InvitationRespondentRequest,
+    InvitationReviewerRequest,
     PrivateInvitationDetail,
 )
 from apps.invitations.errors import (
@@ -159,6 +161,72 @@ class InvitationsService:
             role=invitation.role,
             status=invitation.status,
             key=invitation.key,
+        )
+
+    async def send_reviewer_invitation(
+        self, applet_id: int, schema: InvitationReviewerRequest
+    ) -> InvitationDetailForReviewer:
+
+        await self._is_applet_exist(applet_id)
+        await self._validate_role_for_invitation(applet_id, Role.REVIEWER)
+        # TODO: Need validate list[respondent_id] in applet.
+        #  If not exist - Bad request is raised. The list could be empty
+        #  Need to use user_applet_access
+
+        # TODO: Need information - should we check for already sent invite?
+        #  Should we remove duplicate invites?
+        #  Should we check if the user already has these rights?
+
+        invitation_schema = await InvitationCRUD().save(
+            InvitationSchema(
+                email=schema.email,
+                applet_id=applet_id,
+                role=Role.REVIEWER,
+                key=uuid.uuid3(uuid.uuid4(), schema.email),
+                invitor_id=self._user.id,
+                status=InvitationStatus.PENDING,
+            )
+        )
+
+        invitation = Invitation.from_orm(invitation_schema)
+        applet = await AppletsCRUD().get_by_id(invitation.applet_id)
+
+        # Send email to the user
+        service: MailingService = MailingService()
+
+        html_payload: dict = {
+            "coordinator_name": f"{self._user.first_name} "
+            f"{self._user.last_name}",
+            "user_name": f"{schema.first_name} {schema.last_name}",
+            "applet": applet.display_name,
+            "role": invitation.role,
+            "key": invitation.key,
+            "email": invitation.email,
+            "link": self._get_invitation_url_by_role(invitation.role),
+        }
+
+        if schema.language == "fr":
+            path = "invitation_fr"
+        else:
+            path = "invitation_en"
+
+        message = MessageSchema(
+            recipients=[schema.email],
+            subject="Invitation to the FCM",
+            body=service.get_template(path=path, **html_payload),
+        )
+
+        await service.send(message)
+
+        return InvitationDetailForReviewer(
+            id=invitation.id,
+            email=invitation.email,
+            applet_id=applet.id,
+            applet_name=applet.display_name,
+            role=invitation.role,
+            status=invitation.status,
+            key=invitation.key,
+            respondents=schema.respondents,
         )
 
     async def send_managers_invitation(

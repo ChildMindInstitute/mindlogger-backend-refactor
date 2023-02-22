@@ -10,12 +10,15 @@ from apps.invitations.domain import (
     InvitationDetail,
     InvitationDetailForManagers,
     InvitationDetailForRespondent,
+    InvitationDetailForReviewer,
     InvitationManagersRequest,
     InvitationManagersResponse,
     InvitationRequest,
     InvitationRespondentRequest,
     InvitationRespondentResponse,
     InvitationResponse,
+    InvitationReviewerRequest,
+    InvitationReviewerResponse,
     PrivateInvitationResponse,
 )
 from apps.invitations.services import (
@@ -80,10 +83,6 @@ async def invitation_send(
     )
 
 
-async def inv():
-    pass
-
-
 async def invitation_respondent_send(
     applet_id: int,
     user: User = Depends(get_current_user),
@@ -103,13 +102,32 @@ async def invitation_respondent_send(
     )
 
 
+async def invitation_reviewer_send(
+    applet_id: int,
+    user: User = Depends(get_current_user),
+    invitation_schema: InvitationReviewerRequest = Body(...),
+) -> Response[InvitationReviewerResponse]:
+    """General endpoint for sending invitations to the concrete applet
+    for the concrete user giving him role "reviewer" for specific respondents.
+    """
+
+    # Send the invitation using the internal Invitation service
+    invitation: InvitationDetailForReviewer = await InvitationsService(
+        user
+    ).send_reviewer_invitation(applet_id, invitation_schema)
+
+    return Response[InvitationReviewerResponse](
+        result=InvitationReviewerResponse(**invitation.dict())
+    )
+
+
 async def invitation_managers_send(
     applet_id: int,
     user: User = Depends(get_current_user),
     invitation_schema: InvitationManagersRequest = Body(...),
 ) -> Response[InvitationManagersResponse]:
     """General endpoint for sending invitations to the concrete applet
-    for the concrete user giving him a roles:
+    for the concrete user giving him a one of roles:
     "manager", "coordinator", "editor".
     """
 
