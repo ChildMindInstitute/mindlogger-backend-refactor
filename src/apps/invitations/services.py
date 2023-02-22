@@ -1,7 +1,7 @@
 import uuid
 
 from apps.applets.crud import AppletsCRUD
-from apps.applets.domain import Role
+from apps.applets.domain import ManagersRole, Role
 from apps.applets.service import AppletService, UserAppletAccessService
 from apps.applets.service.applet_service import PublicAppletService
 from apps.invitations.constants import InvitationStatus
@@ -10,7 +10,11 @@ from apps.invitations.db import InvitationSchema
 from apps.invitations.domain import (
     Invitation,
     InvitationDetail,
+    InvitationDetailForManagers,
+    InvitationDetailForRespondent,
+    InvitationManagersRequest,
     InvitationRequest,
+    InvitationRespondentRequest,
     PrivateInvitationDetail,
 )
 from apps.invitations.errors import (
@@ -92,6 +96,133 @@ class InvitationsService:
             key=invitation.key,
         )
 
+    async def send_respondent_invitation(
+        self, applet_id: int, schema: InvitationRespondentRequest
+    ) -> InvitationDetailForRespondent:
+
+        await self._is_applet_exist(applet_id)
+        await self._validate_role_for_invitation(applet_id, Role.RESPONDENT)
+        # TODO: Need validate unique secret_user_id in applet.
+        #  Need to use user_applet_access
+
+        # TODO: Need information - should we check for already sent invite?
+        #  Should we remove duplicate invites?
+        #  Should we check if the user already has these rights?
+
+        invitation_schema = await InvitationCRUD().save(
+            InvitationSchema(
+                email=schema.email,
+                applet_id=applet_id,
+                role=Role.RESPONDENT,
+                key=uuid.uuid3(uuid.uuid4(), schema.email),
+                invitor_id=self._user.id,
+                status=InvitationStatus.PENDING,
+            )
+        )
+
+        invitation = Invitation.from_orm(invitation_schema)
+        applet = await AppletsCRUD().get_by_id(invitation.applet_id)
+
+        # Send email to the user
+        service: MailingService = MailingService()
+
+        html_payload: dict = {
+            "coordinator_name": f"{self._user.first_name} "
+            f"{self._user.last_name}",
+            "user_name": f"{schema.first_name} {schema.last_name}",
+            "applet": applet.display_name,
+            "role": invitation.role,
+            "key": invitation.key,
+            "email": invitation.email,
+            "link": self._get_invitation_url_by_role(invitation.role),
+        }
+
+        if schema.language == "fr":
+            path = "invitation_fr"
+        else:
+            path = "invitation_en"
+
+        message = MessageSchema(
+            recipients=[schema.email],
+            subject="Invitation to the FCM",
+            body=service.get_template(path=path, **html_payload),
+        )
+
+        await service.send(message)
+
+        return InvitationDetailForRespondent(
+            id=invitation.id,
+            secret_user_id=schema.secret_user_id,
+            nickname=schema.nickname,
+            applet_id=applet.id,
+            applet_name=applet.display_name,
+            role=invitation.role,
+            status=invitation.status,
+            key=invitation.key,
+        )
+
+    async def send_managers_invitation(
+        self, applet_id: int, schema: InvitationManagersRequest
+    ) -> InvitationDetailForManagers:
+
+        await self._is_applet_exist(applet_id)
+        await self._validate_role_for_invitation(applet_id, schema.role)
+
+        # TODO: Need information - should we check for already sent invite?
+        #  Should we remove duplicate invites?
+        #  Should we check if the user already has these rights?
+
+        invitation_schema = await InvitationCRUD().save(
+            InvitationSchema(
+                email=schema.email,
+                applet_id=applet_id,
+                role=schema.role,
+                key=uuid.uuid3(uuid.uuid4(), schema.email),
+                invitor_id=self._user.id,
+                status=InvitationStatus.PENDING,
+            )
+        )
+
+        invitation = Invitation.from_orm(invitation_schema)
+        applet = await AppletsCRUD().get_by_id(invitation.applet_id)
+
+        # Send email to the user
+        service: MailingService = MailingService()
+
+        html_payload: dict = {
+            "coordinator_name": f"{self._user.first_name} "
+            f"{self._user.last_name}",
+            "user_name": f"{schema.first_name} {schema.last_name}",
+            "applet": applet.display_name,
+            "role": invitation.role,
+            "key": invitation.key,
+            "email": invitation.email,
+            "link": self._get_invitation_url_by_role(invitation.role),
+        }
+
+        if schema.language == "fr":
+            path = "invitation_fr"
+        else:
+            path = "invitation_en"
+
+        message = MessageSchema(
+            recipients=[schema.email],
+            subject="Invitation to the FCM",
+            body=service.get_template(path=path, **html_payload),
+        )
+
+        await service.send(message)
+
+        return InvitationDetailForManagers(
+            id=invitation.id,
+            email=invitation.email,
+            applet_id=applet.id,
+            applet_name=applet.display_name,
+            role=invitation.role,
+            status=invitation.status,
+            key=invitation.key,
+        )
+
     def _get_invitation_url_by_role(self, role: Role):
         domain = settings.service.urls.frontend.web_base
         url_path = settings.service.urls.frontend.invitation_send
@@ -136,6 +267,50 @@ class InvitationsService:
                 message="You do not have access to send invitation."
             )
         elif Role(role) < Role(invitation_request.role):
+            # TODO: remove this validation if it is not needed
+            # Can not invite users by roles where own role level is lower.
+            raise DoesNotHaveAccess(
+                message="You do not have access to send invitation."
+            )
+
+    async def _is_applet_exist(
+        self,
+        applet_id: int,
+    ):
+        exist = await AppletService(self._user.id).exist_by_id(applet_id)
+        if not exist:
+            raise AppletDoesNotExist(
+                f"Applet by id {applet_id} does not exist."
+            )
+
+    # invitation_request
+    async def _validate_role_for_invitation(
+        self, applet_id: int, request_role: Role | ManagersRole
+    ):
+
+        access_service = UserAppletAccessService(self._user.id, applet_id)
+        if request_role == Role.RESPONDENT:
+            role = await access_service.get_respondent_managers_role()
+        elif request_role in [
+            Role.MANAGER,
+            Role.COORDINATOR,
+            Role.EDITOR,
+            Role.REVIEWER,
+        ]:
+            role = await access_service.get_organizers_role()
+        else:
+            # Wrong role to invite
+            raise DoesNotHaveAccess(
+                message="You can not invite user with "
+                f"role {request_role.name}."
+            )
+
+        if not role:
+            # Does not have access to send invitation
+            raise DoesNotHaveAccess(
+                message="You do not have access to send invitation."
+            )
+        elif Role(role) < Role(request_role):
             # TODO: remove this validation if it is not needed
             # Can not invite users by roles where own role level is lower.
             raise DoesNotHaveAccess(
