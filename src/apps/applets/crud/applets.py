@@ -232,7 +232,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     ) -> AppletSchema:
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
-        query = query.values(creator_id=new_owner_id)
+        query = query.values(account_id=new_owner_id)
         query = query.returning(self.schema_class)
         db_result = await self._execute(query)
         return db_result.scalars().one_or_none()
