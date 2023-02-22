@@ -5,12 +5,16 @@ from apps.invitations.api import (
     invitation_accept,
     invitation_decline,
     invitation_list,
+    invitation_managers_send,
+    invitation_respondent_send,
     invitation_retrieve,
     invitation_send,
     private_invitation_accept,
     private_invitation_retrieve,
 )
 from apps.invitations.domain import (
+    InvitationManagersResponse,
+    InvitationRespondentResponse,
     InvitationResponse,
     PrivateInvitationResponse,
 )
@@ -20,7 +24,7 @@ from apps.shared.domain.response import (
     ResponseMulti,
 )
 
-router = APIRouter(prefix="/invitations", tags=["Invitations"])
+router = APIRouter(prefix="/applets", tags=["Invitations"])
 
 # Invitations list
 router.get(
@@ -60,6 +64,27 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(invitation_send)
+
+# Invitation send for Role respondent
+# invitation_respondent_send
+router.post(
+    "/{applet_id}/invitations/respondent",
+    response_model=Response[InvitationRespondentResponse],
+    responses={
+        status.HTTP_200_OK: {"model": Response[InvitationRespondentResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(invitation_respondent_send)
+
+# Invitation send for other Role ("manager", "coordinator", "editor")
+router.post(
+    "/{applet_id}/invitations/managers",
+    response_model=Response[InvitationManagersResponse],
+    responses={
+        status.HTTP_200_OK: {"model": Response[InvitationManagersResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(invitation_managers_send)
 
 router.get(
     "/private/{key}",
