@@ -79,6 +79,15 @@ class AppletService:
             )
         return applets
 
+    async def get_list_by_single_language_count(
+        self, query_params: QueryParams
+    ) -> int:
+        roles: str = query_params.filters.pop("roles")
+        count = await AppletsCRUD().get_applets_by_roles_count(
+            self.user_id, roles.split(","), query_params
+        )
+        return count
+
     async def get_single_language_by_id(
         self, applet_id: int, language: str
     ) -> AppletDetail:
