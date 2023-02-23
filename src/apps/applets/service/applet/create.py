@@ -77,7 +77,6 @@ async def _create_applet(
 
 
 async def _create_access(applet_id: int, user_id: int):
-    breakpoint()
     await UserAppletAccessService(user_id, applet_id).add_role(Role.ADMIN)
 
 
