@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from fastapi import Body, Depends
 
 from apps.applets.domain import (
@@ -50,7 +52,10 @@ async def applet_list(
     query_params: QueryParams = Depends(parse_query_params(AppletQueryParams)),
 ) -> ResponseMulti[AppletInfoPublic]:
     applets = await AppletService(user.id).get_list_by_single_language(
-        language, query_params
+        language, deepcopy(query_params)
+    )
+    count = await AppletService(user.id).get_list_by_single_language_count(
+        deepcopy(query_params)
     )
     count = await AppletService(user.id).get_list_by_single_language_count(
         query_params
