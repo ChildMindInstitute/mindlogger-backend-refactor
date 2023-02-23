@@ -5,6 +5,7 @@ __all__ = [
     "FolderDoesNotExist",
     "FolderIsNotEmpty",
     "FolderAccessDenied",
+    "AppletNotInFolder",
 ]
 
 
@@ -29,4 +30,9 @@ class FolderIsNotEmpty(ValidationError):
 
 class FolderAccessDenied(ValidationError):
     def __init__(self, *_, message="Access denied.") -> None:
+        super().__init__(message=message)
+
+
+class AppletNotInFolder(ValidationError):
+    def __init__(self, *_, message="Applet not in folder.") -> None:
         super().__init__(message=message)

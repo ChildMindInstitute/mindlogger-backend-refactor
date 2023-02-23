@@ -1,8 +1,10 @@
 from apps.applets.crud import AppletsCRUD
+from apps.applets.errors import AppletNotFoundError
 from apps.folders.crud import FolderCRUD
 from apps.folders.db.schemas import FolderSchema
 from apps.folders.domain import Folder, FolderCreate, FolderUpdate
 from apps.folders.errors import (
+    AppletNotInFolder,
     FolderAccessDenied,
     FolderAlreadyExist,
     FolderIsNotEmpty,
@@ -39,10 +41,7 @@ class FolderService:
         return Folder.from_orm(schema)
 
     async def _validate_update(self, folder_id, new_name: str):
-        existed_folder = await FolderCRUD().get_by_id(folder_id)
-
-        if existed_folder.creator_id != self._creator_id:
-            raise FolderAccessDenied()
+        await self._validate_folder(folder_id)
 
         folder_by_new_name = await FolderCRUD().get_creators_folder_by_name(
             self._creator_id, new_name
@@ -55,11 +54,30 @@ class FolderService:
         await FolderCRUD().delete_creators_folder_by_id(self._creator_id, id_)
 
     async def _validate_delete(self, folder_id: int):
-        folder = await FolderCRUD().get_by_id(folder_id)
-
-        if folder.creator_id != self._creator_id:
-            raise FolderAccessDenied()
+        await self._validate_folder(folder_id)
 
         applet_exists_in_folder = await AppletsCRUD().check_folder(folder_id)
         if applet_exists_in_folder:
             raise FolderIsNotEmpty()
+
+    async def pin_applet(self, id_: int, applet_id: int):
+        await self._validate_pin(id_, applet_id)
+        await AppletsCRUD().pin(applet_id=applet_id, folder_id=id_)
+
+    async def unpin_applet(self, id_: int, applet_id: int):
+        await self._validate_pin(id_, applet_id)
+        await AppletsCRUD().unpin(applet_id=applet_id, folder_id=id_)
+
+    async def _validate_pin(self, folder_id: int, applet_id: int):
+        await self._validate_folder(folder_id)
+
+        # check if applet is in folder
+        applet = await AppletsCRUD().get_by_id(applet_id)
+        if applet.folder_id != folder_id:
+            raise AppletNotInFolder()
+
+    async def _validate_folder(self, folder_id: int):
+        folder = await FolderCRUD().get_by_id(folder_id)
+
+        if folder.creator_id != self._creator_id:
+            raise FolderAccessDenied()
