@@ -11,7 +11,7 @@ class UserAppletAccessService:
         self._applet_id = applet_id
 
     async def add_role(
-        self, role: Role, meta: dict | None
+        self, role: Role, meta: dict | None = None
     ) -> UserAppletAccess:
         access_schema = await UserAppletAccessCRUD().get(
             self._user_id, self._applet_id, role
