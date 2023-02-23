@@ -21,4 +21,7 @@ class UserAppletAccessSchema(Base):
     owner_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
+    invitor_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
     meta = Column(JSONB())
