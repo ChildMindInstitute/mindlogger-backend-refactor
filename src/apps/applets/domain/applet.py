@@ -1,3 +1,5 @@
+import datetime
+
 from pydantic import Field
 from pydantic.types import PositiveInt
 
@@ -24,6 +26,8 @@ class Applet(InternalModel):
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
+    created_at: datetime.datetime | None
+    updated_at: datetime.datetime | None
 
 
 class AppletPublic(PublicModel):
@@ -41,6 +45,8 @@ class AppletPublic(PublicModel):
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
 
 
 class AppletDetail(Applet):
