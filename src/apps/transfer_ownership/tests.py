@@ -35,25 +35,21 @@ class TestTransfer(BaseTest):
     @transaction.rollback
     async def test_decline_transfer(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-        data = {"accepted": False}
-        response = await self.client.post(
+        response = await self.client.delete(
             self.response_url.format(
                 applet_id=1, key="6a3ab8e6-f2fa-49ae-b2db-197136677da7"
             ),
-            data=data,
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 204
 
     @transaction.rollback
     async def test_accept_transfer(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-        data = {"accepted": True}
         response = await self.client.post(
             self.response_url.format(
                 applet_id=1, key="6a3ab8e6-f2fa-49ae-b2db-197136677da7"
             ),
-            data=data,
         )
 
         assert response.status_code == 200

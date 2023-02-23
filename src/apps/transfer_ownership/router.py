@@ -6,11 +6,15 @@ from apps.shared.domain.response import (
     DEFAULT_OPENAPI_RESPONSE,
     NO_CONTENT_ERROR_RESPONSES,
 )
-from apps.transfer_ownership.api import transfer_initiate, transfer_respond
+from apps.transfer_ownership.api import (
+    transfer_accept,
+    transfer_decline,
+    transfer_initiate,
+)
 
 router = APIRouter(prefix="/applets", tags=["Applets"])
 
-# Invitations list
+# Initiate a transfer of ownership of an applet.
 router.post(
     "/{applet_id}/transferOwnership",
     response_model=None,
@@ -22,6 +26,7 @@ router.post(
     },
 )(transfer_initiate)
 
+# Accept a transfer of ownership of an applet.
 router.post(
     "/{applet_id}/transferOwnership/{key}",
     response_model=None,
@@ -31,4 +36,16 @@ router.post(
         **NO_CONTENT_ERROR_RESPONSES,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(transfer_respond)
+)(transfer_accept)
+
+# Decline a transfer of ownership of an applet.
+router.delete(
+    "/{applet_id}/transferOwnership/{key}",
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **NO_CONTENT_ERROR_RESPONSES,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(transfer_decline)

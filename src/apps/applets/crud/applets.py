@@ -235,4 +235,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.values(account_id=new_owner_id)
         query = query.returning(self.schema_class)
         db_result = await self._execute(query)
-        return db_result.scalars().one_or_none()
+        schema = db_result.scalars().one_or_none()
+        if not schema:
+            raise errors.AppletNotFoundError(key="id", value=str(applet_id))
+        return schema

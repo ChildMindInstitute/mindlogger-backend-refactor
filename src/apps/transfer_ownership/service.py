@@ -5,11 +5,7 @@ from apps.authentication.errors import PermissionsError
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.transfer_ownership.crud import TransferCRUD
-from apps.transfer_ownership.domain import (
-    InitiateTransfer,
-    Transfer,
-    TransferResponse,
-)
+from apps.transfer_ownership.domain import InitiateTransfer, Transfer
 from apps.users.domain import User
 from config import settings
 
@@ -35,7 +31,7 @@ class TransferService:
         await TransferCRUD().create(transfer)
 
         # TODO: send email with URL for accepting(or declining)
-        url = self._generate_transfer_url(transfer.key)
+        url = self._generate_transfer_url()
 
         # Send email to the user
         service: MailingService = MailingService()
@@ -59,29 +55,33 @@ class TransferService:
 
         await service.send(message)
 
-    async def respond_transfer(
-        self, applet_id: int, key: uuid.UUID, response: TransferResponse
-    ):
+    async def accept_transfer(self, applet_id: int, key: uuid.UUID):
         """Respond to a transfer of ownership of an applet."""
         transfer = await TransferCRUD().get_by_key(key=key)
 
         if transfer.email != self._user.email:
             raise PermissionsError()
 
-        if response.accepted:
-            await AppletsCRUD().transfer_ownership(
-                applet_id=transfer.applet_id,
-                new_owner_id=self._user.id,
-            )
-            # delete all other transfers for this applet
-            await TransferCRUD().delete_all_by_applet_id(
-                applet_id=transfer.applet_id
-            )
-        else:
-            # delete this transfer
-            await TransferCRUD().delete_by_key(key=key)
+        await AppletsCRUD().transfer_ownership(
+            applet_id=transfer.applet_id,
+            new_owner_id=self._user.id,
+        )
+        # delete all other transfers for this applet
+        await TransferCRUD().delete_all_by_applet_id(
+            applet_id=transfer.applet_id
+        )
 
-    def _generate_transfer_url(self, key: uuid.UUID) -> str:
+    def _generate_transfer_url(self) -> str:
         domain = settings.service.urls.frontend.web_base
         url_path = settings.service.urls.frontend.transfer_link
         return f"https://{domain}/{url_path}"
+
+    async def decline_transfer(self, applet_id: int, key: uuid.UUID):
+        """Decline a transfer of ownership of an applet."""
+        transfer = await TransferCRUD().get_by_key(key=key)
+
+        if transfer.email != self._user.email:
+            raise PermissionsError()
+
+        # delete transfer
+        await TransferCRUD().delete_by_key(key=key)

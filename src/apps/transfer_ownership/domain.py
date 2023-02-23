@@ -8,7 +8,6 @@ from apps.shared.domain import InternalModel, PublicModel
 __all__ = [
     "Transfer",
     "InitiateTransfer",
-    "TransferResponse",
 ]
 
 
@@ -22,7 +21,3 @@ class Transfer(InternalModel):
 
 class InitiateTransfer(PublicModel):
     email: EmailStr
-
-
-class TransferResponse(PublicModel):
-    accepted: bool
