@@ -5,12 +5,14 @@ from sqlalchemy import distinct, or_, select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
+from sqlalchemy.sql.functions import count
 
 from apps.applets import errors
 from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
 from apps.applets.domain import Role
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
+from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
 from infrastructure.database.crud import BaseCRUD
@@ -124,10 +126,33 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 *_AppletOrdering().get_clauses(*query_params.ordering)
             )
         query = query.where(AppletSchema.id.in_(accessible_applets_query))
-        query = query.limit(query_params.limit)
-        query = query.offset(query_params.page - 1)
+        query = paging(query, query_params.page, query_params.limit)
         result: Result = await self._execute(query)
         return result.scalars().all()
+
+    async def get_applets_by_roles_count(
+        self, user_id: int, roles: list[str], query_params: QueryParams
+    ) -> int:
+        accessible_applets_query = select(UserAppletAccessSchema.applet_id)
+        accessible_applets_query = accessible_applets_query.where(
+            UserAppletAccessSchema.user_id == user_id
+        )
+        accessible_applets_query = accessible_applets_query.where(
+            UserAppletAccessSchema.role.in_(roles)
+        )
+
+        query = select(count(AppletSchema.id))
+        if query_params.filters:
+            query = query.where(
+                *_AppletFiltering().get_clauses(**query_params.filters)
+            )
+        if query_params.search:
+            query = query.where(
+                _AppletSearching().get_clauses(query_params.search)
+            )
+        query = query.where(AppletSchema.id.in_(accessible_applets_query))
+        result: Result = await self._execute(query)
+        return result.scalars().first() or 0
 
     async def get_applet_by_roles(
         self, user_id: int, applet_id: int, roles: list[str]
