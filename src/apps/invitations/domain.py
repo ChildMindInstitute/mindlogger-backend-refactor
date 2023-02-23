@@ -81,6 +81,23 @@ class InvitationManagersRequest(_InvitationRequest):
     )
 
 
+class RespondentMeta(InternalModel):
+    """This model is used for internal needs
+    for representation respondent meta information.
+    """
+
+    secret_user_id: str
+    nickname: str
+
+
+class ReviewerMeta(InternalModel):
+    """This model is used for internal needs
+    for representation reviewer meta information.
+    """
+
+    respondents: list[int]
+
+
 class Invitation(InternalModel):
     """This is an invitation representation for internal needs."""
 
@@ -94,6 +111,10 @@ class Invitation(InternalModel):
 
 
 class InvitationDetail(InternalModel):
+    """This is an invitation representation for to get
+    invitations from the database for other roles
+    """
+
     id: uuid.UUID
     email: EmailStr
     applet_id: uuid.UUID
@@ -101,8 +122,23 @@ class InvitationDetail(InternalModel):
     applet_name: str
     role: Role
     key: UUID
-    title: str | None
-    body: str | None
+    meta: dict
+
+
+class InvitationDetailRespondent(InvitationDetail):
+    """This is an invitation representation for to get
+    invitations from the database for respondent roles
+    """
+
+    meta: RespondentMeta
+
+
+class InvitationDetailReviewer(InvitationDetail):
+    """This is an invitation representation for to get
+    invitations from the database for reviewer roles
+    """
+
+    meta: ReviewerMeta
 
 
 class _InvitationDetail(InternalModel):
@@ -164,8 +200,6 @@ class InvitationResponse(PublicModel):
     role: Role
     key: UUID
     status: str
-    title: str | None
-    body: str | None
 
 
 class _InvitationResponse(PublicModel):
