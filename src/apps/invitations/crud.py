@@ -4,9 +4,14 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Query
 
 from apps.applets.db.schemas import AppletSchema
+from apps.applets.domain import Role
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.db import InvitationSchema
-from apps.invitations.domain import InvitationDetail
+from apps.invitations.domain import (
+    InvitationDetail,
+    InvitationDetailRespondent,
+    InvitationDetailReviewer,
+)
 from infrastructure.database import BaseCRUD
 
 
@@ -62,7 +67,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         if not result:
             return None
         invitation, applet_name = result
-        return InvitationDetail(
+        invitation_schema = InvitationDetail(
             id=invitation.id,
             email=invitation.email,
             applet_id=invitation.applet_id,
@@ -70,7 +75,18 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             role=invitation.role,
             key=invitation.key,
             status=invitation.status,
+            meta={},
         )
+        if invitation.role == Role.RESPONDENT:
+            return InvitationDetailRespondent(
+                **invitation_schema.dict(), meta=invitation.meta
+            )
+        elif invitation.role == Role.REVIEWER:
+            return InvitationDetailReviewer(
+                **invitation_schema.dict(), meta=invitation.meta
+            )
+        else:
+            return invitation_schema
 
     async def approve_by_id(self, id_: int):
         query = update(InvitationSchema)

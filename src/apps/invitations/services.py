@@ -1,6 +1,6 @@
 import uuid
 
-from apps.applets.crud import AppletsCRUD
+from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import ManagersRole, Role
 from apps.applets.service import AppletService, UserAppletAccessService
 from apps.applets.service.applet_service import PublicAppletService
@@ -18,12 +18,16 @@ from apps.invitations.domain import (
     InvitationRespondentRequest,
     InvitationReviewerRequest,
     PrivateInvitationDetail,
+    RespondentMeta,
+    ReviewerMeta,
 )
 from apps.invitations.errors import (
     AppletDoesNotExist,
     DoesNotHaveAccess,
     InvitationAlreadyProcesses,
     InvitationDoesNotExist,
+    NonUniqueValue,
+    RespondentDoesNotExist,
 )
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
@@ -104,12 +108,16 @@ class InvitationsService:
 
         await self._is_applet_exist(applet_id)
         await self._validate_role_for_invitation(applet_id, Role.RESPONDENT)
-        # TODO: Need validate unique secret_user_id in applet.
-        #  Need to use user_applet_access
+        await self._is_secret_user_id_unique(applet_id, schema.secret_user_id)
 
         # TODO: Need information - should we check for already sent invite?
         #  Should we remove duplicate invites?
         #  Should we check if the user already has these rights?
+
+        meta = RespondentMeta(
+            secret_user_id=schema.secret_user_id,
+            nickname=schema.nickname,
+        ).dict(by_alias=True)
 
         invitation_schema = await InvitationCRUD().save(
             InvitationSchema(
@@ -119,6 +127,7 @@ class InvitationsService:
                 key=uuid.uuid3(uuid.uuid4(), schema.email),
                 invitor_id=self._user.id,
                 status=InvitationStatus.PENDING,
+                meta=meta,
             )
         )
 
@@ -169,13 +178,13 @@ class InvitationsService:
 
         await self._is_applet_exist(applet_id)
         await self._validate_role_for_invitation(applet_id, Role.REVIEWER)
-        # TODO: Need validate list[respondent_id] in applet.
-        #  If not exist - Bad request is raised. The list could be empty
-        #  Need to use user_applet_access
+        await self._is_respondents_exist(applet_id, schema.respondents)
 
         # TODO: Need information - should we check for already sent invite?
         #  Should we remove duplicate invites?
         #  Should we check if the user already has these rights?
+
+        meta = ReviewerMeta(respondents=schema.respondents).dict(by_alias=True)
 
         invitation_schema = await InvitationCRUD().save(
             InvitationSchema(
@@ -185,6 +194,7 @@ class InvitationsService:
                 key=uuid.uuid3(uuid.uuid4(), schema.email),
                 invitor_id=self._user.id,
                 status=InvitationStatus.PENDING,
+                meta=meta,
             )
         )
 
@@ -385,6 +395,42 @@ class InvitationsService:
                 message="You do not have access to send invitation."
             )
 
+    async def _is_secret_user_id_unique(
+        self,
+        applet_id: int,
+        secret_user_id: str,
+    ):
+        meta = await UserAppletAccessCRUD().get_meta_applet_and_role(
+            applet_id=applet_id,
+            role=Role.RESPONDENT,
+        )
+        if meta:
+            for item in meta:
+                if item["secretUserId"] == secret_user_id:
+                    raise NonUniqueValue(
+                        message=f"In applet with id {applet_id} "
+                        f"secret User Id is non-unique."
+                    )
+
+    async def _is_respondents_exist(
+        self,
+        applet_id: int,
+        respondents: list[int],
+    ):
+        exist_respondents = (
+            await UserAppletAccessCRUD().get_user_id_applet_and_role(
+                applet_id=applet_id,
+                role=Role.RESPONDENT,
+            )
+        )
+
+        for respondent in respondents:
+            if respondent not in exist_respondents:
+                raise RespondentDoesNotExist(
+                    message=f"Respondent with id {respondent} not exist "
+                    f"in applet with id {applet_id}."
+                )
+
     async def accept(self, key: uuid.UUID):
         invitation = await InvitationCRUD().get_by_email_and_key(
             self._user.email, key
@@ -395,9 +441,14 @@ class InvitationsService:
         if invitation.status != InvitationStatus.PENDING:
             raise InvitationAlreadyProcesses()
 
-        await UserAppletAccessService(
-            self._user.id, invitation.applet_id
-        ).add_role(invitation.role)
+        if type(invitation.meta) == dict:
+            await UserAppletAccessService(
+                self._user.id, invitation.applet_id
+            ).add_role(invitation.role, invitation.meta)
+        else:
+            await UserAppletAccessService(
+                self._user.id, invitation.applet_id
+            ).add_role(invitation.role, invitation.meta.dict(by_alias=True))
 
         await InvitationCRUD().approve_by_id(invitation.id)
         return

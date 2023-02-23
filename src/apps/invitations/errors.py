@@ -21,3 +21,15 @@ class InvitationAlreadyProcesses(ValidationError):
         self, *_, message="Invitation has been already processed."
     ) -> None:
         super().__init__(message=message)
+
+
+class NonUniqueValue(ValidationError):
+    def __init__(self, *_, message="Non-unique value.") -> None:
+        super().__init__(message=message)
+
+
+class RespondentDoesNotExist(ValidationError):
+    def __init__(
+        self, *_, message="Respondent does not exist in applet."
+    ) -> None:
+        super().__init__(message=message)
