@@ -73,6 +73,8 @@ class AppletService:
                     report_include_user_id=schema.report_include_user_id,
                     report_include_case_id=schema.report_include_case_id,
                     report_email_body=schema.report_email_body,
+                    created_at=schema.created_at,
+                    updated_at=schema.updated_at,
                 )
             )
         return applets
@@ -103,6 +105,8 @@ class AppletService:
             report_include_user_id=schema.report_include_user_id,
             report_include_case_id=schema.report_include_case_id,
             report_email_body=schema.report_email_body,
+            created_at=schema.created_at,
+            updated_at=schema.updated_at,
         )
         applet.activities = await ActivityService(
             self.user_id
@@ -160,6 +164,8 @@ class AppletService:
                     report_include_user_id=schema.report_include_user_id,
                     report_include_case_id=schema.report_include_case_id,
                     report_email_body=schema.report_email_body,
+                    created_at=schema.created_at,
+                    updated_at=schema.updated_at,
                 )
             )
 
