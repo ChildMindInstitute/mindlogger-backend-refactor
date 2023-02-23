@@ -104,7 +104,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     async def get(
         self, user_id: int, applet_id: int, role: str
     ) -> UserAppletAccessSchema | None:
-        query: Query = select(UserAppletAccessSchema.user_id == user_id)
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.role == role)
 

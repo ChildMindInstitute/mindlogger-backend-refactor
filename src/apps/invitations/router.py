@@ -10,7 +10,10 @@ from apps.invitations.api import (
     private_invitation_accept,
     private_invitation_retrieve,
 )
-from apps.invitations.domain import InvitationResponse
+from apps.invitations.domain import (
+    InvitationResponse,
+    PrivateInvitationResponse,
+)
 from apps.shared.domain.response import (
     DEFAULT_OPENAPI_RESPONSE,
     Response,
@@ -60,9 +63,9 @@ router.post(
 
 router.get(
     "/private/{key}",
-    response_model=Response[InvitationResponse],
+    response_model=Response[PrivateInvitationResponse],
     responses={
-        status.HTTP_200_OK: {"model": Response[InvitationResponse]},
+        status.HTTP_200_OK: {"model": Response[PrivateInvitationResponse]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(private_invitation_retrieve)

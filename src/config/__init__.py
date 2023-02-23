@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     apps_dir: Path
 
     debug: bool = True
+    commit_id: str = "Not assigned"
 
     env: str = "dev"
 

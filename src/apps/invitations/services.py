@@ -3,6 +3,7 @@ import uuid
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import Role
 from apps.applets.service import AppletService, UserAppletAccessService
+from apps.applets.service.applet_service import PublicAppletService
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.db import InvitationSchema
@@ -10,6 +11,7 @@ from apps.invitations.domain import (
     Invitation,
     InvitationDetail,
     InvitationRequest,
+    PrivateInvitationDetail,
 )
 from apps.invitations.errors import (
     AppletDoesNotExist,
@@ -34,24 +36,6 @@ class InvitationsService:
     async def get(self, key: str) -> InvitationDetail | None:
         return await InvitationCRUD().get_by_email_and_key(
             self._user.email, uuid.UUID(key)
-        )
-
-    async def get_private_invitation(
-        self, link: uuid.UUID
-    ) -> InvitationDetail | None:
-        applet = await AppletService(self._user.id).get_by_link(link, True)
-        if not applet:
-            return None
-        return InvitationDetail(
-            id=applet.id,
-            email=self._user.email,
-            applet_id=applet.id,
-            status=InvitationStatus.PENDING,
-            applet_name=applet.display_name,
-            role=Role.RESPONDENT,
-            key=link,
-            title=None,
-            body=None,
         )
 
     async def send_invitation(
@@ -180,14 +164,6 @@ class InvitationsService:
         await InvitationCRUD().approve_by_id(invitation.id)
         return
 
-    async def accept_private_invitation(self, link: uuid.UUID):
-        applet = await AppletService(self._user.id).get_by_link(link, True)
-        if not applet:
-            raise InvitationDoesNotExist()
-        await UserAppletAccessService(self._user.id, applet.id).add_role(
-            Role.RESPONDENT
-        )
-
     async def decline(self, key: uuid.UUID):
         invitation = await InvitationCRUD().get_by_email_and_key(
             self._user.email, key
@@ -199,3 +175,30 @@ class InvitationsService:
             raise InvitationAlreadyProcesses()
 
         await InvitationCRUD().decline_by_id(invitation.id)
+
+
+class PrivateInvitationService:
+    async def get_invitation(
+        self, link: uuid.UUID
+    ) -> PrivateInvitationDetail | None:
+        applet = await PublicAppletService().get_by_link(link, True)
+        if not applet:
+            return None
+        return PrivateInvitationDetail(
+            id=applet.id,
+            applet_id=applet.id,
+            status=InvitationStatus.PENDING,
+            applet_name=applet.display_name,
+            role=Role.RESPONDENT,
+            key=link,
+            title=None,
+            body=None,
+        )
+
+    async def accept_invitation(self, user_id: int, link: uuid.UUID):
+        applet = await PublicAppletService().get_by_link(link, True)
+        if not applet:
+            raise InvitationDoesNotExist()
+        await UserAppletAccessService(user_id, applet.id).add_role(
+            Role.RESPONDENT
+        )
