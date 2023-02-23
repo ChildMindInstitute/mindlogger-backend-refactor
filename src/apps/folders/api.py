@@ -42,14 +42,10 @@ async def folder_delete(id_: int, user=Depends(get_current_user)):
 
 async def folder_pin(id_: int, applet_id: int, user=Depends(get_current_user)):
 
-    folder = await FolderService(user.id).pin_applet(
-        id_=id_, applet_id=applet_id
-    )
+    await FolderService(user.id).pin_applet(id_=id_, applet_id=applet_id)
 
 
 async def folder_unpin(
     id_: int, applet_id: int, user=Depends(get_current_user)
 ):
-    folder = await FolderService(user.id).unpin_applet(
-        id_=id_, applet_id=applet_id
-    )
+    await FolderService(user.id).unpin_applet(id_=id_, applet_id=applet_id)

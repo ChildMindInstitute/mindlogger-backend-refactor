@@ -1,5 +1,4 @@
 from apps.applets.crud import AppletsCRUD
-from apps.applets.errors import AppletNotFoundError
 from apps.folders.crud import FolderCRUD
 from apps.folders.db.schemas import FolderSchema
 from apps.folders.domain import Folder, FolderCreate, FolderUpdate
