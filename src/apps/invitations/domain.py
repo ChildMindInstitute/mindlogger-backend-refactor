@@ -110,22 +110,28 @@ class Invitation(InternalModel):
     invitor_id: int
 
 
-class InvitationDetail(InternalModel):
-    """This is an invitation representation for to get
-    invitations from the database for other roles
-    """
+class InvitationDetailBase(InternalModel):
+    """This is an invitation representation for internal needs."""
 
     id: uuid.UUID
     email: EmailStr
     applet_id: uuid.UUID
     status: str
     applet_name: str
+    invitor_id: uuid.UUID
     role: Role
     key: UUID
+
+
+class InvitationDetail(InvitationDetailBase):
+    """This is an invitation representation for to get
+    invitations from the database for other roles
+    """
+
     meta: dict
 
 
-class InvitationDetailRespondent(InvitationDetail):
+class InvitationDetailRespondent(InvitationDetailBase):
     """This is an invitation representation for to get
     invitations from the database for respondent roles
     """
@@ -133,7 +139,7 @@ class InvitationDetailRespondent(InvitationDetail):
     meta: RespondentMeta
 
 
-class InvitationDetailReviewer(InvitationDetail):
+class InvitationDetailReviewer(InvitationDetailBase):
     """This is an invitation representation for to get
     invitations from the database for reviewer roles
     """

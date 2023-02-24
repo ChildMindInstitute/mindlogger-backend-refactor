@@ -15,6 +15,9 @@ class UserAppletAccessCreate(InternalModel):
     user_id: uuid.UUID
     applet_id: uuid.UUID
     role: Role
+    owner_id: PositiveInt
+    invitor_id: PositiveInt
+    meta: dict
 
 
 class UserAppletAccess(UserAppletAccessCreate):

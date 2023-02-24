@@ -53,8 +53,8 @@ router.post(
 )(invitation_accept)
 
 # Decline invitation
-router.post(
-    "/{key}/decline",
+router.delete(
+    "/{key}/invitations/decline",
 )(invitation_decline)
 
 # Invitation send
