@@ -80,10 +80,7 @@ class TransactionManager:
                 result = await func(*args, **kwargs)
                 session.transaction_count -= 1
                 if session.transaction_count == 0:
-                    try:
-                        await session.commit()
-                    except sqlalchemy.exc.SQLAlchemyError:
-                        raise
+                    await session.commit()
                 return result
             except sqlalchemy.exc.SQLAlchemyError:
                 await session.rollback()
