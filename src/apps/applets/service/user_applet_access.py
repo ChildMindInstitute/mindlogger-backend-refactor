@@ -23,7 +23,8 @@ class UserAppletAccessService:
                 invitation.applet_id
             )
             if invitation.role in [Role.RESPONDENT, Role.REVIEWER]:
-                meta = invitation.meta.dict(by_alias=True)
+                # TODO: Fix typing
+                meta = invitation.meta.dict(by_alias=True)  # type: ignore
             else:
                 meta = {}
             access_schema = await UserAppletAccessCRUD().save(

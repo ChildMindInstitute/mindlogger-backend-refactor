@@ -94,12 +94,14 @@ class InvitationsService:
 
         return InvitationDetail(
             id=invitation.id,
+            invitor_id=self._user.id,
             email=invitation.email,
             applet_id=applet.id,
             applet_name=applet.display_name,
             role=invitation.role,
             status=invitation.status,
             key=invitation.key,
+            meta={},
         )
 
     async def send_respondent_invitation(
@@ -406,7 +408,7 @@ class InvitationsService:
         )
         if meta:
             for item in meta:
-                if item["secretUserId"] == secret_user_id:
+                if item["secretUserId"] == secret_user_id:  # type: ignore
                     raise NonUniqueValue(
                         message=f"In applet with id {applet_id} "
                         f"secret User Id is non-unique."
