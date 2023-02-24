@@ -441,14 +441,9 @@ class InvitationsService:
         if invitation.status != InvitationStatus.PENDING:
             raise InvitationAlreadyProcesses()
 
-        if type(invitation.meta) == dict:
-            await UserAppletAccessService(
-                self._user.id, invitation.applet_id
-            ).add_role(invitation.role, invitation.meta)
-        else:
-            await UserAppletAccessService(
-                self._user.id, invitation.applet_id
-            ).add_role(invitation.role, invitation.meta.dict(by_alias=True))
+        await UserAppletAccessService(
+            self._user.id, invitation.applet_id
+        ).add_role(invitation=invitation)
 
         await InvitationCRUD().approve_by_id(invitation.id)
         return
