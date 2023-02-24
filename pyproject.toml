@@ -38,6 +38,7 @@ python_files = 'tests.py test_*.py *_test.py'
 python_functions = 'test_* *_test'
 filterwarnings = ['ignore::RuntimeWarning', 'ignore::UserWarning']
 env = [
+    "ENV=testing",
     "DATABASE__HOST=localhost",
     "DATABASE__PORT=5432",
     "DATABASE__PASSWORD=test",

@@ -10,6 +10,7 @@ class ResponseMulti(PublicModel, GenericModel, Generic[_BaseModel]):
     """Generic response model that consist multiple result."""
 
     result: list[_BaseModel]
+    count: int = 0
 
 
 class Response(PublicModel, GenericModel, Generic[_BaseModel]):

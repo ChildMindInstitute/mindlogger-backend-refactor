@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     debug: bool = True
     commit_id: str = "Not assigned"
+    version: str = "Not assigned"
 
     env: str = "dev"
 

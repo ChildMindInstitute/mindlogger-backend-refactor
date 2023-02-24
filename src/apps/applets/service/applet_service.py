@@ -73,9 +73,20 @@ class AppletService:
                     report_include_user_id=schema.report_include_user_id,
                     report_include_case_id=schema.report_include_case_id,
                     report_email_body=schema.report_email_body,
+                    created_at=schema.created_at,
+                    updated_at=schema.updated_at,
                 )
             )
         return applets
+
+    async def get_list_by_single_language_count(
+        self, query_params: QueryParams
+    ) -> int:
+        roles: str = query_params.filters.pop("roles")
+        count = await AppletsCRUD().get_applets_by_roles_count(
+            self.user_id, roles.split(","), query_params
+        )
+        return count
 
     async def get_single_language_by_id(
         self, applet_id: int, language: str
@@ -103,6 +114,8 @@ class AppletService:
             report_include_user_id=schema.report_include_user_id,
             report_include_case_id=schema.report_include_case_id,
             report_email_body=schema.report_email_body,
+            created_at=schema.created_at,
+            updated_at=schema.updated_at,
         )
         applet.activities = await ActivityService(
             self.user_id
@@ -160,6 +173,8 @@ class AppletService:
                     report_include_user_id=schema.report_include_user_id,
                     report_include_case_id=schema.report_include_case_id,
                     report_email_body=schema.report_email_body,
+                    created_at=schema.created_at,
+                    updated_at=schema.updated_at,
                 )
             )
 

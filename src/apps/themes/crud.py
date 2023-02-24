@@ -8,6 +8,7 @@ from sqlalchemy.orm import Query
 from apps.authentication.errors import PermissionsError
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
+from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
 from apps.themes.db.schemas import ThemeSchema
@@ -77,8 +78,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
             query = query.where(
                 _ThemeSearching().get_clauses(query_params.search)
             )
-        query = query.offset(query_params.page - 1)
-        query = query.limit(query_params.limit)
+        query = paging(query, query_params.page, query_params.limit)
 
         result: Result = await self._execute(query)
         results: list[PublicTheme] = result.scalars().all()
