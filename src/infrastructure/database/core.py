@@ -1,6 +1,7 @@
 import asyncio
 import json
 
+import sqlalchemy.exc
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_scoped_session,
@@ -74,18 +75,15 @@ class TransactionManager:
 
         async def _wrap(*args, **kwargs):
             session = session_manager.get_session()
-            try:
-                async with session.begin_nested():
-                    session.transaction_count += 1
-                    try:
-                        result = await func(*args, **kwargs)
-                        return result
-                    finally:
-                        session.transaction_count -= 1
-            finally:
-                if session.transaction_count == 0:
+            session.transaction_count += 1
+            result = await func(*args, **kwargs)
+            session.transaction_count -= 1
+            if session.transaction_count == 0:
+                try:
                     await session.commit()
-                    await session_manager.close()
+                except sqlalchemy.exc.SQLAlchemyError:
+                    await session.rollback()
+            return result
 
         return _wrap
 
@@ -122,17 +120,12 @@ class TransactionManager:
 
         async def _wrap(*args, **kwargs):
             session = session_manager.get_session()
+            session.transaction_count += 1
             try:
-                async with session.begin_nested():
-                    session.transaction_count += 1
-                    try:
-                        await func(*args, **kwargs)
-                    finally:
-                        session.transaction_count -= 1
-                        await session.rollback()
+                await func(*args, **kwargs)
             finally:
-                if session.transaction_count == 0:
-                    await session_manager.close()
+                await session.rollback()
+            session.transaction_count -= 1
 
         return _wrap
 
