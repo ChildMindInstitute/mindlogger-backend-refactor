@@ -51,7 +51,7 @@ def create_app():
     # Create base FastAPI application
     app = FastAPI(
         description=f"Commit id: <b>{settings.commit_id}"
-                    f"</b><br>Version: <b>{settings.version}</b>"
+        f"</b><br>Version: <b>{settings.version}</b>"
     )
     if settings.sentry.dsn:
         sentry_sdk.init(dsn=settings.sentry.dsn, traces_sample_rate=1.0)
