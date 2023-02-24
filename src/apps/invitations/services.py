@@ -67,9 +67,6 @@ class InvitationsService:
         invitation = Invitation.from_orm(invitation_schema)
         applet = await AppletsCRUD().get_by_id(invitation.applet_id)
 
-        # Send email to the user
-        service: MailingService = MailingService()
-
         # FIXME: user is not mandatory, as invite can be
         #  sent to non-registered user
         user: User = await UsersCRUD().get_by_email(schema.email)
@@ -84,6 +81,9 @@ class InvitationsService:
             "email": invitation.email,
             "link": self._get_invitation_url_by_role(invitation.role),
         }
+
+        # Send email to the user
+        service: MailingService = MailingService()
         message = MessageSchema(
             recipients=[schema.email],
             subject="Invitation to the FCM",
@@ -136,9 +136,6 @@ class InvitationsService:
         invitation = Invitation.from_orm(invitation_schema)
         applet = await AppletsCRUD().get_by_id(invitation.applet_id)
 
-        # Send email to the user
-        service: MailingService = MailingService()
-
         html_payload: dict = {
             "coordinator_name": f"{self._user.first_name} "
             f"{self._user.last_name}",
@@ -150,6 +147,8 @@ class InvitationsService:
             "link": self._get_invitation_url_by_role(invitation.role),
         }
 
+        # Send email to the user
+        service: MailingService = MailingService()
         if schema.language == "fr":
             path = "invitation_fr"
         else:
@@ -203,9 +202,6 @@ class InvitationsService:
         invitation = Invitation.from_orm(invitation_schema)
         applet = await AppletsCRUD().get_by_id(invitation.applet_id)
 
-        # Send email to the user
-        service: MailingService = MailingService()
-
         html_payload: dict = {
             "coordinator_name": f"{self._user.first_name} "
             f"{self._user.last_name}",
@@ -217,6 +213,8 @@ class InvitationsService:
             "link": self._get_invitation_url_by_role(invitation.role),
         }
 
+        # Send email to the user
+        service: MailingService = MailingService()
         if schema.language == "fr":
             path = "invitation_fr"
         else:
@@ -266,9 +264,6 @@ class InvitationsService:
         invitation = Invitation.from_orm(invitation_schema)
         applet = await AppletsCRUD().get_by_id(invitation.applet_id)
 
-        # Send email to the user
-        service: MailingService = MailingService()
-
         html_payload: dict = {
             "coordinator_name": f"{self._user.first_name} "
             f"{self._user.last_name}",
@@ -280,6 +275,8 @@ class InvitationsService:
             "link": self._get_invitation_url_by_role(invitation.role),
         }
 
+        # Send email to the user
+        service: MailingService = MailingService()
         if schema.language == "fr":
             path = "invitation_fr"
         else:
@@ -357,8 +354,7 @@ class InvitationsService:
         self,
         applet_id: int,
     ):
-        exist = await AppletService(self._user.id).exist_by_id(applet_id)
-        if not exist:
+        if not (await AppletService(self._user.id).exist_by_id(applet_id)):
             raise AppletDoesNotExist(
                 f"Applet by id {applet_id} does not exist."
             )
@@ -402,17 +398,19 @@ class InvitationsService:
         applet_id: int,
         secret_user_id: str,
     ):
-        meta = await UserAppletAccessCRUD().get_meta_applet_and_role(
-            applet_id=applet_id,
-            role=Role.RESPONDENT,
-        )
-        if meta:
-            for item in meta:
-                if item["secretUserId"] == secret_user_id:  # type: ignore
-                    raise NonUniqueValue(
-                        message=f"In applet with id {applet_id} "
-                        f"secret User Id is non-unique."
-                    )
+        if not (
+            meta := await UserAppletAccessCRUD().get_meta_applet_and_role(
+                applet_id=applet_id,
+                role=Role.RESPONDENT,
+            )
+        ):
+            return
+        for item in meta:
+            if item["secretUserId"] == secret_user_id:  # type: ignore
+                raise NonUniqueValue(
+                    message=f"In applet with id {applet_id} "
+                    f"secret User Id is non-unique."
+                )
 
     async def _is_respondents_exist(
         self,

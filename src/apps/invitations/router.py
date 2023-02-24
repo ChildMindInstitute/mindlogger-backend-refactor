@@ -49,12 +49,12 @@ router.get(
 
 # Approve invitation
 router.post(
-    "/{key}/invitations/approve",
+    "/{key}/invitations",
 )(invitation_accept)
 
 # Decline invitation
 router.delete(
-    "/{key}/invitations/decline",
+    "/{key}/invitations",
 )(invitation_decline)
 
 # Invitation send
