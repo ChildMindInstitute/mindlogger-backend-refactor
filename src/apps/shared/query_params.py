@@ -1,10 +1,13 @@
+import re
 from typing import Any
 
 from fastapi import Depends
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from apps.shared.domain import InternalModel
 
 
-class BaseQueryParams(BaseModel):
+class BaseQueryParams(InternalModel):
     """
     Class to declare query parameters
     """
@@ -15,7 +18,7 @@ class BaseQueryParams(BaseModel):
     ordering: str | None = None
 
 
-class QueryParams(BaseModel):
+class QueryParams(InternalModel):
     """
     Class to group query parameters into single format
     """
@@ -45,10 +48,16 @@ def parse_query_params(query_param_class):
             elif key == "limit":
                 grouped_query_params.limit = val
             elif key == "ordering":
-                grouped_query_params.ordering = val.split(",")
+                grouped_query_params.ordering = list(
+                    map(_camelcase_to_snakecase, val.split(","))
+                )
             else:
                 grouped_query_params.filters[key] = val
 
         return grouped_query_params
 
     return _parse
+
+
+def _camelcase_to_snakecase(text: str):
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", text).lower()
