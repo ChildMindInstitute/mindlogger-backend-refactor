@@ -18,7 +18,7 @@ class TransferCRUD(BaseCRUD[TransferSchema]):
 
     async def get_by_key(self, key: uuid.UUID) -> TransferSchema:
         if not (instance := await self._get(key="key", value=key)):
-            raise TransferNotFoundError(key)
+            raise TransferNotFoundError()
 
         return instance
 

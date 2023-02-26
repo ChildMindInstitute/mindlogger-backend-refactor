@@ -226,16 +226,3 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.where(AppletSchema.id == applet_id)
         query = query.values(link=None, require_login=None)
         await self._execute(query)
-
-    async def transfer_ownership(
-        self, applet_id: int, new_owner_id: int
-    ) -> AppletSchema:
-        query: Query = update(AppletSchema)
-        query = query.where(AppletSchema.id == applet_id)
-        query = query.values(account_id=new_owner_id)
-        query = query.returning(self.schema_class)
-        db_result = await self._execute(query)
-        schema = db_result.scalars().one_or_none()
-        if not schema:
-            raise errors.AppletNotFoundError(key="id", value=str(applet_id))
-        return schema

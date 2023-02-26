@@ -1,6 +1,8 @@
 import uuid
 
-from apps.applets.crud import AppletsCRUD
+from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.applets.db.schemas import UserAppletAccessSchema
+from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
@@ -59,13 +61,29 @@ class TransferService:
         """Respond to a transfer of ownership of an applet."""
         transfer = await TransferCRUD().get_by_key(key=key)
 
-        if transfer.email != self._user.email:
+        if (
+            transfer.email != self._user.email
+            or applet_id != transfer.applet_id
+        ):
             raise PermissionsError()
 
-        await AppletsCRUD().transfer_ownership(
-            applet_id=transfer.applet_id,
-            new_owner_id=self._user.id,
+        # delete all users from applet
+        await UserAppletAccessCRUD().delete_all_by_applet_id(
+            applet_id=transfer.applet_id
         )
+
+        # add new owner to applet
+        await UserAppletAccessCRUD().save(
+            UserAppletAccessSchema(
+                user_id=self._user.id,
+                applet_id=transfer.applet_id,
+                role=Role.ADMIN,
+            )
+        )
+        # TODO: remove password from applet
+
+        # TODO: delete responses from applet?
+
         # delete all other transfers for this applet
         await TransferCRUD().delete_all_by_applet_id(
             applet_id=transfer.applet_id

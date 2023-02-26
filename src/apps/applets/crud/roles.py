@@ -1,4 +1,4 @@
-from sqlalchemy import distinct, select
+from sqlalchemy import delete, distinct, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
@@ -143,3 +143,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
+
+    async def delete_all_by_applet_id(self, applet_id: int):
+        query: Query = delete(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        await self._execute(query)
