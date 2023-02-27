@@ -1,5 +1,6 @@
 import uuid
 
+from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.db.schemas import UserAppletAccessSchema
 from apps.applets.domain import Role
@@ -80,9 +81,16 @@ class TransferService:
                 role=Role.ADMIN,
             )
         )
-        # TODO: remove password from applet
 
-        # TODO: delete responses from applet?
+        # delete responses from applet?
+        await AnswerActivityItemsCRUD().delete_by_applet_id(
+            applet_id=transfer.applet_id
+        )
+        await AnswerFlowItemsCRUD().delete_by_applet_id(
+            applet_id=transfer.applet_id
+        )
+
+        # TODO: remove password from applet
 
         # delete all other transfers for this applet
         await TransferCRUD().delete_all_by_applet_id(
