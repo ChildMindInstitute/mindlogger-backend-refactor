@@ -76,14 +76,14 @@ class TransactionManager:
         async def _wrap(*args, **kwargs):
             session = session_manager.get_session()
             session.transaction_count += 1
-            result = await func(*args, **kwargs)
-            session.transaction_count -= 1
-            if session.transaction_count == 0:
-                try:
+            try:
+                result = await func(*args, **kwargs)
+                session.transaction_count -= 1
+                if session.transaction_count == 0:
                     await session.commit()
-                except sqlalchemy.exc.SQLAlchemyError:
-                    await session.rollback()
-            return result
+                return result
+            except sqlalchemy.exc.SQLAlchemyError:
+                await session.rollback()
 
         return _wrap
 
