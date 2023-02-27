@@ -3,12 +3,12 @@ from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
 from apps.applets.db.schemas import UserAppletAccessSchema
-from apps.applets.domain.constants import Role
-from apps.applets.domain.user_applet_access import (
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.user_applet_access import (
     UserAppletAccess,
     UserAppletAccessItem,
 )
-from apps.applets.errors import UserAppletAccessesNotFound
+from apps.workspaces.errors import UserAppletAccessesNotFound
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["UserAppletAccessCRUD"]

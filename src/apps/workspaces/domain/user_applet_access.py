@@ -1,7 +1,7 @@
 from pydantic.types import PositiveInt
 
-from apps.applets.domain.constants import Role
 from apps.shared.domain import InternalModel, PublicModel
+from apps.workspaces.domain.constants import Role
 
 __all__ = [
     "UserAppletAccessCreate",

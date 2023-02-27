@@ -28,10 +28,10 @@ from apps.activity_flows.db.schemas import (
 from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
 from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.applets.domain.applets import fetch, update
-from apps.applets.errors import AppletAccessDenied
 from apps.applets.service import UserAppletAccessService
 from apps.schedule.service import ScheduleService
 from apps.shared.version import get_next_version
+from apps.workspaces.errors import AppletAccessDenied
 
 
 async def update_applet(
