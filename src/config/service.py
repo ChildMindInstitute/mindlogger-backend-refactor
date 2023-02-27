@@ -10,6 +10,7 @@ class FrontendUrlsSettings(BaseModel):
     password_recovery_send: str = "useraccount"
     public_link: str = "public"
     private_link: str = "join"
+    transfer_link: str = "transferOwnership"
 
 
 class ServiceUrlsSettings(BaseModel):

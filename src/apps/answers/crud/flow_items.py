@@ -1,4 +1,6 @@
+from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Query
 
 from apps.answers.db.schemas import AnswerFlowItemsSchema
 from apps.answers.domain import (
@@ -42,3 +44,8 @@ class AnswerFlowItemsCRUD(BaseCRUD[AnswerFlowItemsSchema]):
             raise AnswerError
 
         return answer_flow_items
+
+    async def delete_by_applet_id(self, applet_id: int):
+        query: Query = delete(AnswerFlowItemsSchema)
+        query = query.where(AnswerFlowItemsSchema.applet_id == applet_id)
+        await self._execute(query)
