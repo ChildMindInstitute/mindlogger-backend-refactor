@@ -1,4 +1,12 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
@@ -35,6 +43,7 @@ class AppletSchema(_BaseAppletSchema, Base):
     folder_id = Column(ForeignKey("folders.id", ondelete="RESTRICT"))
     link = Column(UUID(as_uuid=True), unique=True)
     require_login = Column(Boolean(), default=True)
+    pinned_at = Column(DateTime(), nullable=True)
 
 
 class AppletHistorySchema(_BaseAppletSchema, Base):

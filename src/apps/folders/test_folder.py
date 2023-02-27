@@ -11,6 +11,7 @@ class TestFolder(BaseTest):
     login_url = "/auth/login"
     list_url = "/folders"
     detail_url = "/folders/{id}"
+    pin_url = detail_url + "/pin/{applet_id}"
 
     @transaction.rollback
     async def test_folder_list(self):
@@ -126,3 +127,27 @@ class TestFolder(BaseTest):
             response.json()["result"][0]["message"]["en"]
             == "Folder has applets, move applets from folder to delete it."
         )
+
+    @transaction.rollback
+    async def test_pin_applet(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.pin_url.format(id=2, applet_id=1)
+        )
+
+        assert response.status_code == 200, response.json()
+
+    @transaction.rollback
+    async def test_unpin_applet(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.delete(
+            self.pin_url.format(id=2, applet_id=1)
+        )
+
+        assert response.status_code == 204, response.json()

@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import distinct, or_, select, update
@@ -250,4 +251,18 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
         query = query.values(link=None, require_login=None)
+        await self._execute(query)
+
+    async def pin(self, applet_id: int, folder_id: int):
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.where(AppletSchema.folder_id == folder_id)
+        query = query.values(pinned_at=datetime.now())
+        await self._execute(query)
+
+    async def unpin(self, applet_id: int, folder_id: int):
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.where(AppletSchema.folder_id == folder_id)
+        query = query.values(pinned_at=None)
         await self._execute(query)

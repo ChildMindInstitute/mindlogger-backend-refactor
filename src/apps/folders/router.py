@@ -5,6 +5,8 @@ from apps.folders.api import (
     folder_create,
     folder_delete,
     folder_list,
+    folder_pin,
+    folder_unpin,
     folder_update_name,
 )
 from apps.folders.domain import FolderPublic
@@ -59,3 +61,22 @@ router.delete(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(folder_delete)
+
+
+router.post(
+    "/{id_}/pin/{applet_id}",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(folder_pin)
+
+router.delete(
+    "/{id_}/pin/{applet_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(folder_unpin)
