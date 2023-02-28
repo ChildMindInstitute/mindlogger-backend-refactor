@@ -40,7 +40,8 @@ class TransferService:
         service: MailingService = MailingService()
 
         html_payload: dict = {
-            "coordinator_name": f"{self._user.first_name} {self._user.last_name}",
+            "coordinator_name": f"{self._user.first_name} "
+            "{self._user.last_name}",
             "user_name": transfer_request.email,
             "applet": applet.display_name,
             "role": "owner",
