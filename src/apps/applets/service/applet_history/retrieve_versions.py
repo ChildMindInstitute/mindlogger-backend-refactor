@@ -14,8 +14,8 @@ async def retrieve_versions(applet_id: int) -> list[History]:
                 created_at=created_at,
                 creator=dict(
                     id=user_schema.id,
-                    full_name=f"{user_schema.first_name} "
-                    f"{user_schema.last_name}",
+                    first_name=user_schema.first_name,
+                    last_name=user_schema.last_name,
                 ),
             )
         )
