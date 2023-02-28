@@ -79,6 +79,9 @@ class TransferService:
                 user_id=self._user.id,
                 applet_id=transfer.applet_id,
                 role=Role.ADMIN,
+                owner_id=self._user.id,
+                invitor_id=self._user.id,
+                meta={},
             )
         )
 
