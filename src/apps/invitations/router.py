@@ -26,7 +26,7 @@ from apps.shared.domain.response import (
     ResponseMulti,
 )
 
-router = APIRouter(prefix="/applets", tags=["Invitations"])
+router = APIRouter(prefix="/invitations", tags=["Invitations"])
 
 # Invitations list
 router.get(
@@ -47,14 +47,14 @@ router.get(
     },
 )(invitation_retrieve)
 
-# Approve invitation
+# Accept invitation
 router.post(
-    "/{key}/invitations",
+    "/{key}/accept",
 )(invitation_accept)
 
 # Decline invitation
 router.delete(
-    "/{key}/invitations",
+    "/{key}/decline",
 )(invitation_decline)
 
 # Invitation send

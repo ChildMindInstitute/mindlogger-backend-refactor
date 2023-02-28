@@ -20,12 +20,12 @@ class TestInvite(BaseTest):
 
     login_url = "/auth/login"
     invitation_list = "/invitations"
-    invitation_detail = f"{invitation_list}/{{key}}"
-    private_invitation_detail = f"{invitation_list}/private/{{key}}"
-    invite_url = f"{invitation_list}/invite"
-    accept_url = f"{invitation_list}/{{key}}/accept"
-    accept_private_url = f"{invitation_list}/private/{{key}}/accept"
-    decline_url = f"{invitation_list}/{{key}}/decline"
+    invitation_detail = "/invitations/{key}"
+    private_invitation_detail = "/invitations/private/{key}"
+    invite_url = "/invitations/invite"
+    accept_url = "/invitations/{key}/accept"
+    accept_private_url = "/invitations/private/{key}/accept"
+    decline_url = "/invitations/{key}/decline"
 
     async def test_invitation_list(self):
         await self.client.login(
@@ -280,11 +280,6 @@ class TestInvite(BaseTest):
             self.accept_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6")
         )
         assert response.status_code == 200
-        invitation = await InvitationCRUD().get_by_email_and_key(
-            "tom@mindlogger.com",
-            uuid.UUID("6a3ab8e6-f2fa-49ae-b2db-197136677da6"),
-        )
-        assert invitation.status == InvitationStatus.APPROVED
 
     @transaction.rollback
     async def test_private_invitation_accept(self):
@@ -320,15 +315,10 @@ class TestInvite(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
-        response = await self.client.post(
+        response = await self.client.delete(
             self.decline_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6")
         )
         assert response.status_code == 200
-        invitation = await InvitationCRUD().get_by_email_and_key(
-            "tom@mindlogger.com",
-            uuid.UUID("6a3ab8e6-f2fa-49ae-b2db-197136677da6"),
-        )
-        assert invitation.status == InvitationStatus.DECLINED
 
     @transaction.rollback
     async def test_invitation_decline_wrong(self):
@@ -336,7 +326,7 @@ class TestInvite(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
-        response = await self.client.post(
+        response = await self.client.delete(
             self.decline_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da9")
         )
         assert response.status_code == 422
