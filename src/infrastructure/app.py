@@ -16,6 +16,7 @@ import apps.logs.router as logs
 import apps.schedule.router as schedule
 import apps.themes.router as themes
 import apps.users.router as users
+import apps.workspaces.router as workspaces
 import middlewares as middlewares_
 from apps.shared.errors import BaseError
 from config import settings
@@ -38,6 +39,7 @@ routers: Iterable[APIRouter] = (
     schedule.router,
     folders.router,
     answers.router,
+    workspaces.router,
 )
 
 # Declare your middlewares here

@@ -47,8 +47,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, user_id_: int
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).filter(
-            self.schema_class.user_id == user_id_
-            and self.schema_class.role == Role("admin")
+            self.schema_class.user_id == user_id_,
+            self.schema_class.role == Role("admin"),
         )
         result: Result = await self._execute(query)
         results: list[UserAppletAccessSchema] = result.scalars().all()
