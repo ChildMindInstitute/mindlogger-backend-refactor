@@ -1,7 +1,8 @@
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
-from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
+from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.domain import InvitationDetail
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
 

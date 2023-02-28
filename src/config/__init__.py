@@ -78,5 +78,6 @@ settings = Settings(
         "folders",
         "answers",
         "invitations",
+        "workspaces",
     ],
 )

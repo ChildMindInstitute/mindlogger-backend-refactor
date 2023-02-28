@@ -2,7 +2,7 @@ from sqlalchemy import distinct, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
-from apps.applets.db.schemas import UserAppletAccessSchema
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
     UserAppletAccess,
