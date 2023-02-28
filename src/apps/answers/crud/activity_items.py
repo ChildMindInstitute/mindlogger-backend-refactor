@@ -1,4 +1,6 @@
+from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Query
 
 from apps.answers.db.schemas import AnswerActivityItemsSchema
 from apps.answers.domain import (
@@ -42,3 +44,8 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
             raise AnswerError
 
         return answer_activity_items
+
+    async def delete_by_applet_id(self, applet_id: int):
+        query: Query = delete(AnswerActivityItemsSchema)
+        query = query.where(AnswerActivityItemsSchema.applet_id == applet_id)
+        await self._execute(query)

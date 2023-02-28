@@ -15,6 +15,7 @@ import apps.invitations.router as invitations
 import apps.logs.router as logs
 import apps.schedule.router as schedule
 import apps.themes.router as themes
+import apps.transfer_ownership.router as transfer_ownership
 import apps.users.router as users
 import middlewares as middlewares_
 from apps.shared.errors import BaseError
@@ -38,6 +39,7 @@ routers: Iterable[APIRouter] = (
     schedule.router,
     folders.router,
     answers.router,
+    transfer_ownership.router,
 )
 
 # Declare your middlewares here
