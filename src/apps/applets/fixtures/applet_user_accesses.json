@@ -8,6 +8,8 @@
       "is_deleted": false,
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "admin"
     }
   },
@@ -19,6 +21,8 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b2",
       "role": "admin"
     }
@@ -32,6 +36,8 @@
       "is_deleted": false,
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b3",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "admin"
     }
   },
@@ -44,6 +50,8 @@
       "is_deleted": false,
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa3",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b4",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa3",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "admin"
     }
   },
@@ -56,6 +64,8 @@
       "is_deleted": false,
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "manager"
     }
   },
@@ -68,6 +78,8 @@
       "is_deleted": false,
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa3",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "coordinator"
     }
   },
@@ -79,7 +91,9 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa4",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "editor"
     }
   },
@@ -91,7 +105,9 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "respondent"
     }
   },
@@ -103,7 +119,9 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "respondent"
     }
   }

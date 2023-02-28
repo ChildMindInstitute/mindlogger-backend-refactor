@@ -87,7 +87,7 @@ class InvitationsService:
         message = MessageSchema(
             recipients=[schema.email],
             subject="Invitation to the FCM",
-            body=service.get_template(path="invitation", **html_payload),
+            body=service.get_template(path="invitation_en", **html_payload),
         )
 
         await service.send(message)
@@ -446,7 +446,6 @@ class InvitationsService:
         ).add_role(invitation=invitation)
 
         await InvitationCRUD().approve_by_id(invitation.id)
-        return
 
     async def decline(self, key: uuid.UUID):
         invitation = await InvitationCRUD().get_by_email_and_key(

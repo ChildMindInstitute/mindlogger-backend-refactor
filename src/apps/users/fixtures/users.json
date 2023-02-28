@@ -4,7 +4,8 @@
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "email": "tom@mindlogger.com",
-      "full_name": "Tom Isaak",
+      "first_name": "Tom",
+      "last_name": "Isaak",
       "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
       "is_deleted": false
     },
@@ -15,7 +16,8 @@
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
       "email": "lucy@gmail.com",
-      "full_name": "Lucy Gabel",
+      "first_name": "Lucy",
+      "last_name": "Gabel",
       "hashed_password": "$2b$12$rq9CeizkJSdjbEeK0.jFYOgSd37rCbu/e7UNCC7YL5ZwTs4wTGuy.",
       "is_deleted": false
     },
@@ -26,7 +28,8 @@
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa3",
       "email": "bob@gmail.com",
-      "full_name": "Bob Martin",
+      "first_name": "Bob",
+      "last_name": "Martin",
       "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
       "is_deleted": false
     },
@@ -37,7 +40,8 @@
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa4",
       "email": "mike@gmail.com",
-      "full_name": "Mike Samuel",
+      "first_name": "Mike",
+      "last_name": "Samuel",
       "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
       "is_deleted": false
     },
@@ -48,7 +52,8 @@
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa5",
       "email": "patric@gmail.com",
-      "full_name": "Patric Davidson",
+      "first_name": "Patric",
+      "last_name": "Davidson",
       "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
       "is_deleted": false
     },
