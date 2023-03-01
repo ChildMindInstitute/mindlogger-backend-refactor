@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import update
 from sqlalchemy.orm import Query
 
@@ -21,7 +23,7 @@ class PeriodicityCRUD(BaseCRUD[PeriodicitySchema]):
         periodicity: Periodicity = Periodicity.from_orm(instance)
         return periodicity
 
-    async def get_by_id(self, pk: int) -> Periodicity:
+    async def get_by_id(self, pk: uuid.UUID) -> Periodicity:
         """Return periodicity instance."""
 
         if not (instance := await self._get("id", pk)):
@@ -30,14 +32,16 @@ class PeriodicityCRUD(BaseCRUD[PeriodicitySchema]):
         periodicity: Periodicity = Periodicity.from_orm(instance)
         return periodicity
 
-    async def delete_by_ids(self, periodicity_ids: list[int]) -> None:
+    async def delete_by_ids(self, periodicity_ids: list[uuid.UUID]) -> None:
         """Delete all periodicities by if id in list."""
         query: Query = update(PeriodicitySchema)
         query = query.where(PeriodicitySchema.id.in_(periodicity_ids))
         query = query.values(is_deleted=True)
         await self._execute(query)
 
-    async def update(self, pk: int, schema: PeriodicityRequest) -> Periodicity:
+    async def update(
+        self, pk: uuid.UUID, schema: PeriodicityRequest
+    ) -> Periodicity:
         """Update periodicity instance."""
         instance = await self._update_one(
             lookup="id",

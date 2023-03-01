@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
@@ -42,7 +43,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
         return user
 
-    async def get_by_id(self, id_: int) -> User:
+    async def get_by_id(self, id_: uuid.UUID) -> User:
         return await self._fetch(key="id", value=id_)
 
     async def get_by_email(self, email: str) -> User:

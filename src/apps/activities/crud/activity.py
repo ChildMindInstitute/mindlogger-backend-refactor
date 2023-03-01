@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
 
@@ -17,13 +19,15 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         instances = await self._create_many(activity_schemas)
         return instances
 
-    async def delete_by_applet_id(self, applet_id):
+    async def delete_by_applet_id(self, applet_id: uuid.UUID):
         query = delete(ActivitySchema).where(
             ActivitySchema.applet_id == applet_id
         )
         await self._execute(query)
 
-    async def get_by_applet_id(self, applet_id: int) -> list[ActivitySchema]:
+    async def get_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> list[ActivitySchema]:
         # TODO: get by users permission
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.applet_id == applet_id)
@@ -31,7 +35,9 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def get_by_id(self, user_id: int, id_: int) -> ActivitySchema:
+    async def get_by_id(
+        self, user_id: uuid.UUID, id_: uuid.UUID
+    ) -> ActivitySchema:
         # TODO: get by users permission
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.id == id_)
@@ -44,7 +50,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
 
     # Get by applet id and activity id
     async def get_by_applet_id_and_activity_id(
-        self, applet_id: int, activity_id: int
+        self, applet_id: uuid.UUID, activity_id: uuid.UUID
     ) -> ActivitySchema:
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.applet_id == applet_id)

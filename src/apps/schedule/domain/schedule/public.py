@@ -1,4 +1,4 @@
-from pydantic import PositiveInt
+import uuid
 
 from apps.schedule.domain.schedule import BaseEvent, BasePeriodicity
 from apps.shared.domain import PublicModel
@@ -18,22 +18,22 @@ class PublicPeriodicity(PublicModel, BasePeriodicity):
 
 
 class PublicEvent(PublicModel, BaseEvent):
-    id: PositiveInt
+    id: uuid.UUID
     periodicity: PublicPeriodicity
-    user_id: int | None
-    activity_id: int | None
-    flow_id: int | None
+    user_id: uuid.UUID | None
+    activity_id: uuid.UUID | None
+    flow_id: uuid.UUID | None
 
 
 class ActivityEventCount(PublicModel):
     count: int
-    activity_id: int
+    activity_id: uuid.UUID
     activity_name: str
 
 
 class FlowEventCount(PublicModel):
     count: int
-    flow_id: int
+    flow_id: uuid.UUID
     flow_name: str
 
 

@@ -1,10 +1,12 @@
+import uuid
+
 from apps.activity_flows.crud import FlowItemsCRUD, FlowsCRUD
 from apps.activity_flows.domain.flow import FlowDetail
 
 
 class FlowService:
     async def get_single_language_by_applet_id(
-        self, applet_id: int, language: str
+        self, applet_id: uuid.UUID, language: str
     ) -> list[FlowDetail]:
         schemas = await FlowsCRUD().get_by_applet_id(applet_id)
         flow_ids = []

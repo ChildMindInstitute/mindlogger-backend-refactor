@@ -1,4 +1,5 @@
-from sqlalchemy import REAL, Column, ForeignKey, Integer, String
+from sqlalchemy import REAL, Column, ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID
 
 from infrastructure.database import Base
 
@@ -20,7 +21,7 @@ class ActivityFlowItemHistorySchema(_BaseActivityFlow, Base):
     __tablename__ = "flow_item_histories"
 
     id_version = Column(String(), primary_key=True)
-    id = Column(Integer())
+    id = Column(UUID(as_uuid=True))
     activity_flow_id = Column(
         ForeignKey("flow_histories.id_version", ondelete="RESTRICT")
     )

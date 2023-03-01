@@ -1,3 +1,5 @@
+import uuid
+
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = ["FolderCreate", "Folder", "FolderUpdate", "FolderPublic"]
@@ -8,7 +10,7 @@ class FolderCreate(InternalModel):
 
 
 class Folder(InternalModel):
-    id: int
+    id: uuid.UUID
     creator_id: int
     name: str
 
@@ -18,5 +20,5 @@ class FolderUpdate(InternalModel):
 
 
 class FolderPublic(PublicModel):
-    id: int
+    id: uuid.UUID
     name: str

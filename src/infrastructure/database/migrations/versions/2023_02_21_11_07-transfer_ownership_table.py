@@ -1,8 +1,8 @@
 """transfer ownership table
 
 Revision ID: 05cd246d924f
-Revises: 5a856165fb8d
-Create Date: 2023-02-24 11:07:09.586540
+Revises: ccd432ca974f
+Create Date: 2023-02-21 11:07:09.586540
 
 """
 import sqlalchemy as sa
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "05cd246d924f"
-down_revision = "5a856165fb8d"
+down_revision = "ccd432ca974f"
 branch_labels = None
 depends_on = None
 

@@ -9,7 +9,7 @@ from apps.users.domain import User
 
 
 async def transfer_initiate(
-    applet_id: int,
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     transfer: InitiateTransfer = Body(...),
 ) -> None:
@@ -18,7 +18,7 @@ async def transfer_initiate(
 
 
 async def transfer_accept(
-    applet_id: int,
+    applet_id: uuid.UUID,
     key: uuid.UUID,
     user: User = Depends(get_current_user),
 ) -> None:
@@ -27,7 +27,7 @@ async def transfer_accept(
 
 
 async def transfer_decline(
-    applet_id: int,
+    applet_id: uuid.UUID,
     key: uuid.UUID,
     user: User = Depends(get_current_user),
 ) -> None:

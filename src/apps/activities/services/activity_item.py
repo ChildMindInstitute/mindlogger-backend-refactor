@@ -1,10 +1,12 @@
+import uuid
+
 from apps.activities.crud import ActivityItemsCRUD
 from apps.activities.domain.activity_item import ActivityItemDetail
 
 
 class ActivityItemService:
     async def get_single_language_by_activity_id(
-        self, activity_id: int, language: str
+        self, activity_id: uuid.UUID, language: str
     ) -> list[ActivityItemDetail]:
         schemas = await ActivityItemsCRUD().get_by_activity_id(activity_id)
         items = []

@@ -18,7 +18,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         return schema
 
     async def get_pending_by_invitor_id(
-        self, user_id: int
+        self, user_id: uuid.UUID
     ) -> list[InvitationDetail]:
         query: Query = select(
             InvitationSchema, AppletSchema.display_name.label("applet_name")
@@ -76,14 +76,14 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             body=invitation.body,
         )
 
-    async def approve_by_id(self, id_: int):
+    async def approve_by_id(self, id_: uuid.UUID):
         query = update(InvitationSchema)
         query = query.where(InvitationSchema.id == id_)
         query = query.values(status=InvitationStatus.APPROVED)
 
         await self._execute(query)
 
-    async def decline_by_id(self, id_: int):
+    async def decline_by_id(self, id_: uuid.UUID):
         query = update(InvitationSchema)
         query = query.where(InvitationSchema.id == id_)
         query = query.values(status=InvitationStatus.DECLINED)

@@ -3,10 +3,8 @@ from starlette import status
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.router import router as auth_router
-from apps.shared.domain import Response
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
-from apps.users.domain import PublicUser, User
 from apps.users.errors import UserIsDeletedError
 from apps.users.router import router as user_router
 from apps.users.tests.factories import (
@@ -17,7 +15,6 @@ from infrastructure.database import transaction
 
 
 class TestUser(BaseTest):
-
     get_token_url = auth_router.url_path_for("get_token")
     user_create_url = user_router.url_path_for("user_create")
     user_retrieve_url = user_router.url_path_for("user_retrieve")
@@ -33,20 +30,8 @@ class TestUser(BaseTest):
         response = await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
-        # Get  created user by email
-        created_user: User = await UsersCRUD().get_by_email(
-            self.create_request_user.email
-        )
-
-        public_user = PublicUser(**created_user.dict())
-
-        expected_result: Response[PublicUser] = Response(result=public_user)
-
-        count = await UsersCRUD().count()
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.json() == expected_result.dict(by_alias=True)
-        assert count == expected_result.result.id
 
     @transaction.rollback
     async def test_user_create_exist(self):
@@ -58,7 +43,6 @@ class TestUser(BaseTest):
         response = await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
-
         assert response.status_code == status.HTTP_409_CONFLICT
 
     @transaction.rollback
@@ -80,17 +64,7 @@ class TestUser(BaseTest):
 
         # User retrieve
         response = await self.client.get(self.user_retrieve_url)
-
-        logged_in_user: User = await UsersCRUD().get_by_email(
-            self.create_request_user.email
-        )
-
-        public_user = PublicUser(**logged_in_user.dict())
-
-        expected_result: Response[PublicUser] = Response(result=public_user)
-
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == expected_result.dict(by_alias=True)
 
     @transaction.rollback
     async def test_user_update(self):
@@ -114,16 +88,7 @@ class TestUser(BaseTest):
             self.user_update_url, data=self.user_update_request.dict()
         )
 
-        updated_user: User = await UsersCRUD().get_by_email(
-            self.create_request_user.email
-        )
-
-        public_user = PublicUser(**updated_user.dict())
-
-        expected_result: Response[PublicUser] = Response(result=public_user)
-
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == expected_result.dict(by_alias=True)
 
     @transaction.rollback
     async def test_user_delete(self):

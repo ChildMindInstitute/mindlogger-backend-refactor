@@ -5,8 +5,8 @@
             "created_at": "2023-01-05T15:49:51.752113",
             "updated_at": "2023-01-05T15:49:51.752113",
             "is_deleted": false,
-            "id": 1,
-            "periodicity_id": 1,
+            "id": "04c93c4a-2cd4-45ce-9aec-b1912f330581",
+            "periodicity_id": "023d709d-3bf9-4990-9e0b-ecb5a3e90d61",
             "start_time": "00:00:00",
             "end_time": "00:00:00",
             "all_day": false,
@@ -14,7 +14,7 @@
             "one_time_completion": false,
             "timer": "00:00:00",
             "timer_type": "NOT_SET",
-            "applet_id": 1
+            "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1"
         }
     },
     {
@@ -23,8 +23,8 @@
             "created_at": "2023-01-05T15:49:51.752113",
             "updated_at": "2023-01-05T15:49:51.752113",
             "is_deleted": false,
-            "id": 2,
-            "periodicity_id": 2,
+            "id": "04c93c4a-2cd4-45ce-9aec-b1912f330582",
+            "periodicity_id": "023d709d-3bf9-4990-9e0b-ecb5a3e90d62",
             "start_time": "00:00:00",
             "end_time": "00:00:00",
             "all_day": false,
@@ -32,7 +32,7 @@
             "one_time_completion": false,
             "timer": "00:00:00",
             "timer_type": "NOT_SET",
-            "applet_id": 1
+            "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1"
         }
     },
     {
@@ -41,8 +41,8 @@
             "created_at": "2023-01-05T15:49:51.752113",
             "updated_at": "2023-01-05T15:49:51.752113",
             "is_deleted": false,
-            "id": 3,
-            "periodicity_id": 3,
+            "id": "04c93c4a-2cd4-45ce-9aec-b1912f330583",
+            "periodicity_id": "023d709d-3bf9-4990-9e0b-ecb5a3e90d63",
             "start_time": "00:00:00",
             "end_time": "00:00:00",
             "all_day": false,
@@ -50,7 +50,7 @@
             "one_time_completion": false,
             "timer": "00:00:00",
             "timer_type": "NOT_SET",
-            "applet_id": 1
+            "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1"
         }
     },
     {
@@ -59,8 +59,8 @@
             "created_at": "2023-01-05T15:49:51.752113",
             "updated_at": "2023-01-05T15:49:51.752113",
             "is_deleted": false,
-            "id": 4,
-            "periodicity_id": 4,
+            "id": "04c93c4a-2cd4-45ce-9aec-b1912f330584",
+            "periodicity_id": "023d709d-3bf9-4990-9e0b-ecb5a3e90d64",
             "start_time": "00:00:00",
             "end_time": "00:00:00",
             "all_day": false,
@@ -68,7 +68,7 @@
             "one_time_completion": false,
             "timer": "00:00:00",
             "timer_type": "NOT_SET",
-            "applet_id": 2
+            "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b2"
         }
     },
     {
@@ -77,8 +77,8 @@
             "created_at": "2023-01-05T15:49:51.752113",
             "updated_at": "2023-01-05T15:49:51.752113",
             "is_deleted": false,
-            "id": 5,
-            "periodicity_id": 5,
+            "id": "04c93c4a-2cd4-45ce-9aec-b1912f330585",
+            "periodicity_id": "023d709d-3bf9-4990-9e0b-ecb5a3e90d65",
             "start_time": "00:00:00",
             "end_time": "00:00:00",
             "all_day": false,
@@ -86,7 +86,7 @@
             "one_time_completion": false,
             "timer": "00:00:00",
             "timer_type": "NOT_SET",
-            "applet_id": 3
+            "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b3"
         }
     },
     {
@@ -95,8 +95,8 @@
             "created_at": "2023-01-05T15:49:51.752113",
             "updated_at": "2023-01-05T15:49:51.752113",
             "is_deleted": false,
-            "id": 6,
-            "periodicity_id": 6,
+            "id": "04c93c4a-2cd4-45ce-9aec-b1912f330586",
+            "periodicity_id": "023d709d-3bf9-4990-9e0b-ecb5a3e90d66",
             "start_time": "00:00:00",
             "end_time": "00:00:00",
             "all_day": false,
@@ -104,7 +104,7 @@
             "one_time_completion": false,
             "timer": "00:00:00",
             "timer_type": "NOT_SET",
-            "applet_id": 4
+            "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b4"
         }
     },
     {

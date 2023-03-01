@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import and_, distinct, func, select, update
@@ -63,7 +65,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         event: Event = Event.from_orm(instance)
         return event
 
-    async def get_by_id(self, pk: int) -> Event:
+    async def get_by_id(self, pk: uuid.UUID) -> Event:
         """Return event instance."""
         query: Query = select(EventSchema)
         query = query.where(EventSchema.id == pk)
@@ -78,7 +80,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         event: Event = Event.from_orm(instance)
         return event
 
-    async def get_all_by_applet_id(self, applet_id: int) -> EventSchema:
+    async def get_all_by_applet_id(self, applet_id: uuid.UUID) -> EventSchema:
         """Return event instance."""
         query: Query = select(EventSchema)
         query = query.where(EventSchema.applet_id == applet_id)
@@ -87,21 +89,21 @@ class EventCRUD(BaseCRUD[EventSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def delete_by_applet_id(self, applet_id: int) -> None:
+    async def delete_by_applet_id(self, applet_id: uuid.UUID) -> None:
         """Delete all events by applet id."""
         query: Query = update(EventSchema)
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.values(is_deleted=True)
         await self._execute(query)
 
-    async def delete_by_id(self, pk: int) -> None:
+    async def delete_by_id(self, pk: uuid.UUID) -> None:
         """Delete event by event id."""
         query: Query = update(EventSchema)
         query = query.where(EventSchema.id == pk)
         query = query.values(is_deleted=True)
         await self._execute(query)
 
-    async def update(self, pk: int, schema: EventUpdate) -> Event:
+    async def update(self, pk: uuid.UUID, schema: EventUpdate) -> Event:
         """Update event by event id."""
         instance = await self._update_one(
             lookup="id",
@@ -188,7 +190,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         await self._execute(query)
 
     async def get_all_by_applet_and_activity(
-        self, applet_id: int, activity_id: int
+        self, applet_id: uuid.UUID, activity_id: uuid.UUID
     ) -> list[EventSchema]:
         """Get events by applet_id and activity_id"""
         query: Query = select(EventSchema)
@@ -207,7 +209,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         return result.scalars().all()
 
     async def get_all_by_applet_and_flow(
-        self, applet_id: int, flow_id: int
+        self, applet_id: uuid.UUID, flow_id: uuid.UUID
     ) -> list[EventSchema]:
         """Get events by applet_id and flow_id"""
         query: Query = select(EventSchema)
@@ -339,7 +341,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         user_event: UserEvent = UserEvent.from_orm(instance)
         return user_event
 
-    async def get_by_event_id(self, event_id: int) -> int | None:
+    async def get_by_event_id(self, event_id: uuid.UUID) -> int | None:
         """Return user event instances."""
         query: Query = select(distinct(UserEventsSchema.user_id))
         query = query.where(UserEventsSchema.event_id == event_id)
@@ -357,7 +359,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
 
         return results
 
-    async def delete_all_by_event_ids(self, event_ids: list[int]):
+    async def delete_all_by_event_ids(self, event_ids: list[uuid.UUID]):
         """Delete all user events by event ids."""
         query: Query = update(UserEventsSchema)
         query = query.where(UserEventsSchema.event_id.in_(event_ids))
@@ -393,7 +395,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         activity_event: ActivityEvent = ActivityEvent.from_orm(instance)
         return activity_event
 
-    async def get_by_event_id(self, event_id: int) -> int | None:
+    async def get_by_event_id(self, event_id: uuid.UUID) -> uuid.UUID | None:
         """Return activity event instances."""
         query: Query = select(ActivityEventsSchema.activity_id)
         query = query.where(ActivityEventsSchema.event_id == event_id)
@@ -403,7 +405,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         result = await self._execute(query)
 
         try:
-            activity_id: int = result.scalars().one_or_none()
+            activity_id = result.scalars().one_or_none()
         except MultipleResultsFound:
             raise EventError(
                 f"Multiple activity found for event_id: {event_id}".format(
@@ -412,7 +414,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
             )
         return activity_id
 
-    async def delete_all_by_event_ids(self, event_ids: list[int]):
+    async def delete_all_by_event_ids(self, event_ids: list[uuid.UUID]):
         """Delete all activity events by event ids."""
         query: Query = update(ActivityEventsSchema)
         query = query.where(ActivityEventsSchema.event_id.in_(event_ids))
@@ -420,7 +422,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         await self._execute(query)
 
     async def count_by_applet(
-        self, applet_id: int
+        self, applet_id: uuid.UUID
     ) -> list[ActivityEventCount]:
         """Return activity ids with event count."""
 
@@ -463,7 +465,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
 
         return activity_event_counts
 
-    async def count_by_activity(self, activity_id: int) -> int:
+    async def count_by_activity(self, activity_id: uuid.UUID) -> int:
         """Return event count."""
 
         query: Query = select(
@@ -478,12 +480,14 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         count: int = result.scalar()
         return count
 
-    async def get_by_event_ids(self, event_ids: list[int]) -> list[int]:
+    async def get_by_event_ids(
+        self, event_ids: list[uuid.UUID]
+    ) -> list[uuid.UUID]:
         """Return activity event instances."""
         query: Query = select(distinct(ActivityEventsSchema.activity_id))
         query = query.where(ActivityEventsSchema.event_id.in_(event_ids))
         result = await self._execute(query)
-        activity_ids: list[int] = result.scalars().all()
+        activity_ids = result.scalars().all()
         return activity_ids
 
 
@@ -504,7 +508,7 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         flow_event: FlowEvent = FlowEvent.from_orm(instance)
         return flow_event
 
-    async def get_by_event_id(self, event_id: int) -> int | None:
+    async def get_by_event_id(self, event_id: uuid.UUID) -> uuid.UUID | None:
         """Return flow event instances."""
         query: Query = select(FlowEventsSchema.flow_id)
         query = query.where(FlowEventsSchema.event_id == event_id)
@@ -512,7 +516,7 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         result = await self._execute(query)
 
         try:
-            flow_id: int = result.scalars().one_or_none()
+            flow_id: uuid.UUID = result.scalars().one_or_none()
         except MultipleResultsFound:
             raise EventError(
                 message=f"Event{event_id} is used in multiple flows".format(
@@ -522,14 +526,16 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
 
         return flow_id
 
-    async def delete_all_by_event_ids(self, event_ids: list[int]):
+    async def delete_all_by_event_ids(self, event_ids: list[uuid.UUID]):
         """Delete all flow events by event ids."""
         query: Query = update(FlowEventsSchema)
         query = query.where(FlowEventsSchema.event_id.in_(event_ids))
         query = query.values(is_deleted=True)
         await self._execute(query)
 
-    async def count_by_applet(self, applet_id: int) -> list[FlowEventCount]:
+    async def count_by_applet(
+        self, applet_id: uuid.UUID
+    ) -> list[FlowEventCount]:
         """Return flow ids with event count."""
 
         query: Query = select(
@@ -577,15 +583,17 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
 
         return flow_event_counts
 
-    async def get_by_event_ids(self, event_ids: list[int]) -> list[int]:
+    async def get_by_event_ids(
+        self, event_ids: list[uuid.UUID]
+    ) -> list[uuid.UUID]:
         """Return flow event instances."""
         query: Query = select(distinct(FlowEventsSchema.flow_id))
         query = query.where(FlowEventsSchema.event_id.in_(event_ids))
         result = await self._execute(query)
-        flow_ids: list[int] = result.scalars().all()
+        flow_ids = result.scalars().all()
         return flow_ids
 
-    async def count_by_flow(self, flow_id: int) -> int:
+    async def count_by_flow(self, flow_id: uuid.UUID) -> int:
         """Return event count."""
 
         query: Query = select(

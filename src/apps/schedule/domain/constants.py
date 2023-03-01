@@ -1,3 +1,4 @@
+import uuid
 from datetime import date, time, timedelta
 from enum import Enum
 
@@ -39,6 +40,6 @@ class DefaultEvent(BaseModel):
         "end_date": date.max,
         "interval": 0,
     }
-    user_id: int | None = None
-    activity_id: int | None
-    flow_id: int | None
+    user_id: uuid.UUID | None = None
+    activity_id: uuid.UUID | None
+    flow_id: uuid.UUID | None

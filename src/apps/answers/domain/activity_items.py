@@ -1,5 +1,6 @@
+import uuid
+
 from pydantic import Field
-from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -19,17 +20,17 @@ __all__ = [
 class AnswerActivityItemCreateBase(InternalModel):
     """This model used for internal needs"""
 
-    applet_id: int = Field(
+    applet_id: uuid.UUID = Field(
         description="This field represents the specific applet id"
     )
     applet_history_id_version: str = Field(
         description="This field represents the applet histories id version "
         "at a particular moment in history"
     )
-    activity_id: int = Field(
+    activity_id: uuid.UUID = Field(
         description="This field represents the activity id"
     )
-    respondent_id: int = Field(
+    respondent_id: uuid.UUID = Field(
         description="This field represents the user id, "
         "where the user has the respondent role"
     )
@@ -38,7 +39,7 @@ class AnswerActivityItemCreateBase(InternalModel):
 class AnswerRequest(PublicModel):
     """This model represents the answer for specific activity items"""
 
-    activity_item_history_id: int = Field(
+    activity_item_history_id: uuid.UUID = Field(
         description="This field represents the activity item's "
         "histories id at a particular moment in history"
     )
@@ -64,14 +65,14 @@ class AnswerCreate(PublicModel):
 class AnswerActivityItemsCreateRequest(PublicModel):
     """This model represents the answer for activity items"""
 
-    applet_id: int = Field(
+    applet_id: uuid.UUID = Field(
         description="This field represents the specific applet id"
     )
     applet_history_version: str = Field(
         description="This field represents the applet histories version "
         "at a particular moment in history"
     )
-    activity_id: int = Field(
+    activity_id: uuid.UUID = Field(
         description="This field represents the activity id"
     )
 
@@ -106,7 +107,7 @@ class AnswerActivityItemsCreate(AnswerActivityItemCreateBase):
 
 
 class AnswerActivityItem(AnswerActivityItemCreate):
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class ActivityIdentifierBase(PublicModel):
@@ -131,7 +132,7 @@ class ActivityIdentifierBase(PublicModel):
 class PublicAnswerActivityItem(ActivityIdentifierBase):
     """This model represents the public answer for activity item"""
 
-    id: PositiveInt
+    id: uuid.UUID
     answer: dict[str, str] = Field(
         description="This field represents the answer "
         "to a specific activity item"

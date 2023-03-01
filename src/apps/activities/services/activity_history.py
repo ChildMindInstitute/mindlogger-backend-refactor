@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional
 
 from apps.activities.crud import ActivityHistoriesCRUD
@@ -120,10 +121,10 @@ class ActivityHistoryService:
     def _group_and_sort_activities(
         self, activities: list[ActivityHistory]
     ) -> dict[
-        int, tuple[Optional[ActivityHistory], Optional[ActivityHistory]]
+        uuid.UUID, tuple[Optional[ActivityHistory], Optional[ActivityHistory]]
     ]:
         groups_map: dict[
-            int, tuple[ActivityHistory | None, ActivityHistory | None]
+            uuid.UUID, tuple[ActivityHistory | None, ActivityHistory | None]
         ] = dict()
         for activity in activities:
             group = groups_map.get(activity.id)

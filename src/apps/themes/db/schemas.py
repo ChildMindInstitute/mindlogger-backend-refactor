@@ -14,6 +14,6 @@ class ThemeSchema(Base):
     tertiary_color = Column(String(length=100))
     public = Column(Boolean(), default=False)
     allow_rename = Column(Boolean(), default=False)
-    creator = Column(
+    creator_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )

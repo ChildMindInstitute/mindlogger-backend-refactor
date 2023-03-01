@@ -1,3 +1,5 @@
+import uuid
+
 from apps.shared.errors import BaseError, NotFoundError, ValidationError
 
 
@@ -7,14 +9,14 @@ class EventError(BaseError):
 
 
 class UserEventAlreadyExists(ValidationError):
-    def __init__(self, user_id: int, event_id: int) -> None:
+    def __init__(self, user_id: uuid.UUID, event_id: uuid.UUID) -> None:
         super().__init__(
             message=f"The event {event_id} for user {user_id} already exists."
         )
 
 
 class ActivityEventAlreadyExists(ValidationError):
-    def __init__(self, activity_id: int, event_id: int) -> None:
+    def __init__(self, activity_id: uuid.UUID, event_id: uuid.UUID) -> None:
         msg = (
             f"The event {event_id} for activity {activity_id} already exists."
         )
@@ -22,7 +24,7 @@ class ActivityEventAlreadyExists(ValidationError):
 
 
 class FlowEventAlreadyExists(ValidationError):
-    def __init__(self, flow_id: int, event_id: int) -> None:
+    def __init__(self, flow_id: uuid.UUID, event_id: uuid.UUID) -> None:
         super().__init__(
             message=f"The event {event_id} for flow {flow_id} already exists."
         )

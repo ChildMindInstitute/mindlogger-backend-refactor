@@ -1,12 +1,4 @@
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-)
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
@@ -21,10 +13,10 @@ class _BaseAppletSchema:
     image = Column(String(255))
     watermark = Column(String(255))
 
-    theme_id = Column(Integer())
+    theme_id = Column(UUID(as_uuid=True))
     version = Column(String(255))
 
-    account_id = Column(Integer())
+    account_id = Column(UUID(as_uuid=True))
 
     report_server_ip = Column(Text())
     report_public_key = Column(Text())
@@ -50,7 +42,7 @@ class AppletHistorySchema(_BaseAppletSchema, Base):
     __tablename__ = "applet_histories"
 
     id_version = Column(String(), primary_key=True)
-    id = Column(Integer())
+    id = Column(UUID(as_uuid=True))
     display_name = Column(String(length=100))
 
     creator_id = Column(

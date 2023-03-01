@@ -1,10 +1,11 @@
 import datetime
+import uuid
 
 from apps.shared.domain import InternalModel, PublicModel
 
 
 class User(InternalModel):
-    id: int
+    id: uuid.UUID
     full_name: str
 
 

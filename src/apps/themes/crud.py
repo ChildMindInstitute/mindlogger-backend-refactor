@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 from sqlalchemy import select
@@ -26,7 +27,7 @@ __all__ = ["ThemesCRUD"]
 class _ThemeFiltering(Filtering):
     public = FilterField(ThemeSchema.public)
     allow_rename = FilterField(ThemeSchema.allow_rename)
-    creator = FilterField(ThemeSchema.creator)
+    creator_id = FilterField(ThemeSchema.creator_id)
 
 
 class _ThemeSearching(Searching):
@@ -101,24 +102,24 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
         return theme
 
-    async def delete_by_id(self, pk: int, creator_id: int):
+    async def delete_by_id(self, pk: uuid.UUID, creator_id: uuid.UUID):
         """Delete theme by id."""
         instance: Theme = await self._fetch(key="id", value=pk)
 
-        if instance.creator != creator_id:
+        if instance.creator_id != creator_id:
             raise PermissionsError(
                 "You do not have permissions to delete this theme."
             )
         await self._delete(key="id", value=pk)
 
     async def update(
-        self, pk: int, update_schema: ThemeUpdate, creator_id: int
+        self, pk: uuid.UUID, update_schema: ThemeUpdate, creator_id: uuid.UUID
     ) -> Theme:
         # Update theme in database
 
         instance: Theme = await self._fetch(key="id", value=pk)
 
-        if instance.creator != creator_id:
+        if instance.creator_id != creator_id:
             raise PermissionsError(
                 "You do not have permissions to update this theme."
             )
