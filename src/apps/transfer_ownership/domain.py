@@ -15,7 +15,7 @@ class Transfer(InternalModel):
     """Transfer ownership of an applet to another user."""
 
     email: EmailStr
-    applet_id: PositiveInt
+    applet_id: uuid.UUID
     key: uuid.UUID
 
 

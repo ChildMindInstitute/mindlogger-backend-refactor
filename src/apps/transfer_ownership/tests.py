@@ -1,3 +1,5 @@
+import pytest
+
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
@@ -16,6 +18,7 @@ class TestTransfer(BaseTest):
     transfer_url = "/applets/{applet_id}/transferOwnership"
     response_url = "/applets/{applet_id}/transferOwnership/{key}"
 
+    @pytest.mark.main
     @transaction.rollback
     async def test_initiate_transfer(self):
         await self.client.login(
@@ -24,7 +27,7 @@ class TestTransfer(BaseTest):
         data = {"email": "aloevdamirkhon@gmail.com"}
 
         response = await self.client.post(
-            self.transfer_url.format(applet_id=1), data=data
+            self.transfer_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"), data=data
         )
 
         assert response.status_code == 200
@@ -37,7 +40,7 @@ class TestTransfer(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await self.client.delete(
             self.response_url.format(
-                applet_id=1, key="6a3ab8e6-f2fa-49ae-b2db-197136677da7"
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1", key="6a3ab8e6-f2fa-49ae-b2db-197136677da7"
             ),
         )
 
@@ -48,7 +51,7 @@ class TestTransfer(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await self.client.post(
             self.response_url.format(
-                applet_id=1, key="6a3ab8e6-f2fa-49ae-b2db-197136677da7"
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1", key="6a3ab8e6-f2fa-49ae-b2db-197136677da7"
             ),
         )
 
