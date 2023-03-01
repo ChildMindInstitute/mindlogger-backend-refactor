@@ -5,13 +5,19 @@ from apps.invitations.api import (
     invitation_accept,
     invitation_decline,
     invitation_list,
+    invitation_managers_send,
+    invitation_respondent_send,
     invitation_retrieve,
+    invitation_reviewer_send,
     invitation_send,
     private_invitation_accept,
     private_invitation_retrieve,
 )
 from apps.invitations.domain import (
+    InvitationManagersResponse,
+    InvitationRespondentResponse,
     InvitationResponse,
+    InvitationReviewerResponse,
     PrivateInvitationResponse,
 )
 from apps.shared.domain.response import (
@@ -41,13 +47,13 @@ router.get(
     },
 )(invitation_retrieve)
 
-# Approve invitation
+# Accept invitation
 router.post(
     "/{key}/accept",
 )(invitation_accept)
 
 # Decline invitation
-router.post(
+router.delete(
     "/{key}/decline",
 )(invitation_decline)
 
@@ -60,6 +66,36 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(invitation_send)
+
+# Invitation send for Role respondent
+router.post(
+    "/{applet_id}/invitations/respondent",
+    response_model=Response[InvitationRespondentResponse],
+    responses={
+        status.HTTP_200_OK: {"model": Response[InvitationRespondentResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(invitation_respondent_send)
+
+# Invitation send for Role reviewer
+router.post(
+    "/{applet_id}/invitations/reviewer",
+    response_model=Response[InvitationReviewerResponse],
+    responses={
+        status.HTTP_200_OK: {"model": Response[InvitationReviewerResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(invitation_reviewer_send)
+
+# Invitation send for other Role ("manager", "coordinator", "editor")
+router.post(
+    "/{applet_id}/invitations/managers",
+    response_model=Response[InvitationManagersResponse],
+    responses={
+        status.HTTP_200_OK: {"model": Response[InvitationManagersResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(invitation_managers_send)
 
 router.get(
     "/private/{key}",

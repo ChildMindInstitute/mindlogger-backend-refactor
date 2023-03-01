@@ -60,6 +60,17 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             for user_applet_access in results
         ]
 
+    async def get_by_applet_id_role_admin(
+        self, applet_id_: int
+    ) -> UserAppletAccess | None:
+        query: Query = select(self.schema_class).filter(
+            self.schema_class.applet_id == applet_id_,
+            self.schema_class.role == Role.ADMIN,
+        )
+        result: Result = await self._execute(query)
+
+        return result.scalars().one_or_none()
+
     async def get_by_user_applet_role(
         self,
         schema: UserAppletAccessItem,
@@ -150,3 +161,23 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query: Query = delete(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         await self._execute(query)
+
+    async def get_meta_applet_and_role(
+        self, applet_id: uuid.UUID, role: Role
+    ) -> list[str]:
+        query: Query = select(distinct(UserAppletAccessSchema.meta))
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.role == role)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
+    async def get_user_id_applet_and_role(
+        self, applet_id: uuid.UUID, role: Role
+    ) -> list[str]:
+        query: Query = select(distinct(UserAppletAccessSchema.user_id))
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.role == role)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()

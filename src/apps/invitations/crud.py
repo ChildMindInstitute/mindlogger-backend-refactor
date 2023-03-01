@@ -4,9 +4,15 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Query
 
 from apps.applets.db.schemas import AppletSchema
+from apps.applets.domain import Role
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.db import InvitationSchema
-from apps.invitations.domain import InvitationDetail
+from apps.invitations.domain import (
+    InvitationDetail,
+    InvitationDetailBase,
+    InvitationDetailRespondent,
+    InvitationDetailReviewer,
+)
 from infrastructure.database import BaseCRUD
 
 
@@ -42,15 +48,13 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     role=invitation.role,
                     key=invitation.key,
                     status=invitation.status,
-                    title=invitation.title,
-                    body=invitation.body,
+                    invitor_id=invitation.invitor_id,
+                    meta=invitation.meta,
                 )
             )
         return results
 
-    async def get_by_email_and_key(
-        self, email: str, key: uuid.UUID
-    ) -> InvitationDetail | None:
+    async def get_by_email_and_key(self, email: str, key: uuid.UUID):
         query: Query = select(
             InvitationSchema, AppletSchema.display_name.label("applet_name")
         )
@@ -64,7 +68,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         if not result:
             return None
         invitation, applet_name = result
-        return InvitationDetail(
+        invitation_detail_base = InvitationDetailBase(
             id=invitation.id,
             email=invitation.email,
             applet_id=invitation.applet_id,
@@ -72,9 +76,23 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             role=invitation.role,
             key=invitation.key,
             status=invitation.status,
-            title=invitation.title,
-            body=invitation.body,
+            invitor_id=invitation.invitor_id,
         )
+        if invitation.role == Role.RESPONDENT:
+            return InvitationDetailRespondent(
+                meta=invitation.meta,
+                **invitation_detail_base.dict(),
+            )
+        elif invitation.role == Role.REVIEWER:
+            return InvitationDetailReviewer(
+                meta=invitation.meta,
+                **invitation_detail_base.dict(),
+            )
+        else:
+            return InvitationDetail(
+                meta={},
+                **invitation_detail_base.dict(),
+            )
 
     async def approve_by_id(self, id_: uuid.UUID):
         query = update(InvitationSchema)

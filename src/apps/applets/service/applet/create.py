@@ -73,8 +73,7 @@ async def _create_applet(
             report_email_body=create_data.report_email_body,
         )
     )
-    applet = fetch.Applet.from_orm(schema)
-    return applet
+    return fetch.Applet.from_orm(schema)
 
 
 async def _create_access(applet_id: uuid.UUID, user_id: uuid.UUID):

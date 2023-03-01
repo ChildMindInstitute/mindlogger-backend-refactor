@@ -1,5 +1,5 @@
-from sqlalchemy import Column, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database import Base
 
@@ -16,6 +16,5 @@ class InvitationSchema(Base):
     invitor_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
-    title = Column(String(), nullable=True)
-    body = Column(Text(), nullable=True)
     status = Column(String())
+    meta = Column(JSONB())

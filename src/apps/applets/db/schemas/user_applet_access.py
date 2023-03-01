@@ -1,4 +1,5 @@
 from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy.dialects.postgresql import JSONB
 
 from infrastructure.database.base import Base
 
@@ -17,3 +18,10 @@ class UserAppletAccessSchema(Base):
         index=True,
     )
     role = Column(String(length=20), nullable=False, index=True)
+    owner_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    invitor_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    meta = Column(JSONB())

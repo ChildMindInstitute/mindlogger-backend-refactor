@@ -18,3 +18,9 @@ class Role(str, Enum):
     def __lt__(self, other):
         roles = self.as_list()
         return roles.index(self) > roles.index(other)
+
+
+class ManagersRole(str, Enum):
+    MANAGER = "manager"
+    COORDINATOR = "coordinator"
+    EDITOR = "editor"

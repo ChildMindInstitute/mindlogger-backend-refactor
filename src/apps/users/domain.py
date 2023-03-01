@@ -28,19 +28,22 @@ class _UserBase(BaseModel):
 
 
 class UserCreateRequest(_UserBase, PublicModel):
-    full_name: str
+    first_name: str
+    last_name: str
     password: str
 
 
 class UserCreate(_UserBase, InternalModel):
-    full_name: str
+    first_name: str
+    last_name: str
     hashed_password: str
 
 
 class UserUpdateRequest(InternalModel):
     """This model represents user `update request` data model."""
 
-    full_name: str
+    first_name: str
+    last_name: str
 
 
 class User(UserCreate):
@@ -50,7 +53,8 @@ class User(UserCreate):
 class PublicUser(_UserBase, PublicModel):
     """Public user data model."""
 
-    full_name: str
+    first_name: str
+    last_name: str
     id: uuid.UUID
 
 

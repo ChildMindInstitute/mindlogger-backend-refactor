@@ -19,7 +19,8 @@ async def user_create(
 
     user_create = UserCreate(
         email=user_create_schema.email,
-        full_name=user_create_schema.full_name,
+        first_name=user_create_schema.first_name,
+        last_name=user_create_schema.last_name,
         hashed_password=AuthenticationService.get_password_hash(
             user_create_schema.password
         ),
