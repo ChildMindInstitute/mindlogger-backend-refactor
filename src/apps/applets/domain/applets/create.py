@@ -1,7 +1,6 @@
 import uuid
 
 from pydantic import Field
-from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel
 
@@ -52,7 +51,7 @@ class AppletCreate(InternalModel):
     about: dict[str, str] = Field(default_factory=dict)
     image: str = ""
     watermark: str = ""
-    theme_id: PositiveInt | None = None
+    theme_id: uuid.UUID | None = None
     report_server_ip: str = ""  # Fixme: ip address
     report_public_key: str = ""
     report_recipients: list[str] = Field(default_factory=list)

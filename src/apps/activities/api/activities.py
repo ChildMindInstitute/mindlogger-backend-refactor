@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import Depends
 
 from apps.activities.domain.activity import ActivityExtendedDetailPublic
@@ -9,7 +11,7 @@ from infrastructure.http import get_language
 
 
 async def activity_retrieve(
-    id_: int,
+    id_: uuid.UUID,
     user: User = Depends(get_current_user),
     language: str = Depends(get_language),
 ) -> Response[ActivityExtendedDetailPublic]:

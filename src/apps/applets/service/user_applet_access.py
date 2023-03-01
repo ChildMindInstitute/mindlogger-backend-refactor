@@ -1,3 +1,5 @@
+import uuid
+
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.db.schemas import UserAppletAccessSchema
 from apps.applets.domain import Role, UserAppletAccess
@@ -6,7 +8,7 @@ __all__ = ["UserAppletAccessService"]
 
 
 class UserAppletAccessService:
-    def __init__(self, user_id: int, applet_id: int):
+    def __init__(self, user_id: uuid.UUID, applet_id: uuid.UUID):
         self._user_id = user_id
         self._applet_id = applet_id
 

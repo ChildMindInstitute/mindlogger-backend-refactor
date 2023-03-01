@@ -1,13 +1,12 @@
 import uuid
 
 from pydantic import Field
-from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel
 
 
 class ActivityItemUpdate(InternalModel):
-    id: int | None
+    id: uuid.UUID | None
     question: dict[str, str]
     response_type: str
     answers: list
@@ -23,7 +22,7 @@ class ActivityItemUpdate(InternalModel):
 
 
 class ActivityUpdate(InternalModel):
-    id: int | None
+    id: uuid.UUID | None
     guid: uuid.UUID
     name: str
     description: dict[str, str]
@@ -37,12 +36,12 @@ class ActivityUpdate(InternalModel):
 
 
 class ActivityFlowItemUpdate(InternalModel):
-    id: int | None = None
+    id: uuid.UUID | None = None
     activity_guid: uuid.UUID
 
 
 class ActivityFlowUpdate(InternalModel):
-    id: int | None
+    id: uuid.UUID | None
     name: str
     description: dict[str, str]
     is_single_report: bool = False
@@ -56,7 +55,7 @@ class AppletUpdate(InternalModel):
     about: dict[str, str]
     image: str = ""
     watermark: str = ""
-    theme_id: PositiveInt | None = None
+    theme_id: uuid.UUID | None = None
     report_server_ip: str = ""  # Fixme: ip address
     report_public_key: str = ""
     report_recipients: list[str] = Field(default_factory=list)

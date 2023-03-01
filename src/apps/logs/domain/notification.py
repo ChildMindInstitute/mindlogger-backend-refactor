@@ -1,4 +1,5 @@
 import json
+import uuid
 
 from pydantic import BaseModel, root_validator, validator
 from pydantic.types import PositiveInt
@@ -63,4 +64,4 @@ class NotificationLogCreate(_NotificationLogInit, InternalModel):
 class PublicNotificationLog(_NotificationLogInit, PublicModel):
     """Public NotificationLog model."""
 
-    id: PositiveInt
+    id: uuid.UUID

@@ -1,7 +1,7 @@
+import uuid
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
-from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -44,14 +44,14 @@ class UserUpdateRequest(InternalModel):
 
 
 class User(UserCreate):
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class PublicUser(_UserBase, PublicModel):
     """Public user data model."""
 
     full_name: str
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class ChangePasswordRequest(InternalModel):

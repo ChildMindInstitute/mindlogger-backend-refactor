@@ -1,3 +1,4 @@
+import uuid
 from enum import Enum
 
 from pydantic import EmailStr
@@ -13,7 +14,7 @@ class TokenPurpose(str, Enum):
 
 
 class TokenPayload(InternalModel):
-    sub: int
+    sub: uuid.UUID
     exp: int
 
 

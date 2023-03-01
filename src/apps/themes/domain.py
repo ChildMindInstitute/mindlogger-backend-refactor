@@ -1,8 +1,8 @@
 import mimetypes
+import uuid
 
 from pydantic import BaseModel, validator
 from pydantic.color import Color
-from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -52,20 +52,20 @@ class ThemeUpdate(_ThemeBase, InternalModel):
 
 
 class ThemeCreate(ThemeUpdate, InternalModel):
-    creator: PositiveInt
+    creator_id: uuid.UUID
 
 
 class PublicTheme(_ThemeBase, PublicModel):
     """Public theme model."""
 
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class Theme(ThemeCreate):
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class ThemeQueryParams(BaseQueryParams):
     public: bool | None = None
     allow_rename: bool | None = None
-    creator: int | None = None
+    creator_id: int | None = None

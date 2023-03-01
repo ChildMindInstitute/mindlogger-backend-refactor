@@ -1,3 +1,5 @@
+import uuid
+
 from apps.activities.crud import ActivitiesCRUD
 from apps.activity_flows.crud import FlowsCRUD
 from apps.applets.crud import UserAppletAccessCRUD
@@ -35,7 +37,7 @@ class ScheduleService:
         pass
 
     async def create_schedule(
-        self, schedule: EventRequest, applet_id: int
+        self, schedule: EventRequest, applet_id: uuid.UUID
     ) -> PublicEvent:
         # Delete all events of this activity or flow
         # if new periodicity type is "always"
@@ -95,7 +97,7 @@ class ScheduleService:
             flow_id=schedule.flow_id,
         )
 
-    async def get_schedule_by_id(self, schedule_id: int) -> PublicEvent:
+    async def get_schedule_by_id(self, schedule_id: uuid.UUID) -> PublicEvent:
         event: Event = await EventCRUD().get_by_id(pk=schedule_id)
         periodicity: Periodicity = await PeriodicityCRUD().get_by_id(
             event.periodicity_id
@@ -114,7 +116,9 @@ class ScheduleService:
             flow_id=flow_id,
         )
 
-    async def get_all_schedules(self, applet_id: int) -> list[PublicEvent]:
+    async def get_all_schedules(
+        self, applet_id: uuid.UUID
+    ) -> list[PublicEvent]:
         event_schemas: list[
             EventSchema
         ] = await EventCRUD().get_all_by_applet_id(applet_id)
@@ -145,7 +149,7 @@ class ScheduleService:
 
         return events
 
-    async def delete_all_schedules(self, applet_id: int):
+    async def delete_all_schedules(self, applet_id: uuid.UUID):
         event_schemas: list[
             EventSchema
         ] = await EventCRUD().get_all_by_applet_id(applet_id)
@@ -159,12 +163,8 @@ class ScheduleService:
             )
 
         # Get all activity_ids and flow_ids
-        activity_ids: list[int] = await ActivityEventsCRUD().get_by_event_ids(
-            event_ids
-        )
-        flow_ids: list[int] = await FlowEventsCRUD().get_by_event_ids(
-            event_ids
-        )
+        activity_ids = await ActivityEventsCRUD().get_by_event_ids(event_ids)
+        flow_ids = await FlowEventsCRUD().get_by_event_ids(event_ids)
 
         await UserEventsCRUD().delete_all_by_event_ids(event_ids)
         await ActivityEventsCRUD().delete_all_by_event_ids(event_ids)
@@ -182,9 +182,9 @@ class ScheduleService:
                 applet_id=applet_id, activity_id=flow_id, is_activity=False
             )
 
-    async def delete_schedule_by_id(self, schedule_id: int):
+    async def delete_schedule_by_id(self, schedule_id: uuid.UUID):
         event: Event = await EventCRUD().get_by_id(pk=schedule_id)
-        periodicity_id: int = event.periodicity_id
+        periodicity_id = event.periodicity_id
 
         # Get activity_id or flow_id if exists
         activity_id = await ActivityEventsCRUD().get_by_event_id(
@@ -225,7 +225,10 @@ class ScheduleService:
                 )
 
     async def update_schedule(
-        self, applet_id: int, schedule_id: int, schedule: EventRequest
+        self,
+        applet_id: uuid.UUID,
+        schedule_id: uuid.UUID,
+        schedule: EventRequest,
     ) -> PublicEvent:
         # Delete all events of this activity or flow
         # if new periodicity type is "always"
@@ -297,20 +300,24 @@ class ScheduleService:
         )
 
     async def _validate_schedule(
-        self, applet_id: int, schedule: EventRequest
+        self, applet_id: uuid.UUID, schedule: EventRequest
     ) -> None:
         """Validate schedule before saving it to the database."""
         # Check if user has access to applet
         if schedule.user_id:
-            user_applet_access = await UserAppletAccessCRUD().get_by_applet_and_user_as_respondent(  # noqa: E501
-                applet_id=applet_id, user_id=schedule.user_id
-            )
+            user_applet_access = await (
+                UserAppletAccessCRUD().get_by_applet_and_user_as_respondent(
+                    applet_id=applet_id, user_id=schedule.user_id
+                )
+            )  # noqa: E501
             if not user_applet_access:
                 raise NotFoundError(
-                    message=f"User {schedule.user_id} does not have access to applet {applet_id}"  # noqa: E501
-                )
+                    message=f"User {schedule.user_id} "
+                    f"does not have access to applet {applet_id}"
+                )  # noqa: E501
 
         # Check if activity or flow exists inside applet
+        activity_or_flow = None
         if schedule.activity_id:
             activity_or_flow = (
                 await ActivitiesCRUD().get_by_applet_id_and_activity_id(
@@ -323,10 +330,12 @@ class ScheduleService:
             )
         if not activity_or_flow:
             raise NotFoundError(
-                message=f"Activity or flow with id {schedule.activity_id or schedule.flow_id} not found inside applet {applet_id}"  # noqa: E501
-            )
+                message=f"Activity or flow with id "
+                f"{schedule.activity_id or schedule.flow_id}"
+                f" not found inside applet {applet_id}"
+            )  # noqa: E501
 
-    async def count_schedules(self, applet_id: int) -> PublicEventCount:
+    async def count_schedules(self, applet_id: uuid.UUID) -> PublicEventCount:
 
         event_count = PublicEventCount(activity_events=[], flow_events=[])
 
@@ -359,8 +368,9 @@ class ScheduleService:
         ]
         if not event_ids:
             raise NotFoundError(
-                message=f"No schedules found in applet {applet_id} for user {user_id}"  # noqa: E501
-            )
+                message=f"No schedules found in applet "
+                f"{applet_id} for user {user_id}"
+            )  # noqa: E501
 
         await UserEventsCRUD().delete_all_by_events_and_user(
             event_ids, user_id
@@ -371,7 +381,7 @@ class ScheduleService:
         await EventCRUD().delete_by_ids(event_ids)
 
     async def _create_default_event(
-        self, applet_id: int, activity_id: int, is_activity: bool
+        self, applet_id: uuid.UUID, activity_id: uuid.UUID, is_activity: bool
     ) -> None:
         """Create default schedules for applet."""
         default_event = DefaultEvent()
@@ -386,9 +396,14 @@ class ScheduleService:
         )
 
     async def _delete_by_activity_or_flow(
-        self, applet_id: int, activity_id: int | None, flow_id: int | None
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID | None,
+        flow_id: uuid.UUID | None,
     ) -> None:
         """Delete schedules by activity or flow id."""
+        event_schemas = []
+
         if activity_id:
             # Get list of event_ids for activity and delete them all
             event_schemas = await EventCRUD().get_all_by_applet_and_activity(
@@ -412,7 +427,7 @@ class ScheduleService:
             await EventCRUD().delete_by_ids(event_ids)
 
     async def delete_by_activity_ids(
-        self, applet_id: int, activity_ids: list[int]
+        self, applet_id: uuid.UUID, activity_ids: list[uuid.UUID]
     ) -> None:
         """Delete schedules by activity id."""
         for activity_id in activity_ids:
@@ -421,7 +436,7 @@ class ScheduleService:
             )
 
     async def delete_by_flow_ids(
-        self, applet_id: int, flow_ids: list[int]
+        self, applet_id: uuid.UUID, flow_ids: list[uuid.UUID]
     ) -> None:
         """Delete schedules by flow id."""
         for flow_id in flow_ids:
@@ -430,7 +445,10 @@ class ScheduleService:
             )
 
     async def create_default_schedules(
-        self, applet_id: int, activity_ids: list[int], is_activity: bool
+        self,
+        applet_id: uuid.UUID,
+        activity_ids: list[uuid.UUID],
+        is_activity: bool,
     ) -> None:
         """Create default schedules for applet."""
         for activity_id in activity_ids:

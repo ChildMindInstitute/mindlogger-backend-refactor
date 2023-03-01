@@ -2,15 +2,13 @@ from unittest.mock import patch
 
 from starlette import status
 
-from apps.authentication.domain.login import UserLogin, UserLoginRequest
-from apps.authentication.domain.token import RefreshAccessTokenRequest, Token
+from apps.authentication.domain.login import UserLoginRequest
+from apps.authentication.domain.token import RefreshAccessTokenRequest
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
 from apps.authentication.tests.factories import UserLogoutRequestFactory
-from apps.shared.domain.response import Response
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
-from apps.users.domain import PublicUser
 from apps.users.router import router as user_router
 from apps.users.tests import UserCreateRequestFactory
 from infrastructure.database import transaction
@@ -53,17 +51,14 @@ class TestAuthentication(BaseTest):
             {"sub": str(user.id)}
         )
 
-        expected_result = Response(
-            result=UserLogin(
-                token=Token(
-                    access_token=access_token, refresh_token=refresh_token
-                ),
-                user=PublicUser.from_orm(user),
-            ),
-        )
-
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == expected_result.dict(by_alias=True)
+        assert (
+            response.json()["result"]["token"]["accessToken"] == access_token
+        )
+        assert (
+            response.json()["result"]["token"]["refreshToken"] == refresh_token
+        )
+        assert response.json()["result"]["user"]["id"] == str(user.id)
 
     @transaction.rollback
     @patch("apps.authentication.services.core.TokensBlacklistCache.set")

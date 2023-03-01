@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
@@ -11,7 +13,7 @@ from apps.users.domain import User
 # TODO: Add logic to allow to create applets by permissions
 # TODO: Restrict by admin
 async def schedule_create(
-    applet_id: int,
+    applet_id: uuid.UUID,
     schema: EventRequest = Body(...),
     user: User = Depends(get_current_user),
 ) -> Response[PublicEvent]:
@@ -24,8 +26,8 @@ async def schedule_create(
 # TODO: Add logic to allow to create applets by permissions
 # TODO: Restrict by admin
 async def schedule_get_by_id(
-    applet_id: int,
-    schedule_id: int,
+    applet_id: uuid.UUID,
+    schedule_id: uuid.UUID,
     user: User = Depends(get_current_user),
 ) -> Response[PublicEvent]:
     """Get a schedule by id."""
@@ -36,7 +38,7 @@ async def schedule_get_by_id(
 # TODO: Add logic to allow to create applets by permissions
 # TODO: Restrict by admin
 async def schedule_get_all(
-    applet_id: int,
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[PublicEvent]:
     """Get all schedules for an applet."""
@@ -48,7 +50,7 @@ async def schedule_get_all(
 # TODO: Add logic to allow to create applets by permissions
 # TODO: Restrict by admin
 async def schedule_delete_all(
-    applet_id: int,
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
 ):
     """Delete all schedules for an applet."""
@@ -58,8 +60,8 @@ async def schedule_delete_all(
 # TODO: Add logic to allow to create applets by permissions
 # TODO: Restrict by admin
 async def schedule_delete_by_id(
-    applet_id: int,
-    schedule_id: int,
+    applet_id: uuid.UUID,
+    schedule_id: uuid.UUID,
     user: User = Depends(get_current_user),
 ):
     """Delete a schedule by id."""
@@ -69,8 +71,8 @@ async def schedule_delete_by_id(
 # TODO: Add logic to allow to create applets by permissions
 # TODO: Restrict by admin
 async def schedule_update(
-    applet_id: int,
-    schedule_id: int,
+    applet_id: uuid.UUID,
+    schedule_id: uuid.UUID,
     user: User = Depends(get_current_user),
     schema: EventRequest = Body(...),
 ) -> Response[PublicEvent]:
@@ -84,7 +86,7 @@ async def schedule_update(
 # TODO: Add logic to allow to create applets by permissions
 # TODO: Restrict by admin
 async def schedule_count(
-    applet_id: int,
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
 ) -> Response[PublicEventCount]:
     """Get the count of schedules for an applet."""
@@ -97,8 +99,8 @@ async def schedule_count(
 # TODO: Add logic to allow to create applets by permissions
 # TODO: Restrict by admin
 async def schedule_delete_by_user(
-    applet_id: int,
-    user_id: int,
+    applet_id: uuid.UUID,
+    user_id: uuid.UUID,
     user: User = Depends(get_current_user),
 ):
     """Delete all schedules for a user."""

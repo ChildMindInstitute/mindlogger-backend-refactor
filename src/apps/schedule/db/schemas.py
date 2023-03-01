@@ -9,6 +9,7 @@ from sqlalchemy import (
     Time,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import UUID
 
 from infrastructure.database.base import Base
 
@@ -68,7 +69,7 @@ class UserEventsSchema(Base):
 class ActivityEventsSchema(Base):
     __tablename__ = "activity_events"
 
-    activity_id = Column(Integer, nullable=False)
+    activity_id = Column(UUID(as_uuid=True), nullable=False)
     event_id = Column(
         ForeignKey("events.id", ondelete="CASCADE"), nullable=False
     )
@@ -86,7 +87,7 @@ class ActivityEventsSchema(Base):
 class FlowEventsSchema(Base):
     __tablename__ = "flow_events"
 
-    flow_id = Column(Integer, nullable=False)
+    flow_id = Column(UUID(as_uuid=True), nullable=False)
     event_id = Column(
         ForeignKey("events.id", ondelete="CASCADE"), nullable=False
     )

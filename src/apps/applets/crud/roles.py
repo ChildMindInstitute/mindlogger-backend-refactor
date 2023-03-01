@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import delete, distinct, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
@@ -102,7 +104,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return await self._create(schema)
 
     async def get(
-        self, user_id: int, applet_id: int, role: str
+        self, user_id: uuid.UUID, applet_id: uuid.UUID, role: str
     ) -> UserAppletAccessSchema | None:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
@@ -113,7 +115,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return result.scalars().one_or_none()
 
     async def get_by_roles(
-        self, user_id: int, applet_id: int, roles: list[str]
+        self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
     ) -> UserAppletAccessSchema | None:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
@@ -125,7 +127,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
     # Get by applet id and user id and role respondent
     async def get_by_applet_and_user_as_respondent(
-        self, applet_id: int, user_id: int
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
     ) -> UserAppletAccessSchema:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
@@ -135,7 +137,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return result.scalars().first()
 
     async def get_user_roles_to_applet(
-        self, user_id: int, applet_id
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
     ) -> list[str]:
         query: Query = select(distinct(UserAppletAccessSchema.role))
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
@@ -144,7 +146,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return db_result.scalars().all()
 
-    async def delete_all_by_applet_id(self, applet_id: int):
+    async def delete_all_by_applet_id(self, applet_id: uuid.UUID):
         query: Query = delete(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         await self._execute(query)

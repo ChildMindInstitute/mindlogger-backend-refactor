@@ -20,14 +20,19 @@ class TestAppletLink(BaseTest):
 
         data = {"require_login": True}
         response = await self.client.post(
-            self.access_link_url.format(applet_id=2), data=data
+            self.access_link_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2"
+            ),
+            data=data,
         )
 
         assert response.status_code == 201
         assert type(response.json()["result"]["link"]) == str
 
         response = await self.client.get(
-            self.access_link_url.format(applet_id=2)
+            self.access_link_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2"
+            )
         )
 
         assert response.status_code == 200, response.json()
@@ -35,7 +40,10 @@ class TestAppletLink(BaseTest):
         assert type(response.json()["result"]["link"]) == str
 
         response = await self.client.post(
-            self.access_link_url.format(applet_id=2), data=data
+            self.access_link_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2"
+            ),
+            data=data,
         )
         assert response.status_code == 422
 
@@ -46,13 +54,17 @@ class TestAppletLink(BaseTest):
         )
 
         response = await self.client.get(
-            self.access_link_url.format(applet_id=1)
+            self.access_link_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
         )
         assert response.status_code == 200
         assert type(response.json()["result"]["link"]) == str
 
         response = await self.client.get(
-            self.access_link_url.format(applet_id=2)
+            self.access_link_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2"
+            )
         )
         assert response.status_code == 200
         assert response.json()["result"]["link"] is None
@@ -64,12 +76,16 @@ class TestAppletLink(BaseTest):
         )
 
         response = await self.client.delete(
-            self.access_link_url.format(applet_id=1)
+            self.access_link_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
         )
         assert response.status_code == 204
 
         response = await self.client.get(
-            self.access_link_url.format(applet_id=1)
+            self.access_link_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
         )
         assert response.status_code == 200
         assert response.json()["result"]["link"] is None

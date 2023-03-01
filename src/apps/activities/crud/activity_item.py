@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
 
@@ -18,7 +20,7 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
         instances = await self._create_many(activity_item_schemas)
         return instances
 
-    async def delete_by_applet_id(self, applet_id: int):
+    async def delete_by_applet_id(self, applet_id: uuid.UUID):
         activity_id_query: Query = select(ActivitySchema.id).where(
             ActivitySchema.applet_id == applet_id
         )
@@ -47,7 +49,7 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
         return result.scalars().all()
 
     async def get_by_activity_id(
-        self, activity_id: int
+        self, activity_id: uuid.UUID
     ) -> list[ActivityItemSchema]:
         query: Query = select(ActivityItemSchema)
         query = query.where(ActivityItemSchema.activity_id == activity_id)
