@@ -105,7 +105,7 @@ class InvitationsService:
         )
 
     async def send_respondent_invitation(
-        self, applet_id: int, schema: InvitationRespondentRequest
+        self, applet_id: uuid.UUID, schema: InvitationRespondentRequest
     ) -> InvitationDetailForRespondent:
 
         await self._is_applet_exist(applet_id)
@@ -240,7 +240,7 @@ class InvitationsService:
         )
 
     async def send_managers_invitation(
-        self, applet_id: int, schema: InvitationManagersRequest
+        self, applet_id: uuid.UUID, schema: InvitationManagersRequest
     ) -> InvitationDetailForManagers:
 
         await self._is_applet_exist(applet_id)

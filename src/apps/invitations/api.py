@@ -84,7 +84,7 @@ async def invitation_send(
 
 
 async def invitation_respondent_send(
-    applet_id: int,
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     invitation_schema: InvitationRespondentRequest = Body(...),
 ) -> Response[InvitationRespondentResponse]:
@@ -103,7 +103,7 @@ async def invitation_respondent_send(
 
 
 async def invitation_reviewer_send(
-    applet_id: int,
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     invitation_schema: InvitationReviewerRequest = Body(...),
 ) -> Response[InvitationReviewerResponse]:
@@ -122,7 +122,7 @@ async def invitation_reviewer_send(
 
 
 async def invitation_managers_send(
-    applet_id: int,
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     invitation_schema: InvitationManagersRequest = Body(...),
 ) -> Response[InvitationManagersResponse]:
