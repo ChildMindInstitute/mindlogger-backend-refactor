@@ -71,14 +71,6 @@ class FlowEvent(FlowEventCreate, InternalModel):
 class EventFull(InternalModel, BaseEvent):
     id: uuid.UUID
     periodicity: Periodicity
-    user_id: int | None
-    activity_id: int | None
-    flow_id: int | None
-
-
-class EventFull(InternalModel, BaseEvent):
-    id: uuid.UUID
-    periodicity: Periodicity
-    user_id: int | None
-    activity_id: int | None
-    flow_id: int | None
+    user_id: uuid.UUID | None
+    activity_id: uuid.UUID | None
+    flow_id: uuid.UUID | None

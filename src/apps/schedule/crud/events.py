@@ -114,7 +114,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         return event
 
     async def get_all_by_applet_and_user(
-        self, applet_id: int, user_id: int
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
     ) -> list[EventFull]:
         """Get events by applet_id and user_id"""
 
@@ -182,7 +182,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
             )
         return events
 
-    async def delete_by_ids(self, ids: list[int]) -> None:
+    async def delete_by_ids(self, ids: list[uuid.UUID]) -> None:
         """Delete event by event ids."""
         query: Query = update(EventSchema)
         query = query.where(EventSchema.id.in_(ids))
@@ -228,7 +228,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         return result.scalars().all()
 
     async def get_general_events_by_user(
-        self, applet_id: int, user_id: int
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
     ) -> list[EventFull]:
         """Get general events by applet_id and user_id"""
         # select flow_ids to exclude
@@ -341,7 +341,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         user_event: UserEvent = UserEvent.from_orm(instance)
         return user_event
 
-    async def get_by_event_id(self, event_id: uuid.UUID) -> int | None:
+    async def get_by_event_id(self, event_id: uuid.UUID) -> uuid.UUID | None:
         """Return user event instances."""
         query: Query = select(distinct(UserEventsSchema.user_id))
         query = query.where(UserEventsSchema.event_id == event_id)
@@ -349,7 +349,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         result = await self._execute(query)
 
         try:
-            results: int = result.scalars().one_or_none()
+            results: uuid.UUID = result.scalars().one_or_none()
         except MultipleResultsFound:
             raise EventError(
                 f"Multiple user events found for event_id: {event_id}".format(
@@ -367,7 +367,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         await self._execute(query)
 
     async def delete_all_by_events_and_user(
-        self, event_ids: list[int], user_id: int
+        self, event_ids: list[uuid.UUID], user_id: uuid.UUID
     ):
         """Delete all user events by event ids."""
         query: Query = update(UserEventsSchema)

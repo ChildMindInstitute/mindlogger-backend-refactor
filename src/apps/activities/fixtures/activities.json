@@ -90,12 +90,11 @@
   {
     "table": "activities",
     "fields": {
-      "id": 5,
+      "id": "494544c9-e7f1-4d7b-8eea-4ddc840c25fc",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "guid": "a5b3241d-388c-4a5a-a128-3b1a4ec12684",
-      "applet_id": 4,
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b4",
       "name": "PHQ9",
       "description": {
         "en": "PHQ9",

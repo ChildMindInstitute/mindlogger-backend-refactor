@@ -43,6 +43,6 @@ class PublicEventCount(PublicModel):
 
 
 class PublicEventByUser(PublicModel):
-    applet_id: int
+    applet_id: uuid.UUID
     individual_events: list[PublicEvent] | None
     general_events: list[PublicEvent] | None

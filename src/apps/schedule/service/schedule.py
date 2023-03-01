@@ -462,7 +462,7 @@ class ScheduleService:
             )
 
     async def get_events_by_user(
-        self, user_id: int
+        self, user_id: uuid.UUID
     ) -> list[PublicEventByUser]:
         """Get all events for user in applet."""
         applets = await AppletsCRUD().get_applets_by_roles(
