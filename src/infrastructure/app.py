@@ -37,6 +37,7 @@ routers: Iterable[APIRouter] = (
     invitations.router,
     logs.router,
     schedule.router,
+    schedule.user_router,
     folders.router,
     answers.router,
     transfer_ownership.router,

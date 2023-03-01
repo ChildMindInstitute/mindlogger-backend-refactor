@@ -23,7 +23,7 @@ class TestSchedule(BaseTest):
     login_url = "/auth/login"
     applet_detail_url = "applets/{applet_id}"
 
-    schedule_user_url = "applets/events/user"
+    schedule_user_url = "users/me/events"
 
     schedule_url = applet_detail_url + "/events"
     delete_user_url = schedule_url + "/delete_individual/{user_id}"
