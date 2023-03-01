@@ -1,15 +1,15 @@
 """Add users workspaces
 
-Revision ID: 50d2c38ac183
+Revision ID: a80abe2beca3
 Revises: 2551608a53c1
-Create Date: 2023-02-28 18:41:04.723678
+Create Date: 2023-03-01 02:39:30.013095
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "50d2c38ac183"
+revision = "a80abe2beca3"
 down_revision = "2551608a53c1"
 branch_labels = None
 depends_on = None
@@ -25,6 +25,7 @@ def upgrade() -> None:
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("workspace_name", sa.String(length=100), nullable=False),
+        sa.Column("is_modified", sa.Boolean(), nullable=True),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["users.id"],

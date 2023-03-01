@@ -68,6 +68,12 @@ class InvitationReviewerRequest(_InvitationRequest):
         description="This field represents the list of users id's "
         "which invited to the applet as a respondents",
     )
+    workspace_prefix: str | None = Field(
+        description="This field represents the user workspace prefix. "
+        "You can only set this field the first time you invite any "
+        "manager role to your applet. Once created, "
+        "this name can not be changed anymore.",
+    )
 
 
 class InvitationManagersRequest(_InvitationRequest):
@@ -77,6 +83,12 @@ class InvitationManagersRequest(_InvitationRequest):
 
     role: ManagersRole = Field(
         description="This field represents the managers role",
+    )
+    workspace_prefix: str | None = Field(
+        description="This field represents the user workspace prefix. "
+        "You can only set this field the first time you invite any "
+        "manager role to your applet. Once created, "
+        "this name can not be changed anymore.",
     )
 
 

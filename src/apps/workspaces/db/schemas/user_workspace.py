@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy import Boolean, Column, ForeignKey, String
 
 from infrastructure.database.base import Base
 
@@ -15,3 +15,4 @@ class UserWorkspaceSchema(Base):
         index=True,
     )
     workspace_name = Column(String(length=100), nullable=False, index=True)
+    is_modified = Column(Boolean(), default=False)

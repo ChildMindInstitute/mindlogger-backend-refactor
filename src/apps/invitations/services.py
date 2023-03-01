@@ -33,6 +33,7 @@ from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.users import UsersCRUD
 from apps.users.domain import User
+from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
 
 
@@ -109,7 +110,9 @@ class InvitationsService:
     ) -> InvitationDetailForRespondent:
 
         await self._is_applet_exist(applet_id)
-        await self._validate_role_for_invitation(applet_id, Role.RESPONDENT)
+        await self._is_validated_role_for_invitation(
+            applet_id, Role.RESPONDENT
+        )
         await self._is_secret_user_id_unique(applet_id, schema.secret_user_id)
 
         # TODO: Need information - should we check for already sent invite?
@@ -119,7 +122,7 @@ class InvitationsService:
         meta = RespondentMeta(
             secret_user_id=schema.secret_user_id,
             nickname=schema.nickname,
-        ).dict(by_alias=True)
+        )
 
         invitation_schema = await InvitationCRUD().save(
             InvitationSchema(
@@ -159,7 +162,6 @@ class InvitationsService:
             subject="Invitation to the FCM",
             body=service.get_template(path=path, **html_payload),
         )
-
         await service.send(message)
 
         return InvitationDetailForRespondent(
@@ -178,7 +180,7 @@ class InvitationsService:
     ) -> InvitationDetailForReviewer:
 
         await self._is_applet_exist(applet_id)
-        await self._validate_role_for_invitation(applet_id, Role.REVIEWER)
+        await self._is_validated_role_for_invitation(applet_id, Role.REVIEWER)
         await self._is_respondents_exist(applet_id, schema.respondents)
 
         # TODO: Need information - should we check for already sent invite?
@@ -228,6 +230,10 @@ class InvitationsService:
 
         await service.send(message)
 
+        await WorkspaceService(self._user.id).update_workspace_name(
+            self._user, schema.workspace_prefix
+        )
+
         return InvitationDetailForReviewer(
             id=invitation.id,
             email=invitation.email,
@@ -244,22 +250,32 @@ class InvitationsService:
     ) -> InvitationDetailForManagers:
 
         await self._is_applet_exist(applet_id)
-        await self._validate_role_for_invitation(applet_id, schema.role)
-
-        # TODO: Need information - should we check for already sent invite?
-        #  Should we remove duplicate invites?
-        #  Should we check if the user already has these rights?
-
-        invitation_schema = await InvitationCRUD().save(
-            InvitationSchema(
-                email=schema.email,
-                applet_id=applet_id,
-                role=schema.role,
-                key=uuid.uuid3(uuid.uuid4(), schema.email),
-                invitor_id=self._user.id,
-                status=InvitationStatus.PENDING,
+        await self._is_validated_role_for_invitation(applet_id, schema.role)
+        exist_invitation: InvitationSchema = (
+            await self._validated_exist_invitation(
+                schema.email,
+                applet_id,
+                schema.role,
             )
         )
+
+        invitation = InvitationSchema(
+            email=schema.email,
+            applet_id=applet_id,
+            role=schema.role,
+            key=uuid.uuid3(uuid.uuid4(), schema.email),
+            invitor_id=self._user.id,
+            status=InvitationStatus.PENDING,
+        )
+
+        if not exist_invitation:
+            invitation_schema = await InvitationCRUD().save(invitation)
+        else:
+            invitation_schema = await InvitationCRUD().update(
+                lookup="id",
+                value=exist_invitation.id,
+                schema=invitation,
+            )
 
         invitation = Invitation.from_orm(invitation_schema)
         applet = await AppletsCRUD().get_by_id(invitation.applet_id)
@@ -289,6 +305,10 @@ class InvitationsService:
         )
 
         await service.send(message)
+
+        await WorkspaceService(self._user.id).update_workspace_name(
+            self._user, schema.workspace_prefix
+        )
 
         return InvitationDetailForManagers(
             id=invitation.id,
@@ -360,7 +380,7 @@ class InvitationsService:
             )
 
     # invitation_request
-    async def _validate_role_for_invitation(
+    async def _is_validated_role_for_invitation(
         self, applet_id: int, request_role: Role | ManagersRole
     ):
 
@@ -430,6 +450,46 @@ class InvitationsService:
                     message=f"Respondent with id {respondent} not exist "
                     f"in applet with id {applet_id}."
                 )
+
+    async def _validated_exist_invitation(
+        self,
+        email: str,
+        applet_id: int,
+        request_role: Role | ManagersRole,
+    ) -> InvitationSchema | None:
+
+        instances: list[
+            InvitationSchema
+        ] = await InvitationCRUD().get_by_email_applet_role(
+            email, applet_id, request_role
+        )
+
+        if request_role == Role.RESPONDENT:
+            if not instances:
+                return
+            for instance in instances:
+                if not instance:
+                    return
+                elif instance.status == InvitationStatus.APPROVED:
+                    raise InvitationAlreadyProcesses(
+                        message=f"Invitation {instance.id} "
+                        f"has been already processed."
+                    )
+                else:
+                    return instance
+
+        if request_role in [Role.MANAGER, Role.EDITOR, Role.COORDINATOR]:
+            instance = instances[0]
+            if not instance:
+                return
+            elif instance.status == InvitationStatus.APPROVED:
+                raise InvitationAlreadyProcesses(
+                    message=f"Invitation {instance.id} "
+                    f"has been already processed."
+                )
+            else:
+                return instance
+        return
 
     async def accept(self, key: uuid.UUID):
         invitation = await InvitationCRUD().get_by_email_and_key(

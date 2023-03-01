@@ -1,6 +1,8 @@
 import uuid
+from typing import Any
 
 from sqlalchemy import select, update
+from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
 from apps.applets.db.schemas import AppletSchema
@@ -21,6 +23,12 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
 
     async def save(self, schema: InvitationSchema) -> InvitationSchema:
         schema = await self._create(schema)
+        return schema
+
+    async def update(
+        self, lookup: str, value: Any, schema: InvitationSchema
+    ) -> InvitationSchema:
+        schema = await self._update_one(lookup, value, schema)
         return schema
 
     async def get_pending_by_invitor_id(
@@ -93,6 +101,18 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                 meta={},
                 **invitation_detail_base.dict(),
             )
+
+    async def get_by_email_applet_role(
+        self, email_: str, applet_id_: int, role_: Role
+    ) -> InvitationSchema:
+        query: Query = select(InvitationSchema)
+        query = query.where(InvitationSchema.email == email_)
+        query = query.where(InvitationSchema.applet_id == applet_id_)
+        query = query.where(InvitationSchema.role == role_)
+        db_result: Result = await self._execute(query)
+        result = db_result.scalars().all()
+
+        return result
 
     async def approve_by_id(self, id_: int):
         query = update(InvitationSchema)

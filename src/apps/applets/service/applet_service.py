@@ -23,7 +23,10 @@ from apps.workspaces.errors import AppletAccessDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from config import settings
 
-__all__ = ["AppletService"]
+__all__ = [
+    "AppletService",
+    "PublicAppletService",
+]
 
 from apps.shared.query_params import QueryParams
 
