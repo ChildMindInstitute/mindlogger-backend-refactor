@@ -2,7 +2,6 @@ import uuid
 
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
-from apps.applets.db.schemas import UserAppletAccessSchema
 from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
 from apps.mailing.domain import MessageSchema
@@ -10,6 +9,7 @@ from apps.mailing.services import MailingService
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.domain import InitiateTransfer, Transfer
 from apps.users.domain import User
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 from config import settings
 
 

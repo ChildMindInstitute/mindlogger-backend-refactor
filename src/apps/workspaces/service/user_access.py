@@ -16,10 +16,13 @@ class UserAccessService:
         Returns the user their current workspaces.
         Workspaces in which the user is the owner or invited user
         """
+
         accesses: list[
             UserAppletAccess
         ] = await UserAppletAccessCRUD().get_by_user_id(self._user_id)
-        workspaces = []
+
+        workspaces: list[PublicWorkspace] = []
+
         for access in accesses:
             user_owner: User = await UsersCRUD().get_by_id(access.owner_id)
             workspace = PublicWorkspace(
@@ -33,13 +36,14 @@ class UserAccessService:
         return workspaces
 
     async def get_workspace_applets(self, owner_id: int) -> list[AppletPublic]:
-        """
-        Returns the user their chosen workspace applets.
-        """
+        """Returns the user their chosen workspace applets."""
+
         accesses: list[
             UserAppletAccess
         ] = await UserAppletAccessCRUD().get_by_user_id(self._user_id)
-        applets = []
+
+        applets: list[AppletPublic] = []
+
         for access in accesses:
             if access.owner_id == owner_id:
                 applet: AppletPublic = await AppletsCRUD().get_by_id(

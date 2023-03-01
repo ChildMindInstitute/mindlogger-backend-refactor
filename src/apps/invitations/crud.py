@@ -12,6 +12,7 @@ from apps.invitations.db import InvitationSchema
 from apps.invitations.domain import (
     InvitationDetail,
     InvitationDetailBase,
+    InvitationDetailGeneric,
     InvitationDetailRespondent,
     InvitationDetailReviewer,
 )
@@ -62,7 +63,9 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
         return results
 
-    async def get_by_email_and_key(self, email: str, key: uuid.UUID):
+    async def get_by_email_and_key(
+        self, email: str, key: uuid.UUID
+    ) -> InvitationDetailGeneric | None:
         query: Query = select(
             InvitationSchema, AppletSchema.display_name.label("applet_name")
         )

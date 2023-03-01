@@ -73,6 +73,7 @@ class InvitationReviewerRequest(_InvitationRequest):
         "You can only set this field the first time you invite any "
         "manager role to your applet. Once created, "
         "this name can not be changed anymore.",
+        default=None,
     )
 
 
@@ -89,6 +90,7 @@ class InvitationManagersRequest(_InvitationRequest):
         "You can only set this field the first time you invite any "
         "manager role to your applet. Once created, "
         "this name can not be changed anymore.",
+        default=None
     )
 
 
@@ -290,3 +292,8 @@ class PrivateInvitationResponse(PublicModel):
     role: Role
     key: UUID
     status: str
+
+
+InvitationDetailGeneric = (
+    InvitationDetailReviewer | InvitationDetailRespondent | InvitationDetail
+)
