@@ -7,7 +7,9 @@ class WorkspaceService:
     def __init__(self, user_id: int):
         self._user_id = user_id
 
-    async def update_workspace_name(self, user: User, workspace_prefix: str | None = None):
+    async def update_workspace_name(
+        self, user: User, workspace_prefix: str | None = None
+    ):
         """
         Let's check if the workspace name has changed before.
         We don't do anything. Otherwise, accept the workspace prefix value
