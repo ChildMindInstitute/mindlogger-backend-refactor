@@ -1,3 +1,5 @@
+import uuid
+
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.mailing.services import TestMail

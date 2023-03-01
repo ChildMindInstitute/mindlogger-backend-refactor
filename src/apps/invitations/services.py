@@ -174,7 +174,7 @@ class InvitationsService:
         )
 
     async def send_reviewer_invitation(
-        self, applet_id: int, schema: InvitationReviewerRequest
+        self, applet_id: uuid.UUID, schema: InvitationReviewerRequest
     ) -> InvitationDetailForReviewer:
 
         await self._is_applet_exist(applet_id)
@@ -352,7 +352,7 @@ class InvitationsService:
 
     async def _is_applet_exist(
         self,
-        applet_id: int,
+        applet_id: uuid.UUID,
     ):
         if not (await AppletService(self._user.id).exist_by_id(applet_id)):
             raise AppletDoesNotExist(
@@ -361,7 +361,7 @@ class InvitationsService:
 
     # invitation_request
     async def _validate_role_for_invitation(
-        self, applet_id: int, request_role: Role | ManagersRole
+        self, applet_id: uuid.UUID, request_role: Role | ManagersRole
     ):
 
         access_service = UserAppletAccessService(self._user.id, applet_id)
@@ -395,7 +395,7 @@ class InvitationsService:
 
     async def _is_secret_user_id_unique(
         self,
-        applet_id: int,
+        applet_id: uuid.UUID,
         secret_user_id: str,
     ):
         if not (
@@ -414,7 +414,7 @@ class InvitationsService:
 
     async def _is_respondents_exist(
         self,
-        applet_id: int,
+        applet_id: uuid.UUID,
         respondents: list[int],
     ):
         exist_respondents = (
@@ -474,8 +474,6 @@ class PrivateInvitationService:
             applet_name=applet.display_name,
             role=Role.RESPONDENT,
             key=link,
-            title=None,
-            body=None,
         )
 
     async def accept_invitation(self, user_id: uuid.UUID, link: uuid.UUID):
