@@ -76,5 +76,31 @@
             "end_date": "2096-01-05",
             "interval": 0
         }
+    },
+    {
+        "table": "periodicity",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 7,
+            "type": "MONTHLY",
+            "start_date": "1980-01-05",
+            "end_date": "2096-01-05",
+            "interval": 10
+        }
+    },
+    {
+        "table": "periodicity",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 8,
+            "type": "ALWAYS",
+            "start_date": "1980-01-05",
+            "end_date": "2096-01-05",
+            "interval": 0
+        }
     }
 ]

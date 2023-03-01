@@ -42,5 +42,27 @@
             "activity_id": 4,
             "event_id": 6
         }
+    },
+    {
+        "table": "activity_events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 5,
+            "activity_id": 4,
+            "event_id": 7
+        }
+    },
+    {
+        "table": "activity_events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 6,
+            "activity_id": 5,
+            "event_id": 8
+        }
     }
 ]

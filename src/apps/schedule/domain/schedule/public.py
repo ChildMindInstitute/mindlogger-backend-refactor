@@ -9,6 +9,7 @@ __all__ = [
     "ActivityEventCount",
     "FlowEventCount",
     "PublicEventCount",
+    "PublicEventByUser",
 ]
 
 
@@ -39,3 +40,9 @@ class FlowEventCount(PublicModel):
 class PublicEventCount(PublicModel):
     activity_events: list[ActivityEventCount] | None
     flow_events: list[FlowEventCount] | None
+
+
+class PublicEventByUser(PublicModel):
+    applet_id: int
+    individual_events: list[PublicEvent] | None
+    general_events: list[PublicEvent] | None

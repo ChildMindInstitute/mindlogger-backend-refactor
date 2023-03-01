@@ -106,5 +106,41 @@
             "timer_type": "NOT_SET",
             "applet_id": 4
         }
+    },
+    {
+        "table": "events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 7,
+            "periodicity_id": 7,
+            "start_time": "00:00:00",
+            "end_time": "00:00:00",
+            "all_day": false,
+            "access_before_schedule": false,
+            "one_time_completion": false,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "applet_id": 4
+        }
+    },
+    {
+        "table": "events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": 8,
+            "periodicity_id": 8,
+            "start_time": "00:00:00",
+            "end_time": "00:00:00",
+            "all_day": false,
+            "access_before_schedule": false,
+            "one_time_completion": false,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "applet_id": 4
+        }
     }
 ]
