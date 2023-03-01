@@ -1,3 +1,5 @@
+import uuid
+
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import UserAppletAccess
 from apps.applets.domain.applet import AppletPublic
@@ -8,7 +10,7 @@ __all__ = ["UserAccessService"]
 
 
 class UserAccessService:
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: uuid.UUID):
         self._user_id = user_id
 
     async def get_user_workspaces(self) -> list[PublicWorkspace]:

@@ -1,6 +1,8 @@
+import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, MetaData
+from sqlalchemy import Boolean, Column, DateTime, MetaData
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
 
 from infrastructure.database.core import engine
@@ -21,7 +23,9 @@ meta = MetaData(
 class _Base:
     """Base class for all database models."""
 
-    id = Column(Integer(), primary_key=True)
+    id = Column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: uuid.uuid4()
+    )
     created_at = Column(DateTime(), default=datetime.now)
     updated_at = Column(
         DateTime(), default=datetime.now, onupdate=datetime.now

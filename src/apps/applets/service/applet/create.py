@@ -35,7 +35,7 @@ from apps.shared.version import get_next_version
 
 
 async def create_applet(
-    data: create.AppletCreate, user_id: int
+    data: create.AppletCreate, user_id: uuid.UUID
 ) -> fetch.Applet:
     applet = await _create_applet(data, user_id)
     await _create_access(applet.id, user_id)
@@ -76,7 +76,7 @@ async def _create_applet(
     return fetch.Applet.from_orm(schema)
 
 
-async def _create_access(applet_id: int, user_id: int):
+async def _create_access(applet_id: uuid.UUID, user_id: uuid.UUID):
     await UserAppletAccessService(user_id, applet_id).add_role(Role.ADMIN)
 
 
@@ -91,7 +91,6 @@ async def _create_activities(
         activity_schemas.append(
             ActivitySchema(
                 applet_id=applet.id,
-                guid=activity_data.guid,
                 name=activity_data.name,
                 description=activity_data.description,
                 splash_screen=activity_data.splash_screen,
@@ -204,8 +203,8 @@ async def _create_flows(
 
 
 async def _add_history(
-    creator_id: int,
-    account_id: int,
+    creator_id: uuid.UUID,
+    account_id: uuid.UUID,
     applet: fetch.Applet,
     activities: list[fetch.Activity],
     activity_items: list[fetch.ActivityItem],
@@ -246,7 +245,6 @@ async def _add_history(
                 id=activity.id,
                 id_version=activity_id_version,
                 applet_id=applet_id_version,
-                guid=activity.guid,
                 name=activity.name,
                 description=activity.description,
                 splash_screen=activity.splash_screen,

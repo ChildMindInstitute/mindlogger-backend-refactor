@@ -18,11 +18,15 @@ class TestActivities(BaseTest):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
-        response = await self.client.get(self.activity_detail.format(pk=1))
+        response = await self.client.get(
+            self.activity_detail.format(
+                pk="09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
+            )
+        )
 
         assert response.status_code == 200
         result = response.json()["result"]
-        assert result["id"] == 1
+        assert result["id"] == "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
         assert result["name"] == "PHQ2"
         assert result["description"] == "PHQ2 en"
         assert len(result["items"]) == 2

@@ -1,4 +1,4 @@
-from uuid import UUID
+import uuid
 
 from pydantic import EmailStr, Field
 
@@ -8,7 +8,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class Applet(PublicModel):
-    id: int
+    id: uuid.UUID
     display_name: str
 
 
@@ -18,7 +18,7 @@ class InvitationRequest(InternalModel):
     """
 
     email: EmailStr
-    applet_id: int
+    applet_id: uuid.UUID
     role: Role = Role.RESPONDENT
 
 
@@ -64,7 +64,7 @@ class InvitationReviewerRequest(_InvitationRequest):
     to the user for "reviewer" role.
     """
 
-    respondents: list[int] = Field(
+    respondents: list[uuid.UUID] = Field(
         description="This field represents the list of users id's "
         "which invited to the applet as a respondents",
     )
@@ -114,11 +114,11 @@ class ReviewerMeta(InternalModel):
 class Invitation(InternalModel):
     """This is an invitation representation for internal needs."""
 
-    id: int
+    id: uuid.UUID
     email: EmailStr
-    applet_id: int
+    applet_id: uuid.UUID
     role: Role
-    key: UUID
+    key: uuid.UUID
     status: str
     invitor_id: int
 
@@ -126,14 +126,14 @@ class Invitation(InternalModel):
 class InvitationDetailBase(InternalModel):
     """This is an invitation representation for internal needs."""
 
-    id: int
+    id: uuid.UUID
     email: EmailStr
-    applet_id: int
-    applet_name: str
+    applet_id: uuid.UUID
     status: str
-    invitor_id: int
+    applet_name: str
+    invitor_id: uuid.UUID
     role: Role
-    key: UUID
+    key: uuid.UUID
 
 
 class InvitationDetail(InvitationDetailBase):
@@ -169,7 +169,7 @@ class _InvitationDetail(InternalModel):
     applet_id: int
     applet_name: str
     status: str
-    key: UUID
+    key: uuid.UUID
 
 
 class InvitationDetailForRespondent(_InvitationDetail):
@@ -202,22 +202,22 @@ class InvitationDetailForManagers(_InvitationDetail):
 
 
 class PrivateInvitationDetail(InternalModel):
-    id: int
-    applet_id: int
+    id: uuid.UUID
+    applet_id: uuid.UUID
     status: str
     applet_name: str
     role: Role
-    key: UUID
+    key: uuid.UUID
 
 
 class InvitationResponse(PublicModel):
     """This model is returned to the user on the invitation request."""
 
     email: EmailStr
-    applet_id: int
+    applet_id: uuid.UUID
     applet_name: str
     role: Role
-    key: UUID
+    key: uuid.UUID
     status: str
 
 
@@ -232,7 +232,7 @@ class _InvitationResponse(PublicModel):
         description="This field represents the specific applet name "
         "for invitation",
     )
-    key: UUID = Field(
+    key: uuid.UUID = Field(
         description="This field represents the universally unique "
         "identifiers for invitation",
     )
@@ -287,10 +287,10 @@ class InvitationManagersResponse(_InvitationResponse):
 
 
 class PrivateInvitationResponse(PublicModel):
-    applet_id: int
+    applet_id: uuid.UUID
     applet_name: str
     role: Role
-    key: UUID
+    key: uuid.UUID
     status: str
 
 

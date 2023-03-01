@@ -1,5 +1,6 @@
+import uuid
+
 from pydantic import BaseModel
-from pydantic.types import PositiveInt
 
 from apps.activities.domain.constants import InputType
 from apps.shared.domain import InternalModel, PublicModel
@@ -24,7 +25,7 @@ class _ReusableItemChoiceBase(BaseModel):
 class PublicReusableItemChoice(_ReusableItemChoiceBase, PublicModel):
     """Public item template data model."""
 
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class ReusableItemChoiceInitializeCreate(
@@ -34,8 +35,8 @@ class ReusableItemChoiceInitializeCreate(
 
 
 class ReusableItemChoiceCreate(_ReusableItemChoiceBase, InternalModel):
-    user_id: PositiveInt
+    user_id: uuid.UUID
 
 
 class ReusableItemChoice(ReusableItemChoiceCreate, InternalModel):
-    id: PositiveInt
+    id: uuid.UUID

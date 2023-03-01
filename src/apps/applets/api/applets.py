@@ -1,3 +1,4 @@
+import uuid
 from copy import deepcopy
 
 from fastapi import Body, Depends
@@ -67,7 +68,7 @@ async def applet_list(
 
 
 async def applet_retrieve(
-    id_: int,
+    id_: uuid.UUID,
     user: User = Depends(get_current_user),
     language: str = Depends(get_language),
 ) -> Response[AppletDetailPublic]:
@@ -78,7 +79,7 @@ async def applet_retrieve(
 
 
 async def folders_applet_list(
-    id_: int,
+    id_: uuid.UUID,
     user: User = Depends(get_current_user),
     language: str = Depends(get_language),
 ) -> ResponseMulti[AppletInfoPublic]:
@@ -101,7 +102,7 @@ async def applet_create(
 
 
 async def applet_update(
-    id_: int,
+    id_: uuid.UUID,
     user: User = Depends(get_current_user),
     schema: AppletUpdate = Body(...),
 ) -> Response[public_detail.Applet]:
@@ -152,7 +153,7 @@ async def applet_unique_name_get(
 
 
 async def applet_link_create(
-    id_: int,
+    id_: uuid.UUID,
     user: User = Depends(get_current_user),
     schema: CreateAccessLink = Body(...),
 ) -> Response[AppletLink]:
@@ -163,7 +164,7 @@ async def applet_link_create(
 
 
 async def applet_link_get(
-    id_: int,
+    id_: uuid.UUID,
     user: User = Depends(get_current_user),
 ) -> Response[AppletLink]:
     access_link = await AppletService(user.id).get_access_link(applet_id=id_)
@@ -171,7 +172,7 @@ async def applet_link_get(
 
 
 async def applet_link_delete(
-    id_: int,
+    id_: uuid.UUID,
     user: User = Depends(get_current_user),
 ):
     await AppletService(user.id).delete_access_link(applet_id=id_)

@@ -1,5 +1,4 @@
 import uuid
-from uuid import UUID
 
 from fastapi import Body, Depends
 from fastapi import Response as FastApiResponse
@@ -47,7 +46,7 @@ async def invitation_list(
 
 
 async def invitation_retrieve(
-    key: str,
+    key: uuid.UUID,
     response: FastApiResponse,
     user: User = Depends(get_current_user),
 ) -> Response[InvitationResponse]:
@@ -84,7 +83,7 @@ async def invitation_send(
 
 
 async def invitation_respondent_send(
-    applet_id: int,
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     invitation_schema: InvitationRespondentRequest = Body(...),
 ) -> Response[InvitationRespondentResponse]:
@@ -103,7 +102,7 @@ async def invitation_respondent_send(
 
 
 async def invitation_reviewer_send(
-    applet_id: int,
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     invitation_schema: InvitationReviewerRequest = Body(...),
 ) -> Response[InvitationReviewerResponse]:
@@ -122,7 +121,7 @@ async def invitation_reviewer_send(
 
 
 async def invitation_managers_send(
-    applet_id: int,
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     invitation_schema: InvitationManagersRequest = Body(...),
 ) -> Response[InvitationManagersResponse]:
@@ -141,7 +140,9 @@ async def invitation_managers_send(
     )
 
 
-async def invitation_accept(key: UUID, user: User = Depends(get_current_user)):
+async def invitation_accept(
+    key: uuid.UUID, user: User = Depends(get_current_user)
+):
     """General endpoint to approve the applet invitation."""
     await InvitationsService(user).accept(key)
 
@@ -154,7 +155,7 @@ async def private_invitation_accept(
 
 
 async def invitation_decline(
-    key: UUID, user: User = Depends(get_current_user)
+    key: uuid.UUID, user: User = Depends(get_current_user)
 ):
     """General endpoint to decline the applet invitation."""
     await InvitationsService(user).decline(key)

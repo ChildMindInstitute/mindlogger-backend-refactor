@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import Body, Depends
 
 from apps.activities.crud import ReusableItemChoiceCRUD
@@ -23,7 +25,9 @@ async def item_choice_create(
     return Response(result=PublicReusableItemChoice(**item_template.dict()))
 
 
-async def item_choice_delete(id_: int, user: User = Depends(get_current_user)):
+async def item_choice_delete(
+    id_: uuid.UUID, user: User = Depends(get_current_user)
+):
     # TODO: validate user access
     await ReusableItemChoiceCRUD().delete_by_id(id_=id_)
 

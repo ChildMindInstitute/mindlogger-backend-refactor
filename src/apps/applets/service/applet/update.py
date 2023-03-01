@@ -35,7 +35,7 @@ from apps.workspaces.errors import AppletAccessDenied
 
 
 async def update_applet(
-    applet_id: int, data: update.AppletUpdate, user_id: int
+    applet_id: uuid.UUID, data: update.AppletUpdate, user_id: uuid.UUID
 ) -> fetch.Applet:
     applet = await _validate(user_id, applet_id)
     await _delete_applet_items(applet_id)
@@ -52,7 +52,7 @@ async def update_applet(
     return applet
 
 
-async def _validate(user_id: int, applet_id: int):
+async def _validate(user_id: uuid.UUID, applet_id: uuid.UUID):
     applet_schema = await AppletsCRUD().get_by_id(applet_id)
     role = await UserAppletAccessService(user_id, applet_id).get_editors_role()
     if not role:
@@ -60,7 +60,7 @@ async def _validate(user_id: int, applet_id: int):
     return fetch.Applet.from_orm(applet_schema)
 
 
-async def _delete_applet_items(applet_id: int):
+async def _delete_applet_items(applet_id: uuid.UUID):
     await FlowItemsCRUD().delete_by_applet_id(applet_id)
     await FlowsCRUD().delete_by_applet_id(applet_id)
     await ActivityItemsCRUD().delete_by_applet_id(applet_id)
@@ -265,8 +265,8 @@ async def _create_flows(
 
 
 async def _add_history(
-    creator_id: int,
-    account_id: int,
+    creator_id: uuid.UUID,
+    account_id: uuid.UUID,
     applet: fetch.Applet,
     activities: list[fetch.Activity],
     activity_items: list[fetch.ActivityItem],
@@ -307,7 +307,6 @@ async def _add_history(
                 id=activity.id,
                 id_version=activity_id_version,
                 applet_id=applet_id_version,
-                guid=activity.guid,
                 name=activity.name,
                 description=activity.description,
                 splash_screen=activity.splash_screen,

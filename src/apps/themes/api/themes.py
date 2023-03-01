@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
@@ -21,7 +23,10 @@ async def create_theme(
 ) -> Response[PublicTheme]:
     theme: Theme = await ThemesCRUD().save(
         schema=ThemeCreate(
-            **schema.dict(), public=False, allow_rename=False, creator=user.id
+            **schema.dict(),
+            public=False,
+            allow_rename=False,
+            creator_id=user.id,
         )
     )
 
@@ -37,12 +42,14 @@ async def get_themes(
     return ResponseMulti(result=themes)
 
 
-async def delete_theme_by_id(pk: int, user: User = Depends(get_current_user)):
+async def delete_theme_by_id(
+    pk: uuid.UUID, user: User = Depends(get_current_user)
+):
     await ThemesCRUD().delete_by_id(pk=pk, creator_id=user.id)
 
 
 async def update_theme_by_id(
-    pk: int,
+    pk: uuid.UUID,
     user: User = Depends(get_current_user),
     schema: ThemeRequest = Body(...),
 ) -> Response[PublicTheme]:

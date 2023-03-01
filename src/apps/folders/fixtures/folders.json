@@ -2,44 +2,44 @@
   {
     "table": "folders",
     "fields": {
-      "id": 1,
+      "id": "ecf66358-a717-41a7-8027-807374307731",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "creator_id": 1,
+      "creator_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "name": "Morning applets"
     }
   },
   {
     "table": "folders",
     "fields": {
-      "id": 2,
+      "id": "ecf66358-a717-41a7-8027-807374307732",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "creator_id": 1,
+      "creator_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "name": "Night applets"
     }
   },
   {
     "table": "folders",
     "fields": {
-      "id": 3,
+      "id": "ecf66358-a717-41a7-8027-807374307733",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "creator_id": 2,
+      "creator_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
       "name": "Morning applets"
     }
   },
   {
     "table": "folders",
     "fields": {
-      "id": 4,
+      "id": "ecf66358-a717-41a7-8027-807374307734",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "creator_id": 2,
+      "creator_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
       "name": "Night applets"
     }
   }

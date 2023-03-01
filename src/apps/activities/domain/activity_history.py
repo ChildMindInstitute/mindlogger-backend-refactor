@@ -11,7 +11,7 @@ __all__ = [
 
 
 class ActivityHistory(InternalModel):
-    id: int
+    id: uuid.UUID
     applet_id: str
     id_version: str
     guid: uuid.UUID

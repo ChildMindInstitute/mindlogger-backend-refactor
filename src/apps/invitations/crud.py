@@ -33,7 +33,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         return schema
 
     async def get_pending_by_invitor_id(
-        self, user_id: int
+        self, user_id: uuid.UUID
     ) -> list[InvitationDetail]:
         query: Query = select(
             InvitationSchema, AppletSchema.display_name.label("applet_name")
@@ -106,25 +106,27 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
 
     async def get_by_email_applet_role(
-        self, email_: str, applet_id_: int, role_: Role
-    ) -> InvitationSchema:
+        self, email_: str, applet_id_: uuid.UUID, role_: Role
+    ) -> list[InvitationSchema]:
         query: Query = select(InvitationSchema)
         query = query.where(InvitationSchema.email == email_)
         query = query.where(InvitationSchema.applet_id == applet_id_)
         query = query.where(InvitationSchema.role == role_)
         db_result: Result = await self._execute(query)
-        result = db_result.scalars().all()
+        results: list[InvitationSchema] = db_result.scalars().all()
 
-        return result
+        return [
+            InvitationSchema.from_orm(invitation) for invitation in results
+        ]
 
-    async def approve_by_id(self, id_: int):
+    async def approve_by_id(self, id_: uuid.UUID):
         query = update(InvitationSchema)
         query = query.where(InvitationSchema.id == id_)
         query = query.values(status=InvitationStatus.APPROVED)
 
         await self._execute(query)
 
-    async def decline_by_id(self, id_: int):
+    async def decline_by_id(self, id_: uuid.UUID):
         query = update(InvitationSchema)
         query = query.where(InvitationSchema.id == id_)
         query = query.values(status=InvitationStatus.DECLINED)

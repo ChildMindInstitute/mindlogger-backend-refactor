@@ -312,11 +312,11 @@ class PushNotification(Scheduler):
             scheduled_date = str(
                 str(schedule["year"][0])
                 + "/"
-                + ("0" + str(schedule["month"][0] + 1))[-2:]  # Year.
+                + ("0" + str(schedule["month"][0] + 1))[-2:]
                 + "/"
-                + ("0" + str(schedule["dayOfMonth"][0]))[  # Zero-padded month.
+                + ("0" + str(schedule["dayOfMonth"][0]))[
                     -2:
-                ]
+                ]  # Year.  # Zero-padded month.
             )  # Zero-padded date.
             self.schedule_range["start"] = scheduled_date
             self.schedule_range["end"] = scheduled_date

@@ -15,7 +15,7 @@
       "watermark": "",
       "theme_id": null,
       "version": "1.0.0",
-      "account_id": 1,
+      "account_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "report_server_ip": "",
       "report_public_key": "",
       "report_recipients": [],
@@ -23,9 +23,9 @@
       "report_include_case_id": false,
       "report_email_body": "",
       "id_version": "1_1.0.0",
-      "id": 1,
+      "id": "dffa3fd4-83b0-499e-839a-b860ee229851",
       "display_name": "Applet 1",
-      "creator_id": 1
+      "creator_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
     }
   },
   {
@@ -44,7 +44,7 @@
       "watermark": "",
       "theme_id": null,
       "version": "2.0.1",
-      "account_id": 1,
+      "account_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "report_server_ip": "",
       "report_public_key": "",
       "report_recipients": [],
@@ -52,9 +52,9 @@
       "report_include_case_id": false,
       "report_email_body": "",
       "id_version": "2_2.0.1",
-      "id": 2,
+      "id": "dffa3fd4-83b0-499e-839a-b860ee229852",
       "display_name": "Applet 2",
-      "creator_id": 1
+      "creator_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
     }
   },
   {
@@ -73,7 +73,7 @@
       "watermark": "",
       "theme_id": null,
       "version": "1.3.0",
-      "account_id": 3,
+      "account_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa3",
       "report_server_ip": "",
       "report_public_key": "",
       "report_recipients": [],
@@ -81,9 +81,9 @@
       "report_include_case_id": false,
       "report_email_body": "",
       "id_version": "3_1.3.0",
-      "id": 3,
+      "id": "dffa3fd4-83b0-499e-839a-b860ee229853",
       "display_name": "Applet 3",
-      "creator_id": 3
+      "creator_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa3"
     }
   },
   {
@@ -102,7 +102,7 @@
       "watermark": "",
       "theme_id": null,
       "version": "1.0.5",
-      "account_id": 2,
+      "account_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
       "report_server_ip": "",
       "report_public_key": "",
       "report_recipients": [],
@@ -110,9 +110,9 @@
       "report_include_case_id": false,
       "report_email_body": "",
       "id_version": "4_1.0.5",
-      "id": 4,
+      "id": "dffa3fd4-83b0-499e-839a-b860ee229854",
       "display_name": "Applet 4",
-      "creator_id": 2
+      "creator_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2"
     }
   }
 ]

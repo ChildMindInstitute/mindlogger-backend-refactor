@@ -1,3 +1,5 @@
+import uuid
+
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.mailing.services import TestMail
@@ -45,7 +47,10 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 200
 
-        assert response.json()["result"]["appletId"] == 1
+        assert (
+            response.json()["result"]["appletId"]
+            == "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        )
         assert response.json()["result"]["role"] == Role.MANAGER
 
     async def test_private_invitation_retrieve(self):
@@ -58,7 +63,10 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 200
 
-        assert response.json()["result"]["appletId"] == 3
+        assert (
+            response.json()["result"]["appletId"]
+            == "92917a56-d586-4613-b7aa-991f2c4b15b3"
+        )
         assert response.json()["result"]["role"] == Role.RESPONDENT
 
     @transaction.rollback
@@ -68,7 +76,7 @@ class TestInvite(BaseTest):
         )
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.REVIEWER,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -85,7 +93,7 @@ class TestInvite(BaseTest):
         )
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.COORDINATOR,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -102,7 +110,7 @@ class TestInvite(BaseTest):
         )
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.EDITOR,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -119,7 +127,7 @@ class TestInvite(BaseTest):
         )
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.REVIEWER,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -136,7 +144,7 @@ class TestInvite(BaseTest):
         )
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.RESPONDENT,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -151,7 +159,7 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.MANAGER,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -166,7 +174,7 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.COORDINATOR,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -181,7 +189,7 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.EDITOR,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -196,7 +204,7 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.REVIEWER,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -211,7 +219,7 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.RESPONDENT,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -226,7 +234,7 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.RESPONDENT,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -241,7 +249,7 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.MANAGER,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -256,7 +264,7 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id=1,
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             role=Role.RESPONDENT,
         )
         response = await self.client.post(self.invite_url, request_data)
@@ -290,7 +298,9 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 200
         access = await UserAppletAccessCRUD().get_by_roles(
-            user_id=1, applet_id=3, roles=[Role.RESPONDENT]
+            user_id=uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            applet_id=uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b3"),
+            roles=[Role.RESPONDENT],
         )
         assert access.role == Role.RESPONDENT
 

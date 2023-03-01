@@ -1,14 +1,13 @@
 import uuid
 
 from pydantic import Field
-from pydantic.types import PositiveInt
 
 from apps.shared.domain import PublicModel
 
 
 class ActivityItem(PublicModel):
-    id: int
-    activity_id: int
+    id: uuid.UUID
+    activity_id: uuid.UUID
     question: dict[str, str]
     response_type: str
     answers: list
@@ -25,7 +24,7 @@ class ActivityItem(PublicModel):
 
 
 class Activity(PublicModel):
-    id: int
+    id: uuid.UUID
     guid: uuid.UUID
     name: str
     description: dict[str, str] = Field(default_factory=dict)
@@ -40,15 +39,15 @@ class Activity(PublicModel):
 
 
 class ActivityFlowItem(PublicModel):
-    id: int
-    activity_flow_id: int
-    activity_id: int
+    id: uuid.UUID
+    activity_flow_id: uuid.UUID
+    activity_id: uuid.UUID
     ordering: int
     activity: Activity | None
 
 
 class ActivityFlow(PublicModel):
-    id: int
+    id: uuid.UUID
     guid: uuid.UUID
     name: str
     description: dict[str, str]
@@ -59,14 +58,14 @@ class ActivityFlow(PublicModel):
 
 
 class Applet(PublicModel):
-    id: int
+    id: uuid.UUID
     display_name: str
     version: str
     description: dict[str, str] = Field(default_factory=dict)
     about: dict[str, str] = Field(default_factory=dict)
     image: str = ""
     watermark: str = ""
-    theme_id: PositiveInt | None = None
+    theme_id: uuid.UUID | None = None
     report_server_ip: str = ""
     report_public_key: str = ""
     report_recipients: list[str] = Field(default_factory=list)

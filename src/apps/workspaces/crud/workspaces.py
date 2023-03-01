@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
@@ -13,7 +15,7 @@ __all__ = ["UserWorkspaceCRUD"]
 class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
     schema_class = UserWorkspaceSchema
 
-    async def get_by_user_id(self, user_id_: int) -> UserWorkspaceSchema:
+    async def get_by_user_id(self, user_id_: uuid.UUID) -> UserWorkspaceSchema:
         query: Query = select(self.schema_class).filter(
             self.schema_class.user_id == user_id_
         )

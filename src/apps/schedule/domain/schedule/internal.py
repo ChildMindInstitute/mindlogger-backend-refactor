@@ -1,4 +1,4 @@
-from pydantic import PositiveInt
+import uuid
 
 from apps.schedule.domain.schedule.base import BaseEvent, BasePeriodicity
 from apps.shared.domain import InternalModel
@@ -18,8 +18,8 @@ __all__ = [
 
 
 class EventCreate(BaseEvent, InternalModel):
-    periodicity_id: PositiveInt
-    applet_id: PositiveInt
+    periodicity_id: uuid.UUID
+    applet_id: uuid.UUID
 
 
 class EventUpdate(EventCreate):
@@ -27,41 +27,41 @@ class EventUpdate(EventCreate):
 
 
 class Event(EventCreate, InternalModel):
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class Periodicity(BasePeriodicity, InternalModel):
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class UserEventCreate(InternalModel):
-    user_id: PositiveInt
-    event_id: PositiveInt
+    user_id: uuid.UUID
+    event_id: uuid.UUID
 
 
 class UserEvent(UserEventCreate, InternalModel):
     """UserEvent of a schedule"""
 
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class ActivityEventCreate(InternalModel):
-    activity_id: PositiveInt
-    event_id: PositiveInt
+    activity_id: uuid.UUID
+    event_id: uuid.UUID
 
 
 class ActivityEvent(ActivityEventCreate, InternalModel):
     """ActivityEvent of a schedule"""
 
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class FlowEventCreate(InternalModel):
-    flow_id: PositiveInt
-    event_id: PositiveInt
+    flow_id: uuid.UUID
+    event_id: uuid.UUID
 
 
 class FlowEvent(FlowEventCreate, InternalModel):
     """FlowEvent of a schedule"""
 
-    id: PositiveInt
+    id: uuid.UUID

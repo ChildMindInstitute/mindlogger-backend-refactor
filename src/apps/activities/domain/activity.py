@@ -10,8 +10,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class Activity(InternalModel):
-    id: int
-    guid: uuid.UUID
+    id: uuid.UUID
     name: str
     description: dict[str, str] = Field(default_factory=dict)
     splash_screen: str = ""
@@ -24,8 +23,7 @@ class Activity(InternalModel):
 
 
 class ActivityPublic(PublicModel):
-    id: int
-    guid: uuid.UUID
+    id: uuid.UUID
     name: str
     description: dict[str, str] = Field(default_factory=dict)
     splash_screen: str = ""

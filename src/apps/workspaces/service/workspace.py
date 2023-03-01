@@ -1,10 +1,12 @@
+import uuid
+
 from apps.users import User
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
 
 
 class WorkspaceService:
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: uuid.UUID):
         self._user_id = user_id
 
     async def update_workspace_name(

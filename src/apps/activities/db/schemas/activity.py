@@ -1,4 +1,4 @@
-from sqlalchemy import REAL, Boolean, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
@@ -7,7 +7,6 @@ __all__ = ["ActivitySchema", "ActivityHistorySchema"]
 
 
 class _BaseActivitySchema:
-    guid = Column(UUID(as_uuid=True))
     name = Column(String(length=100))
     description = Column(JSONB())
     splash_screen = Column(Text())
@@ -30,7 +29,7 @@ class ActivitySchema(Base, _BaseActivitySchema):
 class ActivityHistorySchema(Base, _BaseActivitySchema):
     __tablename__ = "activity_histories"
 
-    id = Column(Integer())
+    id = Column(UUID(as_uuid=True))
     id_version = Column(String(), primary_key=True)
     applet_id = Column(
         ForeignKey("applet_histories.id_version", ondelete="RESTRICT"),

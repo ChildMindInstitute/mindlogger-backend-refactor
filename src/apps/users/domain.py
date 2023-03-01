@@ -1,7 +1,6 @@
-from uuid import UUID
+import uuid
 
 from pydantic import BaseModel, EmailStr
-from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -47,7 +46,7 @@ class UserUpdateRequest(InternalModel):
 
 
 class User(UserCreate):
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class PublicUser(_UserBase, PublicModel):
@@ -55,7 +54,7 @@ class PublicUser(_UserBase, PublicModel):
 
     first_name: str
     last_name: str
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class ChangePasswordRequest(InternalModel):
@@ -86,7 +85,7 @@ class PasswordRecoveryInfo(InternalModel):
 
     email: EmailStr
     user_id: int
-    key: UUID
+    key: uuid.UUID
 
 
 class PasswordRecoveryApproveRequest(InternalModel):
@@ -95,5 +94,5 @@ class PasswordRecoveryApproveRequest(InternalModel):
     """
 
     email: EmailStr
-    key: UUID
+    key: uuid.UUID
     password: str

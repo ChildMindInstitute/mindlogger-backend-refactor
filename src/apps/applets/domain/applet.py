@@ -1,7 +1,7 @@
 import datetime
+import uuid
 
 from pydantic import Field
-from pydantic.types import PositiveInt
 
 from apps.activities.domain.activity import (
     ActivityDetail,
@@ -12,14 +12,14 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class Applet(InternalModel):
-    id: int
+    id: uuid.UUID
     display_name: str
     version: str
     description: dict[str, str] = Field(default_factory=dict)
     about: dict[str, str] = Field(default_factory=dict)
     image: str = ""
     watermark: str = ""
-    theme_id: PositiveInt | None = None
+    theme_id: uuid.UUID | None = None
     report_server_ip: str = ""  # Fixme: ip address
     report_public_key: str = ""
     report_recipients: list[str] = Field(default_factory=list)
@@ -31,14 +31,14 @@ class Applet(InternalModel):
 
 
 class AppletPublic(PublicModel):
-    id: int
+    id: uuid.UUID
     display_name: str
     version: str
     description: dict[str, str] = Field(default_factory=dict)
     about: dict[str, str] = Field(default_factory=dict)
     image: str = ""
     watermark: str = ""
-    theme_id: PositiveInt | None = None
+    theme_id: uuid.UUID | None = None
     report_server_ip: str = ""  # Fixme: ip address
     report_public_key: str = ""
     report_recipients: list[str] = Field(default_factory=list)
@@ -77,7 +77,7 @@ class AppletInfoPublic(AppletPublic):
 
 class AppletName(InternalModel):
     name: str
-    exclude_applet_id: int | None
+    exclude_applet_id: uuid.UUID | None
 
 
 class AppletUniqueName(PublicModel):

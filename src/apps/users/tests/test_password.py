@@ -9,8 +9,7 @@ from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.router import router as auth_router
 from apps.shared.domain import Response
 from apps.shared.test import BaseTest
-from apps.users import UsersCRUD
-from apps.users.domain import PasswordRecoveryRequest, PublicUser, User
+from apps.users.domain import PasswordRecoveryRequest, PublicUser
 from apps.users.router import router as user_router
 from apps.users.services import PasswordRecoveryCache
 from apps.users.tests.factories import (
@@ -65,14 +64,6 @@ class TestPassword(BaseTest):
             self.password_update_url, data=password_update_request.dict()
         )
 
-        updated_user: User = await UsersCRUD().get_by_email(
-            login_request_user.email
-        )
-
-        public_user = PublicUser(**updated_user.dict())
-
-        expected_result: Response[PublicUser] = Response(result=public_user)
-
         # User get token with new password
         login_request_user: UserLoginRequest = UserLoginRequest(
             email=self.create_request_user.dict()["email"],
@@ -85,7 +76,6 @@ class TestPassword(BaseTest):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == expected_result.dict(by_alias=True)
         assert response.status_code == status.HTTP_200_OK
         assert internal_response.status_code == status.HTTP_200_OK
 

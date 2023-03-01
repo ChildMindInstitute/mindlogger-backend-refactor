@@ -24,7 +24,7 @@ class TestReusableItem(BaseTest):
         response = await self.client.post(self.create_url, data=create_data)
 
         assert response.status_code == 201, response.json()
-        assert response.json()["result"]["id"] == 1
+        assert response.json()["result"]["id"]
 
     @transaction.rollback
     async def test_recreate_item_choice(self):
@@ -40,7 +40,7 @@ class TestReusableItem(BaseTest):
         response = await self.client.post(self.create_url, data=create_data)
 
         assert response.status_code == 201, response.json()
-        assert response.json()["result"]["id"] == 1
+        assert response.json()["result"]["id"]
 
         create_data = dict(
             token_name="Average age",
@@ -71,8 +71,10 @@ class TestReusableItem(BaseTest):
         response = await self.client.post(self.create_url, data=create_data)
 
         assert response.status_code == 201, response.json()
-        assert response.json()["result"]["id"] == 1
+        assert response.json()["result"]["id"]
 
-        response = await self.client.delete(self.delete_url.format(id=1))
+        response = await self.client.delete(
+            self.delete_url.format(id=response.json()["result"]["id"])
+        )
 
         assert response.status_code == 204, response.json()
