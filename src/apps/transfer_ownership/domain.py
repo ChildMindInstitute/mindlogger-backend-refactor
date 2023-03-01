@@ -1,7 +1,6 @@
 import uuid
 
 from pydantic import EmailStr
-from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
 

@@ -46,7 +46,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         ]
 
     async def get_by_user_id_role_admin(
-            self, user_id_: int
+        self, user_id_: int
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).filter(
             self.schema_class.user_id == user_id_
@@ -61,8 +61,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         ]
 
     async def get_by_user_applet_role(
-            self,
-            schema: UserAppletAccessItem,
+        self,
+        schema: UserAppletAccessItem,
     ) -> UserAppletAccess | None:
         query: Query = select(self.schema_class).filter(
             self.schema_class.user_id == schema.user_id,
@@ -74,7 +74,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return result.scalars().one_or_none()
 
     async def get_by_applet_id(
-            self, applet_id_: int
+        self, applet_id_: int
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).filter(
             self.schema_class.applet_id == applet_id_
@@ -87,7 +87,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         ]
 
     async def get_by_admin_user_and_applet(
-            self, user_id: int, applet_id: int
+        self, user_id: int, applet_id: int
     ) -> list[UserAppletAccessSchema]:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
@@ -98,13 +98,13 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return results
 
     async def save(
-            self, schema: UserAppletAccessSchema
+        self, schema: UserAppletAccessSchema
     ) -> UserAppletAccessSchema:
         """Return UserAppletAccess instance and the created information."""
         return await self._create(schema)
 
     async def get(
-            self, user_id: uuid.UUID, applet_id: uuid.UUID, role: str
+        self, user_id: uuid.UUID, applet_id: uuid.UUID, role: str
     ) -> UserAppletAccessSchema | None:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
@@ -115,7 +115,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return result.scalars().one_or_none()
 
     async def get_by_roles(
-            self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
+        self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
     ) -> UserAppletAccessSchema | None:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
@@ -127,7 +127,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
     # Get by applet id and user id and role respondent
     async def get_by_applet_and_user_as_respondent(
-            self, applet_id: uuid.UUID, user_id: uuid.UUID
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
     ) -> UserAppletAccessSchema:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
@@ -137,7 +137,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return result.scalars().first()
 
     async def get_user_roles_to_applet(
-            self, user_id: uuid.UUID, applet_id: uuid.UUID
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
     ) -> list[str]:
         query: Query = select(distinct(UserAppletAccessSchema.role))
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
