@@ -1,5 +1,6 @@
+import uuid
+
 from pydantic import Field
-from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -106,7 +107,7 @@ class AnswerFlowItemsCreate(AnswerFlowItemCreateBase):
 
 
 class AnswerFlowItem(AnswerFlowItemCreate):
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class FlowIdentifierBase(PublicModel):
@@ -131,7 +132,7 @@ class FlowIdentifierBase(PublicModel):
 class PublicAnswerFlowItem(FlowIdentifierBase):
     """This model represents the public answer for activity item"""
 
-    id: PositiveInt
+    id: uuid.UUID
     answer: dict[str, str] = Field(
         description="This field represents the answer "
         "to a specific activity item"

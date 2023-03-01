@@ -1,20 +1,19 @@
 import uuid
 
 from pydantic import Field
-from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel
 
 
 class Applet(InternalModel):
-    id: int
+    id: uuid.UUID
     display_name: str
     version: str
     description: dict[str, str] = Field(default_factory=dict)
     about: dict[str, str] = Field(default_factory=dict)
     image: str = ""
     watermark: str = ""
-    theme_id: PositiveInt | None = None
+    theme_id: uuid.UUID | None = None
     report_server_ip: str = ""  # Fixme: ip address
     report_public_key: str = ""
     report_recipients: list[str] = Field(default_factory=list)
@@ -24,7 +23,7 @@ class Applet(InternalModel):
 
 
 class Activity(InternalModel):
-    id: int
+    id: uuid.UUID
     guid: uuid.UUID
     name: str
     description: dict[str, str] = Field(default_factory=dict)
@@ -38,8 +37,8 @@ class Activity(InternalModel):
 
 
 class ActivityItem(InternalModel):
-    id: int
-    activity_id: int
+    id: uuid.UUID
+    activity_id: uuid.UUID
     question: dict[str, str]
     response_type: str
     answers: list
@@ -56,7 +55,7 @@ class ActivityItem(InternalModel):
 
 
 class ActivityFlow(InternalModel):
-    id: int
+    id: uuid.UUID
     guid: uuid.UUID
     name: str
     description: dict[str, str]
@@ -66,7 +65,7 @@ class ActivityFlow(InternalModel):
 
 
 class ActivityFlowItem(InternalModel):
-    id: int
-    activity_flow_id: int
-    activity_id: int
+    id: uuid.UUID
+    activity_flow_id: uuid.UUID
+    activity_id: uuid.UUID
     ordering: int

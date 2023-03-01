@@ -1,3 +1,4 @@
+import uuid
 from uuid import UUID
 
 from pydantic import EmailStr
@@ -7,7 +8,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class Applet(PublicModel):
-    id: int
+    id: uuid.UUID
     display_name: str
 
 
@@ -17,7 +18,7 @@ class InvitationRequest(InternalModel):
     """
 
     email: EmailStr
-    applet_id: int
+    applet_id: uuid.UUID
     role: Role = Role.RESPONDENT
     title: str | None
     body: str | None
@@ -26,9 +27,9 @@ class InvitationRequest(InternalModel):
 class Invitation(InternalModel):
     """This is an invitation representation for internal needs."""
 
-    id: int
+    id: uuid.UUID
     email: EmailStr
-    applet_id: int
+    applet_id: uuid.UUID
     role: Role
     key: UUID
     status: str
@@ -38,9 +39,9 @@ class Invitation(InternalModel):
 
 
 class InvitationDetail(InternalModel):
-    id: int
+    id: uuid.UUID
     email: EmailStr
-    applet_id: int
+    applet_id: uuid.UUID
     status: str
     applet_name: str
     role: Role
@@ -50,8 +51,8 @@ class InvitationDetail(InternalModel):
 
 
 class PrivateInvitationDetail(InternalModel):
-    id: int
-    applet_id: int
+    id: uuid.UUID
+    applet_id: uuid.UUID
     status: str
     applet_name: str
     role: Role
@@ -64,7 +65,7 @@ class InvitationResponse(PublicModel):
     """This model is returned to the user on the invitation request."""
 
     email: EmailStr
-    applet_id: int
+    applet_id: uuid.UUID
     applet_name: str
     role: Role
     key: UUID
@@ -74,7 +75,7 @@ class InvitationResponse(PublicModel):
 
 
 class PrivateInvitationResponse(PublicModel):
-    applet_id: int
+    applet_id: uuid.UUID
     applet_name: str
     role: Role
     key: UUID

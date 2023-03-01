@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import delete, select
 
 from apps.activity_flows.db.schemas import (
@@ -18,7 +20,7 @@ class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
     ) -> list[ActivityFlowItemSchema]:
         return await self._create_many(flow_items)
 
-    async def delete_by_applet_id(self, applet_id):
+    async def delete_by_applet_id(self, applet_id: uuid.UUID):
         flow_id_query = select(ActivityFlowSchema.id).where(
             ActivityFlowSchema.applet_id == applet_id
         )

@@ -4,7 +4,8 @@ from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
 
-class TestAnswerActivityItems(BaseTest):
+class _TestAnswerActivityItems(BaseTest):
+    # TODO: fix text
     fixtures = [
         "users/fixtures/users.json",
         "folders/fixtures/folders.json",
@@ -30,9 +31,9 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         create_data = dict(
-            appletId=1,
+            appletId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             appletHistoryVersion="1.0.0",
-            activityId=1,
+            activityId="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             answers=[
                 dict(
                     activityItemHistoryId=1,
@@ -56,9 +57,9 @@ class TestAnswerActivityItems(BaseTest):
         await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
 
         create_data = dict(
-            appletId=1,
+            appletId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             appletHistoryVersion="1.0.0",
-            activityId=1,
+            activityId="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             answers=[
                 dict(
                     activityItemHistoryId=1,

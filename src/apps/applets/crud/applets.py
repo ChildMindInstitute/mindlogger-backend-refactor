@@ -57,7 +57,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return instance
 
     async def update_by_id(
-        self, pk: int, schema: AppletSchema
+        self, pk: uuid.UUID, schema: AppletSchema
     ) -> AppletSchema:
         instance = await self._update_one(
             lookup="id",
@@ -90,11 +90,11 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         return instance
 
-    async def get_by_id(self, id_: int) -> AppletSchema:
+    async def get_by_id(self, id_: uuid.UUID) -> AppletSchema:
         instance = await self._fetch(key="id", value=id_)
         return instance
 
-    async def exist_by_id(self, id_: int) -> bool:
+    async def exist_by_id(self, id_: uuid.UUID) -> bool:
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.id == id_)
 
@@ -103,7 +103,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return db_result.scalars().first() is not None
 
     async def get_applets_by_roles(
-        self, user_id: int, roles: list[str], query_params: QueryParams
+        self, user_id: uuid.UUID, roles: list[str], query_params: QueryParams
     ) -> list[AppletSchema]:
         accessible_applets_query = select(UserAppletAccessSchema.applet_id)
         accessible_applets_query = accessible_applets_query.where(
@@ -132,7 +132,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return result.scalars().all()
 
     async def get_applets_by_roles_count(
-        self, user_id: int, roles: list[str], query_params: QueryParams
+        self, user_id: uuid.UUID, roles: list[str], query_params: QueryParams
     ) -> int:
         accessible_applets_query = select(UserAppletAccessSchema.applet_id)
         accessible_applets_query = accessible_applets_query.where(
@@ -156,7 +156,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return result.scalars().first() or 0
 
     async def get_applet_by_roles(
-        self, user_id: int, applet_id: int, roles: list[str]
+        self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
     ) -> AppletSchema | None:
         query = select(AppletSchema)
         query = query.join_from(UserAppletAccessSchema, AppletSchema)
@@ -175,7 +175,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.values(is_deleted=True)
         await self._execute(query)
 
-    async def check_folder(self, folder_id: int) -> bool:
+    async def check_folder(self, folder_id: uuid.UUID) -> bool:
         """
         Checks whether folder has applets
         """
@@ -187,7 +187,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return db_result.scalars().first()
 
     async def set_applets_folder(
-        self, applet_id: int, folder_id: int | None
+        self, applet_id: uuid.UUID, folder_id: uuid.UUID | None
     ) -> AppletSchema:
         query = update(AppletSchema)
         query = query.values(folder_id=folder_id)
@@ -198,7 +198,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return db_result.scalars().one_or_none()
 
     async def get_folder_applets(
-        self, owner_id: int, folder_id: int
+        self, owner_id: uuid.UUID, folder_id: uuid.UUID
     ) -> list[AppletSchema]:
         access_query: Query = select(
             distinct(UserAppletAccessSchema.applet_id)
@@ -218,7 +218,10 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return db_result.scalars().all()
 
     async def get_name_duplicates(
-        self, user_id: int, name: str, exclude_applet_id: int | None = None
+        self,
+        user_id: uuid.UUID,
+        name: str,
+        exclude_applet_id: uuid.UUID | None = None,
     ) -> list[str]:
         query: Query = select(distinct(AppletSchema.display_name))
         query = query.join(
@@ -238,7 +241,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return db_result.scalars().all()
 
     async def create_access_link(
-        self, applet_id: int, require_login: bool
+        self, applet_id: uuid.UUID, require_login: bool
     ) -> str:
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
@@ -247,20 +250,20 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().one()
 
-    async def delete_access_link(self, applet_id: int):
+    async def delete_access_link(self, applet_id: uuid.UUID):
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
         query = query.values(link=None, require_login=None)
         await self._execute(query)
 
-    async def pin(self, applet_id: int, folder_id: int):
+    async def pin(self, applet_id: uuid.UUID, folder_id: uuid.UUID):
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
         query = query.where(AppletSchema.folder_id == folder_id)
         query = query.values(pinned_at=datetime.now())
         await self._execute(query)
 
-    async def unpin(self, applet_id: int, folder_id: int):
+    async def unpin(self, applet_id: uuid.UUID, folder_id: uuid.UUID):
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
         query = query.where(AppletSchema.folder_id == folder_id)

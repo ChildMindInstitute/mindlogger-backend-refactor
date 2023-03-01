@@ -11,7 +11,7 @@ class TestFolder(BaseTest):
     login_url = "/auth/login"
     list_url = "/folders"
     detail_url = "/folders/{id}"
-    pin_url = detail_url + "/pin/{applet_id}"
+    pin_url = f"{detail_url}/pin/{{applet_id}}"
 
     @transaction.rollback
     async def test_folder_list(self):
@@ -23,8 +23,14 @@ class TestFolder(BaseTest):
 
         assert response.status_code == 200, response.json()
         assert len(response.json()["result"]) == 2
-        assert response.json()["result"][0]["id"] == 2
-        assert response.json()["result"][1]["id"] == 1
+        assert (
+            response.json()["result"][0]["id"]
+            == "ecf66358-a717-41a7-8027-807374307732"
+        )
+        assert (
+            response.json()["result"][1]["id"]
+            == "ecf66358-a717-41a7-8027-807374307731"
+        )
 
     @transaction.rollback
     async def test_create_folder(self):
@@ -37,7 +43,7 @@ class TestFolder(BaseTest):
 
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["name"] == data["name"]
-        assert response.json()["result"]["id"] == 5
+        assert response.json()["result"]["id"]
 
     @transaction.rollback
     async def test_create_folder_with_already_exists(self):
@@ -61,7 +67,10 @@ class TestFolder(BaseTest):
         )
         data = dict(name="Daily applets")
 
-        response = await self.client.put(self.detail_url.format(id=1), data)
+        response = await self.client.put(
+            self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307731"),
+            data,
+        )
 
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["name"] == data["name"]
@@ -73,7 +82,10 @@ class TestFolder(BaseTest):
         )
         data = dict(name="Morning applets")
 
-        response = await self.client.put(self.detail_url.format(id=1), data)
+        response = await self.client.put(
+            self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307731"),
+            data,
+        )
 
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["name"] == data["name"]
@@ -85,7 +97,10 @@ class TestFolder(BaseTest):
         )
         data = dict(name="Night applets")
 
-        response = await self.client.put(self.detail_url.format(id=1), data)
+        response = await self.client.put(
+            self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307731"),
+            data,
+        )
 
         assert response.status_code == 422, response.json()
         assert (
@@ -99,7 +114,9 @@ class TestFolder(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
-        response = await self.client.delete(self.detail_url.format(id=1))
+        response = await self.client.delete(
+            self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307731")
+        )
         assert response.status_code == 204, response.json()
 
     @transaction.rollback
@@ -108,7 +125,9 @@ class TestFolder(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
-        response = await self.client.delete(self.detail_url.format(id=3))
+        response = await self.client.delete(
+            self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307733")
+        )
 
         assert response.status_code == 422, response.json()
         assert (
@@ -121,7 +140,9 @@ class TestFolder(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
-        response = await self.client.delete(self.detail_url.format(id=2))
+        response = await self.client.delete(
+            self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307732")
+        )
         assert response.status_code == 422, response.json()
         assert (
             response.json()["result"][0]["message"]["en"]
@@ -135,7 +156,10 @@ class TestFolder(BaseTest):
         )
 
         response = await self.client.post(
-            self.pin_url.format(id=2, applet_id=1)
+            self.pin_url.format(
+                id="ecf66358-a717-41a7-8027-807374307732",
+                applet_id="190eb023-a610-403b-8d8e-b02c158c6f51",
+            )
         )
 
         assert response.status_code == 200, response.json()
@@ -147,7 +171,10 @@ class TestFolder(BaseTest):
         )
 
         response = await self.client.delete(
-            self.pin_url.format(id=2, applet_id=1)
+            self.pin_url.format(
+                id="ecf66358-a717-41a7-8027-807374307732",
+                applet_id="190eb023-a610-403b-8d8e-b02c158c6f51",
+            )
         )
 
         assert response.status_code == 204, response.json()

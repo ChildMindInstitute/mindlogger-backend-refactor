@@ -195,7 +195,7 @@ class PrivateInvitationService:
             body=None,
         )
 
-    async def accept_invitation(self, user_id: int, link: uuid.UUID):
+    async def accept_invitation(self, user_id: uuid.UUID, link: uuid.UUID):
         applet = await PublicAppletService().get_by_link(link, True)
         if not applet:
             raise InvitationDoesNotExist()

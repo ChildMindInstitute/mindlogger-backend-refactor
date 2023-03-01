@@ -1,3 +1,5 @@
+import uuid
+
 from apps.applets.crud import AppletsCRUD
 from apps.folders.crud import FolderCRUD
 from apps.folders.db.schemas import FolderSchema
@@ -11,7 +13,7 @@ from apps.folders.errors import (
 
 
 class FolderService:
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: uuid.UUID):
         self._creator_id = user_id
 
     async def list(self) -> list[Folder]:
@@ -32,7 +34,7 @@ class FolderService:
         if existed_folder:
             raise FolderAlreadyExist()
 
-    async def update(self, id_: int, data: FolderUpdate) -> Folder:
+    async def update(self, id_: uuid.UUID, data: FolderUpdate) -> Folder:
         await self._validate_update(id_, data.name)
         schema = await FolderCRUD().update_by_id(
             FolderSchema(id=id_, name=data.name, creator_id=self._creator_id)
@@ -48,26 +50,26 @@ class FolderService:
         if folder_by_new_name and folder_by_new_name.id != folder_id:
             raise FolderAlreadyExist()
 
-    async def delete_by_id(self, id_: int):
+    async def delete_by_id(self, id_: uuid.UUID):
         await self._validate_delete(id_)
         await FolderCRUD().delete_creators_folder_by_id(self._creator_id, id_)
 
-    async def _validate_delete(self, folder_id: int):
+    async def _validate_delete(self, folder_id: uuid.UUID):
         await self._validate_folder(folder_id)
 
         applet_exists_in_folder = await AppletsCRUD().check_folder(folder_id)
         if applet_exists_in_folder:
             raise FolderIsNotEmpty()
 
-    async def pin_applet(self, id_: int, applet_id: int):
+    async def pin_applet(self, id_: uuid.UUID, applet_id: uuid.UUID):
         await self._validate_pin(id_, applet_id)
-        await AppletsCRUD().pin(applet_id=applet_id, folder_id=id_)
+        await AppletsCRUD().pin(applet_id, id_)
 
-    async def unpin_applet(self, id_: int, applet_id: int):
+    async def unpin_applet(self, id_: uuid.UUID, applet_id: uuid.UUID):
         await self._validate_pin(id_, applet_id)
-        await AppletsCRUD().unpin(applet_id=applet_id, folder_id=id_)
+        await AppletsCRUD().unpin(applet_id, id_)
 
-    async def _validate_pin(self, folder_id: int, applet_id: int):
+    async def _validate_pin(self, folder_id: uuid.UUID, applet_id: uuid.UUID):
         await self._validate_folder(folder_id)
 
         # check if applet is in folder
@@ -75,7 +77,7 @@ class FolderService:
         if applet.folder_id != folder_id:
             raise AppletNotInFolder()
 
-    async def _validate_folder(self, folder_id: int):
+    async def _validate_folder(self, folder_id: uuid.UUID):
         folder = await FolderCRUD().get_by_id(folder_id)
 
         if folder.creator_id != self._creator_id:

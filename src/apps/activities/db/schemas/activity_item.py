@@ -1,5 +1,5 @@
 from sqlalchemy import REAL, Boolean, Column, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
 
@@ -33,7 +33,7 @@ class ActivityItemSchema(_BaseActivityItemSchema, Base):
 class ActivityItemHistorySchema(_BaseActivityItemSchema, Base):
     __tablename__ = "activity_item_histories"
 
-    id = Column(Integer())
+    id = Column(UUID(as_uuid=True))
     id_version = Column(String(), primary_key=True)
     activity_id = Column(
         ForeignKey("activity_histories.id_version", ondelete="CASCADE"),

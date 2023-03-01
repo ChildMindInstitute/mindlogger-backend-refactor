@@ -1,4 +1,4 @@
-from pydantic.types import PositiveInt
+import uuid
 
 from apps.applets.domain.constants import Role
 from apps.shared.domain import InternalModel, PublicModel
@@ -12,27 +12,27 @@ __all__ = [
 
 
 class UserAppletAccessCreate(InternalModel):
-    user_id: PositiveInt
-    applet_id: PositiveInt
+    user_id: uuid.UUID
+    applet_id: uuid.UUID
     role: Role
 
 
 class UserAppletAccess(UserAppletAccessCreate):
-    id: PositiveInt
+    id: uuid.UUID
 
 
 class PublicUserAppletAccess(PublicModel):
     """Public UserAppletAccess data model."""
 
-    id: PositiveInt
-    user_id: PositiveInt
-    applet_id: PositiveInt
+    id: uuid.UUID
+    user_id: uuid.UUID
+    applet_id: uuid.UUID
     role: Role
 
 
 class UserAppletAccessItem(InternalModel):
     """This is an UserAppletAccess representation for internal needs."""
 
-    user_id: PositiveInt
-    applet_id: PositiveInt
+    user_id: uuid.UUID
+    applet_id: uuid.UUID
     role: Role

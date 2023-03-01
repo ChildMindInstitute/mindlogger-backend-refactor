@@ -27,7 +27,7 @@ class TestThemes(BaseTest):
 
         response = await self.client.post(self.list_url, data=create_data)
         assert response.status_code == 201, response.json()
-        assert response.json()["result"]["id"] == 1
+        assert response.json()["result"]["id"]
 
     @transaction.rollback
     async def test_delete_theme(self):
@@ -46,9 +46,11 @@ class TestThemes(BaseTest):
         response = await self.client.post(self.list_url, data=create_data)
 
         assert response.status_code == 201, response.json()
-        assert response.json()["result"]["id"] == 1
+        assert response.json()["result"]["id"]
 
-        response = await self.client.delete(self.detail_url.format(id=1))
+        response = await self.client.delete(
+            self.detail_url.format(id=response.json()["result"]["id"])
+        )
 
         assert response.status_code == 204, response.json()
 
@@ -69,7 +71,7 @@ class TestThemes(BaseTest):
         response = await self.client.post(self.list_url, data=create_data)
 
         assert response.status_code == 201, response.json()
-        assert response.json()["result"]["id"] == 1
+        assert response.json()["result"]["id"]
 
         update_data = dict(
             name="Test theme 2",
@@ -80,11 +82,12 @@ class TestThemes(BaseTest):
             tertiary_color="#000000",
         )
         response = await self.client.put(
-            self.detail_url.format(id=1), data=update_data
+            self.detail_url.format(id=response.json()["result"]["id"]),
+            data=update_data,
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["result"]["id"] == 1
+        assert response.json()["result"]["id"]
         assert response.json()["result"]["name"] == update_data["name"]
         assert response.json()["result"]["logo"] == update_data["logo"]
         assert (

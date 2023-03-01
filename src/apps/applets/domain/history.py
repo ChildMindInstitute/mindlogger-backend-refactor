@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import Field
 
 from apps.activities.domain import (
@@ -15,10 +17,10 @@ class AppletHistory(InternalModel):
     about: dict
     image: str
     watermark: str
-    theme_id: int | None
+    theme_id: uuid.UUID | None
     version: str
-    account_id: int
-    creator_id: int
+    account_id: uuid.UUID
+    creator_id: uuid.UUID
     report_server_ip: str
     report_public_key: str
     report_recipients: list[str]

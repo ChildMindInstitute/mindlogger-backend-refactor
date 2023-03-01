@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
@@ -19,7 +21,7 @@ class ReusableItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
     schema_class = ReusableItemChoiceSchema
 
     async def get_item_templates(
-        self, user_id_: int
+        self, user_id_: uuid.UUID
     ) -> list[PublicReusableItemChoice]:
         query: Query = (
             select(self.schema_class)
@@ -55,7 +57,7 @@ class ReusableItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
 
         return item_template
 
-    async def delete_by_id(self, id_: int):
+    async def delete_by_id(self, id_: uuid.UUID):
         """Delete item template by id."""
 
         await self._delete(key="id", value=id_)

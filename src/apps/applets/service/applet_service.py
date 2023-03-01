@@ -35,7 +35,7 @@ class AppletService:
 
     # TODO: implement applet create/update logics here
 
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: uuid.UUID):
         self.user_id = user_id
 
     def get_next_version(self, version: str | None = None):
@@ -89,7 +89,7 @@ class AppletService:
         return count
 
     async def get_single_language_by_id(
-        self, applet_id: int, language: str
+        self, applet_id: uuid.UUID, language: str
     ) -> AppletDetail:
         applet_exists = await AppletsCRUD().exist_by_id(applet_id)
         if not applet_exists:
@@ -133,7 +133,7 @@ class AppletService:
             return self.INITIAL_VERSION
         return ".".join(list(str(int_version - self.VERSION_DIFFERENCE)))
 
-    async def exist_by_id(self, applet_id: int) -> bool:
+    async def exist_by_id(self, applet_id: uuid.UUID) -> bool:
         return await AppletsCRUD().exist_by_id(applet_id)
 
     async def delete_applet_by_id(self, applet_id: int):
@@ -148,7 +148,7 @@ class AppletService:
             raise AppletAccessDenied()
 
     async def get_single_language_by_folder_id(
-        self, folder_id: int, language
+        self, folder_id: uuid.UUID, language
     ) -> list[AppletInfo]:
         schemas = await AppletsCRUD().get_folder_applets(
             self.user_id, folder_id
@@ -186,21 +186,23 @@ class AppletService:
         else:
             await self._remove_from_folder(schema.applet_id)
 
-    async def _move_to_folder(self, applet_id: int, folder_id: int):
+    async def _move_to_folder(
+        self, applet_id: uuid.UUID, folder_id: uuid.UUID
+    ):
         await self._validate_applet(applet_id)
         await self._validate_folder(folder_id)
         await AppletsCRUD().set_applets_folder(applet_id, folder_id)
 
-    async def _remove_from_folder(self, applet_id: int):
+    async def _remove_from_folder(self, applet_id: uuid.UUID):
         await self._validate_applet(applet_id)
         await AppletsCRUD().set_applets_folder(applet_id, None)
 
-    async def _validate_applet(self, applet_id: int):
+    async def _validate_applet(self, applet_id: uuid.UUID):
         applet_schema = await AppletsCRUD().get_by_id(applet_id)
         if applet_schema.creator_id != self.user_id:
             raise AppletAccessDenied()
 
-    async def _validate_folder(self, folder_id: int):
+    async def _validate_folder(self, folder_id: uuid.UUID):
         folder = await FolderCRUD().get_by_id(folder_id)
 
         if folder.creator_id != self.user_id:
@@ -230,7 +232,7 @@ class AppletService:
         return 0
 
     async def create_access_link(
-        self, applet_id: int, create_request: CreateAccessLink
+        self, applet_id: uuid.UUID, create_request: CreateAccessLink
     ) -> AppletLink:
         roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
             self.user_id, applet_id
@@ -249,7 +251,7 @@ class AppletService:
         )
         return AppletLink(link=link)
 
-    async def get_access_link(self, applet_id: int) -> AppletLink:
+    async def get_access_link(self, applet_id: uuid.UUID) -> AppletLink:
         roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
             self.user_id, applet_id
         )
@@ -264,7 +266,7 @@ class AppletService:
 
         return AppletLink(link=link)
 
-    async def delete_access_link(self, applet_id: int):
+    async def delete_access_link(self, applet_id: uuid.UUID):
         roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
             self.user_id, applet_id
         )
