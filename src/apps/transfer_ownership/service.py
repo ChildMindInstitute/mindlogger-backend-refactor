@@ -40,7 +40,8 @@ class TransferService:
         service: MailingService = MailingService()
 
         html_payload: dict = {
-            "coordinator_name": self._user.full_name,
+            "coordinator_name": f"{self._user.first_name} "
+            "{self._user.last_name}",
             "user_name": transfer_request.email,
             "applet": applet.display_name,
             "role": "owner",
@@ -53,7 +54,7 @@ class TransferService:
         message = MessageSchema(
             recipients=[transfer_request.email],
             subject="Transfer ownership of an Applet",
-            body=service.get_template(path="invitation", **html_payload),
+            body=service.get_template(path="invitation_en", **html_payload),
         )
 
         await service.send(message)
@@ -79,6 +80,9 @@ class TransferService:
                 user_id=self._user.id,
                 applet_id=transfer.applet_id,
                 role=Role.ADMIN,
+                owner_id=self._user.id,
+                invitor_id=self._user.id,
+                meta={},
             )
         )
 
