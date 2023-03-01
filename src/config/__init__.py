@@ -79,5 +79,6 @@ settings = Settings(
         "answers",
         "invitations",
         "workspaces",
+        "transfer_ownership",
     ],
 )
