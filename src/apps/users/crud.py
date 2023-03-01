@@ -30,7 +30,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
         # Get user from the database
         if not (instance := await self._get(key, value)):
-            raise UserNotFound(message="!!!!!!")
+            raise UserNotFound
         # TODO: Align with client about the business logic
         if instance.is_deleted:
             raise UserIsDeletedError(
