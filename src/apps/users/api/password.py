@@ -53,7 +53,7 @@ async def password_recovery(
         )
     except UserNotFound:
         raise UserNotFound(
-            message=("That email is not associated with a MindLogger account")
+            message="That email is not associated with a MindLogger account"
         )
 
     return Response[PublicUser](result=public_user)
