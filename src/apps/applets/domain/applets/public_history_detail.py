@@ -24,7 +24,6 @@ class ActivityItem(PublicModel):
 
 class Activity(PublicModel):
     id: uuid.UUID
-    guid: uuid.UUID
     name: str
     description: dict[str, str] = Field(default_factory=dict)
     splash_screen: str = ""
@@ -45,7 +44,6 @@ class ActivityFlowItem(PublicModel):
 
 class ActivityFlow(PublicModel):
     id: uuid.UUID
-    guid: uuid.UUID
     name: str
     description: dict[str, str]
     is_single_report: bool = False

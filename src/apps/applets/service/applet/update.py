@@ -1,5 +1,5 @@
 import uuid
-from collections import defaultdict
+from typing import Any
 
 from apps.activities.crud import (
     ActivitiesCRUD,
@@ -40,11 +40,11 @@ async def update_applet(
     applet = await _validate(user_id, applet_id)
     await _delete_applet_items(applet_id)
     applet = await _update_applet(applet, data, user_id)
-    activities, activity_items = await _create_activities(
+    activities, activity_items, activity_key_id_map = await _create_activities(
         applet, data.activities
     )
     flows, flow_items = await _create_flows(
-        applet, activities, data.activity_flows
+        applet, activity_key_id_map, data.activity_flows
     )
     await _add_history(
         user_id, user_id, applet, activities, activity_items, flows, flow_items
@@ -96,10 +96,12 @@ async def _update_applet(
 
 async def _create_activities(
     applet: fetch.Applet, create_data: list[update.ActivityUpdate]
-) -> tuple[list[fetch.Activity], list[fetch.ActivityItem]]:
+) -> tuple[
+    list[fetch.Activity], list[fetch.ActivityItem], dict[Any, uuid.UUID]
+]:
     activity_schemas: list[ActivitySchema] = []
     activity_item_schemas: list[ActivityItemSchema] = []
-    activity_to_items_map = defaultdict(list)
+    activity_key_id_map: dict[Any, uuid.UUID] = dict()
 
     # Save existing activities to avoid creating default schedules for them
     all_activities = [
@@ -109,14 +111,15 @@ async def _create_activities(
     existing_activities = []
 
     for index, activity_data in enumerate(create_data):
+        activity_id = activity_data.id or uuid.uuid4()
+        activity_key_id_map[activity_data.key] = activity_id
         if activity_data.id:
             existing_activities.append(activity_data.id)
 
         activity_schemas.append(
             ActivitySchema(
-                id=activity_data.id or None,
+                id=activity_id,
                 applet_id=applet.id,
-                guid=activity_data.guid,
                 name=activity_data.name,
                 description=activity_data.description,
                 splash_screen=activity_data.splash_screen,
@@ -130,7 +133,8 @@ async def _create_activities(
         )
         for item_index, activity_item_data in enumerate(activity_data.items):
             activity_item_schema = ActivityItemSchema(
-                id=activity_item_data.id or None,
+                id=activity_item_data.id or uuid.uuid4(),
+                activity_id=activity_id,
                 question=activity_item_data.question,
                 response_type=activity_item_data.response_type,
                 answers=activity_item_data.answers,
@@ -148,9 +152,6 @@ async def _create_activities(
                 ),
             )
             activity_item_schemas.append(activity_item_schema)
-            activity_to_items_map[activity_data.guid].append(
-                activity_item_schema
-            )
 
     activity_schemas = await ActivitiesCRUD().create_many(activity_schemas)
     activities = []
@@ -175,9 +176,6 @@ async def _create_activities(
 
     for activity_schema in activity_schemas:
         activities.append(fetch.Activity.from_orm(activity_schema))
-        activity_item_schemas = activity_to_items_map[activity_schema.guid]
-        for activity_item_schema in activity_item_schemas:
-            activity_item_schema.activity_id = activity_schema.id
 
     activity_item_schemas = await ActivityItemsCRUD().create_many(
         activity_item_schemas
@@ -185,20 +183,16 @@ async def _create_activities(
     activity_items = [
         fetch.ActivityItem.from_orm(schema) for schema in activity_item_schemas
     ]
-    return activities, activity_items
+    return activities, activity_items, activity_key_id_map
 
 
 async def _create_flows(
     applet: fetch.Applet,
-    activities: list[fetch.Activity],
+    activity_key_id_map: dict[Any, uuid.UUID],
     create_data: list[update.ActivityFlowUpdate],
 ) -> tuple[list[fetch.ActivityFlow], list[fetch.ActivityFlowItem]]:
     flow_schemas = []
     flow_item_schemas = []
-    flow_to_items_map = defaultdict(list)
-    activity_guid_id_map = dict(
-        (activity.guid, activity.id) for activity in activities
-    )
 
     # Save existing flows to avoid creating default schedules for them
     all_flows = [
@@ -206,15 +200,14 @@ async def _create_flows(
     ]
     existing_flows = []
     for index, flow_data in enumerate(create_data):
-        flow_guid = uuid.uuid4()
+        flow_id = flow_data.id or uuid.uuid4()
         if flow_data.id:
             existing_flows.append(flow_data.id)
 
         flow_schemas.append(
             ActivityFlowSchema(
-                id=flow_data.id or None,
+                id=flow_id,
                 name=flow_data.name,
-                guid=flow_guid,
                 description=flow_data.description,
                 applet_id=applet.id,
                 is_single_report=flow_data.is_single_report,
@@ -224,12 +217,22 @@ async def _create_flows(
         )
         for item_index, item in enumerate(flow_data.items):
             flow_item_schema = ActivityFlowItemSchema(
-                id=item.id or None,
-                activity_id=activity_guid_id_map[item.activity_guid],
+                id=item.id or uuid.uuid4(),
+                activity_flow_id=flow_id,
+                activity_id=activity_key_id_map[item.activity_key],
                 ordering=item_index + 1,
             )
             flow_item_schemas.append(flow_item_schema)
-            flow_to_items_map[flow_guid].append(flow_item_schema)
+
+    flow_schemas = await FlowsCRUD().create_many(flow_schemas)
+    flows = []
+    for flow_schema in flow_schemas:
+        flows.append(fetch.ActivityFlow.from_orm(flow_schema))
+
+    flow_item_schemas = await FlowItemsCRUD().create_many(flow_item_schemas)
+    flow_items = [
+        fetch.ActivityFlowItem.from_orm(schema) for schema in flow_item_schemas
+    ]
 
     # Create default events for new flows
     flow_ids = [
@@ -250,17 +253,6 @@ async def _create_flows(
             is_activity=False,
         )
 
-    flow_schemas = await FlowsCRUD().create_many(flow_schemas)
-    flows = []
-    for flow_schema in flow_schemas:
-        flows.append(fetch.ActivityFlow.from_orm(flow_schema))
-        for flow_item_schema in flow_to_items_map[flow_schema.guid]:
-            flow_item_schema.activity_flow_id = flow_schema.id
-
-    flow_item_schemas = await FlowItemsCRUD().create_many(flow_item_schemas)
-    flow_items = [
-        fetch.ActivityFlowItem.from_orm(schema) for schema in flow_item_schemas
-    ]
     return flows, flow_items
 
 
@@ -351,7 +343,6 @@ async def _add_history(
                 id=flow.id,
                 applet_id=applet_id_version,
                 name=flow.name,
-                guid=flow.guid,
                 description=flow.description,
                 is_single_report=flow.is_single_report,
                 hide_badge=flow.hide_badge,

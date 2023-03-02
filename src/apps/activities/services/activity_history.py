@@ -11,7 +11,7 @@ from apps.shared.version import get_prev_version
 
 
 class ActivityHistoryService:
-    def __init__(self, applet_id: int, version: str):
+    def __init__(self, applet_id: uuid.UUID, version: str):
         self._applet_id = applet_id
         self._version = version
         self._applet_id_version = f"{applet_id}_{version}"

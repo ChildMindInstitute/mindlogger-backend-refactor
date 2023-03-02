@@ -1,3 +1,5 @@
+import uuid
+
 from apps.activities.services import ActivityHistoryService
 from apps.applets.crud import AppletHistoriesCRUD
 from apps.applets.domain import AppletHistory, AppletHistoryChange
@@ -9,7 +11,7 @@ from apps.shared.version import get_prev_version
 
 
 class AppletHistoryService:
-    def __init__(self, applet_id: int, version: str):
+    def __init__(self, applet_id: uuid.UUID, version: str):
         self._applet_id = applet_id
         self._version = version
         self._id_version = f"{applet_id}_{version}"

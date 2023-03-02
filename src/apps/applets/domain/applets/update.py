@@ -23,7 +23,7 @@ class ActivityItemUpdate(InternalModel):
 
 class ActivityUpdate(InternalModel):
     id: uuid.UUID | None
-    guid: uuid.UUID
+    key: uuid.UUID
     name: str
     description: dict[str, str]
     splash_screen: str = ""
@@ -37,7 +37,7 @@ class ActivityUpdate(InternalModel):
 
 class ActivityFlowItemUpdate(InternalModel):
     id: uuid.UUID | None = None
-    activity_guid: uuid.UUID
+    activity_key: uuid.UUID
 
 
 class ActivityFlowUpdate(InternalModel):

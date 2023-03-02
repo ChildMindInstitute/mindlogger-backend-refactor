@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from sqlalchemy import select
 from sqlalchemy.orm import Query
@@ -18,7 +19,7 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
         await self._create(schema)
 
     async def retrieve_versions_by_applet_id(
-        self, applet_id: int
+        self, applet_id: uuid.UUID
     ) -> list[tuple[str, datetime.datetime, UserSchema]]:
         """
         Retrieve versions by applet id
