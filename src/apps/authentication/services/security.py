@@ -62,7 +62,16 @@ class AuthenticationService:
         user: User = await UsersCRUD().get_by_email(
             email=user_login_schema.email
         )
-        cls.verify_password(user_login_schema.password, user.hashed_password)
+        try:
+            cls.verify_password(
+                user_login_schema.password, user.hashed_password
+            )
+        except BadCredentials:
+            raise BadCredentials(
+                message=(
+                    f"Incorrect password for {user.email} if that user exist."
+                )
+            )
 
         return user
 
