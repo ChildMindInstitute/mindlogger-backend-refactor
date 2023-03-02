@@ -11,7 +11,7 @@ class TestAppletSettings(BaseTest):
     ]
     login_url = "/auth/login"
     applet_url = "applets/{applet_id}"
-    data_retention = applet_url + "/setRetention"
+    data_retention = applet_url + "/retentions"
 
     @transaction.rollback
     async def test_applet_set_data_retention(self):
@@ -23,7 +23,7 @@ class TestAppletSettings(BaseTest):
 
         retention_data = dict(
             period=1,
-            retention="day",
+            retention="days",
         )
 
         response = await self.client.post(

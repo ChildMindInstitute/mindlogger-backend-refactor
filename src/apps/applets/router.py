@@ -187,7 +187,7 @@ router.delete(
 )(applet_link_delete)
 
 router.post(
-    "/{id_}/setRetention",
+    "/{id_}/retentions",
     status_code=status.HTTP_200_OK,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
