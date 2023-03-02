@@ -1,13 +1,14 @@
 import datetime
 import uuid
 
-from pydantic import Field
+from pydantic import Field, PositiveInt
 
 from apps.activities.domain.activity import (
     ActivityDetail,
     ActivityDetailPublic,
 )
 from apps.activity_flows.domain.flow import FlowDetail, FlowDetailPublic
+from apps.applets.domain.constants import DataRetention
 from apps.shared.domain import InternalModel, PublicModel
 
 
@@ -52,6 +53,8 @@ class AppletPublic(PublicModel):
 class AppletDetail(Applet):
     description: str  # type: ignore[assignment]
     about: str  # type: ignore[assignment]
+    retention_period: PositiveInt | None = None
+    retention_type: DataRetention | None = None
 
     activities: list[ActivityDetail] = Field(default_factory=list)
     activity_flows: list[FlowDetail] = Field(default_factory=list)
@@ -65,6 +68,8 @@ class AppletInfo(Applet):
 class AppletDetailPublic(AppletPublic):
     description: str  # type: ignore[assignment]
     about: str  # type: ignore[assignment]
+    retention_period: PositiveInt | None = None
+    retention_type: DataRetention | None = None
 
     activities: list[ActivityDetailPublic] = Field(default_factory=list)
     activity_flows: list[FlowDetailPublic] = Field(default_factory=list)
@@ -82,3 +87,8 @@ class AppletName(InternalModel):
 
 class AppletUniqueName(PublicModel):
     name: str
+
+
+class AppletDataRetention(InternalModel):
+    period: PositiveInt
+    retention: DataRetention

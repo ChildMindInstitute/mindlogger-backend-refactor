@@ -24,3 +24,11 @@ class ManagersRole(str, Enum):
     MANAGER = "manager"
     COORDINATOR = "coordinator"
     EDITOR = "editor"
+
+
+class DataRetention(str, Enum):
+    INDEFINITELY = "indefinitely"
+    DAY = "day"
+    WEEK = "week"
+    MONTH = "month"
+    YEAR = "year"

@@ -9,6 +9,7 @@ from apps.applets.api.applets import (
     applet_link_get,
     applet_list,
     applet_retrieve,
+    applet_set_data_retention,
     applet_set_folder,
     applet_unique_name_get,
     applet_update,
@@ -184,3 +185,12 @@ router.delete(
         **NO_CONTENT_ERROR_RESPONSES,
     },
 )(applet_link_delete)
+
+router.post(
+    "/{id_}/setRetention",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_set_data_retention)

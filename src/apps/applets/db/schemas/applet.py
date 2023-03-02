@@ -1,4 +1,12 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
@@ -36,6 +44,8 @@ class AppletSchema(_BaseAppletSchema, Base):
     link = Column(UUID(as_uuid=True), unique=True)
     require_login = Column(Boolean(), default=True)
     pinned_at = Column(DateTime(), nullable=True)
+    retention_period = Column(Integer(), nullable=True)
+    retention_type = Column(String(20), nullable=True)
 
 
 class AppletHistorySchema(_BaseAppletSchema, Base):

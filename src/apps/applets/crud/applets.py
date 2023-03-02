@@ -11,6 +11,7 @@ from sqlalchemy.sql.functions import count
 from apps.applets import errors
 from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
 from apps.applets.domain import Role
+from apps.applets.domain.applet import AppletDataRetention
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
@@ -270,12 +271,13 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.values(pinned_at=None)
         await self._execute(query)
 
-    async def transfer_ownership(
-        self, applet_id: uuid.UUID, new_owner_id: uuid.UUID
-    ) -> AppletSchema:
+    async def set_data_retention(
+        self, applet_id: uuid.UUID, data_retention: AppletDataRetention
+    ):
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
-        query = query.values(creator_id=new_owner_id)
-        query = query.returning(self.schema_class)
-        db_result = await self._execute(query)
-        return db_result.scalars().one_or_none()
+        query = query.values(
+            retention_period=data_retention.period,
+            retention_type=data_retention.retention,
+        )
+        await self._execute(query)

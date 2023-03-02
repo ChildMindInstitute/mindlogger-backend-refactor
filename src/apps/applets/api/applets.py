@@ -10,7 +10,11 @@ from apps.applets.domain import (
     PublicAppletHistoryChange,
     PublicHistory,
 )
-from apps.applets.domain.applet import AppletDetailPublic, AppletInfoPublic
+from apps.applets.domain.applet import (
+    AppletDataRetention,
+    AppletDetailPublic,
+    AppletInfoPublic,
+)
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.applets.create import AppletCreate
@@ -176,3 +180,13 @@ async def applet_link_delete(
     user: User = Depends(get_current_user),
 ):
     await AppletService(user.id).delete_access_link(applet_id=id_)
+
+
+async def applet_set_data_retention(
+    id_: uuid.UUID,
+    schema: AppletDataRetention,
+    user: User = Depends(get_current_user),
+):
+    await AppletService(user.id).set_data_retention(
+        applet_id=id_, data_retention=schema
+    )
