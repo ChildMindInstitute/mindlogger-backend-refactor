@@ -260,7 +260,10 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.put(
-            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"), data=update_data
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=update_data,
         )
         assert response.status_code == 200, response.json()
 
@@ -303,7 +306,11 @@ class TestApplet(BaseTest):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
-        response = await self.client.get(self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
+        response = await self.client.get(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
 
         assert response.status_code == 200
         result = response.json()["result"]
@@ -481,7 +488,10 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.put(
-            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"), data=update_data
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=update_data,
         )
         assert response.status_code == 200, response.json()
 

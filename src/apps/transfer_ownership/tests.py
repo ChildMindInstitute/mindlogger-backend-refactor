@@ -1,5 +1,3 @@
-import pytest
-
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction

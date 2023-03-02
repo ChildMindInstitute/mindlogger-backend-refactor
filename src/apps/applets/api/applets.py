@@ -1,4 +1,3 @@
-import traceback
 import uuid
 from copy import deepcopy
 
@@ -107,11 +106,7 @@ async def applet_update(
     user: User = Depends(get_current_user),
     schema: AppletUpdate = Body(...),
 ) -> Response[public_detail.Applet]:
-    try:
-        applet = await update_applet(id_, schema, user.id)
-    except Exception as e:
-        traceback.print_exc()
-        return Response()
+    applet = await update_applet(id_, schema, user.id)
     return Response(result=public_detail.Applet(**applet.dict()))
 
 

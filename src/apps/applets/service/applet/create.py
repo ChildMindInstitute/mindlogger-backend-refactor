@@ -1,5 +1,4 @@
 import uuid
-from collections import defaultdict
 from typing import Any
 
 from apps.activities.crud import (
@@ -36,7 +35,7 @@ from apps.shared.version import get_next_version
 
 
 async def create_applet(
-        data: create.AppletCreate, user_id: uuid.UUID
+    data: create.AppletCreate, user_id: uuid.UUID
 ) -> fetch.Applet:
     # TODO: validation for activity_key uniqueness
 
@@ -55,7 +54,7 @@ async def create_applet(
 
 
 async def _create_applet(
-        create_data: create.AppletCreate, user_id
+    create_data: create.AppletCreate, user_id
 ) -> fetch.Applet:
     schema = await AppletsCRUD().save(
         AppletSchema(
@@ -84,8 +83,10 @@ async def _create_access(applet_id: uuid.UUID, user_id: uuid.UUID):
 
 
 async def _create_activities(
-        applet: fetch.Applet, create_data: list[create.ActivityCreate]
-) -> tuple[list[fetch.Activity], list[fetch.ActivityItem], dict[uuid.UUID, Any]]:
+    applet: fetch.Applet, create_data: list[create.ActivityCreate]
+) -> tuple[
+    list[fetch.Activity], list[fetch.ActivityItem], dict[uuid.UUID, Any]
+]:
     activity_schemas: list[ActivitySchema] = []
     activity_item_schemas: list[ActivityItemSchema] = []
     activity_id_key_map: dict[uuid.UUID, Any] = dict()
@@ -151,9 +152,9 @@ async def _create_activities(
 
 
 async def _create_flows(
-        applet: fetch.Applet,
-        activities_key_id_map: dict[uuid.UUID, Any],
-        create_data: list[create.ActivityFlowCreate],
+    applet: fetch.Applet,
+    activities_key_id_map: dict[uuid.UUID, Any],
+    create_data: list[create.ActivityFlowCreate],
 ) -> tuple[list[fetch.ActivityFlow], list[fetch.ActivityFlowItem]]:
     flow_schemas = []
     flow_item_schemas = []
@@ -198,13 +199,13 @@ async def _create_flows(
 
 
 async def _add_history(
-        creator_id: uuid.UUID,
-        account_id: uuid.UUID,
-        applet: fetch.Applet,
-        activities: list[fetch.Activity],
-        activity_items: list[fetch.ActivityItem],
-        flows: list[fetch.ActivityFlow],
-        flow_items: list[fetch.ActivityFlowItem],
+    creator_id: uuid.UUID,
+    account_id: uuid.UUID,
+    applet: fetch.Applet,
+    activities: list[fetch.Activity],
+    activity_items: list[fetch.ActivityItem],
+    flows: list[fetch.ActivityFlow],
+    flow_items: list[fetch.ActivityFlowItem],
 ):
     applet_id_version = f"{applet.id}_{applet.version}"
     await AppletHistoriesCRUD().save(
