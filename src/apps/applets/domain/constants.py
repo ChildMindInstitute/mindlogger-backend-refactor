@@ -28,7 +28,7 @@ class ManagersRole(str, Enum):
 
 class DataRetention(str, Enum):
     INDEFINITELY = "indefinitely"
-    DAY = "day"
-    WEEK = "week"
-    MONTH = "month"
-    YEAR = "year"
+    DAYS = "days"
+    WEEKS = "weeks"
+    MONTHS = "months"
+    YEARS = "years"
