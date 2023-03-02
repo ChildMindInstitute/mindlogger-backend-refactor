@@ -4,6 +4,7 @@ from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import UserAppletAccess
 from apps.applets.domain.applet import AppletPublic
 from apps.users import User, UsersCRUD
+from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.domain.workspace import PublicWorkspace
 
 __all__ = ["UserAccessService"]
@@ -27,10 +28,12 @@ class UserAccessService:
 
         for access in accesses:
             user_owner: User = await UsersCRUD().get_by_id(access.owner_id)
+            workspace_internal = await UserWorkspaceCRUD().get_by_user_id(
+                user_owner.id
+            )
             workspace = PublicWorkspace(
                 owner_id=access.owner_id,
-                workspace_name=f"{user_owner.first_name} "
-                f"{user_owner.last_name} MindLogger",
+                workspace_name=workspace_internal.workspace_name,
             )
             if workspace not in workspaces:
                 workspaces.append(workspace)

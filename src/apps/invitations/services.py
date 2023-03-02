@@ -121,14 +121,11 @@ class InvitationsService:
             applet_id, Role.RESPONDENT
         )
         await self._is_secret_user_id_unique(applet_id, schema.secret_user_id)
-        await self._validated_exist_invitation(
-            email=schema.email,
-            applet_id=applet_id,
-            request_role=Role.RESPONDENT,
-        )
 
         # Get all invitations and check if it is possible to create
-        # the another invite with same parameters
+        # the another invite or update existing or invitation
+        # has already been accepted by the user, and we should raise
+        # an error that sending a second invitation is not possible.
         invitations: list[
             InvitationSchema
         ] = await self.invitations_crud.get_by_email_applet_role(
@@ -144,6 +141,8 @@ class InvitationsService:
             "status": InvitationStatus.PENDING,
         }
 
+        payload = None
+        invitation_schema = None
         for invitation in invitations:
             meta = RespondentMeta(**invitation.meta)
             if invitation.status == InvitationStatus.PENDING and (
@@ -155,28 +154,28 @@ class InvitationsService:
                     value=invitation.id,
                     schema=InvitationSchema(**payload),
                 )
+                break
             elif invitation.status == InvitationStatus.APPROVED and (
                 meta.secret_user_id == schema.secret_user_id
             ):
                 raise InvitationAlreadyProcesses
 
-        # TODO: Need information - should we check for already sent invite?
-        #  Should we remove duplicate invites?
-        #  Should we check if the user already has these rights?
+        if not payload:
+            meta = RespondentMeta(
+                secret_user_id=schema.secret_user_id,
+                nickname=schema.nickname,
+            )
 
-        meta = RespondentMeta(
-            secret_user_id=schema.secret_user_id,
-            nickname=schema.nickname,
-        )
+            payload = success_invitation_schema | {"meta": meta}
+            invitation_schema = await self.invitations_crud.save(
+                InvitationSchema(**payload)
+            )
+            invitation_internal: Invitation = Invitation.from_orm(
+                invitation_schema
+            )
+        else:
+            invitation_internal = Invitation.from_orm(invitation_schema)
 
-        payload = success_invitation_schema | {"meta": meta}
-        invitation_schema = await InvitationCRUD().save(
-            InvitationSchema(**payload)
-        )
-
-        invitation_internal: Invitation = Invitation.from_orm(
-            invitation_schema
-        )
         applet = await AppletsCRUD().get_by_id(invitation_internal.applet_id)
 
         html_payload: dict = {
@@ -223,36 +222,68 @@ class InvitationsService:
         await self._is_validated_role_for_invitation(applet_id, Role.REVIEWER)
         await self._is_respondents_exist(applet_id, schema.respondents)
 
-        # TODO: Need information - should we check for already sent invite?
-        #  Should we remove duplicate invites?
-        #  Should we check if the user already has these rights?
-
-        meta = ReviewerMeta(respondents=schema.respondents).dict(by_alias=True)
-
-        invitation_schema = await InvitationCRUD().save(
-            InvitationSchema(
-                email=schema.email,
-                applet_id=applet_id,
-                role=Role.REVIEWER,
-                key=uuid.uuid3(uuid.uuid4(), schema.email),
-                invitor_id=self._user.id,
-                status=InvitationStatus.PENDING,
-                meta=meta,
-            )
+        # Get all invitations and check if it is possible to create
+        # the another invite or update existing or invitation
+        # has already been accepted by the user, and we should raise
+        # an error that sending a second invitation is not possible.
+        invitations: list[
+            InvitationSchema
+        ] = await self.invitations_crud.get_by_email_applet_role(
+            email_=schema.email, applet_id_=applet_id, role_=Role.RESPONDENT
         )
 
-        invitation = Invitation.from_orm(invitation_schema)
-        applet = await AppletsCRUD().get_by_id(invitation.applet_id)
+        success_invitation_schema = {
+            "email": schema.email,
+            "applet_id": applet_id,
+            "role": Role.REVIEWER,
+            "key": uuid.uuid3(uuid.uuid4(), schema.email),
+            "invitor_id": self._user.id,
+            "status": InvitationStatus.PENDING,
+        }
+
+        payload = None
+        invitation_schema = None
+        for invitation in invitations:
+            meta = ReviewerMeta(**invitation.meta)
+            if invitation.status == InvitationStatus.PENDING and (
+                meta.respondents == schema.respondents
+            ):
+                payload = success_invitation_schema | {"meta": meta}
+                invitation_schema = await self.invitations_crud.update(
+                    lookup="id",
+                    value=invitation.id,
+                    schema=InvitationSchema(**payload),
+                )
+                break
+            elif invitation.status == InvitationStatus.APPROVED and (
+                meta.respondents == schema.respondents
+            ):
+                raise InvitationAlreadyProcesses
+
+        if not payload:
+            meta = ReviewerMeta(respondents=schema.respondents)
+
+            payload = success_invitation_schema | {"meta": meta}
+            invitation_schema = await self.invitations_crud.save(
+                InvitationSchema(**payload)
+            )
+            invitation_internal: Invitation = Invitation.from_orm(
+                invitation_schema
+            )
+        else:
+            invitation_internal = Invitation.from_orm(invitation_schema)
+
+        applet = await AppletsCRUD().get_by_id(invitation_internal.applet_id)
 
         html_payload: dict = {
             "coordinator_name": f"{self._user.first_name} "
             f"{self._user.last_name}",
             "user_name": f"{schema.first_name} {schema.last_name}",
             "applet": applet.display_name,
-            "role": invitation.role,
-            "key": invitation.key,
-            "email": invitation.email,
-            "link": self._get_invitation_url_by_role(invitation.role),
+            "role": invitation_internal.role,
+            "key": invitation_internal.key,
+            "email": invitation_internal.email,
+            "link": self._get_invitation_url_by_role(invitation_internal.role),
         }
 
         # Send email to the user
@@ -275,13 +306,13 @@ class InvitationsService:
         )
 
         return InvitationDetailForReviewer(
-            id=invitation.id,
-            email=invitation.email,
+            id=invitation_internal.id,
+            email=invitation_internal.email,
             applet_id=applet.id,
             applet_name=applet.display_name,
-            role=invitation.role,
-            status=invitation.status,
-            key=invitation.key,
+            role=invitation_internal.role,
+            status=invitation_internal.status,
+            key=invitation_internal.key,
             respondents=schema.respondents,
         )
 
