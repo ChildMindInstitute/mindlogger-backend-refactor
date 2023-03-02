@@ -17,7 +17,6 @@ class FlowService:
 
             flow = FlowDetail(
                 id=schema.id,
-                guid=schema.guid,
                 name=schema.name,
                 description=self._get_by_language(
                     schema.description, language

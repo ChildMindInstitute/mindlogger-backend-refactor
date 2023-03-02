@@ -22,7 +22,7 @@ class ActivityItemCreate(InternalModel):
 
 class ActivityCreate(InternalModel):
     name: str
-    guid: uuid.UUID
+    key: uuid.UUID
     description: dict[str, str] = Field(default_factory=dict)
     splash_screen: str = ""
     image: str = ""
@@ -34,7 +34,7 @@ class ActivityCreate(InternalModel):
 
 
 class ActivityFlowItemCreate(InternalModel):
-    activity_guid: uuid.UUID
+    activity_key: uuid.UUID
 
 
 class ActivityFlowCreate(InternalModel):

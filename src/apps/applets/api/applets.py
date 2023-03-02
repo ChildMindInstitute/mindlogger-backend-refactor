@@ -1,3 +1,4 @@
+import traceback
 import uuid
 from copy import deepcopy
 
@@ -106,19 +107,23 @@ async def applet_update(
     user: User = Depends(get_current_user),
     schema: AppletUpdate = Body(...),
 ) -> Response[public_detail.Applet]:
-    applet = await update_applet(id_, schema, user.id)
+    try:
+        applet = await update_applet(id_, schema, user.id)
+    except Exception as e:
+        traceback.print_exc()
+        return Response()
     return Response(result=public_detail.Applet(**applet.dict()))
 
 
 async def applet_versions_retrieve(
-    id_: int, user: User = Depends(get_current_user)
+    id_: uuid.UUID, user: User = Depends(get_current_user)
 ) -> ResponseMulti[PublicHistory]:
     histories = await retrieve_versions(id_)
     return ResponseMulti(result=[PublicHistory(**h.dict()) for h in histories])
 
 
 async def applet_version_retrieve(
-    id_: int, version: str, user: User = Depends(get_current_user)
+    id_: uuid.UUID, version: str, user: User = Depends(get_current_user)
 ) -> Response[public_history_detail.AppletDetailHistory]:
     applet = await retrieve_applet_by_version(id_, version)
     if not applet:
@@ -129,7 +134,7 @@ async def applet_version_retrieve(
 
 
 async def applet_version_changes_retrieve(
-    id_: int, version: str, user: User = Depends(get_current_user)
+    id_: uuid.UUID, version: str, user: User = Depends(get_current_user)
 ) -> Response[PublicAppletHistoryChange]:
     changes = await AppletHistoryService(id_, version).get_changes()
     return Response(result=PublicAppletHistoryChange(**changes.dict()))

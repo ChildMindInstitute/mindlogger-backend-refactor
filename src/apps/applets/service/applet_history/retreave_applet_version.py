@@ -1,3 +1,5 @@
+import uuid
+
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
     ActivityItemHistoriesCRUD,
@@ -14,7 +16,7 @@ from apps.applets.domain.applets.history_detail import (
 
 
 async def retrieve_applet_by_version(
-    applet_id: int, version: str
+    applet_id: uuid.UUID, version: str
 ) -> None | Applet:
     id_version = f"{applet_id}_{version}"
 

@@ -1,8 +1,10 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
 
-class _TestApplet(BaseTest):
+class TestApplet(BaseTest):
     # TODO: fix text
     fixtures = [
         "users/fixtures/users.json",
@@ -41,7 +43,7 @@ class _TestApplet(BaseTest):
             activities=[
                 dict(
                     name="Morning activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
                     description=dict(
                         en="Understand morning feelings.",
                         fr="Understand morning feelings.",
@@ -59,7 +61,7 @@ class _TestApplet(BaseTest):
                 ),
                 dict(
                     name="Evening activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
                     description=dict(
                         en="Understand evening feelings.",
                         fr="Understand evening feelings.",
@@ -85,7 +87,7 @@ class _TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
-                            activity_guid="577dbbda-3afc-"
+                            activity_key="577dbbda-3afc-"
                             "4962-842b-8d8d11588bfe"
                         )
                     ],
@@ -116,7 +118,7 @@ class _TestApplet(BaseTest):
             activities=[
                 dict(
                     name="Morning activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
                     description=dict(
                         en="Understand morning feelings.",
                         fr="Understand morning feelings.",
@@ -134,7 +136,7 @@ class _TestApplet(BaseTest):
                 ),
                 dict(
                     name="Evening activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
                     description=dict(
                         en="Understand evening feelings.",
                         fr="Understand evening feelings.",
@@ -160,7 +162,7 @@ class _TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
-                            activity_guid="577dbbda-3afc-"
+                            activity_key="577dbbda-3afc-"
                             "4962-842b-8d8d11588bfe"
                         )
                     ],
@@ -194,16 +196,16 @@ class _TestApplet(BaseTest):
             ),
             activities=[
                 dict(
-                    id=1,
+                    id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
                     name="Morning activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
                     description=dict(
                         en="Understand morning feelings.",
                         fr="Understand morning feelings.",
                     ),
                     items=[
                         dict(
-                            id=1,
+                            id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                             question=dict(
                                 en="How had you slept?",
                                 fr="How had you slept?",
@@ -223,7 +225,7 @@ class _TestApplet(BaseTest):
                 ),
                 dict(
                     name="Evening activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
                     description=dict(
                         en="Understand evening feelings.",
                         fr="Understand evening feelings.",
@@ -249,8 +251,8 @@ class _TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
-                            id=2,
-                            activity_guid="577dbbda-"
+                            id="7941b770-b649-42fc-832a-870e11bdd402",
+                            activity_key="577dbbda-"
                             "3afc-4962-842b-8d8d11588bfe",
                         )
                     ],
@@ -258,9 +260,8 @@ class _TestApplet(BaseTest):
             ],
         )
         response = await self.client.put(
-            self.applet_detail_url.format(pk=1), data=update_data
+            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"), data=update_data
         )
-
         assert response.status_code == 200, response.json()
 
     @transaction.rollback
@@ -302,11 +303,11 @@ class _TestApplet(BaseTest):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
-        response = await self.client.get(self.applet_detail_url.format(pk=1))
+        response = await self.client.get(self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
 
         assert response.status_code == 200
         result = response.json()["result"]
-        assert result["id"] == 1
+        assert result["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         assert result["displayName"] == "Applet 1"
         assert len(result["activities"]) == 1
         assert len(result["activityFlows"]) == 2
@@ -331,7 +332,7 @@ class _TestApplet(BaseTest):
             activities=[
                 dict(
                     name="Morning activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
                     description=dict(
                         en="Understand morning feelings.",
                         fr="Understand morning feelings.",
@@ -349,7 +350,7 @@ class _TestApplet(BaseTest):
                 ),
                 dict(
                     name="Evening activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
                     description=dict(
                         en="Understand evening feelings.",
                         fr="Understand evening feelings.",
@@ -375,7 +376,7 @@ class _TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
-                            activity_guid="577dbbda-3afc-"
+                            activity_key="577dbbda-3afc-"
                             "4962-842b-8d8d11588bfe"
                         )
                     ],
@@ -416,16 +417,16 @@ class _TestApplet(BaseTest):
             ),
             activities=[
                 dict(
-                    id=1,
+                    id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
                     name="Morning activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
                     description=dict(
                         en="Understand morning feelings.",
                         fr="Understand morning feelings.",
                     ),
                     items=[
                         dict(
-                            id=1,
+                            id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                             question=dict(
                                 en="How had you slept?",
                                 fr="How had you slept?",
@@ -445,7 +446,7 @@ class _TestApplet(BaseTest):
                 ),
                 dict(
                     name="Evening activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
                     description=dict(
                         en="Understand evening feelings.",
                         fr="Understand evening feelings.",
@@ -471,8 +472,8 @@ class _TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
-                            id=2,
-                            activity_guid="577dbbda-"
+                            id="7941b770-b649-42fc-832a-870e11bdd402",
+                            activity_key="577dbbda-"
                             "3afc-4962-842b-8d8d11588bfe",
                         )
                     ],
@@ -480,9 +481,8 @@ class _TestApplet(BaseTest):
             ],
         )
         response = await self.client.put(
-            self.applet_detail_url.format(pk=1), data=update_data
+            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"), data=update_data
         )
-
         assert response.status_code == 200, response.json()
 
         version = response.json()["result"]["version"]
@@ -505,6 +505,7 @@ class _TestApplet(BaseTest):
         applet = response.json()["result"]
         assert applet["version"] == version
 
+    @pytest.mark.main
     @transaction.rollback
     async def test_history_changes(self):
         await self.client.login(
@@ -523,7 +524,7 @@ class _TestApplet(BaseTest):
             activities=[
                 dict(
                     name="Morning activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
                     description=dict(
                         en="Understand morning feelings.",
                         fr="Understand morning feelings.",
@@ -541,7 +542,7 @@ class _TestApplet(BaseTest):
                 ),
                 dict(
                     name="Evening activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
                     description=dict(
                         en="Understand evening feelings.",
                         fr="Understand evening feelings.",
@@ -567,7 +568,7 @@ class _TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
-                            activity_guid="577dbbda-3afc-"
+                            activity_key="577dbbda-3afc-"
                             "4962-842b-8d8d11588bfe"
                         )
                     ],
@@ -590,16 +591,15 @@ class _TestApplet(BaseTest):
             ),
             activities=[
                 dict(
-                    id=5,
+                    id="09e3dbf0-aefb-4d0e-9177-bdb321bf3615",
                     name="Morning activity new",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
                     description=dict(
                         en="Understand morning feelings.",
                         fr="Understand morning feelings.",
                     ),
                     items=[
                         dict(
-                            id=29,
                             question=dict(
                                 en="How had you slept?",
                                 fr="How had you slept?",
@@ -619,7 +619,7 @@ class _TestApplet(BaseTest):
                 ),
                 dict(
                     name="Evening activity",
-                    guid="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
                     description=dict(
                         en="Understand evening feelings.",
                         fr="Understand evening feelings.",
@@ -645,7 +645,7 @@ class _TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
-                            activity_guid="577dbbda-"
+                            activity_key="577dbbda-"
                             "3afc-4962-842b-8d8d11588bfe",
                         )
                     ],
@@ -670,7 +670,7 @@ class _TestApplet(BaseTest):
             response.json()["result"]["displayName"]
             == "User daily behave is changed to user daily behave updated."
         )
-        assert len(response.json()["result"]["activities"]) == 3
+        assert len(response.json()["result"]["activities"]) == 4
 
     async def test_get_applet_unique_name(self):
         await self.client.login(
