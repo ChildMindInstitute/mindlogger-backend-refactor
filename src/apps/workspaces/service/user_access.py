@@ -40,7 +40,9 @@ class UserAccessService:
 
         return workspaces
 
-    async def get_workspace_applets(self, owner_id: int) -> list[AppletPublic]:
+    async def get_workspace_applets(
+        self, owner_id: uuid.UUID
+    ) -> list[AppletPublic]:
         """Returns the user their chosen workspace applets."""
 
         accesses: list[

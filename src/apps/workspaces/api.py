@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import Depends
 
 from apps.applets.domain.applet import AppletPublic
@@ -26,7 +28,7 @@ async def user_workspaces(
 
 
 async def workspace_applets(
-    owner_id: int, user: User = Depends(get_current_user)
+    owner_id: uuid.UUID, user: User = Depends(get_current_user)
 ) -> ResponseMulti[AppletPublic]:
     """Fetch all applets for the specific user and specific workspace."""
 
