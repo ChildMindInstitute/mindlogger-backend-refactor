@@ -485,16 +485,12 @@ class ScheduleService:
                     applet_id=applet_id, user_id=user_id
                 )
             )
+            all_events = user_events + general_events
             events.append(
                 PublicEventByUser(
                     applet_id=applet_id,
-                    individual_events=[
-                        PublicEvent(**user_event.dict())
-                        for user_event in user_events
-                    ],
-                    general_events=[
-                        PublicEvent(**general_event.dict())
-                        for general_event in general_events
+                    events=[
+                        PublicEvent(**event.dict()) for event in all_events
                     ],
                 )
             )
