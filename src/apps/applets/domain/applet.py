@@ -8,8 +8,8 @@ from apps.activities.domain.activity import (
     ActivityDetailPublic,
 )
 from apps.activity_flows.domain.flow import FlowDetail, FlowDetailPublic
-from apps.applets.domain.constants import DataRetention
 from apps.shared.domain import InternalModel, PublicModel
+from apps.workspaces.domain.constants import DataRetention
 
 
 class Applet(InternalModel):
