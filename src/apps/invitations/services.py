@@ -33,7 +33,7 @@ from apps.invitations.errors import (
 )
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
-from apps.users import UsersCRUD
+from apps.users import UsersCRUD, UsersError
 from apps.users.domain import User
 from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
@@ -181,21 +181,31 @@ class InvitationsService:
         html_payload: dict = {
             "coordinator_name": f"{self._user.first_name} "
             f"{self._user.last_name}",
-            "user_name": f"{schema.first_name} {schema.last_name}",
-            "applet": applet.display_name,
+            "first_name": schema.first_name,
+            "last_name": schema.last_name,
+            "applet_name": applet.display_name,
+            "language": schema.language,
             "role": invitation_internal.role,
             "key": invitation_internal.key,
             "email": invitation_internal.email,
             "link": self._get_invitation_url_by_role(invitation_internal.role),
         }
 
+        try:
+            await UsersCRUD().get_by_email(schema.email)
+        except UsersError:
+            if schema.language == "fr":
+                path = "invitation_new_user_fr"
+            else:
+                path = "invitation_new_user_en"
+        else:
+            if schema.language == "fr":
+                path = "invitation_registered_user_fr"
+            else:
+                path = "invitation_registered_user_en"
+
         # Send email to the user
         service: MailingService = MailingService()
-        if schema.language == "fr":
-            path = "invitation_fr"
-        else:
-            path = "invitation_en"
-
         message = MessageSchema(
             recipients=[schema.email],
             subject="Invitation to the FCM",
@@ -278,21 +288,31 @@ class InvitationsService:
         html_payload: dict = {
             "coordinator_name": f"{self._user.first_name} "
             f"{self._user.last_name}",
-            "user_name": f"{schema.first_name} {schema.last_name}",
-            "applet": applet.display_name,
+            "first_name": schema.first_name,
+            "last_name": schema.last_name,
+            "applet_name": applet.display_name,
+            "language": schema.language,
             "role": invitation_internal.role,
             "key": invitation_internal.key,
             "email": invitation_internal.email,
             "link": self._get_invitation_url_by_role(invitation_internal.role),
         }
 
+        try:
+            await UsersCRUD().get_by_email(schema.email)
+        except UsersError:
+            if schema.language == "fr":
+                path = "invitation_new_user_fr"
+            else:
+                path = "invitation_new_user_en"
+        else:
+            if schema.language == "fr":
+                path = "invitation_registered_user_fr"
+            else:
+                path = "invitation_registered_user_en"
+
         # Send email to the user
         service: MailingService = MailingService()
-        if schema.language == "fr":
-            path = "invitation_fr"
-        else:
-            path = "invitation_en"
-
         message = MessageSchema(
             recipients=[schema.email],
             subject="Invitation to the FCM",
@@ -353,21 +373,31 @@ class InvitationsService:
         html_payload: dict = {
             "coordinator_name": f"{self._user.first_name} "
             f"{self._user.last_name}",
-            "user_name": f"{schema.first_name} {schema.last_name}",
-            "applet": applet.display_name,
+            "first_name": schema.first_name,
+            "last_name": schema.last_name,
+            "applet_name": applet.display_name,
+            "language": schema.language,
             "role": invitation.role,
             "key": invitation.key,
             "email": invitation.email,
             "link": self._get_invitation_url_by_role(invitation.role),
         }
 
+        try:
+            await UsersCRUD().get_by_email(schema.email)
+        except UsersError:
+            if schema.language == "fr":
+                path = "invitation_new_user_fr"
+            else:
+                path = "invitation_new_user_en"
+        else:
+            if schema.language == "fr":
+                path = "invitation_registered_user_fr"
+            else:
+                path = "invitation_registered_user_en"
+
         # Send email to the user
         service: MailingService = MailingService()
-        if schema.language == "fr":
-            path = "invitation_fr"
-        else:
-            path = "invitation_en"
-
         message = MessageSchema(
             recipients=[schema.email],
             subject="Invitation to the FCM",
