@@ -1,8 +1,8 @@
 """add users workspaces invintations
 
-Revision ID: e139679a5675
-Revises: 3233777bab05
-Create Date: 2023-03-01 22:23:42.173880
+Revision ID: 811e5176e3e2
+Revises: 735ef98e2c6e
+Create Date: 2023-03-03 15:54:16.660909
 
 """
 import sqlalchemy as sa
@@ -10,8 +10,8 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "e139679a5675"
-down_revision = "3233777bab05"
+revision = "811e5176e3e2"
+down_revision = "735ef98e2c6e"
 branch_labels = None
 depends_on = None
 
