@@ -349,7 +349,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         result = await self._execute(query)
 
         try:
-            results: uuid.UUID = result.scalars().one_or_none()
+            result: uuid.UUID = result.scalars().one_or_none()
         except MultipleResultsFound:
             raise EventError(
                 f"Multiple user events found for event_id: {event_id}".format(
@@ -357,7 +357,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
                 )
             )
 
-        return results
+        return result
 
     async def delete_all_by_event_ids(self, event_ids: list[uuid.UUID]):
         """Delete all user events by event ids."""
