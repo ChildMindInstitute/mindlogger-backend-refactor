@@ -24,7 +24,7 @@ async def answer_flow_item_create(
     user_applet_access_item = UserAppletAccessItem(
         user_id=user.id,
         applet_id=schema.applet_id,
-        role=Role("respondent"),
+        role=Role.RESPONDENT,
     )
 
     # Checking if the user has responder permission to the given applet
