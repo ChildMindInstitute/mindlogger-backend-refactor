@@ -1,7 +1,12 @@
+from fastapi import Response
 from fastapi.encoders import jsonable_encoder
-from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 from starlette import status
+from starlette.middleware.base import (
+    BaseHTTPMiddleware,
+    RequestResponseEndpoint,
+)
 from starlette.requests import Request
 
 from apps.shared.domain.response.errors import (
@@ -12,9 +17,21 @@ from apps.shared.domain.response.errors import (
 from apps.shared.errors import BaseError
 
 
-async def custom_base_errors_handler(
-    _: Request, error: BaseError
-) -> JSONResponse:
+class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        try:
+            return await call_next(request)
+        except BaseError as e:
+            return _custom_base_errors_handler(request, e)
+        except ValidationError as e:
+            return _pydantic_validation_errors_handler(request, e)
+        except Exception as e:
+            return _python_base_error_handler(request, e)
+
+
+def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     """This function is called if the BaseError was raised."""
 
     response = ErrorResponseMulti(
@@ -32,9 +49,7 @@ async def custom_base_errors_handler(
     )
 
 
-async def python_base_error_handler(
-    _: Request, error: Exception
-) -> JSONResponse:
+def _python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     """This function is called if the Exception was raised."""
 
     response = ErrorResponseMulti(
@@ -51,8 +66,8 @@ async def python_base_error_handler(
     )
 
 
-async def pydantic_validation_errors_handler(
-    _: Request, error: RequestValidationError
+def _pydantic_validation_errors_handler(
+    _: Request, error: ValidationError
 ) -> JSONResponse:
     """This function is called if the Pydantic validation error was raised."""
 

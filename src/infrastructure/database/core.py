@@ -1,7 +1,6 @@
 import asyncio
 import json
 
-import sqlalchemy.exc
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_scoped_session,
@@ -82,8 +81,9 @@ class TransactionManager:
                 if session.transaction_count == 0:
                     await session.commit()
                 return result
-            except sqlalchemy.exc.SQLAlchemyError:
+            except Exception as e:
                 await session.rollback()
+                raise e
 
         return _wrap
 
