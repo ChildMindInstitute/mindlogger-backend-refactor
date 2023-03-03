@@ -2,7 +2,6 @@ from typing import Iterable, Type
 
 import sentry_sdk
 from fastapi import FastAPI
-from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRouter
 
 import apps.activities.router as activities
@@ -18,13 +17,7 @@ import apps.themes.router as themes
 import apps.transfer_ownership.router as transfer_ownership
 import apps.users.router as users
 import middlewares as middlewares_
-from apps.shared.errors import BaseError
 from config import settings
-from infrastructure.errors import (
-    custom_base_errors_handler,
-    pydantic_validation_errors_handler,
-    python_base_error_handler,
-)
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -44,8 +37,9 @@ routers: Iterable[APIRouter] = (
 
 # Declare your middlewares here
 middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
-    (middlewares_.CORSMiddleware, middlewares_.cors_options),
     (middlewares_.DatabaseTransactionMiddleware, {}),
+    (middlewares_.ExceptionHandlerMiddleware, {}),
+    (middlewares_.CORSMiddleware, middlewares_.cors_options),
 )
 
 
@@ -65,12 +59,5 @@ def create_app():
     # Include middlewares
     for middleware, options in middlewares:
         app.add_middleware(middleware, **options)
-
-    # Error handling
-    app.exception_handler(RequestValidationError)(
-        pydantic_validation_errors_handler
-    )
-    app.exception_handler(BaseError)(custom_base_errors_handler)
-    app.exception_handler(Exception)(python_base_error_handler)
 
     return app

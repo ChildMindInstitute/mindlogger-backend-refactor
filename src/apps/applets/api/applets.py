@@ -58,9 +58,6 @@ async def applet_list(
     count = await AppletService(user.id).get_list_by_single_language_count(
         deepcopy(query_params)
     )
-    count = await AppletService(user.id).get_list_by_single_language_count(
-        query_params
-    )
     return ResponseMulti(
         result=[AppletInfoPublic.from_orm(applet) for applet in applets],
         count=count,
