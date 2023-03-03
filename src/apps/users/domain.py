@@ -1,5 +1,4 @@
 import uuid
-from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
 
@@ -86,7 +85,7 @@ class PasswordRecoveryInfo(InternalModel):
 
     email: EmailStr
     user_id: int
-    key: UUID
+    key: uuid.UUID
 
 
 class PasswordRecoveryApproveRequest(InternalModel):
@@ -95,5 +94,5 @@ class PasswordRecoveryApproveRequest(InternalModel):
     """
 
     email: EmailStr
-    key: UUID
+    key: uuid.UUID
     password: str

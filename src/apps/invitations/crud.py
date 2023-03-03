@@ -1,6 +1,8 @@
 import uuid
+from typing import Any
 
 from sqlalchemy import select, update
+from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
 from apps.applets.db.schemas import AppletSchema
@@ -10,6 +12,7 @@ from apps.invitations.db import InvitationSchema
 from apps.invitations.domain import (
     InvitationDetail,
     InvitationDetailBase,
+    InvitationDetailGeneric,
     InvitationDetailRespondent,
     InvitationDetailReviewer,
 )
@@ -21,6 +24,12 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
 
     async def save(self, schema: InvitationSchema) -> InvitationSchema:
         schema = await self._create(schema)
+        return schema
+
+    async def update(
+        self, lookup: str, value: Any, schema: InvitationSchema
+    ) -> InvitationSchema:
+        schema = await self._update_one(lookup, value, schema)
         return schema
 
     async def get_pending_by_invitor_id(
@@ -54,7 +63,9 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
         return results
 
-    async def get_by_email_and_key(self, email: str, key: uuid.UUID):
+    async def get_by_email_and_key(
+        self, email: str, key: uuid.UUID
+    ) -> InvitationDetailGeneric | None:
         query: Query = select(
             InvitationSchema, AppletSchema.display_name.label("applet_name")
         )
@@ -93,6 +104,20 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                 meta={},
                 **invitation_detail_base.dict(),
             )
+
+    async def get_by_email_applet_role(
+        self, email_: str, applet_id_: uuid.UUID, role_: Role
+    ) -> list[InvitationSchema]:
+        query: Query = select(InvitationSchema)
+        query = query.where(InvitationSchema.email == email_)
+        query = query.where(InvitationSchema.applet_id == applet_id_)
+        query = query.where(InvitationSchema.role == role_)
+        db_result: Result = await self._execute(query)
+        results: list[InvitationSchema] = db_result.scalars().all()
+
+        return [
+            InvitationSchema.from_orm(invitation) for invitation in results
+        ]
 
     async def approve_by_id(self, id_: uuid.UUID):
         query = update(InvitationSchema)

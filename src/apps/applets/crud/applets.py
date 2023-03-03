@@ -9,7 +9,7 @@ from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
 
 from apps.applets import errors
-from apps.applets.db.schemas import AppletSchema, UserAppletAccessSchema
+from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import Role
 from apps.applets.domain.applet import AppletDataRetention
 from apps.shared.filtering import FilterField, Filtering
@@ -17,6 +17,7 @@ from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["AppletsCRUD"]

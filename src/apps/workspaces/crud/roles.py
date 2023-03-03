@@ -4,13 +4,13 @@ from sqlalchemy import delete, distinct, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
-from apps.applets.db.schemas import UserAppletAccessSchema
-from apps.applets.domain.constants import Role
-from apps.applets.domain.user_applet_access import (
+from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.user_applet_access import (
     UserAppletAccess,
     UserAppletAccessItem,
 )
-from apps.applets.errors import UserAppletAccessesNotFound
+from apps.workspaces.errors import UserAppletAccessesNotFound
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["UserAppletAccessCRUD"]
@@ -33,7 +33,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return user_applet_access
 
-    async def get_by_user_id(self, user_id_: int) -> list[UserAppletAccess]:
+    async def get_by_user_id(
+        self, user_id_: uuid.UUID
+    ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).filter(
             self.schema_class.user_id == user_id_
         )
@@ -49,8 +51,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, user_id_: int
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).filter(
-            self.schema_class.user_id == user_id_
-            and self.schema_class.role == Role("admin")
+            self.schema_class.user_id == user_id_,
+            self.schema_class.role == Role.ADMIN,
         )
         result: Result = await self._execute(query)
         results: list[UserAppletAccessSchema] = result.scalars().all()
@@ -157,11 +159,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return db_result.scalars().all()
 
-    async def delete_all_by_applet_id(self, applet_id: uuid.UUID):
-        query: Query = delete(UserAppletAccessSchema)
-        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
-        await self._execute(query)
-
     async def get_meta_applet_and_role(
         self, applet_id: uuid.UUID, role: Role
     ) -> list[str]:
@@ -181,3 +178,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
+
+    async def delete_all_by_applet_id(self, applet_id: uuid.UUID):
+        query: Query = delete(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        await self._execute(query)

@@ -14,16 +14,19 @@ from apps.applets.domain import (
 from apps.applets.domain.applet import Applet, AppletDataRetention
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.errors import (
-    AppletAccessDenied,
     AppletLinkAlreadyExist,
     AppletNotFoundError,
     AppletsFolderAccessDenied,
 )
-from apps.applets.service.user_applet_access import UserAppletAccessService
 from apps.folders.crud import FolderCRUD
+from apps.workspaces.errors import AppletAccessDenied
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from config import settings
 
-__all__ = ["AppletService"]
+__all__ = [
+    "AppletService",
+    "PublicAppletService",
+]
 
 from apps.shared.query_params import QueryParams
 

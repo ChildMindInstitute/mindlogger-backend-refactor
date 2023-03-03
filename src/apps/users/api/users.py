@@ -11,6 +11,8 @@ from apps.users.domain import (
     UserCreateRequest,
     UserUpdateRequest,
 )
+from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
+from apps.workspaces.db.schemas import UserWorkspaceSchema
 
 
 async def user_create(
@@ -29,6 +31,14 @@ async def user_create(
 
     # Create public user model in order to avoid password sharing
     public_user = PublicUser(**user.dict())
+
+    # Create default workspace for new user
+    user_workspace = UserWorkspaceSchema(
+        user_id=user.id,
+        workspace_name=f"{user.first_name} {user.last_name}",
+        is_modified=False,
+    )
+    await UserWorkspaceCRUD().save(schema=user_workspace)
 
     return Response(result=public_user)
 

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class FrontendUrlsSettings(BaseModel):
     web_base: str = "web.mindlogger.org"
     admin_base: str = "admin.frontend.com"
-    invitation_send: str = "invite"
+    invitation_send: str = "invitation"
     password_recovery_send: str = "useraccount"
     public_link: str = "public"
     private_link: str = "join"
