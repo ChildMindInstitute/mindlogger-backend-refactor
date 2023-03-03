@@ -3,7 +3,6 @@ import uuid
 from apps.activities.crud import ActivitiesCRUD
 from apps.activity_flows.crud import FlowsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
-from apps.applets.domain.constants import Role
 from apps.schedule.crud.events import (
     ActivityEventsCRUD,
     EventCRUD,
@@ -31,6 +30,7 @@ from apps.schedule.domain.schedule.public import (
 from apps.schedule.domain.schedule.requests import EventRequest
 from apps.shared.errors import NotFoundError
 from apps.shared.query_params import QueryParams
+from apps.workspaces.domain.constants import Role
 
 __all__ = ["ScheduleService"]
 

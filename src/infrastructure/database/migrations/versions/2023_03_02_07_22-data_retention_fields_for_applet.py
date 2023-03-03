@@ -1,7 +1,7 @@
 """data retention fields for applet
 
 Revision ID: 735ef98e2c6e
-Revises: 3233777bab05
+Revises: e139679a5675
 Create Date: 2023-03-02 07:22:21.502415
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "735ef98e2c6e"
-down_revision = "3233777bab05"
+down_revision = "e139679a5675"
 branch_labels = None
 depends_on = None
 

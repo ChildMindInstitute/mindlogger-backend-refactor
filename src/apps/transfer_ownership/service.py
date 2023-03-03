@@ -8,7 +8,9 @@ from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.domain import InitiateTransfer, Transfer
+from apps.users.crud import UsersCRUD
 from apps.users.domain import User
+from apps.users.errors import UserNotFound
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from config import settings
 
@@ -51,10 +53,17 @@ class TransferService:
             "body": None,
             "link": url,
         }
+        try:
+            await UsersCRUD().get_by_email(transfer_request.email)
+        except UserNotFound:
+            path = "invitation_new_user_en"
+        else:
+            path = "invitation_registered_user_en"
+
         message = MessageSchema(
             recipients=[transfer_request.email],
             subject="Transfer ownership of an Applet",
-            body=service.get_template(path="invitation_en", **html_payload),
+            body=service.get_template(path=path, **html_payload),
         )
 
         await service.send(message)
