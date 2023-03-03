@@ -3,14 +3,18 @@ import uuid
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
-from apps.schedule.domain.schedule.public import PublicEvent, PublicEventCount
+from apps.schedule.domain.schedule.public import (
+    PublicEvent,
+    PublicEventByUser,
+    PublicEventCount,
+)
 from apps.schedule.domain.schedule.requests import EventRequest
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.domain import Response, ResponseMulti
 from apps.users.domain import User
 
 
-# TODO: Add logic to allow to create applets by permissions
+# TODO: Add logic to allow to create events by permissions
 # TODO: Restrict by admin
 async def schedule_create(
     applet_id: uuid.UUID,
@@ -23,7 +27,7 @@ async def schedule_create(
     return Response(result=PublicEvent(**schedule.dict()))
 
 
-# TODO: Add logic to allow to create applets by permissions
+# TODO: Add logic to allow to create events by permissions
 # TODO: Restrict by admin
 async def schedule_get_by_id(
     applet_id: uuid.UUID,
@@ -35,7 +39,7 @@ async def schedule_get_by_id(
     return Response(result=PublicEvent(**schedule.dict()))
 
 
-# TODO: Add logic to allow to create applets by permissions
+# TODO: Add logic to allow to create events by permissions
 # TODO: Restrict by admin
 async def schedule_get_all(
     applet_id: uuid.UUID,
@@ -47,7 +51,7 @@ async def schedule_get_all(
     return ResponseMulti(result=schedules)
 
 
-# TODO: Add logic to allow to create applets by permissions
+# TODO: Add logic to allow to create events by permissions
 # TODO: Restrict by admin
 async def schedule_delete_all(
     applet_id: uuid.UUID,
@@ -57,7 +61,7 @@ async def schedule_delete_all(
     await ScheduleService().delete_all_schedules(applet_id)
 
 
-# TODO: Add logic to allow to create applets by permissions
+# TODO: Add logic to allow to create events by permissions
 # TODO: Restrict by admin
 async def schedule_delete_by_id(
     applet_id: uuid.UUID,
@@ -68,7 +72,7 @@ async def schedule_delete_by_id(
     await ScheduleService().delete_schedule_by_id(schedule_id)
 
 
-# TODO: Add logic to allow to create applets by permissions
+# TODO: Add logic to allow to create events by permissions
 # TODO: Restrict by admin
 async def schedule_update(
     applet_id: uuid.UUID,
@@ -83,7 +87,7 @@ async def schedule_update(
     return Response(result=PublicEvent(**schedule.dict()))
 
 
-# TODO: Add logic to allow to create applets by permissions
+# TODO: Add logic to allow to create events by permissions
 # TODO: Restrict by admin
 async def schedule_count(
     applet_id: uuid.UUID,
@@ -96,7 +100,7 @@ async def schedule_count(
     return Response(result=count)
 
 
-# TODO: Add logic to allow to create applets by permissions
+# TODO: Add logic to allow to create events by permissions
 # TODO: Restrict by admin
 async def schedule_delete_by_user(
     applet_id: uuid.UUID,
@@ -107,3 +111,11 @@ async def schedule_delete_by_user(
     await ScheduleService().delete_by_user_id(
         applet_id=applet_id, user_id=user_id
     )
+
+
+async def schedule_get_by_user(
+    user: User = Depends(get_current_user),
+) -> ResponseMulti[PublicEventByUser]:
+    """Get all schedules for a user."""
+    schedules = await ScheduleService().get_events_by_user(user_id=user.id)
+    return ResponseMulti(result=schedules)

@@ -42,5 +42,27 @@
             "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3614",
             "event_id": "04c93c4a-2cd4-45ce-9aec-b1912f330586"
         }
+    },
+    {
+        "table": "activity_events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": "68ddbb6c-eb20-4666-85aa-fd6264825c05",
+            "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3614",
+            "event_id": "04c93c4a-2cd4-45ce-9aec-b1912f330587"
+        }
+    },
+    {
+        "table": "activity_events",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": "68ddbb6c-eb20-4666-85aa-fd6264825c06",
+            "activity_id": "494544c9-e7f1-4d7b-8eea-4ddc840c25fc",
+            "event_id": "04c93c4a-2cd4-45ce-9aec-b1912f330588"
+        }
     }
 ]

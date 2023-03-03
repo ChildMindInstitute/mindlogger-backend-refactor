@@ -16,11 +16,13 @@ class TestSchedule(BaseTest):
         "schedule/fixtures/events.json",
         "schedule/fixtures/activity_events.json",
         "schedule/fixtures/flow_events.json",
-        # "schedule/fixtures/user_events.json",
+        "schedule/fixtures/user_events.json",
     ]
 
     login_url = "/auth/login"
     applet_detail_url = "applets/{applet_id}"
+
+    schedule_user_url = "users/me/events"
 
     schedule_url = f"{applet_detail_url}/events"
     delete_user_url = f"{schedule_url}/delete_individual/{{user_id}}"
@@ -507,3 +509,13 @@ class TestSchedule(BaseTest):
             )
         )
         assert response.status_code == 404
+
+    @transaction.rollback
+    async def test_schedule_get_user(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(self.schedule_user_url)
+
+        assert response.status_code == 200

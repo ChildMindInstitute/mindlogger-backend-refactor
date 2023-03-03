@@ -14,6 +14,7 @@ __all__ = [
     "UserEventCreate",
     "ActivityEventCreate",
     "FlowEventCreate",
+    "EventFull",
 ]
 
 
@@ -65,3 +66,11 @@ class FlowEvent(FlowEventCreate, InternalModel):
     """FlowEvent of a schedule"""
 
     id: uuid.UUID
+
+
+class EventFull(InternalModel, BaseEvent):
+    id: uuid.UUID
+    periodicity: Periodicity
+    user_id: uuid.UUID | None = None
+    activity_id: uuid.UUID | None = None
+    flow_id: uuid.UUID | None = None

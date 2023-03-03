@@ -2,7 +2,8 @@ import uuid
 
 from apps.activities.crud import ActivitiesCRUD
 from apps.activity_flows.crud import FlowsCRUD
-from apps.applets.crud import UserAppletAccessCRUD
+from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.applets.domain.constants import Role
 from apps.schedule.crud.events import (
     ActivityEventsCRUD,
     EventCRUD,
@@ -23,11 +24,13 @@ from apps.schedule.domain.schedule.internal import (
 )
 from apps.schedule.domain.schedule.public import (
     PublicEvent,
+    PublicEventByUser,
     PublicEventCount,
     PublicPeriodicity,
 )
 from apps.schedule.domain.schedule.requests import EventRequest
 from apps.shared.errors import NotFoundError
+from apps.shared.query_params import QueryParams
 
 __all__ = ["ScheduleService"]
 
@@ -364,7 +367,7 @@ class ScheduleService:
         )
         event_ids = [event_schema.id for event_schema in event_schemas]
         periodicity_ids = [
-            event_schema.periodicity_id for event_schema in event_schemas
+            event_schema.periodicity.id for event_schema in event_schemas
         ]
         if not event_ids:
             raise NotFoundError(
@@ -457,3 +460,39 @@ class ScheduleService:
                 activity_id=activity_id,
                 is_activity=is_activity,
             )
+
+    async def get_events_by_user(
+        self, user_id: uuid.UUID
+    ) -> list[PublicEventByUser]:
+        """Get all events for user in applet."""
+        applets = await AppletsCRUD().get_applets_by_roles(
+            user_id=user_id,
+            roles=[
+                Role.RESPONDENT,
+            ],
+            query_params=QueryParams(),
+        )
+        applet_ids = [applet.id for applet in applets]
+        events = []
+
+        for applet_id in applet_ids:
+            user_events: list = await EventCRUD().get_all_by_applet_and_user(
+                applet_id=applet_id,
+                user_id=user_id,
+            )
+            general_events: list = (
+                await EventCRUD().get_general_events_by_user(
+                    applet_id=applet_id, user_id=user_id
+                )
+            )
+            all_events = user_events + general_events
+            events.append(
+                PublicEventByUser(
+                    applet_id=applet_id,
+                    events=[
+                        PublicEvent(**event.dict()) for event in all_events
+                    ],
+                )
+            )
+
+        return events

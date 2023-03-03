@@ -19,9 +19,11 @@ from apps.schedule.domain.schedule.internal import (
     ActivityEventCreate,
     Event,
     EventCreate,
+    EventFull,
     EventUpdate,
     FlowEvent,
     FlowEventCreate,
+    Periodicity,
     UserEvent,
     UserEventCreate,
 )
@@ -112,10 +114,19 @@ class EventCRUD(BaseCRUD[EventSchema]):
         return event
 
     async def get_all_by_applet_and_user(
-        self, applet_id: int, user_id: int
-    ) -> list[EventSchema]:
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ) -> list[EventFull]:
         """Get events by applet_id and user_id"""
-        query: Query = select(EventSchema)
+
+        query: Query = select(
+            EventSchema,
+            PeriodicitySchema.start_date,
+            PeriodicitySchema.end_date,
+            PeriodicitySchema.interval,
+            PeriodicitySchema.type,
+            ActivityEventsSchema.activity_id,
+            FlowEventsSchema.flow_id,
+        )
         query = query.join(
             UserEventsSchema,
             and_(
@@ -124,13 +135,54 @@ class EventCRUD(BaseCRUD[EventSchema]):
             ),
         )
 
+        query = query.join(
+            PeriodicitySchema,
+            PeriodicitySchema.id == EventSchema.periodicity_id,
+        )
+
+        query = query.join(
+            FlowEventsSchema,
+            FlowEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+        query = query.join(
+            ActivityEventsSchema,
+            ActivityEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
 
-        result = await self._execute(query)
-        return result.scalars().all()
+        db_result = await self._execute(query)
 
-    async def delete_by_ids(self, ids: list[int]) -> None:
+        events = []
+        for row in db_result:
+            events.append(
+                EventFull(
+                    id=row.EventSchema.id,
+                    start_time=row.EventSchema.start_time,
+                    end_time=row.EventSchema.end_time,
+                    all_day=row.EventSchema.all_day,
+                    access_before_schedule=row.EventSchema.access_before_schedule,  # noqa: E501
+                    one_time_completion=row.EventSchema.one_time_completion,
+                    timer=row.EventSchema.timer,
+                    timer_type=row.EventSchema.timer_type,
+                    user_id=user_id,
+                    periodicity=Periodicity(
+                        id=row.EventSchema.periodicity_id,
+                        type=row.type,
+                        start_date=row.start_date,
+                        end_date=row.end_date,
+                        interval=row.interval,
+                    ),
+                    activity_id=row.activity_id,
+                    flow_id=row.flow_id,
+                )
+            )
+        return events
+
+    async def delete_by_ids(self, ids: list[uuid.UUID]) -> None:
         """Delete event by event ids."""
         query: Query = update(EventSchema)
         query = query.where(EventSchema.id.in_(ids))
@@ -175,6 +227,101 @@ class EventCRUD(BaseCRUD[EventSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
+    async def get_general_events_by_user(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ) -> list[EventFull]:
+        """Get general events by applet_id and user_id"""
+        # select flow_ids to exclude
+        flow_ids = (
+            select(distinct(FlowEventsSchema.flow_id))
+            .select_from(FlowEventsSchema)
+            .join(
+                UserEventsSchema,
+                UserEventsSchema.event_id == FlowEventsSchema.event_id,
+            )
+            .join(
+                EventSchema,
+                EventSchema.id == FlowEventsSchema.event_id,
+            )
+            .where(UserEventsSchema.user_id == user_id)
+            .where(EventSchema.applet_id == applet_id)
+        )
+        activity_ids = (
+            select(distinct(ActivityEventsSchema.activity_id))
+            .select_from(ActivityEventsSchema)
+            .join(
+                UserEventsSchema,
+                UserEventsSchema.event_id == ActivityEventsSchema.event_id,
+            )
+            .join(
+                EventSchema,
+                EventSchema.id == ActivityEventsSchema.event_id,
+            )
+            .where(UserEventsSchema.user_id == user_id)
+            .where(EventSchema.applet_id == applet_id)
+        )
+
+        query: Query = select(
+            EventSchema,
+            PeriodicitySchema.start_date,
+            PeriodicitySchema.end_date,
+            PeriodicitySchema.interval,
+            PeriodicitySchema.type,
+            ActivityEventsSchema.activity_id,
+            FlowEventsSchema.flow_id,
+        )
+        query = query.join(
+            PeriodicitySchema,
+            PeriodicitySchema.id == EventSchema.periodicity_id,
+        )
+
+        query = query.join(
+            FlowEventsSchema,
+            FlowEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+        query = query.join(
+            ActivityEventsSchema,
+            ActivityEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+
+        query = query.where(EventSchema.applet_id == applet_id)
+        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        query = query.where(FlowEventsSchema.flow_id.not_in(flow_ids))
+        query = query.where(
+            ActivityEventsSchema.activity_id.not_in(activity_ids)
+        )
+
+        db_result = await self._execute(query)
+
+        events = []
+        for row in db_result:
+            events.append(
+                EventFull(
+                    id=row.EventSchema.id,
+                    start_time=row.EventSchema.start_time,
+                    end_time=row.EventSchema.end_time,
+                    all_day=row.EventSchema.all_day,
+                    access_before_schedule=row.EventSchema.access_before_schedule,  # noqa: E501
+                    one_time_completion=row.EventSchema.one_time_completion,
+                    timer=row.EventSchema.timer,
+                    timer_type=row.EventSchema.timer_type,
+                    user_id=user_id,
+                    periodicity=Periodicity(
+                        id=row.EventSchema.periodicity_id,
+                        type=row.type,
+                        start_date=row.start_date,
+                        end_date=row.end_date,
+                        interval=row.interval,
+                    ),
+                    activity_id=row.activity_id,
+                    flow_id=row.flow_id,
+                )
+            )
+
+        return events
+
 
 class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
     schema_class = UserEventsSchema
@@ -194,15 +341,15 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         user_event: UserEvent = UserEvent.from_orm(instance)
         return user_event
 
-    async def get_by_event_id(self, event_id: uuid.UUID) -> int | None:
+    async def get_by_event_id(self, event_id: uuid.UUID) -> uuid.UUID | None:
         """Return user event instances."""
         query: Query = select(distinct(UserEventsSchema.user_id))
         query = query.where(UserEventsSchema.event_id == event_id)
         query = query.where(UserEventsSchema.is_deleted == False)  # noqa: E712
-        result = await self._execute(query)
+        db_result = await self._execute(query)
 
         try:
-            results: int = result.scalars().one_or_none()
+            result: uuid.UUID = db_result.scalars().one_or_none()
         except MultipleResultsFound:
             raise EventError(
                 f"Multiple user events found for event_id: {event_id}".format(
@@ -210,7 +357,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
                 )
             )
 
-        return results
+        return result
 
     async def delete_all_by_event_ids(self, event_ids: list[uuid.UUID]):
         """Delete all user events by event ids."""
@@ -220,7 +367,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         await self._execute(query)
 
     async def delete_all_by_events_and_user(
-        self, event_ids: list[int], user_id: int
+        self, event_ids: list[uuid.UUID], user_id: uuid.UUID
     ):
         """Delete all user events by event ids."""
         query: Query = update(UserEventsSchema)
