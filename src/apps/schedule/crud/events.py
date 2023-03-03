@@ -346,10 +346,10 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         query: Query = select(distinct(UserEventsSchema.user_id))
         query = query.where(UserEventsSchema.event_id == event_id)
         query = query.where(UserEventsSchema.is_deleted == False)  # noqa: E712
-        result = await self._execute(query)
+        db_result = await self._execute(query)
 
         try:
-            result: uuid.UUID = result.scalars().one_or_none()
+            result: uuid.UUID = db_result.scalars().one_or_none()
         except MultipleResultsFound:
             raise EventError(
                 f"Multiple user events found for event_id: {event_id}".format(
