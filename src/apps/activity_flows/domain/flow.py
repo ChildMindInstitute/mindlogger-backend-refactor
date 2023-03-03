@@ -6,8 +6,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class Flow(InternalModel):
-    id: int
-    guid: uuid.UUID
+    id: uuid.UUID
     name: str
     description: dict[str, str]
     is_single_report: bool = False
@@ -16,8 +15,7 @@ class Flow(InternalModel):
 
 
 class FlowPublic(PublicModel):
-    id: int
-    guid: uuid.UUID
+    id: uuid.UUID
     name: str
     description: dict[str, str]
     is_single_report: bool = False

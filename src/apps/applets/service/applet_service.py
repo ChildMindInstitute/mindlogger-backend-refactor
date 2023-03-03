@@ -11,7 +11,7 @@ from apps.applets.domain import (
     AppletName,
     Role,
 )
-from apps.applets.domain.applet import Applet
+from apps.applets.domain.applet import Applet, AppletDataRetention
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.errors import (
     AppletLinkAlreadyExist,
@@ -119,6 +119,8 @@ class AppletService:
             report_email_body=schema.report_email_body,
             created_at=schema.created_at,
             updated_at=schema.updated_at,
+            retention_period=schema.retention_period,
+            retention_type=schema.retention_type,
         )
         applet.activities = await ActivityService(
             self.user_id
@@ -237,11 +239,8 @@ class AppletService:
     async def create_access_link(
         self, applet_id: uuid.UUID, create_request: CreateAccessLink
     ) -> AppletLink:
-        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
-            self.user_id, applet_id
-        )
-        if Role.ADMIN not in roles:
-            raise AppletAccessDenied()
+        await self._validate_applet_access(applet_id)
+
         applet_instance = await AppletsCRUD().get_by_id(applet_id)
         if applet_instance.link:
             raise AppletLinkAlreadyExist()
@@ -255,11 +254,7 @@ class AppletService:
         return AppletLink(link=link)
 
     async def get_access_link(self, applet_id: uuid.UUID) -> AppletLink:
-        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
-            self.user_id, applet_id
-        )
-        if Role.ADMIN not in roles:
-            raise AppletAccessDenied()
+        await self._validate_applet_access(applet_id)
         applet_instance = await AppletsCRUD().get_by_id(applet_id)
         link = None
         if applet_instance.link:
@@ -270,11 +265,7 @@ class AppletService:
         return AppletLink(link=link)
 
     async def delete_access_link(self, applet_id: uuid.UUID):
-        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
-            self.user_id, applet_id
-        )
-        if Role.ADMIN not in roles:
-            raise AppletAccessDenied()
+        await self._validate_applet_access(applet_id)
 
         if not await AppletsCRUD().exist_by_id(applet_id):
             raise AppletNotFoundError(key="id", value=str(applet_id))
@@ -306,6 +297,23 @@ class AppletService:
             for key, val in values.items():
                 return val
             return ""
+
+    async def set_data_retention(
+        self, applet_id: uuid.UUID, data_retention: AppletDataRetention
+    ):
+        await self._validate_applet_access(applet_id)
+
+        if not await AppletsCRUD().exist_by_id(applet_id):
+            raise AppletNotFoundError(key="id", value=str(applet_id))
+
+        await AppletsCRUD().set_data_retention(applet_id, data_retention)
+
+    async def _validate_applet_access(self, applet_id: uuid.UUID):
+        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
+            self.user_id, applet_id
+        )
+        if Role.ADMIN not in roles:
+            raise AppletAccessDenied()
 
 
 class PublicAppletService:

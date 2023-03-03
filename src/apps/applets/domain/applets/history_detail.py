@@ -28,7 +28,6 @@ class Activity(InternalModel):
     id: uuid.UUID
     id_version: str
     applet_id: str
-    guid: uuid.UUID
     name: str
     description: dict[str, str] = Field(default_factory=dict)
     splash_screen: str = ""
@@ -53,7 +52,6 @@ class ActivityFlowItem(InternalModel):
 class ActivityFlow(InternalModel):
     id: uuid.UUID
     id_version: str
-    guid: uuid.UUID
     name: str
     applet_id: str
     description: dict[str, str]

@@ -1,5 +1,3 @@
-import pytest
-
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
@@ -18,7 +16,6 @@ class TestTransfer(BaseTest):
     transfer_url = "/applets/{applet_id}/transferOwnership"
     response_url = "/applets/{applet_id}/transferOwnership/{key}"
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_initiate_transfer(self):
         await self.client.login(

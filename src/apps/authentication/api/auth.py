@@ -27,12 +27,8 @@ async def get_token(
         )
     except UserNotFound:
         raise UserNotFound(
-            message=(
-                f"Incorrect password for {user_login_schema.email}"
-                " if that user exists."
-            )
+            message=("That email is not associated with a MindLogger account.")
         )
-
     access_token = AuthenticationService.create_access_token(
         {"sub": str(user.id)}
     )

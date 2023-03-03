@@ -10,7 +10,11 @@ from apps.applets.domain import (
     PublicAppletHistoryChange,
     PublicHistory,
 )
-from apps.applets.domain.applet import AppletDetailPublic, AppletInfoPublic
+from apps.applets.domain.applet import (
+    AppletDataRetention,
+    AppletDetailPublic,
+    AppletInfoPublic,
+)
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.applets.create import AppletCreate
@@ -111,14 +115,14 @@ async def applet_update(
 
 
 async def applet_versions_retrieve(
-    id_: int, user: User = Depends(get_current_user)
+    id_: uuid.UUID, user: User = Depends(get_current_user)
 ) -> ResponseMulti[PublicHistory]:
     histories = await retrieve_versions(id_)
     return ResponseMulti(result=[PublicHistory(**h.dict()) for h in histories])
 
 
 async def applet_version_retrieve(
-    id_: int, version: str, user: User = Depends(get_current_user)
+    id_: uuid.UUID, version: str, user: User = Depends(get_current_user)
 ) -> Response[public_history_detail.AppletDetailHistory]:
     applet = await retrieve_applet_by_version(id_, version)
     if not applet:
@@ -129,7 +133,7 @@ async def applet_version_retrieve(
 
 
 async def applet_version_changes_retrieve(
-    id_: int, version: str, user: User = Depends(get_current_user)
+    id_: uuid.UUID, version: str, user: User = Depends(get_current_user)
 ) -> Response[PublicAppletHistoryChange]:
     changes = await AppletHistoryService(id_, version).get_changes()
     return Response(result=PublicAppletHistoryChange(**changes.dict()))
@@ -176,3 +180,13 @@ async def applet_link_delete(
     user: User = Depends(get_current_user),
 ):
     await AppletService(user.id).delete_access_link(applet_id=id_)
+
+
+async def applet_set_data_retention(
+    id_: uuid.UUID,
+    schema: AppletDataRetention,
+    user: User = Depends(get_current_user),
+):
+    await AppletService(user.id).set_data_retention(
+        applet_id=id_, data_retention=schema
+    )
