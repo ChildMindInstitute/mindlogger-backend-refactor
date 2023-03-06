@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -15,6 +17,8 @@ from apps.shared.domain.response.errors import (
     ErrorResponseMulti,
 )
 from apps.shared.errors import BaseError
+
+logger = logging.getLogger("__name__")
 
 
 class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
@@ -43,6 +47,8 @@ def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
         ]
     )
 
+    logger.error(response)
+
     return JSONResponse(
         response.dict(by_alias=True),
         status_code=error._status_code,
@@ -59,6 +65,8 @@ def _python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
             )
         ]
     )
+
+    logger.error(response)
 
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),
@@ -80,6 +88,8 @@ def _pydantic_validation_errors_handler(
             for err in error.errors()
         ]
     )
+
+    logger.error(response)
 
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),
