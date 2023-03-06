@@ -18,7 +18,7 @@ from apps.shared.domain.response.errors import (
 )
 from apps.shared.errors import BaseError
 
-logger = logging.getLogger("__name__")
+logger = logging.getLogger("mindlogger_backend")
 
 
 class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
