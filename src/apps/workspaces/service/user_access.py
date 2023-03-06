@@ -40,6 +40,7 @@ class UserAccessService:
 
         return workspaces
 
+    # TODO: Finish with paginatination
     async def get_workspace_applets(
         self, owner_id: uuid.UUID
     ) -> list[AppletPublic]:
