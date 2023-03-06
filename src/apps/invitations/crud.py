@@ -36,6 +36,39 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         schema = await self._update_one(lookup, value, schema)
         return schema
 
+    async def get_pending_by_invited_email(
+        self, email: str
+    ) -> list[InvitationDetail]:
+        """Return the list of pending invitations for the invited user."""
+
+        query: Query = select(
+            InvitationSchema, AppletSchema.display_name.label("applet_name")
+        )
+        query = query.join(
+            AppletSchema, AppletSchema.id == InvitationSchema.applet_id
+        )
+        query = query.where(InvitationSchema.email == email)
+        query = query.where(
+            InvitationSchema.status == InvitationStatus.PENDING
+        )
+        db_result = await self._execute(query)
+        results = []
+        for invitation, applet_name in db_result.all():
+            results.append(
+                InvitationDetail(
+                    id=invitation.id,
+                    email=invitation.email,
+                    applet_id=invitation.applet_id,
+                    applet_name=applet_name,
+                    role=invitation.role,
+                    key=invitation.key,
+                    status=invitation.status,
+                    invitor_id=invitation.invitor_id,
+                    meta=invitation.meta,
+                )
+            )
+        return results
+
     async def get_pending_by_invitor_id(
         self, user_id: uuid.UUID
     ) -> list[InvitationDetail]:
