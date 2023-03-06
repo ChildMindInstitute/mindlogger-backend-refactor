@@ -36,7 +36,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     async def get_by_user_id(
         self, user_id_: uuid.UUID
     ) -> list[UserAppletAccess]:
-        query: Query = select(self.schema_class).filter(
+        query: Query = select(self.schema_class).where(
             self.schema_class.user_id == user_id_
         )
         result: Result = await self._execute(query)

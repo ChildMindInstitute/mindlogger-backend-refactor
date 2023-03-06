@@ -95,7 +95,9 @@ class InvitationsService:
         message = MessageSchema(
             recipients=[schema.email],
             subject="Invitation to the FCM",
-            body=service.get_template(path="invitation_en", **html_payload),
+            body=service.get_template(
+                path="invitation_new_user_en", **html_payload
+            ),
         )
 
         await service.send(message)
