@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -27,9 +27,20 @@ class _UserBase(BaseModel):
 
 
 class UserCreateRequest(_UserBase, PublicModel):
-    first_name: str
-    last_name: str
-    password: str
+    """This model represents user `create request` data model."""
+
+    first_name: str = Field(
+        description="This field represents the user first name",
+        min_length=1,
+    )
+    last_name: str = Field(
+        description="This field represents the user last name",
+        min_length=1,
+    )
+    password: str = Field(
+        description="This field represents the user password",
+        min_length=1,
+    )
 
 
 class UserCreate(_UserBase, InternalModel):
