@@ -143,19 +143,22 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
             raise PermissionsError(
                 "You do not have permissions to update this theme."
             )
-        instance = await self._update_one(
-            lookup="id",
-            value=pk,
-            schema=ThemeSchema(
-                name=update_schema.name,
-                logo=update_schema.logo,
-                background_image=update_schema.background_image,
-                primary_color=str(update_schema.primary_color),
-                secondary_color=str(update_schema.secondary_color),
-                tertiary_color=str(update_schema.tertiary_color),
-                public=update_schema.public,
-                allow_rename=update_schema.allow_rename,
-            ),
-        )
+        try:
+            instance = await self._update_one(
+                lookup="id",
+                value=pk,
+                schema=ThemeSchema(
+                    name=update_schema.name,
+                    logo=update_schema.logo,
+                    background_image=update_schema.background_image,
+                    primary_color=str(update_schema.primary_color),
+                    secondary_color=str(update_schema.secondary_color),
+                    tertiary_color=str(update_schema.tertiary_color),
+                    public=update_schema.public,
+                    allow_rename=update_schema.allow_rename,
+                ),
+            )
+        except IntegrityError:
+            raise ThemeAlreadyExist()
 
         return Theme.from_orm(instance)

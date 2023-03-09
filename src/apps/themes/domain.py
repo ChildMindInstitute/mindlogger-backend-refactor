@@ -68,4 +68,4 @@ class Theme(ThemeCreate):
 class ThemeQueryParams(BaseQueryParams):
     public: bool | None = None
     allow_rename: bool | None = None
-    creator_id: int | None = None
+    creator_id: uuid.UUID | None = None

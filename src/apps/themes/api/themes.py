@@ -39,7 +39,7 @@ async def get_themes(
 ) -> ResponseMulti[PublicTheme]:
     """Returns all themes."""
     themes: list[PublicTheme] = await ThemesCRUD().list(query_params)
-    return ResponseMulti(result=themes)
+    return ResponseMulti(result=themes, count=len(themes))
 
 
 async def delete_theme_by_id(
