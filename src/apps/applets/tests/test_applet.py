@@ -1,3 +1,5 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -6,6 +8,7 @@ class TestApplet(BaseTest):
     # TODO: fix text
     fixtures = [
         "users/fixtures/users.json",
+        "themes/fixtures/themes.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
@@ -272,7 +275,7 @@ class TestApplet(BaseTest):
         )
         response = await self.client.get(self.applet_list_url)
 
-        assert response.status_code == 200
+        assert response.status_code == 200, response.json()
         assert len(response.json()["result"]) == 3
         assert (
             response.json()["result"][0]["id"]
@@ -303,6 +306,7 @@ class TestApplet(BaseTest):
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 
+    @pytest.mark.main
     @transaction.rollback
     async def test_applet_detail(self):
         await self.client.login(

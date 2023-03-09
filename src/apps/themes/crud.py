@@ -65,6 +65,26 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
     async def get_by_id(self, pk: int) -> Theme:
         return await self._fetch(key="id", value=pk)
 
+    async def get_users_themes_by_ids(
+        self, user_id: uuid.UUID, ids: list[uuid.UUID]
+    ) -> list[ThemeSchema]:
+        query: Query = select(ThemeSchema)
+        query = query.where(ThemeSchema.creator_id == user_id)
+        query = query.where(ThemeSchema.id.in_(ids))
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
+    async def get_users_theme_by_id(
+        self, user_id: uuid.UUID, them_id: uuid.UUID
+    ) -> ThemeSchema:
+        query: Query = select(ThemeSchema)
+        query = query.where(ThemeSchema.creator_id == user_id)
+        query = query.where(ThemeSchema.id == them_id)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().one_or_none()
+
     async def list(self, query_params: QueryParams) -> list[PublicTheme]:
         query: Query = select(self.schema_class)
         if query_params.filters:
