@@ -43,3 +43,8 @@ class DefaultEvent(BaseModel):
     user_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None
     flow_id: uuid.UUID | None
+
+
+class AvailabilityType(str, Enum):
+    AlwaysAvailable = "AlwaysAvailable"
+    ScheduledAccess = "ScheduledAccess"

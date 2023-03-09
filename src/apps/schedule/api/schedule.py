@@ -113,9 +113,20 @@ async def schedule_delete_by_user(
     )
 
 
-async def schedule_get_by_user(
+async def schedule_get_all_by_user(
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[PublicEventByUser]:
     """Get all schedules for a user."""
     schedules = await ScheduleService().get_events_by_user(user_id=user.id)
     return ResponseMulti(result=schedules)
+
+
+async def schedule_get_by_user(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+) -> Response[PublicEventByUser]:
+    """Get all schedules for a user per applet id."""
+    schedules = await ScheduleService().get_events_by_user_and_applet(
+        user_id=user.id, applet_id=applet_id
+    )
+    return Response(result=schedules)

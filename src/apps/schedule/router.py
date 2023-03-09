@@ -8,6 +8,7 @@ from apps.schedule.api.schedule import (
     schedule_delete_by_id,
     schedule_delete_by_user,
     schedule_get_all,
+    schedule_get_all_by_user,
     schedule_get_by_id,
     schedule_get_by_user,
     schedule_update,
@@ -134,6 +135,18 @@ user_router.get(
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": ResponseMulti[PublicEventByUser]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+        **NO_CONTENT_ERROR_RESPONSES,
+    },
+)(schedule_get_all_by_user)
+
+user_router.get(
+    "/me/events/{applet_id}",
+    response_model=Response[PublicEventByUser],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicEventByUser]},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
         **NO_CONTENT_ERROR_RESPONSES,
