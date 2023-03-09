@@ -9,11 +9,11 @@ from apps.themes.crud import ThemesCRUD
 from apps.themes.domain import (
     PublicTheme,
     Theme,
-    ThemeCreate,
     ThemeQueryParams,
     ThemeRequest,
     ThemeUpdate,
 )
+from apps.themes.service import ThemeService
 from apps.users.domain import User
 
 
@@ -21,16 +21,9 @@ async def create_theme(
     user: User = Depends(get_current_user),
     schema: ThemeRequest = Body(...),
 ) -> Response[PublicTheme]:
-    theme: Theme = await ThemesCRUD().save(
-        schema=ThemeCreate(
-            **schema.dict(),
-            public=False,
-            allow_rename=False,
-            creator_id=user.id,
-        )
-    )
-
-    return Response(result=PublicTheme(**theme.dict()))
+    """Creates a new theme."""
+    theme: PublicTheme = await ThemeService(user.id).create(schema)
+    return Response(result=theme)
 
 
 async def get_themes(

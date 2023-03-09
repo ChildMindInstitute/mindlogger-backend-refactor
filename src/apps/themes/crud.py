@@ -108,7 +108,6 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
     async def save(self, schema: ThemeCreate) -> Theme:
         """Return theme instance and the created information."""
-
         # Save theme into the database
         try:
             instance: ThemeSchema = await self._create(
@@ -162,3 +161,15 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
             raise ThemeAlreadyExist()
 
         return Theme.from_orm(instance)
+
+    async def get_by_name_and_creator_id(
+        self, name: str, creator_id: uuid.UUID
+    ) -> Theme:
+        query: Query = select(ThemeSchema)
+        query = query.where(ThemeSchema.name == name)
+        query = query.where(ThemeSchema.creator_id == creator_id)
+        query = query.where(ThemeSchema.is_deleted == False)  # noqa E712
+
+        db_result = await self._execute(query)
+
+        return db_result.scalars().one_or_none()

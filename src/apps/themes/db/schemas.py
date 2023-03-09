@@ -6,7 +6,7 @@ from infrastructure.database.base import Base
 class ThemeSchema(Base):
     __tablename__ = "themes"
 
-    name = Column(String(length=100), nullable=False, unique=True)
+    name = Column(String(length=100), nullable=False)
     logo = Column(String(length=100))
     background_image = Column(String(length=100))
     primary_color = Column(String(length=100))
