@@ -1,5 +1,3 @@
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -28,7 +26,6 @@ class TestReusableItem(BaseTest):
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_recreate_item_choice(self):
         await self.client.login(

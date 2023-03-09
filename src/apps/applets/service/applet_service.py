@@ -19,6 +19,7 @@ from apps.applets.errors import (
     AppletsFolderAccessDenied,
 )
 from apps.folders.crud import FolderCRUD
+from apps.themes.service import ThemeService
 from apps.workspaces.errors import AppletAccessDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from config import settings
@@ -56,8 +57,15 @@ class AppletService:
         schemas = await AppletsCRUD().get_applets_by_roles(
             self.user_id, roles.split(","), query_params
         )
+        theme_ids = [schema.theme_id for schema in schemas if schema.theme_id]
+        themes = []
+        if theme_ids:
+            themes = await ThemeService(self.user_id).get_by_ids(theme_ids)
+        theme_map = dict((theme.id, theme) for theme in themes)
         applets = []
+
         for schema in schemas:
+            theme = theme_map.get(schema.theme_id)
             applets.append(
                 AppletInfo(
                     id=schema.id,
@@ -66,6 +74,7 @@ class AppletService:
                     description=self._get_by_language(
                         schema.description, language
                     ),
+                    theme=theme.dict() if theme else None,
                     about=self._get_by_language(schema.about, language),
                     image=schema.image,
                     watermark=schema.watermark,
@@ -100,8 +109,11 @@ class AppletService:
         schema = await AppletsCRUD().get_applet_by_roles(
             self.user_id, applet_id, Role.as_list()
         )
+        theme = None
         if not schema:
             raise AppletAccessDenied()
+        if schema.theme_id:
+            theme = await ThemeService(self.user_id).get_by_id(schema.theme_id)
         applet = AppletDetail(
             id=schema.id,
             display_name=schema.display_name,
@@ -109,6 +121,7 @@ class AppletService:
             description=self._get_by_language(schema.description, language),
             about=self._get_by_language(schema.about, language),
             image=schema.image,
+            theme=theme.dict() if theme else None,
             watermark=schema.watermark,
             theme_id=schema.theme_id,
             report_server_ip=schema.report_server_ip,
