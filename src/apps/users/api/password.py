@@ -12,7 +12,7 @@ from apps.users.domain import (
     User,
     UserChangePassword,
 )
-from apps.users.errors import UserNotFound
+from apps.users.errors import EmailAddressError, UserNotFound
 from apps.users.services import PasswordRecoveryService
 
 
@@ -52,8 +52,9 @@ async def password_recovery(
             await PasswordRecoveryService().send_password_recovery(schema)
         )
     except UserNotFound:
-        raise UserNotFound(
-            message="That email is not associated with a MindLogger account"
+        raise EmailAddressError(
+            message=f"Email address is not verified. The following "
+            f"identities failed the check: {schema.email}"
         )
 
     return Response[PublicUser](result=public_user)
