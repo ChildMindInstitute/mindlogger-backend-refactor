@@ -19,12 +19,12 @@ class BasePeriodicity(BaseModel):
 
     @root_validator
     def validate_periodicity(cls, values):
-        if values.get("type") == PeriodicityType.weekly:
+        if values.get("type") == PeriodicityType.WEEKLY:
             if values.get("interval") < 1 or values.get("interval") > 7:
                 raise ValidationError(
                     message="Interval must be between 1 and 7"
                 )
-        elif values.get("type") == PeriodicityType.monthly:
+        elif values.get("type") == PeriodicityType.MONTHLY:
             if values.get("interval") < 1 or values.get("interval") > 31:
                 raise ValidationError(
                     message="Interval must be between 1 and 31"

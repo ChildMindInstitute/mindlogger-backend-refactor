@@ -518,7 +518,6 @@ class TestSchedule(BaseTest):
         )
 
         response = await self.client.get(self.schedule_user_url)
-        print(response.json())
         assert response.status_code == 200
 
     @transaction.rollback
