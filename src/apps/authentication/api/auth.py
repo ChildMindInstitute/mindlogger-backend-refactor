@@ -27,7 +27,7 @@ async def get_token(
         )
     except UserNotFound:
         raise UserNotFound(
-            message=("That email is not associated with a MindLogger account.")
+            message="That email is not associated with a MindLogger account."
         )
     access_token = AuthenticationService.create_access_token(
         {"sub": str(user.id)}

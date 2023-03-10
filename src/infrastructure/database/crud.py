@@ -79,6 +79,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
             getattr(self.schema_class, key) == value
         )
         results = await self._execute(query=query)
+        await self.session.commit()
 
         return results.scalars().one_or_none()
 
@@ -87,6 +88,8 @@ class BaseCRUD(Generic[ConcreteSchema]):
         self.session.add(schema)
         await self.session.flush()
         await self.session.refresh(schema)
+        await self.session.commit()
+
         return schema
 
     async def _create_many(
