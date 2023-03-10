@@ -170,7 +170,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         result: Result = await self._execute(query)
         return result.scalars().first()
 
-    async def delete_by_id(self, id_: int):
+    async def delete_by_id(self, id_: uuid.UUID):
         """Delete applets by id."""
 
         query = update(AppletSchema)
