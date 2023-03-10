@@ -108,7 +108,6 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
     async def save(self, schema: ThemeCreate) -> Theme:
         """Return theme instance and the created information."""
-
         # Save theme into the database
         try:
             instance: ThemeSchema = await self._create(
@@ -143,19 +142,34 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
             raise PermissionsError(
                 "You do not have permissions to update this theme."
             )
-        instance = await self._update_one(
-            lookup="id",
-            value=pk,
-            schema=ThemeSchema(
-                name=update_schema.name,
-                logo=update_schema.logo,
-                background_image=update_schema.background_image,
-                primary_color=str(update_schema.primary_color),
-                secondary_color=str(update_schema.secondary_color),
-                tertiary_color=str(update_schema.tertiary_color),
-                public=update_schema.public,
-                allow_rename=update_schema.allow_rename,
-            ),
-        )
+        try:
+            instance = await self._update_one(
+                lookup="id",
+                value=pk,
+                schema=ThemeSchema(
+                    name=update_schema.name,
+                    logo=update_schema.logo,
+                    background_image=update_schema.background_image,
+                    primary_color=str(update_schema.primary_color),
+                    secondary_color=str(update_schema.secondary_color),
+                    tertiary_color=str(update_schema.tertiary_color),
+                    public=update_schema.public,
+                    allow_rename=update_schema.allow_rename,
+                ),
+            )
+        except IntegrityError:
+            raise ThemeAlreadyExist()
 
         return Theme.from_orm(instance)
+
+    async def get_by_name_and_creator_id(
+        self, name: str, creator_id: uuid.UUID
+    ) -> Theme:
+        query: Query = select(ThemeSchema)
+        query = query.where(ThemeSchema.name == name)
+        query = query.where(ThemeSchema.creator_id == creator_id)
+        query = query.where(ThemeSchema.is_deleted == False)  # noqa E712
+
+        db_result = await self._execute(query)
+
+        return db_result.scalars().one_or_none()
