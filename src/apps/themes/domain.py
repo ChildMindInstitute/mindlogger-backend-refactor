@@ -1,7 +1,7 @@
 import mimetypes
 import uuid
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, validator
 from pydantic.color import Color
 
 from apps.shared.domain import InternalModel, PublicModel
@@ -19,12 +19,37 @@ from apps.shared.query_params import BaseQueryParams
 
 
 class _ThemeBase(BaseModel):
-    name: str
-    logo: str
-    background_image: str
-    primary_color: Color
-    secondary_color: Color
-    tertiary_color: Color
+    name: str = Field(
+        ...,
+        description="Name of the theme",
+        example="My theme",
+        max_length=100,
+    )
+    logo: str = Field(
+        ...,
+        description="URL to logo image",
+        example="https://example.com/logo.png",
+    )
+    background_image: str = Field(
+        ...,
+        description="URL to background image",
+        example="https://example.com/background.png",
+    )
+    primary_color: Color = Field(
+        ...,
+        description="Primary color",
+        example="#FFFFFF",
+    )
+    secondary_color: Color = Field(
+        ...,
+        description="Secondary color",
+        example="#FFFFFF",
+    )
+    tertiary_color: Color = Field(
+        ...,
+        description="Tertiary color",
+        example="#FFFFFF",
+    )
 
     def __str__(self) -> str:
         return self.name
