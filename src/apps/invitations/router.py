@@ -5,6 +5,7 @@ from apps.invitations.api import (
     invitation_accept,
     invitation_decline,
     invitation_list,
+    invitation_list_for_invited,
     invitation_managers_send,
     invitation_respondent_send,
     invitation_retrieve,
@@ -37,6 +38,18 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(invitation_list)
+
+
+# Invitations list for invited user
+router.get(
+    "/invited",
+    response_model=ResponseMulti[InvitationResponse],
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[InvitationResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(invitation_list_for_invited)
+
 
 router.get(
     "/{key}",
