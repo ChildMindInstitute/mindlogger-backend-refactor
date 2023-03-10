@@ -31,11 +31,28 @@ from apps.users.domain import User
 async def invitation_list(
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[InvitationResponse]:
-    """Fetch all invitations for the specific user."""
+    """Fetch all invitations for the specific user who is invitor."""
 
     invitations: list[InvitationDetail] = await InvitationsService(
         user
     ).fetch_all()
+
+    return ResponseMulti[InvitationResponse](
+        result=[
+            InvitationResponse(**invitation.dict())
+            for invitation in invitations
+        ]
+    )
+
+
+async def invitation_list_for_invited(
+    user: User = Depends(get_current_user),
+) -> ResponseMulti[InvitationResponse]:
+    """Fetch all invitations for the specific user who is invited."""
+
+    invitations: list[InvitationDetail] = await InvitationsService(
+        user
+    ).fetch_all_for_invited()
 
     return ResponseMulti[InvitationResponse](
         result=[

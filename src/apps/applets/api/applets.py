@@ -136,7 +136,9 @@ async def applet_version_changes_retrieve(
     return Response(result=PublicAppletHistoryChange(**changes.dict()))
 
 
-async def applet_delete(id_: int, user: User = Depends(get_current_user)):
+async def applet_delete(
+    id_: uuid.UUID, user: User = Depends(get_current_user)
+):
     await AppletService(user.id).delete_applet_by_id(id_)
 
 
