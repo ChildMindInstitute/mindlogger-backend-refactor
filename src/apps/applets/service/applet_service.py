@@ -154,7 +154,7 @@ class AppletService:
     async def exist_by_id(self, applet_id: uuid.UUID) -> bool:
         return await AppletsCRUD().exist_by_id(applet_id)
 
-    async def delete_applet_by_id(self, applet_id: int):
+    async def delete_applet_by_id(self, applet_id: uuid.UUID):
         await self._validate_delete_applet(self.user_id, applet_id)
         await AppletsCRUD().delete_by_id(applet_id)
 

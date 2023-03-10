@@ -129,6 +129,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 *_AppletOrdering().get_clauses(*query_params.ordering)
             )
         query = query.where(AppletSchema.id.in_(accessible_applets_query))
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
         query = paging(query, query_params.page, query_params.limit)
         result: Result = await self._execute(query)
         return result.scalars().all()
@@ -169,7 +170,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         result: Result = await self._execute(query)
         return result.scalars().first()
 
-    async def delete_by_id(self, id_: int):
+    async def delete_by_id(self, id_: uuid.UUID):
         """Delete applets by id."""
 
         query = update(AppletSchema)
