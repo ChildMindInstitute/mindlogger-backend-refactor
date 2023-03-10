@@ -152,7 +152,7 @@ class InvitationsService:
         payload = None
         invitation_schema = None
         for invitation in invitations:
-            meta = RespondentMeta(**invitation.meta.dict())
+            meta = RespondentMeta.from_orm(invitation.meta)
             if invitation.status == InvitationStatus.PENDING and (
                 meta.secret_user_id == schema.secret_user_id
             ):
@@ -264,7 +264,7 @@ class InvitationsService:
         payload = None
         invitation_schema = None
         for invitation in invitations:
-            meta = ReviewerMeta(**invitation.meta.dict())
+            meta = ReviewerMeta.from_orm(invitation.meta)
             if invitation.status == InvitationStatus.PENDING and (
                 meta.respondents == schema.respondents
             ):
