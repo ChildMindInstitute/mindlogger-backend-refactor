@@ -19,8 +19,6 @@ class AppletHistory(InternalModel):
     watermark: str
     theme_id: uuid.UUID | None
     version: str
-    account_id: uuid.UUID
-    creator_id: uuid.UUID
     report_server_ip: str
     report_public_key: str
     report_recipients: list[str]

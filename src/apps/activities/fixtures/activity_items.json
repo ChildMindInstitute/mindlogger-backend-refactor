@@ -3,6 +3,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+      "header_image": null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -18,15 +19,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 1.0
     }
   },
@@ -34,6 +27,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0012",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -49,15 +43,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 2.0
     }
   },
@@ -65,6 +51,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0013",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -80,15 +67,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 1.0
     }
   },
@@ -96,6 +75,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -111,15 +91,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 2.0
     }
   },
@@ -127,6 +99,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0015",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -142,15 +115,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 3.0
     }
   },
@@ -158,6 +123,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0016",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -173,15 +139,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 4.0
     }
   },
@@ -189,6 +147,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0017",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -204,15 +163,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 5.0
     }
   },
@@ -220,6 +171,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0018",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -235,15 +187,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 6.0
     }
   },
@@ -251,6 +195,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0019",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -266,15 +211,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 7.0
     }
   },
@@ -282,6 +219,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0020",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -297,15 +235,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 8.0
     }
   },
@@ -313,6 +243,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0021",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -328,15 +259,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 1.0
     }
   },
@@ -344,6 +267,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0022",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -359,15 +283,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 2.0
     }
   },
@@ -375,6 +291,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0023",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -390,15 +307,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 3.0
     }
   },
@@ -406,6 +315,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0024",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -421,15 +331,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 4.0
     }
   },
@@ -437,6 +339,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0025",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -452,15 +355,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 5.0
     }
   },
@@ -468,6 +363,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0026",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -483,15 +379,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 6.0
     }
   },
@@ -499,6 +387,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0027",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -514,15 +403,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 7.0
     }
   },
@@ -530,6 +411,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0028",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -545,15 +427,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 8.0
     }
   },
@@ -561,6 +435,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0029",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -576,15 +451,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 9.0
     }
   },
@@ -592,6 +459,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0030",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -607,15 +475,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 1.0
     }
   },
@@ -623,6 +483,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0031",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -638,15 +499,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 2.0
     }
   },
@@ -654,6 +507,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0032",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -669,15 +523,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 3.0
     }
   },
@@ -685,6 +531,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0033",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -700,15 +547,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 4.0
     }
   },
@@ -716,6 +555,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0034",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -731,15 +571,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 5.0
     }
   },
@@ -747,6 +579,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0035",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -762,15 +595,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 6.0
     }
   },
@@ -778,6 +603,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0036",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -793,15 +619,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 7.0
     }
   },
@@ -809,6 +627,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0037",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -824,15 +643,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 8.0
     }
   },
@@ -840,6 +651,7 @@
     "table": "activity_items",
     "fields": {
       "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0038",
+      "header_image":  null,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -855,15 +667,7 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "config": {},
       "ordering": 9.0
     }
   }

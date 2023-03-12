@@ -595,9 +595,7 @@ class InvitationsService:
 
         await UserAppletAccessService(
             self._user.id, invitation.applet_id
-        ).add_role(
-            invitation=invitation  # type: ignore
-        )
+        ).add_role_by_invitation(invitation)
 
         await InvitationCRUD().approve_by_id(invitation.id)
 
@@ -634,6 +632,6 @@ class PrivateInvitationService:
         applet = await PublicAppletService().get_by_link(link, True)
         if not applet:
             raise InvitationDoesNotExist()
-        await UserAppletAccessService(user_id, applet.id).add_role(
-            Role.RESPONDENT
-        )
+        await UserAppletAccessService(
+            user_id, applet.id
+        ).add_role_by_private_invitation(Role.RESPONDENT)
