@@ -47,12 +47,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             for user_applet_access in results
         ]
 
-    async def get_by_user_id_role_admin(
-        self, user_id_: int
+    async def get_by_user_id_and_roles(
+        self, user_id_: uuid.UUID, roles: list[Role]
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).filter(
             self.schema_class.user_id == user_id_,
-            self.schema_class.role == Role.ADMIN,
+            self.schema_class.role.in_(roles),
         )
         result: Result = await self._execute(query)
         results: list[UserAppletAccessSchema] = result.scalars().all()
@@ -181,5 +181,13 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
     async def delete_all_by_applet_id(self, applet_id: uuid.UUID):
         query: Query = delete(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        await self._execute(query)
+
+    async def delete_all_by_user_and_applet(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
+    ):
+        query: Query = delete(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         await self._execute(query)

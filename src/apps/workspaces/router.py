@@ -7,7 +7,11 @@ from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
 )
-from apps.workspaces.api import user_workspaces, workspace_applets
+from apps.workspaces.api import (
+    user_workspaces,
+    workspace_applets,
+    workspace_remove_manager_access,
+)
 from apps.workspaces.domain.workspace import PublicWorkspace
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
@@ -33,3 +37,13 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(workspace_applets)
+
+# Remove manager access from a specific user
+router.post(
+    "/removeAccess",
+    response_model=None,
+    responses={
+        status.HTTP_200_OK: {"model": None},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(workspace_remove_manager_access)

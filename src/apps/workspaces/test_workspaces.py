@@ -34,3 +34,22 @@ class TestWorkspaces(BaseTest):
 
         response = await self.client.get(self.workspace_applets_list)
         assert response.status_code == 200
+
+    @transaction.rollback
+    async def test_workspace_remove_access(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        data = {
+            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "applet_ids": [
+                "92917a56-d586-4613-b7aa-991f2c4b15b1",
+            ],
+        }
+
+        response = await self.client.post(
+            "/workspaces/removeAccess", data=data
+        )
+
+        assert response.status_code == 200

@@ -5,7 +5,12 @@ from apps.applets.domain import UserAppletAccess
 from apps.applets.domain.applet import AppletPublic
 from apps.users import User, UsersCRUD
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
-from apps.workspaces.domain.workspace import PublicWorkspace
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.workspace import (
+    PublicWorkspace,
+    RemoveManagerAccess,
+)
+from apps.workspaces.errors import AppletAccessDenied
 
 __all__ = ["UserAccessService"]
 
@@ -61,3 +66,49 @@ class UserAccessService:
                     applets.append(applet)
 
         return applets
+
+    async def remove_manager_access(self, schema: RemoveManagerAccess):
+        """Remove manager access from a specific user."""
+        # check if user is owner of all applets
+
+        owners_applet_ids = [
+            owner_applet.applet_id
+            for owner_applet in (
+                await UserAppletAccessCRUD().get_by_user_id_and_roles(
+                    self._user_id, roles=[Role.ADMIN]
+                )
+            )
+        ]
+
+        # check if schema.user_id is manager of all applets
+        managers_applet_ids = [
+            manager_applet.applet_id
+            for manager_applet in (
+                await UserAppletAccessCRUD().get_by_user_id_and_roles(
+                    schema.user_id,
+                    roles=[
+                        Role.MANAGER,
+                        Role.COORDINATOR,
+                        Role.EDITOR,
+                        Role.REVIEWER,
+                    ],
+                )
+            )
+        ]
+
+        for applet_id in schema.applet_ids:
+            if applet_id not in owners_applet_ids:
+                raise AppletAccessDenied(
+                    message=f"User is not owner of applet {applet_id}"
+                )
+
+            if applet_id not in managers_applet_ids:
+                raise AppletAccessDenied(
+                    message=f"User is not manager of applet {applet_id}"
+                )
+
+        # remove manager access
+        for applet_id in schema.applet_ids:
+            await UserAppletAccessCRUD().delete_all_by_user_and_applet(
+                user_id=schema.user_id, applet_id=applet_id
+            )

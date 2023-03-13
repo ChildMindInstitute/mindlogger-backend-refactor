@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import Field
 from pydantic.types import PositiveInt
 
@@ -6,6 +8,7 @@ from apps.shared.domain import InternalModel, PublicModel
 __all__ = [
     "PublicWorkspace",
     "UserWorkspace",
+    "RemoveManagerAccess",
 ]
 
 
@@ -34,4 +37,17 @@ class UserWorkspace(InternalModel):
         description="This field represents the name of workspace "
         "which is consists of 'first name', 'last name' of user "
         "which is applet owner and prefix",
+    )
+
+
+class RemoveManagerAccess(InternalModel):
+    """This model used for internal needs, returned to the user
+    their current workspace.
+    """
+
+    user_id: uuid.UUID = Field(
+        description="This field represents the applet manager id",
+    )
+    applet_ids: list[uuid.UUID] = Field(
+        description="This field represents the applet ids",
     )
