@@ -23,7 +23,7 @@ from apps.applets.errors import (
     AppletNotFoundError,
     AppletsFolderAccessDenied,
 )
-from apps.applets.service import AppletHistoryService
+from apps.applets.service.applet_history_service import AppletHistoryService
 from apps.folders.crud import FolderCRUD
 from apps.themes.service import ThemeService
 from apps.workspaces.errors import AppletAccessDenied
