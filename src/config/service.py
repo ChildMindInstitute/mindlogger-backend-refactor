@@ -7,7 +7,7 @@ class FrontendUrlsSettings(BaseModel):
     web_base: str = "web.mindlogger.org"
     admin_base: str = "admin.frontend.com"
     invitation_send: str = "invitation"
-    password_recovery_send: str = "useraccount"
+    password_recovery_send: str = "password-recovery"
     public_link: str = "public"
     private_link: str = "join"
     transfer_link: str = "transferOwnership"
