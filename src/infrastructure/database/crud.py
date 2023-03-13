@@ -79,7 +79,6 @@ class BaseCRUD(Generic[ConcreteSchema]):
             getattr(self.schema_class, key) == value
         )
         results = await self._execute(query=query)
-        await self.session.commit()
 
         return results.scalars().one_or_none()
 
