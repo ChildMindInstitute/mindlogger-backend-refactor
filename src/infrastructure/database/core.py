@@ -82,6 +82,7 @@ class TransactionManager:
                     await session.commit()
                 return result
             except Exception as e:
+                session.transaction_count -= 1
                 await session.rollback()
                 raise e
 
@@ -123,9 +124,10 @@ class TransactionManager:
             session.transaction_count += 1
             try:
                 await func(*args, **kwargs)
+                session.transaction_count -= 1
             finally:
+                session.transaction_count -= 1
                 await session.rollback()
-            session.transaction_count -= 1
 
         return _wrap
 
