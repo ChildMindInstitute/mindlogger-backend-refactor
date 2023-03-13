@@ -82,7 +82,7 @@ router.post(
 
 # Invitation send for Role respondent
 router.post(
-    "/{applet_id}/invitations/respondent",
+    "/{applet_id}/respondent",
     response_model=Response[InvitationRespondentResponse],
     responses={
         status.HTTP_200_OK: {"model": Response[InvitationRespondentResponse]},
@@ -92,7 +92,7 @@ router.post(
 
 # Invitation send for Role reviewer
 router.post(
-    "/{applet_id}/invitations/reviewer",
+    "/{applet_id}/reviewer",
     response_model=Response[InvitationReviewerResponse],
     responses={
         status.HTTP_200_OK: {"model": Response[InvitationReviewerResponse]},
@@ -102,7 +102,7 @@ router.post(
 
 # Invitation send for other Role ("manager", "coordinator", "editor")
 router.post(
-    "/{applet_id}/invitations/managers",
+    "/{applet_id}/managers",
     response_model=Response[InvitationManagersResponse],
     responses={
         status.HTTP_200_OK: {"model": Response[InvitationManagersResponse]},
