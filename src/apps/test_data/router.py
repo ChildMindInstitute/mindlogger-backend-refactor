@@ -1,25 +1,16 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.shared.domain import Response
-from apps.shared.domain.response import (
-    DEFAULT_OPENAPI_RESPONSE,
-)
-from apps.users.api import (
-    user_create,
-)
-from apps.users.domain import PublicUser
+from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE
+from apps.test_data.api import generate_test_data
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter(prefix="/data")
 
 # User create
 router.post(
-    "",
-    response_model=Response[PublicUser],
+    "/generate_applet",
     status_code=status.HTTP_201_CREATED,
     responses={
-        status.HTTP_201_CREATED: {"model": Response[PublicUser]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(user_create)
-
+)(generate_test_data)
