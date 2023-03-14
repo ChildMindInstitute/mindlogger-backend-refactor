@@ -30,7 +30,7 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
         query = query.where(AppletHistorySchema.id == applet_id)
         query = query.join(
             UserSchema,
-            UserSchema.id == AppletHistorySchema.creator_id,
+            UserSchema.id == AppletHistorySchema.user_id,
         )
         query = query.order_by(AppletHistorySchema.created_at.desc())
         result = await self._execute(query)
