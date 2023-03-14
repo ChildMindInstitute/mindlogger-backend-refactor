@@ -2,12 +2,14 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.applets.domain.applet import AppletPublic
+from apps.applets.router import router as applet_router
 from apps.shared.domain import ResponseMulti
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
 )
 from apps.workspaces.api import (
+    applet_remove_respondent_access,
     user_workspaces,
     workspace_applets,
     workspace_remove_manager_access,
@@ -47,3 +49,12 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(workspace_remove_manager_access)
+
+applet_router.post(
+    "/removeAccess",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_remove_respondent_access)

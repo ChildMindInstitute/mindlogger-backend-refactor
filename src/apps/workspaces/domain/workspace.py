@@ -41,9 +41,7 @@ class UserWorkspace(InternalModel):
 
 
 class RemoveManagerAccess(InternalModel):
-    """This model used for internal needs, returned to the user
-    their current workspace.
-    """
+    """Manager access removal model."""
 
     user_id: uuid.UUID = Field(
         description="This field represents the applet manager id",

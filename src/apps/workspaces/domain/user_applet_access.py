@@ -1,5 +1,7 @@
 import uuid
 
+from pydantic import Field
+
 from apps.shared.domain import InternalModel, PublicModel
 from apps.workspaces.domain.constants import Role
 
@@ -8,6 +10,7 @@ __all__ = [
     "UserAppletAccess",
     "PublicUserAppletAccess",
     "UserAppletAccessItem",
+    "RemoveRespondentAccess",
 ]
 
 
@@ -39,3 +42,17 @@ class UserAppletAccessItem(InternalModel):
     user_id: uuid.UUID
     applet_id: uuid.UUID
     role: Role
+
+
+class RemoveRespondentAccess(InternalModel):
+    """Respondent access removal model."""
+
+    user_id: uuid.UUID = Field(
+        description="This field represents the applet respondent id",
+    )
+    applet_ids: list[uuid.UUID] = Field(
+        description="This field represents the applet ids",
+    )
+    delete_responses: bool = Field(
+        description="This field represents the flag for deleting responses",
+    )

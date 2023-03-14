@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
@@ -45,7 +47,15 @@ class AnswerFlowItemsCRUD(BaseCRUD[AnswerFlowItemsSchema]):
 
         return answer_flow_items
 
-    async def delete_by_applet_id(self, applet_id: int):
+    async def delete_by_applet_id(self, applet_id: uuid.UUID):
         query: Query = delete(AnswerFlowItemsSchema)
+        query = query.where(AnswerFlowItemsSchema.applet_id == applet_id)
+        await self._execute(query)
+
+    async def delete_by_user_and_applet(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
+    ):
+        query: Query = delete(AnswerFlowItemsSchema)
+        query = query.where(AnswerFlowItemsSchema.respondent_id == user_id)
         query = query.where(AnswerFlowItemsSchema.applet_id == applet_id)
         await self._execute(query)

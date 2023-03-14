@@ -16,6 +16,8 @@ class TestWorkspaces(BaseTest):
     login_url = "/auth/login"
     user_workspace_list = "/workspaces"
     workspace_applets_list = f"/workspaces/{owner_id}"
+    remove_manager_access = f"{user_workspace_list}/removeAccess"
+    remove_respondent_access = "/applets/removeAccess"
 
     @transaction.rollback
     async def test_user_workspace_list(self):
@@ -36,7 +38,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
 
     @transaction.rollback
-    async def test_workspace_remove_access(self):
+    async def test_workspace_remove_manager_access(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -49,7 +51,27 @@ class TestWorkspaces(BaseTest):
         }
 
         response = await self.client.post(
-            "/workspaces/removeAccess", data=data
+            self.remove_manager_access, data=data
+        )
+
+        assert response.status_code == 200
+
+    @transaction.rollback
+    async def test_workspace_remove_respondent_access(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        data = {
+            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "applet_ids": [
+                "92917a56-d586-4613-b7aa-991f2c4b15b1",
+            ],
+            "delete_responses": True,
+        }
+
+        response = await self.client.post(
+            self.remove_respondent_access, data=data
         )
 
         assert response.status_code == 200
