@@ -1,13 +1,7 @@
 from fastapi import Body, Depends
 
 from apps.answers.crud import AnswerActivityItemsCRUD
-from apps.answers.domain import (
-    AnswerActivityItem,
-    AnswerActivityItemsCreate,
-    AnswerActivityItemsCreateRequest,
-    AnswerCreate,
-    PublicAnswerActivityItem,
-)
+from apps.answers.domain import ActivityAnswerCreate
 from apps.answers.errors import UserDoesNotHavePermissionError
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccessItem
@@ -18,8 +12,8 @@ from apps.users.domain import User
 
 async def answer_activity_item_create(
     user: User = Depends(get_current_user),
-    schema: AnswerActivityItemsCreateRequest = Body(...),
-) -> ResponseMulti[PublicAnswerActivityItem]:
+    schema: ActivityAnswerCreate = Body(...),
+) -> None:
 
     user_applet_access_item = UserAppletAccessItem(
         user_id=user.id,

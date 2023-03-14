@@ -1,51 +1,37 @@
+import json
+import typing
+
 from sqlalchemy import delete
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
 from apps.answers.db.schemas import AnswerActivityItemsSchema
-from apps.answers.domain import (
-    ActivityIdentifierBase,
-    AnswerActivityItem,
-    AnswerActivityItemCreate,
-    AnswerActivityItemsCreate,
-)
-from apps.answers.errors import AnswerError
 from infrastructure.database.crud import BaseCRUD
 
 
 class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
     schema_class = AnswerActivityItemsSchema
 
-    async def save(
-        self, schema_multiple: AnswerActivityItemsCreate
-    ) -> list[AnswerActivityItem]:
+    async def create_many(
+        self, schemas: list[AnswerActivityItemsSchema]
+    ) -> list[AnswerActivityItemsSchema]:
+        for schema in schemas:
+            schema.answer = self._encrypt(schema.answer)
 
-        respondent_activity_identifier = ActivityIdentifierBase(
-            **schema_multiple.dict()
-        )
-        answer_activity_items = []
+        schemas = await self._create_many(schemas)
 
-        # Save answer activity items into the database
-        try:
-            for answer in schema_multiple.answers:
-                schema = AnswerActivityItemCreate(
-                    **respondent_activity_identifier.dict(),
-                    **answer.dict(),
-                )
+        for schema in schemas:
+            schema.answer = self._decrypt(schema.answer)
 
-                instance: AnswerActivityItemsSchema = await self._create(
-                    self.schema_class(**schema.dict())
-                )
-                # Create internal data model
-                answer_activity_item = AnswerActivityItem.from_orm(instance)
-                answer_activity_items.append(answer_activity_item)
+        return schemas
 
-        except IntegrityError:
-            raise AnswerError
+    def _encrypt(self, value: typing.Any):
+        return json.dumps(value)
 
-        return answer_activity_items
+    def _decrypt(self, value: str):
+        return json.loads(value)
 
     async def delete_by_applet_id(self, applet_id: int):
+        raise NotImplemented
         query: Query = delete(AnswerActivityItemsSchema)
         query = query.where(AnswerActivityItemsSchema.applet_id == applet_id)
         await self._execute(query)

@@ -3,6 +3,7 @@ import uuid
 from apps.activities.crud import ActivityItemHistoriesCRUD
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activities.domain.activity_full import ActivityItemFull
+from apps.activities.domain.activity_item_history import ActivityItemHistory
 
 
 class ActivityItemHistoryService:
@@ -28,3 +29,12 @@ class ActivityItemHistoryService:
                 )
             )
         await ActivityItemHistoriesCRUD().create_many(schemas)
+
+    async def get_by_activity_id(
+        self, activity_id: uuid.UUID
+    ) -> list[ActivityItemHistory]:
+        activity_id_version = f"{activity_id}_{self.version}"
+        schemas = await ActivityItemHistoriesCRUD().get_by_activity_id_version(
+            activity_id_version
+        )
+        return [ActivityItemHistory.from_orm(schema) for schema in schemas]
