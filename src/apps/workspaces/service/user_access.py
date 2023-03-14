@@ -78,7 +78,7 @@ class UserAccessService:
         managers_applet_ids = [
             manager_applet.applet_id
             for manager_applet in (
-                await UserAppletAccessCRUD().get_by_user_id_and_roles(
+                await UserAppletAccessCRUD().get_all_by_user_id_and_roles(
                     schema.user_id,
                     roles=[
                         Role.MANAGER,
@@ -111,7 +111,7 @@ class UserAccessService:
         respondents_applet_ids = [
             respondent_applet.applet_id
             for respondent_applet in (
-                await UserAppletAccessCRUD().get_by_user_id_and_roles(
+                await UserAppletAccessCRUD().get_all_by_user_id_and_roles(
                     schema.user_id,
                     roles=[
                         Role.RESPONDENT,
@@ -146,7 +146,7 @@ class UserAccessService:
         owners_applet_ids = [
             owner_applet.applet_id
             for owner_applet in (
-                await UserAppletAccessCRUD().get_by_user_id_and_roles(
+                await UserAppletAccessCRUD().get_all_by_user_id_and_roles(
                     self._user_id, roles=[Role.ADMIN]
                 )
             )

@@ -78,7 +78,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             for user_applet_access in results
         ]
 
-    async def get_by_user_id_and_roles(
+    async def get_all_by_user_id_and_roles(
         self, user_id_: uuid.UUID, roles: list[Role]
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).filter(
@@ -92,17 +92,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserAppletAccess.from_orm(user_applet_access)
             for user_applet_access in results
         ]
-
-    async def get_by_applet_id_role_admin(
-        self, applet_id_: int
-    ) -> UserAppletAccess | None:
-        query: Query = select(self.schema_class).filter(
-            self.schema_class.applet_id == applet_id_,
-            self.schema_class.role == Role.ADMIN,
-        )
-        result: Result = await self._execute(query)
-
-        return result.scalars().one_or_none()
 
     async def get_by_user_applet_role(
         self,
