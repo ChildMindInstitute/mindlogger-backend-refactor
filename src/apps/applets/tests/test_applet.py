@@ -1,5 +1,3 @@
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -55,8 +53,9 @@ class TestApplet(BaseTest):
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),
@@ -73,8 +72,9 @@ class TestApplet(BaseTest):
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),
@@ -130,8 +130,9 @@ class TestApplet(BaseTest):
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),
@@ -148,8 +149,9 @@ class TestApplet(BaseTest):
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),
@@ -177,7 +179,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 422, response.json()
         assert (
             response.json()["result"][0]["message"]["en"]
-            == "Applet already exist."
+            == "Applet already exists."
         )
 
     @transaction.rollback
@@ -211,16 +213,26 @@ class TestApplet(BaseTest):
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(
+                                setAlert=True,
+                                optionScore=True,
+                                randomizeResponseOptions=True,
+                            ),
                         ),
                         dict(
                             question=dict(
                                 en="How was your breakfast?",
                                 fr="How was your breakfast?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(
+                                setAlert=True,
+                                optionScore=True,
+                                randomizeResponseOptions=True,
+                            ),
                         ),
                     ],
                 ),
@@ -237,8 +249,13 @@ class TestApplet(BaseTest):
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(
+                                setAlert=True,
+                                optionScore=True,
+                                randomizeResponseOptions=True,
+                            ),
                         ),
                     ],
                 ),
@@ -306,7 +323,6 @@ class TestApplet(BaseTest):
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_applet_detail(self):
         await self.client.login(
@@ -356,8 +372,9 @@ class TestApplet(BaseTest):
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),
@@ -374,8 +391,9 @@ class TestApplet(BaseTest):
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),
@@ -444,16 +462,18 @@ class TestApplet(BaseTest):
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                         dict(
                             question=dict(
                                 en="How was your breakfast?",
                                 fr="How was your breakfast?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),
@@ -470,8 +490,9 @@ class TestApplet(BaseTest):
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),
@@ -550,8 +571,9 @@ class TestApplet(BaseTest):
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),
@@ -568,8 +590,9 @@ class TestApplet(BaseTest):
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),
@@ -619,16 +642,18 @@ class TestApplet(BaseTest):
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                         dict(
                             question=dict(
                                 en="How was your breakfast?",
                                 fr="How was your breakfast?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),
@@ -645,8 +670,9 @@ class TestApplet(BaseTest):
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
-                            response_type="choices",
+                            response_type="text",
                             answers=["Bad", "Normal", "Good"],
+                            config=dict(set_alert=True),
                         ),
                     ],
                 ),

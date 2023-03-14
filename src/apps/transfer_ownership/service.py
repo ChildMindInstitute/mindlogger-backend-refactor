@@ -24,9 +24,11 @@ class TransferService:
     ):
         """Initiate a transfer of ownership of an applet."""
         # check if user is owner of applet
-        applet = await AppletsCRUD().get_by_id(id_=applet_id)
-        if applet.account_id != self._user.id:
+        access = await UserAppletAccessCRUD().get_applet_owner(applet_id)
+        if access.user_id != self._user.id:
             raise PermissionsError()
+
+        applet = await AppletsCRUD().get_by_id(id_=applet_id)
 
         transfer = Transfer(
             email=transfer_request.email,

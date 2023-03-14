@@ -15,7 +15,7 @@ __all__ = ["AppletSchema", "AppletHistorySchema"]
 
 
 class _BaseAppletSchema:
-    display_name = Column(String(100), unique=True)
+    display_name = Column(String(100))
     description = Column(JSONB())
     about = Column(JSONB())
     image = Column(String(255))
@@ -23,8 +23,6 @@ class _BaseAppletSchema:
 
     theme_id = Column(UUID(as_uuid=True))
     version = Column(String(255))
-
-    account_id = Column(UUID(as_uuid=True))
 
     report_server_ip = Column(Text())
     report_public_key = Column(Text())
@@ -37,9 +35,6 @@ class _BaseAppletSchema:
 class AppletSchema(_BaseAppletSchema, Base):
     __tablename__ = "applets"
 
-    creator_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
-    )
     folder_id = Column(ForeignKey("folders.id", ondelete="RESTRICT"))
     link = Column(UUID(as_uuid=True), unique=True)
     require_login = Column(Boolean(), default=True)
@@ -55,6 +50,6 @@ class AppletHistorySchema(_BaseAppletSchema, Base):
     id = Column(UUID(as_uuid=True))
     display_name = Column(String(length=100))
 
-    creator_id = Column(
+    user_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )

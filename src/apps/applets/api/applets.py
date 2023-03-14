@@ -15,13 +15,12 @@ from apps.applets.domain.applet import (
     AppletDetailPublic,
     AppletInfoPublic,
 )
+from apps.applets.domain.applet_create import AppletCreate
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
+from apps.applets.domain.applet_update import AppletUpdate
 from apps.applets.domain.applets import public_detail, public_history_detail
-from apps.applets.domain.applets.create import AppletCreate
-from apps.applets.domain.applets.update import AppletUpdate
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletHistoryService, AppletService
-from apps.applets.service.applet import create_applet, update_applet
 from apps.applets.service.applet_history import (
     retrieve_applet_by_version,
     retrieve_versions,
@@ -98,7 +97,7 @@ async def applet_create(
     user: User = Depends(get_current_user),
     schema: AppletCreate = Body(...),
 ) -> Response[public_detail.Applet]:
-    applet = await create_applet(schema, user.id)
+    applet = await AppletService(user.id).create(schema)
     return Response(result=public_detail.Applet(**applet.dict()))
 
 
@@ -107,7 +106,7 @@ async def applet_update(
     user: User = Depends(get_current_user),
     schema: AppletUpdate = Body(...),
 ) -> Response[public_detail.Applet]:
-    applet = await update_applet(id_, schema, user.id)
+    applet = await AppletService(user.id).update(id_, schema)
     return Response(result=public_detail.Applet(**applet.dict()))
 
 
