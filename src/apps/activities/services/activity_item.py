@@ -1,10 +1,55 @@
 import uuid
+from collections import defaultdict
 
 from apps.activities.crud import ActivityItemsCRUD
+from apps.activities.db.schemas import ActivityItemSchema
+from apps.activities.domain.activity_create import PreparedActivityItemCreate
+from apps.activities.domain.activity_full import ActivityItemFull
 from apps.activities.domain.activity_item import ActivityItemDetail
+from apps.activities.domain.activity_update import PreparedActivityItemUpdate
 
 
 class ActivityItemService:
+    async def create(
+        self, activity_items: list[PreparedActivityItemCreate]
+    ) -> list[ActivityItemFull]:
+        schemas = list()
+        activity_id_ordering_map: dict[uuid.UUID, int] = defaultdict(int)
+
+        for activity_item in activity_items:
+            schemas.append(
+                ActivityItemSchema(
+                    **activity_item.dict(),
+                    ordering=activity_id_ordering_map[
+                        activity_item.activity_id
+                    ]
+                    + 1,
+                )
+            )
+            activity_id_ordering_map[activity_item.activity_id] += 1
+        item_schemas = await ActivityItemsCRUD().create_many(schemas)
+        return [ActivityItemFull.from_orm(item) for item in item_schemas]
+
+    async def update_create(
+        self, activity_items: list[PreparedActivityItemUpdate]
+    ):
+        schemas = list()
+        activity_id_ordering_map: dict[uuid.UUID, int] = defaultdict(int)
+
+        for activity_item in activity_items:
+            schemas.append(
+                ActivityItemSchema(
+                    **activity_item.dict(),
+                    ordering=activity_id_ordering_map[
+                        activity_item.activity_id
+                    ]
+                    + 1,
+                )
+            )
+            activity_id_ordering_map[activity_item.activity_id] += 1
+        item_schemas = await ActivityItemsCRUD().create_many(schemas)
+        return [ActivityItemFull.from_orm(item) for item in item_schemas]
+
     async def get_single_language_by_activity_id(
         self, activity_id: uuid.UUID, language: str
     ) -> list[ActivityItemDetail]:
@@ -19,21 +64,14 @@ class ActivityItemService:
                     response_type=schema.response_type,
                     # TODO: get answers by language
                     answers=schema.answers,
-                    color_palette=schema.color_palette,
-                    timer=schema.timer,
-                    has_token_value=schema.has_token_value,
-                    is_skippable=schema.is_skippable,
-                    has_alert=schema.has_alert,
-                    has_score=schema.has_score,
-                    is_random=schema.is_random,
-                    is_able_to_move_to_previous=(
-                        schema.is_able_to_move_to_previous
-                    ),
-                    has_text_response=schema.has_text_response,
+                    config=schema.config,
                     ordering=schema.ordering,
                 )
             )
         return items
+
+    async def remove_applet_activity_items(self, applet_id: uuid.UUID):
+        await ActivityItemsCRUD().delete_by_applet_id(applet_id)
 
     @staticmethod
     def _get_by_language(values: dict, language: str):

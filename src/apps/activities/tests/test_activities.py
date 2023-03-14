@@ -14,7 +14,7 @@ class TestActivities(BaseTest):
     login_url = "/auth/login"
     activity_detail = "/activities/{pk}"
 
-    async def test_applet_detail(self):
+    async def test_activity_detail(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -24,7 +24,7 @@ class TestActivities(BaseTest):
             )
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 200, response.json()
         result = response.json()["result"]
         assert result["id"] == "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
         assert result["name"] == "PHQ2"

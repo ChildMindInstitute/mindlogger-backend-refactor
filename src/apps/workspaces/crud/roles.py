@@ -19,6 +19,37 @@ __all__ = ["UserAppletAccessCRUD"]
 class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     schema_class = UserAppletAccessSchema
 
+    async def get_applet_role_by_user_id(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
+    ) -> UserAppletAccessSchema | None:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.role == role)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first()
+
+    def user_applet_ids_query(self, user_id: uuid.UUID) -> Query:
+        query: Query = select(UserAppletAccessSchema.applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(
+            UserAppletAccessSchema.role.in_(
+                [Role.ADMIN, Role.MANAGER, Role.EDITOR]
+            )
+        )
+        return query
+
+    async def get_applet_owner(
+        self, applet_id: uuid.UUID
+    ) -> UserAppletAccessSchema:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().one()
+
     async def get_by_id(self, id_: int) -> UserAppletAccess:
         """Fetch UserAppletAccess by id from the database."""
 
@@ -85,30 +116,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         result: Result = await self._execute(query)
 
         return result.scalars().one_or_none()
-
-    async def get_by_applet_id(
-        self, applet_id_: int
-    ) -> list[UserAppletAccess]:
-        query: Query = select(self.schema_class).filter(
-            self.schema_class.applet_id == applet_id_
-        )
-        result: Result = await self._execute(query)
-        results: list[UserAppletAccessSchema] = result.scalars().all()
-        return [
-            UserAppletAccess.from_orm(user_applet_access)
-            for user_applet_access in results
-        ]
-
-    async def get_by_admin_user_and_applet(
-        self, user_id: int, applet_id: int
-    ) -> list[UserAppletAccessSchema]:
-        query: Query = select(UserAppletAccessSchema)
-        query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
-        query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
-        result = await self._execute(query)
-        results = result.scalars().all()
-        return results
 
     async def save(
         self, schema: UserAppletAccessSchema

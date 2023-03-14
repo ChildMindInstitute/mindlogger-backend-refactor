@@ -11,21 +11,14 @@ class ActivityItem(PublicModel):
     question: dict[str, str]
     response_type: str
     answers: list
-    color_palette: str = ""
-    timer: int = 0
-    has_token_value: bool = False
-    is_skippable: bool = False
-    has_alert: bool = False
-    has_score: bool = False
-    is_random: bool = False
-    is_able_to_move_to_previous: bool = False
-    has_text_response: bool = False
-    ordering: float
+    config: dict = dict()
+    ordering: int
+    skippable_item: bool = False
+    remove_availability_to_go_back: bool = False
 
 
 class Activity(PublicModel):
     id: uuid.UUID
-    guid: uuid.UUID
     name: str
     description: dict[str, str] = Field(default_factory=dict)
     splash_screen: str = ""
@@ -34,7 +27,7 @@ class Activity(PublicModel):
     is_skippable: bool = False
     is_reviewable: bool = False
     response_is_editable: bool = False
-    ordering: float
+    ordering: int
     items: list[ActivityItem] = Field(default_factory=list)
 
 
@@ -48,7 +41,6 @@ class ActivityFlowItem(PublicModel):
 
 class ActivityFlow(PublicModel):
     id: uuid.UUID
-    guid: uuid.UUID
     name: str
     description: dict[str, str]
     is_single_report: bool = False

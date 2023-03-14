@@ -1,4 +1,4 @@
-from sqlalchemy import REAL, Boolean, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
@@ -7,19 +7,101 @@ __all__ = ["ActivityItemSchema", "ActivityItemHistorySchema"]
 
 
 class _BaseActivityItemSchema:
+    header_image = Column(Text())
     question = Column(JSONB())
     response_type = Column(Text())
     answers = Column(JSONB())
-    color_palette = Column(Text())
-    timer = Column(Integer())
-    has_token_value = Column(Boolean(), default=False)
-    is_skippable = Column(Boolean(), default=False)
-    has_alert = Column(Boolean(), default=False)
-    has_score = Column(Boolean(), default=False)
-    is_random = Column(Boolean(), default=False)
-    is_able_to_move_to_previous = Column(Boolean(), default=False)
-    has_text_response = Column(Boolean(), default=False)
+    config = Column(JSONB(), default=dict())
     ordering = Column(REAL())
+    skippable_item = Column(Boolean())
+    remove_availability_to_go_back = Column(Boolean())
+
+    """
+    Text:
+    header_image
+    question
+    response_type
+    max_response_length
+    correct_answer_required
+    correct_answer
+    skippable_item
+    numerical_response_required
+    response_data_identifier
+    response_required
+    remove_availability_to_go_back
+
+    CheckBox:
+    header_image
+    question
+    response_type
+    token_value
+    skippable_item
+    set_alert
+    option_score
+    randomize_response_options
+    remove_availability_to_go_back
+    color_palette
+    text_input_options
+    text_input_options_required
+    response_timer
+    answers: [{value, token_value, score_value, tooltip, alert}]
+
+    Slider:
+    header_image
+    question
+    response_type
+    min_value
+    max_value
+    min_label
+    max_label
+    tick_marks
+    tick_mark_labels
+    text_anchor
+    skippable_item
+    option_score
+    set_alert
+    use_continuous_slider
+
+    Radio:
+    header_image
+    question
+    response_type
+    token_value
+    skippable_item
+    set_alert
+    option_score
+    remove_availability_to_go_back
+    response_timer
+    answers: [{value, token_value, score_value, tooltip, alert}]
+
+    StackedRadio:
+    header_image
+    question
+    response_type
+    token_value
+    skippable_item
+    set_alert
+    option_score
+    remove_availability_to_go_back
+    response_timer
+    answers: {options: [], items: []}
+
+    StackedCheckBox:
+    header_image
+    question
+    response_type
+    token_value
+    skippable_item
+    set_alert
+    option_score
+    randomize_response_options
+    remove_availability_to_go_back
+    color_palette
+    text_input_options
+    text_input_options_required
+    response_timer
+    answers: [{value, token_value, score_value, tooltip, alert}]
+    """
 
 
 class ActivityItemSchema(_BaseActivityItemSchema, Base):
