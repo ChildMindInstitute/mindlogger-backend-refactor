@@ -23,6 +23,10 @@ class TestDataService:
     async def create_applet(self):
         applet_create = self._generate_applet()
         applet = await AppletService(self.user_id).create(applet_create)
+        self._generate_events(
+            activity_ids=[activity.id for activity in applet.activities],
+            flow_ids=[flow.id for flow in applet.activity_flows],
+        )
         return applet
 
     @staticmethod
@@ -154,3 +158,10 @@ class TestDataService:
             items.append(FlowItemCreate(activity_key=activities[index].key))
 
         return items
+
+    def _generate_events(
+        self,
+        activity_ids: list[uuid.UUID] = None,
+        flow_ids: list[uuid.UUID] = None,
+    ):
+        pass

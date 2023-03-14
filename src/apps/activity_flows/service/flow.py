@@ -13,6 +13,7 @@ from apps.activity_flows.domain.flow_update import (
     PreparedFlowItemUpdate,
 )
 from apps.activity_flows.service.flow_item import FlowItemService
+from apps.schedule.service.schedule import ScheduleService
 
 
 class FlowService:
@@ -60,6 +61,13 @@ class FlowService:
         for flow_item in flow_items:
             flow_id_map[flow_item.activity_flow_id].items.append(flow_item)
 
+        # add default schedule for flows
+        await ScheduleService().create_default_schedules(
+            applet_id=applet_id,
+            activity_ids=[flow.id for flow in flows],
+            is_activity=False,
+        )
+
         return flows
 
     async def update_create(
@@ -70,8 +78,22 @@ class FlowService:
     ) -> list[FlowFull]:
         schemas = list()
         prepared_flow_items = list()
+
+        all_flows = [
+            flow.id for flow in await FlowsCRUD().get_by_applet_id(applet_id)
+        ]
+        # Save new flow ids
+        new_flows = []
+        existing_flows = []
+
         for index, flow_update in enumerate(flows_update):
             flow_id = flow_update.id or uuid.uuid4()
+
+            if flow_update.id:
+                existing_flows.append(flow_id)
+            else:
+                new_flows.append(flow_id)
+
             schemas.append(
                 ActivityFlowSchema(
                     id=flow_id,
@@ -106,6 +128,22 @@ class FlowService:
 
         for flow_item in flow_items:
             flow_id_map[flow_item.activity_flow_id].items.append(flow_item)
+
+        # Remove events for deleted flows
+        deleted_flow_ids = set(all_flows) - set(existing_flows)
+
+        if deleted_flow_ids:
+            await ScheduleService().delete_by_flow_ids(
+                applet_id=applet_id, activity_ids=list(deleted_flow_ids)
+            )
+
+        # Create default events for new activities
+        if new_flows:
+            await ScheduleService().create_default_schedules(
+                applet_id=applet_id,
+                activity_ids=list(new_flows),
+                is_activity=False,
+            )
 
         return flows
 

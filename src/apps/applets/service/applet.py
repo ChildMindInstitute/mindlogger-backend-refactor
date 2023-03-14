@@ -67,7 +67,6 @@ class AppletService:
         await AppletHistoryService(applet.id, applet.version).add_history(
             self.user_id, applet
         )
-
         return applet
 
     async def _create(self, create_data: AppletCreate) -> AppletFull:
