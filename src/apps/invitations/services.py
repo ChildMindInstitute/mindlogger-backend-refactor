@@ -253,6 +253,9 @@ class InvitationsService:
         ] = await self.invitations_crud.get_by_email_applet_role_reviewer(
             email_=schema.email, applet_id_=applet_id
         )
+        respondents = [
+            str(respondent_id) for respondent_id in schema.respondents
+        ]
 
         success_invitation_schema = {
             "email": schema.email,
@@ -268,7 +271,7 @@ class InvitationsService:
         for invitation in invitations:
             meta = ReviewerMeta.from_orm(invitation.meta)
             if invitation.status == InvitationStatus.PENDING and (
-                meta.respondents == schema.respondents
+                meta.respondents == respondents
             ):
                 payload = success_invitation_schema | {"meta": meta.dict()}
                 invitation_schema = await self.invitations_crud.update(
@@ -278,12 +281,12 @@ class InvitationsService:
                 )
                 break
             elif invitation.status == InvitationStatus.APPROVED and (
-                meta.respondents == schema.respondents
+                meta.respondents == respondents
             ):
                 raise InvitationAlreadyProcesses
 
         if not payload:
-            meta = ReviewerMeta(respondents=schema.respondents)
+            meta = ReviewerMeta(respondents=respondents)
 
             payload = success_invitation_schema | {"meta": meta.dict()}
             invitation_schema = await self.invitations_crud.save(
@@ -370,7 +373,7 @@ class InvitationsService:
         success_invitation_schema = {
             "email": schema.email,
             "applet_id": applet_id,
-            "role": Role.REVIEWER,
+            "role": schema.role,
             "key": uuid.uuid3(uuid.uuid4(), schema.email),
             "invitor_id": self._user.id,
             "status": InvitationStatus.PENDING,

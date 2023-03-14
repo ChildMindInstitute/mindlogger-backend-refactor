@@ -108,7 +108,7 @@ class ReviewerMeta(InternalModel):
     for representation reviewer meta information.
     """
 
-    respondents: list[uuid.UUID]
+    respondents: list[str]
 
 
 class Invitation(InternalModel):
@@ -120,7 +120,7 @@ class Invitation(InternalModel):
     role: Role
     key: uuid.UUID
     status: str
-    invitor_id: int
+    invitor_id: uuid.UUID
 
 
 class InvitationRespondent(Invitation):
@@ -207,7 +207,7 @@ class InvitationDetailForReviewer(_InvitationDetail):
 
     email: EmailStr
     role: Role = Role.REVIEWER
-    respondents: list[int]
+    respondents: list[uuid.UUID]
 
 
 class InvitationDetailForManagers(_InvitationDetail):
@@ -287,7 +287,7 @@ class InvitationReviewerResponse(_InvitationResponse):
     for reviewer role.
     """
 
-    respondents: list[int] = Field(
+    respondents: list[uuid.UUID] = Field(
         description="This field represents the list of users id's "
         "which invited to the applet as a respondents",
     )
