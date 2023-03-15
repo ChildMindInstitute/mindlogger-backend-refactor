@@ -4,6 +4,7 @@ import uuid
 from apps.activities.services.activity import ActivityService
 from apps.activity_flows.service.flow import FlowService
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import (
     AppletDetail,
     AppletFolder,
@@ -12,12 +13,17 @@ from apps.applets.domain import (
     Role,
 )
 from apps.applets.domain.applet import Applet, AppletDataRetention
+from apps.applets.domain.applet_create import AppletCreate
+from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
+from apps.applets.domain.applet_update import AppletUpdate
 from apps.applets.errors import (
+    AppletAlreadyExist,
     AppletLinkAlreadyExist,
     AppletNotFoundError,
     AppletsFolderAccessDenied,
 )
+from apps.applets.service.applet_history_service import AppletHistoryService
 from apps.folders.crud import FolderCRUD
 from apps.themes.service import ThemeService
 from apps.workspaces.errors import AppletAccessDenied
@@ -41,6 +47,110 @@ class AppletService:
 
     def __init__(self, user_id: uuid.UUID):
         self.user_id = user_id
+
+    async def create(self, create_data: AppletCreate) -> AppletFull:
+        applet = await self._create(create_data)
+
+        await UserAppletAccessService(self.user_id, applet.id).add_role(
+            Role.ADMIN
+        )
+        applet.activities = await ActivityService(self.user_id).create(
+            applet.id, create_data.activities
+        )
+        activity_key_id_map = dict()
+        for activity in applet.activities:
+            activity_key_id_map[activity.key] = activity.id
+        applet.activity_flows = await FlowService().create(
+            applet.id, create_data.activity_flows, activity_key_id_map
+        )
+
+        await AppletHistoryService(applet.id, applet.version).add_history(
+            self.user_id, applet
+        )
+
+        return applet
+
+    async def _create(self, create_data: AppletCreate) -> AppletFull:
+        await self._validate_applet_name(create_data.display_name)
+        schema = await AppletsCRUD().save(
+            AppletSchema(
+                display_name=create_data.display_name,
+                description=create_data.description,
+                about=create_data.about,
+                image=create_data.image,
+                watermark=create_data.watermark,
+                theme_id=create_data.theme_id,
+                version=self.get_next_version(),
+                report_server_ip=create_data.report_server_ip,
+                report_public_key=create_data.report_public_key,
+                report_recipients=create_data.report_recipients,
+                report_include_user_id=create_data.report_include_user_id,
+                report_include_case_id=create_data.report_include_case_id,
+                report_email_body=create_data.report_email_body,
+            )
+        )
+        return AppletFull.from_orm(schema)
+
+    async def update(
+        self, applet_id: uuid.UUID, update_data: AppletUpdate
+    ) -> AppletFull:
+        await FlowService().remove_applet_flows(applet_id)
+        await ActivityService(self.user_id).remove_applet_activities(applet_id)
+        applet = await self._update(applet_id, update_data)
+
+        applet.activities = await ActivityService(self.user_id).update_create(
+            applet_id, update_data.activities
+        )
+        activity_key_id_map = dict()
+        for activity in applet.activities:
+            activity_key_id_map[activity.key] = activity.id
+        applet.activity_flows = await FlowService().update_create(
+            applet_id, update_data.activity_flows, activity_key_id_map
+        )
+
+        await AppletHistoryService(applet.id, applet.version).add_history(
+            self.user_id, applet
+        )
+
+        return applet
+
+    async def _validate_applet_name(
+        self, display_name: str, exclude_by_id: uuid.UUID | None = None
+    ):
+        applet_ids_query = UserAppletAccessCRUD().user_applet_ids_query(
+            self.user_id
+        )
+        existed_applet = await AppletsCRUD().get_by_display_name(
+            display_name, applet_ids_query, exclude_by_id
+        )
+        if existed_applet:
+            raise AppletAlreadyExist()
+
+    async def _update(
+        self, applet_id: uuid.UUID, update_data: AppletUpdate
+    ) -> AppletFull:
+        await self._validate_applet_name(update_data.display_name, applet_id)
+        applet_schema = await AppletsCRUD().get_by_id(applet_id)
+
+        schema = await AppletsCRUD().update_by_id(
+            applet_id,
+            AppletSchema(
+                display_name=update_data.display_name,
+                description=update_data.description,
+                about=update_data.about,
+                image=update_data.image,
+                watermark=update_data.watermark,
+                theme_id=update_data.theme_id,
+                version=self.get_next_version(applet_schema.version),
+                report_server_ip=update_data.report_server_ip,
+                report_public_key=update_data.report_public_key,
+                report_recipients=update_data.report_recipients,
+                report_include_user_id=update_data.report_include_user_id,
+                report_include_case_id=update_data.report_include_case_id,
+                report_email_body=update_data.report_email_body,
+            ),
+        )
+        return AppletFull.from_orm(schema)
 
     def get_next_version(self, version: str | None = None):
         if not version:
@@ -216,8 +326,8 @@ class AppletService:
         await AppletsCRUD().set_applets_folder(applet_id, None)
 
     async def _validate_applet(self, applet_id: uuid.UUID):
-        applet_schema = await AppletsCRUD().get_by_id(applet_id)
-        if applet_schema.creator_id != self.user_id:
+        access = await UserAppletAccessCRUD().get_applet_owner(applet_id)
+        if access.user_id != self.user_id:
             raise AppletAccessDenied()
 
     async def _validate_folder(self, folder_id: uuid.UUID):

@@ -71,7 +71,7 @@ class PasswordRecoveryService:
             "link": (
                 f"https://{settings.service.urls.frontend.web_base}"
                 f"/{settings.service.urls.frontend.password_recovery_send}"
-                f"/{user.id}/token/{password_recovery_info.key}?lang=en"
+                f"?key={password_recovery_info.key}&email={user.email}"
             ),
         }
         message = MessageSchema(
