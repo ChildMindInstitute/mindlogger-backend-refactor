@@ -81,7 +81,6 @@ class ActivityService:
                 activity_item
             )
 
-
         # add default schedule for activities
         await ScheduleService().create_default_schedules(
             applet_id=applet_id,

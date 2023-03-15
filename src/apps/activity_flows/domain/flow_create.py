@@ -5,7 +5,6 @@ from pydantic import Field
 from apps.shared.domain import InternalModel
 
 
-
 class FlowItemCreate(InternalModel):
     activity_key: uuid.UUID
 
