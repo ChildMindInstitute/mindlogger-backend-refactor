@@ -1,4 +1,5 @@
 import uuid
+from enum import Enum
 
 from pydantic import EmailStr, Field
 
@@ -10,6 +11,11 @@ from apps.shared.domain import InternalModel, PublicModel
 class Applet(PublicModel):
     id: uuid.UUID
     display_name: str
+
+
+class InvitationLanguage(str, Enum):
+    EN = "en"
+    FR = "fr"
 
 
 class InvitationRequest(InternalModel):
@@ -34,9 +40,8 @@ class _InvitationRequest(PublicModel):
     last_name: str = Field(
         description="This field represents the last name of invited user",
     )
-    language: str = Field(
-        description="This field represents the language of invitation",
-        max_length=2,
+    language: InvitationLanguage = Field(
+        description="This field represents the language of invitation"
     )
 
 
