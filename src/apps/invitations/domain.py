@@ -273,7 +273,8 @@ class InvitationRespondentResponse(_InvitationResponse):
         "of the respondent, this user identifier is unique "
         "within the applet",
     )
-    nickname: str = Field(
+    nickname: str | None = Field(
+        default=None,
         description="This field represents the nickname of respondent, "
         "this is the identifier that is assigned by the applet manager "
         "when the respondent is invited, it is intended to increase "
