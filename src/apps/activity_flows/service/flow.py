@@ -134,7 +134,7 @@ class FlowService:
 
         if deleted_flow_ids:
             await ScheduleService().delete_by_flow_ids(
-                applet_id=applet_id, activity_ids=list(deleted_flow_ids)
+                applet_id=applet_id, flow_ids=list(deleted_flow_ids)
             )
 
         # Create default events for new activities

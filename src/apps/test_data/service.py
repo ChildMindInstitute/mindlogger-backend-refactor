@@ -1,6 +1,7 @@
 import random
 import string
 import uuid
+from datetime import date, timedelta
 
 from apps.activities.domain.activity_create import (
     ActivityCreate,
@@ -14,6 +15,9 @@ from apps.activities.domain.response_type_config import (
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.applets.domain.applet_create import AppletCreate
 from apps.applets.service import AppletService
+from apps.schedule.domain.constants import PeriodicityType, TimerType
+from apps.schedule.domain.schedule import EventRequest, PeriodicityRequest
+from apps.schedule.service import ScheduleService
 
 
 class TestDataService:
@@ -23,7 +27,9 @@ class TestDataService:
     async def create_applet(self):
         applet_create = self._generate_applet()
         applet = await AppletService(self.user_id).create(applet_create)
-        self._generate_events(
+
+        await self._create_events(
+            applet_id=applet.id,
             activity_ids=[activity.id for activity in applet.activities],
             flow_ids=[flow.id for flow in applet.activity_flows],
         )
@@ -159,9 +165,59 @@ class TestDataService:
 
         return items
 
-    def _generate_events(
+    async def _create_events(
         self,
-        activity_ids: list[uuid.UUID] = None,
-        flow_ids: list[uuid.UUID] = None,
+        applet_id: uuid.UUID,
+        activity_ids: list[uuid.UUID] | None = None,
+        flow_ids: list[uuid.UUID] | None = None,
     ):
-        pass
+        # create events for activities
+        events = []
+        if activity_ids:
+            for activity_id in activity_ids:
+                schedule = self._generate_event_request(
+                    activity_id=activity_id, flow_id=None
+                )
+                event = await ScheduleService().create_schedule(
+                    schedule=schedule,
+                    applet_id=applet_id,
+                )
+                events.append(event)
+
+        # create events for flows
+        if flow_ids:
+            for flow_id in flow_ids:
+                schedule = self._generate_event_request(
+                    activity_id=None, flow_id=flow_id
+                )
+                event = await ScheduleService().create_schedule(
+                    schedule=schedule,
+                    applet_id=applet_id,
+                )
+                events.append(event)
+
+        return events
+
+    def _generate_event_request(
+        self,
+        activity_id: uuid.UUID | None = None,
+        flow_id: uuid.UUID | None = None,
+    ):
+        return EventRequest(
+            start_time="00:00:00",
+            end_time="23:59:59",
+            all_day=self.random_boolean(),
+            access_before_schedule=self.random_boolean(),
+            one_time_completion=self.random_boolean(),
+            timer=timedelta(minutes=random.randint(1, 10)),
+            timer_type=TimerType.not_set,
+            periodicity=PeriodicityRequest(
+                type=PeriodicityType.monthly,
+                start_date=date.today(),
+                end_date=date.today() + timedelta(days=random.randint(30, 90)),
+                interval=random.randint(1, 30),
+            ),
+            user_id=None,
+            activity_id=activity_id if activity_id else None,
+            flow_id=flow_id if flow_id else None,
+        )
