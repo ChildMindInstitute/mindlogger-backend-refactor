@@ -1,7 +1,7 @@
 import random
 import string
 import uuid
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from apps.activities.domain.activity_create import (
     ActivityCreate,
@@ -18,20 +18,44 @@ from apps.applets.service import AppletService
 from apps.schedule.domain.constants import PeriodicityType, TimerType
 from apps.schedule.domain.schedule import EventRequest, PeriodicityRequest
 from apps.schedule.service import ScheduleService
+from apps.shared.query_params import QueryParams
+from apps.test_data.domain import AnchorDateTime
 
 
 class TestDataService:
     def __init__(self, user_id: uuid.UUID):
         self.user_id = user_id
 
-    async def create_applet(self):
+    async def create_applet(self, anchor_datetime: AnchorDateTime):
+        if not anchor_datetime.anchor_date_time:
+            anchor_datetime.anchor_date_time = datetime.now()
+
+        # delete applets with suffix '-generated'
+        old_applets = await AppletService(
+            self.user_id
+        ).get_list_by_single_language(
+            language="en", query_params=QueryParams()
+        )
+
+        if old_applets:
+            for applet in old_applets:
+                if applet.display_name.endswith("-generated"):
+                    await AppletService(self.user_id).delete_applet_by_id(
+                        applet.id
+                    )
+
         applet_create = self._generate_applet()
         applet = await AppletService(self.user_id).create(applet_create)
 
-        await self._create_events(
+        await self._create_activity_events(
             applet_id=applet.id,
             activity_ids=[activity.id for activity in applet.activities],
+            anchor_datetime=anchor_datetime.anchor_date_time,
+        )
+        await self._create_flow_events(
+            applet_id=applet.id,
             flow_ids=[flow.id for flow in applet.activity_flows],
+            anchor_datetime=anchor_datetime.anchor_date_time,
         )
         return applet
 
@@ -53,7 +77,7 @@ class TestDataService:
             activities
         )
         applet_create = AppletCreate(
-            display_name=self.random_string(),
+            display_name=f"{self.random_string()}-generated",
             description=dict(
                 en=self.random_string(50), fr=self.random_string(50)
             ),
@@ -165,37 +189,31 @@ class TestDataService:
 
         return items
 
-    async def _create_events(
+    async def _create_activity_events(
         self,
         applet_id: uuid.UUID,
         activity_ids: list[uuid.UUID] | None = None,
-        flow_ids: list[uuid.UUID] | None = None,
+        anchor_datetime: datetime.datetime | None = None,
     ):
         # create events for activities
         events = []
         if activity_ids:
-            for activity_id in activity_ids:
-                schedule = self._generate_event_request(
-                    activity_id=activity_id, flow_id=None
-                )
-                event = await ScheduleService().create_schedule(
-                    schedule=schedule,
-                    applet_id=applet_id,
-                )
-                events.append(event)
+            pass
+            # create one by one
 
+        return events
+
+    async def _create_flow_events(
+        self,
+        applet_id: uuid.UUID,
+        flow_ids: list[uuid.UUID] | None = None,
+        anchor_datetime: datetime.datetime | None = None,
+    ):
         # create events for flows
+        events = []
         if flow_ids:
-            for flow_id in flow_ids:
-                schedule = self._generate_event_request(
-                    activity_id=None, flow_id=flow_id
-                )
-                event = await ScheduleService().create_schedule(
-                    schedule=schedule,
-                    applet_id=applet_id,
-                )
-                events.append(event)
-
+            pass
+            # create one by one
         return events
 
     def _generate_event_request(
