@@ -193,7 +193,7 @@ class TestDataService:
         self,
         applet_id: uuid.UUID,
         activity_ids: list[uuid.UUID] | None = None,
-        anchor_datetime: datetime.datetime | None = None,
+        anchor_datetime: datetime | None = None,
     ):
         # create events for activities
         events = []
@@ -207,7 +207,7 @@ class TestDataService:
         self,
         applet_id: uuid.UUID,
         flow_ids: list[uuid.UUID] | None = None,
-        anchor_datetime: datetime.datetime | None = None,
+        anchor_datetime: datetime | None = None,
     ):
         # create events for flows
         events = []
@@ -233,7 +233,7 @@ class TestDataService:
                 type=PeriodicityType.monthly,
                 start_date=date.today(),
                 end_date=date.today() + timedelta(days=random.randint(30, 90)),
-                interval=random.randint(1, 30),
+                selected_date=random.randint(1, 30),
             ),
             user_id=None,
             activity_id=activity_id if activity_id else None,

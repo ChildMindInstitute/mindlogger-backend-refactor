@@ -38,7 +38,7 @@ class DefaultEvent(BaseModel):
         "type": PeriodicityType.ALWAYS,
         "start_date": date.min,
         "end_date": date.max,
-        "interval": 0,
+        "selectedDate": None,
     }
     user_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None

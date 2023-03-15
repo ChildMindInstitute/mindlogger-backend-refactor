@@ -10,28 +10,23 @@ class BasePeriodicity(BaseModel):
     """Periodicity of an event"""
 
     type: PeriodicityType
-    start_date: date
-    end_date: date
-    interval: int = Field(
-        ...,
-        description="Must be between 1 and 7 for WEEKLY. Must be between 1 and 31 for MONTHLY. Otherwise, must be 0",  # noqa: E501
+    start_date: date | None
+    end_date: date | None
+    selected_date: date | None = Field(
+        None,
+        description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set",  # noqa: E501
     )
 
     @root_validator
     def validate_periodicity(cls, values):
-        if values.get("type") == PeriodicityType.WEEKLY:
-            if values.get("interval") < 1 or values.get("interval") > 7:
-                raise ValidationError(
-                    message="Interval must be between 1 and 7"
-                )
-        elif values.get("type") == PeriodicityType.MONTHLY:
-            if values.get("interval") < 1 or values.get("interval") > 31:
-                raise ValidationError(
-                    message="Interval must be between 1 and 31"
-                )
-        else:
-            if values.get("interval") != 0:
-                raise ValidationError(message="Interval must be 0")
+        if values.get("type") in [
+            PeriodicityType.ONCE,
+            PeriodicityType.WEEKLY,
+            PeriodicityType.MONTHLY,
+        ] and not values.get("selected_date"):
+            raise ValidationError(
+                message="selected_date is required for this periodicity type"
+            )
         return values
 
 
@@ -43,5 +38,19 @@ class BaseEvent(BaseModel):
     all_day: bool
     access_before_schedule: bool
     one_time_completion: bool
-    timer: timedelta
+    timer: timedelta | None = Field(
+        None,
+        description="If timer_type is TIMER or IDLE, timer must be set",
+    )
     timer_type: TimerType
+
+    @root_validator
+    def validate_timer(cls, values):
+        if values.get("timer_type") in [
+            TimerType.TIMER,
+            TimerType.IDLE,
+        ] and not values.get("timer"):
+            raise ValidationError(
+                message="timer is required for this timer type"
+            )
+        return values
