@@ -12,7 +12,6 @@ from apps.invitations.domain import (
     InvitationDetailForReviewer,
     InvitationManagersRequest,
     InvitationManagersResponse,
-    InvitationRequest,
     InvitationRespondentRequest,
     InvitationRespondentResponse,
     InvitationResponse,
