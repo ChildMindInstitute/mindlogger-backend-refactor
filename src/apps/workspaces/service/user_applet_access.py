@@ -73,6 +73,12 @@ class UserAppletAccessService:
         )
         return UserAppletAccess.from_orm(access_schema)
 
+    async def get_roles(self) -> list[str]:
+        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
+            self._user_id, self._applet_id
+        )
+        return roles
+
     async def get_admins_role(self) -> Role | None:
         """
         Checks whether user is in admin group and returns role

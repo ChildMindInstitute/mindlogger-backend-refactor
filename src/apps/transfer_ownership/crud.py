@@ -22,9 +22,9 @@ class TransferCRUD(BaseCRUD[TransferSchema]):
 
         return instance
 
-    async def delete_all_by_applet_id(self, applet_id: int) -> None:
+    async def delete_all_by_applet_id(self, applet_id: uuid.UUID) -> None:
         query = delete(self.schema_class)
-        query = query.where(self.schema_class.applet_id == applet_id)
+        query = query.where(TransferSchema.applet_id == applet_id)
         await self._execute(query)
 
     async def delete_by_key(self, key: uuid.UUID) -> None:

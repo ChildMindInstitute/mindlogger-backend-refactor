@@ -18,17 +18,10 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "skippable_item": false,
+      "remove_availability_to_go_back": false,
       "ordering": 1.0,
-      "id_version": "1_1.0.0"
+      "id_version": "04ac3c66-36f0-4097-9c3a-9352e728d2c1_1.0.0"
     }
   },
   {
@@ -50,17 +43,10 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "skippable_item": false,
+      "remove_availability_to_go_back": false,
       "ordering": 1.0,
-      "id_version": "3_1.0.0"
+      "id_version": "04ac3c66-36f0-4097-9c3a-9352e728d2c3_1.0.0"
     }
   },
   {
@@ -82,17 +68,10 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "skippable_item": false,
+      "remove_availability_to_go_back": false,
       "ordering": 1.0,
-      "id_version": "11_1.0.0"
+      "id_version": "04ac3c66-36f0-4097-9c3a-9352e728d211_1.0.0"
     }
   },
   {
@@ -114,17 +93,10 @@
         "More than half the days",
         "Nearly every day"
       ],
-      "color_palette": "",
-      "timer": 0,
-      "has_token_value": false,
-      "is_skippable": false,
-      "has_alert": false,
-      "has_score": false,
-      "is_random": false,
-      "is_able_to_move_to_previous": false,
-      "has_text_response": false,
+      "skippable_item": false,
+      "remove_availability_to_go_back": false,
       "ordering": 1.0,
-      "id_version": "20_1.0.0"
+      "id_version": "04ac3c66-36f0-4097-9c3a-9352e728d220_1.0.0"
     }
   }
 ]

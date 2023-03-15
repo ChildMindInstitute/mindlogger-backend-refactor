@@ -1,5 +1,5 @@
 from sqlalchemy import Column, ForeignKey, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
 
@@ -14,6 +14,7 @@ class AnswerActivityItemsSchema(Base):
         nullable=True,
     )
     answer = Column(Text())
+    applet_id = Column(UUID(as_uuid=True))
     applet_history_id = Column(
         ForeignKey("applet_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
@@ -38,19 +39,20 @@ class AnswerFlowItemsSchema(Base):
         nullable=False,
     )
     answer = Column(JSONB())
-    applet_id = Column(
-        ForeignKey("applets.id", ondelete="RESTRICT"),
-        nullable=False,
-    )
-    applet_history_id_version = Column(
+    applet_id = Column(UUID(as_uuid=True))
+    applet_history_id = Column(
         ForeignKey("applet_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
     )
-    flow_item_history_id_version = Column(
-        ForeignKey("flow_item_histories.id_version", ondelete="RESTRICT"),
+    flow_history_id = Column(
+        ForeignKey("flow_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
     )
-    activity_item_history_id_version = Column(
+    activity_history_id = Column(
+        ForeignKey("activity_histories.id_version", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    activity_item_history_id = Column(
         ForeignKey("activity_item_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
     )

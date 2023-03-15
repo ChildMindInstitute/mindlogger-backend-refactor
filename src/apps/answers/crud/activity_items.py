@@ -1,5 +1,5 @@
-import json
 import typing
+import uuid
 
 from sqlalchemy import delete
 from sqlalchemy.orm import Query
@@ -25,13 +25,12 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         return schemas
 
     def _encrypt(self, value: typing.Any):
-        return json.dumps(value)
+        return value
 
     def _decrypt(self, value: str):
-        return json.loads(value)
+        return value
 
-    async def delete_by_applet_id(self, applet_id: int):
-        raise NotImplemented
+    async def delete_by_applet_id(self, applet_id: uuid.UUID):
         query: Query = delete(AnswerActivityItemsSchema)
         query = query.where(AnswerActivityItemsSchema.applet_id == applet_id)
         await self._execute(query)
