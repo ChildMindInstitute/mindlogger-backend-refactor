@@ -11,21 +11,31 @@ from apps.schedule.crud.events import (
 )
 from apps.schedule.crud.periodicity import PeriodicityCRUD
 from apps.schedule.db.schemas import EventSchema
-from apps.schedule.domain.constants import DefaultEvent, PeriodicityType
+from apps.schedule.domain.constants import (
+    AvailabilityType,
+    DefaultEvent,
+    PeriodicityType,
+    TimerType,
+)
 from apps.schedule.domain.schedule.internal import (
     ActivityEventCreate,
     Event,
     EventCreate,
+    EventFull,
     EventUpdate,
     FlowEventCreate,
     Periodicity,
     UserEventCreate,
 )
 from apps.schedule.domain.schedule.public import (
+    EventAvailabilityDto,
+    HourMinute,
     PublicEvent,
     PublicEventByUser,
     PublicEventCount,
     PublicPeriodicity,
+    ScheduleEventDto,
+    TimerDto,
 )
 from apps.schedule.domain.schedule.requests import EventRequest
 from apps.shared.errors import NotFoundError
@@ -45,7 +55,7 @@ class ScheduleService:
         # Delete all events of this activity or flow
         # if new periodicity type is "always"
 
-        if schedule.periodicity.type == PeriodicityType.always:
+        if schedule.periodicity.type == PeriodicityType.ALWAYS:
             await self._delete_by_activity_or_flow(
                 applet_id=applet_id,
                 activity_id=schedule.activity_id,
@@ -236,7 +246,7 @@ class ScheduleService:
         # Delete all events of this activity or flow
         # if new periodicity type is "always"
 
-        if schedule.periodicity.type == PeriodicityType.always:
+        if schedule.periodicity.type == PeriodicityType.ALWAYS:
             await self._delete_by_activity_or_flow(
                 applet_id=applet_id,
                 activity_id=schedule.activity_id,
@@ -464,7 +474,7 @@ class ScheduleService:
     async def get_events_by_user(
         self, user_id: uuid.UUID
     ) -> list[PublicEventByUser]:
-        """Get all events for user in applet."""
+        """Get all events for user in applets that user is respondent."""
         applets = await AppletsCRUD().get_applets_by_roles(
             user_id=user_id,
             roles=[
@@ -490,9 +500,93 @@ class ScheduleService:
                 PublicEventByUser(
                     applet_id=applet_id,
                     events=[
-                        PublicEvent(**event.dict()) for event in all_events
+                        self._convert_to_dto(event=event)
+                        for event in all_events
                     ],
                 )
             )
+
+        return events
+
+    def _convert_to_dto(self, event: EventFull) -> ScheduleEventDto:
+        """Convert event to dto."""
+        timers = TimerDto(
+            timer=HourMinute(
+                hours=event.timer.seconds // 3600,
+                minutes=event.timer.seconds // 60 % 60,
+            )
+            if event.timer_type == TimerType.TIMER
+            else None,
+            idleTimer=HourMinute(
+                hours=event.timer.seconds // 3600,
+                minutes=event.timer.seconds // 60 % 60,
+            )
+            if event.timer_type == TimerType.IDLE
+            else None,
+        )
+
+        availabilityType = (
+            AvailabilityType.ALWAYS_AVAILABLE
+            if event.periodicity.type == PeriodicityType.ALWAYS
+            else AvailabilityType.SCHEDULED_ACCESS
+        )
+
+        availability = EventAvailabilityDto(
+            oneTimeCompletion=event.one_time_completion,
+            periodicityType=event.periodicity.type,
+            timeFrom=HourMinute(
+                hours=event.start_time.hour,
+                minutes=event.start_time.minute,
+            ),
+            timeTo=HourMinute(
+                hours=event.end_time.hour, minutes=event.end_time.minute
+            ),
+            allowAccessBeforeFromTime=event.access_before_schedule,
+            startDate=event.periodicity.start_date,
+            endDate=event.periodicity.end_date,
+        )
+        return ScheduleEventDto(
+            id=event.id,
+            entityId=event.activity_id if event.activity_id else event.flow_id,
+            timers=timers,
+            availabilityType=availabilityType,
+            availability=availability,
+        )
+
+    async def get_events_by_user_and_applet(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
+    ) -> PublicEventByUser:
+        """Get all events for user in applet."""
+
+        if not (
+            await AppletsCRUD().get_applet_by_roles(
+                user_id=user_id,
+                applet_id=applet_id,
+                roles=[
+                    Role.RESPONDENT,
+                ],
+            )
+        ):
+            raise NotFoundError(
+                message=f"User {user_id} "
+                f"does not have access to applet {applet_id}"
+            )
+
+        user_events = await EventCRUD().get_all_by_applet_and_user(
+            applet_id=applet_id,
+            user_id=user_id,
+        )
+
+        general_events = await EventCRUD().get_general_events_by_user(
+            applet_id=applet_id, user_id=user_id
+        )
+
+        events = PublicEventByUser(
+            applet_id=applet_id,
+            events=[
+                self._convert_to_dto(event=event)
+                for event in (user_events + general_events)
+            ],
+        )
 
         return events
