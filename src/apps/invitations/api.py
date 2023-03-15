@@ -69,7 +69,7 @@ async def invitation_retrieve(
 ) -> Response[InvitationResponse]:
     invitation = await InvitationsService(user).get(key)
     if not invitation:
-        response.status_code = status.HTTP_204_NO_CONTENT
+        response.status_code = status.HTTP_404_NOT_FOUND
         return Response(result=None)
     return Response(result=InvitationResponse.from_orm(invitation))
 
