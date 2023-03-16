@@ -39,7 +39,8 @@ class AlertsConfigBase(PublicModel):
 
 class AlertsConfigCreateRequest(AlertsConfigBase):
     """This model represents the request for configuration
-    alerts for specific applet and activity item
+    alerts for specific applet and activity item,
+    you can only have one alert per one possible answer
     """
 
 
