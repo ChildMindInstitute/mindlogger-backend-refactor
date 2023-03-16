@@ -2,10 +2,15 @@ import uuid
 from typing import Optional
 
 from apps.activities.crud import ActivityHistoriesCRUD
+from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activities.domain import ActivityHistory, ActivityHistoryChange
 
 __all__ = ["ActivityHistoryService"]
 
+from apps.activities.domain.activity_full import ActivityFull
+from apps.activities.services.activity_item_history import (
+    ActivityItemHistoryService,
+)
 from apps.shared.changes_generator import ChangeTextGenerator
 from apps.shared.version import get_prev_version
 
@@ -15,6 +20,34 @@ class ActivityHistoryService:
         self._applet_id = applet_id
         self._version = version
         self._applet_id_version = f"{applet_id}_{version}"
+
+    async def add(self, activities: list[ActivityFull]):
+        activity_items = []
+        schemas = []
+
+        for activity in activities:
+            activity_items += activity.items
+            schemas.append(
+                ActivityHistorySchema(
+                    id=activity.id,
+                    id_version=f"{activity.id}_{self._version}",
+                    applet_id=self._applet_id_version,
+                    name=activity.name,
+                    description=activity.description,
+                    splash_screen=activity.splash_screen,
+                    image=activity.image,
+                    show_all_at_once=activity.show_all_at_once,
+                    is_skippable=activity.is_skippable,
+                    is_reviewable=activity.is_reviewable,
+                    response_is_editable=activity.response_is_editable,
+                    ordering=activity.ordering,
+                )
+            )
+
+        await ActivityHistoriesCRUD().create_many(schemas)
+        await ActivityItemHistoryService(self._applet_id, self._version).add(
+            activity_items
+        )
 
     async def get_changes(self):
         prev_version = get_prev_version(self._version)

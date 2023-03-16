@@ -4,7 +4,6 @@ from typing import Any
 
 from sqlalchemy import distinct, or_, select, update
 from sqlalchemy.engine import Result
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
 
@@ -24,11 +23,9 @@ __all__ = ["AppletsCRUD"]
 
 
 class _AppletFiltering(Filtering):
-    owner_id = FilterField(
-        AppletSchema.id, cast=int, method_name="filter_by_owner"
-    )
+    owner_id = FilterField(AppletSchema.id, method_name="filter_by_owner")
 
-    def filter_by_owner(self, field, value: int):
+    def filter_by_owner(self, field, value: uuid.UUID):
         query: Query = select(UserAppletAccessSchema.applet_id)
         query = query.where(UserAppletAccessSchema.user_id == value)
         query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
@@ -52,10 +49,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     async def save(self, schema: AppletSchema) -> AppletSchema:
         """Return applets instance and the created information."""
 
-        try:
-            instance: AppletSchema = await self._create(schema)
-        except IntegrityError:
-            raise errors.AppletAlreadyExist()
+        instance: AppletSchema = await self._create(schema)
         return instance
 
     async def update_by_id(
@@ -67,6 +61,21 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             schema=schema,
         )
         return instance
+
+    async def get_by_display_name(
+        self,
+        display_name: str,
+        applet_ids: Query | list[uuid.UUID],
+        exclude_id: uuid.UUID | None,
+    ) -> list[AppletSchema]:
+        query: Query = select(AppletSchema)
+        query = query.where(AppletSchema.display_name == display_name)
+        query = query.where(AppletSchema.id.in_(applet_ids))
+        if exclude_id:
+            query = query.where(AppletSchema.id != exclude_id)
+        db_result = await self._execute(query)
+        results = db_result.scalars().all()
+        return results
 
     async def get_by_link(
         self, link: uuid.UUID, require_login: bool
@@ -129,6 +138,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 *_AppletOrdering().get_clauses(*query_params.ordering)
             )
         query = query.where(AppletSchema.id.in_(accessible_applets_query))
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
         query = paging(query, query_params.page, query_params.limit)
         result: Result = await self._execute(query)
         return result.scalars().all()
@@ -169,7 +179,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         result: Result = await self._execute(query)
         return result.scalars().first()
 
-    async def delete_by_id(self, id_: int):
+    async def delete_by_id(self, id_: uuid.UUID):
         """Delete applets by id."""
 
         query = update(AppletSchema)

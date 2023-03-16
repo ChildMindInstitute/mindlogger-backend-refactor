@@ -12,18 +12,18 @@ __all__ = [
 
 
 class PeriodicityType(str, Enum):
-    once = "ONCE"
-    daily = "DAILY"
-    weekly = "WEEKLY"
-    weekdays = "WEEKDAYS"
-    monthly = "MONTHLY"
-    always = "ALWAYS"
+    ONCE = "ONCE"
+    DAILY = "DAILY"
+    WEEKLY = "WEEKLY"
+    WEEKDAYS = "WEEKDAYS"
+    MONTHLY = "MONTHLY"
+    ALWAYS = "ALWAYS"
 
 
 class TimerType(str, Enum):
-    not_set = "NOT_SET"
-    timer = "TIMER"
-    idle = "IDLE"
+    NOT_SET = "NOT_SET"
+    TIMER = "TIMER"
+    IDLE = "IDLE"
 
 
 class DefaultEvent(BaseModel):
@@ -33,9 +33,9 @@ class DefaultEvent(BaseModel):
     access_before_schedule: bool = True
     one_time_completion: bool = False
     timer: timedelta = timedelta()
-    timer_type: TimerType = TimerType.not_set
+    timer_type: TimerType = TimerType.NOT_SET
     periodicity: dict = {
-        "type": PeriodicityType.always,
+        "type": PeriodicityType.ALWAYS,
         "start_date": date.min,
         "end_date": date.max,
         "interval": 0,
@@ -43,3 +43,8 @@ class DefaultEvent(BaseModel):
     user_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None
     flow_id: uuid.UUID | None
+
+
+class AvailabilityType(str, Enum):
+    ALWAYS_AVAILABLE = "AlwaysAvailable"
+    SCHEDULED_ACCESS = "ScheduledAccess"

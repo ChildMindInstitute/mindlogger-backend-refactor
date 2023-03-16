@@ -16,7 +16,7 @@ class AppletsError(BaseError):
 
 
 class AppletAlreadyExist(ValidationError):
-    def __init__(self, *_, message="Applet already exist.") -> None:
+    def __init__(self, *_, message="Applet already exists.") -> None:
         super().__init__(message=message)
 
 

@@ -450,7 +450,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
 
         query = query.filter(ActivitySchema.is_deleted == False)  # noqa: E712
         query = query.filter(ActivitySchema.applet_id == applet_id)
-        query = query.filter(PeriodicitySchema.type != PeriodicityType.always)
+        query = query.filter(PeriodicitySchema.type != PeriodicityType.ALWAYS)
         query = query.group_by(ActivitySchema.applet_id, ActivitySchema.id)
         result = await self._execute(query)
 
@@ -565,7 +565,7 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         query = query.filter(
             ActivityFlowSchema.is_deleted == False  # noqa: E712
         )
-        query = query.filter(PeriodicitySchema.type != PeriodicityType.always)
+        query = query.filter(PeriodicitySchema.type != PeriodicityType.ALWAYS)
         query = query.group_by(
             ActivityFlowSchema.applet_id, ActivityFlowSchema.id
         )

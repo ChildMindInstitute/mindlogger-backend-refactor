@@ -1,9 +1,8 @@
 import uuid
 
-from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
-from apps.applets.db.schemas import AppletSchema
+from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
-from apps.invitations.domain import InvitationDetail
+from apps.invitations.domain import InvitationDetailGeneric
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
@@ -14,54 +13,65 @@ class UserAppletAccessService:
         self._user_id = user_id
         self._applet_id = applet_id
 
-    async def add_role(
-        self,
-        role: Role | None = None,
-        invitation: InvitationDetail | None = None,
-    ) -> UserAppletAccess:
-
-        # Used if the user has an invitation
-        if invitation:
-            applet: AppletSchema = await AppletsCRUD().get_by_id(
-                invitation.applet_id
+    async def add_role(self, role: Role) -> UserAppletAccess:
+        access_schema = (
+            await UserAppletAccessCRUD().get_applet_role_by_user_id(
+                self._applet_id, self._user_id, role
             )
-            if invitation.role in [Role.RESPONDENT, Role.REVIEWER]:
-                # TODO: Fix typing
-                meta = invitation.meta.dict(by_alias=True)  # type: ignore
-            else:
-                meta = {}
-            access_schema = await UserAppletAccessCRUD().save(
-                UserAppletAccessSchema(
-                    user_id=self._user_id,
-                    applet_id=invitation.applet_id,
-                    role=invitation.role,
-                    owner_id=applet.creator_id,
-                    invitor_id=invitation.invitor_id,
-                    meta=meta,
-                )
-            )
-        else:
-            # Used if the User-Admin create applet,
-            access_schema = await UserAppletAccessCRUD().save(
-                UserAppletAccessSchema(
-                    user_id=self._user_id,
-                    applet_id=self._applet_id,
-                    role=role,
-                    owner_id=self._user_id,
-                    invitor_id=self._user_id,
-                    meta={},
-                )
-            )
-
-        return UserAppletAccess(
-            id=access_schema.id,
-            user_id=access_schema.user_id,
-            applet_id=access_schema.applet_id,
-            role=access_schema.role,
-            owner_id=access_schema.owner_id,
-            invitor_id=access_schema.invitor_id,
-            meta=access_schema.meta,
         )
+        if access_schema:
+            return UserAppletAccess.from_orm(access_schema)
+
+        access_schema = await UserAppletAccessCRUD().save(
+            UserAppletAccessSchema(
+                user_id=self._user_id,
+                applet_id=self._applet_id,
+                role=role,
+                owner_id=self._user_id,
+                invitor_id=self._user_id,
+                meta=dict(),
+            )
+        )
+        return UserAppletAccess.from_orm(access_schema)
+
+    async def add_role_by_invitation(
+        self, invitation: InvitationDetailGeneric
+    ):
+        owner_access = await UserAppletAccessCRUD().get_applet_owner(
+            invitation.applet_id
+        )
+        if invitation.role in [Role.RESPONDENT, Role.REVIEWER]:
+            # TODO: Fix typing
+            meta = invitation.meta.dict(by_alias=True)  # type: ignore
+        else:
+            meta = {}
+        access_schema = await UserAppletAccessCRUD().save(
+            UserAppletAccessSchema(
+                user_id=self._user_id,
+                applet_id=invitation.applet_id,
+                role=invitation.role,
+                owner_id=owner_access.user_id,
+                invitor_id=invitation.invitor_id,
+                meta=meta,
+            )
+        )
+        return UserAppletAccess.from_orm(access_schema)
+
+    async def add_role_by_private_invitation(self, role: Role):
+        owner_access = await UserAppletAccessCRUD().get_applet_owner(
+            self._applet_id
+        )
+        access_schema = await UserAppletAccessCRUD().save(
+            UserAppletAccessSchema(
+                user_id=self._user_id,
+                applet_id=self._applet_id,
+                role=role,
+                owner_id=owner_access.user_id,
+                invitor_id=owner_access.user_id,
+                meta={},
+            )
+        )
+        return UserAppletAccess.from_orm(access_schema)
 
     async def get_admins_role(self) -> Role | None:
         """

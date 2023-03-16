@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, String
+from sqlalchemy import Boolean, Column, ForeignKey, String, Text
 
 from infrastructure.database.base import Base
 
@@ -7,8 +7,8 @@ class ThemeSchema(Base):
     __tablename__ = "themes"
 
     name = Column(String(length=100), nullable=False)
-    logo = Column(String(length=100))
-    background_image = Column(String(length=100))
+    logo = Column(Text())
+    background_image = Column(Text())
     primary_color = Column(String(length=100))
     secondary_color = Column(String(length=100))
     tertiary_color = Column(String(length=100))
