@@ -6,6 +6,6 @@ from apps.shared.domain import PublicModel
 
 
 class AnchorDateTime(PublicModel):
-    anchor_date_time: datetime | None = Field(
-        ..., description="Anchor date time"
+    anchor_date_time: datetime = Field(
+        description="Anchor date time", default=datetime.now()
     )

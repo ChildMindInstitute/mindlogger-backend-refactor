@@ -35,14 +35,12 @@ class TestDataService:
         ]
 
     async def create_applet(self, anchor_datetime: AnchorDateTime):
-        if not anchor_datetime.anchor_date_time:
-            anchor_datetime.anchor_date_time = datetime.now()
-
         # delete applets with suffix '-generated'
+
         old_applets = await AppletService(
             self.user_id
         ).get_list_by_single_language(
-            language="en", query_params=QueryParams()
+            language="en", query_params=QueryParams(filters={"roles": "ADMIN"})
         )
 
         if old_applets:
@@ -520,10 +518,11 @@ class TestDataService:
                 current_entity_index,
             )
 
-            default_event.periodicity.type = PeriodicityType.WEEKLY
             default_event.periodicity.selected_date = (
                 anchor_datetime.date() - timedelta(days=2)
             )
+            default_event.periodicity.type = PeriodicityType.WEEKLY
+
             default_event = self._set_timer(
                 default_event, current_entity_index
             )
@@ -544,8 +543,8 @@ class TestDataService:
                 current_entity_index,
             )
 
-            default_event.periodicity.type = PeriodicityType.WEEKLY
             default_event.periodicity.selected_date = anchor_datetime.date()
+            default_event.periodicity.type = PeriodicityType.WEEKLY
             default_event = self._set_timer(
                 default_event, current_entity_index
             )
@@ -566,10 +565,10 @@ class TestDataService:
                 current_entity_index,
             )
 
-            default_event.periodicity.type = PeriodicityType.WEEKLY
             default_event.periodicity.selected_date = (
                 anchor_datetime.date() + timedelta(days=2)
             )
+            default_event.periodicity.type = PeriodicityType.WEEKLY
             default_event = self._set_timer(
                 default_event, current_entity_index
             )
@@ -590,8 +589,8 @@ class TestDataService:
                 current_entity_index,
             )
 
-            default_event.periodicity.type = PeriodicityType.MONTHLY
             default_event.periodicity.selected_date = anchor_datetime.date()
+            default_event.periodicity.type = PeriodicityType.MONTHLY
 
             default_event = self._set_timer(
                 default_event, current_entity_index
@@ -635,8 +634,8 @@ class TestDataService:
                 current_entity_index,
             )
 
-            default_event.periodicity.type = PeriodicityType.ONCE
             default_event.periodicity.selected_date = anchor_datetime.date()
+            default_event.periodicity.type = PeriodicityType.ONCE
 
             default_event = self._set_timer(
                 default_event, current_entity_index

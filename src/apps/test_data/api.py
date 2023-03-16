@@ -7,6 +7,6 @@ from apps.test_data.service import TestDataService
 
 async def generate_test_data(
     user=Depends(get_current_user),
-    anchor_datetime: AnchorDateTime = Body(...),
+    schema: AnchorDateTime = Body(default=AnchorDateTime()),
 ) -> None:
-    await TestDataService(user.id).create_applet(anchor_datetime)
+    await TestDataService(user.id).create_applet(schema)
