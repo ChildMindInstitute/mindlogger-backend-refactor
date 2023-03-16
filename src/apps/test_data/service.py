@@ -1,7 +1,7 @@
 import random
 import string
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 from apps.activities.domain.activity_create import (
     ActivityCreate,
@@ -25,6 +25,14 @@ from apps.test_data.domain import AnchorDateTime
 class TestDataService:
     def __init__(self, user_id: uuid.UUID):
         self.user_id = user_id
+        self.timer_options = [
+            {"type": TimerType.TIMER, "value": timedelta(minutes=195)},
+            {"type": TimerType.IDLE, "value": timedelta(minutes=1)},
+            {"type": TimerType.TIMER, "value": timedelta(minutes=1)},
+            {"type": TimerType.IDLE, "value": timedelta(minutes=195)},
+            {"type": TimerType.TIMER, "value": timedelta(minutes=195)},
+            {"type": TimerType.IDLE, "value": timedelta(minutes=195)},
+        ]
 
     async def create_applet(self, anchor_datetime: AnchorDateTime):
         if not anchor_datetime.anchor_date_time:
@@ -38,10 +46,10 @@ class TestDataService:
         )
 
         if old_applets:
-            for applet in old_applets:
-                if applet.display_name.endswith("-generated"):
+            for old_applet in old_applets:
+                if old_applet.display_name.endswith("-generated"):
                     await AppletService(self.user_id).delete_applet_by_id(
-                        applet.id
+                        old_applet.id
                     )
 
         applet_create = self._generate_applet()
@@ -191,29 +199,36 @@ class TestDataService:
 
     async def _create_activity_events(
         self,
+        anchor_datetime: datetime,
         applet_id: uuid.UUID,
         activity_ids: list[uuid.UUID] | None = None,
-        anchor_datetime: datetime | None = None,
     ):
         # create events for activities
         events = []
         if activity_ids:
-            pass
-            # create one by one
-
+            events = await self._create_events(
+                applet_id=applet_id,
+                entity_ids=activity_ids,
+                is_activity=True,
+                anchor_datetime=anchor_datetime,
+            )
         return events
 
     async def _create_flow_events(
         self,
+        anchor_datetime: datetime,
         applet_id: uuid.UUID,
         flow_ids: list[uuid.UUID] | None = None,
-        anchor_datetime: datetime | None = None,
     ):
         # create events for flows
         events = []
         if flow_ids:
-            pass
-            # create one by one
+            events = await self._create_events(
+                applet_id=applet_id,
+                entity_ids=flow_ids,
+                is_activity=False,
+                anchor_datetime=anchor_datetime,
+            )
         return events
 
     def _generate_event_request(
@@ -224,18 +239,428 @@ class TestDataService:
         return EventRequest(
             start_time="00:00:00",
             end_time="23:59:59",
-            all_day=self.random_boolean(),
-            access_before_schedule=self.random_boolean(),
+            access_before_schedule=False,
             one_time_completion=self.random_boolean(),
             timer=timedelta(minutes=random.randint(1, 10)),
-            timer_type=TimerType.not_set,
+            timer_type=TimerType.NOT_SET,
             periodicity=PeriodicityRequest(
-                type=PeriodicityType.monthly,
-                start_date=date.today(),
-                end_date=date.today() + timedelta(days=random.randint(30, 90)),
-                selected_date=random.randint(1, 30),
+                type=PeriodicityType.ALWAYS,
+                start_date=None,
+                end_date=None,
+                selected_date=None,
             ),
-            user_id=None,
+            respondent_id=None,
             activity_id=activity_id if activity_id else None,
             flow_id=flow_id if flow_id else None,
         )
+
+    def _get_generated_event(
+        self,
+        is_activity: bool,
+        entity_ids: list[uuid.UUID],
+        current_entity_index: int,
+    ):
+
+        if is_activity:
+            default_event = self._generate_event_request(
+                activity_id=entity_ids[current_entity_index],
+            )
+        else:
+            default_event = self._generate_event_request(
+                flow_id=entity_ids[current_entity_index],
+            )
+        return default_event
+
+    async def _create_events(
+        self,
+        applet_id: uuid.UUID,
+        anchor_datetime: datetime,
+        entity_ids: list[uuid.UUID] | None = None,
+        is_activity: bool = True,
+    ):
+        events = []
+        if entity_ids:
+            current_entity_index = 0
+            # first event always available and allow_access_before_schedule false # noqa: E501
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+            default_event.access_before_schedule = False
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+            # second event always available and allow_access_before_schedule true # noqa: E501
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+            default_event.access_before_schedule = True
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # third event daily
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+            default_event.periodicity.start_date = (
+                anchor_datetime.date() - timedelta(days=5)
+            )
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() - timedelta(days=3)
+            )
+            default_event.periodicity.type = PeriodicityType.DAILY
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # fourth event daily
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+            default_event.periodicity.start_date = (
+                anchor_datetime.date() - timedelta(days=2)
+            )
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=2)
+            )
+            default_event.periodicity.type = PeriodicityType.DAILY
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # fifth event daily
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+            default_event.periodicity.start_date = (
+                anchor_datetime.date() + timedelta(days=2)
+            )
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=5)
+            )
+            default_event.periodicity.type = PeriodicityType.DAILY
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # sixth event daily
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+
+            default_event.periodicity.type = PeriodicityType.DAILY
+
+            default_event.start_time = (
+                anchor_datetime + timedelta(minutes=60)
+            ).time()
+            default_event.end_time = (
+                anchor_datetime + timedelta(minutes=180)
+            ).time()
+
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # seventh event daily
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+
+            default_event.periodicity.type = PeriodicityType.DAILY
+            default_event.start_time = (
+                anchor_datetime + timedelta(minutes=60)
+            ).time()
+            default_event.end_time = (
+                anchor_datetime + timedelta(minutes=180)
+            ).time()
+            default_event.access_before_schedule = True
+
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # eighth event daily
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+
+            default_event.periodicity.type = PeriodicityType.DAILY
+            default_event.start_time = (
+                anchor_datetime - timedelta(minutes=180)
+            ).time()
+            default_event.end_time = (
+                anchor_datetime - timedelta(minutes=60)
+            ).time()
+
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # ninth event daily
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+
+            default_event.periodicity.type = PeriodicityType.DAILY
+            default_event.start_time = (
+                anchor_datetime - timedelta(minutes=180)
+            ).time()
+            default_event.end_time = (
+                anchor_datetime + timedelta(minutes=180)
+            ).time()
+
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # tenth event weekly
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+
+            default_event.periodicity.type = PeriodicityType.WEEKLY
+            default_event.periodicity.selected_date = (
+                anchor_datetime.date() - timedelta(days=2)
+            )
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # eleventh event weekly
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+
+            default_event.periodicity.type = PeriodicityType.WEEKLY
+            default_event.periodicity.selected_date = anchor_datetime.date()
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # twelfth event weekly
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+
+            default_event.periodicity.type = PeriodicityType.WEEKLY
+            default_event.periodicity.selected_date = (
+                anchor_datetime.date() + timedelta(days=2)
+            )
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # thirteenth event montly
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+
+            default_event.periodicity.type = PeriodicityType.MONTHLY
+            default_event.periodicity.selected_date = anchor_datetime.date()
+
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # fourteenth event weekdays
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+
+            default_event.periodicity.type = PeriodicityType.WEEKDAYS
+
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+            # fifteenth event once
+            current_entity_index = self._increment_index(
+                current_entity_index, len(entity_ids)
+            )
+            default_event = self._get_generated_event(
+                is_activity,
+                entity_ids,
+                current_entity_index,
+            )
+
+            default_event.periodicity.type = PeriodicityType.ONCE
+            default_event.periodicity.selected_date = anchor_datetime.date()
+
+            default_event = self._set_timer(
+                default_event, current_entity_index
+            )
+            events.append(
+                await ScheduleService().create_schedule(
+                    applet_id=applet_id,
+                    schedule=default_event,
+                )
+            )
+
+        return events
+
+    def _increment_index(self, index: int, length: int):
+        if index == length - 1:
+            return 0
+        return index + 1
+
+    def _set_timer(self, event: EventRequest, index: int):
+        timer_data = self._get_timer_option(index)
+        event.timer_type = timer_data["type"]
+        event.timer = timer_data["value"]
+        return event
+
+    def _get_timer_option(self, index: int):
+        # get from option index mod length
+        return self.timer_options[index % len(self.timer_options)]

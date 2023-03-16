@@ -163,7 +163,6 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     id=row.EventSchema.id,
                     start_time=row.EventSchema.start_time,
                     end_time=row.EventSchema.end_time,
-                    all_day=row.EventSchema.all_day,
                     access_before_schedule=row.EventSchema.access_before_schedule,  # noqa: E501
                     one_time_completion=row.EventSchema.one_time_completion,
                     timer=row.EventSchema.timer,
@@ -302,7 +301,6 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     id=row.EventSchema.id,
                     start_time=row.EventSchema.start_time,
                     end_time=row.EventSchema.end_time,
-                    all_day=row.EventSchema.all_day,
                     access_before_schedule=row.EventSchema.access_before_schedule,  # noqa: E501
                     one_time_completion=row.EventSchema.one_time_completion,
                     timer=row.EventSchema.timer,

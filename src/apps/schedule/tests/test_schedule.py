@@ -26,7 +26,7 @@ class TestSchedule(BaseTest):
     schedule_detail_user_url = f"{schedule_user_url}/{{applet_id}}"
 
     schedule_url = f"{applet_detail_url}/events"
-    delete_user_url = f"{schedule_url}/delete_individual/{{user_id}}"
+    delete_user_url = f"{schedule_url}/delete_individual/{{respondent_id}}"
     schedule_detail_url = f"{applet_detail_url}/events/{{event_id}}"
 
     count_url = "applets/{applet_id}/events/count"
@@ -39,7 +39,6 @@ class TestSchedule(BaseTest):
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
-            "all_day": False,
             "access_before_schedule": False,
             "one_time_completion": False,
             "timer": "00:00:00",
@@ -50,7 +49,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "user_id": None,
+            "respondent_id": None,
             "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             "flow_id": None,
         }
@@ -67,14 +66,13 @@ class TestSchedule(BaseTest):
         assert event["startTime"] == create_data["start_time"]
 
     @transaction.rollback
-    async def test_schedule_create_with_user_id(self):
+    async def test_schedule_create_with_respondent_id(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
-            "all_day": False,
             "access_before_schedule": True,
             "one_time_completion": True,
             "timer": "00:00:00",
@@ -85,7 +83,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2023-09-01",
                 "selected_date": "2023-01-01",
             },
-            "user_id": None,
+            "respondent_id": None,
             "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             "flow_id": None,
         }
@@ -99,7 +97,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 201, response.json()
         event = response.json()["result"]
-        assert event["userId"] == create_data["user_id"]
+        assert event["respondentId"] == create_data["respondent_id"]
 
     @transaction.rollback
     async def test_schedule_create_with_flow(self):
@@ -109,7 +107,6 @@ class TestSchedule(BaseTest):
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
-            "all_day": False,
             "access_before_schedule": True,
             "one_time_completion": True,
             "timer": "00:00:00",
@@ -120,7 +117,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
@@ -134,7 +131,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 201, response.json()
         event = response.json()["result"]
-        assert event["userId"] == create_data["user_id"]
+        assert event["respondentId"] == create_data["respondent_id"]
         assert event["flowId"] == create_data["flow_id"]
 
     @transaction.rollback
@@ -157,7 +154,6 @@ class TestSchedule(BaseTest):
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
-            "all_day": False,
             "access_before_schedule": True,
             "one_time_completion": True,
             "timer": "00:00:00",
@@ -168,7 +164,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5832",
         }
@@ -201,7 +197,6 @@ class TestSchedule(BaseTest):
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
-            "all_day": False,
             "access_before_schedule": True,
             "one_time_completion": True,
             "timer": "00:00:00",
@@ -212,7 +207,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
@@ -234,7 +229,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 200, response.json()
         event = response.json()["result"]
-        assert event["userId"] == create_data["user_id"]
+        assert event["respondentId"] == create_data["respondent_id"]
 
     @transaction.rollback
     async def test_schedule_delete_all(self):
@@ -252,7 +247,6 @@ class TestSchedule(BaseTest):
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
-            "all_day": False,
             "access_before_schedule": True,
             "one_time_completion": True,
             "timer": "00:00:00",
@@ -263,7 +257,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
@@ -293,7 +287,6 @@ class TestSchedule(BaseTest):
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
-            "all_day": False,
             "access_before_schedule": True,
             "one_time_completion": True,
             "timer": "00:00:00",
@@ -304,7 +297,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
@@ -334,7 +327,6 @@ class TestSchedule(BaseTest):
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
-            "all_day": False,
             "access_before_schedule": True,
             "one_time_completion": True,
             "timer": "00:00:00",
@@ -345,7 +337,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
@@ -360,7 +352,7 @@ class TestSchedule(BaseTest):
 
         create_data["activity_id"] = "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
         create_data["flow_id"] = None
-        create_data["user_id"] = "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+        create_data["respondent_id"] = "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
 
         response = await self.client.put(
             self.schedule_detail_url.format(
@@ -374,7 +366,7 @@ class TestSchedule(BaseTest):
         event = response.json()["result"]
 
         assert event["flowId"] == create_data["flow_id"]
-        assert event["userId"] == create_data["user_id"]
+        assert event["respondentId"] == create_data["respondent_id"]
         assert event["activityId"] == create_data["activity_id"]
 
     @transaction.rollback
@@ -393,7 +385,6 @@ class TestSchedule(BaseTest):
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
-            "all_day": False,
             "access_before_schedule": True,
             "one_time_completion": True,
             "timer": "00:00:00",
@@ -404,7 +395,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
@@ -451,7 +442,7 @@ class TestSchedule(BaseTest):
         response = await self.client.delete(
             self.delete_user_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-                user_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             )
         )
 
@@ -460,7 +451,6 @@ class TestSchedule(BaseTest):
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
-            "all_day": False,
             "access_before_schedule": True,
             "one_time_completion": True,
             "timer": "00:00:00",
@@ -471,7 +461,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
@@ -492,12 +482,15 @@ class TestSchedule(BaseTest):
         )
 
         assert response.status_code == 200
-        assert response.json()["result"]["userId"] == create_data["user_id"]
+        assert (
+            response.json()["result"]["respondentId"]
+            == create_data["respondent_id"]
+        )
 
         response = await self.client.delete(
             self.delete_user_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-                user_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             )
         )
 

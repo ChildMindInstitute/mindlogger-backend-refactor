@@ -32,7 +32,6 @@ class EventSchema(Base):
     )
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
-    all_day = Column(Boolean, nullable=False, default=False)
     access_before_schedule = Column(Boolean, nullable=False)
     one_time_completion = Column(Boolean, nullable=False)
     timer = Column(Interval, nullable=False)

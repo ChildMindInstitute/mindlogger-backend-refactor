@@ -29,7 +29,6 @@ class TimerType(str, Enum):
 class DefaultEvent(BaseModel):
     start_time: time = time.min
     end_time: time = time.max
-    all_day: bool = True
     access_before_schedule: bool = True
     one_time_completion: bool = False
     timer: timedelta = timedelta()
@@ -38,7 +37,7 @@ class DefaultEvent(BaseModel):
         "type": PeriodicityType.ALWAYS,
         "start_date": date.min,
         "end_date": date.max,
-        "selectedDate": None,
+        "selectedDate": date.today(),
     }
     user_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None

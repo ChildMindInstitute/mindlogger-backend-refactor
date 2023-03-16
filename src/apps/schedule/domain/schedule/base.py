@@ -35,7 +35,6 @@ class BaseEvent(BaseModel):
 
     start_time: time
     end_time: time
-    all_day: bool
     access_before_schedule: bool
     one_time_completion: bool
     timer: timedelta | None = Field(

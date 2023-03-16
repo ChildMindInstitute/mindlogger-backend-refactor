@@ -27,6 +27,7 @@ def upgrade() -> None:
     op.alter_column(
         "periodicity", "end_date", existing_type=sa.DATE(), nullable=True
     )
+    op.drop_column("events", "all_day")
     # ### end Alembic commands ###
 
 
@@ -44,5 +45,11 @@ def downgrade() -> None:
     )
     op.alter_column(
         "periodicity", "start_date", existing_type=sa.DATE(), nullable=False
+    )
+    op.add_column(
+        "events",
+        sa.Column(
+            "all_day", sa.BOOLEAN(), autoincrement=False, nullable=False
+        ),
     )
     # ### end Alembic commands ###

@@ -75,7 +75,6 @@ class ScheduleService:
             EventCreate(
                 start_time=schedule.start_time,
                 end_time=schedule.end_time,
-                all_day=schedule.all_day,
                 access_before_schedule=schedule.access_before_schedule,
                 one_time_completion=schedule.one_time_completion,
                 timer=schedule.timer,
@@ -86,9 +85,11 @@ class ScheduleService:
         )
 
         # Create event-user
-        if schedule.user_id:
+        if schedule.respondent_id:
             await UserEventsCRUD().save(
-                UserEventCreate(event_id=event.id, user_id=schedule.user_id)
+                UserEventCreate(
+                    event_id=event.id, user_id=schedule.respondent_id
+                )
             )
         # Create event-activity or event-flow
         if schedule.activity_id:
@@ -105,7 +106,7 @@ class ScheduleService:
         return PublicEvent(
             **event.dict(),
             periodicity=PublicPeriodicity(**periodicity.dict()),
-            user_id=schedule.user_id,
+            user_id=schedule.respondent_id,
             activity_id=schedule.activity_id,
             flow_id=schedule.flow_id,
         )
@@ -271,7 +272,6 @@ class ScheduleService:
             schema=EventUpdate(
                 start_time=schedule.start_time,
                 end_time=schedule.end_time,
-                all_day=schedule.all_day,
                 access_before_schedule=schedule.access_before_schedule,
                 one_time_completion=schedule.one_time_completion,
                 timer=schedule.timer,
@@ -283,9 +283,11 @@ class ScheduleService:
 
         # Update event-user
         await UserEventsCRUD().delete_all_by_event_ids(event_ids=[schedule_id])
-        if schedule.user_id:
+        if schedule.respondent_id:
             await UserEventsCRUD().save(
-                UserEventCreate(event_id=event.id, user_id=schedule.user_id)
+                UserEventCreate(
+                    event_id=event.id, user_id=schedule.respondent_id
+                )
             )
 
         # Update event-activity or event-flow
@@ -307,7 +309,7 @@ class ScheduleService:
         return PublicEvent(
             **event.dict(),
             periodicity=PublicPeriodicity(**periodicity.dict()),
-            user_id=schedule.user_id,
+            user_id=schedule.respondent_id,
             activity_id=schedule.activity_id,
             flow_id=schedule.flow_id,
         )
@@ -317,15 +319,15 @@ class ScheduleService:
     ) -> None:
         """Validate schedule before saving it to the database."""
         # Check if user has access to applet
-        if schedule.user_id:
+        if schedule.respondent_id:
             user_applet_access = await (
                 UserAppletAccessCRUD().get_by_applet_and_user_as_respondent(
-                    applet_id=applet_id, user_id=schedule.user_id
+                    applet_id=applet_id, user_id=schedule.respondent_id
                 )
             )  # noqa: E501
             if not user_applet_access:
                 raise NotFoundError(
-                    message=f"User {schedule.user_id} "
+                    message=f"User {schedule.respondent_id} "
                     f"does not have access to applet {applet_id}"
                 )  # noqa: E501
 
@@ -512,14 +514,14 @@ class ScheduleService:
         """Convert event to dto."""
         timers = TimerDto(
             timer=HourMinute(
-                hours=event.timer.seconds // 3600,
-                minutes=event.timer.seconds // 60 % 60,
+                hours=event.timer.seconds // 3600 if event.timer else 0,
+                minutes=event.timer.seconds // 60 % 60 if event.timer else 0,
             )
             if event.timer_type == TimerType.TIMER
             else None,
             idleTimer=HourMinute(
-                hours=event.timer.seconds // 3600,
-                minutes=event.timer.seconds // 60 % 60,
+                hours=event.timer.seconds // 3600 if event.timer else 0,
+                minutes=event.timer.seconds // 60 % 60 if event.timer else 0,
             )
             if event.timer_type == TimerType.IDLE
             else None,
@@ -551,6 +553,7 @@ class ScheduleService:
             timers=timers,
             availabilityType=availabilityType,
             availability=availability,
+            selectedDate=event.periodicity.selected_date,
         )
 
     async def get_events_by_user_and_applet(

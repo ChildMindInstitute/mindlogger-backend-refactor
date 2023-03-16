@@ -86,6 +86,7 @@ class ScheduleEventDto(PublicModel):
     id: uuid.UUID
     entityId: uuid.UUID
     availability: EventAvailabilityDto
+    selectedDate: date | None = None
     timers: TimerDto
     availabilityType: AvailabilityType
 
