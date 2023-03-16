@@ -10,7 +10,6 @@ from apps.invitations.api import (
     invitation_respondent_send,
     invitation_retrieve,
     invitation_reviewer_send,
-    invitation_send,
     private_invitation_accept,
     private_invitation_retrieve,
 )
@@ -70,19 +69,10 @@ router.delete(
     "/{key}/decline",
 )(invitation_decline)
 
-# Invitation send
-router.post(
-    "/invite",
-    response_model=Response[InvitationResponse],
-    responses={
-        status.HTTP_200_OK: {"model": Response[InvitationResponse]},
-        **DEFAULT_OPENAPI_RESPONSE,
-    },
-)(invitation_send)
 
 # Invitation send for Role respondent
 router.post(
-    "/{applet_id}/invitations/respondent",
+    "/{applet_id}/respondent",
     response_model=Response[InvitationRespondentResponse],
     responses={
         status.HTTP_200_OK: {"model": Response[InvitationRespondentResponse]},
@@ -92,7 +82,7 @@ router.post(
 
 # Invitation send for Role reviewer
 router.post(
-    "/{applet_id}/invitations/reviewer",
+    "/{applet_id}/reviewer",
     response_model=Response[InvitationReviewerResponse],
     responses={
         status.HTTP_200_OK: {"model": Response[InvitationReviewerResponse]},
@@ -102,7 +92,7 @@ router.post(
 
 # Invitation send for other Role ("manager", "coordinator", "editor")
 router.post(
-    "/{applet_id}/invitations/managers",
+    "/{applet_id}/managers",
     response_model=Response[InvitationManagersResponse],
     responses={
         status.HTTP_200_OK: {"model": Response[InvitationManagersResponse]},

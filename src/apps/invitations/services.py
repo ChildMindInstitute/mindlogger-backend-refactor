@@ -1,7 +1,6 @@
 import uuid
 
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
-from apps.applets.db.schemas.applet import AppletSchema
 from apps.applets.domain import ManagersRole, Role
 from apps.applets.service import AppletService, UserAppletAccessService
 from apps.applets.service.applet import PublicAppletService
@@ -9,7 +8,6 @@ from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.db import InvitationSchema
 from apps.invitations.domain import (
-    Invitation,
     InvitationDetail,
     InvitationDetailForManagers,
     InvitationDetailForRespondent,
@@ -60,66 +58,6 @@ class InvitationsService:
     async def get(self, key: uuid.UUID) -> InvitationDetailGeneric | None:
         return await self.invitations_crud.get_by_email_and_key(
             self._user.email, key
-        )
-
-    async def send_invitation(
-        self, schema: InvitationRequest
-    ) -> InvitationDetail:
-        await self._validate_invitation(schema)
-
-        invitation_schema: InvitationSchema = await InvitationCRUD().save(
-            InvitationSchema(
-                email=schema.email,
-                applet_id=schema.applet_id,
-                role=schema.role,
-                key=uuid.uuid3(uuid.uuid4(), schema.email),
-                invitor_id=self._user.id,
-                status=InvitationStatus.PENDING,
-            )
-        )
-
-        invitation = Invitation.from_orm(invitation_schema)
-        applet: AppletSchema = await AppletsCRUD().get_by_id(
-            invitation.applet_id
-        )
-
-        # FIXME: user is not mandatory, as invite can be
-        #  sent to non-registered user
-        user: User = await UsersCRUD().get_by_email(schema.email)
-
-        html_payload: dict = {
-            "coordinator_name": f"{self._user.first_name} "
-            f"{self._user.last_name}",
-            "user_name": f"{user.first_name} {user.last_name}",
-            "applet": applet.display_name,
-            "role": invitation.role,
-            "key": invitation.key,
-            "email": invitation.email,
-            "link": self._get_invitation_url_by_role(invitation.role),
-        }
-
-        # Send email to the user
-        service: MailingService = MailingService()
-        message = MessageSchema(
-            recipients=[schema.email],
-            subject="Invitation to the FCM",
-            body=service.get_template(
-                path="invitation_new_user_en", **html_payload
-            ),
-        )
-
-        await service.send(message)
-
-        return InvitationDetail(
-            id=invitation.id,
-            invitor_id=self._user.id,
-            email=invitation.email,
-            applet_id=applet.id,
-            applet_name=applet.display_name,
-            role=invitation.role,
-            status=invitation.status,
-            key=invitation.key,
-            meta={},
         )
 
     async def send_respondent_invitation(
@@ -253,6 +191,9 @@ class InvitationsService:
         ] = await self.invitations_crud.get_by_email_applet_role_reviewer(
             email_=schema.email, applet_id_=applet_id
         )
+        respondents = [
+            str(respondent_id) for respondent_id in schema.respondents
+        ]
 
         success_invitation_schema = {
             "email": schema.email,
@@ -268,7 +209,7 @@ class InvitationsService:
         for invitation in invitations:
             meta = ReviewerMeta.from_orm(invitation.meta)
             if invitation.status == InvitationStatus.PENDING and (
-                meta.respondents == schema.respondents
+                meta.respondents == respondents
             ):
                 payload = success_invitation_schema | {"meta": meta.dict()}
                 invitation_schema = await self.invitations_crud.update(
@@ -278,12 +219,12 @@ class InvitationsService:
                 )
                 break
             elif invitation.status == InvitationStatus.APPROVED and (
-                meta.respondents == schema.respondents
+                meta.respondents == respondents
             ):
                 raise InvitationAlreadyProcesses
 
         if not payload:
-            meta = ReviewerMeta(respondents=schema.respondents)
+            meta = ReviewerMeta(respondents=respondents)
 
             payload = success_invitation_schema | {"meta": meta.dict()}
             invitation_schema = await self.invitations_crud.save(
@@ -370,7 +311,7 @@ class InvitationsService:
         success_invitation_schema = {
             "email": schema.email,
             "applet_id": applet_id,
-            "role": Role.REVIEWER,
+            "role": schema.role,
             "key": uuid.uuid3(uuid.uuid4(), schema.email),
             "invitor_id": self._user.id,
             "status": InvitationStatus.PENDING,

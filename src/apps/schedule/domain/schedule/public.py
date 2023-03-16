@@ -1,5 +1,9 @@
 import uuid
+from datetime import date
 
+from pydantic import NonNegativeInt, validator
+
+from apps.schedule.domain.constants import AvailabilityType, PeriodicityType
 from apps.schedule.domain.schedule import BaseEvent, BasePeriodicity
 from apps.shared.domain import PublicModel
 
@@ -10,6 +14,10 @@ __all__ = [
     "FlowEventCount",
     "PublicEventCount",
     "PublicEventByUser",
+    "HourMinute",
+    "TimerDto",
+    "EventAvailabilityDto",
+    "ScheduleEventDto",
 ]
 
 
@@ -42,6 +50,46 @@ class PublicEventCount(PublicModel):
     flow_events: list[FlowEventCount] | None
 
 
+class HourMinute(PublicModel):
+    hours: NonNegativeInt
+    minutes: NonNegativeInt
+
+    @validator("hours")
+    def validate_hour(cls, value):
+        if value > 23:
+            raise ValueError("Hours must be between 0 and 23")
+        return value
+
+    @validator("minutes")
+    def validate_minute(cls, value):
+        if value > 59:
+            raise ValueError("Minutes must be between 0 and 59")
+        return value
+
+
+class TimerDto(PublicModel):
+    timer: HourMinute | None = None
+    idleTimer: HourMinute | None = None
+
+
+class EventAvailabilityDto(PublicModel):
+    oneTimeCompletion: bool
+    periodicityType: PeriodicityType
+    timeFrom: HourMinute | None = None
+    timeTo: HourMinute | None = None
+    allowAccessBeforeFromTime: bool
+    startDate: date | None = None
+    endDate: date | None = None
+
+
+class ScheduleEventDto(PublicModel):
+    id: uuid.UUID
+    entityId: uuid.UUID
+    availability: EventAvailabilityDto
+    timers: TimerDto
+    availabilityType: AvailabilityType
+
+
 class PublicEventByUser(PublicModel):
     applet_id: uuid.UUID
-    events: list[PublicEvent] | None
+    events: list[ScheduleEventDto] | None = None

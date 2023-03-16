@@ -23,11 +23,9 @@ __all__ = ["AppletsCRUD"]
 
 
 class _AppletFiltering(Filtering):
-    owner_id = FilterField(
-        AppletSchema.id, cast=int, method_name="filter_by_owner"
-    )
+    owner_id = FilterField(AppletSchema.id, method_name="filter_by_owner")
 
-    def filter_by_owner(self, field, value: int):
+    def filter_by_owner(self, field, value: uuid.UUID):
         query: Query = select(UserAppletAccessSchema.applet_id)
         query = query.where(UserAppletAccessSchema.user_id == value)
         query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
