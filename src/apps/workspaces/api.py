@@ -10,11 +10,11 @@ from apps.authentication.deps import get_current_user
 from apps.shared.domain import ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
-from apps.workspaces.domain.user_applet_access import RemoveRespondentAccess
-from apps.workspaces.domain.workspace import (
-    PublicWorkspace,
+from apps.workspaces.domain.user_applet_access import (
     RemoveManagerAccess,
+    RemoveRespondentAccess,
 )
+from apps.workspaces.domain.workspace import PublicWorkspace
 from apps.workspaces.service.user_access import UserAccessService
 
 

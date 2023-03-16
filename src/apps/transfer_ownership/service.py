@@ -98,10 +98,10 @@ class TransferService:
         )
 
         # delete responses from applet?
-        await AnswerActivityItemsCRUD().delete_by_applet_id(
+        await AnswerActivityItemsCRUD().delete_by_applet_user(
             applet_id=transfer.applet_id
         )
-        await AnswerFlowItemsCRUD().delete_by_applet_id(
+        await AnswerFlowItemsCRUD().delete_by_applet_user(
             applet_id=transfer.applet_id
         )
 

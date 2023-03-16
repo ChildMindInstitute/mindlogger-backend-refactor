@@ -44,15 +44,20 @@ class UserAppletAccessItem(InternalModel):
     role: Role
 
 
-class RemoveRespondentAccess(InternalModel):
-    """Respondent access removal model."""
+class RemoveManagerAccess(InternalModel):
+    """Manager access removal model."""
 
     user_id: uuid.UUID = Field(
-        description="This field represents the applet respondent id",
+        description="This field represents the user id",
     )
     applet_ids: list[uuid.UUID] = Field(
         description="This field represents the applet ids",
     )
+
+
+class RemoveRespondentAccess(RemoveManagerAccess):
+    """Respondent access removal model."""
+
     delete_responses: bool = Field(
         description="This field represents the flag for deleting responses",
     )

@@ -47,15 +47,11 @@ class AnswerFlowItemsCRUD(BaseCRUD[AnswerFlowItemsSchema]):
 
         return answer_flow_items
 
-    async def delete_by_applet_id(self, applet_id: uuid.UUID):
-        query: Query = delete(AnswerFlowItemsSchema)
-        query = query.where(AnswerFlowItemsSchema.applet_id == applet_id)
-        await self._execute(query)
-
-    async def delete_by_user_and_applet(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID
+    async def delete_by_applet_user(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID | None = None
     ):
         query: Query = delete(AnswerFlowItemsSchema)
-        query = query.where(AnswerFlowItemsSchema.respondent_id == user_id)
         query = query.where(AnswerFlowItemsSchema.applet_id == applet_id)
+        if user_id:
+            query = query.where(AnswerFlowItemsSchema.respondent_id == user_id)
         await self._execute(query)

@@ -7,11 +7,11 @@ from apps.applets.domain.applet import AppletPublic
 from apps.users import User, UsersCRUD
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.domain.user_applet_access import RemoveRespondentAccess
-from apps.workspaces.domain.workspace import (
-    PublicWorkspace,
+from apps.workspaces.domain.user_applet_access import (
     RemoveManagerAccess,
+    RemoveRespondentAccess,
 )
+from apps.workspaces.domain.workspace import PublicWorkspace
 from apps.workspaces.errors import AppletAccessDenied
 
 __all__ = ["UserAccessService"]
@@ -75,26 +75,16 @@ class UserAccessService:
         await self._validate_ownership(schema.applet_ids)
 
         # check if schema.user_id is manager of all applets
-        managers_applet_ids = [
-            manager_applet.applet_id
-            for manager_applet in (
-                await UserAppletAccessCRUD().get_all_by_user_id_and_roles(
-                    schema.user_id,
-                    roles=[
-                        Role.MANAGER,
-                        Role.COORDINATOR,
-                        Role.EDITOR,
-                        Role.REVIEWER,
-                    ],
-                )
-            )
-        ]
-
-        for applet_id in schema.applet_ids:
-            if applet_id not in managers_applet_ids:
-                raise AppletAccessDenied(
-                    message=f"User is not manager of applet {applet_id}"
-                )
+        await self._validate_access(
+            user_id=schema.user_id,
+            removing_applets=schema.applet_ids,
+            roles=[
+                Role.MANAGER,
+                Role.COORDINATOR,
+                Role.EDITOR,
+                Role.REVIEWER,
+            ],
+        )
 
         # remove manager access
         for applet_id in schema.applet_ids:
@@ -108,23 +98,11 @@ class UserAccessService:
         await self._validate_ownership(schema.applet_ids)
 
         # check if schema.user_id is respondent of all applets
-        respondents_applet_ids = [
-            respondent_applet.applet_id
-            for respondent_applet in (
-                await UserAppletAccessCRUD().get_all_by_user_id_and_roles(
-                    schema.user_id,
-                    roles=[
-                        Role.RESPONDENT,
-                    ],
-                )
-            )
-        ]
-
-        for applet_id in schema.applet_ids:
-            if applet_id not in respondents_applet_ids:
-                raise AppletAccessDenied(
-                    message=f"User is not respondent of applet {applet_id}"
-                )
+        await self._validate_access(
+            user_id=schema.user_id,
+            removing_applets=schema.applet_ids,
+            roles=[Role.RESPONDENT],
+        )
 
         # remove respondent access
         for applet_id in schema.applet_ids:
@@ -135,10 +113,10 @@ class UserAccessService:
         # delete all responses of respondent in applets
         if schema.delete_responses:
             for applet_id in schema.applet_ids:
-                await AnswerActivityItemsCRUD().delete_by_user_and_applet(
-                    user_id=schema.user_id, applet_id=applet_id
+                await AnswerActivityItemsCRUD().delete_by_applet_user(
+                    applet_id=applet_id, user_id=schema.user_id
                 )
-                await AnswerFlowItemsCRUD().delete_by_user_and_applet(
+                await AnswerFlowItemsCRUD().delete_by_applet_user(
                     user_id=schema.user_id, applet_id=applet_id
                 )
 
@@ -155,4 +133,27 @@ class UserAccessService:
             if applet_id not in owners_applet_ids:
                 raise AppletAccessDenied(
                     message=f"User is not owner of applet {applet_id}"
+                )
+
+    async def _validate_access(
+        self,
+        user_id: uuid.UUID,
+        removing_applets: list[uuid.UUID],
+        roles: list[Role],
+    ):
+        # check if user_id has access to applets with roles
+        applet_ids = [
+            manager_applet.applet_id
+            for manager_applet in (
+                await UserAppletAccessCRUD().get_all_by_user_id_and_roles(
+                    user_id,
+                    roles=roles,
+                )
+            )
+        ]
+
+        for applet_id in removing_applets:
+            if applet_id not in applet_ids:
+                raise AppletAccessDenied(
+                    message=f"User is not related to applet {applet_id}"
                 )
