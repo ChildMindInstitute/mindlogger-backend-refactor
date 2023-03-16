@@ -12,7 +12,6 @@ from apps.invitations.domain import (
     InvitationDetailForReviewer,
     InvitationManagersRequest,
     InvitationManagersResponse,
-    InvitationRequest,
     InvitationRespondentRequest,
     InvitationRespondentResponse,
     InvitationResponse,
@@ -79,24 +78,6 @@ async def private_invitation_retrieve(
 ) -> Response[PrivateInvitationResponse]:
     invitation = await PrivateInvitationService().get_invitation(key)
     return Response(result=PrivateInvitationResponse.from_orm(invitation))
-
-
-async def invitation_send(
-    user: User = Depends(get_current_user),
-    invitation_schema: InvitationRequest = Body(...),
-) -> Response[InvitationResponse]:
-    """General endpoint for sending invitations to the concrete applet
-    for the concrete user giving him a role.
-    """
-
-    # Send the invitation using the internal Invitation service
-    invitation: InvitationDetail = await InvitationsService(
-        user
-    ).send_invitation(invitation_schema)
-
-    return Response[InvitationResponse](
-        result=InvitationResponse(**invitation.dict())
-    )
 
 
 async def invitation_respondent_send(
