@@ -10,9 +10,9 @@ __all__ = [
 ]
 
 
-class AlertsConfigCreateRequest(PublicModel):
-    """This model represents the request for configuration
-    alerts for specific applet and activity item
+class AlertsConfigBase(PublicModel):
+    """This model used for internal needs
+    as a base model for request and response
     """
 
     applet_id: uuid.UUID = Field(
@@ -35,6 +35,12 @@ class AlertsConfigCreateRequest(PublicModel):
         "whether the alerts will be shown to the user",
         default=True,
     )
+
+
+class AlertsConfigCreateRequest(AlertsConfigBase):
+    """This model represents the request for configuration
+    alerts for specific applet and activity item
+    """
 
 
 class AlertsConfigCreateResponse(AlertsConfigCreateRequest):
