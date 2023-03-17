@@ -164,6 +164,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 _AppletSearching().get_clauses(query_params.search)
             )
         query = query.where(AppletSchema.id.in_(accessible_applets_query))
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
         result: Result = await self._execute(query)
         return result.scalars().first() or 0
 
