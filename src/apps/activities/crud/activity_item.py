@@ -58,3 +58,11 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
         )
         result = await self._execute(query)
         return result.scalars().all()
+
+    async def get_by_id(
+        self, activity_item_id: uuid.UUID
+    ) -> ActivityItemSchema:
+        query: Query = select(ActivityItemSchema)
+        query = query.where(ActivityItemSchema.id == activity_item_id)
+        result = await self._execute(query)
+        return result.scalars().one_or_none()
