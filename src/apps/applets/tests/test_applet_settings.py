@@ -5,6 +5,7 @@ from infrastructure.database import transaction
 class TestAppletSettings(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
+        "themes/fixtures/themes.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",

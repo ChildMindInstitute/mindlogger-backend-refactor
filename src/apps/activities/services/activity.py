@@ -1,9 +1,19 @@
 import uuid
 
 from apps.activities.crud import ActivitiesCRUD
+from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain.activity import (
     ActivityDetail,
     ActivityExtendedDetail,
+)
+from apps.activities.domain.activity_create import (
+    ActivityCreate,
+    PreparedActivityItemCreate,
+)
+from apps.activities.domain.activity_full import ActivityFull
+from apps.activities.domain.activity_update import (
+    ActivityUpdate,
+    PreparedActivityItemUpdate,
 )
 from apps.activities.services.activity_item import ActivityItemService
 
@@ -11,6 +21,130 @@ from apps.activities.services.activity_item import ActivityItemService
 class ActivityService:
     def __init__(self, user_id: uuid.UUID):
         self.user_id = user_id
+
+    async def create(
+        self, applet_id: uuid.UUID, activities_create: list[ActivityCreate]
+    ) -> list[ActivityFull]:
+        schemas = []
+        activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()
+        activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
+        prepared_activity_items = list()
+
+        for index, activity_data in enumerate(activities_create):
+            activity_id = uuid.uuid4()
+            activity_key_id_map[activity_data.key] = activity_id
+            activity_id_key_map[activity_id] = activity_data.key
+
+            schemas.append(
+                ActivitySchema(
+                    id=activity_id,
+                    applet_id=applet_id,
+                    name=activity_data.name,
+                    description=activity_data.description,
+                    splash_screen=activity_data.splash_screen,
+                    image=activity_data.image,
+                    show_all_at_once=activity_data.show_all_at_once,
+                    is_skippable=activity_data.is_skippable,
+                    is_reviewable=activity_data.is_reviewable,
+                    response_is_editable=activity_data.response_is_editable,
+                    ordering=index + 1,
+                )
+            )
+
+            for item in activity_data.items:
+                prepared_activity_items.append(
+                    PreparedActivityItemCreate(
+                        activity_id=activity_id,
+                        question=item.question,
+                        response_type=item.response_type,
+                        answers=item.answers,
+                        config=item.config.dict(),
+                    )
+                )
+        activity_schemas = await ActivitiesCRUD().create_many(schemas)
+        activity_items = await ActivityItemService().create(
+            prepared_activity_items
+        )
+        activities = list()
+
+        activity_id_map: dict[uuid.UUID, ActivityFull] = dict()
+
+        for activity_schema in activity_schemas:
+            activity_schema.key = activity_id_key_map[activity_schema.id]
+            activity = ActivityFull.from_orm(activity_schema)
+            activities.append(activity)
+            activity_id_map[activity.id] = activity
+
+        for activity_item in activity_items:
+            activity_id_map[activity_item.activity_id].items.append(
+                activity_item
+            )
+        return activities
+
+    async def update_create(
+        self, applet_id: uuid.UUID, activities_create: list[ActivityUpdate]
+    ) -> list[ActivityFull]:
+        schemas = []
+        activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()
+        activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
+        prepared_activity_items = list()
+
+        for index, activity_data in enumerate(activities_create):
+            activity_id = activity_data.id or uuid.uuid4()
+            activity_key_id_map[activity_data.key] = activity_id
+            activity_id_key_map[activity_id] = activity_data.key
+
+            schemas.append(
+                ActivitySchema(
+                    id=activity_id,
+                    applet_id=applet_id,
+                    name=activity_data.name,
+                    description=activity_data.description,
+                    splash_screen=activity_data.splash_screen,
+                    image=activity_data.image,
+                    show_all_at_once=activity_data.show_all_at_once,
+                    is_skippable=activity_data.is_skippable,
+                    is_reviewable=activity_data.is_reviewable,
+                    response_is_editable=activity_data.response_is_editable,
+                    ordering=index + 1,
+                )
+            )
+
+            for item in activity_data.items:
+                prepared_activity_items.append(
+                    PreparedActivityItemUpdate(
+                        id=item.id or uuid.uuid4(),
+                        header_image=item.header_image,
+                        activity_id=activity_id,
+                        question=item.question,
+                        response_type=item.response_type,
+                        answers=item.answers,
+                        config=item.config.dict(),
+                    )
+                )
+        activity_schemas = await ActivitiesCRUD().create_many(schemas)
+        activity_items = await ActivityItemService().update_create(
+            prepared_activity_items
+        )
+        activities = list()
+
+        activity_id_map: dict[uuid.UUID, ActivityFull] = dict()
+
+        for activity_schema in activity_schemas:
+            activity_schema.key = activity_id_key_map[activity_schema.id]
+            activity = ActivityFull.from_orm(activity_schema)
+            activities.append(activity)
+            activity_id_map[activity.id] = activity
+
+        for activity_item in activity_items:
+            activity_id_map[activity_item.activity_id].items.append(
+                activity_item
+            )
+        return activities
+
+    async def remove_applet_activities(self, applet_id: uuid.UUID):
+        await ActivityItemService().remove_applet_activity_items(applet_id)
+        await ActivitiesCRUD().delete_by_applet_id(applet_id)
 
     async def get_single_language_by_applet_id(
         self, applet_id: uuid.UUID, language: str

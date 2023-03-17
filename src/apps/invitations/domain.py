@@ -1,4 +1,5 @@
 import uuid
+from enum import Enum
 
 from pydantic import EmailStr, Field
 
@@ -10,6 +11,11 @@ from apps.shared.domain import InternalModel, PublicModel
 class Applet(PublicModel):
     id: uuid.UUID
     display_name: str
+
+
+class InvitationLanguage(str, Enum):
+    EN = "en"
+    FR = "fr"
 
 
 class InvitationRequest(InternalModel):
@@ -34,9 +40,8 @@ class _InvitationRequest(PublicModel):
     last_name: str = Field(
         description="This field represents the last name of invited user",
     )
-    language: str = Field(
-        description="This field represents the language of invitation",
-        max_length=2,
+    language: InvitationLanguage = Field(
+        description="This field represents the language of invitation"
     )
 
 
@@ -108,7 +113,7 @@ class ReviewerMeta(InternalModel):
     for representation reviewer meta information.
     """
 
-    respondents: list[int]
+    respondents: list[str]
 
 
 class Invitation(InternalModel):
@@ -120,7 +125,25 @@ class Invitation(InternalModel):
     role: Role
     key: uuid.UUID
     status: str
-    invitor_id: int
+    invitor_id: uuid.UUID
+
+
+class InvitationRespondent(Invitation):
+    """This is an invitation representation for internal needs."""
+
+    meta: RespondentMeta
+
+
+class InvitationReviewer(Invitation):
+    """This is an invitation representation for internal needs."""
+
+    meta: ReviewerMeta
+
+
+class InvitationManagers(Invitation):
+    """This is an invitation representation for internal needs."""
+
+    meta: dict
 
 
 class InvitationDetailBase(InternalModel):
@@ -165,8 +188,8 @@ class _InvitationDetail(InternalModel):
     as base class for invitation detail.
     """
 
-    id: int
-    applet_id: int
+    id: uuid.UUID
+    applet_id: uuid.UUID
     applet_name: str
     status: str
     key: uuid.UUID
@@ -189,7 +212,7 @@ class InvitationDetailForReviewer(_InvitationDetail):
 
     email: EmailStr
     role: Role = Role.REVIEWER
-    respondents: list[int]
+    respondents: list[uuid.UUID]
 
 
 class InvitationDetailForManagers(_InvitationDetail):
@@ -224,7 +247,10 @@ class InvitationResponse(PublicModel):
 class _InvitationResponse(PublicModel):
     """This model is used as base class for invitation response."""
 
-    applet_id: int = Field(
+    id: uuid.UUID = Field(
+        description="This field represents the specific invitation id",
+    )
+    applet_id: uuid.UUID = Field(
         description="This field represents the specific applet id "
         "for invitation",
     )
@@ -252,7 +278,8 @@ class InvitationRespondentResponse(_InvitationResponse):
         "of the respondent, this user identifier is unique "
         "within the applet",
     )
-    nickname: str = Field(
+    nickname: str | None = Field(
+        default=None,
         description="This field represents the nickname of respondent, "
         "this is the identifier that is assigned by the applet manager "
         "when the respondent is invited, it is intended to increase "
@@ -266,7 +293,7 @@ class InvitationReviewerResponse(_InvitationResponse):
     for reviewer role.
     """
 
-    respondents: list[int] = Field(
+    respondents: list[uuid.UUID] = Field(
         description="This field represents the list of users id's "
         "which invited to the applet as a respondents",
     )

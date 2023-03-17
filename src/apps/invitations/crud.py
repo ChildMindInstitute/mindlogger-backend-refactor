@@ -15,7 +15,11 @@ from apps.invitations.domain import (
     InvitationDetailGeneric,
     InvitationDetailRespondent,
     InvitationDetailReviewer,
+    InvitationManagers,
+    InvitationRespondent,
+    InvitationReviewer,
 )
+from apps.workspaces.domain.constants import ManagersRole
 from infrastructure.database import BaseCRUD
 
 
@@ -31,6 +35,39 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
     ) -> InvitationSchema:
         schema = await self._update_one(lookup, value, schema)
         return schema
+
+    async def get_pending_by_invited_email(
+        self, email: str
+    ) -> list[InvitationDetail]:
+        """Return the list of pending invitations for the invited user."""
+
+        query: Query = select(
+            InvitationSchema, AppletSchema.display_name.label("applet_name")
+        )
+        query = query.join(
+            AppletSchema, AppletSchema.id == InvitationSchema.applet_id
+        )
+        query = query.where(InvitationSchema.email == email)
+        query = query.where(
+            InvitationSchema.status == InvitationStatus.PENDING
+        )
+        db_result = await self._execute(query)
+        results = []
+        for invitation, applet_name in db_result.all():
+            results.append(
+                InvitationDetail(
+                    id=invitation.id,
+                    email=invitation.email,
+                    applet_id=invitation.applet_id,
+                    applet_name=applet_name,
+                    role=invitation.role,
+                    key=invitation.key,
+                    status=invitation.status,
+                    invitor_id=invitation.invitor_id,
+                    meta=invitation.meta,
+                )
+            )
+        return results
 
     async def get_pending_by_invitor_id(
         self, user_id: uuid.UUID
@@ -105,9 +142,37 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                 **invitation_detail_base.dict(),
             )
 
-    async def get_by_email_applet_role(
-        self, email_: str, applet_id_: uuid.UUID, role_: Role
-    ) -> list[InvitationSchema]:
+    async def get_by_email_applet_role_respondent(
+        self, email_: str, applet_id_: uuid.UUID
+    ) -> list[InvitationRespondent]:
+        query: Query = select(InvitationSchema)
+        query = query.where(InvitationSchema.email == email_)
+        query = query.where(InvitationSchema.applet_id == applet_id_)
+        query = query.where(InvitationSchema.role == Role.RESPONDENT)
+        db_result: Result = await self._execute(query)
+        results: list[InvitationSchema] = db_result.scalars().all()
+
+        return [
+            InvitationRespondent.from_orm(invitation) for invitation in results
+        ]
+
+    async def get_by_email_applet_role_reviewer(
+        self, email_: str, applet_id_: uuid.UUID
+    ) -> list[InvitationReviewer]:
+        query: Query = select(InvitationSchema)
+        query = query.where(InvitationSchema.email == email_)
+        query = query.where(InvitationSchema.applet_id == applet_id_)
+        query = query.where(InvitationSchema.role == Role.REVIEWER)
+        db_result: Result = await self._execute(query)
+        results: list[InvitationSchema] = db_result.scalars().all()
+
+        return [
+            InvitationReviewer.from_orm(invitation) for invitation in results
+        ]
+
+    async def get_by_email_applet_role_managers(
+        self, email_: str, applet_id_: uuid.UUID, role_: ManagersRole
+    ) -> list[InvitationManagers]:
         query: Query = select(InvitationSchema)
         query = query.where(InvitationSchema.email == email_)
         query = query.where(InvitationSchema.applet_id == applet_id_)
@@ -116,7 +181,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         results: list[InvitationSchema] = db_result.scalars().all()
 
         return [
-            InvitationSchema.from_orm(invitation) for invitation in results
+            InvitationManagers.from_orm(invitation) for invitation in results
         ]
 
     async def approve_by_id(self, id_: uuid.UUID):
