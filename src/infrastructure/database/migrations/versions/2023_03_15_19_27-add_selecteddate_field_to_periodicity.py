@@ -36,20 +36,18 @@ def downgrade() -> None:
     op.add_column(
         "periodicity",
         sa.Column(
-            "interval", sa.INTEGER(), autoincrement=False, nullable=False
+            "interval", sa.INTEGER(), autoincrement=False, nullable=True
         ),
     )
     op.drop_column("periodicity", "selected_date")
     op.alter_column(
-        "periodicity", "end_date", existing_type=sa.DATE(), nullable=False
+        "periodicity", "end_date", existing_type=sa.DATE(), nullable=True
     )
     op.alter_column(
-        "periodicity", "start_date", existing_type=sa.DATE(), nullable=False
+        "periodicity", "start_date", existing_type=sa.DATE(), nullable=True
     )
     op.add_column(
         "events",
-        sa.Column(
-            "all_day", sa.BOOLEAN(), autoincrement=False, nullable=False
-        ),
+        sa.Column("all_day", sa.BOOLEAN(), autoincrement=False, nullable=True),
     )
     # ### end Alembic commands ###

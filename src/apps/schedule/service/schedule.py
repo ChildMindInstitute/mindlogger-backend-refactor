@@ -106,7 +106,7 @@ class ScheduleService:
         return PublicEvent(
             **event.dict(),
             periodicity=PublicPeriodicity(**periodicity.dict()),
-            user_id=schedule.respondent_id,
+            respondent_id=schedule.respondent_id,
             activity_id=schedule.activity_id,
             flow_id=schedule.flow_id,
         )
@@ -125,7 +125,7 @@ class ScheduleService:
         return PublicEvent(
             **event.dict(),
             periodicity=PublicPeriodicity(**periodicity.dict()),
-            user_id=user_id,
+            respondent_id=user_id,
             activity_id=activity_id,
             flow_id=flow_id,
         )
@@ -155,7 +155,7 @@ class ScheduleService:
                 PublicEvent(
                     **event.dict(),
                     periodicity=PublicPeriodicity(**periodicity.dict()),
-                    user_id=user_id,
+                    respondent_id=user_id,
                     activity_id=activity_id,
                     flow_id=flow_id,
                 )
@@ -309,7 +309,7 @@ class ScheduleService:
         return PublicEvent(
             **event.dict(),
             periodicity=PublicPeriodicity(**periodicity.dict()),
-            user_id=schedule.respondent_id,
+            respondent_id=schedule.respondent_id,
             activity_id=schedule.activity_id,
             flow_id=schedule.flow_id,
         )
