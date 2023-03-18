@@ -23,4 +23,25 @@ class ResponseType(str, Enum):
     CHOICE = "choice"
 
 
+class CheckboxItemConfig(InternalModel):
+    name: str
+    value: int
+    isVisible: bool
+    image: str
+    description: str
+    color: str
+    score: int
+
+
+class CheckboxConfig(InternalModel):
+    multiple_choice: bool = False
+    scoring: bool = False
+    min_value: int = 0
+    max_value: int = 0
+    color_palette: bool = False
+    randomize_options: bool = False
+    is_token_type: bool = False
+    items: list[CheckboxItemConfig] = []
+
+
 ResponseTypeConfig = TextConfig | ChoiceConfig
