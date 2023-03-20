@@ -74,17 +74,20 @@ class TransactionManager:
 
         async def _wrap(*args, **kwargs):
             session = session_manager.get_session()
-            session.transaction_count += 1
-            try:
-                result = await func(*args, **kwargs)
-                session.transaction_count -= 1
-                if session.transaction_count == 0:
+            if settings.env != "testing":
+                try:
+                    result = await func(*args, **kwargs)
                     await session.commit()
-                return result
-            except Exception as e:
-                session.transaction_count -= 1
-                await session.rollback()
-                raise e
+                    return result
+                except Exception as e:
+                    await session.rollback()
+                    raise e
+            else:
+                try:
+                    result = await func(*args, **kwargs)
+                    return result
+                except Exception as e:
+                    raise e
 
         return _wrap
 
@@ -121,12 +124,9 @@ class TransactionManager:
 
         async def _wrap(*args, **kwargs):
             session = session_manager.get_session()
-            session.transaction_count += 1
             try:
                 await func(*args, **kwargs)
-                session.transaction_count -= 1
             finally:
-                session.transaction_count -= 1
                 await session.rollback()
 
         return _wrap

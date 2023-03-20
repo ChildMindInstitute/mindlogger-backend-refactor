@@ -3,7 +3,14 @@ import uuid
 from sqlalchemy import delete, distinct, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
+from sqlalchemy.sql.functions import count
 
+from apps.applets.db.schemas import AppletSchema
+from apps.shared.filtering import FilterField, Filtering
+from apps.shared.ordering import Ordering
+from apps.shared.paging import paging
+from apps.shared.query_params import QueryParams
+from apps.shared.searching import Searching
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
@@ -16,8 +23,83 @@ from infrastructure.database.crud import BaseCRUD
 __all__ = ["UserAppletAccessCRUD"]
 
 
+class _UserAppletFilter(Filtering):
+    owner_id = FilterField(UserAppletAccessSchema.owner_id)
+    folder_id = FilterField(AppletSchema.folder_id)
+    role = FilterField(UserAppletAccessSchema.role, lookup="in")
+
+
+class _UserAppletOrdering(Ordering):
+    created_at = AppletSchema.created_at
+    display_name = AppletSchema.display_name
+
+
+class _UserAppletSearch(Searching):
+    search_fields = [AppletSchema.display_name]
+
+
 class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     schema_class = UserAppletAccessSchema
+
+    async def get_accessible_applets(
+        self, user_id: uuid.UUID, query_params: QueryParams
+    ) -> list[AppletSchema]:
+        query: Query = select(AppletSchema)
+        query = query.join(
+            UserAppletAccessSchema,
+            UserAppletAccessSchema.applet_id == AppletSchema.id,
+        )
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
+        query = query.group_by(
+            AppletSchema.id, AppletSchema.display_name, AppletSchema.created_at
+        )
+
+        if query_params.filters:
+            query = query.where(
+                *_UserAppletFilter().get_clauses(**query_params.filters)
+            )
+        if query_params.ordering:
+            query = query.order_by(
+                *_UserAppletOrdering().get_clauses(*query_params.ordering)
+            )
+        if query_params.search:
+            query = query.where(
+                _UserAppletSearch().get_clauses(query_params.search)
+            )
+        query = paging(query, query_params.page, query_params.limit)
+        db_result = await self._execute(query)
+
+        applets = []
+        for applet_schema in db_result.scalars().all():
+            applets.append(applet_schema)
+        return applets
+
+    async def get_accessible_applets_count(
+        self, user_id: uuid.UUID, query_params: QueryParams
+    ) -> int:
+        query: Query = select(count(AppletSchema.id))
+        query = query.join(
+            UserAppletAccessSchema,
+            UserAppletAccessSchema.applet_id == AppletSchema.id,
+        )
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
+        query = query.group_by(
+            AppletSchema.id, AppletSchema.display_name, AppletSchema.created_at
+        )
+
+        if query_params.filters:
+            query = query.where(
+                *_UserAppletFilter().get_clauses(**query_params.filters)
+            )
+        if query_params.search:
+            query = query.where(
+                _UserAppletSearch().get_clauses(query_params.search)
+            )
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first() or 0
 
     async def get_applet_role_by_user_id(
         self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role

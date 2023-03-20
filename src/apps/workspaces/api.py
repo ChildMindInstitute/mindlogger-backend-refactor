@@ -3,15 +3,15 @@ from copy import deepcopy
 
 from fastapi import Depends
 
-from apps.applets.domain.applet import AppletPublic
+from apps.applets.domain.applet import AppletInfoPublic, AppletPublic
 from apps.applets.filters import AppletQueryParams
-from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.workspaces.domain.workspace import PublicWorkspace
 from apps.workspaces.service.user_access import UserAccessService
+from infrastructure.http import get_language
 
 
 async def user_workspaces(
@@ -34,19 +34,21 @@ async def user_workspaces(
 async def workspace_applets(
     owner_id: uuid.UUID,
     user: User = Depends(get_current_user),
+    language: str = Depends(get_language),
     query_params: QueryParams = Depends(parse_query_params(AppletQueryParams)),
 ) -> ResponseMulti[AppletPublic]:
     """Fetch all applets for the specific user and specific workspace."""
+    query_params.filters["owner_id"] = owner_id
 
-    applets: list[AppletPublic] = await UserAccessService(
+    applets = await UserAccessService(
         user.id
-    ).get_workspace_applets(owner_id)
+    ).get_workspace_applets_by_language(language, deepcopy(query_params))
 
-    count: int = await AppletService(
-        user.id
-    ).get_list_by_single_language_count(deepcopy(query_params))
+    count = await UserAccessService(user.id).get_workspace_applets_count(
+        deepcopy(query_params)
+    )
 
-    return ResponseMulti[AppletPublic](
+    return ResponseMulti(
+        result=[AppletInfoPublic.from_orm(applet) for applet in applets],
         count=count,
-        result=[AppletPublic.from_orm(applet) for applet in applets],
     )
