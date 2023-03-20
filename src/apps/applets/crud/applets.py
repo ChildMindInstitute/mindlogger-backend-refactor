@@ -210,26 +210,6 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         return db_result.scalars().one_or_none()
 
-    async def get_folder_applets(
-        self, owner_id: uuid.UUID, folder_id: uuid.UUID
-    ) -> list[AppletSchema]:
-        access_query: Query = select(
-            distinct(UserAppletAccessSchema.applet_id)
-        )
-        access_query = access_query.where(
-            UserAppletAccessSchema.user_id == owner_id
-        )
-        access_query = access_query.where(
-            UserAppletAccessSchema.role.in_([Role.ADMIN])
-        )
-
-        query: Query = select(AppletSchema)
-        query = query.where(AppletSchema.folder_id == folder_id)
-        query = query.where(AppletSchema.id.in_(access_query))
-
-        db_result = await self._execute(query)
-        return db_result.scalars().all()
-
     async def get_name_duplicates(
         self,
         user_id: uuid.UUID,
