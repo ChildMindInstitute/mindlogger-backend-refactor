@@ -9,7 +9,9 @@ class WorkspaceService:
     def __init__(self, user_id: uuid.UUID):
         self._user_id = user_id
 
-    async def create_workspace_from_user(self, user: User) -> UserWorkspaceSchema:
+    async def create_workspace_from_user(
+        self, user: User
+    ) -> UserWorkspaceSchema:
         schema = await UserWorkspaceCRUD().save(
             UserWorkspaceSchema(
                 user_id=user.id,
@@ -20,7 +22,7 @@ class WorkspaceService:
         return schema
 
     async def update_workspace_name(
-            self, user: User, workspace_prefix: str | None = None
+        self, user: User, workspace_prefix: str | None = None
     ):
         """
         Let's check if the workspace name has changed before.
