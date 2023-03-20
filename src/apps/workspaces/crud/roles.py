@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import delete, distinct, select
+from sqlalchemy import delete, distinct, select, func
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
@@ -11,11 +11,12 @@ from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
+from apps.users import UserSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
     UserAppletAccess,
-    UserAppletAccessItem,
+    UserAppletAccessItem, AppletUser,
 )
 from apps.workspaces.errors import UserAppletAccessesNotFound
 from infrastructure.database.crud import BaseCRUD
@@ -38,11 +39,24 @@ class _UserAppletSearch(Searching):
     search_fields = [AppletSchema.display_name]
 
 
+class _AppletUsersFilter(Filtering):
+    role = FilterField(UserAppletAccessSchema.role)
+
+
+class _AppletUsersOrdering(Ordering):
+    email = UserSchema.email
+    first_name = UserSchema.first_name
+
+
+class _AppletUsersSearch(Searching):
+    search_fields = [UserSchema.first_name, UserSchema.last_name]
+
+
 class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     schema_class = UserAppletAccessSchema
 
     async def get_accessible_applets(
-        self, user_id: uuid.UUID, query_params: QueryParams
+            self, user_id: uuid.UUID, query_params: QueryParams
     ) -> list[AppletSchema]:
         query: Query = select(AppletSchema)
         query = query.join(
@@ -76,7 +90,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return applets
 
     async def get_accessible_applets_count(
-        self, user_id: uuid.UUID, query_params: QueryParams
+            self, user_id: uuid.UUID, query_params: QueryParams
     ) -> int:
         query: Query = select(count(AppletSchema.id))
         query = query.join(
@@ -102,7 +116,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return db_result.scalars().first() or 0
 
     async def get_applet_role_by_user_id(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
+            self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
     ) -> UserAppletAccessSchema | None:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
@@ -123,7 +137,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return query
 
     async def get_applet_owner(
-        self, applet_id: uuid.UUID
+            self, applet_id: uuid.UUID
     ) -> UserAppletAccessSchema:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
@@ -147,7 +161,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return user_applet_access
 
     async def get_by_user_id(
-        self, user_id_: uuid.UUID
+            self, user_id_: uuid.UUID
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).where(
             self.schema_class.user_id == user_id_
@@ -161,8 +175,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         ]
 
     async def get_by_user_applet_role(
-        self,
-        schema: UserAppletAccessItem,
+            self,
+            schema: UserAppletAccessItem,
     ) -> UserAppletAccess | None:
         query: Query = select(self.schema_class).filter(
             self.schema_class.user_id == schema.user_id,
@@ -174,13 +188,13 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return result.scalars().one_or_none()
 
     async def save(
-        self, schema: UserAppletAccessSchema
+            self, schema: UserAppletAccessSchema
     ) -> UserAppletAccessSchema:
         """Return UserAppletAccess instance and the created information."""
         return await self._create(schema)
 
     async def get(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID, role: str
+            self, user_id: uuid.UUID, applet_id: uuid.UUID, role: str
     ) -> UserAppletAccessSchema | None:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
@@ -191,7 +205,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return result.scalars().one_or_none()
 
     async def get_by_roles(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
+            self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
     ) -> UserAppletAccessSchema | None:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
@@ -203,7 +217,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
     # Get by applet id and user id and role respondent
     async def get_by_applet_and_user_as_respondent(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
+            self, applet_id: uuid.UUID, user_id: uuid.UUID
     ) -> UserAppletAccessSchema:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
@@ -213,7 +227,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return result.scalars().first()
 
     async def get_user_roles_to_applet(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID
+            self, user_id: uuid.UUID, applet_id: uuid.UUID
     ) -> list[str]:
         query: Query = select(distinct(UserAppletAccessSchema.role))
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
@@ -223,7 +237,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return db_result.scalars().all()
 
     async def get_meta_applet_and_role(
-        self, applet_id: uuid.UUID, role: Role
+            self, applet_id: uuid.UUID, role: Role
     ) -> list[str]:
         query: Query = select(distinct(UserAppletAccessSchema.meta))
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
@@ -233,7 +247,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return db_result.scalars().all()
 
     async def get_user_id_applet_and_role(
-        self, applet_id: uuid.UUID, role: Role
+            self, applet_id: uuid.UUID, role: Role
     ) -> list[str]:
         query: Query = select(distinct(UserAppletAccessSchema.user_id))
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
@@ -246,3 +260,41 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query: Query = delete(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         await self._execute(query)
+
+    async def get_applet_users(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[AppletUser]:
+        query: Query = select(UserSchema, func.str_agg(UserAppletAccessSchema.role, ','))
+        query = query.join(UserAppletAccessSchema, UserAppletAccessSchema.user_id == UserSchema.id)
+        query = query.group_by(UserSchema.id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        if query_params.filters:
+            query = query.where(*_AppletUsersFilter().get_clauses(**query_params.filters))
+        if query_params.search:
+            query = query.where(_AppletUsersSearch().get_clauses(query_params.search))
+        if query_params.ordering:
+            query = query.where(*_AppletUsersOrdering().get_clauses(*query_params.ordering))
+        query = paging(query, query_params.page, query_params.limit)
+
+        db_result = await self._execute(query)
+
+        users = []
+        for user_schema, roles in db_result.scalars().all():
+            users.append(AppletUser(
+                id=user_schema.id,
+                first_name=user_schema.first_name,
+                last_name=user_schema.last_name,
+                roles=roles.split(',')
+            ))
+        return users
+
+    async def get_applet_users_count(self, applet_id: uuid.UUID, query_params: QueryParams) -> int:
+        query: Query = select(count(UserSchema.id))
+        query = query.join(UserAppletAccessSchema, UserAppletAccessSchema.user_id == UserSchema.id)
+        query = query.group_by(UserSchema.id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        if query_params.filters:
+            query = query.where(*_AppletUsersFilter().get_clauses(**query_params.filters))
+        if query_params.search:
+            query = query.where(_AppletUsersSearch().get_clauses(query_params.search))
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first() or 0

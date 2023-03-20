@@ -57,6 +57,17 @@ router.get(
 )(applet_retrieve)
 
 router.get(
+    "/{id_}/users",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[AppletDetailPublic],
+    responses={
+        status.HTTP_200_OK: {"model": Response[AppletDetailPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_retrieve)
+
+router.get(
     "/{id_}/versions",
     status_code=status.HTTP_200_OK,
     response_model=ResponseMulti[PublicHistory],

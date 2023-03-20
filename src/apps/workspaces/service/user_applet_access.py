@@ -3,9 +3,12 @@ import uuid
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.domain import InvitationDetailGeneric
+from apps.shared.query_params import QueryParams
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
+
+from apps.workspaces.domain.user_applet_access import AppletUser
 
 
 class UserAppletAccessService:
@@ -35,7 +38,7 @@ class UserAppletAccessService:
         return UserAppletAccess.from_orm(access_schema)
 
     async def add_role_by_invitation(
-        self, invitation: InvitationDetailGeneric
+            self, invitation: InvitationDetailGeneric
     ):
         owner_access = await UserAppletAccessCRUD().get_applet_owner(
             invitation.applet_id
@@ -184,3 +187,10 @@ class UserAppletAccessService:
             ],
         )
         return getattr(access, "role", None)
+
+    async def get_applet_users(self, query_params: QueryParams) -> list[AppletUser]:
+        users = await UserAppletAccessCRUD().get_applet_users(self._applet_id, query_params)
+        return users
+
+    async def get_applet_users_count(self, query_params: QueryParams):
+        return await UserAppletAccessCRUD().get_applet_users_count(self._applet_id, query_params)

@@ -39,3 +39,17 @@ class UserAppletAccessItem(InternalModel):
     user_id: uuid.UUID
     applet_id: uuid.UUID
     role: Role
+
+
+class AppletUser(InternalModel):
+    id: uuid.UUID
+    first_name: str
+    last_name: str
+    roles: list[str]
+
+
+class PublicAppletUser(PublicModel):
+    id: uuid.UUID
+    first_name: str
+    last_name: str
+    roles: list[str]
