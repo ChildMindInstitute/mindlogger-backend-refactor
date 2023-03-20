@@ -45,6 +45,7 @@ __all__ = [
     "applet_link_create",
     "applet_link_get",
     "applet_link_delete",
+    "applet_set_data_retention",
 ]
 
 from infrastructure.http import get_language

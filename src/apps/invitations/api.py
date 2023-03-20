@@ -66,6 +66,10 @@ async def invitation_retrieve(
     response: FastApiResponse,
     user: User = Depends(get_current_user),
 ) -> Response[InvitationResponse]:
+    """Get specific invitation with approve key for user
+    who was invited.
+    """
+
     invitation = await InvitationsService(user).get(key)
     if not invitation:
         response.status_code = status.HTTP_404_NOT_FOUND
