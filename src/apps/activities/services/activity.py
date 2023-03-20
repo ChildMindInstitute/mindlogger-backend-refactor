@@ -16,6 +16,7 @@ from apps.activities.domain.activity_update import (
     PreparedActivityItemUpdate,
 )
 from apps.activities.services.activity_item import ActivityItemService
+from apps.schedule.service.schedule import ScheduleService
 
 
 class ActivityService:
@@ -79,6 +80,14 @@ class ActivityService:
             activity_id_map[activity_item.activity_id].items.append(
                 activity_item
             )
+
+        # add default schedule for activities
+        await ScheduleService().create_default_schedules(
+            applet_id=applet_id,
+            activity_ids=[activity.id for activity in activities],
+            is_activity=True,
+        )
+
         return activities
 
     async def update_create(
@@ -89,10 +98,23 @@ class ActivityService:
         activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
         prepared_activity_items = list()
 
+        all_activities = [
+            activity.id
+            for activity in await ActivitiesCRUD().get_by_applet_id(applet_id)
+        ]
+        # Save new activity ids
+        new_activities = []
+        existing_activities = []
+
         for index, activity_data in enumerate(activities_create):
             activity_id = activity_data.id or uuid.uuid4()
             activity_key_id_map[activity_data.key] = activity_id
             activity_id_key_map[activity_id] = activity_data.key
+
+            if activity_data.id:
+                existing_activities.append(activity_id)
+            else:
+                new_activities.append(activity_id)
 
             schemas.append(
                 ActivitySchema(
@@ -140,6 +162,23 @@ class ActivityService:
             activity_id_map[activity_item.activity_id].items.append(
                 activity_item
             )
+
+        # Remove events for deleted activities
+        deleted_activity_ids = set(all_activities) - set(existing_activities)
+
+        if deleted_activity_ids:
+            await ScheduleService().delete_by_activity_ids(
+                applet_id=applet_id, activity_ids=list(deleted_activity_ids)
+            )
+
+        # Create default events for new activities
+        if new_activities:
+            await ScheduleService().create_default_schedules(
+                applet_id=applet_id,
+                activity_ids=list(new_activities),
+                is_activity=True,
+            )
+
         return activities
 
     async def remove_applet_activities(self, applet_id: uuid.UUID):

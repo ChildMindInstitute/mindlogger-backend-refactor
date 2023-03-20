@@ -14,7 +14,7 @@ class PeriodicityRequest(BasePeriodicity, PublicModel):
 
 class EventRequest(BaseEvent, PublicModel):
     periodicity: PeriodicityRequest
-    user_id: uuid.UUID | None
+    respondent_id: uuid.UUID | None
     activity_id: uuid.UUID | None
     flow_id: uuid.UUID | None
 

@@ -13,6 +13,7 @@ import apps.healthcheck.router as healthcheck
 import apps.invitations.router as invitations
 import apps.logs.router as logs
 import apps.schedule.router as schedule
+import apps.test_data.router as test_data
 import apps.themes.router as themes
 import apps.transfer_ownership.router as transfer_ownership
 import apps.users.router as users
@@ -36,6 +37,7 @@ routers: Iterable[APIRouter] = (
     answers.router,
     workspaces.router,
     transfer_ownership.router,
+    test_data.router,
 )
 
 # Declare your middlewares here
