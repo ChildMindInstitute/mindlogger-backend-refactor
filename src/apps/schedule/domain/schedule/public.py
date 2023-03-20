@@ -28,7 +28,7 @@ class PublicPeriodicity(PublicModel, BasePeriodicity):
 class PublicEvent(PublicModel, BaseEvent):
     id: uuid.UUID
     periodicity: PublicPeriodicity
-    user_id: uuid.UUID | None
+    respondent_id: uuid.UUID | None
     activity_id: uuid.UUID | None
     flow_id: uuid.UUID | None
 
@@ -86,6 +86,7 @@ class ScheduleEventDto(PublicModel):
     id: uuid.UUID
     entityId: uuid.UUID
     availability: EventAvailabilityDto
+    selectedDate: date | None = None
     timers: TimerDto
     availabilityType: AvailabilityType
 
