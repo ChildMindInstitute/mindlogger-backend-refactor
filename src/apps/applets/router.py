@@ -16,7 +16,6 @@ from apps.applets.api.applets import (
     applet_version_changes_retrieve,
     applet_version_retrieve,
     applet_versions_retrieve,
-    folders_applet_list,
 )
 from apps.applets.domain import (
     AppletUniqueName,
@@ -45,17 +44,6 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_list)
-
-router.get(
-    "/folders/{id_}",
-    status_code=status.HTTP_200_OK,
-    response_model=ResponseMulti[AppletInfoPublic],
-    responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[AppletInfoPublic]},
-        **DEFAULT_OPENAPI_RESPONSE,
-        **AUTHENTICATION_ERROR_RESPONSES,
-    },
-)(folders_applet_list)
 
 router.get(
     "/{id_}",

@@ -3,7 +3,9 @@ import uuid
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import UserAppletAccess
-from apps.applets.domain.applet import AppletPublic
+from apps.applets.domain.applet import AppletInfo
+from apps.shared.query_params import QueryParams
+from apps.themes.service import ThemeService
 from apps.users import User, UsersCRUD
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.domain.constants import Role
@@ -47,26 +49,47 @@ class UserAccessService:
 
         return workspaces
 
-    # TODO: Finish with paginatination
-    async def get_workspace_applets(
-        self, owner_id: uuid.UUID
-    ) -> list[AppletPublic]:
+    async def get_workspace_applets_by_language(
+        self, language: str, query_params: QueryParams
+    ) -> list[AppletInfo]:
         """Returns the user their chosen workspace applets."""
 
-        accesses: list[
-            UserAppletAccess
-        ] = await UserAppletAccessCRUD().get_by_user_id(self._user_id)
+        schemas = await UserAppletAccessCRUD().get_accessible_applets(
+            self._user_id, query_params
+        )
 
-        applets: list[AppletPublic] = []
+        theme_ids = [schema.theme_id for schema in schemas if schema.theme_id]
+        themes = []
+        if theme_ids:
+            themes = await ThemeService(self._user_id).get_by_ids(theme_ids)
 
-        for access in accesses:
-            if access.owner_id == owner_id:
-                applet: AppletPublic = await AppletsCRUD().get_by_id(
-                    access.applet_id
+        theme_map = dict((theme.id, theme) for theme in themes)
+        applets = []
+        for schema in schemas:
+            theme = theme_map.get(schema.theme_id)
+            applets.append(
+                AppletInfo(
+                    id=schema.id,
+                    display_name=schema.display_name,
+                    version=schema.version,
+                    description=self._get_by_language(
+                        schema.description, language
+                    ),
+                    theme=theme.dict() if theme else None,
+                    about=self._get_by_language(schema.about, language),
+                    image=schema.image,
+                    watermark=schema.watermark,
+                    theme_id=schema.theme_id,
+                    report_server_ip=schema.report_server_ip,
+                    report_public_key=schema.report_public_key,
+                    report_recipients=schema.report_recipients,
+                    report_include_user_id=schema.report_include_user_id,
+                    report_include_case_id=schema.report_include_case_id,
+                    report_email_body=schema.report_email_body,
+                    created_at=schema.created_at,
+                    updated_at=schema.updated_at,
                 )
-                if applet not in applets:
-                    applets.append(applet)
-
+            )
         return applets
 
     async def remove_manager_access(self, schema: RemoveManagerAccess):
@@ -157,3 +180,25 @@ class UserAccessService:
                 raise AppletAccessDenied(
                     message=f"User is not related to applet {applet_id}"
                 )
+
+    async def get_workspace_applets_count(
+        self, query_params: QueryParams
+    ) -> int:
+        count = await UserAppletAccessCRUD().get_accessible_applets_count(
+            self._user_id, query_params
+        )
+        return count
+
+    @staticmethod
+    def _get_by_language(values: dict, language: str):
+        """
+        Returns value by language key,
+         if it does not exist,
+         returns first existing or empty string
+        """
+        try:
+            return values[language]
+        except KeyError:
+            for key, val in values.items():
+                return val
+            return ""

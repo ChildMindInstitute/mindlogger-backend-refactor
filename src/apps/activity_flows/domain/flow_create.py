@@ -5,7 +5,7 @@ from pydantic import Field
 from apps.shared.domain import InternalModel
 
 
-class ActivityFlowItemCreate(InternalModel):
+class FlowItemCreate(InternalModel):
     activity_key: uuid.UUID
 
 
@@ -19,5 +19,5 @@ class FlowCreate(InternalModel):
     description: dict[str, str] = Field(default_factory=dict)
     is_single_report: bool = False
     hide_badge: bool = False
-    items: list[ActivityFlowItemCreate]
+    items: list[FlowItemCreate]
     is_hidden: bool = False

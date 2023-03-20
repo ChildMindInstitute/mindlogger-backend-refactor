@@ -1,7 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.applets.domain.applet import AppletPublic
+from apps.applets.domain.applet import AppletInfoPublic, AppletPublic
 from apps.applets.router import router as applet_router
 from apps.shared.domain import ResponseMulti
 from apps.shared.domain.response import (
@@ -33,10 +33,12 @@ router.get(
 # Applets in a specific workspace where owner_id is applet owner
 router.get(
     "/{owner_id}",
-    response_model=ResponseMulti[AppletPublic],
+    response_model=ResponseMulti[AppletInfoPublic],
+    status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[AppletPublic]},
+        status.HTTP_200_OK: {"model": ResponseMulti[AppletInfoPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_applets)
 

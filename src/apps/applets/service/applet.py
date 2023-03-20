@@ -170,7 +170,9 @@ class AppletService:
         theme_ids = [schema.theme_id for schema in schemas if schema.theme_id]
         themes = []
         if theme_ids:
-            themes = await ThemeService(self.user_id).get_by_ids(theme_ids)
+            themes = await ThemeService(self.user_id).get_users_by_ids(
+                theme_ids
+            )
         theme_map = dict((theme.id, theme) for theme in themes)
         applets = []
 
@@ -274,39 +276,6 @@ class AppletService:
         ).get_admins_role()
         if not role:
             raise AppletAccessDenied()
-
-    async def get_single_language_by_folder_id(
-        self, folder_id: uuid.UUID, language
-    ) -> list[AppletInfo]:
-        schemas = await AppletsCRUD().get_folder_applets(
-            self.user_id, folder_id
-        )
-        applets = []
-        for schema in schemas:
-            applets.append(
-                AppletInfo(
-                    id=schema.id,
-                    display_name=schema.display_name,
-                    version=schema.version,
-                    description=self._get_by_language(
-                        schema.description, language
-                    ),
-                    about=self._get_by_language(schema.about, language),
-                    image=schema.image,
-                    watermark=schema.watermark,
-                    theme_id=schema.theme_id,
-                    report_server_ip=schema.report_server_ip,
-                    report_public_key=schema.report_public_key,
-                    report_recipients=schema.report_recipients,
-                    report_include_user_id=schema.report_include_user_id,
-                    report_include_case_id=schema.report_include_case_id,
-                    report_email_body=schema.report_email_body,
-                    created_at=schema.created_at,
-                    updated_at=schema.updated_at,
-                )
-            )
-
-        return applets
 
     async def set_applet_folder(self, schema: AppletFolder):
         if schema.folder_id:

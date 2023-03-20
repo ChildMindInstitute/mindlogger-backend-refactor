@@ -21,21 +21,20 @@ class TestWorkspaces(BaseTest):
 
     @transaction.rollback
     async def test_user_workspace_list(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
 
         response = await self.client.get(self.user_workspace_list)
         assert response.status_code == 200, response.json()
+        assert len(response.json()["result"]) == 2
 
     @transaction.rollback
     async def test_workspace_applets_list(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
 
         response = await self.client.get(self.workspace_applets_list)
         assert response.status_code == 200
+        assert response.json()["count"] == 1
+
 
     @transaction.rollback
     async def test_workspace_remove_manager_access(self):
@@ -75,3 +74,4 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200
+
