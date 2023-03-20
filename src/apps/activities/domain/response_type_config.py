@@ -1,6 +1,10 @@
 from enum import Enum
 
-from apps.shared.domain import InternalModel
+from apps.shared.domain import (
+    CustomColorField,
+    CustomImageField,
+    InternalModel,
+)
 
 
 class TextConfig(InternalModel):
@@ -24,12 +28,12 @@ class ResponseType(str, Enum):
 
 
 class CheckboxItemConfig(InternalModel):
-    name: str
-    value: int
-    isVisible: bool
-    image: str
-    description: str
-    color: str
+    name: str = ""
+    value: int = 0
+    isVisible: bool = False
+    image: CustomImageField
+    description: str = ""
+    color: CustomColorField
     score: int
 
 
@@ -44,4 +48,4 @@ class CheckboxConfig(InternalModel):
     items: list[CheckboxItemConfig] = []
 
 
-ResponseTypeConfig = TextConfig | ChoiceConfig
+ResponseTypeConfig = TextConfig | ChoiceConfig | CheckboxConfig
