@@ -27,7 +27,7 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         create_data = dict(
-            applet_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             answers=[
@@ -48,10 +48,10 @@ class TestAnswerActivityItems(BaseTest):
 
     @transaction.rollback
     async def test_answer_activity_items_create_for_not_respondent(self):
-        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        await self.client.login(self.login_url, "patric@gmail.com", "Test1234")
 
         create_data = dict(
-            applet_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             answers=[

@@ -1,16 +1,16 @@
-"""change answers
+"""change answer, applet
 
-Revision ID: 55bb1145f6a0
+Revision ID: 113a350cf8cd
 Revises: 8d675fdfaa1d
-Create Date: 2023-03-15 13:02:19.570069
+Create Date: 2023-03-16 16:08:36.262150
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "55bb1145f6a0"
+revision = "113a350cf8cd"
 down_revision = "8d675fdfaa1d"
 branch_labels = None
 depends_on = None
@@ -43,6 +43,16 @@ def upgrade() -> None:
         nullable=True,
     )
     op.drop_constraint(
+        "fk_answers_activity_items_applet_id_applets",
+        "answers_activity_items",
+        type_="foreignkey",
+    )
+    op.drop_constraint(
+        "fk_answers_activity_items_activity_item_history_id_vers_9079",
+        "answers_activity_items",
+        type_="foreignkey",
+    )
+    op.drop_constraint(
         "fk_answers_activity_items_activity_id_activities",
         "answers_activity_items",
         type_="foreignkey",
@@ -52,15 +62,15 @@ def upgrade() -> None:
         "answers_activity_items",
         type_="foreignkey",
     )
-    op.drop_constraint(
-        "fk_answers_activity_items_applet_id_applets",
+    op.create_foreign_key(
+        op.f(
+            "fk_answers_activity_items_activity_history_id_activity_histories"
+        ),
         "answers_activity_items",
-        type_="foreignkey",
-    )
-    op.drop_constraint(
-        "fk_answers_activity_items_activity_item_history_id_vers_9079",
-        "answers_activity_items",
-        type_="foreignkey",
+        "activity_histories",
+        ["activity_history_id"],
+        ["id_version"],
+        ondelete="RESTRICT",
     )
     op.create_foreign_key(
         op.f(
@@ -80,21 +90,12 @@ def upgrade() -> None:
         ["id_version"],
         ondelete="RESTRICT",
     )
-    op.create_foreign_key(
-        op.f(
-            "fk_answers_activity_items_activity_history_id_activity_histories"
-        ),
-        "answers_activity_items",
-        "activity_histories",
-        ["activity_history_id"],
-        ["id_version"],
-        ondelete="RESTRICT",
-    )
     op.drop_column("answers_activity_items", "activity_id")
     op.drop_column("answers_activity_items", "applet_history_id_version")
     op.drop_column(
         "answers_activity_items", "activity_item_history_id_version"
     )
+    op.drop_column("answers_activity_items", "answer")
     op.add_column(
         "answers_flow_items",
         sa.Column("applet_history_id", sa.String(), nullable=False),
@@ -118,7 +119,7 @@ def upgrade() -> None:
         nullable=True,
     )
     op.drop_constraint(
-        "fk_answers_flow_items_activity_item_history_id_version__efb0",
+        "fk_answers_flow_items_flow_item_history_id_version_flow_99c3",
         "answers_flow_items",
         type_="foreignkey",
     )
@@ -128,28 +129,22 @@ def upgrade() -> None:
         type_="foreignkey",
     )
     op.drop_constraint(
-        "fk_answers_flow_items_flow_item_history_id_version_flow_99c3",
-        "answers_flow_items",
-        type_="foreignkey",
-    )
-    op.drop_constraint(
         "fk_answers_flow_items_applet_history_id_version_applet__0ada",
         "answers_flow_items",
         type_="foreignkey",
     )
-    op.create_foreign_key(
-        op.f("fk_answers_flow_items_activity_history_id_activity_histories"),
+    op.drop_constraint(
+        "fk_answers_flow_items_activity_item_history_id_version__efb0",
         "answers_flow_items",
-        "activity_histories",
-        ["activity_history_id"],
-        ["id_version"],
-        ondelete="RESTRICT",
+        type_="foreignkey",
     )
     op.create_foreign_key(
-        op.f("fk_answers_flow_items_applet_history_id_applet_histories"),
+        op.f(
+            "fk_answers_flow_items_activity_item_history_id_activity_item_histories"
+        ),
         "answers_flow_items",
-        "applet_histories",
-        ["applet_history_id"],
+        "activity_item_histories",
+        ["activity_item_history_id"],
         ["id_version"],
         ondelete="RESTRICT",
     )
@@ -162,36 +157,55 @@ def upgrade() -> None:
         ondelete="RESTRICT",
     )
     op.create_foreign_key(
-        op.f(
-            "fk_answers_flow_items_activity_item_history_id_activity_item_histories"
-        ),
+        op.f("fk_answers_flow_items_applet_history_id_applet_histories"),
         "answers_flow_items",
-        "activity_item_histories",
-        ["activity_item_history_id"],
+        "applet_histories",
+        ["applet_history_id"],
         ["id_version"],
         ondelete="RESTRICT",
     )
-    op.drop_column("answers_flow_items", "applet_history_id_version")
+    op.create_foreign_key(
+        op.f("fk_answers_flow_items_activity_history_id_activity_histories"),
+        "answers_flow_items",
+        "activity_histories",
+        ["activity_history_id"],
+        ["id_version"],
+        ondelete="RESTRICT",
+    )
     op.drop_column("answers_flow_items", "flow_item_history_id_version")
+    op.drop_column("answers_flow_items", "applet_history_id_version")
     op.drop_column("answers_flow_items", "activity_item_history_id_version")
+    op.drop_column("answers_flow_items", "answer")
+    op.add_column(
+        "applets", sa.Column("hashed_password", sa.Text(), nullable=True)
+    )
+    op.add_column(
+        "applets", sa.Column("user_encrypted_key", sa.Text(), nullable=True)
+    )
+    op.add_column(
+        "applets", sa.Column("system_encrypted_key", sa.Text(), nullable=True)
+    )
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_column("applets", "system_encrypted_key")
+    op.drop_column("applets", "user_encrypted_key")
+    op.drop_column("applets", "hashed_password")
     op.add_column(
         "answers_flow_items",
         sa.Column(
-            "activity_item_history_id_version",
-            sa.VARCHAR(),
+            "answer",
+            postgresql.JSONB(astext_type=sa.Text()),
             autoincrement=False,
-            nullable=False,
+            nullable=True,
         ),
     )
     op.add_column(
         "answers_flow_items",
         sa.Column(
-            "flow_item_history_id_version",
+            "activity_item_history_id_version",
             sa.VARCHAR(),
             autoincrement=False,
             nullable=False,
@@ -206,15 +220,17 @@ def downgrade() -> None:
             nullable=False,
         ),
     )
-    op.drop_constraint(
-        op.f(
-            "fk_answers_flow_items_activity_item_history_id_activity_item_histories"
-        ),
+    op.add_column(
         "answers_flow_items",
-        type_="foreignkey",
+        sa.Column(
+            "flow_item_history_id_version",
+            sa.VARCHAR(),
+            autoincrement=False,
+            nullable=False,
+        ),
     )
     op.drop_constraint(
-        op.f("fk_answers_flow_items_flow_history_id_flow_histories"),
+        op.f("fk_answers_flow_items_activity_history_id_activity_histories"),
         "answers_flow_items",
         type_="foreignkey",
     )
@@ -224,23 +240,30 @@ def downgrade() -> None:
         type_="foreignkey",
     )
     op.drop_constraint(
-        op.f("fk_answers_flow_items_activity_history_id_activity_histories"),
+        op.f("fk_answers_flow_items_flow_history_id_flow_histories"),
         "answers_flow_items",
         type_="foreignkey",
+    )
+    op.drop_constraint(
+        op.f(
+            "fk_answers_flow_items_activity_item_history_id_activity_item_histories"
+        ),
+        "answers_flow_items",
+        type_="foreignkey",
+    )
+    op.create_foreign_key(
+        "fk_answers_flow_items_activity_item_history_id_version__efb0",
+        "answers_flow_items",
+        "activity_item_histories",
+        ["activity_item_history_id_version"],
+        ["id_version"],
+        ondelete="RESTRICT",
     )
     op.create_foreign_key(
         "fk_answers_flow_items_applet_history_id_version_applet__0ada",
         "answers_flow_items",
         "applet_histories",
         ["applet_history_id_version"],
-        ["id_version"],
-        ondelete="RESTRICT",
-    )
-    op.create_foreign_key(
-        "fk_answers_flow_items_flow_item_history_id_version_flow_99c3",
-        "answers_flow_items",
-        "flow_item_histories",
-        ["flow_item_history_id_version"],
         ["id_version"],
         ondelete="RESTRICT",
     )
@@ -253,10 +276,10 @@ def downgrade() -> None:
         ondelete="RESTRICT",
     )
     op.create_foreign_key(
-        "fk_answers_flow_items_activity_item_history_id_version__efb0",
+        "fk_answers_flow_items_flow_item_history_id_version_flow_99c3",
         "answers_flow_items",
-        "activity_item_histories",
-        ["activity_item_history_id_version"],
+        "flow_item_histories",
+        ["flow_item_history_id_version"],
         ["id_version"],
         ondelete="RESTRICT",
     )
@@ -270,6 +293,15 @@ def downgrade() -> None:
     op.drop_column("answers_flow_items", "activity_history_id")
     op.drop_column("answers_flow_items", "flow_history_id")
     op.drop_column("answers_flow_items", "applet_history_id")
+    op.add_column(
+        "answers_activity_items",
+        sa.Column(
+            "answer",
+            postgresql.JSONB(astext_type=sa.Text()),
+            autoincrement=False,
+            nullable=True,
+        ),
+    )
     op.add_column(
         "answers_activity_items",
         sa.Column(
@@ -298,13 +330,6 @@ def downgrade() -> None:
         ),
     )
     op.drop_constraint(
-        op.f(
-            "fk_answers_activity_items_activity_history_id_activity_histories"
-        ),
-        "answers_activity_items",
-        type_="foreignkey",
-    )
-    op.drop_constraint(
         op.f("fk_answers_activity_items_applet_history_id_applet_histories"),
         "answers_activity_items",
         type_="foreignkey",
@@ -316,21 +341,12 @@ def downgrade() -> None:
         "answers_activity_items",
         type_="foreignkey",
     )
-    op.create_foreign_key(
-        "fk_answers_activity_items_activity_item_history_id_vers_9079",
+    op.drop_constraint(
+        op.f(
+            "fk_answers_activity_items_activity_history_id_activity_histories"
+        ),
         "answers_activity_items",
-        "activity_item_histories",
-        ["activity_item_history_id_version"],
-        ["id_version"],
-        ondelete="RESTRICT",
-    )
-    op.create_foreign_key(
-        "fk_answers_activity_items_applet_id_applets",
-        "answers_activity_items",
-        "applets",
-        ["applet_id"],
-        ["id"],
-        ondelete="RESTRICT",
+        type_="foreignkey",
     )
     op.create_foreign_key(
         "fk_answers_activity_items_applet_history_id_version_app_b0e9",
@@ -345,6 +361,22 @@ def downgrade() -> None:
         "answers_activity_items",
         "activities",
         ["activity_id"],
+        ["id"],
+        ondelete="RESTRICT",
+    )
+    op.create_foreign_key(
+        "fk_answers_activity_items_activity_item_history_id_vers_9079",
+        "answers_activity_items",
+        "activity_item_histories",
+        ["activity_item_history_id_version"],
+        ["id_version"],
+        ondelete="RESTRICT",
+    )
+    op.create_foreign_key(
+        "fk_answers_activity_items_applet_id_applets",
+        "answers_activity_items",
+        "applets",
+        ["applet_id"],
         ["id"],
         ondelete="RESTRICT",
     )

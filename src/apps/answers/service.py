@@ -121,9 +121,10 @@ class AnswerService:
                 )
                 flow_item_answer_schemas.append(
                     AnswerFlowItemsSchema(
+                        id=uuid.uuid4(),
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
-                        answer=json.dumps(answer.answer),
+                        answer=json.dumps(answer.answer.dict()),
                         applet_history_id=applet_id_version,
                         flow_history_id=flow_id_version,
                         activity_history_id=activity_id_version,
@@ -133,9 +134,10 @@ class AnswerService:
             else:
                 activity_item_answer_schemas.append(
                     AnswerActivityItemsSchema(
+                        id=uuid.uuid4(),
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
-                        answer=json.dumps(answer.answer),
+                        answer=json.dumps(answer.answer.dict()),
                         applet_history_id=applet_id_version,
                         activity_history_id=activity_id_version,
                         activity_item_history_id=activity_item_id_version,

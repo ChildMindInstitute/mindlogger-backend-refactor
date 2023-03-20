@@ -43,3 +43,8 @@ class AppletLinkNotFoundError(NotFoundError):
 class AppletLinkAlreadyExist(ValidationError):
     def __init__(self, *_, message="Applet link already exists.") -> None:
         super().__init__(message=message)
+
+
+class AppletPasswordValidationError(ValidationError):
+    def __init__(self, *_, message="Applet password does not match.") -> None:
+        super().__init__(message=message)

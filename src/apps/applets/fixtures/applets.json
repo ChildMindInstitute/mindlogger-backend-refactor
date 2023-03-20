@@ -3,6 +3,8 @@
     "table": "applets",
     "fields": {
       "id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
+      "hashed_password": "$2b$12$tSDe06c7In1ybVmFcslucunhvnfj02UewQuXPLU5dQBjGpuvHPeSm",
+      "system_encrypted_key": "MDds9Ff/5kNp1plmHw62DzAKJTEZpyczSnlf1OUsLbM=",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -26,12 +28,15 @@
       "report_email_body": "",
       "link": "51857e10-6c05-4fa8-a2c8-725b8c1a0aa6",
       "require_login": false
-    }
+    },
+    "note": "Password is `Test1234!`"
   },
   {
     "table": "applets",
     "fields": {
       "id": "92917a56-d586-4613-b7aa-991f2c4b15b2",
+      "hashed_password": "$2b$12$tSDe06c7In1ybVmFcslucunhvnfj02UewQuXPLU5dQBjGpuvHPeSm",
+      "system_encrypted_key": "+pGNygAnQNqc2N5078MEmHcGquSVhCSLmPcWsOX1OMw=",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -53,12 +58,15 @@
       "report_include_case_id": false,
       "report_email_body": "",
       "require_login": true
-    }
+    },
+    "note": "Password is `Test1234!`"
   },
   {
     "table": "applets",
     "fields": {
       "id": "92917a56-d586-4613-b7aa-991f2c4b15b3",
+      "system_encrypted_key": "+WPM9FuVdF16DRpjfTIlUNVNliB5rEcCySlIX0+iLAo=",
+      "hashed_password": "$2b$12$tSDe06c7In1ybVmFcslucunhvnfj02UewQuXPLU5dQBjGpuvHPeSm",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -81,12 +89,15 @@
       "report_email_body": "",
       "link": "51857e10-6c05-4fa8-a2c8-725b8c1a0aa7",
       "require_login": true
-    }
+    },
+    "note": "Password is `Test1234!`"
   },
   {
     "table": "applets",
     "fields": {
       "id": "92917a56-d586-4613-b7aa-991f2c4b15b4",
+      "system_encrypted_key": "7MVuQad4qT8a/1FHh6q0/V65zC9dJX5oy5ljLV2dftg=",
+      "hashed_password": "$2b$12$tSDe06c7In1ybVmFcslucunhvnfj02UewQuXPLU5dQBjGpuvHPeSm",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
@@ -107,6 +118,7 @@
       "report_include_user_id": false,
       "report_include_case_id": false,
       "report_email_body": ""
-    }
+    },
+    "note": "Password is `Test1234!`"
   }
 ]

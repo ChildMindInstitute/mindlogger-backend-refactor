@@ -1,5 +1,5 @@
 from sqlalchemy import Column, ForeignKey, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 
 from infrastructure.database.base import Base
 
@@ -38,7 +38,7 @@ class AnswerFlowItemsSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    answer = Column(JSONB())
+    answer = Column(Text())
     applet_id = Column(UUID(as_uuid=True))
     applet_history_id = Column(
         ForeignKey("applet_histories.id_version", ondelete="RESTRICT"),

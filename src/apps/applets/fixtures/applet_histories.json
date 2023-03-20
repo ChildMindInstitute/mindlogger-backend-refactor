@@ -22,8 +22,8 @@
       "report_include_user_id": false,
       "report_include_case_id": false,
       "report_email_body": "",
-      "id_version": "1_1.0.0",
-      "id": "dffa3fd4-83b0-499e-839a-b860ee229851",
+      "id_version": "92917a56-d586-4613-b7aa-991f2c4b15b1_1.0.0",
+      "id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
       "display_name": "Applet 1"
     }
   },
@@ -50,8 +50,8 @@
       "report_include_user_id": false,
       "report_include_case_id": false,
       "report_email_body": "",
-      "id_version": "2_2.0.1",
-      "id": "dffa3fd4-83b0-499e-839a-b860ee229852",
+      "id_version": "92917a56-d586-4613-b7aa-991f2c4b15b2_2.0.1",
+      "id": "92917a56-d586-4613-b7aa-991f2c4b15b2",
       "display_name": "Applet 2"
     }
   },
@@ -78,8 +78,8 @@
       "report_include_user_id": false,
       "report_include_case_id": false,
       "report_email_body": "",
-      "id_version": "3_1.3.0",
-      "id": "dffa3fd4-83b0-499e-839a-b860ee229853",
+      "id_version": "92917a56-d586-4613-b7aa-991f2c4b15b3_1.3.0",
+      "id": "92917a56-d586-4613-b7aa-991f2c4b15b3",
       "display_name": "Applet 3"
     }
   },
@@ -106,8 +106,8 @@
       "report_include_user_id": false,
       "report_include_case_id": false,
       "report_email_body": "",
-      "id_version": "4_1.0.5",
-      "id": "dffa3fd4-83b0-499e-839a-b860ee229854",
+      "id_version": "92917a56-d586-4613-b7aa-991f2c4b15b4_1.0.5",
+      "id": "92917a56-d586-4613-b7aa-991f2c4b15b4",
       "display_name": "Applet 4"
     }
   }
