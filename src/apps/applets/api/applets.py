@@ -40,7 +40,6 @@ __all__ = [
     "applet_list",
     "applet_delete",
     "applet_set_folder",
-    "folders_applet_list",
     "applet_unique_name_get",
     "applet_link_create",
     "applet_link_get",
@@ -76,19 +75,6 @@ async def applet_retrieve(
         id_, language
     )
     return Response(result=AppletDetailPublic.from_orm(applet))
-
-
-async def folders_applet_list(
-    id_: uuid.UUID,
-    user: User = Depends(get_current_user),
-    language: str = Depends(get_language),
-) -> ResponseMulti[AppletInfoPublic]:
-    applets = await AppletService(user.id).get_single_language_by_folder_id(
-        id_, language
-    )
-    return ResponseMulti(
-        result=[AppletInfoPublic.from_orm(applet) for applet in applets]
-    )
 
 
 # TODO: Add logic to allow to create applets by permissions
