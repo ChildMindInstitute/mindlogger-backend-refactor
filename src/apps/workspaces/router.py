@@ -1,7 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.applets.domain.applet import AppletInfoPublic, AppletPublic
+from apps.applets.domain.applet import AppletInfoPublic
 from apps.applets.router import router as applet_router
 from apps.shared.domain import ResponseMulti
 from apps.shared.domain.response import (

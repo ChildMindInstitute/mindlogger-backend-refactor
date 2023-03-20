@@ -1,7 +1,7 @@
 import uuid
 
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
-from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import UserAppletAccess
 from apps.applets.domain.applet import AppletInfo
 from apps.shared.query_params import QueryParams
