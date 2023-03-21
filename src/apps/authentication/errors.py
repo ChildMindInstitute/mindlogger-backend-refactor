@@ -1,6 +1,6 @@
 from starlette import status
 
-from apps.shared.errors import BadRequestError, BaseError
+from apps.shared.errors import BadRequestError, BaseError, ValidationError
 
 
 class AuthenticationError(BaseError):
@@ -19,4 +19,9 @@ class PermissionsError(BaseError):
 
 class BadCredentials(BadRequestError):
     def __init__(self, message="Bad credentials") -> None:
+        super().__init__(message=message)
+
+
+class WeakPassword(ValidationError):
+    def __init__(self, message="Weak password.") -> None:
         super().__init__(message=message)

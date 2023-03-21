@@ -1,51 +1,65 @@
+import base64
+import uuid
+
 from sqlalchemy import delete
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
 from apps.answers.db.schemas import AnswerActivityItemsSchema
-from apps.answers.domain import (
-    ActivityIdentifierBase,
-    AnswerActivityItem,
-    AnswerActivityItemCreate,
-    AnswerActivityItemsCreate,
-)
-from apps.answers.errors import AnswerError
+from apps.applets.crud import AppletsCRUD
+from apps.shared.encryption import decrypt, encrypt, generate_iv
 from infrastructure.database.crud import BaseCRUD
 
 
 class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
     schema_class = AnswerActivityItemsSchema
 
-    async def save(
-        self, schema_multiple: AnswerActivityItemsCreate
-    ) -> list[AnswerActivityItem]:
-
-        respondent_activity_identifier = ActivityIdentifierBase(
-            **schema_multiple.dict()
+    async def create_many(
+        self, schemas: list[AnswerActivityItemsSchema]
+    ) -> list[AnswerActivityItemsSchema]:
+        applet = await AppletsCRUD().get_by_id(schemas[0].applet_id)
+        system_encrypted_key = base64.b64decode(
+            applet.system_encrypted_key.encode()
         )
-        answer_activity_items = []
+        iv = generate_iv(str(applet.id))
+        key = decrypt(system_encrypted_key, iv=iv)
+        for schema in schemas:
+            encrypted_answer = self._encrypt(
+                schema.id, key, schema.answer.encode()
+            )
+            schema.answer = base64.b64encode(encrypted_answer).decode()
 
-        # Save answer activity items into the database
-        try:
-            for answer in schema_multiple.answers:
-                schema = AnswerActivityItemCreate(
-                    **respondent_activity_identifier.dict(),
-                    **answer.dict(),
-                )
+        schemas = await self._create_many(schemas)
 
-                instance: AnswerActivityItemsSchema = await self._create(
-                    self.schema_class(**schema.dict())
-                )
-                # Create internal data model
-                answer_activity_item = AnswerActivityItem.from_orm(instance)
-                answer_activity_items.append(answer_activity_item)
+        for schema in schemas:
+            schema.answer = self._decrypt(
+                schema.id, key, base64.b64decode(schema.answer.encode())
+            ).decode()
 
-        except IntegrityError:
-            raise AnswerError
+        return schemas
 
-        return answer_activity_items
+    def _encrypt(
+        self,
+        unique_identifier: uuid.UUID,
+        system_encrypted_key: bytes,
+        value: bytes,
+    ) -> bytes:
+        iv = generate_iv(str(unique_identifier))
+        key = decrypt(system_encrypted_key)
+        encrypted_value = encrypt(value, key, iv)
+        return encrypted_value
 
-    async def delete_by_applet_id(self, applet_id: int):
+    def _decrypt(
+        self,
+        unique_identifier: uuid.UUID,
+        system_encrypted_key: bytes,
+        encrypted_value: bytes,
+    ) -> bytes:
+        iv = generate_iv(str(unique_identifier))
+        key = decrypt(system_encrypted_key)
+        answer = decrypt(encrypted_value, key, iv)
+        return answer
+
+    async def delete_by_applet_id(self, applet_id: uuid.UUID):
         query: Query = delete(AnswerActivityItemsSchema)
         query = query.where(AnswerActivityItemsSchema.applet_id == applet_id)
         await self._execute(query)

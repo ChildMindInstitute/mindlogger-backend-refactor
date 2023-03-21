@@ -30,6 +30,7 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
+            password="Test1234!",
             display_name="User daily behave",
             description=dict(
                 en="Understand users behave",
@@ -107,6 +108,7 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
+            password="Test1234!",
             display_name="Applet 1",
             description=dict(
                 en="Understand users behave",
@@ -188,6 +190,7 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         update_data = dict(
+            password="Test1234!",
             display_name="Applet 1",
             description=dict(
                 en="Understand users behave",
@@ -349,6 +352,7 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
+            password="Test1234!",
             display_name="User daily behave",
             description=dict(
                 en="Understand users behave",
@@ -437,6 +441,7 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         update_data = dict(
+            password="Test1234!",
             display_name="Applet 1",
             description=dict(
                 en="Understand users behave",
@@ -548,6 +553,7 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
+            password="Test1234!",
             display_name="User daily behave",
             description=dict(
                 en="Understand users behave",
@@ -618,6 +624,7 @@ class TestApplet(BaseTest):
         )
 
         update_data = dict(
+            password="Test1234!",
             display_name="User daily behave updated",
             description=dict(
                 en="Understand users behave",

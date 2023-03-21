@@ -35,3 +35,13 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
 
         result = await self._execute(query)
         return result.scalars().all()
+
+    async def get_by_activity_id_version(
+        self, activity_id: str
+    ) -> list[ActivityItemHistorySchema]:
+        query: Query = select(ActivityItemHistorySchema)
+        query = query.where(
+            ActivityItemHistorySchema.activity_id == activity_id
+        )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()

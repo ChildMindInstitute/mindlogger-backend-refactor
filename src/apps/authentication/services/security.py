@@ -13,7 +13,6 @@ from config import settings
 
 __all__ = ["AuthenticationService"]
 
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -52,6 +51,12 @@ class AuthenticationService:
     def verify_password(plain_password: str, hashed_password: str):
         if not pwd_context.verify(plain_password, hashed_password):
             raise BadCredentials
+
+    @staticmethod
+    def verify_password_and_hash(
+        plain_password: str, hashed_password: str
+    ) -> bool:
+        return pwd_context.verify(plain_password, hashed_password)
 
     @staticmethod
     def get_password_hash(password: str) -> str:

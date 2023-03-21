@@ -1,3 +1,5 @@
+import base64
+import os
 import re
 import uuid
 
@@ -21,10 +23,13 @@ from apps.applets.errors import (
     AppletAlreadyExist,
     AppletLinkAlreadyExist,
     AppletNotFoundError,
+    AppletPasswordValidationError,
     AppletsFolderAccessDenied,
 )
 from apps.applets.service.applet_history_service import AppletHistoryService
+from apps.authentication.services import AuthenticationService
 from apps.folders.crud import FolderCRUD
+from apps.shared.encryption import encrypt, generate_iv
 from apps.themes.service import ThemeService
 from apps.workspaces.errors import AppletAccessDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
@@ -71,9 +76,12 @@ class AppletService:
         return applet
 
     async def _create(self, create_data: AppletCreate) -> AppletFull:
+        applet_id = uuid.uuid4()
         await self._validate_applet_name(create_data.display_name)
+        system_encrypted_key = self.create_keys(applet_id)
         schema = await AppletsCRUD().save(
             AppletSchema(
+                id=applet_id,
                 display_name=create_data.display_name,
                 description=create_data.description,
                 about=create_data.about,
@@ -87,6 +95,10 @@ class AppletService:
                 report_include_user_id=create_data.report_include_user_id,
                 report_include_case_id=create_data.report_include_case_id,
                 report_email_body=create_data.report_email_body,
+                hashed_password=AuthenticationService.get_password_hash(
+                    create_data.password
+                ),
+                system_encrypted_key=system_encrypted_key,
             )
         )
         return AppletFull.from_orm(schema)
@@ -126,10 +138,21 @@ class AppletService:
         if existed_applet:
             raise AppletAlreadyExist()
 
+    async def _validate_applet_password(
+        self, password: str, applet_id: uuid.UUID
+    ):
+        applet_schema = await AppletsCRUD().get_by_id(applet_id)
+        is_verified = AuthenticationService.verify_password_and_hash(
+            password, applet_schema.hashed_password
+        )
+        if not is_verified:
+            raise AppletPasswordValidationError()
+
     async def _update(
         self, applet_id: uuid.UUID, update_data: AppletUpdate
     ) -> AppletFull:
         await self._validate_applet_name(update_data.display_name, applet_id)
+        await self._validate_applet_password(update_data.password, applet_id)
         applet_schema = await AppletsCRUD().get_by_id(applet_id)
 
         schema = await AppletsCRUD().update_by_id(
@@ -406,6 +429,12 @@ class AppletService:
         )
         if Role.ADMIN not in roles:
             raise AppletAccessDenied()
+
+    def create_keys(self, applet_id: uuid.UUID) -> str:
+        key = os.urandom(settings.secrets.key_length)
+        iv = generate_iv(str(applet_id))
+        system_encrypted_key = encrypt(key, iv=iv)
+        return base64.b64encode(system_encrypted_key).decode()
 
 
 class PublicAppletService:
