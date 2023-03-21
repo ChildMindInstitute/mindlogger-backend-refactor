@@ -6,8 +6,8 @@ from apps.alerts.domain.alert import AlertCreate
 from apps.alerts.domain.alert_config import AlertConfigGet
 from apps.alerts.errors import AlertConfigNotFoundError
 from apps.answers.crud import AnswerActivityItemsCRUD
+from apps.answers.db.schemas import AnswerActivityItemsSchema
 from apps.answers.domain import (
-    AnswerActivityItem,
     AnswerActivityItemsCreate,
     AnswerActivityItemsCreateRequest,
     AnswerCreate,
@@ -61,8 +61,10 @@ async def answer_activity_item_create(
         ],
     )
 
+    # TODO: Find why this save is not working.
+    #       There is only create_many() in the AnswerActivityItemsCRUD
     answer_activity_items: list[
-        AnswerActivityItem
+        AnswerActivityItemsSchema
     ] = await AnswerActivityItemsCRUD().save(
         schema_multiple=answers_with_id_version
     )

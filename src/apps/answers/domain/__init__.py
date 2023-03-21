@@ -1,11 +1,7 @@
 import uuid
 
+from apps.answers.domain.activity_items import *  # noqa: F401, F403
 from apps.shared.domain import InternalModel
-
-__all__ = [
-    "AppletAnswerCreate",
-    "ActivityItemAnswerCreate",
-]
 
 
 class TextAnswer(InternalModel):
