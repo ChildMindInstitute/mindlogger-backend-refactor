@@ -27,6 +27,10 @@ class BaseCRUD(Generic[ConcreteSchema]):
             execution_options=immutabledict({"synchronize_session": False}),
         )
 
+    async def _commit(self):
+        """Commit the current session"""
+        await self.session.commit()
+
     async def _update_one(
         self, lookup: str, value: Any, schema: ConcreteSchema
     ) -> ConcreteSchema:
