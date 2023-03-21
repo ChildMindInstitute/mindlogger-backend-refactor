@@ -98,7 +98,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
     ) -> list[ConcreteSchema]:
         """Creates a new instance of the model in the related table"""
         self.session.add_all(schemas)
-        await self.session.flush()
+        await self.session.commit()
         for schema in schemas:
             await self.session.refresh(schema)
         return schemas
