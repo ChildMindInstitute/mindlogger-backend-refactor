@@ -1,17 +1,17 @@
 """Add alerts
 
-Revision ID: 124895f6a6d6
-Revises: 8d675fdfaa1d
-Create Date: 2023-03-21 03:03:54.817674
+Revision ID: d13f5c3d55b5
+Revises: 4f353d3e56f4
+Create Date: 2023-03-21 17:17:05.562637
 
 """
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "124895f6a6d6"
-down_revision = "8d675fdfaa1d"
+revision = "d13f5c3d55b5"
+down_revision = "4f353d3e56f4"
 branch_labels = None
 depends_on = None
 
