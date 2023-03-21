@@ -9,7 +9,7 @@
             "type": "ALWAYS",
             "start_date": "1980-01-05",
             "end_date": "2096-01-05",
-            "interval": 0
+            "selected_date": null
         }
     },
     {
@@ -22,7 +22,7 @@
             "type": "ALWAYS",
             "start_date": "1980-01-05",
             "end_date": "2096-01-05",
-            "interval": 0
+            "selected_date": null
         }
     },
     {
@@ -35,7 +35,7 @@
             "type": "ALWAYS",
             "start_date": "1980-01-05",
             "end_date": "2096-01-05",
-            "interval": 0
+            "selected_date": null
         }
     },
     {
@@ -48,7 +48,7 @@
             "type": "ALWAYS",
             "start_date": "1980-01-05",
             "end_date": "2096-01-05",
-            "interval": 0
+            "selected_date": null
         }
     },
     {
@@ -61,7 +61,7 @@
             "type": "ALWAYS",
             "start_date": "1980-01-05",
             "end_date": "2096-01-05",
-            "interval": 0
+            "selected_date": null
         }
     },
     {
@@ -74,7 +74,7 @@
             "type": "ALWAYS",
             "start_date": "1980-01-05",
             "end_date": "2096-01-05",
-            "interval": 0
+            "selected_date": null
         }
     },
     {
@@ -87,7 +87,7 @@
             "type": "MONTHLY",
             "start_date": "1980-01-05",
             "end_date": "2096-01-05",
-            "interval": 10
+            "selected_date": "2023-01-05"
         }
     },
     {
@@ -100,7 +100,7 @@
             "type": "ALWAYS",
             "start_date": "1980-01-05",
             "end_date": "2096-01-05",
-            "interval": 0
+            "selected_date": null
         }
     }
 ]

@@ -3,7 +3,6 @@ from sqlalchemy import (
     Column,
     Date,
     ForeignKey,
-    Integer,
     Interval,
     String,
     Time,
@@ -20,12 +19,9 @@ class PeriodicitySchema(Base):
     type = Column(
         String(10), nullable=False
     )  # Options: ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY, ALWAYS
-    start_date = Column(Date, nullable=False)
-    end_date = Column(Date, nullable=False)
-    interval = Column(Integer, nullable=False)
-    # If type is Weekly, interval is 1-7;
-    # If type is Monthly, interval is 1-31;
-    # Otherwise interval is 0;
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
+    selected_date = Column(Date, nullable=True)
 
 
 class EventSchema(Base):
@@ -36,7 +32,6 @@ class EventSchema(Base):
     )
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
-    all_day = Column(Boolean, nullable=False, default=False)
     access_before_schedule = Column(Boolean, nullable=False)
     one_time_completion = Column(Boolean, nullable=False)
     timer = Column(Interval, nullable=False)

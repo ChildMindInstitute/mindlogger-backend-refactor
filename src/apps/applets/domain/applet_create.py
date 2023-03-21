@@ -20,6 +20,7 @@ class AppletCreate(InternalModel):
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
+    password: str
 
     activities: list[ActivityCreate]
     activity_flows: list[FlowCreate]

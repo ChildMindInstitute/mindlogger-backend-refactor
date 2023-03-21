@@ -37,10 +37,10 @@ class SessionManager:
             async_session_factory = sessionmaker(
                 engine, class_=AsyncSession, expire_on_commit=False
             )
-            AsyncScopedSession = async_scoped_session(
+            self.AsyncScopedSession = async_scoped_session(
                 async_session_factory, scopefunc=asyncio.current_task
             )
-            self.session = AsyncScopedSession()
+            self.session = self.AsyncScopedSession()
             self.session.transaction_count = 0
         return self.session
 
@@ -74,17 +74,22 @@ class TransactionManager:
 
         async def _wrap(*args, **kwargs):
             session = session_manager.get_session()
-            session.transaction_count += 1
-            try:
-                result = await func(*args, **kwargs)
-                session.transaction_count -= 1
-                if session.transaction_count == 0:
-                    await session.commit()
-                return result
-            except Exception as e:
-                session.transaction_count -= 1
-                await session.rollback()
-                raise e
+            if settings.env != "testing":
+                try:
+                    result = await func(*args, **kwargs)
+                    await session_manager.AsyncScopedSession.commit()
+                    await session_manager.AsyncScopedSession.remove()
+                    return result
+                except Exception as e:
+                    await session.rollback()
+                    await session_manager.AsyncScopedSession.remove()
+                    raise e
+            else:
+                try:
+                    result = await func(*args, **kwargs)
+                    return result
+                except Exception as e:
+                    raise e
 
         return _wrap
 
@@ -121,12 +126,9 @@ class TransactionManager:
 
         async def _wrap(*args, **kwargs):
             session = session_manager.get_session()
-            session.transaction_count += 1
             try:
                 await func(*args, **kwargs)
-                session.transaction_count -= 1
             finally:
-                session.transaction_count -= 1
                 await session.rollback()
 
         return _wrap

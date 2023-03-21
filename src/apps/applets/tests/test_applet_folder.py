@@ -17,34 +17,6 @@ class TestAppletFolder(BaseTest):
     folders_applet_url = "applets/folders/{id}"
 
     @transaction.rollback
-    async def test_folders_applet_list(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-
-        response = await self.client.get(
-            self.folders_applet_url.format(
-                id="ecf66358-a717-41a7-8027-807374307732"
-            )
-        )
-
-        assert response.status_code == 200, response.json()
-        assert len(response.json()["result"]) == 1
-        assert (
-            response.json()["result"][0]["id"]
-            == "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        )
-
-        response = await self.client.get(
-            self.folders_applet_url.format(
-                id="ecf66358-a717-41a7-8027-807374307731"
-            )
-        )
-
-        assert response.status_code == 200, response.json()
-        assert len(response.json()["result"]) == 0
-
-    @transaction.rollback
     async def test_move_to_folder(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

@@ -75,6 +75,13 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
         return db_result.scalars().all()
 
+    async def get_by_ids(self, ids: list[uuid.UUID]) -> list[ThemeSchema]:
+        query: Query = select(ThemeSchema)
+        query = query.where(ThemeSchema.id.in_(ids))
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
     async def get_users_theme_by_id(
         self, user_id: uuid.UUID, them_id: uuid.UUID
     ) -> ThemeSchema:

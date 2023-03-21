@@ -143,7 +143,7 @@ def downgrade() -> None:
             "creator_id",
             postgresql.UUID(),
             autoincrement=False,
-            nullable=False,
+            nullable=True,
         ),
     )
     op.drop_constraint(

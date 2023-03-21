@@ -25,3 +25,11 @@ class FlowItemHistoryService:
             )
 
         await FlowItemHistoriesCRUD().create_many(schemas)
+
+    async def get_activity_ids_by_flow_id(
+        self, flow_id: uuid.UUID
+    ) -> list[str]:
+        flow_id_version = f"{flow_id}_{self.version}"
+        schemas = await FlowItemHistoriesCRUD().get_by_flow_id(flow_id_version)
+
+        return [schema.activity_id for schema in schemas]
