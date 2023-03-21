@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import delete, distinct, select, func
+from sqlalchemy import delete, distinct, func, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
@@ -15,9 +15,9 @@ from apps.users import UserSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
+    AppletUser,
     UserAppletAccess,
     UserAppletAccessItem,
-    AppletUser,
 )
 from apps.workspaces.errors import UserAppletAccessesNotFound
 from infrastructure.database.crud import BaseCRUD

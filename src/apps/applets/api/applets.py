@@ -48,9 +48,7 @@ __all__ = [
 ]
 
 from apps.workspaces.domain.user_applet_access import PublicAppletUser
-
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
-
 from infrastructure.http import get_language
 
 

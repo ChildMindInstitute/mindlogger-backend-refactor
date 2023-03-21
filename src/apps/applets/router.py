@@ -13,10 +13,10 @@ from apps.applets.api.applets import (
     applet_set_folder,
     applet_unique_name_get,
     applet_update,
+    applet_users_list,
     applet_version_changes_retrieve,
     applet_version_retrieve,
     applet_versions_retrieve,
-    applet_users_list,
 )
 from apps.applets.domain import (
     AppletUniqueName,

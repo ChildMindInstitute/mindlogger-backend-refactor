@@ -740,4 +740,4 @@ class TestApplet(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()['count'] == 4
+        assert response.json()["count"] == 4
