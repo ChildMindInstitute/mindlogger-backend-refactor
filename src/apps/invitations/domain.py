@@ -130,7 +130,6 @@ class Invitation(InternalModel):
     first_name: str
     last_name: str
     created_at: datetime
-    meta: dict
 
 
 class InvitationRespondent(Invitation):
