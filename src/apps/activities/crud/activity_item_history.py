@@ -39,7 +39,10 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
     async def retrieve_by_id_version(
         self, id_version: str
     ) -> ActivityItemHistorySchema:
-        """This method might be redundant. It is leaved there because of changes from main branch."""
+        """
+        This method might be redundant.
+        It is leaved there because of changes from main branch.
+        """
 
         query: Query = select(ActivityItemHistorySchema)
         query = query.where(ActivityItemHistorySchema.id_version == id_version)
