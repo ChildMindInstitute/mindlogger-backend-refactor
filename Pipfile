@@ -25,6 +25,7 @@ python-multipart = "~=0.0.5"
 sentry-sdk = "~=1.6"
 sqlalchemy = {extras = ["asyncio"], version = "~=1.4.46"}
 uvicorn = {extras = ["standard"], version = "==0.19"}
+pyld = "*"
 
 [dev-packages]
 black = "~=22.6"
@@ -50,7 +51,6 @@ types-python-jose = "==3.3.4"
 typing-extensions = "~=4.4.0"
 # https://github.com/sqlalchemy/sqlalchemy/issues/7714
 greenlet = "~=2.0.1"
-
 # Old project requirements
 pymongo = "==3.7.1"
 cherrypy = "==11.0.0"
