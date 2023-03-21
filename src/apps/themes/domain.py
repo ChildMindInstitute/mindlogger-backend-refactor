@@ -1,13 +1,9 @@
 import uuid
 
 from pydantic import BaseModel, Field
+from pydantic.color import Color
 
-from apps.shared.domain import (
-    CustomColorField,
-    CustomImageField,
-    InternalModel,
-    PublicModel,
-)
+from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
     "ThemeRequest",
@@ -17,7 +13,12 @@ __all__ = [
     "ThemeUpdate",
     "ThemeQueryParams",
 ]
+from pydantic import validator
 
+from apps.shared.domain.custom_validations import (
+    validate_color,
+    validate_image,
+)
 from apps.shared.query_params import BaseQueryParams
 
 
@@ -28,27 +29,27 @@ class _ThemeBase(BaseModel):
         example="My theme",
         max_length=100,
     )
-    logo: CustomImageField = Field(
+    logo: str = Field(
         ...,
         description="URL to logo image",
         example="https://example.com/logo.png",
     )
-    background_image: CustomImageField = Field(
+    background_image: str = Field(
         ...,
         description="URL to background image",
         example="https://example.com/background.png",
     )
-    primary_color: CustomColorField = Field(
+    primary_color: Color = Field(
         ...,
         description="Primary color",
         example="#FFFFFF",
     )
-    secondary_color: CustomColorField = Field(
+    secondary_color: Color = Field(
         ...,
         description="Secondary color",
         example="#FFFFFF",
     )
-    tertiary_color: CustomColorField = Field(
+    tertiary_color: Color = Field(
         ...,
         description="Tertiary color",
         example="#FFFFFF",
@@ -56,6 +57,14 @@ class _ThemeBase(BaseModel):
 
     def __str__(self) -> str:
         return self.name
+
+    @validator("logo", "background_image")
+    def validate_image(cls, value):
+        return validate_image(value)
+
+    @validator("primary_color", "secondary_color", "tertiary_color")
+    def validate_color(cls, value):
+        return validate_color(value)
 
 
 class ThemeRequest(_ThemeBase, PublicModel):

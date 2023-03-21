@@ -1,10 +1,9 @@
 from enum import Enum
 
-from apps.shared.domain import (
-    CustomColorField,
-    CustomImageField,
-    InternalModel,
-)
+from pydantic import validator
+from pydantic.color import Color
+
+from apps.shared.domain import InternalModel, validate_color, validate_image
 
 
 class TextConfig(InternalModel):
@@ -31,10 +30,18 @@ class CheckboxItemConfig(InternalModel):
     name: str = ""
     value: int = 0
     isVisible: bool = False
-    image: CustomImageField
+    image: str
     description: str = ""
-    color: CustomColorField
+    color: Color
     score: int
+
+    @validator("image")
+    def validate_image(cls, value):
+        return validate_image(value)
+
+    @validator("color")
+    def validate_color(cls, value):
+        return validate_color(value)
 
 
 class CheckboxConfig(InternalModel):
