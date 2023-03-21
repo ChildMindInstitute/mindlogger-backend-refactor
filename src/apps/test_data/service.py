@@ -83,7 +83,7 @@ class TestDataService:
             activities
         )
         applet_create = AppletCreate(
-            display_name=f"{self.random_string()}-password-Test1234!-generated",
+            display_name=f"{self.random_string()}-password-Test1234!-generated",  # noqa: E501
             description=dict(
                 en=self.random_string(50), fr=self.random_string(50)
             ),
@@ -99,7 +99,7 @@ class TestDataService:
             report_email_body="",
             activities=activities,
             activity_flows=activity_flows,
-            password='Test1234!'
+            password="Test1234!",
         )
 
         return applet_create
