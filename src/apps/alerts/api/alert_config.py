@@ -3,8 +3,8 @@ from copy import deepcopy
 
 from fastapi import Body, Depends
 
-from apps.activities.crud import ActivityItemsCRUD
-from apps.activities.db.schemas import ActivityItemSchema
+from apps.activities.crud import ActivityItemHistoriesCRUD
+from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.alerts.crud.alert_config import AlertConfigsCRUD
 from apps.alerts.domain.alert_config import (
     AlertConfigCreate,
@@ -14,7 +14,7 @@ from apps.alerts.domain.alert_config import (
     AlertsConfigUpdateRequest,
 )
 from apps.alerts.errors import (
-    ActivityItemNotFoundError,
+    ActivityItemHistoryNotFoundError,
     AlertConfigNotFoundError,
     AlertCreateAccessDenied,
     AnswerNotFoundError,
@@ -28,7 +28,7 @@ from apps.workspaces.crud.roles import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 
 
-async def create(
+async def alert_config_create(
     user: User = Depends(get_current_user),
     schema: AlertsConfigCreateRequest = Body(...),
 ) -> Response[AlertsConfigPublic]:
@@ -43,14 +43,16 @@ async def create(
     if not roles:
         raise AlertCreateAccessDenied
 
-    # Check if answer exist in specific activity item
-    activity_item: ActivityItemSchema = await ActivityItemsCRUD().get_by_id(
-        schema.activity_item_id
+    # Check if answer exist in specific activity item history
+    activity: ActivityItemHistorySchema = (
+        await ActivityItemHistoriesCRUD().retrieve_by_id_version(
+            schema.activity_item_histories_id_version
+        )
     )
-    if not activity_item:
-        raise ActivityItemNotFoundError
+    if not activity:
+        raise ActivityItemHistoryNotFoundError
 
-    if schema.specific_answer not in activity_item.answers:
+    if schema.specific_answer not in activity.answers:
         raise AnswerNotFoundError
 
     alert_config_internal = AlertConfigCreate(**schema.dict())
@@ -60,7 +62,7 @@ async def create(
     return Response(result=alert_config)
 
 
-async def update(
+async def alert_config_update(
     alert_config_id: uuid.UUID,
     user: User = Depends(get_current_user),
     schema: AlertsConfigUpdateRequest = Body(...),
@@ -91,7 +93,7 @@ async def update(
     return Response(result=alert_config)
 
 
-async def get_by_id(
+async def alert_config_get_by_id(
     alert_config_id: uuid.UUID,
     user: User = Depends(get_current_user),
 ) -> Response[AlertsConfigPublic]:
@@ -116,7 +118,7 @@ async def get_by_id(
     return Response(result=alert_config)
 
 
-async def get_all_by_applet_id(
+async def alert_config_get_all_by_applet_id(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     query_params: QueryParams = Depends(
@@ -134,7 +136,7 @@ async def get_all_by_applet_id(
     if not roles:
         raise AlertCreateAccessDenied
 
-    # Get all alert configs for applet
+    # Get all alert configs for specific applet
     instances = await AlertConfigsCRUD().get_by_applet_id(
         applet_id, deepcopy(query_params)
     )

@@ -1,5 +1,10 @@
 from fastapi import Body, Depends
 
+from apps.alerts.crud.alert import AlertCRUD
+from apps.alerts.crud.alert_config import AlertConfigsCRUD
+from apps.alerts.domain.alert import AlertCreate
+from apps.alerts.domain.alert_config import AlertConfigGet
+from apps.alerts.errors import AlertConfigNotFoundError
 from apps.answers.crud import AnswerActivityItemsCRUD
 from apps.answers.domain import (
     AnswerActivityItem,
@@ -61,6 +66,34 @@ async def answer_activity_item_create(
     ] = await AnswerActivityItemsCRUD().save(
         schema_multiple=answers_with_id_version
     )
+
+    # Alerts create if alerts config for specific parameters exist
+    for answer in schema.answers:
+        try:
+            alert_config = await AlertConfigsCRUD().get_by_applet_item_answer(
+                AlertConfigGet(
+                    applet_id=schema.applet_id,
+                    activity_item_histories_id_version=(
+                        f"{answer.activity_item_history_id}_"
+                        f"{schema.applet_history_version}"
+                    ),
+                    specific_answer=answer.answer,
+                )
+            )
+            await AlertCRUD().save(
+                AlertCreate(
+                    respondent_id=user.id,
+                    alert_config_id=alert_config.id,
+                    applet_id=schema.applet_id,
+                    activity_item_histories_id_version=(
+                        f"{answer.activity_item_history_id}_"
+                        f"{schema.applet_history_version}"
+                    ),
+                    specific_answer=answer.answer,
+                )
+            )
+        except AlertConfigNotFoundError:
+            raise
 
     return ResponseMulti(
         result=[

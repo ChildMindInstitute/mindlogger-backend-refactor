@@ -2,10 +2,10 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.alerts.api.alert_config import (
-    create,
-    get_all_by_applet_id,
-    get_by_id,
-    update,
+    alert_config_create,
+    alert_config_get_all_by_applet_id,
+    alert_config_get_by_id,
+    alert_config_update,
 )
 from apps.alerts.domain.alert_config import AlertsConfigPublic
 from apps.shared.domain import Response, ResponseMulti
@@ -25,7 +25,7 @@ router.post(
         status.HTTP_201_CREATED: {"model": Response[AlertsConfigPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(create)
+)(alert_config_create)
 
 # Alert configuration update
 router.put(
@@ -39,7 +39,7 @@ router.put(
         status.HTTP_200_OK: {"model": Response[AlertsConfigPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(update)
+)(alert_config_update)
 
 # Alert configuration get by id
 router.get(
@@ -53,7 +53,7 @@ router.get(
         status.HTTP_200_OK: {"model": Response[AlertsConfigPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(get_by_id)
+)(alert_config_get_by_id)
 
 # Alerts configurations get all for specific applet
 router.get(
@@ -67,4 +67,18 @@ router.get(
         status.HTTP_200_OK: {"model": ResponseMulti[AlertsConfigPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(get_all_by_applet_id)
+)(alert_config_get_all_by_applet_id)
+
+# Alert create
+# router.post(
+#     "",
+#     description="""This endpoint using for adding new configuration
+#                 for alert notified""",
+#     response_model_by_alias=True,
+#     response_model=Response[AlertsConfigPublic],
+#     status_code=status.HTTP_201_CREATED,
+#     responses={
+#         status.HTTP_201_CREATED: {"model": Response[AlertsConfigPublic]},
+#         **DEFAULT_OPENAPI_RESPONSE,
+#     },
+# )(alert_create)

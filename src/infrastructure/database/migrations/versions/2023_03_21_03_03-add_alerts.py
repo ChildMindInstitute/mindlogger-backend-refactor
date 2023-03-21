@@ -1,8 +1,8 @@
 """Add alerts
 
-Revision ID: c377459fb6ef
+Revision ID: 124895f6a6d6
 Revises: 8d675fdfaa1d
-Create Date: 2023-03-16 11:44:59.371744
+Create Date: 2023-03-21 03:03:54.817674
 
 """
 import sqlalchemy as sa
@@ -10,7 +10,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "c377459fb6ef"
+revision = "124895f6a6d6"
 down_revision = "8d675fdfaa1d"
 branch_labels = None
 depends_on = None
@@ -26,15 +26,17 @@ def upgrade() -> None:
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
         sa.Column("applet_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column(
-            "activity_item_id", postgresql.UUID(as_uuid=True), nullable=False
+            "activity_item_histories_id_version", sa.String(), nullable=False
         ),
         sa.Column("alert_message", sa.String(), nullable=False),
         sa.Column("specific_answer", sa.String(), nullable=False),
         sa.Column("viewed", sa.Boolean(), nullable=False),
         sa.ForeignKeyConstraint(
-            ["activity_item_id"],
-            ["activity_items.id"],
-            name=op.f("fk_alerts_configs_activity_item_id_activity_items"),
+            ["activity_item_histories_id_version"],
+            ["activity_item_histories.id_version"],
+            name=op.f(
+                "fk_alerts_configs_activity_item_histories_id_version_activity_item_histories"
+            ),
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
@@ -60,12 +62,14 @@ def upgrade() -> None:
         sa.Column("is_watched", sa.Boolean(), nullable=False),
         sa.Column("applet_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column(
-            "activity_item_id", postgresql.UUID(as_uuid=True), nullable=False
+            "activity_item_histories_id_version", sa.String(), nullable=False
         ),
         sa.ForeignKeyConstraint(
-            ["activity_item_id"],
-            ["activity_items.id"],
-            name=op.f("fk_alerts_activity_item_id_activity_items"),
+            ["activity_item_histories_id_version"],
+            ["activity_item_histories.id_version"],
+            name=op.f(
+                "fk_alerts_activity_item_histories_id_version_activity_item_histories"
+            ),
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(

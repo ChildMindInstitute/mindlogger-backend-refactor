@@ -120,14 +120,3 @@ class AppletUniqueName(PublicModel):
 class AppletDataRetention(InternalModel):
     period: PositiveInt
     retention: DataRetention
-
-
-class AppletAlert(InternalModel):
-    alert_message: str
-    applet_id: str
-    created: str
-    id: str
-    item_id: str
-    item_schema: str
-    profile_id: str
-    viewed: bool

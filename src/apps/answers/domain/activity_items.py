@@ -43,7 +43,7 @@ class AnswerRequest(PublicModel):
         description="This field represents the activity item's "
         "histories id at a particular moment in history"
     )
-    answer: dict[str, str] = Field(
+    answer: str = Field(
         description="This field represents the answer "
         "to a specific activity item"
     )
@@ -56,7 +56,7 @@ class AnswerCreate(PublicModel):
         description="This field represents the activity item's "
         "histories id version at a particular moment in history"
     )
-    answer: dict[str, str] = Field(
+    answer: str = Field(
         description="This field represents the answer "
         "to a specific activity item"
     )
@@ -91,7 +91,7 @@ class AnswerActivityItemCreate(AnswerActivityItemCreateBase):
         description="This field represents the activity item's "
         "histories id version at a particular moment in history"
     )
-    answer: dict[str, str] = Field(
+    answer: str = Field(
         description="This field represents the answer "
         "to a specific activity item"
     )
@@ -113,18 +113,18 @@ class AnswerActivityItem(AnswerActivityItemCreate):
 class ActivityIdentifierBase(PublicModel):
     """This model used for internal needs"""
 
-    respondent_id: int = Field(
+    respondent_id: uuid.UUID = Field(
         description="This field represents the user id, "
         "where the user has the respondent role"
     )
-    applet_id: int = Field(
+    applet_id: uuid.UUID = Field(
         description="This field represents the specific applet id"
     )
     applet_history_id_version: str = Field(
         description="This field represents the applet histories id version "
         "at a particular moment in history"
     )
-    activity_id: int = Field(
+    activity_id: uuid.UUID = Field(
         description="This field represents the activity id"
     )
 
@@ -133,7 +133,7 @@ class PublicAnswerActivityItem(ActivityIdentifierBase):
     """This model represents the public answer for activity item"""
 
     id: uuid.UUID
-    answer: dict[str, str] = Field(
+    answer: str = Field(
         description="This field represents the answer "
         "to a specific activity item"
     )

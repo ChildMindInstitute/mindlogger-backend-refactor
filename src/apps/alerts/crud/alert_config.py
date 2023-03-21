@@ -25,12 +25,12 @@ from infrastructure.database.crud import BaseCRUD
 
 
 class _AlertConfigSearching(Searching):
-    search_fields = [AlertConfigSchema.activity_item_id]
+    search_fields = [AlertConfigSchema.activity_item_histories_id_version]
 
 
 class _AlertConfigOrdering(Ordering):
     id = AlertConfigSchema.id
-    activity_item_id = AlertConfigSchema.activity_item_id
+    applet_id = AlertConfigSchema.applet_id
     created_at = AlertConfigSchema.created_at
     updated_at = AlertConfigSchema.updated_at
 
@@ -41,15 +41,16 @@ class AlertConfigsCRUD(BaseCRUD[AlertConfigSchema]):
     async def get_by_applet_item_answer(
         self, schema: AlertConfigGet
     ) -> AlertConfig:
-        """Get alert config by applet_id, activity_item_id and
-        specific answer from the database
+        """Get alert config by applet_id, activity item histories
+        id version and specific answer from the database
         """
 
         # Get alert config from the database
         query: Query = select(self.schema_class)
         query = query.where(self.schema_class.applet_id == schema.applet_id)
         query = query.where(
-            self.schema_class.activity_item_id == schema.activity_item_id
+            self.schema_class.activity_item_histories_id_version
+            == schema.activity_item_histories_id_version
         )
         query = query.where(
             self.schema_class.specific_answer == schema.specific_answer
@@ -142,7 +143,7 @@ class AlertConfigsCRUD(BaseCRUD[AlertConfigSchema]):
 
         if instance.is_deleted:
             raise AlertConfigIsDeletedError(
-                "This alert config is deleted. "
+                message="This alert config is deleted. "
                 "The recovery logic is not implemented yet."
             )
 

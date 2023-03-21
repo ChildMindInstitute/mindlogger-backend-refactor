@@ -14,8 +14,8 @@ class AlertConfigSchema(Base):
         ForeignKey("applets.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    activity_item_id = Column(
-        ForeignKey("activity_items.id", ondelete="RESTRICT"),
+    activity_item_histories_id_version = Column(
+        ForeignKey("activity_item_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
     )
     alert_message = Column(String(), nullable=False)
@@ -41,7 +41,7 @@ class AlertSchema(Base):
         ForeignKey("applets.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    activity_item_id = Column(
-        ForeignKey("activity_items.id", ondelete="RESTRICT"),
+    activity_item_histories_id_version = Column(
+        ForeignKey("activity_item_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
     )

@@ -23,9 +23,9 @@ class _AlertsConfigBase(BaseModel):
     applet_id: uuid.UUID = Field(
         description="This field represents the specific applet id"
     )
-    activity_item_id: uuid.UUID = Field(
+    activity_item_histories_id_version: str = Field(
         description="This field represents the specific activity item "
-        "id in applet"
+        "histories id version in applet"
     )
     specific_answer: str = Field(
         description="This field represents the specific answer "

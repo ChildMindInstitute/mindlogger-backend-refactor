@@ -11,8 +11,8 @@ class AlertConfigNotFoundError(NotFoundError):
         super().__init__(message=message)
 
 
-class ActivityItemNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Activity item not found") -> None:
+class ActivityItemHistoryNotFoundError(NotFoundError):
+    def __init__(self, *_, message="Activity item history not found") -> None:
         super().__init__(message=message)
 
 
@@ -33,4 +33,14 @@ class AlertCreateAccessDenied(ValidationError):
 
 class AnswerNotFoundError(NotFoundError):
     def __init__(self, *_, message="Answer not found in answers") -> None:
+        super().__init__(message=message)
+
+
+class AlertNotFoundError(NotFoundError):
+    def __init__(self, *_, message="Alert not found") -> None:
+        super().__init__(message=message)
+
+
+class AlertIsDeletedError(BadRequestError):
+    def __init__(self, *_, message="Alert is deleted") -> None:
         super().__init__(message=message)
