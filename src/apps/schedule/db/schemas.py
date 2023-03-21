@@ -30,11 +30,11 @@ class EventSchema(Base):
     periodicity_id = Column(
         ForeignKey("periodicity.id", ondelete="RESTRICT"), nullable=False
     )
-    start_time = Column(Time, nullable=False)
-    end_time = Column(Time, nullable=False)
-    access_before_schedule = Column(Boolean, nullable=False)
-    one_time_completion = Column(Boolean, nullable=False)
-    timer = Column(Interval, nullable=False)
+    start_time = Column(Time, nullable=True)
+    end_time = Column(Time, nullable=True)
+    access_before_schedule = Column(Boolean, nullable=True)
+    one_time_completion = Column(Boolean, nullable=True)
+    timer = Column(Interval, nullable=True)
     timer_type = Column(String(10), nullable=False)  # NOT_SET, TIMER, IDLE
     applet_id = Column(
         ForeignKey("applets.id", ondelete="CASCADE"), nullable=False
