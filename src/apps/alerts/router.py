@@ -68,17 +68,3 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(alert_config_get_all_by_applet_id)
-
-# Alert create
-# router.post(
-#     "",
-#     description="""This endpoint using for adding new configuration
-#                 for alert notified""",
-#     response_model_by_alias=True,
-#     response_model=Response[AlertsConfigPublic],
-#     status_code=status.HTTP_201_CREATED,
-#     responses={
-#         status.HTTP_201_CREATED: {"model": Response[AlertsConfigPublic]},
-#         **DEFAULT_OPENAPI_RESPONSE,
-#     },
-# )(alert_create)
