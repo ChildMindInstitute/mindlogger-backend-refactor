@@ -1,7 +1,5 @@
 import uuid
 
-import pytest
-
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.mailing.services import TestMail
@@ -157,7 +155,7 @@ class TestInvite(BaseTest):
             last_name="Daniel",
             role=Role.REVIEWER,
             language="en",
-            respondents=['7484f34a-3acc-4ee6-8a94-fd7299502fa1']
+            respondents=["7484f34a-3acc-4ee6-8a94-fd7299502fa1"],
         )
         response = await self.client.post(
             self.invite_reviewer_url.format(
@@ -184,7 +182,6 @@ class TestInvite(BaseTest):
             language="en",
             secret_user_id=str(uuid.uuid4()),
             nickname=str(uuid.uuid4()),
-
         )
         response = await self.client.post(
             self.invite_respondent_url.format(
@@ -273,7 +270,7 @@ class TestInvite(BaseTest):
             last_name="Daniel",
             role=Role.REVIEWER,
             language="en",
-            respondents=['7484f34a-3acc-4ee6-8a94-fd7299502fa1']
+            respondents=["7484f34a-3acc-4ee6-8a94-fd7299502fa1"],
         )
         response = await self.client.post(
             self.invite_reviewer_url.format(
@@ -358,7 +355,6 @@ class TestInvite(BaseTest):
             == "You do not have access to send invitation."
         )
 
-    @pytest.mark.main
     @transaction.rollback
     async def test_editor_invite_respondent_fail(self):
         await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
@@ -367,14 +363,17 @@ class TestInvite(BaseTest):
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             first_name="Patric",
             last_name="Daniel",
-            language='en',
+            language="en",
             role=Role.RESPONDENT,
             secret_user_id=str(uuid.uuid4()),
             nickname=str(uuid.uuid4()),
         )
-        response = await self.client.post(self.invite_respondent_url.format(
+        response = await self.client.post(
+            self.invite_respondent_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ), request_data)
+            ),
+            request_data,
+        )
         assert response.status_code == 422
         assert (
             response.json()["result"][0]["message"]["en"]

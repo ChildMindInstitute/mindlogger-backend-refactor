@@ -495,7 +495,7 @@ class InvitationsService:
         if access:
             raise NonUniqueValue(
                 message=f"In applet with id {applet_id} "
-                        f"secret User Id is non-unique."
+                f"secret User Id is non-unique."
             )
 
     async def _is_respondents_exist(
