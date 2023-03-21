@@ -479,9 +479,7 @@ class ScheduleService:
         """Get all events for user in applets that user is respondent."""
         applets = await AppletsCRUD().get_applets_by_roles(
             user_id=user_id,
-            roles=[
-                Role.RESPONDENT,
-            ],
+            roles=Role.as_list(),
             query_params=QueryParams(),
         )
         applet_ids = [applet.id for applet in applets]
@@ -565,9 +563,7 @@ class ScheduleService:
             await AppletsCRUD().get_applet_by_roles(
                 user_id=user_id,
                 applet_id=applet_id,
-                roles=[
-                    Role.RESPONDENT,
-                ],
+                roles=Role.as_list(),
             )
         ):
             raise NotFoundError(
