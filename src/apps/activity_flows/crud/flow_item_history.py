@@ -36,3 +36,13 @@ class FlowItemHistoriesCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
         )
         result = await self._execute(query)
         return result.scalars().all()
+
+    async def get_by_flow_id(
+        self, flow_id: str
+    ) -> list[ActivityFlowItemHistorySchema]:
+        query: Query = select(ActivityFlowItemHistorySchema)
+        query = query.where(
+            ActivityFlowItemHistorySchema.activity_flow_id == flow_id
+        )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()

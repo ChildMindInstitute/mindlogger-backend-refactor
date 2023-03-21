@@ -4,7 +4,6 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivityItemSchema, ActivitySchema
-from apps.applets.db.schemas import AppletSchema
 from infrastructure.database import BaseCRUD
 
 __all__ = ["ActivityItemsCRUD"]
@@ -28,25 +27,6 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
             ActivityItemSchema.activity_id.in_(activity_id_query)
         )
         await self._execute(query)
-
-    async def get_by_applet_id(
-        self, applet_id: int
-    ) -> list[ActivityItemSchema]:
-        query: Query = select(ActivityItemSchema)
-        query = query.join(
-            ActivitySchema,
-            ActivitySchema.id == ActivityItemSchema.activity_id,
-        )
-        query = query.join(
-            AppletSchema,
-            AppletSchema.id == ActivitySchema.applet_id,
-        )
-        query = query.where(AppletSchema.id == applet_id)
-        query = query.order_by(
-            ActivityItemSchema.ordering.asc(),
-        )
-        result = await self._execute(query)
-        return result.scalars().all()
 
     async def get_by_activity_id(
         self, activity_id: uuid.UUID

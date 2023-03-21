@@ -24,6 +24,9 @@ class TestInvite(BaseTest):
     accept_url = "/invitations/{key}/accept"
     accept_private_url = "/invitations/private/{key}/accept"
     decline_url = "/invitations/{key}/decline"
+    invite_manager_url = f"{invitation_list}/{{applet_id}}/managers"
+    invite_reviewer_url = f"{invitation_list}/{{applet_id}}/reviewer"
+    invite_respondent_url = f"{invitation_list}/{{applet_id}}/respondent"
 
     async def test_invitation_list(self):
         await self.client.login(
@@ -76,10 +79,17 @@ class TestInvite(BaseTest):
         )
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-            role=Role.REVIEWER,
+            first_name="Patric",
+            last_name="Daniel",
+            role=Role.MANAGER,
+            language="en",
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
         assert response.status_code == 200
 
         assert len(TestMail.mails) == 1
@@ -93,10 +103,17 @@ class TestInvite(BaseTest):
         )
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
             role=Role.COORDINATOR,
+            language="en",
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
         assert response.status_code == 200
 
         assert len(TestMail.mails) == 1
@@ -110,10 +127,17 @@ class TestInvite(BaseTest):
         )
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
             role=Role.EDITOR,
+            language="en",
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
         assert response.status_code == 200
 
         assert len(TestMail.mails) == 1
@@ -127,11 +151,19 @@ class TestInvite(BaseTest):
         )
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
             role=Role.REVIEWER,
+            language="en",
+            respondents=["7484f34a-3acc-4ee6-8a94-fd7299502fa1"],
         )
-        response = await self.client.post(self.invite_url, request_data)
-        assert response.status_code == 200
+        response = await self.client.post(
+            self.invite_reviewer_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
+        assert response.status_code == 200, response.json()
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
@@ -144,10 +176,19 @@ class TestInvite(BaseTest):
         )
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
             role=Role.RESPONDENT,
+            language="en",
+            secret_user_id=str(uuid.uuid4()),
+            nickname=str(uuid.uuid4()),
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_respondent_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
         assert response.status_code == 200
 
         assert len(TestMail.mails) == 1
@@ -159,10 +200,17 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
             role=Role.MANAGER,
+            language="en",
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
         assert response.status_code == 200
 
         assert len(TestMail.mails) == 1
@@ -174,10 +222,17 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
             role=Role.COORDINATOR,
+            language="en",
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
         assert response.status_code == 200
 
         assert len(TestMail.mails) == 1
@@ -189,10 +244,17 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
             role=Role.EDITOR,
+            language="en",
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
         assert response.status_code == 200
 
         assert len(TestMail.mails) == 1
@@ -204,10 +266,18 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
             role=Role.REVIEWER,
+            language="en",
+            respondents=["7484f34a-3acc-4ee6-8a94-fd7299502fa1"],
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_reviewer_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
         assert response.status_code == 200
 
         assert len(TestMail.mails) == 1
@@ -219,10 +289,19 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
             role=Role.RESPONDENT,
+            language="en",
+            secret_user_id=str(uuid.uuid4()),
+            nickname=str(uuid.uuid4()),
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_respondent_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
         assert response.status_code == 200
 
         assert len(TestMail.mails) == 1
@@ -234,10 +313,19 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
             role=Role.RESPONDENT,
+            language="en",
+            secret_user_id=str(uuid.uuid4()),
+            nickname=str(uuid.uuid4()),
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_respondent_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
         assert response.status_code == 200
 
         assert len(TestMail.mails) == 1
@@ -249,10 +337,18 @@ class TestInvite(BaseTest):
         await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
         request_data = dict(
             email="patric@gmail.com",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
             role=Role.MANAGER,
+            language="en",
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
+
         assert response.status_code == 422
         assert (
             response.json()["result"][0]["message"]["en"]
@@ -260,14 +356,24 @@ class TestInvite(BaseTest):
         )
 
     @transaction.rollback
-    async def test_editor_invite_any_fail(self):
+    async def test_editor_invite_respondent_fail(self):
         await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
         request_data = dict(
             email="patric@gmail.com",
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            first_name="Patric",
+            last_name="Daniel",
+            language="en",
             role=Role.RESPONDENT,
+            secret_user_id=str(uuid.uuid4()),
+            nickname=str(uuid.uuid4()),
         )
-        response = await self.client.post(self.invite_url, request_data)
+        response = await self.client.post(
+            self.invite_respondent_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
         assert response.status_code == 422
         assert (
             response.json()["result"][0]["message"]["en"]

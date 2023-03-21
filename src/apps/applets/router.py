@@ -13,6 +13,7 @@ from apps.applets.api.applets import (
     applet_set_folder,
     applet_unique_name_get,
     applet_update,
+    applet_users_list,
     applet_version_changes_retrieve,
     applet_version_retrieve,
     applet_versions_retrieve,
@@ -31,6 +32,7 @@ from apps.shared.domain.response import (
     DEFAULT_OPENAPI_RESPONSE,
     NO_CONTENT_ERROR_RESPONSES,
 )
+from apps.workspaces.domain.user_applet_access import PublicAppletUser
 
 router = APIRouter(prefix="/applets", tags=["Applets"])
 
@@ -55,6 +57,17 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_retrieve)
+
+router.get(
+    "/{id_}/users",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[PublicAppletUser],
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicAppletUser]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_users_list)
 
 router.get(
     "/{id_}/versions",

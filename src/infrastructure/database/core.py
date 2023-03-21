@@ -37,10 +37,10 @@ class SessionManager:
             async_session_factory = sessionmaker(
                 engine, class_=AsyncSession, expire_on_commit=False
             )
-            AsyncScopedSession = async_scoped_session(
+            self.AsyncScopedSession = async_scoped_session(
                 async_session_factory, scopefunc=asyncio.current_task
             )
-            self.session = AsyncScopedSession()
+            self.session = self.AsyncScopedSession()
             self.session.transaction_count = 0
         return self.session
 
@@ -77,10 +77,12 @@ class TransactionManager:
             if settings.env != "testing":
                 try:
                     result = await func(*args, **kwargs)
-                    await session.commit()
+                    await session_manager.AsyncScopedSession.commit()
+                    await session_manager.AsyncScopedSession.remove()
                     return result
                 except Exception as e:
                     await session.rollback()
+                    await session_manager.AsyncScopedSession.remove()
                     raise e
             else:
                 try:
