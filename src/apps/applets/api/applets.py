@@ -19,7 +19,7 @@ from apps.applets.domain.applet_create import AppletCreate
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applet_update import AppletUpdate
 from apps.applets.domain.applets import public_detail, public_history_detail
-from apps.applets.filters import AppletQueryParams
+from apps.applets.filters import AppletQueryParams, AppletUsersQueryParams
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.applets.service.applet_history import (
     retrieve_applet_by_version,
@@ -44,8 +44,11 @@ __all__ = [
     "applet_link_create",
     "applet_link_get",
     "applet_link_delete",
+    "applet_users_list",
 ]
 
+from apps.workspaces.domain.user_applet_access import PublicAppletUser
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.http import get_language
 
 
@@ -77,8 +80,24 @@ async def applet_retrieve(
     return Response(result=AppletDetailPublic.from_orm(applet))
 
 
-# TODO: Add logic to allow to create applets by permissions
-# TODO: Restrict by admin
+async def applet_users_list(
+    id_: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(
+        parse_query_params(AppletUsersQueryParams)
+    ),
+) -> ResponseMulti[PublicAppletUser]:
+    users = await UserAppletAccessService(user.id, id_).get_applet_users(
+        deepcopy(query_params)
+    )
+    count = await UserAppletAccessService(user.id, id_).get_applet_users_count(
+        deepcopy(query_params)
+    )
+    return ResponseMulti(
+        count=count, result=[PublicAppletUser.from_orm(user) for user in users]
+    )
+
+
 async def applet_create(
     user: User = Depends(get_current_user),
     schema: AppletCreate = Body(...),
