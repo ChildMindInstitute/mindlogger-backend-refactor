@@ -38,7 +38,7 @@ class UserAppletAccessService:
         return UserAppletAccess.from_orm(access_schema)
 
     async def add_role_by_invitation(
-            self, invitation: InvitationDetailGeneric
+        self, invitation: InvitationDetailGeneric
     ):
         owner_access = await UserAppletAccessCRUD().get_applet_owner(
             invitation.applet_id
@@ -188,9 +188,15 @@ class UserAppletAccessService:
         )
         return getattr(access, "role", None)
 
-    async def get_applet_users(self, query_params: QueryParams) -> list[AppletUser]:
-        users = await UserAppletAccessCRUD().get_applet_users(self._applet_id, query_params)
+    async def get_applet_users(
+        self, query_params: QueryParams
+    ) -> list[AppletUser]:
+        users = await UserAppletAccessCRUD().get_applet_users(
+            self._applet_id, query_params
+        )
         return users
 
     async def get_applet_users_count(self, query_params: QueryParams):
-        return await UserAppletAccessCRUD().get_applet_users_count(self._applet_id, query_params)
+        return await UserAppletAccessCRUD().get_applet_users_count(
+            self._applet_id, query_params
+        )

@@ -12,4 +12,4 @@ class AppletQueryParams(BaseQueryParams):
 
 
 class AppletUsersQueryParams(BaseQueryParams):
-    role: Role
+    role: Role | None = None

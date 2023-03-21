@@ -1,3 +1,5 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -19,6 +21,7 @@ class TestApplet(BaseTest):
     login_url = "/auth/login"
     applet_list_url = "applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
+    applet_users_url = f"{applet_list_url}/{{pk}}/users"
     applet_unique_name_url = f"{applet_list_url}/unique_name"
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
@@ -724,3 +727,17 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["result"]["name"] == "Applet 1 (1)"
+
+    @pytest.mark.main
+    async def test_get_applet_users(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.get(
+            self.applet_users_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()['count'] == 4
