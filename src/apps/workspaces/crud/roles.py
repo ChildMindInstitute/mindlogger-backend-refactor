@@ -237,15 +237,18 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return db_result.scalars().all()
 
-    async def get_meta_applet_and_role(
-        self, applet_id: uuid.UUID, role: Role
-    ) -> list[str]:
-        query: Query = select(distinct(UserAppletAccessSchema.meta))
+    async def get_by_secret_user_id_for_applet(
+        self, applet_id: uuid.UUID, secret_user_id: str
+    ) -> UserAppletAccessSchema | None:
+        query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
-        query = query.where(UserAppletAccessSchema.role == role)
+        query = query.where(
+            UserAppletAccessSchema.meta.op("->>")("secretUserId")
+            == secret_user_id
+        )
         db_result = await self._execute(query)
 
-        return db_result.scalars().all()
+        return db_result.scalars().first()
 
     async def get_user_id_applet_and_role(
         self, applet_id: uuid.UUID, role: Role
