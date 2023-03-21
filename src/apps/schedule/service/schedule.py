@@ -191,6 +191,7 @@ class ScheduleService:
             await self._create_default_event(
                 applet_id=applet_id, activity_id=activity_id, is_activity=True
             )
+
         for flow_id in flow_ids:
             await self._create_default_event(
                 applet_id=applet_id, activity_id=flow_id, is_activity=False
@@ -535,11 +536,12 @@ class ScheduleService:
             oneTimeCompletion=event.one_time_completion,
             periodicityType=event.periodicity.type,
             timeFrom=HourMinute(
-                hours=event.start_time.hour,
-                minutes=event.start_time.minute,
+                hours=event.start_time.hour if event.start_time else 0,
+                minutes=event.start_time.minute if event.start_time else 0,
             ),
             timeTo=HourMinute(
-                hours=event.end_time.hour, minutes=event.end_time.minute
+                hours=event.end_time.hour if event.end_time else 0,
+                minutes=event.end_time.minute if event.end_time else 0,
             ),
             allowAccessBeforeFromTime=event.access_before_schedule,
             startDate=event.periodicity.start_date,
