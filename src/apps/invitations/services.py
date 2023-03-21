@@ -452,11 +452,9 @@ class InvitationsService:
                 f"Applet by id {applet_id} does not exist."
             )
 
-    # invitation_request
     async def _is_validated_role_for_invitation(
         self, applet_id: uuid.UUID, request_role: Role | ManagersRole
     ):
-
         access_service = UserAppletAccessService(self._user.id, applet_id)
         if request_role == Role.RESPONDENT:
             role = await access_service.get_respondent_managers_role()
@@ -491,19 +489,14 @@ class InvitationsService:
         applet_id: uuid.UUID,
         secret_user_id: str,
     ):
-        if not (
-            meta := await UserAppletAccessCRUD().get_meta_applet_and_role(
-                applet_id=applet_id,
-                role=Role.RESPONDENT,
+        access = await UserAppletAccessCRUD().get_by_secret_user_id_for_applet(
+            applet_id, secret_user_id
+        )
+        if access:
+            raise NonUniqueValue(
+                message=f"In applet with id {applet_id} "
+                        f"secret User Id is non-unique."
             )
-        ):
-            return
-        for item in meta:
-            if item["secretUserId"] == secret_user_id:  # type: ignore
-                raise NonUniqueValue(
-                    message=f"In applet with id {applet_id} "
-                    f"secret User Id is non-unique."
-                )
 
     async def _is_respondents_exist(
         self,

@@ -735,7 +735,6 @@ class TestApplet(BaseTest):
         assert response.status_code == 200
         assert response.json()["result"]["name"] == "Applet 1 (1)"
 
-    @pytest.mark.main
     async def test_get_applet_users(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
