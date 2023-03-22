@@ -35,8 +35,7 @@ async def item_choice_delete(
 async def item_choice_retrieve(
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[PublicReusableItemChoice]:
-    item_templates: list[
-        PublicReusableItemChoice
-    ] = await ReusableItemChoiceCRUD().get_item_templates(user.id)
+    item_templates = await ReusableItemChoiceCRUD().get_item_templates(user.id)
+    count = await ReusableItemChoiceCRUD().get_item_templates_count(user.id)
 
-    return ResponseMulti(result=item_templates)
+    return ResponseMulti(result=item_templates, count=count)
