@@ -23,6 +23,6 @@ class ActivityItemAnswerCreate(InternalModel):
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
-    flow_id: uuid.UUID | None
+    flow_id: uuid.UUID | None = None
     activity_id: uuid.UUID
     answers: list[ActivityItemAnswerCreate]
