@@ -5,8 +5,8 @@ from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
 from apps.alerts.crud.alert_config import AlertConfigsCRUD
-from apps.alerts.db.schemas import AlertSchema
-from apps.alerts.domain.alert import Alert, AlertCreate
+from apps.alerts.db.schemas import AlertConfigSchema, AlertSchema
+from apps.alerts.domain.alert import Alert, AlertCreate, AlertPublic
 from apps.alerts.domain.alert_config import AlertConfig, AlertConfigGet
 from apps.alerts.errors import (
     AlertConfigNotFoundError,
@@ -14,6 +14,8 @@ from apps.alerts.errors import (
     AlertNotFoundError,
 )
 from apps.shared.ordering import Ordering
+from apps.shared.paging import paging
+from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
 from infrastructure.database.crud import BaseCRUD
 
@@ -65,6 +67,67 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         alert: Alert = Alert.from_orm(instance)
 
         return alert
+
+    async def get_by_applet_id(
+        self,
+        applet_id: uuid.UUID,
+        query_params: QueryParams,
+    ) -> list[AlertPublic]:
+        """Get alerts by applet_id from the database"""
+
+        # Get alert from the database
+        query: Query = select(self.schema_class)
+        query = query.where(self.schema_class.applet_id == applet_id)
+        query = query.join(
+            AlertConfigSchema.alert_message,
+            AlertConfigSchema.id == self.schema_class.alert_config_id,
+        )
+
+        if query_params.search:
+            query = query.where(
+                *_AlertSearching().get_clauses(query_params.search)
+            )
+        if query_params.ordering:
+            query = query.order_by(
+                *_AlertOrdering().get_clauses(*query_params.ordering)
+            )
+        query = query.where(
+            self.schema_class.is_deleted == False  # noqa: E712
+        )
+        query = paging(query, query_params.page, query_params.limit)
+
+        result: Result = await self._execute(query)
+        instances: list[AlertSchema] = result.scalars().all()
+
+        return [AlertPublic.from_orm(alert) for alert in instances]
+
+    async def get_by_applet_id_count(
+        self,
+        applet_id: uuid.UUID,
+        query_params: QueryParams,
+    ) -> int:
+        """Get alerts count by applet_id from the database"""
+
+        # Get alert from the database
+        query: Query = select(self.schema_class.id)
+        query = query.where(self.schema_class.applet_id == applet_id)
+        query = query.join(
+            AlertConfigSchema.alert_message,
+            AlertConfigSchema.id == self.schema_class.alert_config_id,
+        )
+
+        if query_params.search:
+            query = query.where(
+                *_AlertSearching().get_clauses(query_params.search)
+            )
+
+        query = query.where(
+            self.schema_class.is_deleted == False  # noqa: E712
+        )
+
+        result: Result = await self._execute(query)
+
+        return result.scalars().first() or 0
 
     async def save(self, schema: AlertCreate) -> Alert:
 

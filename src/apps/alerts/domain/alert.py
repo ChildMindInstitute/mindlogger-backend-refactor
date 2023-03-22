@@ -2,11 +2,12 @@ import uuid
 
 from pydantic import BaseModel, Field
 
-from apps.shared.domain import InternalModel
+from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
     "AlertCreate",
     "Alert",
+    "AlertPublic",
 ]
 
 
@@ -49,4 +50,19 @@ class Alert(_AlertBase, InternalModel):
     )
     is_watched: bool = Field(
         description="This field indicates whether this alert has been watched."
+    )
+
+
+class AlertPublic(_AlertBase, PublicModel):
+    """This model represents the alert"""
+
+    id: uuid.UUID = Field(
+        description="This field represents the id " "for specific alert"
+    )
+    is_watched: bool = Field(
+        description="This field indicates whether this alert has been watched."
+    )
+    alert_message: str = Field(
+        description="This field represents the alert message "
+        "which will be shown"
     )

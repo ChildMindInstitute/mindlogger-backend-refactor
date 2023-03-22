@@ -1,12 +1,14 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
+from apps.alerts.api.alert import alert_get_all_by_applet_id
 from apps.alerts.api.alert_config import (
     alert_config_create,
     alert_config_get_all_by_applet_id,
     alert_config_get_by_id,
     alert_config_update,
 )
+from apps.alerts.domain.alert import AlertPublic
 from apps.alerts.domain.alert_config import AlertsConfigPublic
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE
@@ -68,3 +70,17 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(alert_config_get_all_by_applet_id)
+
+# Alerts get all
+router.get(
+    "{applet_id}",
+    description="""This endpoint using for get all alerts
+                for specific applet id""",
+    response_model_by_alias=True,
+    response_model=ResponseMulti[AlertPublic],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[AlertPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(alert_get_all_by_applet_id)
