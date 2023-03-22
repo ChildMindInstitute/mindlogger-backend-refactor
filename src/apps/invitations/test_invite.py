@@ -419,7 +419,7 @@ class TestInvite(BaseTest):
         response = await self.client.post(
             self.accept_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da9")
         )
-        assert response.status_code == 422
+        assert response.status_code == 404
 
     @transaction.rollback
     async def test_invitation_decline(self):
@@ -441,4 +441,4 @@ class TestInvite(BaseTest):
         response = await self.client.delete(
             self.decline_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da9")
         )
-        assert response.status_code == 422
+        assert response.status_code == 404
