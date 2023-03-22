@@ -1,3 +1,5 @@
+import uuid
+
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
 
@@ -78,3 +80,15 @@ class TestReusableItem(BaseTest):
         )
 
         assert response.status_code == 204, response.json()
+
+    @transaction.rollback
+    async def test_delete_item_choice_does_not_exist(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.delete(
+            self.delete_url.format(id=str(uuid.uuid4()))
+        )
+
+        assert response.status_code == 404, response.json()

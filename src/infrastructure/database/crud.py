@@ -6,6 +6,7 @@ from sqlalchemy.engine import Result
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Query
 
+from apps.activities.errors import ReusableItemChoiceDoeNotExist
 from infrastructure.database.base import Base
 from infrastructure.database.core import session_manager
 
@@ -120,8 +121,9 @@ class BaseCRUD(Generic[ConcreteSchema]):
         return value
 
     async def _delete(self, key: str, value: Any) -> None:
-        if not (schema := await self._get(key, value)):
-            return None
+        schema = await self._get(key, value)
+        if not schema:
+            raise ReusableItemChoiceDoeNotExist()
 
         query: Query = delete(self.schema_class).where(
             self.schema_class.id == schema.id
