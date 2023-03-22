@@ -1,7 +1,6 @@
 import uuid
 
 from sqlalchemy import select
-from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
@@ -34,9 +33,7 @@ class ReusableItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
             for item_template in db_result.scalars().all()
         ]
 
-    async def get_item_templates_count(
-        self, user_id_: uuid.UUID
-    ) -> int:
+    async def get_item_templates_count(self, user_id_: uuid.UUID) -> int:
         query: Query = select(count(ReusableItemChoiceSchema.id))
         query = query.where(ReusableItemChoiceSchema.user_id == user_id_)
         query = query.order_by(ReusableItemChoiceSchema.id)
