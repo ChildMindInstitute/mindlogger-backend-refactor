@@ -71,6 +71,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.display_name == display_name)
         query = query.where(AppletSchema.id.in_(applet_ids))
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
         if exclude_id:
             query = query.where(AppletSchema.id != exclude_id)
         db_result = await self._execute(query)
@@ -83,6 +84,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.link == link)
         query = query.where(AppletSchema.require_login == require_login)
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
 
         db_result = await self._execute(query)
         return db_result.scalars().first()
@@ -108,6 +110,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     async def exist_by_id(self, id_: uuid.UUID) -> bool:
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.id == id_)
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
 
         db_result = await self._execute(query)
 
