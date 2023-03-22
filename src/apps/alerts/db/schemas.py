@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, String
+from sqlalchemy import Boolean, Column, ForeignKey, String, Text
 
 from infrastructure.database.base import Base
 
@@ -19,7 +19,7 @@ class AlertConfigSchema(Base):
         nullable=False,
     )
     alert_message = Column(String(), nullable=False)
-    specific_answer = Column(String(), nullable=False)
+    specific_answer = Column(Text(), nullable=False)
     viewed = Column(Boolean(), nullable=False, default=True)
 
 
