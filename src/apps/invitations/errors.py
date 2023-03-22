@@ -1,4 +1,4 @@
-from apps.shared.errors import ValidationError
+from apps.shared.errors import ValidationError, NotFoundError
 
 
 class AppletDoesNotExist(ValidationError):
@@ -11,7 +11,7 @@ class DoesNotHaveAccess(ValidationError):
         super().__init__(message=message)
 
 
-class InvitationDoesNotExist(ValidationError):
+class InvitationDoesNotExist(NotFoundError):
     def __init__(self, *_, message="Invitation does not exist.") -> None:
         super().__init__(message=message)
 
