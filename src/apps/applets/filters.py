@@ -1,5 +1,3 @@
-import uuid
-
 from apps.applets.domain import Role
 from apps.shared.query_params import BaseQueryParams
 
