@@ -1,4 +1,4 @@
-from apps.shared.errors import ValidationError, NotFoundError
+from apps.shared.errors import NotFoundError, ValidationError
 
 
 class AppletDoesNotExist(ValidationError):
