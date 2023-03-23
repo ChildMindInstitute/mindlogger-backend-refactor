@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from enum import Enum
 
 from pydantic import EmailStr, Field
@@ -127,6 +128,9 @@ class Invitation(InternalModel):
     key: uuid.UUID
     status: str
     invitor_id: uuid.UUID
+    first_name: str
+    last_name: str
+    created_at: datetime
 
 
 class InvitationRespondent(Invitation):
@@ -158,6 +162,9 @@ class InvitationDetailBase(InternalModel):
     invitor_id: uuid.UUID
     role: Role
     key: uuid.UUID
+    first_name: str
+    last_name: str
+    created_at: datetime
 
 
 class InvitationDetail(InvitationDetailBase):
@@ -243,6 +250,10 @@ class InvitationResponse(PublicModel):
     role: Role
     key: uuid.UUID
     status: str
+    first_name: str
+    last_name: str
+    created_at: datetime
+    meta: dict
 
 
 class _InvitationResponse(PublicModel):

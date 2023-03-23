@@ -92,6 +92,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         self.session.add(schema)
         await self.session.commit()
         await self.session.refresh(schema)
+
         return schema
 
     async def _create_many(
