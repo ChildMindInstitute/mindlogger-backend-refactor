@@ -28,6 +28,10 @@ class BaseCRUD(Generic[ConcreteSchema]):
             execution_options=immutabledict({"synchronize_session": False}),
         )
 
+    async def _commit(self):
+        """Commit the current session"""
+        await self.session.commit()
+
     async def _update_one(
         self, lookup: str, value: Any, schema: ConcreteSchema
     ) -> ConcreteSchema:
@@ -86,7 +90,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
     async def _create(self, schema: ConcreteSchema) -> ConcreteSchema:
         """Creates a new instance of the model in the related table"""
         self.session.add(schema)
-        await self.session.flush()
+        await self.session.commit()
         await self.session.refresh(schema)
         return schema
 
@@ -95,7 +99,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
     ) -> list[ConcreteSchema]:
         """Creates a new instance of the model in the related table"""
         self.session.add_all(schemas)
-        await self.session.flush()
+        await self.session.commit()
         for schema in schemas:
             await self.session.refresh(schema)
         return schemas

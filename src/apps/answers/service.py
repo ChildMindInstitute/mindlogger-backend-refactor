@@ -7,6 +7,10 @@ from apps.activities.services.activity_item_history import (
 from apps.activity_flows.service.flow_item_history import (
     FlowItemHistoryService,
 )
+from apps.alerts.crud.alert import AlertCRUD
+from apps.alerts.crud.alert_config import AlertConfigsCRUD
+from apps.alerts.domain.alert import AlertCreate
+from apps.alerts.domain.alert_config import AlertConfigGet
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.answers.db.schemas import (
     AnswerActivityItemsSchema,
@@ -144,11 +148,35 @@ class AnswerService:
                     )
                 )
 
+        schemas = list()
         if activity_item_answer_schemas:
-            await AnswerActivityItemsCRUD().create_many(
+            schemas = await AnswerActivityItemsCRUD().create_many(
                 activity_item_answer_schemas
             )
         elif flow_item_answer_schemas:
-            await AnswerFlowItemsCRUD().create_many(
+            schemas = await AnswerFlowItemsCRUD().create_many(
                 activity_item_answer_schemas
             )
+
+        for schema in schemas:
+            alert_config = await AlertConfigsCRUD().get_by_applet_item_answer(
+                AlertConfigGet(
+                    applet_id=schema.applet_id,
+                    activity_item_histories_id_version=(
+                        schema.activity_item_history_id
+                    ),
+                    specific_answer=schema.answer,
+                )
+            )
+            if alert_config:
+                await AlertCRUD().save(
+                    AlertCreate(
+                        specific_answer=schema.answer,
+                        respondent_id=schema.respondent_id,
+                        alert_config_id=alert_config.id,
+                        applet_id=schema.applet_id,
+                        activity_item_histories_id_version=(
+                            schema.activity_item_history_id
+                        ),
+                    )
+                )

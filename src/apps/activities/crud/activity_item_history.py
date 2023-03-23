@@ -36,6 +36,19 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
+    async def retrieve_by_id_version(
+        self, id_version: str
+    ) -> ActivityItemHistorySchema:
+        """
+        This method might be redundant.
+        It is leaved there because of changes from main branch.
+        """
+
+        query: Query = select(ActivityItemHistorySchema)
+        query = query.where(ActivityItemHistorySchema.id_version == id_version)
+        result = await self._execute(query)
+        return result.scalars().one_or_none()
+
     async def get_by_activity_id_version(
         self, activity_id: str
     ) -> list[ActivityItemHistorySchema]:

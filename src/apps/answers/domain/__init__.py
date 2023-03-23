@@ -1,11 +1,7 @@
 import uuid
 
+from apps.answers.domain.activity_items import *  # noqa: F401, F403
 from apps.shared.domain import InternalModel
-
-__all__ = [
-    "AppletAnswerCreate",
-    "ActivityItemAnswerCreate",
-]
 
 
 class TextAnswer(InternalModel):
@@ -27,6 +23,6 @@ class ActivityItemAnswerCreate(InternalModel):
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
-    flow_id: uuid.UUID | None
+    flow_id: uuid.UUID | None = None
     activity_id: uuid.UUID
     answers: list[ActivityItemAnswerCreate]

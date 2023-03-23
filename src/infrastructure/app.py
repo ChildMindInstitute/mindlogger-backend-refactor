@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.routing import APIRouter
 
 import apps.activities.router as activities
+import apps.alerts.router as alerts
 import apps.answers.router as answers
 import apps.applets.router as applets
 import apps.authentication.router as auth
@@ -37,6 +38,7 @@ routers: Iterable[APIRouter] = (
     answers.router,
     workspaces.router,
     transfer_ownership.router,
+    alerts.router,
     test_data.router,
 )
 

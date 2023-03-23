@@ -237,6 +237,17 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return db_result.scalars().all()
 
+    async def get_roles_in_roles(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
+    ) -> list[str]:
+        query: Query = select(distinct(UserAppletAccessSchema.role))
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.role.in_(roles))
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
     async def get_by_secret_user_id_for_applet(
         self, applet_id: uuid.UUID, secret_user_id: str
     ) -> UserAppletAccessSchema | None:
