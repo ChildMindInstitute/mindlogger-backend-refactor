@@ -29,17 +29,21 @@ from apps.users.domain import User
 async def invitation_list(
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[InvitationResponse]:
-    """Fetch all invitations for the specific user who is invitor."""
+    """Fetch all invitations whose status is pending
+    for the specific user who is invitor."""
 
     invitations: list[InvitationDetail] = await InvitationsService(
         user
     ).fetch_all()
 
+    count: int = await InvitationsService(user).fetch_all_count()
+
     return ResponseMulti[InvitationResponse](
         result=[
             InvitationResponse(**invitation.dict())
             for invitation in invitations
-        ]
+        ],
+        count=count,
     )
 
 

@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy import select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
+from sqlalchemy.sql.functions import count
 
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import Role
@@ -105,6 +106,16 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                 )
             )
         return results
+
+    async def get_pending_by_invitor_id_count(self, user_id: uuid.UUID) -> int:
+        query: Query = select(count(InvitationSchema.id))
+        query = query.where(InvitationSchema.invitor_id == user_id)
+        query = query.where(
+            InvitationSchema.status == InvitationStatus.PENDING
+        )
+        result = await self._execute(query)
+
+        return result.scalars().first() or 0
 
     async def get_by_email_and_key(
         self, email: str, key: uuid.UUID

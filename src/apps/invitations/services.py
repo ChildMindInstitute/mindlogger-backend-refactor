@@ -50,6 +50,11 @@ class InvitationsService:
             self._user.id
         )
 
+    async def fetch_all_count(self) -> int:
+        return await self.invitations_crud.get_pending_by_invitor_id_count(
+            self._user.id
+        )
+
     async def fetch_all_for_invited(self) -> list[InvitationDetail]:
         return await self.invitations_crud.get_pending_by_invited_email(
             self._user.email
