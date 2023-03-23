@@ -73,9 +73,25 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
         return results
 
+    async def get_pending_by_invited_email_count(self, email: str) -> int:
+        """Return the count of pending invitations for the invited user."""
+
+        query: Query = select(count(InvitationSchema.id))
+        query = query.where(InvitationSchema.email == email)
+        query = query.where(
+            InvitationSchema.status == InvitationStatus.PENDING
+        )
+        result = await self._execute(query)
+
+        return result.scalars().first() or 0
+
     async def get_pending_by_invitor_id(
         self, user_id: uuid.UUID
     ) -> list[InvitationDetail]:
+        """Return the list of pending invitations
+        for the user who is invitor.
+        """
+
         query: Query = select(
             InvitationSchema, AppletSchema.display_name.label("applet_name")
         )
@@ -108,6 +124,9 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         return results
 
     async def get_pending_by_invitor_id_count(self, user_id: uuid.UUID) -> int:
+        """Return the cont of pending invitations
+        for the user who is invitor.
+        """
         query: Query = select(count(InvitationSchema.id))
         query = query.where(InvitationSchema.invitor_id == user_id)
         query = query.where(
@@ -120,6 +139,9 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
     async def get_by_email_and_key(
         self, email: str, key: uuid.UUID
     ) -> InvitationDetailGeneric | None:
+        """Return the specific invitation
+        for the user who was invited.
+        """
         query: Query = select(
             InvitationSchema, AppletSchema.display_name.label("applet_name")
         )

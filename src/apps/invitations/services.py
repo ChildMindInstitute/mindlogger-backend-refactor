@@ -60,6 +60,11 @@ class InvitationsService:
             self._user.email
         )
 
+    async def fetch_all_for_invited_count(self) -> int:
+        return await self.invitations_crud.get_pending_by_invited_email_count(
+            self._user.email
+        )
+
     async def get(self, key: uuid.UUID) -> InvitationDetailGeneric | None:
         return await self.invitations_crud.get_by_email_and_key(
             self._user.email, key
