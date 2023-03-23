@@ -1,8 +1,6 @@
 import uuid
 
 from fastapi import Body, Depends
-from fastapi import Response as FastApiResponse
-from fastapi import status
 
 from apps.authentication.deps import get_current_user
 from apps.invitations.domain import (
@@ -19,6 +17,7 @@ from apps.invitations.domain import (
     InvitationReviewerResponse,
     PrivateInvitationResponse,
 )
+from apps.invitations.errors import InvitationDoesNotExist
 from apps.invitations.services import (
     InvitationsService,
     PrivateInvitationService,
@@ -63,13 +62,17 @@ async def invitation_list_for_invited(
 
 async def invitation_retrieve(
     key: uuid.UUID,
-    response: FastApiResponse,
     user: User = Depends(get_current_user),
 ) -> Response[InvitationResponse]:
+    """Get specific invitation with approve key for user
+    who was invited.
+    """
+
     invitation = await InvitationsService(user).get(key)
     if not invitation:
-        response.status_code = status.HTTP_404_NOT_FOUND
-        return Response(result=None)
+        raise InvitationDoesNotExist(
+            message=f"No such invitation with key={key}."
+        )
     return Response(result=InvitationResponse.from_orm(invitation))
 
 
