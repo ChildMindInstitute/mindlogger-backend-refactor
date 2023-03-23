@@ -7,23 +7,37 @@ from pyld import (
     ContextResolver,
 )
 
-from apps.jsonld_converter.service.reproschema_document import (
-    ContainsNestedMixin,
-    LdDocumentBase,
+from apps.jsonld_converter.service.document import (
     ReproActivity,
     ReproProtocol,
+    ReproFieldText,
+)
+from apps.jsonld_converter.service.document.base import (
+    ContainsNestedMixin,
+    LdDocumentBase,
 )
 from apps.shared.domain import InternalModel
 
 
 class JsonLDModelConverter(ContainsNestedMixin):
+    """
+    Converters json-ld document to internal model
+
+    :example:
+        document_loader = requests_document_loader()  # sync loader
+        _resolved_context_cache = LRUCache(maxsize=100)
+        context_resolver = ContextResolver(_resolved_context_cache, document_loader)
+
+        converter = JsonLDModelConverter(context_resolver, document_loader)
+        protocol = await converter.convert(document_url)
+    """
     def __init__(self, context_resolver: ContextResolver, document_loader: Callable):
         self.context_resolver: ContextResolver = context_resolver
         self.document_loader: Callable = document_loader
 
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
-        return [ReproProtocol, ReproActivity]
+        return [ReproProtocol, ReproActivity, ReproFieldText]
 
     async def convert(self, input_: str | dict,
                       base_url: str | None = None) -> InternalModel:
