@@ -4,7 +4,6 @@ from abc import (
     ABC,
     abstractmethod,
 )
-from copy import deepcopy
 from typing import (
     Callable,
     Type,
@@ -13,8 +12,6 @@ from typing import (
     Any,
 )
 
-from apps.activities.domain.activity_create import ActivityCreate
-from apps.applets.domain.applet_create import AppletCreate
 from pyld import (
     ContextResolver,
     jsonld,
@@ -35,9 +32,14 @@ class LdKeyword(str, enum.Enum):
 
 
 class LdAttributeProcessor:
+    """
+    https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json
+    """
+
     TERMS = {
         'reproschema': [
             "http://schema.repronim.org/",
+            "https://schema.repronim.org/",
             "https://raw.githubusercontent.com/ReproNim/reproschema/master/terms/",
             "https://raw.githubusercontent.com/ReproNim/reproschema/master/schemas/",
         ],
@@ -69,7 +71,7 @@ class LdAttributeProcessor:
         return None
 
     @classmethod
-    def get_attr(cls, doc: dict, attr: str):
+    def get_attr(cls, doc: dict, attr: str, *, drop=None):
         key = cls.get_key(doc, attr)
         if key:
             return doc[key]
@@ -89,14 +91,14 @@ class LdAttributeProcessor:
             return res
 
     @classmethod
-    def get_lang_formatted(cls, items: list[dict]) -> dict:
-        res = {}
-        for item in items:
-            lang, val = item.get(LdKeyword.language), item.get(LdKeyword.value)
-            if lang:
-                res[lang] = val
-
-        return res
+    def get_attr_list(cls, doc: dict, attr: str, *, drop: bool = False) -> list | None:
+        key = cls.get_key(doc, attr)
+        if key and isinstance(obj_list := doc[key], list):
+            if len(obj_list) == 1 and isinstance(obj_list[0], dict) and LdKeyword.list in obj_list[0]:
+                obj_list = obj_list[0][LdKeyword.list]
+            if drop:
+                del doc[key]
+            return obj_list
 
     @classmethod
     def get_attr_value(cls, doc: dict, attr: str, *, drop: bool = False):
@@ -106,12 +108,30 @@ class LdAttributeProcessor:
     def get_translations(cls, doc: dict, term_attr: str, *, drop=False) -> dict[str, str] | None:
         key = cls.get_key(doc, term_attr)
         if key:
-            res = cls.get_lang_formatted(doc[key])
+            res = cls._get_lang_formatted(doc[key])
             if drop:
                 del doc[key]
 
             return res
         return None
+
+    @classmethod
+    def get_translation(cls, doc: dict, term_attr: str, lang: str, *, drop=False) -> str | None:
+        items = cls.get_translations(doc, term_attr, drop=drop)
+        if items:
+            if val := items.get(lang):
+                return val
+            return next(iter(items.values()))
+
+    @classmethod
+    def _get_lang_formatted(cls, items: list[dict]) -> dict:
+        res = {}
+        for item in items:
+            lang, val = item.get(LdKeyword.language), item.get(LdKeyword.value)
+            if lang:
+                res[lang] = val
+
+        return res
 
 
 class ContextResolverAwareMixin:
@@ -120,7 +140,10 @@ class ContextResolverAwareMixin:
 
     async def load_remote_doc(self, remote_doc: str) -> dict:
         assert self.document_loader is not None
-        return await asyncio.to_thread(self.document_loader, remote_doc)
+        try:
+            return await asyncio.to_thread(self.document_loader, remote_doc)
+        except Exception as e:
+            raise
 
 
 class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
@@ -150,7 +173,7 @@ class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
 
         type_ = self._get_supported(new_doc)
         if type_ is None:
-            raise JsonLDNotSupportedError(f'Document not supported', doc)
+            raise JsonLDNotSupportedError(new_doc)
 
         obj = type_(self.context_resolver, self.document_loader)
         await obj.load(new_doc, base_url)
@@ -172,13 +195,6 @@ class CommonFieldsMixin:
     attr_processor: LdAttributeProcessor
 
     lang = 'en'
-    ld_pref_label: str | None = None
-    ld_alt_label: str | None = None
-    ld_description: dict[str, str] | None = None
-    ld_about: dict[str, str] | None = None
-    ld_schema_version: str | None = None
-    ld_version: str | None = None
-    ld_image: str | None = None
 
     def _get_ld_description(self, doc: dict, drop=False):
         return self.attr_processor.get_translations(doc, 'schema:description', drop=drop)
@@ -187,18 +203,10 @@ class CommonFieldsMixin:
         return self.attr_processor.get_translations(doc, 'schema:about', drop=drop)
 
     def _get_ld_pref_label(self, doc: dict, drop=False):
-        items = self.attr_processor.get_translations(doc, 'skos:prefLabel', drop=drop)
-        if items:
-            if val := items.get(self.lang):
-                return val
-            return next(iter(items.values()))
+        return self.attr_processor.get_translation(doc, 'skos:prefLabel', self.lang, drop=drop)
 
     def _get_ld_alt_label(self, doc: dict, drop=False):
-        items = self.attr_processor.get_translations(doc, 'skos:altLabel', drop=drop)
-        if items:
-            if val := items.get(self.lang):
-                return val
-            return next(iter(items.values()))
+        return self.attr_processor.get_translation(doc, 'skos:altLabel', self.lang, drop=drop)
 
     def _get_ld_version(self, doc: dict, drop=False):
         return self.attr_processor.get_attr_value(doc, 'schema:version', drop=drop)
@@ -212,6 +220,26 @@ class CommonFieldsMixin:
                 break
         return img
 
+    def _get_ld_properties_formatted(self, doc: dict, drop=False) -> dict:
+        items = self.attr_processor.get_attr_list(doc, 'reproschema:addProperties', drop=drop)
+
+        properties_by_id = {}
+        if items:
+            for item in items:
+                _id = self.attr_processor.get_attr_single(item, 'reproschema:isAbout', ld_key=LdKeyword.id)
+                _var = self.attr_processor.get_translation(item, 'reproschema:variableName', self.lang)
+                _is_visible = self.attr_processor.get_attr_value(item, 'reproschema:isVis')
+                _pref_label = self._get_ld_pref_label(item)
+                _is_required = self.attr_processor.get_attr_value(item, 'reproschema:requiredValue')
+                properties_by_id[_id] = {
+                    'ld_variable_name': _var,
+                    'ld_is_vis': _is_visible,
+                    'ld_pref_label': _pref_label,
+                    'ld_required_value': _is_required
+                }
+
+        return properties_by_id
+
 
 class LdDocumentBase(ABC, ContextResolverAwareMixin):
     attr_processor: LdAttributeProcessor = LdAttributeProcessor()
@@ -223,6 +251,7 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
     lang: str = 'en'
 
     ld_id: str | None = None
+    ld_variable_name: str | None = None
 
     def __init__(self, context_resolver: ContextResolver, document_loader: Callable):
         self.context_resolver: ContextResolver = context_resolver
@@ -249,127 +278,6 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
         options = dict(
             base=base_url,
             contextResolver=self.context_resolver,
-
+            documentLoader=self.document_loader,
         )
         return await asyncio.to_thread(jsonld.expand, doc, options)
-
-
-class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
-
-    @classmethod
-    def supports(cls, doc: dict) -> bool:
-        ld_types = [
-            'reproschema:Activity',
-            *cls.attr_processor.resolve_key('reproschema:Activity')
-        ]
-        return doc.get(LdKeyword.type) in ld_types
-
-    @classmethod
-    def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
-        return []
-
-    async def load(self, doc: dict, base_url: str | None = None):
-        await super().load(doc, base_url)
-        processed_doc: dict = deepcopy(self.doc_expanded)
-        self.ld_description = self._get_ld_description(processed_doc, drop=True)
-        self.ld_about = self._get_ld_about(processed_doc, drop=True)
-        self.ld_version = self._get_ld_version(processed_doc)
-        self.ld_schema_version = self._get_ld_schema_version(processed_doc)
-        self.ld_pref_label = self._get_ld_pref_label(processed_doc)
-        self.ld_alt_label = self._get_ld_alt_label(processed_doc)
-
-    def export(self) -> InternalModel:
-        return ActivityCreate(
-            name=self.ld_pref_label or self.ld_alt_label,
-            description=self.ld_description or {},
-            image=self.ld_image,
-            items=[],
-        )
-
-
-class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
-    ld_shuffle: bool | None = None
-    ld_allow: list[str] | None = None
-    ld_order: list[str] | None = None
-    ld_watermark: str | None = None
-    extra: dict | None = None
-    nested_by_order: list[LdDocumentBase] | None = None
-
-    @classmethod
-    def supports(cls, doc: dict) -> bool:
-        ld_types = [
-            'reproschema:Protocol',
-            *cls.attr_processor.resolve_key('reproschema:Protocol')
-        ]
-        return doc.get(LdKeyword.type) in ld_types
-
-    @classmethod
-    def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
-        return [ReproActivity]
-
-    async def load(self, doc: dict, base_url: str | None = None):
-        await super().load(doc, base_url)
-
-        processed_doc = deepcopy(self.doc_expanded)
-        self.ld_description = self._get_ld_description(processed_doc, drop=True)
-        self.ld_about = self._get_ld_about(processed_doc, drop=True)
-        self.ld_version = self._get_ld_version(processed_doc, drop=True)
-        self.ld_schema_version = self._get_ld_schema_version(processed_doc, drop=True)
-        self.ld_shuffle = self._get_ld_shuffle(processed_doc, drop=True)
-        self.ld_allow = self._get_ld_allow(processed_doc)
-        self.ld_pref_label = self._get_ld_pref_label(processed_doc)
-        self.ld_alt_label = self._get_ld_alt_label(processed_doc)
-        self.ld_image = self._get_ld_image(processed_doc, drop=True)
-        self._get_ld_watermark(processed_doc, drop=True)
-        await self._process_ld_order(processed_doc)
-
-        self._load_extra(processed_doc)
-
-    def _get_ld_watermark(self, doc: dict, drop=False):
-        return self.attr_processor.get_attr_value(doc, 'reproschema:watermark', drop=drop)
-
-    def _get_ld_shuffle(self, doc: dict, drop=False):
-        return self.attr_processor.get_attr_value(doc, 'reproschema:shuffle', drop=drop)
-
-    def _get_ld_allow(self, doc: dict, drop=False):
-        key = self.attr_processor.get_key(doc, 'reproschema:allow')
-        items = doc[key]
-        if isinstance(items, list):
-            return [item.get(LdKeyword.id) for item in items]
-        if drop:
-            del doc[key]
-
-    async def _process_ld_order(self, doc: dict, drop=False):
-        term_attr = 'reproschema:order'
-        key = self.attr_processor.get_key(doc, term_attr)
-        items = self.attr_processor.get_attr_single(doc, term_attr, ld_key=LdKeyword.list)
-        self.ld_order = items
-
-        nested = await asyncio.gather(*[self._load_nested(item) for item in items])
-        self.nested_by_order = list(nested)
-
-        if drop:
-            del doc[key]
-
-    async def _load_nested(self, doc: dict):
-        return await self.load_supported_document(doc, self.base_url)
-
-    def _load_extra(self, doc: dict):
-        if self.extra is None:
-            self.extra = {}
-        for k, v in doc.items():
-            self.extra[k] = v
-
-    def export(self):
-        activities = []
-        activity_flows = []
-        return AppletCreate(
-            display_name=self.ld_pref_label or self.ld_alt_label,
-            description=self.ld_description or {},
-            about=self.ld_about or {},
-            image=self.ld_image or '',
-            watermark=self.ld_watermark or '',
-            extra_fields=self.extra,
-            activities=activities,
-            activity_flows=activity_flows
-        )
