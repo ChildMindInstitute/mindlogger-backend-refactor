@@ -7,131 +7,87 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 from config import settings
 
-__all__ = ["engine", "session_manager", "transaction"]
+__all__ = ["engine", "session_manager", "rollback", "atomic"]
 
 engine = create_async_engine(
     settings.database.url,
     future=True,
     pool_pre_ping=True,
     echo=False,
-    pool_size=settings.database.pool_size,
+    poolclass=NullPool,
     json_serializer=lambda x: json.dumps(x),
     json_deserializer=lambda x: json.loads(x),
+)
+
+async_session_factory = sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+    autocommit=False,
 )
 
 
 class SessionManager:
     def __init__(self):
-        self.session = None
+        self.test_session = None
 
     def get_session(self):
-        """
-        session = SessionManager().get_session()
+        if settings.env == "testing":
+            return self._get_test_session()
+        return self._get_session()
 
-        Returns async scoped session with counter for transactions.
-        """
-        if not self.session:
-            async_session_factory = sessionmaker(
-                engine, class_=AsyncSession, expire_on_commit=False
-            )
-            self.AsyncScopedSession = async_scoped_session(
-                async_session_factory, scopefunc=asyncio.current_task
-            )
-            self.session = self.AsyncScopedSession()
-            self.session.transaction_count = 0
-        return self.session
+    def _get_test_session(self):
+        if self.test_session:
+            return self.test_session
+        async_session_factory = sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
+        AsyncScopedSession = async_scoped_session(
+            async_session_factory, scopefunc=asyncio.current_task
+        )
+        self.test_session = AsyncScopedSession()
+        return self.test_session
 
-    async def close(self):
-        """
-        await SessionManager().close()
-
-        It will cose session and remove cached session.
-        """
-        if self.session:
-            await self.session.close()
-            self.session = None
+    def _get_session(self):
+        return async_scoped_session(
+            async_session_factory, asyncio.current_task
+        )
 
 
 session_manager = SessionManager()
 
 
-class TransactionManager:
-    def commit(self, func):
-        """
-        @commit
-        async def initial_method(*args, **kwargs):
-            pass
+class atomic:
+    def __init__(self, session):
+        self.session = session
 
-        This decorator forcibly commits the database session.
-        Use it in initial database interaction(ex. in middlewares) to open
-         session.
-        Transaction counter is used to understand when to commit changes and
-         close session.
-        """
+    async def __aenter__(self):
+        return self
 
-        async def _wrap(*args, **kwargs):
-            session = session_manager.get_session()
-            if settings.env != "testing":
-                try:
-                    result = await func(*args, **kwargs)
-                    await session_manager.AsyncScopedSession.commit()
-                    await session_manager.AsyncScopedSession.remove()
-                    return result
-                except Exception as e:
-                    await session.rollback()
-                    await session_manager.AsyncScopedSession.remove()
-                    raise e
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if settings.env != "testing":
+            if not exc_type:
+                await self.session.commit()
+                await self.session.close()
             else:
-                try:
-                    result = await func(*args, **kwargs)
-                    return result
-                except Exception as e:
-                    raise e
-
-        return _wrap
-
-    def atomic(self, func):
-        """
-        @atomic
-        async def create_doc(*args, **kwargs):
-            pass
-
-        Creates savepoint to rollback or keep it until the latest commit.
-        Use it to wrap atomic database interactions to avoid false commits.
-        """
-
-        async def _wrap(*args, **kwargs):
-            session = session_manager.get_session()
-            async with session.begin_nested():
-                try:
-                    await func(*args, **kwargs)
-                finally:
-                    await session.rollback()
-
-        return _wrap
-
-    def rollback(self, func):
-        """
-        @rollback
-        async def test_action(*args, **kwargs):
-            pass
-
-        This decorator forcibly rollbacks the database session.
-        Use it in tests to rollback.
-        Transaction counter is used to close session.
-        """
-
-        async def _wrap(*args, **kwargs):
-            session = session_manager.get_session()
-            try:
-                await func(*args, **kwargs)
-            finally:
-                await session.rollback()
-
-        return _wrap
+                await self.session.rollback()
+                await self.session.close()
+                raise exc_type(exc_val)
+        else:
+            if exc_type:
+                await self.session.rollback()
+                raise exc_type
 
 
-transaction = TransactionManager()
+def rollback(func):
+    async def _wrap(*args, **kwargs):
+        session = session_manager.get_session()
+        await func(*args, **kwargs)
+        await session.rollback()
+
+    return _wrap

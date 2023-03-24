@@ -13,8 +13,9 @@ from apps.themes.errors import ThemeAlreadyExist, ThemeNotFoundError
 
 
 class ThemeService:
-    def __init__(self, user_id: uuid.UUID):
+    def __init__(self, session, user_id: uuid.UUID):
         self.user_id = user_id
+        self.session = session
 
     async def get_users_by_ids(self, ids: list[uuid.UUID]) -> list[Theme]:
         themes = await ThemesCRUD().get_users_themes_by_ids(self.user_id, ids)

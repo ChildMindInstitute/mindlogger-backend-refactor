@@ -19,38 +19,45 @@ from apps.users.domain import User
 from apps.users.errors import UserNotFound
 from config import settings
 from infrastructure.cache import CacheNotFound
+from infrastructure.database import atomic, session_manager
 
 oauth2_oauth = OAuth2PasswordBearer(
     tokenUrl="/auth/openapi", scheme_name="Bearer"
 )
 
 
-async def get_current_user(token: str = Depends(oauth2_oauth)) -> User:
-    try:
-        payload = jwt.decode(
-            token,
-            settings.authentication.access_token.secret_key,
-            algorithms=[settings.authentication.algorithm],
-        )
-        token_data = TokenPayload(**payload)
+async def get_current_user(
+    token: str = Depends(oauth2_oauth),
+    session=Depends(session_manager.get_session),
+) -> User:
+    async with atomic(session):
+        try:
+            payload = jwt.decode(
+                token,
+                settings.authentication.access_token.secret_key,
+                algorithms=[settings.authentication.algorithm],
+            )
+            token_data = TokenPayload(**payload)
 
-        if datetime.fromtimestamp(token_data.exp) < datetime.now():
-            raise AuthenticationError
-    except (JWTError, ValidationError):
-        raise AuthenticationError
-
-    if not (user := await UsersCRUD().get_by_id(id_=token_data.sub)):
-        raise UserNotFound()
-
-    # Check if the token is in the blacklist
-    with suppress(CacheNotFound):
-        cache_entries: list[
-            TokenInfo
-        ] = await AuthenticationService().fetch_all_tokens(user.email)
-
-        for entry in cache_entries:
-            if entry.raw_token == token:
+            if datetime.fromtimestamp(token_data.exp) < datetime.now():
                 raise AuthenticationError
+        except (JWTError, ValidationError):
+            raise AuthenticationError
+
+        if not (
+            user := await UsersCRUD(session).get_by_id(id_=token_data.sub)
+        ):
+            raise UserNotFound()
+
+        # Check if the token is in the blacklist
+        with suppress(CacheNotFound):
+            cache_entries: list[TokenInfo] = await AuthenticationService(
+                session
+            ).fetch_all_tokens(user.email)
+
+            for entry in cache_entries:
+                if entry.raw_token == token:
+                    raise AuthenticationError
 
     return user
 
@@ -77,20 +84,24 @@ async def get_current_token(
 
 async def openapi_auth(
     form_data: OAuth2PasswordRequestForm = Depends(),
+    session=Depends(session_manager.get_session),
 ):
-    user_login_schema = UserLoginRequest(
-        email=EmailStr(form_data.username), password=form_data.password
-    )
-    user: User = await AuthenticationService.authenticate_user(
-        user_login_schema
-    )
-    if not user:
-        raise AuthenticationError
+    async with atomic(session):
+        user_login_schema = UserLoginRequest(
+            email=EmailStr(form_data.username), password=form_data.password
+        )
+        user: User = await AuthenticationService(session).authenticate_user(
+            user_login_schema
+        )
+        if not user:
+            raise AuthenticationError
 
-    user = await AuthenticationService.authenticate_user(user_login_schema)
-    access_token = AuthenticationService.create_access_token(
-        {"sub": str(user.id)}
-    )
+        user = await AuthenticationService(session).authenticate_user(
+            user_login_schema
+        )
+        access_token = AuthenticationService.create_access_token(
+            {"sub": str(user.id)}
+        )
 
     return {
         "access_token": access_token,

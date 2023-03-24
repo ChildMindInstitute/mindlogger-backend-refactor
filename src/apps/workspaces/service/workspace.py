@@ -6,13 +6,14 @@ from apps.workspaces.db.schemas import UserWorkspaceSchema
 
 
 class WorkspaceService:
-    def __init__(self, user_id: uuid.UUID):
+    def __init__(self, session, user_id: uuid.UUID):
         self._user_id = user_id
+        self.session = session
 
     async def create_workspace_from_user(
         self, user: User
     ) -> UserWorkspaceSchema:
-        schema = await UserWorkspaceCRUD().save(
+        schema = await UserWorkspaceCRUD(self.session).save(
             UserWorkspaceSchema(
                 user_id=user.id,
                 workspace_name=f"{user.first_name} {user.last_name}",
@@ -30,13 +31,13 @@ class WorkspaceService:
         and update the workspace name. This procedure is performed only once.
         You can't change the workspace name after that.
         """
-        user_workspace: UserWorkspaceSchema = (
-            await UserWorkspaceCRUD().get_by_user_id(user.id)
+        user_workspace = await UserWorkspaceCRUD(self.session).get_by_user_id(
+            user.id
         )
         if not user_workspace:
             user_workspace = await self.create_workspace_from_user(user)
         if not user_workspace.is_modified:
-            await UserWorkspaceCRUD().update(
+            await UserWorkspaceCRUD(self.session).update(
                 user,
                 workspace_prefix,
             )

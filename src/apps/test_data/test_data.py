@@ -1,5 +1,5 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestData(BaseTest):
@@ -13,7 +13,7 @@ class TestData(BaseTest):
     generate_applet_url = f"{generating_url}/generate_applet"
     applet_list_url = "applets"
 
-    @transaction.rollback
+    @rollback
     async def test_generate_applet(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

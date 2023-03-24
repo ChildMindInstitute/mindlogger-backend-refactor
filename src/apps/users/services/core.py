@@ -22,8 +22,9 @@ __all__ = ["PasswordRecoveryService"]
 
 
 class PasswordRecoveryService:
-    def __init__(self) -> None:
+    def __init__(self, session) -> None:
         self._cache: PasswordRecoveryCache = PasswordRecoveryCache()
+        self.session = session
 
     async def fetch_all(self, email: str) -> list[PasswordRecoveryInfo]:
         cache_entries: list[
@@ -36,7 +37,7 @@ class PasswordRecoveryService:
         self, schema: PasswordRecoveryRequest
     ) -> PublicUser:
 
-        user: User = await UsersCRUD().get_by_email(schema.email)
+        user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
         # If already exist password recovery for this user in Redis,
         # delete old password recovery, before generate and send new.
@@ -101,15 +102,17 @@ class PasswordRecoveryService:
             raise error
 
         # Get user from the database
-        user: User = await UsersCRUD().get_by_email(cache_entry.instance.email)
+        user: User = await UsersCRUD(self.session).get_by_email(
+            cache_entry.instance.email
+        )
 
         # Update password for user
         user_change_password_schema = UserChangePassword(
-            hashed_password=AuthenticationService().get_password_hash(
-                schema.password
-            )
+            hashed_password=AuthenticationService(
+                self.session
+            ).get_password_hash(schema.password)
         )
-        user = await UsersCRUD().change_password(
+        user = await UsersCRUD(self.session).change_password(
             user, user_change_password_schema
         )
 

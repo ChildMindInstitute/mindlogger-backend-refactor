@@ -1,4 +1,5 @@
 from apps.shared.test import BaseTest
+from infrastructure.database import rollback
 
 
 class TestActivities(BaseTest):
@@ -14,6 +15,7 @@ class TestActivities(BaseTest):
     login_url = "/auth/login"
     activity_detail = "/activities/{pk}"
 
+    @rollback
     async def test_activity_detail(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

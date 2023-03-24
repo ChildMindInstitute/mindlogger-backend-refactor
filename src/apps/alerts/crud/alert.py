@@ -133,11 +133,9 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
 
         # Check if the alert config exist
         try:
-            alert_config: AlertConfig = (
-                await AlertConfigsCRUD().get_by_applet_item_answer(
-                    AlertConfigGet(**schema.dict())
-                )
-            )
+            alert_config: AlertConfig = await AlertConfigsCRUD(
+                self.session
+            ).get_by_applet_item_answer(AlertConfigGet(**schema.dict()))
         except AlertConfigNotFoundError:
             raise
 
