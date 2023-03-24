@@ -8,10 +8,13 @@ from sqlalchemy.sql.functions import count
 from apps.alerts.db.schemas import AlertConfigSchema, AlertSchema
 from apps.alerts.domain.alert import Alert, AlertCreate, AlertPublic
 from apps.alerts.errors import AlertIsDeletedError, AlertNotFoundError
+from apps.applets.db.schemas import AppletSchema
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
+from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.domain.constants import Role
 from infrastructure.database.crud import BaseCRUD
 
 
@@ -74,11 +77,23 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         query: Query = select(
             self.schema_class,
             AlertConfigSchema.alert_message.label("alert_message"),
+            AppletSchema.display_name.label("applet_name"),
+            UserAppletAccessSchema.meta.label("meta"),
         )
         query = query.where(self.schema_class.applet_id == applet_id)
         query = query.join(
             AlertConfigSchema.alert_message,
             AlertConfigSchema.id == self.schema_class.alert_config_id,
+        )
+        query = query.join(
+            AppletSchema.display_name,
+            AppletSchema.id == self.schema_class.applet_id,
+        )
+        query = query.join(
+            UserAppletAccessSchema.meta,
+            UserAppletAccessSchema.role == Role.RESPONDENT,
+            UserAppletAccessSchema.user_id == self.schema_class.respondent_id,
+            UserAppletAccessSchema.applet_id == self.schema_class.applet_id,
         )
 
         if query_params.search:
@@ -95,7 +110,7 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         query = paging(query, query_params.page, query_params.limit)
         result: Result = await self._execute(query)
         results = []
-        for alert, alert_message in result.all():
+        for alert, alert_message, applet_name, meta in result.all():
             results.append(
                 AlertPublic(
                     id=alert.id,
@@ -104,6 +119,9 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
                     respondent_id=alert.respondent_id,
                     alert_config_id=alert.alert_config_id,
                     applet_id=alert.applet_id,
+                    applet_name=applet_name,
+                    meta=meta,
+                    created_at=alert.created_at,
                     activity_item_histories_id_version=(
                         alert.activity_item_histories_id_version
                     ),
@@ -134,6 +152,38 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         result: Result = await self._execute(query)
 
         return result.scalars().first() or 0
+
+    async def get_by_id(self, alert_id: uuid.UUID) -> AlertSchema:
+        """Get alert by alert_id"""
+
+        # Get alert from the database
+        query: Query = select(self.schema_class)
+        query = query.where(self.schema_class.id == alert_id)
+
+        result: Result = await self._execute(query)
+        instance = result.scalars().one_or_none()
+
+        if not instance:
+            raise AlertNotFoundError
+
+        if instance.is_deleted:
+            raise AlertIsDeletedError(
+                message="This alert is deleted. "
+                "The recovery logic is not implemented yet."
+            )
+
+        return instance
+
+    async def update(self, schema: AlertSchema) -> Alert:
+
+        # Update alert status at is_watched true
+        schema.is_watched = True
+        instance: Alert = await self._update_one(
+            lookup="id", value=schema.id, schema=schema
+        )
+        alert = Alert.from_orm(instance)
+
+        return alert
 
     async def save(self, schema: AlertCreate) -> Alert:
 

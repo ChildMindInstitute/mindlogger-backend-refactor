@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -65,4 +66,14 @@ class AlertPublic(_AlertBase, PublicModel):
     alert_message: str = Field(
         description="This field represents the alert message "
         "which will be shown"
+    )
+    created_at: datetime = Field(
+        description="This field represents when this alert was created"
+    )
+    applet_name: str = Field(
+        description="This field represents the specific applet name"
+    )
+    meta: dict = Field(
+        description="This field represents the meta data for respondent"
+        "which which contains the fields - nickname and secret_user_id"
     )
