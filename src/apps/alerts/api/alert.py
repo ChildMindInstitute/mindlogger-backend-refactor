@@ -14,16 +14,16 @@ from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.workspaces.crud.roles import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
-from infrastructure.database import session_manager, atomic
+from infrastructure.database import atomic, session_manager
 
 
 async def alert_get_all_by_applet_id(
-        applet_id: uuid.UUID,
-        user: User = Depends(get_current_user),
-        query_params: QueryParams = Depends(
-            parse_query_params(AlertConfigQueryParams)
-        ),
-        session=Depends(session_manager.get_session),
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(
+        parse_query_params(AlertConfigQueryParams)
+    ),
+    session=Depends(session_manager.get_session),
 ) -> ResponseMulti[AlertPublic]:
     # Check user permissions.
     # Only manager roles - (admin, manager, editor) can get alert config
