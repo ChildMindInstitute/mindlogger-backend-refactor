@@ -7,10 +7,7 @@ from jose import JWTError, jwt
 from pydantic import EmailStr, ValidationError
 
 from apps.authentication.domain.login import UserLoginRequest
-from apps.authentication.domain.token import (
-    InternalToken,
-    TokenPayload,
-)
+from apps.authentication.domain.token import InternalToken, TokenPayload
 from apps.authentication.errors import AuthenticationError
 from apps.authentication.services import AuthenticationService
 from apps.users.crud import UsersCRUD
