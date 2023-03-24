@@ -7,8 +7,8 @@ from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Query
 
 from apps.activities.errors import ReusableItemChoiceDoeNotExist
+from infrastructure.database import session_manager
 from infrastructure.database.base import Base
-from infrastructure.database.core import session_manager
 
 ConcreteSchema = TypeVar("ConcreteSchema", bound=Base)
 
@@ -18,8 +18,8 @@ __all__ = ["BaseCRUD"]
 class BaseCRUD(Generic[ConcreteSchema]):
     schema_class: Type[ConcreteSchema]
 
-    def __init__(self) -> None:
-        self.session = session_manager.get_session()
+    def __init__(self, session=None):
+        self.session = session or session_manager.get_session()
 
     async def _execute(self, query: Query) -> Result:
         """Executes the specified query and returns the result"""
@@ -27,10 +27,6 @@ class BaseCRUD(Generic[ConcreteSchema]):
             query,
             execution_options=immutabledict({"synchronize_session": False}),
         )
-
-    async def _commit(self):
-        """Commit the current session"""
-        await self.session.commit()
 
     async def _update_one(
         self, lookup: str, value: Any, schema: ConcreteSchema
@@ -90,7 +86,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
     async def _create(self, schema: ConcreteSchema) -> ConcreteSchema:
         """Creates a new instance of the model in the related table"""
         self.session.add(schema)
-        await self.session.commit()
+        await self.session.flush()
         await self.session.refresh(schema)
 
         return schema
@@ -100,7 +96,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
     ) -> list[ConcreteSchema]:
         """Creates a new instance of the model in the related table"""
         self.session.add_all(schemas)
-        await self.session.commit()
+        await self.session.flush()
         for schema in schemas:
             await self.session.refresh(schema)
         return schemas

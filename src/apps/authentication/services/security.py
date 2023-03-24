@@ -17,6 +17,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthenticationService:
+    def __init__(self, session):
+        self.session = session
+
     @staticmethod
     def create_access_token(data: dict):
         to_encode = data.copy()
@@ -62,13 +65,12 @@ class AuthenticationService:
     def get_password_hash(password: str) -> str:
         return pwd_context.hash(password)
 
-    @classmethod
-    async def authenticate_user(cls, user_login_schema: UserLoginRequest):
-        user: User = await UsersCRUD().get_by_email(
+    async def authenticate_user(self, user_login_schema: UserLoginRequest):
+        user: User = await UsersCRUD(self.session).get_by_email(
             email=user_login_schema.email
         )
         try:
-            cls.verify_password(
+            self.verify_password(
                 user_login_schema.password, user.hashed_password
             )
         except BadCredentials:

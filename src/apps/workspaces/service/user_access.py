@@ -13,8 +13,9 @@ __all__ = ["UserAccessService"]
 
 
 class UserAccessService:
-    def __init__(self, user_id: uuid.UUID):
+    def __init__(self, session, user_id: uuid.UUID):
         self._user_id = user_id
+        self.session = session
 
     async def get_user_workspaces(self) -> list[PublicWorkspace]:
         """
@@ -47,14 +48,16 @@ class UserAccessService:
     ) -> list[AppletInfo]:
         """Returns the user their chosen workspace applets."""
 
-        schemas = await UserAppletAccessCRUD().get_accessible_applets(
-            self._user_id, query_params
-        )
+        schemas = await UserAppletAccessCRUD(
+            self.session
+        ).get_accessible_applets(self._user_id, query_params)
 
         theme_ids = [schema.theme_id for schema in schemas if schema.theme_id]
         themes = []
         if theme_ids:
-            themes = await ThemeService(self._user_id).get_by_ids(theme_ids)
+            themes = await ThemeService(
+                self.session, self._user_id
+            ).get_by_ids(theme_ids)
 
         theme_map = dict((theme.id, theme) for theme in themes)
         applets = []
@@ -88,9 +91,9 @@ class UserAccessService:
     async def get_workspace_applets_count(
         self, query_params: QueryParams
     ) -> int:
-        count = await UserAppletAccessCRUD().get_accessible_applets_count(
-            self._user_id, query_params
-        )
+        count = await UserAppletAccessCRUD(
+            self.session
+        ).get_accessible_applets_count(self._user_id, query_params)
         return count
 
     @staticmethod

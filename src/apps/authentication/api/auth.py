@@ -15,20 +15,25 @@ from apps.shared.domain.response import Response
 from apps.users.domain import PublicUser, User
 from apps.users.errors import UserNotFound
 from config import settings
+from infrastructure.database import atomic, session_manager
 
 
 async def get_token(
     user_login_schema: UserLoginRequest = Body(...),
+    session=Depends(session_manager.get_session),
 ) -> Response[UserLogin]:
     """Generate the JWT access token."""
-    try:
-        user: User = await AuthenticationService.authenticate_user(
-            user_login_schema
-        )
-    except UserNotFound:
-        raise UserNotFound(
-            message=("That email is not associated with a MindLogger account.")
-        )
+    async with atomic(session):
+        try:
+            user: User = await AuthenticationService(
+                session
+            ).authenticate_user(user_login_schema)
+        except UserNotFound:
+            raise UserNotFound(
+                message=(
+                    "That email is not associated with a MindLogger account."
+                )
+            )
     access_token = AuthenticationService.create_access_token(
         {"sub": str(user.id)}
     )

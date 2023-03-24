@@ -17,6 +17,9 @@ from apps.schedule.service.schedule import ScheduleService
 
 
 class FlowService:
+    def __init__(self, session):
+        self.session = session
+
     async def create(
         self,
         applet_id: uuid.UUID,
@@ -47,8 +50,10 @@ class FlowService:
                         ],
                     )
                 )
-        flow_schemas = await FlowsCRUD().create_many(schemas)
-        flow_items = await FlowItemService().create(prepared_flow_items)
+        flow_schemas = await FlowsCRUD(self.session).create_many(schemas)
+        flow_items = await FlowItemService(self.session).create(
+            prepared_flow_items
+        )
         flows = list()
 
         flow_id_map = dict()
@@ -62,7 +67,7 @@ class FlowService:
             flow_id_map[flow_item.activity_flow_id].items.append(flow_item)
 
         # add default schedule for flows
-        await ScheduleService().create_default_schedules(
+        await ScheduleService(self.session).create_default_schedules(
             applet_id=applet_id,
             activity_ids=[flow.id for flow in flows],
             is_activity=False,
@@ -80,7 +85,10 @@ class FlowService:
         prepared_flow_items = list()
 
         all_flows = [
-            flow.id for flow in await FlowsCRUD().get_by_applet_id(applet_id)
+            flow.id
+            for flow in await FlowsCRUD(self.session).get_by_applet_id(
+                applet_id
+            )
         ]
         # Save new flow ids
         new_flows = []
@@ -115,8 +123,10 @@ class FlowService:
                         ],
                     )
                 )
-        flow_schemas = await FlowsCRUD().create_many(schemas)
-        flow_items = await FlowItemService().create_update(prepared_flow_items)
+        flow_schemas = await FlowsCRUD(self.session).create_many(schemas)
+        flow_items = await FlowItemService(self.session).create_update(
+            prepared_flow_items
+        )
         flows = list()
 
         flow_id_map = dict()
@@ -133,13 +143,13 @@ class FlowService:
         deleted_flow_ids = set(all_flows) - set(existing_flows)
 
         if deleted_flow_ids:
-            await ScheduleService().delete_by_flow_ids(
+            await ScheduleService(self.session).delete_by_flow_ids(
                 applet_id=applet_id, flow_ids=list(deleted_flow_ids)
             )
 
         # Create default events for new activities
         if new_flows:
-            await ScheduleService().create_default_schedules(
+            await ScheduleService(self.session).create_default_schedules(
                 applet_id=applet_id,
                 activity_ids=list(new_flows),
                 is_activity=False,
@@ -148,13 +158,13 @@ class FlowService:
         return flows
 
     async def remove_applet_flows(self, applet_id: uuid.UUID):
-        await FlowItemService().remove_applet_flow_items(applet_id)
-        await FlowsCRUD().delete_by_applet_id(applet_id)
+        await FlowItemService(self.session).remove_applet_flow_items(applet_id)
+        await FlowsCRUD(self.session).delete_by_applet_id(applet_id)
 
     async def get_single_language_by_applet_id(
         self, applet_id: uuid.UUID, language: str
     ) -> list[FlowDetail]:
-        schemas = await FlowsCRUD().get_by_applet_id(applet_id)
+        schemas = await FlowsCRUD(self.session).get_by_applet_id(applet_id)
         flow_ids = []
         flow_map = dict()
         flows = []
@@ -173,7 +183,7 @@ class FlowService:
             )
             flow_map[flow.id] = flow
             flows.append(flow)
-        schemas = await FlowItemsCRUD().get_by_applet_id(applet_id)
+        schemas = await FlowItemsCRUD(self.session).get_by_applet_id(applet_id)
         for schema in schemas:
             flow_map[schema.activity_flow_id].activity_ids.append(
                 schema.activity_id

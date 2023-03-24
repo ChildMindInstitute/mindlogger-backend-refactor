@@ -6,9 +6,10 @@ from apps.activity_flows.domain.flow_full import ActivityFlowItemFull
 
 
 class FlowItemHistoryService:
-    def __init__(self, applet_id: uuid.UUID, version: str):
+    def __init__(self, session, applet_id: uuid.UUID, version: str):
         self.applet_id = applet_id
         self.version = version
+        self.session = session
 
     async def add(self, flow_items: list[ActivityFlowItemFull]):
         schemas = []
@@ -24,12 +25,14 @@ class FlowItemHistoryService:
                 )
             )
 
-        await FlowItemHistoriesCRUD().create_many(schemas)
+        await FlowItemHistoriesCRUD(self.session).create_many(schemas)
 
     async def get_activity_ids_by_flow_id(
         self, flow_id: uuid.UUID
     ) -> list[str]:
         flow_id_version = f"{flow_id}_{self.version}"
-        schemas = await FlowItemHistoriesCRUD().get_by_flow_id(flow_id_version)
+        schemas = await FlowItemHistoriesCRUD(self.session).get_by_flow_id(
+            flow_id_version
+        )
 
         return [schema.activity_id for schema in schemas]

@@ -16,11 +16,6 @@ class ActivityItemHistoryNotFoundError(NotFoundError):
         super().__init__(message=message)
 
 
-class AlertConfigIsDeletedError(BadRequestError):
-    def __init__(self, *_, message="Alert config is deleted") -> None:
-        super().__init__(message=message)
-
-
 class AlertConfigAlreadyExistError(ConflictError):
     def __init__(self, *_, message="Alert config already exist") -> None:
         super().__init__(message=message)

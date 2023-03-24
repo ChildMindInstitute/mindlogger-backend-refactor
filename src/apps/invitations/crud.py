@@ -283,7 +283,6 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.values(status=InvitationStatus.APPROVED)
 
         await self._execute(query)
-        await self._commit()
 
     async def decline_by_id(self, id_: uuid.UUID):
         query = update(InvitationSchema)
@@ -291,4 +290,3 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.values(status=InvitationStatus.DECLINED)
 
         await self._execute(query)
-        await self._commit()

@@ -16,7 +16,9 @@ class AnswerFlowItemsCRUD(BaseCRUD[AnswerFlowItemsSchema]):
     async def create_many(
         self, schemas: list[AnswerFlowItemsSchema]
     ) -> list[AnswerFlowItemsSchema]:
-        applet = await AppletsCRUD().get_by_id(schemas[0].applet_id)
+        applet = await AppletsCRUD(self.session).get_by_id(
+            schemas[0].applet_id
+        )
         system_encrypted_key = base64.b64decode(
             applet.system_encrypted_key.encode()
         )

@@ -16,29 +16,27 @@ from apps.applets.domain.applets.history_detail import (
 
 
 async def retrieve_applet_by_version(
-    applet_id: uuid.UUID, version: str
+    session, applet_id: uuid.UUID, version: str
 ) -> None | Applet:
     id_version = f"{applet_id}_{version}"
 
-    applet_schema = await AppletHistoriesCRUD().retrieve_by_applet_version(
-        id_version
-    )
+    applet_schema = await AppletHistoriesCRUD(
+        session
+    ).retrieve_by_applet_version(id_version)
     if not applet_schema:
         return None
-    activity_schemas = (
-        await ActivityHistoriesCRUD().retrieve_by_applet_version(id_version)
-    )
-    activity_item_schemas = (
-        await ActivityItemHistoriesCRUD().retrieve_by_applet_version(
-            id_version
-        )
-    )
-    flow_schemas = await FlowsHistoryCRUD().retrieve_by_applet_version(
+    activity_schemas = await ActivityHistoriesCRUD(
+        session
+    ).retrieve_by_applet_version(id_version)
+    activity_item_schemas = await ActivityItemHistoriesCRUD(
+        session
+    ).retrieve_by_applet_version(id_version)
+    flow_schemas = await FlowsHistoryCRUD(session).retrieve_by_applet_version(
         id_version
     )
-    flow_item_schemas = (
-        await FlowItemHistoriesCRUD().retrieve_by_applet_version(id_version)
-    )
+    flow_item_schemas = await FlowItemHistoriesCRUD(
+        session
+    ).retrieve_by_applet_version(id_version)
     applet = Applet.from_orm(applet_schema)
 
     activity_map: dict[str, Activity] = dict()
