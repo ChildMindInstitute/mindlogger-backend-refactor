@@ -34,6 +34,7 @@ from apps.invitations.errors import (
 )
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.shared.query_params import QueryParams
 from apps.users import UserNotFound, UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.service.workspace import WorkspaceService
@@ -45,24 +46,30 @@ class InvitationsService:
         self._user: User = user
         self.invitations_crud = InvitationCRUD()
 
-    async def fetch_all(self) -> list[InvitationDetail]:
+    async def fetch_all(
+        self, query_params: QueryParams
+    ) -> list[InvitationDetail]:
         return await self.invitations_crud.get_pending_by_invitor_id(
-            self._user.id
+            self._user.id, query_params
         )
 
-    async def fetch_all_count(self) -> int:
+    async def fetch_all_count(self, query_params: QueryParams) -> int:
         return await self.invitations_crud.get_pending_by_invitor_id_count(
-            self._user.id
+            self._user.id, query_params
         )
 
-    async def fetch_all_for_invited(self) -> list[InvitationDetail]:
+    async def fetch_all_for_invited(
+        self, query_params: QueryParams
+    ) -> list[InvitationDetail]:
         return await self.invitations_crud.get_pending_by_invited_email(
-            self._user.email
+            self._user.email, query_params
         )
 
-    async def fetch_all_for_invited_count(self) -> int:
+    async def fetch_all_for_invited_count(
+        self, query_params: QueryParams
+    ) -> int:
         return await self.invitations_crud.get_pending_by_invited_email_count(
-            self._user.email
+            self._user.email, query_params
         )
 
     async def get(self, key: uuid.UUID) -> InvitationDetailGeneric | None:

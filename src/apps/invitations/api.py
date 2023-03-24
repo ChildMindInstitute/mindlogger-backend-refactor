@@ -1,4 +1,5 @@
 import uuid
+from copy import deepcopy
 
 from fastapi import Body, Depends
 
@@ -18,16 +19,21 @@ from apps.invitations.domain import (
     PrivateInvitationResponse,
 )
 from apps.invitations.errors import InvitationDoesNotExist
+from apps.invitations.filters import InvitationQueryParams
 from apps.invitations.services import (
     InvitationsService,
     PrivateInvitationService,
 )
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 
 
 async def invitation_list(
     user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(
+        parse_query_params(InvitationQueryParams)
+    ),
 ) -> ResponseMulti[InvitationResponse]:
     """Fetch all invitations whose status is pending
     for the specific user who is invitor.
@@ -35,9 +41,11 @@ async def invitation_list(
 
     invitations: list[InvitationDetail] = await InvitationsService(
         user
-    ).fetch_all()
+    ).fetch_all(deepcopy(query_params))
 
-    count: int = await InvitationsService(user).fetch_all_count()
+    count: int = await InvitationsService(user).fetch_all_count(
+        deepcopy(query_params)
+    )
 
     return ResponseMulti[InvitationResponse](
         result=[
@@ -50,6 +58,9 @@ async def invitation_list(
 
 async def invitation_list_for_invited(
     user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(
+        parse_query_params(InvitationQueryParams)
+    ),
 ) -> ResponseMulti[InvitationResponse]:
     """Fetch all invitations whose status is pending
     for the specific user who was invited.
@@ -57,9 +68,11 @@ async def invitation_list_for_invited(
 
     invitations: list[InvitationDetail] = await InvitationsService(
         user
-    ).fetch_all_for_invited()
+    ).fetch_all_for_invited(deepcopy(query_params))
 
-    count: int = await InvitationsService(user).fetch_all_for_invited_count()
+    count: int = await InvitationsService(user).fetch_all_for_invited_count(
+        deepcopy(query_params)
+    )
 
     return ResponseMulti[InvitationResponse](
         result=[

@@ -20,8 +20,25 @@ from apps.invitations.domain import (
     InvitationRespondent,
     InvitationReviewer,
 )
+from apps.shared.ordering import Ordering
+from apps.shared.paging import paging
+from apps.shared.query_params import QueryParams
+from apps.shared.searching import Searching
 from apps.workspaces.domain.constants import ManagersRole
 from infrastructure.database import BaseCRUD
+
+__all__ = ["InvitationCRUD"]
+
+
+class _InvitationSearching(Searching):
+    search_fields = [InvitationSchema.applet_id]
+
+
+class _InvitationOrdering(Ordering):
+    id = InvitationSchema.id
+    applet_id = InvitationSchema.applet_id
+    created_at = InvitationSchema.created_at
+    updated_at = InvitationSchema.updated_at
 
 
 class InvitationCRUD(BaseCRUD[InvitationSchema]):
@@ -38,7 +55,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         return schema
 
     async def get_pending_by_invited_email(
-        self, email: str
+        self, email: str, query_params: QueryParams
     ) -> list[InvitationDetail]:
         """Return the list of pending invitations for the invited user."""
 
@@ -52,6 +69,16 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(
             InvitationSchema.status == InvitationStatus.PENDING
         )
+        if query_params.search:
+            query = query.where(
+                _InvitationSearching().get_clauses(query_params.search)
+            )
+        if query_params.ordering:
+            query = query.order_by(
+                *_InvitationOrdering().get_clauses(*query_params.ordering)
+            )
+        query = paging(query, query_params.page, query_params.limit)
+
         db_result = await self._execute(query)
         results = []
         for invitation, applet_name in db_result.all():
@@ -73,7 +100,9 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
         return results
 
-    async def get_pending_by_invited_email_count(self, email: str) -> int:
+    async def get_pending_by_invited_email_count(
+        self, email: str, query_params: QueryParams
+    ) -> int:
         """Return the count of pending invitations for the invited user."""
 
         query: Query = select(count(InvitationSchema.id))
@@ -81,12 +110,17 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(
             InvitationSchema.status == InvitationStatus.PENDING
         )
+        if query_params.search:
+            query = query.where(
+                _InvitationSearching().get_clauses(query_params.search)
+            )
+
         result = await self._execute(query)
 
         return result.scalars().first() or 0
 
     async def get_pending_by_invitor_id(
-        self, user_id: uuid.UUID
+        self, user_id: uuid.UUID, query_params: QueryParams
     ) -> list[InvitationDetail]:
         """Return the list of pending invitations
         for the user who is invitor.
@@ -102,6 +136,16 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(
             InvitationSchema.status == InvitationStatus.PENDING
         )
+        if query_params.search:
+            query = query.where(
+                _InvitationSearching().get_clauses(query_params.search)
+            )
+        if query_params.ordering:
+            query = query.order_by(
+                *_InvitationOrdering().get_clauses(*query_params.ordering)
+            )
+        query = paging(query, query_params.page, query_params.limit)
+
         db_result = await self._execute(query)
         results = []
         for invitation, applet_name in db_result.all():
@@ -123,7 +167,9 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
         return results
 
-    async def get_pending_by_invitor_id_count(self, user_id: uuid.UUID) -> int:
+    async def get_pending_by_invitor_id_count(
+        self, user_id: uuid.UUID, query_params: QueryParams
+    ) -> int:
         """Return the cont of pending invitations
         for the user who is invitor.
         """
@@ -132,6 +178,11 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(
             InvitationSchema.status == InvitationStatus.PENDING
         )
+        if query_params.search:
+            query = query.where(
+                _InvitationSearching().get_clauses(query_params.search)
+            )
+
         result = await self._execute(query)
 
         return result.scalars().first() or 0
