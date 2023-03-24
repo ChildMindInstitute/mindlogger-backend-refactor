@@ -84,5 +84,6 @@ settings = Settings(
         "invitations",
         "workspaces",
         "transfer_ownership",
+        "alerts",
     ],
 )

@@ -6,6 +6,7 @@ from sqlalchemy.engine import Result
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Query
 
+from apps.activities.errors import ReusableItemChoiceDoeNotExist
 from infrastructure.database.base import Base
 from infrastructure.database.core import session_manager
 
@@ -26,6 +27,10 @@ class BaseCRUD(Generic[ConcreteSchema]):
             query,
             execution_options=immutabledict({"synchronize_session": False}),
         )
+
+    async def _commit(self):
+        """Commit the current session"""
+        await self.session.commit()
 
     async def _update_one(
         self, lookup: str, value: Any, schema: ConcreteSchema
@@ -85,8 +90,9 @@ class BaseCRUD(Generic[ConcreteSchema]):
     async def _create(self, schema: ConcreteSchema) -> ConcreteSchema:
         """Creates a new instance of the model in the related table"""
         self.session.add(schema)
-        await self.session.flush()
+        await self.session.commit()
         await self.session.refresh(schema)
+
         return schema
 
     async def _create_many(
@@ -94,7 +100,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
     ) -> list[ConcreteSchema]:
         """Creates a new instance of the model in the related table"""
         self.session.add_all(schemas)
-        await self.session.flush()
+        await self.session.commit()
         for schema in schemas:
             await self.session.refresh(schema)
         return schemas
@@ -120,8 +126,9 @@ class BaseCRUD(Generic[ConcreteSchema]):
         return value
 
     async def _delete(self, key: str, value: Any) -> None:
-        if not (schema := await self._get(key, value)):
-            return None
+        schema = await self._get(key, value)
+        if not schema:
+            raise ReusableItemChoiceDoeNotExist()
 
         query: Query = delete(self.schema_class).where(
             self.schema_class.id == schema.id

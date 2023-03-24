@@ -26,6 +26,10 @@ class ActivityItemHistoryService:
                     answers=item.answers,
                     config=item.config,
                     ordering=item.ordering,
+                    skippable_item=item.skippable_item,
+                    remove_availability_to_go_back=(
+                        item.remove_availability_to_go_back
+                    ),
                 )
             )
         await ActivityItemHistoriesCRUD().create_many(schemas)

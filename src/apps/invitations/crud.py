@@ -65,6 +65,9 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     status=invitation.status,
                     invitor_id=invitation.invitor_id,
                     meta=invitation.meta,
+                    first_name=invitation.first_name,
+                    last_name=invitation.last_name,
+                    created_at=invitation.created_at,
                 )
             )
         return results
@@ -96,6 +99,9 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     status=invitation.status,
                     invitor_id=invitation.invitor_id,
                     meta=invitation.meta,
+                    first_name=invitation.first_name,
+                    last_name=invitation.last_name,
+                    created_at=invitation.created_at,
                 )
             )
         return results
@@ -125,6 +131,9 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             key=invitation.key,
             status=invitation.status,
             invitor_id=invitation.invitor_id,
+            first_name=invitation.first_name,
+            last_name=invitation.last_name,
+            created_at=invitation.created_at,
         )
         if invitation.role == Role.RESPONDENT:
             return InvitationDetailRespondent(
@@ -190,6 +199,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.values(status=InvitationStatus.APPROVED)
 
         await self._execute(query)
+        await self._commit()
 
     async def decline_by_id(self, id_: uuid.UUID):
         query = update(InvitationSchema)
@@ -197,3 +207,4 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.values(status=InvitationStatus.DECLINED)
 
         await self._execute(query)
+        await self._commit()

@@ -453,7 +453,7 @@ class TestSchedule(BaseTest):
             "end_time": "09:00:00",
             "access_before_schedule": True,
             "one_time_completion": True,
-            "timer": "00:00:00",
+            "timer": None,
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "MONTHLY",
