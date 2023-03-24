@@ -1,7 +1,7 @@
 """empty message
 
 Revision ID: 651d290bd7b7
-Revises: 4f353d3e56f4
+Revises: 43ea095c253a
 Create Date: 2023-03-21 13:46:58.869554
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "651d290bd7b7"
-down_revision = "4f353d3e56f4"
+down_revision = "43ea095c253a"
 branch_labels = None
 depends_on = None
 

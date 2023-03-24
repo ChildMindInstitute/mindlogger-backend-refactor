@@ -58,8 +58,9 @@ class ActivityService:
                         activity_id=activity_id,
                         question=item.question,
                         response_type=item.response_type,
-                        answers=item.answers,
+                        response_values=item.response_values,
                         config=item.config.dict(),
+                        name=item.name,
                     )
                 )
         activity_schemas = await ActivitiesCRUD().create_many(schemas)

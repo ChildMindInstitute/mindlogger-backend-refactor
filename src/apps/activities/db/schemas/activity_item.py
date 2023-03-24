@@ -7,14 +7,12 @@ __all__ = ["ActivityItemSchema", "ActivityItemHistorySchema"]
 
 
 class _BaseActivityItemSchema:
-    header_image = Column(Text())
+    name = Column(Text(), nullable=False)
     question = Column(JSONB())
     response_type = Column(Text())
-    answers = Column(JSONB())
+    response_values = Column(JSONB())
     config = Column(JSONB(), default=dict())
-    ordering = Column(REAL())
-    skippable_item = Column(Boolean())
-    remove_availability_to_go_back = Column(Boolean())
+    order = Column(REAL())
 
     """
     Text:

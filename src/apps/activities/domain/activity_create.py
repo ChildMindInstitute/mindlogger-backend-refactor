@@ -10,23 +10,20 @@ from apps.shared.domain import InternalModel
 
 
 class ActivityItemCreate(InternalModel):
-    header_image: str | None
+    name: str
     question: dict[str, str]
     response_type: ResponseType
-    answers: list
+    response_values: list | dict
     config: ResponseTypeConfig
-    skippable_item: bool = False
-    remove_availability_to_go_back: bool = False
 
 
 class PreparedActivityItemCreate(InternalModel):
     activity_id: uuid.UUID
+    name: str
     question: dict[str, str]
     response_type: str
-    answers: list
+    response_values: list | dict
     config: ResponseTypeConfig
-    skippable_item: bool = False
-    remove_availability_to_go_back: bool = False
 
 
 class ActivityCreate(InternalModel):
