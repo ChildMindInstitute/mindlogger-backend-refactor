@@ -23,17 +23,19 @@ class UserAccessService:
         Workspaces in which the user is the owner or invited user
         """
 
-        accesses: list[
-            UserAppletAccess
-        ] = await UserAppletAccessCRUD().get_by_user_id(self._user_id)
+        accesses: list[UserAppletAccess] = await UserAppletAccessCRUD(
+            self.session
+        ).get_by_user_id(self._user_id)
 
         workspaces: list[PublicWorkspace] = []
 
         for access in accesses:
-            user_owner: User = await UsersCRUD().get_by_id(access.owner_id)
-            workspace_internal = await UserWorkspaceCRUD().get_by_user_id(
-                user_owner.id
+            user_owner: User = await UsersCRUD(self.session).get_by_id(
+                access.owner_id
             )
+            workspace_internal = await UserWorkspaceCRUD(
+                self.session
+            ).get_by_user_id(user_owner.id)
             workspace = PublicWorkspace(
                 owner_id=access.owner_id,
                 workspace_name=workspace_internal.workspace_name,

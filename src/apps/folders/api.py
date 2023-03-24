@@ -24,7 +24,7 @@ async def folder_list(
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[FolderPublic]:
     async with atomic(session):
-        folders = await FolderService(user.id).list()
+        folders = await FolderService(session, user.id).list()
     return ResponseMulti(result=[FolderPublic.from_orm(f) for f in folders])
 
 
@@ -34,7 +34,7 @@ async def folder_create(
     session=Depends(session_manager.get_session),
 ) -> Response[FolderPublic]:
     async with atomic(session):
-        folder = await FolderService(user.id).create(data)
+        folder = await FolderService(session, user.id).create(data)
     return Response(result=FolderPublic.from_orm(folder))
 
 
@@ -45,7 +45,7 @@ async def folder_update_name(
     session=Depends(session_manager.get_session),
 ) -> Response[FolderPublic]:
     async with atomic(session):
-        folder = await FolderService(user.id).update(id_, data)
+        folder = await FolderService(session, user.id).update(id_, data)
     return Response(result=FolderPublic.from_orm(folder))
 
 
@@ -55,7 +55,7 @@ async def folder_delete(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
-        await FolderService(user.id).delete_by_id(id_)
+        await FolderService(session, user.id).delete_by_id(id_)
 
 
 async def folder_pin(
@@ -65,7 +65,9 @@ async def folder_pin(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
-        await FolderService(user.id).pin_applet(id_=id_, applet_id=applet_id)
+        await FolderService(session, user.id).pin_applet(
+            id_=id_, applet_id=applet_id
+        )
 
 
 async def folder_unpin(
@@ -75,4 +77,6 @@ async def folder_unpin(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
-        await FolderService(user.id).unpin_applet(id_=id_, applet_id=applet_id)
+        await FolderService(session, user.id).unpin_applet(
+            id_=id_, applet_id=applet_id
+        )

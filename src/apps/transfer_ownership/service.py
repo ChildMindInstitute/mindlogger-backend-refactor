@@ -59,7 +59,7 @@ class TransferService:
             "link": url,
         }
         try:
-            await UsersCRUD().get_by_email(transfer_request.email)
+            await UsersCRUD(self.session).get_by_email(transfer_request.email)
         except UserNotFound:
             path = "invitation_new_user_en"
         else:
@@ -75,7 +75,7 @@ class TransferService:
 
     async def accept_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):
         """Respond to a transfer of ownership of an applet."""
-        transfer = await TransferCRUD().get_by_key(key=key)
+        transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
         if (
             transfer.email != self._user.email
