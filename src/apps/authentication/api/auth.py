@@ -55,29 +55,30 @@ async def get_token(
 
 async def refresh_access_token(
     schema: RefreshAccessTokenRequest = Body(...),
+    session=Depends(session_manager.get_session),
 ) -> Response[Token]:
     """Refresh access token."""
-
-    refresh_token_not_correct = BadCredentials(
-        message="Refresh token is invalid"
-    )
-
-    try:
-        payload = jwt.decode(
-            schema.refresh_token,
-            settings.authentication.refresh_token.secret_key,
-            algorithms=[settings.authentication.algorithm],
+    async with atomic(session):
+        refresh_token_not_correct = BadCredentials(
+            message="Refresh token is invalid"
         )
 
-        if not (user_id := payload.get("sub")):
-            raise refresh_token_not_correct
+        try:
+            payload = jwt.decode(
+                schema.refresh_token,
+                settings.authentication.refresh_token.secret_key,
+                algorithms=[settings.authentication.algorithm],
+            )
 
-    except JWTError:
-        raise BadCredentials(message="Refresh token is invalid")
+            if not (user_id := payload.get("sub")):
+                raise refresh_token_not_correct
 
-    access_token = AuthenticationService.create_access_token(
-        {"sub": str(user_id)}
-    )
+        except JWTError:
+            raise BadCredentials(message="Refresh token is invalid")
+
+        access_token = AuthenticationService(session).create_access_token(
+            {"sub": str(user_id)}
+        )
 
     return Response(
         result=Token(
@@ -90,8 +91,11 @@ async def delete_access_token(
     token: InternalToken = Depends(get_current_token),
     _: User = Depends(get_current_user),
     schema: UserLogoutRequest = Body(...),
+    session=Depends(session_manager.get_session),
 ):
     """Add token to the blacklist."""
-
-    await AuthenticationService.add_access_token_to_blacklist(token)
+    async with atomic(session):
+        await AuthenticationService(session).add_access_token_to_blacklist(
+            token
+        )
     return ""

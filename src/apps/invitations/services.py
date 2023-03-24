@@ -263,7 +263,7 @@ class InvitationsService:
         }
 
         try:
-            await UsersCRUD().get_by_email(schema.email)
+            await UsersCRUD(self.session).get_by_email(schema.email)
         except UserNotFound:
             if schema.language == "fr":
                 path = "invitation_new_user_fr"

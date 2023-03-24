@@ -9,7 +9,6 @@ from pydantic import EmailStr, ValidationError
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import (
     InternalToken,
-    TokenInfo,
     TokenPayload,
 )
 from apps.authentication.errors import AuthenticationError
@@ -51,7 +50,7 @@ async def get_current_user(
 
         # Check if the token is in the blacklist
         with suppress(CacheNotFound):
-            cache_entries: list[TokenInfo] = await AuthenticationService(
+            cache_entries = await AuthenticationService(
                 session
             ).fetch_all_tokens(user.email)
 

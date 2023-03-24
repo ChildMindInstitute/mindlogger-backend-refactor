@@ -76,4 +76,4 @@ async def user_delete(
     session=Depends(session_manager.get_session),
 ) -> None:
     async with atomic(session):
-        await UsersCRUD().delete(user)
+        await UsersCRUD(session).delete(user)

@@ -82,12 +82,10 @@ class AuthenticationService:
 
         return user
 
-    @staticmethod
-    async def add_access_token_to_blacklist(token: InternalToken):
+    async def add_access_token_to_blacklist(self, token: InternalToken):
         """Add access token to blacklist in Redis."""
-        await TokensService().add_access_token_to_blacklist(token)
+        await TokensService(self.session).add_access_token_to_blacklist(token)
 
-    @staticmethod
-    async def fetch_all_tokens(email: str):
+    async def fetch_all_tokens(self, email: str):
         """Finds all records for the specified Email."""
-        return await TokensService().fetch_all(email)
+        return await TokensService(self.session).fetch_all(email)
