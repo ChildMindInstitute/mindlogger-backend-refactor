@@ -28,7 +28,7 @@ __all__ = ["UserAppletAccessCRUD"]
 class _UserAppletFilter(Filtering):
     owner_id = FilterField(UserAppletAccessSchema.owner_id)
     folder_id = FilterField(AppletSchema.folder_id)
-    role = FilterField(UserAppletAccessSchema.role, lookup="in")
+    roles = FilterField(UserAppletAccessSchema.role, lookup="in")
 
 
 class _UserAppletOrdering(Ordering):
