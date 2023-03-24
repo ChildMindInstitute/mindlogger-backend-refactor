@@ -5,7 +5,6 @@ from fastapi import Depends
 
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.domain.alert import AlertPublic
-from apps.alerts.domain.alert_config import AlertsConfigPublic
 from apps.alerts.errors import AlertCreateAccessDenied
 from apps.alerts.filters import AlertConfigQueryParams
 from apps.authentication.deps import get_current_user
@@ -45,8 +44,7 @@ async def alert_get_all_by_applet_id(
 
     return ResponseMulti(
         result=[
-            AlertsConfigPublic.from_orm(alert_config)
-            for alert_config in instances
+            AlertPublic.from_orm(alert_config) for alert_config in instances
         ],
         count=count,
     )

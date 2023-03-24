@@ -73,7 +73,7 @@ router.get(
 
 # Alerts get all
 router.get(
-    "{applet_id}",
+    "/{applet_id}",
     description="""This endpoint using for get all alerts
                 for specific applet id""",
     response_model_by_alias=True,
