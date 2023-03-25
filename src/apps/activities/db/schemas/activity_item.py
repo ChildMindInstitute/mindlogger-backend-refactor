@@ -1,4 +1,4 @@
-from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text
+from sqlalchemy import REAL, Column, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base

@@ -63,9 +63,10 @@ class ActivityItemService:
                     question=self._get_by_language(schema.question, language),
                     response_type=schema.response_type,
                     # TODO: get answers by language
-                    answers=schema.answers,
+                    response_values=schema.response_values,
                     config=schema.config,
-                    ordering=schema.ordering,
+                    order=schema.order,
+                    name=schema.name,
                 )
             )
         return items

@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import Field, validator
+from pydantic import BaseModel, Field, validator
 
 from apps.activities.domain.response_type_config import (
     ResponseType,
@@ -10,7 +10,7 @@ from apps.activities.domain.response_type_config import (
 from apps.shared.domain import InternalModel, PublicModel
 
 
-class _BaseActivityItem(InternalModel):
+class BaseActivityItem(BaseModel):
     id: uuid.UUID
     question: dict[str, str] = Field(default_factory=dict)
     response_type: ResponseType
@@ -29,11 +29,11 @@ class _BaseActivityItem(InternalModel):
         return value
 
 
-class ActivityItem(_BaseActivityItem):
+class ActivityItem(BaseActivityItem, InternalModel):
     activity_id: uuid.UUID
 
 
-class ActivityItemPublic(_BaseActivityItem, PublicModel):
+class ActivityItemPublic(BaseActivityItem, PublicModel):
     pass
 
 
