@@ -6,6 +6,7 @@ from apps.activities.domain.response_type_config import (
     ResponseType,
     ResponseTypeConfig,
 )
+from apps.activities.domain.response_values import ResponseValueConfig
 from apps.shared.domain import InternalModel
 
 
@@ -13,7 +14,7 @@ class ActivityItemCreate(InternalModel):
     name: str
     question: dict[str, str]
     response_type: ResponseType
-    response_values: list | dict
+    response_values: ResponseValueConfig
     config: ResponseTypeConfig
 
 
@@ -22,7 +23,7 @@ class PreparedActivityItemCreate(InternalModel):
     name: str
     question: dict[str, str]
     response_type: str
-    response_values: list | dict
+    response_values: ResponseValueConfig
     config: ResponseTypeConfig
 
 

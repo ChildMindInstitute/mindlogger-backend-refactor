@@ -7,6 +7,7 @@ from apps.activities.domain.response_type_config import (
     ResponseTypeConfig,
     TextConfig,
 )
+from apps.activities.domain.response_values import ResponseValueConfig
 from apps.shared.domain import InternalModel, PublicModel
 
 
@@ -14,7 +15,7 @@ class BaseActivityItem(BaseModel):
     id: uuid.UUID
     question: dict[str, str] = Field(default_factory=dict)
     response_type: ResponseType
-    response_values: dict | list | None
+    response_values: ResponseValueConfig
     config: ResponseTypeConfig = Field(default_factory=TextConfig)
     order: int
     name: str = ""

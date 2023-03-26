@@ -6,30 +6,27 @@ from apps.activities.domain.response_type_config import (
     ResponseType,
     ResponseTypeConfig,
 )
+from apps.activities.domain.response_values import ResponseValueConfig
 from apps.shared.domain import InternalModel
 
 
 class ActivityItemUpdate(InternalModel):
     id: uuid.UUID | None
-    header_image: str | None
     question: dict[str, str]
     response_type: ResponseType
-    answers: list
+    response_values: ResponseValueConfig
     config: ResponseTypeConfig
-    skippable_item: bool = False
-    remove_availability_to_go_back: bool = False
+    name: str
 
 
 class PreparedActivityItemUpdate(InternalModel):
     id: uuid.UUID | None
     activity_id: uuid.UUID
-    header_image: str | None
     question: dict[str, str]
     response_type: str
-    answers: list
+    response_values: ResponseValueConfig
     config: ResponseTypeConfig
-    skippable_item: bool = False
-    remove_availability_to_go_back: bool = False
+    name: str
 
 
 class ActivityUpdate(InternalModel):
