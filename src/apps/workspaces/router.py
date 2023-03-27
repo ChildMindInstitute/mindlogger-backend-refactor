@@ -2,7 +2,6 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.applets.domain.applet import AppletInfoPublic
-from apps.applets.router import router as applet_router
 from apps.shared.domain import ResponseMulti
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -51,6 +50,9 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(workspace_remove_manager_access)
+
+
+applet_router = APIRouter(prefix="/applets", tags=["Applets"])
 
 applet_router.post(
     "/removeAccess",
