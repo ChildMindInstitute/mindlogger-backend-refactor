@@ -4,12 +4,12 @@ from copy import deepcopy
 from fastapi import Depends
 
 from apps.alerts.crud.alert import AlertCRUD
-from apps.alerts.domain.alert import AlertPublic
-from apps.alerts.domain.alert_config import AlertsConfigPublic
-from apps.alerts.errors import AlertCreateAccessDenied
+from apps.alerts.db.schemas import AlertSchema
+from apps.alerts.domain.alert import Alert, AlertPublic
+from apps.alerts.errors import AlertUpdateAccessDenied, AlertViewAccessDenied
 from apps.alerts.filters import AlertConfigQueryParams
 from apps.authentication.deps import get_current_user
-from apps.shared.domain import ResponseMulti
+from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.workspaces.crud.roles import UserAppletAccessCRUD
@@ -25,14 +25,14 @@ async def alert_get_all_by_applet_id(
 ) -> ResponseMulti[AlertPublic]:
 
     # Check user permissions.
-    # Only manager roles - (admin, manager, editor) can get alert config
+    # Only manager roles - (admin) can get alert
     roles = await UserAppletAccessCRUD().get_roles_in_roles(
         user.id,
         applet_id,
-        [Role.ADMIN, Role.MANAGER, Role.EDITOR],
+        [Role.ADMIN],
     )
     if not roles:
-        raise AlertCreateAccessDenied
+        raise AlertViewAccessDenied
 
     # Get all alert for specific applet
     instances = await AlertCRUD().get_by_applet_id(
@@ -45,8 +45,31 @@ async def alert_get_all_by_applet_id(
 
     return ResponseMulti(
         result=[
-            AlertsConfigPublic.from_orm(alert_config)
-            for alert_config in instances
+            AlertPublic.from_orm(alert_config) for alert_config in instances
         ],
         count=count,
     )
+
+
+async def alert_update_status_by_id(
+    alert_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+) -> Response[Alert]:
+
+    alert_schema: AlertSchema = await AlertCRUD().get_by_id(alert_id)
+    # Check user permissions.
+    # Only manager roles - (admin) can update alert status
+    roles = await UserAppletAccessCRUD().get_roles_in_roles(
+        user.id,
+        alert_schema.applet_id,
+        [Role.ADMIN],
+    )
+    if not roles:
+        raise AlertUpdateAccessDenied
+
+    # Update specific alert
+    instance = await AlertCRUD().update(alert_schema)
+
+    alert = Alert(**instance.dict())
+
+    return Response(result=alert)

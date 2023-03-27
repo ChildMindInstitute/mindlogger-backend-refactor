@@ -11,6 +11,7 @@ from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.crud.alert_config import AlertConfigsCRUD
 from apps.alerts.domain.alert import AlertCreate
 from apps.alerts.domain.alert_config import AlertConfigGet
+from apps.alerts.errors import AlertConfigNotFoundError
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.answers.db.schemas import (
     AnswerActivityItemsSchema,
@@ -159,15 +160,21 @@ class AnswerService:
             )
 
         for schema in schemas:
-            alert_config = await AlertConfigsCRUD().get_by_applet_item_answer(
-                AlertConfigGet(
-                    applet_id=schema.applet_id,
-                    activity_item_histories_id_version=(
-                        schema.activity_item_history_id
-                    ),
-                    specific_answer=schema.answer,
+            try:
+                alert_config = (
+                    await AlertConfigsCRUD().get_by_applet_item_answer(
+                        AlertConfigGet(
+                            applet_id=schema.applet_id,
+                            activity_item_histories_id_version=(
+                                schema.activity_item_history_id
+                            ),
+                            specific_answer=json.loads(schema.answer)["value"],
+                        )
+                    )
                 )
-            )
+            except AlertConfigNotFoundError:
+                continue
+
             if alert_config:
                 await AlertCRUD().save(
                     AlertCreate(
