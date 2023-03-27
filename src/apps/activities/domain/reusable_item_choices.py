@@ -15,7 +15,7 @@ __all__ = [
 
 class _ReusableItemChoiceBase(BaseModel):
     token_name: str
-    token_value: conint(gt=-2147483648, lt=2147483647)
+    token_value: conint(gt=-2147483648, lt=2147483647)  # type: ignore
     input_type: InputType
 
     def __str__(self) -> str:
