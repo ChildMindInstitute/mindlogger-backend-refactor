@@ -12,6 +12,7 @@ from apps.schedule.domain.schedule.requests import EventRequest
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.domain import Response, ResponseMulti
 from apps.users.domain import User
+from infrastructure.database import atomic, session_manager
 
 
 # TODO: Add logic to allow to create events by permissions
@@ -20,10 +21,13 @@ async def schedule_create(
     applet_id: uuid.UUID,
     schema: EventRequest = Body(...),
     user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
 ) -> Response[PublicEvent]:
     """Create a new event for an applet."""
-
-    schedule = await ScheduleService().create_schedule(schema, applet_id)
+    async with atomic(session):
+        schedule = await ScheduleService(session).create_schedule(
+            schema, applet_id
+        )
     return Response(result=PublicEvent(**schedule.dict()))
 
 
@@ -33,9 +37,10 @@ async def schedule_get_by_id(
     applet_id: uuid.UUID,
     schedule_id: uuid.UUID,
     user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
 ) -> Response[PublicEvent]:
     """Get a schedule by id."""
-    schedule = await ScheduleService().get_schedule_by_id(schedule_id)
+    schedule = await ScheduleService(session).get_schedule_by_id(schedule_id)
     return Response(result=PublicEvent(**schedule.dict()))
 
 
@@ -44,9 +49,10 @@ async def schedule_get_by_id(
 async def schedule_get_all(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicEvent]:
     """Get all schedules for an applet."""
-    schedules = await ScheduleService().get_all_schedules(applet_id)
+    schedules = await ScheduleService(session).get_all_schedules(applet_id)
 
     return ResponseMulti(result=schedules)
 
@@ -56,9 +62,10 @@ async def schedule_get_all(
 async def schedule_delete_all(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
 ):
     """Delete all schedules for an applet."""
-    await ScheduleService().delete_all_schedules(applet_id)
+    await ScheduleService(session).delete_all_schedules(applet_id)
 
 
 # TODO: Add logic to allow to create events by permissions
@@ -67,9 +74,10 @@ async def schedule_delete_by_id(
     applet_id: uuid.UUID,
     schedule_id: uuid.UUID,
     user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
 ):
     """Delete a schedule by id."""
-    await ScheduleService().delete_schedule_by_id(schedule_id)
+    await ScheduleService(session).delete_schedule_by_id(schedule_id)
 
 
 # TODO: Add logic to allow to create events by permissions
@@ -79,9 +87,10 @@ async def schedule_update(
     schedule_id: uuid.UUID,
     user: User = Depends(get_current_user),
     schema: EventRequest = Body(...),
+    session=Depends(session_manager.get_session),
 ) -> Response[PublicEvent]:
     """Update a schedule by id."""
-    schedule = await ScheduleService().update_schedule(
+    schedule = await ScheduleService(session).update_schedule(
         applet_id, schedule_id, schema
     )
     return Response(result=PublicEvent(**schedule.dict()))
@@ -92,9 +101,10 @@ async def schedule_update(
 async def schedule_count(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
 ) -> Response[PublicEventCount]:
     """Get the count of schedules for an applet."""
-    count: PublicEventCount = await ScheduleService().count_schedules(
+    count: PublicEventCount = await ScheduleService(session).count_schedules(
         applet_id
     )
     return Response(result=count)
@@ -106,27 +116,32 @@ async def schedule_delete_by_user(
     applet_id: uuid.UUID,
     user_id: uuid.UUID,
     user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
 ):
     """Delete all schedules for a user."""
-    await ScheduleService().delete_by_user_id(
+    await ScheduleService(session).delete_by_user_id(
         applet_id=applet_id, user_id=user_id
     )
 
 
 async def schedule_get_all_by_user(
     user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicEventByUser]:
     """Get all schedules for a user."""
-    schedules = await ScheduleService().get_events_by_user(user_id=user.id)
+    schedules = await ScheduleService(session).get_events_by_user(
+        user_id=user.id
+    )
     return ResponseMulti(result=schedules)
 
 
 async def schedule_get_by_user(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
 ) -> Response[PublicEventByUser]:
     """Get all schedules for a user per applet id."""
-    schedules = await ScheduleService().get_events_by_user_and_applet(
+    schedules = await ScheduleService(session).get_events_by_user_and_applet(
         user_id=user.id, applet_id=applet_id
     )
     return Response(result=schedules)

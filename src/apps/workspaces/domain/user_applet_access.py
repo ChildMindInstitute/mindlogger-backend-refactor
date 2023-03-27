@@ -61,3 +61,16 @@ class RemoveRespondentAccess(RemoveManagerAccess):
     delete_responses: bool = Field(
         description="This field represents the flag for deleting responses",
     )
+
+class AppletUser(InternalModel):
+    id: uuid.UUID
+    first_name: str
+    last_name: str
+    roles: list[str]
+
+
+class PublicAppletUser(PublicModel):
+    id: uuid.UUID
+    first_name: str
+    last_name: str
+    roles: list[str]

@@ -41,6 +41,8 @@ class AppletSchema(_BaseAppletSchema, Base):
     pinned_at = Column(DateTime(), nullable=True)
     retention_period = Column(Integer(), nullable=True)
     retention_type = Column(String(20), nullable=True)
+    hashed_password = Column(Text())
+    system_encrypted_key = Column(Text())
 
 
 class AppletHistorySchema(_BaseAppletSchema, Base):

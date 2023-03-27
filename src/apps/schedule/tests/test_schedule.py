@@ -1,5 +1,5 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestSchedule(BaseTest):
@@ -31,7 +31,7 @@ class TestSchedule(BaseTest):
 
     count_url = "applets/{applet_id}/events/count"
 
-    @transaction.rollback
+    @rollback
     async def test_schedule_create_with_activity(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -65,7 +65,7 @@ class TestSchedule(BaseTest):
         event = response.json()["result"]
         assert event["startTime"] == create_data["start_time"]
 
-    @transaction.rollback
+    @rollback
     async def test_schedule_create_with_respondent_id(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -99,7 +99,7 @@ class TestSchedule(BaseTest):
         event = response.json()["result"]
         assert event["respondentId"] == create_data["respondent_id"]
 
-    @transaction.rollback
+    @rollback
     async def test_schedule_create_with_flow(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -134,7 +134,7 @@ class TestSchedule(BaseTest):
         assert event["respondentId"] == create_data["respondent_id"]
         assert event["flowId"] == create_data["flow_id"]
 
-    @transaction.rollback
+    @rollback
     async def test_schedule_get_all(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -188,7 +188,7 @@ class TestSchedule(BaseTest):
         events = response.json()["result"]
         assert len(events) == events_count + 1
 
-    @transaction.rollback
+    @rollback
     async def test_schedule_get_detail(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -231,7 +231,7 @@ class TestSchedule(BaseTest):
         event = response.json()["result"]
         assert event["respondentId"] == create_data["respondent_id"]
 
-    @transaction.rollback
+    @rollback
     async def test_schedule_delete_all(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -278,7 +278,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 204
 
-    @transaction.rollback
+    @rollback
     async def test_schedule_delete_detail(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -319,7 +319,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 204
 
-    @transaction.rollback
+    @rollback
     async def test_schedule_update(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -369,7 +369,7 @@ class TestSchedule(BaseTest):
         assert event["respondentId"] == create_data["respondent_id"]
         assert event["activityId"] == create_data["activity_id"]
 
-    @transaction.rollback
+    @rollback
     async def test_count(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -433,7 +433,7 @@ class TestSchedule(BaseTest):
         assert type(result["activityEvents"][0]["count"]) == int
         assert type(result["flowEvents"][0]["count"]) == int
 
-    @transaction.rollback
+    @rollback
     async def test_schedule_delete_user(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -453,7 +453,7 @@ class TestSchedule(BaseTest):
             "end_time": "09:00:00",
             "access_before_schedule": True,
             "one_time_completion": True,
-            "timer": "00:00:00",
+            "timer": None,
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "MONTHLY",
@@ -504,7 +504,7 @@ class TestSchedule(BaseTest):
         )
         assert response.status_code == 404
 
-    @transaction.rollback
+    @rollback
     async def test_schedules_get_user_all(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -513,7 +513,7 @@ class TestSchedule(BaseTest):
         response = await self.client.get(self.schedule_user_url)
         assert response.status_code == 200
 
-    @transaction.rollback
+    @rollback
     async def test_schedule_get_user_by_applet(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

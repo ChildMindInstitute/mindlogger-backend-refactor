@@ -6,8 +6,9 @@ from sqlalchemy.engine import Result
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Query
 
+from apps.activities.errors import ReusableItemChoiceDoeNotExist
+from infrastructure.database import session_manager
 from infrastructure.database.base import Base
-from infrastructure.database.core import session_manager
 
 ConcreteSchema = TypeVar("ConcreteSchema", bound=Base)
 
@@ -17,8 +18,8 @@ __all__ = ["BaseCRUD"]
 class BaseCRUD(Generic[ConcreteSchema]):
     schema_class: Type[ConcreteSchema]
 
-    def __init__(self) -> None:
-        self.session = session_manager.get_session()
+    def __init__(self, session=None):
+        self.session = session or session_manager.get_session()
 
     async def _execute(self, query: Query) -> Result:
         """Executes the specified query and returns the result"""
@@ -87,6 +88,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         self.session.add(schema)
         await self.session.flush()
         await self.session.refresh(schema)
+
         return schema
 
     async def _create_many(
@@ -120,8 +122,9 @@ class BaseCRUD(Generic[ConcreteSchema]):
         return value
 
     async def _delete(self, key: str, value: Any) -> None:
-        if not (schema := await self._get(key, value)):
-            return None
+        schema = await self._get(key, value)
+        if not schema:
+            raise ReusableItemChoiceDoeNotExist()
 
         query: Query = delete(self.schema_class).where(
             self.schema_class.id == schema.id

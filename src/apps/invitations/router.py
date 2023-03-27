@@ -31,6 +31,9 @@ router = APIRouter(prefix="/invitations", tags=["Invitations"])
 # Invitations list
 router.get(
     "",
+    description="""Fetch all invitations whose status is pending
+                for the specific user who is invitor.""",
+    response_model_by_alias=True,
     response_model=ResponseMulti[InvitationResponse],
     responses={
         status.HTTP_200_OK: {"model": ResponseMulti[InvitationResponse]},
@@ -42,6 +45,9 @@ router.get(
 # Invitations list for invited user
 router.get(
     "/invited",
+    description="""Fetch all invitations whose status is pending
+                for the specific user who was invited.""",
+    response_model_by_alias=True,
     response_model=ResponseMulti[InvitationResponse],
     responses={
         status.HTTP_200_OK: {"model": ResponseMulti[InvitationResponse]},
@@ -52,6 +58,9 @@ router.get(
 
 router.get(
     "/{key}",
+    description="""Get specific invitation with approve key for user
+                who was invited.""",
+    response_model_by_alias=True,
     response_model=Response[InvitationResponse],
     responses={
         status.HTTP_200_OK: {"model": Response[InvitationResponse]},
@@ -73,6 +82,10 @@ router.delete(
 # Invitation send for Role respondent
 router.post(
     "/{applet_id}/respondent",
+    description="""General endpoint for sending invitations to the concrete
+                applet for the concrete user giving him a roles
+                "respondent".""",
+    response_model_by_alias=True,
     response_model=Response[InvitationRespondentResponse],
     responses={
         status.HTTP_200_OK: {"model": Response[InvitationRespondentResponse]},
@@ -83,6 +96,10 @@ router.post(
 # Invitation send for Role reviewer
 router.post(
     "/{applet_id}/reviewer",
+    description="""General endpoint for sending invitations to the concrete
+                applet for the concrete user giving him role "reviewer"
+                for specific respondents.""",
+    response_model_by_alias=True,
     response_model=Response[InvitationReviewerResponse],
     responses={
         status.HTTP_200_OK: {"model": Response[InvitationReviewerResponse]},
@@ -93,6 +110,10 @@ router.post(
 # Invitation send for other Role ("manager", "coordinator", "editor")
 router.post(
     "/{applet_id}/managers",
+    description="""General endpoint for sending invitations to the concrete
+    applet for the concrete user giving him a one of roles:
+    "manager", "coordinator", "editor".""",
+    response_model_by_alias=True,
     response_model=Response[InvitationManagersResponse],
     responses={
         status.HTTP_200_OK: {"model": Response[InvitationManagersResponse]},

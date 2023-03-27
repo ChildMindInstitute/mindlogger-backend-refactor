@@ -1,7 +1,7 @@
 from pydantic.color import Color
 
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestThemes(BaseTest):
@@ -11,7 +11,7 @@ class TestThemes(BaseTest):
     list_url = "/themes"
     detail_url = "themes/{id}"
 
-    @transaction.rollback
+    @rollback
     async def test_create_theme(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -29,7 +29,7 @@ class TestThemes(BaseTest):
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-    @transaction.rollback
+    @rollback
     async def test_delete_theme(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -54,7 +54,7 @@ class TestThemes(BaseTest):
 
         assert response.status_code == 204, response.json()
 
-    @transaction.rollback
+    @rollback
     async def test_update_theme(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -107,7 +107,7 @@ class TestThemes(BaseTest):
             == Color(update_data["tertiary_color"]).as_hex()
         )
 
-    @transaction.rollback
+    @rollback
     async def test_themes_list(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

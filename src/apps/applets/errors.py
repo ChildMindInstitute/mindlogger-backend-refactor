@@ -25,6 +25,11 @@ class AppletNotFoundError(NotFoundError):
         super().__init__(message=f"No such applets with {key}={value}.")
 
 
+class NotValidAppletHistory(NotFoundError):
+    def __init__(self, *_, message="Not valid applet version.") -> None:
+        super().__init__(message=message)
+
+
 class AppletsFolderAccessDenied(ValidationError):
     def __init__(self, *_, message="Access denied to folder.") -> None:
         super().__init__(message=message)
@@ -37,4 +42,9 @@ class AppletLinkNotFoundError(NotFoundError):
 
 class AppletLinkAlreadyExist(ValidationError):
     def __init__(self, *_, message="Applet link already exists.") -> None:
+        super().__init__(message=message)
+
+
+class AppletPasswordValidationError(ValidationError):
+    def __init__(self, *_, message="Applet password does not match.") -> None:
         super().__init__(message=message)

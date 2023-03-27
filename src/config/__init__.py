@@ -9,6 +9,7 @@ from config.database import DatabaseSettings
 from config.mailing import MailingSettings
 from config.notification import NotificationSettings
 from config.redis import RedisSettings
+from config.secret import SecretSettings
 from config.sentry import SentrySettings
 from config.service import ServiceSettings
 
@@ -30,6 +31,9 @@ class Settings(BaseSettings):
 
     # Authentication
     authentication: AuthenticationSettings = AuthenticationSettings()
+
+    # Encryption
+    secrets: SecretSettings = SecretSettings()
 
     # CORS policy
     cors: CorsSettings = CorsSettings()
@@ -80,5 +84,6 @@ settings = Settings(
         "invitations",
         "workspaces",
         "transfer_ownership",
+        "alerts",
     ],
 )

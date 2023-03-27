@@ -16,26 +16,29 @@ from config import settings
 
 
 class TransferService:
-    def __init__(self, user: User):
+    def __init__(self, session, user: User):
         self._user = user
+        self.session = session
 
     async def initiate_transfer(
         self, applet_id: uuid.UUID, transfer_request: InitiateTransfer
     ):
         """Initiate a transfer of ownership of an applet."""
         # check if user is owner of applet
-        access = await UserAppletAccessCRUD().get_applet_owner(applet_id)
+        access = await UserAppletAccessCRUD(self.session).get_applet_owner(
+            applet_id
+        )
         if access.user_id != self._user.id:
             raise PermissionsError()
 
-        applet = await AppletsCRUD().get_by_id(id_=applet_id)
+        applet = await AppletsCRUD(self.session).get_by_id(id_=applet_id)
 
         transfer = Transfer(
             email=transfer_request.email,
             applet_id=applet_id,
             key=uuid.uuid4(),
         )
-        await TransferCRUD().create(transfer)
+        await TransferCRUD(self.session).create(transfer)
 
         # TODO: send email with URL for accepting(or declining)
         url = self._generate_transfer_url()
@@ -56,7 +59,7 @@ class TransferService:
             "link": url,
         }
         try:
-            await UsersCRUD().get_by_email(transfer_request.email)
+            await UsersCRUD(self.session).get_by_email(transfer_request.email)
         except UserNotFound:
             path = "invitation_new_user_en"
         else:
@@ -72,7 +75,7 @@ class TransferService:
 
     async def accept_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):
         """Respond to a transfer of ownership of an applet."""
-        transfer = await TransferCRUD().get_by_key(key=key)
+        transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
         if (
             transfer.email != self._user.email
@@ -81,12 +84,12 @@ class TransferService:
             raise PermissionsError()
 
         # delete all users from applet
-        await UserAppletAccessCRUD().delete_all_by_applet_id(
+        await UserAppletAccessCRUD(self.session).delete_all_by_applet_id(
             applet_id=transfer.applet_id
         )
 
         # add new owner to applet
-        await UserAppletAccessCRUD().save(
+        await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
                 user_id=self._user.id,
                 applet_id=transfer.applet_id,
@@ -98,17 +101,17 @@ class TransferService:
         )
 
         # delete responses from applet?
-        await AnswerActivityItemsCRUD().delete_by_applet_user(
+        await AnswerActivityItemsCRUD(self.session).delete_by_applet_user(
             applet_id=transfer.applet_id
         )
-        await AnswerFlowItemsCRUD().delete_by_applet_user(
+        await AnswerFlowItemsCRUD(self.session).delete_by_applet_user(
             applet_id=transfer.applet_id
         )
 
         # TODO: remove password from applet
 
         # delete all other transfers for this applet
-        await TransferCRUD().delete_all_by_applet_id(
+        await TransferCRUD(self.session).delete_all_by_applet_id(
             applet_id=transfer.applet_id
         )
 
@@ -119,10 +122,10 @@ class TransferService:
 
     async def decline_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):
         """Decline a transfer of ownership of an applet."""
-        transfer = await TransferCRUD().get_by_key(key=key)
+        transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
         if transfer.email != self._user.email:
             raise PermissionsError()
 
         # delete transfer
-        await TransferCRUD().delete_by_key(key=key)
+        await TransferCRUD(self.session).delete_by_key(key=key)
