@@ -56,10 +56,12 @@ async def alert_get_all_by_applet_id(
 async def alert_update_status_by_id(
     alert_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session)
+    session=Depends(session_manager.get_session),
 ) -> Response[Alert]:
     async with atomic(session):
-        alert_schema: AlertSchema = await AlertCRUD(session).get_by_id(alert_id)
+        alert_schema: AlertSchema = await AlertCRUD(session).get_by_id(
+            alert_id
+        )
         # Check user permissions.
         # Only manager roles - (admin) can update alert status
         roles = await UserAppletAccessCRUD(session).get_roles_in_roles(

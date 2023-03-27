@@ -28,11 +28,11 @@ from infrastructure.database import atomic, session_manager
 
 
 async def invitation_list(
-        user: User = Depends(get_current_user),
-        query_params: QueryParams = Depends(
-            parse_query_params(InvitationQueryParams)
-        ),
-        session=Depends(session_manager.get_session),
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(
+        parse_query_params(InvitationQueryParams)
+    ),
+    session=Depends(session_manager.get_session),
 ) -> ResponseMulti[InvitationResponse]:
     """Fetch all invitations whose status is pending
     for the specific user who is invitor.
@@ -55,11 +55,11 @@ async def invitation_list(
 
 
 async def invitation_list_for_invited(
-        user: User = Depends(get_current_user),
-        session=Depends(session_manager.get_session),
-        query_params: QueryParams = Depends(
-            parse_query_params(InvitationQueryParams)
-        ),
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+    query_params: QueryParams = Depends(
+        parse_query_params(InvitationQueryParams)
+    ),
 ) -> ResponseMulti[InvitationResponse]:
     """Fetch all invitations for the specific user who is invited."""
     async with atomic(session):
@@ -81,8 +81,8 @@ async def invitation_list_for_invited(
 
 
 async def invitation_retrieve(
-        key: uuid.UUID,
-        user: User = Depends(get_current_user),
+    key: uuid.UUID,
+    user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ) -> Response[InvitationResponse]:
     """Get specific invitation with approve key for user
@@ -98,7 +98,7 @@ async def invitation_retrieve(
 
 
 async def private_invitation_retrieve(
-        key: uuid.UUID,
+    key: uuid.UUID,
     session=Depends(session_manager.get_session),
 ) -> Response[PrivateInvitationResponse]:
     async with atomic(session):
@@ -109,9 +109,9 @@ async def private_invitation_retrieve(
 
 
 async def invitation_respondent_send(
-        applet_id: uuid.UUID,
-        user: User = Depends(get_current_user),
-        invitation_schema: InvitationRespondentRequest = Body(...),
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    invitation_schema: InvitationRespondentRequest = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[InvitationRespondentResponse]:
     """General endpoint for sending invitations to the concrete applet
@@ -129,9 +129,9 @@ async def invitation_respondent_send(
 
 
 async def invitation_reviewer_send(
-        applet_id: uuid.UUID,
-        user: User = Depends(get_current_user),
-        invitation_schema: InvitationReviewerRequest = Body(...),
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    invitation_schema: InvitationReviewerRequest = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[InvitationReviewerResponse]:
     """General endpoint for sending invitations to the concrete applet
@@ -150,9 +150,9 @@ async def invitation_reviewer_send(
 
 
 async def invitation_managers_send(
-        applet_id: uuid.UUID,
-        user: User = Depends(get_current_user),
-        invitation_schema: InvitationManagersRequest = Body(...),
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    invitation_schema: InvitationManagersRequest = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[InvitationManagersResponse]:
     """General endpoint for sending invitations to the concrete applet
@@ -182,8 +182,8 @@ async def invitation_accept(
 
 
 async def private_invitation_accept(
-        key: uuid.UUID,
-        user: User = Depends(get_current_user),
+    key: uuid.UUID,
+    user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
