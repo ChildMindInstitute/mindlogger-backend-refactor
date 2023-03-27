@@ -4,9 +4,19 @@ __all__ = ["Filtering", "FilterField"]
 
 from sqlalchemy import Column
 
+
+def generate_clause(condition):
+    def handle(field, value):
+        clause = getattr(field, condition, None)
+        return clause(value)
+
+    return handle
+
+
 lookups = {
     "eq": operator.eq,
     "neq": operator.ne,
+    "in": generate_clause("in_"),
 }
 
 
@@ -62,11 +72,14 @@ class Filtering:
             if not filter_field:
                 continue
             filtering_method = None
+            prepare_method = getattr(self, f"prepare_{name}", lambda x: x)
             if filter_field.method_name:
                 filtering_method = getattr(
                     self, filter_field.method_name, None
                 )
             clauses.append(
-                filter_field.generate_filter(value, filtering_method)
+                filter_field.generate_filter(
+                    prepare_method(value), filtering_method
+                )
             )
         return clauses

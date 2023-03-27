@@ -2,7 +2,7 @@ import uuid
 
 from apps.applets.crud import AppletsCRUD
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestAppletFolder(BaseTest):
@@ -16,7 +16,7 @@ class TestAppletFolder(BaseTest):
     set_folder_url = "applets/set_folder"
     folders_applet_url = "applets/folders/{id}"
 
-    @transaction.rollback
+    @rollback
     async def test_move_to_folder(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -34,7 +34,7 @@ class TestAppletFolder(BaseTest):
         )
         assert str(applet.folder_id) == "ecf66358-a717-41a7-8027-807374307731"
 
-    @transaction.rollback
+    @rollback
     async def test_move_to_not_accessible_folder(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -51,7 +51,7 @@ class TestAppletFolder(BaseTest):
             == "Access denied to folder."
         )
 
-    @transaction.rollback
+    @rollback
     async def test_move_not_accessible_applet_to_folder(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -68,7 +68,7 @@ class TestAppletFolder(BaseTest):
             == "Access denied to applet."
         )
 
-    @transaction.rollback
+    @rollback
     async def test_remove_from_folder(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

@@ -7,26 +7,28 @@ from apps.logs.domain import (
     PublicNotificationLog,
 )
 from apps.shared.domain import Response, ResponseMulti
+from infrastructure.database import atomic, session_manager
 
 
 async def notification_log_create(
     schema: NotificationLogCreate = Body(...),
+    session=Depends(session_manager.get_session),
 ) -> Response[PublicNotificationLog]:
     """Creates a new NotificationLog."""
-    notification_log: PublicNotificationLog = await NotificationLogCRUD().save(
-        schema=schema
-    )
+    async with atomic(session):
+        notification_log = await NotificationLogCRUD(session).save(
+            schema=schema
+        )
 
     return Response(result=notification_log)
 
 
 async def notification_log_retrieve(
     query: NotificationLogQuery = Depends(NotificationLogQuery),
+    session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicNotificationLog]:
     """Returns NotificationLogs of user and device"""
-
-    notification_logs: list[
-        PublicNotificationLog
-    ] = await NotificationLogCRUD().filter(query)
+    async with atomic(session):
+        notification_logs = await NotificationLogCRUD(session).filter(query)
 
     return ResponseMulti(result=notification_logs)

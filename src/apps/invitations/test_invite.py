@@ -4,7 +4,7 @@ from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestInvite(BaseTest):
@@ -28,6 +28,7 @@ class TestInvite(BaseTest):
     invite_reviewer_url = f"{invitation_list}/{{applet_id}}/reviewer"
     invite_respondent_url = f"{invitation_list}/{{applet_id}}/respondent"
 
+    @rollback
     async def test_invitation_list(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -38,6 +39,7 @@ class TestInvite(BaseTest):
 
         assert len(response.json()["result"]) == 2
 
+    @rollback
     async def test_invitation_retrieve(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -56,6 +58,7 @@ class TestInvite(BaseTest):
         )
         assert response.json()["result"]["role"] == Role.MANAGER
 
+    @rollback
     async def test_private_invitation_retrieve(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
 
@@ -72,7 +75,7 @@ class TestInvite(BaseTest):
         )
         assert response.json()["result"]["role"] == Role.RESPONDENT
 
-    @transaction.rollback
+    @rollback
     async def test_admin_invite_manager_success(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -96,7 +99,7 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_admin_invite_coordinator_success(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -120,7 +123,7 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_admin_invite_editor_success(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -144,7 +147,7 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_admin_invite_reviewer_success(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -169,7 +172,7 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_admin_invite_respondent_success(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -195,7 +198,7 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_manager_invite_manager_success(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
@@ -217,7 +220,7 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_manager_invite_coordinator_success(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
@@ -239,7 +242,7 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_manager_invite_editor_success(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
@@ -261,7 +264,7 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_manager_invite_reviewer_success(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
@@ -284,7 +287,7 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_manager_invite_respondent_success(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
@@ -308,7 +311,7 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_coordinator_invite_respondent_success(self):
         await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
         request_data = dict(
@@ -332,7 +335,7 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_coordinator_invite_manager_fail(self):
         await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
         request_data = dict(
@@ -351,11 +354,10 @@ class TestInvite(BaseTest):
 
         assert response.status_code == 422
         assert (
-            response.json()["result"][0]["message"]["en"]
-            == "You do not have access to send invitation."
+            response.json()["result"][0]["message"]["en"] == "Access denied."
         )
 
-    @transaction.rollback
+    @rollback
     async def test_editor_invite_respondent_fail(self):
         await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
         request_data = dict(
@@ -376,11 +378,10 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 422
         assert (
-            response.json()["result"][0]["message"]["en"]
-            == "You do not have access to send invitation."
+            response.json()["result"][0]["message"]["en"] == "Access denied."
         )
 
-    @transaction.rollback
+    @rollback
     async def test_invitation_accept(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -391,7 +392,7 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 200
 
-    @transaction.rollback
+    @rollback
     async def test_private_invitation_accept(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -410,7 +411,7 @@ class TestInvite(BaseTest):
         )
         assert access.role == Role.RESPONDENT
 
-    @transaction.rollback
+    @rollback
     async def test_invitation_accept_wrong(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -421,7 +422,7 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 404
 
-    @transaction.rollback
+    @rollback
     async def test_invitation_decline(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -432,7 +433,7 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 200
 
-    @transaction.rollback
+    @rollback
     async def test_invitation_decline_wrong(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

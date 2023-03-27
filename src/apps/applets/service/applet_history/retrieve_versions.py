@@ -4,10 +4,10 @@ from apps.applets.crud import AppletHistoriesCRUD
 from apps.applets.domain import History
 
 
-async def retrieve_versions(applet_id: uuid.UUID) -> list[History]:
-    applet_versions = (
-        await AppletHistoriesCRUD().retrieve_versions_by_applet_id(applet_id)
-    )
+async def retrieve_versions(session, applet_id: uuid.UUID) -> list[History]:
+    applet_versions = await AppletHistoriesCRUD(
+        session
+    ).retrieve_versions_by_applet_id(applet_id)
     versions = []
     for version, created_at, user_schema in applet_versions:
         versions.append(

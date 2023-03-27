@@ -8,40 +8,48 @@ from apps.shared.query_params import QueryParams, parse_query_params
 from apps.themes.domain import PublicTheme, ThemeQueryParams, ThemeRequest
 from apps.themes.service import ThemeService
 from apps.users.domain import User
+from infrastructure.database import atomic, session_manager
 
 
 async def create_theme(
     user: User = Depends(get_current_user),
     schema: ThemeRequest = Body(...),
+    session=Depends(session_manager.get_session),
 ) -> Response[PublicTheme]:
     """Creates a new theme."""
-    theme: PublicTheme = await ThemeService(user.id).create(schema)
+    async with atomic(session):
+        theme = await ThemeService(session, user.id).create(schema)
     return Response(result=theme)
 
 
 async def get_themes(
     query_params: QueryParams = Depends(parse_query_params(ThemeQueryParams)),
     user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicTheme]:
     """Returns all themes."""
-    themes: list[PublicTheme] = await ThemeService(user.id).get_all(
-        query_params
-    )
+    async with atomic(session):
+        themes = await ThemeService(session, user.id).get_all(query_params)
     return ResponseMulti(result=themes, count=len(themes))
 
 
 async def delete_theme_by_id(
-    pk: uuid.UUID, user: User = Depends(get_current_user)
+    pk: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
 ):
     """Deletes a theme by id."""
-    await ThemeService(user.id).delete_by_id(pk)
+    async with atomic(session):
+        await ThemeService(session, user.id).delete_by_id(pk)
 
 
 async def update_theme_by_id(
     pk: uuid.UUID,
     user: User = Depends(get_current_user),
     schema: ThemeRequest = Body(...),
+    session=Depends(session_manager.get_session),
 ) -> Response[PublicTheme]:
-    theme: PublicTheme = await ThemeService(user.id).update(pk, schema)
+    async with atomic(session):
+        theme = await ThemeService(session, user.id).update(pk, schema)
 
     return Response(result=theme)

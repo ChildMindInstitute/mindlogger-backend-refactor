@@ -1,7 +1,7 @@
 import uuid
 
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestReusableItem(BaseTest):
@@ -12,7 +12,7 @@ class TestReusableItem(BaseTest):
     update_url = "activities/item_choices"
     delete_url = "activities/item_choices/{id}"
 
-    @transaction.rollback
+    @rollback
     async def test_create_item_choice(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -28,7 +28,7 @@ class TestReusableItem(BaseTest):
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-    @transaction.rollback
+    @rollback
     async def test_recreate_item_choice(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -59,7 +59,7 @@ class TestReusableItem(BaseTest):
             == "Reusable item choice already exist"
         )
 
-    @transaction.rollback
+    @rollback
     async def test_delete_item_choice(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -81,7 +81,7 @@ class TestReusableItem(BaseTest):
 
         assert response.status_code == 204, response.json()
 
-    @transaction.rollback
+    @rollback
     async def test_delete_item_choice_does_not_exist(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

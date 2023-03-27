@@ -30,6 +30,9 @@ class _UserAppletFilter(Filtering):
     folder_id = FilterField(AppletSchema.folder_id)
     roles = FilterField(UserAppletAccessSchema.role, lookup="in")
 
+    def prepare_roles(self, value: str):
+        return value.split(",")
+
 
 class _UserAppletOrdering(Ordering):
     created_at = AppletSchema.created_at

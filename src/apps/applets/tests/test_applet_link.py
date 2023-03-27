@@ -1,5 +1,5 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestAppletLink(BaseTest):
@@ -12,7 +12,7 @@ class TestAppletLink(BaseTest):
     login_url = "/auth/login"
     access_link_url = "applets/{applet_id}/access_link"
 
-    @transaction.rollback
+    @rollback
     async def test_applet_access_link_create(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -47,7 +47,7 @@ class TestAppletLink(BaseTest):
         )
         assert response.status_code == 422
 
-    @transaction.rollback
+    @rollback
     async def test_applet_access_link_get(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -69,7 +69,7 @@ class TestAppletLink(BaseTest):
         assert response.status_code == 200
         assert response.json()["result"]["link"] is None
 
-    @transaction.rollback
+    @rollback
     async def test_applet_access_link_delete(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

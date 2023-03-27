@@ -14,8 +14,9 @@ __all__ = ["TokensService"]
 
 
 class TokensService:
-    def __init__(self) -> None:
+    def __init__(self, session) -> None:
         self._cache: TokensBlacklistCache = TokensBlacklistCache()
+        self.session = session
 
     async def fetch_all(self, email: str) -> list[TokenInfo]:
         cache_entries: list[CacheEntry[TokenInfo]] = await self._cache.all(
@@ -31,7 +32,9 @@ class TokensService:
         ttl = schema.payload.exp - int(now.timestamp())
 
         if ttl > 1:
-            user: User = await UsersCRUD().get_by_id(schema.payload.sub)
+            user: User = await UsersCRUD(self.session).get_by_id(
+                schema.payload.sub
+            )
 
             token_info = TokenInfo(
                 email=user.email,

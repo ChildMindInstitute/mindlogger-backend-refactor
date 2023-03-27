@@ -1,5 +1,5 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestWorkspaces(BaseTest):
@@ -17,7 +17,7 @@ class TestWorkspaces(BaseTest):
     user_workspace_list = "/workspaces"
     workspace_applets_list = f"/workspaces/{owner_id}"
 
-    @transaction.rollback
+    @rollback
     async def test_user_workspace_list(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
 
@@ -25,7 +25,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         assert len(response.json()["result"]) == 2
 
-    @transaction.rollback
+    @rollback
     async def test_workspace_applets_list(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
 

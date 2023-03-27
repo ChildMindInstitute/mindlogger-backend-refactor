@@ -1,5 +1,5 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestApplet(BaseTest):
@@ -25,7 +25,7 @@ class TestApplet(BaseTest):
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
 
-    @transaction.rollback
+    @rollback
     async def test_creating_applet(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -103,7 +103,7 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-    @transaction.rollback
+    @rollback
     async def test_create_duplicate_name_applet(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -185,7 +185,7 @@ class TestApplet(BaseTest):
             == "Applet already exists."
         )
 
-    @transaction.rollback
+    @rollback
     async def test_update_applet(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -289,7 +289,7 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == 200, response.json()
 
-    @transaction.rollback
+    @rollback
     async def test_applet_list(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -311,7 +311,7 @@ class TestApplet(BaseTest):
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 
-    @transaction.rollback
+    @rollback
     async def test_applet_list_by_filters(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -327,7 +327,7 @@ class TestApplet(BaseTest):
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 
-    @transaction.rollback
+    @rollback
     async def test_applet_detail(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -347,7 +347,7 @@ class TestApplet(BaseTest):
         assert len(result["activityFlows"][0]["activityIds"]) == 1
         assert len(result["activityFlows"][1]["activityIds"]) == 1
 
-    @transaction.rollback
+    @rollback
     async def test_creating_applet_history(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -436,7 +436,7 @@ class TestApplet(BaseTest):
         assert len(versions) == 1
         assert versions[0]["version"] == version
 
-    @transaction.rollback
+    @rollback
     async def test_updating_applet_history(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -548,7 +548,7 @@ class TestApplet(BaseTest):
         applet = response.json()["result"]
         assert applet["version"] == version
 
-    @transaction.rollback
+    @rollback
     async def test_history_changes(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

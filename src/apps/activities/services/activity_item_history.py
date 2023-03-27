@@ -7,9 +7,10 @@ from apps.activities.domain.activity_item_history import ActivityItemHistory
 
 
 class ActivityItemHistoryService:
-    def __init__(self, applet_id: uuid.UUID, version: str):
+    def __init__(self, session, applet_id: uuid.UUID, version: str):
         self.applet_id = applet_id
         self.version = version
+        self.session = session
 
     async def add(self, activity_items: list[ActivityItemFull]):
         schemas = []
@@ -32,13 +33,13 @@ class ActivityItemHistoryService:
                     ),
                 )
             )
-        await ActivityItemHistoriesCRUD().create_many(schemas)
+        await ActivityItemHistoriesCRUD(self.session).create_many(schemas)
 
     async def get_by_activity_id(
         self, activity_id: uuid.UUID
     ) -> list[ActivityItemHistory]:
         activity_id_version = f"{activity_id}_{self.version}"
-        schemas = await ActivityItemHistoriesCRUD().get_by_activity_id_version(
-            activity_id_version
-        )
+        schemas = await ActivityItemHistoriesCRUD(
+            self.session
+        ).get_by_activity_id_version(activity_id_version)
         return [ActivityItemHistory.from_orm(schema) for schema in schemas]

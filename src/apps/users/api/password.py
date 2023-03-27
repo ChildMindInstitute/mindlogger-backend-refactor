@@ -14,59 +14,69 @@ from apps.users.domain import (
 )
 from apps.users.errors import EmailAddressError, UserNotFound
 from apps.users.services import PasswordRecoveryService
+from infrastructure.database import atomic, session_manager
 
 
 async def password_update(
     user: User = Depends(get_current_user),
     schema: ChangePasswordRequest = Body(...),
+    session=Depends(session_manager.get_session),
 ) -> Response[PublicUser]:
     """General endpoint for update password for signin."""
+    async with atomic(session):
+        AuthenticationService.verify_password(
+            schema.prev_password,
+            user.hashed_password,
+        )
 
-    AuthenticationService.verify_password(
-        schema.prev_password,
-        user.hashed_password,
-    )
+        password_hash: str = AuthenticationService.get_password_hash(
+            schema.password
+        )
+        password = UserChangePassword(hashed_password=password_hash)
 
-    password_hash: str = AuthenticationService.get_password_hash(
-        schema.password
-    )
-    password = UserChangePassword(hashed_password=password_hash)
+        updated_user: User = await UsersCRUD(session).change_password(
+            user, password
+        )
 
-    updated_user: User = await UsersCRUD().change_password(user, password)
-
-    # Create public representation of the internal user
-    public_user = PublicUser(**updated_user.dict())
+        # Create public representation of the internal user
+        public_user = PublicUser(**updated_user.dict())
 
     return Response[PublicUser](result=public_user)
 
 
 async def password_recovery(
     schema: PasswordRecoveryRequest = Body(...),
+    session=Depends(session_manager.get_session),
 ) -> Response[PublicUser]:
     """General endpoint for sending password recovery email
     and stored info in Redis.
     """
     # Send the password recovery the internal password recovery service
-    try:
-        public_user: PublicUser = (
-            await PasswordRecoveryService().send_password_recovery(schema)
-        )
-    except UserNotFound:
-        raise EmailAddressError(
-            message=f"Email address is not verified. The following "
-            f"identities failed the check: {schema.email}"
-        )
+    async with atomic(session):
+        try:
+            public_user: PublicUser = await PasswordRecoveryService(
+                session
+            ).send_password_recovery(schema)
+        except UserNotFound:
+            raise EmailAddressError(
+                message=f"Email address is not verified. The following "
+                f"identities failed the check: {schema.email}"
+            )
 
     return Response[PublicUser](result=public_user)
 
 
 async def password_recovery_approve(
     schema: PasswordRecoveryApproveRequest = Body(...),
+    session=Depends(session_manager.get_session),
 ) -> Response[PublicUser]:
     """General endpoint to approve the password recovery."""
 
     # Approve the password recovery
     # NOTE: also check if the data exists and tokens are not expired
-    public_user: PublicUser = await PasswordRecoveryService().approve(schema)
+    async with atomic(session):
+        public_user: PublicUser = await PasswordRecoveryService(
+            session
+        ).approve(schema)
 
     return Response[PublicUser](result=public_user)
