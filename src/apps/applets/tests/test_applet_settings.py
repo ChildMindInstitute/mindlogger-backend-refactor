@@ -1,5 +1,5 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestAppletSettings(BaseTest):
@@ -14,7 +14,7 @@ class TestAppletSettings(BaseTest):
     applet_url = "applets/{applet_id}"
     data_retention = applet_url + "/retentions"
 
-    @transaction.rollback
+    @rollback
     async def test_applet_set_data_retention(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

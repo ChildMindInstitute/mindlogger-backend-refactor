@@ -11,7 +11,7 @@ class FolderCreate(InternalModel):
 
 class Folder(InternalModel):
     id: uuid.UUID
-    creator_id: int
+    creator_id: uuid.UUID
     name: str
 
 

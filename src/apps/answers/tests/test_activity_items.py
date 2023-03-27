@@ -1,10 +1,10 @@
-from apps.answers.router import router as answer_activity_router
-from apps.authentication.router import router as auth_router
+import pytest
+
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
-class _TestAnswerActivityItems(BaseTest):
+class TestAnswerActivityItems(BaseTest):
     # TODO: fix text
     fixtures = [
         "users/fixtures/users.json",
@@ -19,28 +19,25 @@ class _TestAnswerActivityItems(BaseTest):
         "activity_flows/fixtures/activity_flows.json",
     ]
 
-    login_url = auth_router.url_path_for("get_token")
-    answer_activity_item_create_url = answer_activity_router.url_path_for(
-        "answer_activity_item_create"
-    )
+    login_url = "/auth/login"
+    answer_activity_item_create_url = "/answers/"
 
-    @transaction.rollback
+    @pytest.mark.main
+    @rollback
     async def test_answer_activity_items_create_for_respondent(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
         create_data = dict(
-            appletId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-            appletHistoryVersion="1.0.0",
-            activityId="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             answers=[
                 dict(
-                    activityItemHistoryId=1,
+                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     answer=dict(
-                        additionalProp1="string",
-                        additionalProp2="string",
-                        additionalProp3="string",
+                        value="string",
                     ),
                 )
             ],
@@ -52,21 +49,19 @@ class _TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-    @transaction.rollback
+    @rollback
     async def test_answer_activity_items_create_for_not_respondent(self):
-        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        await self.client.login(self.login_url, "patric@gmail.com", "Test1234")
 
         create_data = dict(
-            appletId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-            appletHistoryVersion="1.0.0",
-            activityId="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             answers=[
                 dict(
-                    activityItemHistoryId=1,
+                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     answer=dict(
-                        additionalProp1="string",
-                        additionalProp2="string",
-                        additionalProp3="string",
+                        value="string",
                     ),
                 )
             ],

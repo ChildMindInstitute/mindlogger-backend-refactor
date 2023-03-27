@@ -18,7 +18,7 @@ from apps.users.tests.factories import (
     PasswordUpdateRequestFactory,
     UserCreateRequestFactory,
 )
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestPassword(BaseTest):
@@ -39,7 +39,7 @@ class TestPassword(BaseTest):
         created_at=datetime.datetime.now(),
     )
 
-    @transaction.rollback
+    @rollback
     async def test_password_update(self):
         # Creating new user
         await self.client.post(
@@ -79,7 +79,7 @@ class TestPassword(BaseTest):
         assert response.status_code == status.HTTP_200_OK
         assert internal_response.status_code == status.HTTP_200_OK
 
-    @transaction.rollback
+    @rollback
     @patch("apps.users.services.core.MailingService.send")
     @patch("apps.users.services.core.PasswordRecoveryCache.set")
     @patch("apps.users.services.core.PasswordRecoveryCache.delete_all_entries")
@@ -116,7 +116,7 @@ class TestPassword(BaseTest):
         assert cache_set_mock.call_count == 1
         assert mailing_send_mock.call_count == 1
 
-    @transaction.rollback
+    @rollback
     @patch("apps.users.services.core.PasswordRecoveryCache.delete_all_entries")
     @patch(
         "apps.users.services.core.PasswordRecoveryCache.get",
@@ -149,6 +149,8 @@ class TestPassword(BaseTest):
             data=data,
         )
 
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == expected_result
         assert cache_get_mock is PasswordRecoveryCache.get
         assert (
             cache_delete_all_entries_mock
@@ -156,5 +158,3 @@ class TestPassword(BaseTest):
         )
         assert cache_get_mock.call_count == 1
         assert cache_delete_all_entries_mock.call_count == 1
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == expected_result

@@ -2,12 +2,11 @@
   {
     "table": "activity_histories",
     "fields": {
-      "id": "e8fc6d72-a727-4db1-b4ab-191d601d9671",
+      "id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "guid": "a5b3241d-388c-4a5a-a128-3b1a4ec12681",
-      "applet_id": "1_1.0.0",
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1_1.0.0",
       "name": "PHQ2",
       "description": {
         "en": "PHQ2",
@@ -20,18 +19,17 @@
       "is_reviewable": false,
       "response_is_editable": false,
       "ordering": 1.0,
-      "id_version": "1_1.0.0"
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611_1.0.0"
     }
   },
   {
     "table": "activity_histories",
     "fields": {
-      "id": "e8fc6d72-a727-4db1-b4ab-191d601d9672",
+      "id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3612",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "guid": "a5b3241d-388c-4a5a-a128-3b1a4ec12682",
-      "applet_id": "2_2.0.1",
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b2_2.0.1",
       "name": "PHQ8",
       "description": {
         "en": "PHQ8",
@@ -44,18 +42,17 @@
       "is_reviewable": false,
       "response_is_editable": false,
       "ordering": 2,
-      "id_version": "2_1.0.0"
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3612_1.0.0"
     }
   },
   {
     "table": "activity_histories",
     "fields": {
-      "id": "e8fc6d72-a727-4db1-b4ab-191d601d9673",
+      "id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3613",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "guid": "a5b3241d-388c-4a5a-a128-3b1a4ec12683",
-      "applet_id": "3_1.3.0",
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b3_1.3.0",
       "name": "PHQ9",
       "description": {
         "en": "PHQ9",
@@ -68,18 +65,17 @@
       "is_reviewable": false,
       "response_is_editable": false,
       "ordering": 1,
-      "id_version": "3_1.0.0"
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3613_1.0.0"
     }
   },
   {
     "table": "activity_histories",
     "fields": {
-      "id": "e8fc6d72-a727-4db1-b4ab-191d601d9674",
+      "id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3614",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "guid": "a5b3241d-388c-4a5a-a128-3b1a4ec12683",
-      "applet_id": "4_1.0.5",
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b4_1.0.5",
       "name": "PHQ9",
       "description": {
         "en": "PHQ9",
@@ -92,7 +88,7 @@
       "is_reviewable": false,
       "response_is_editable": false,
       "ordering": 1,
-      "id_version": "4_1.0.0"
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3614_1.0.0"
     }
   }
 ]

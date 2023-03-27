@@ -23,8 +23,9 @@ from apps.test_data.domain import AnchorDateTime
 
 
 class TestDataService:
-    def __init__(self, user_id: uuid.UUID):
+    def __init__(self, session, user_id: uuid.UUID):
         self.user_id = user_id
+        self.session = session
         self.timer_options = [
             {"type": TimerType.TIMER, "value": timedelta(minutes=195)},
             {"type": TimerType.IDLE, "value": timedelta(minutes=1)},
@@ -38,7 +39,7 @@ class TestDataService:
         # delete applets with suffix '-generated'
 
         old_applets = await AppletService(
-            self.user_id
+            self.session, self.user_id
         ).get_list_by_single_language(
             language="en", query_params=QueryParams(filters={"roles": "ADMIN"})
         )
@@ -46,12 +47,14 @@ class TestDataService:
         if old_applets:
             for old_applet in old_applets:
                 if old_applet.display_name.endswith("-generated"):
-                    await AppletService(self.user_id).delete_applet_by_id(
-                        old_applet.id
-                    )
+                    await AppletService(
+                        self.session, self.user_id
+                    ).delete_applet_by_id(old_applet.id)
 
         applet_create = self._generate_applet()
-        applet = await AppletService(self.user_id).create(applet_create)
+        applet = await AppletService(self.session, self.user_id).create(
+            applet_create
+        )
 
         await self._create_activity_events(
             applet_id=applet.id,
@@ -83,7 +86,9 @@ class TestDataService:
             activities
         )
         applet_create = AppletCreate(
-            display_name=f"{self.random_string()}-generated",
+            display_name=f"{self.random_string()}-password-"
+            "Test1234!-generated",
+            # noqa: E501
             description=dict(
                 en=self.random_string(50), fr=self.random_string(50)
             ),
@@ -99,6 +104,7 @@ class TestDataService:
             report_email_body="",
             activities=activities,
             activity_flows=activity_flows,
+            password="Test1234!",
         )
 
         return applet_create
@@ -291,7 +297,7 @@ class TestDataService:
             )
 
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -310,7 +316,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -336,7 +342,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -362,7 +368,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -388,7 +394,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -417,7 +423,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -446,7 +452,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -474,7 +480,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -502,7 +508,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -527,7 +533,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -549,7 +555,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -573,7 +579,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -596,7 +602,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -618,7 +624,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )
@@ -641,7 +647,7 @@ class TestDataService:
                 default_event, current_entity_index
             )
             events.append(
-                await ScheduleService().create_schedule(
+                await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
                     schedule=default_event,
                 )

@@ -20,6 +20,7 @@ class AppletUpdate(InternalModel):
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
+    password: str
 
     activities: list[ActivityUpdate]
     activity_flows: list[FlowUpdate]

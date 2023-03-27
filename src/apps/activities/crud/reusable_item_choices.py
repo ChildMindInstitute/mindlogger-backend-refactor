@@ -1,9 +1,9 @@
 import uuid
 
 from sqlalchemy import select
-from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
+from sqlalchemy.sql.functions import count
 
 from apps.activities.db.schemas import ReusableItemChoiceSchema
 from apps.activities.domain.reusable_item_choices import (
@@ -23,19 +23,23 @@ class ReusableItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
     async def get_item_templates(
         self, user_id_: uuid.UUID
     ) -> list[PublicReusableItemChoice]:
-        query: Query = (
-            select(self.schema_class)
-            .where(self.schema_class.user_id == user_id_)
-            .order_by(self.schema_class.id)
-        )
-
-        result: Result = await self._execute(query)
-        results: list[PublicReusableItemChoice] = result.scalars().all()
+        query: Query = select(ReusableItemChoiceSchema)
+        query = query.where(ReusableItemChoiceSchema.user_id == user_id_)
+        query = query.order_by(ReusableItemChoiceSchema.id)
+        db_result = await self._execute(query)
 
         return [
             PublicReusableItemChoice.from_orm(item_template)
-            for item_template in results
+            for item_template in db_result.scalars().all()
         ]
+
+    async def get_item_templates_count(self, user_id_: uuid.UUID) -> int:
+        query: Query = select(count(ReusableItemChoiceSchema.id))
+        query = query.where(ReusableItemChoiceSchema.user_id == user_id_)
+        query = query.order_by(ReusableItemChoiceSchema.id)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first() or 0
 
     async def save(
         self, schema: ReusableItemChoiceCreate

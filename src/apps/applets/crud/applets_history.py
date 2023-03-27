@@ -18,6 +18,10 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
     async def save(self, schema: AppletHistorySchema):
         await self._create(schema)
 
+    async def get_by_id(self, id_version: str) -> AppletHistorySchema | None:
+        schema = await self._get("id", id_version)
+        return schema
+
     async def retrieve_versions_by_applet_id(
         self, applet_id: uuid.UUID
     ) -> list[tuple[str, datetime.datetime, UserSchema]]:

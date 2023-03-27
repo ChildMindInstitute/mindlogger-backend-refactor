@@ -11,7 +11,7 @@ from apps.users.tests.factories import (
     UserCreateRequestFactory,
     UserUpdateRequestFactory,
 )
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestUser(BaseTest):
@@ -24,16 +24,16 @@ class TestUser(BaseTest):
     create_request_user = UserCreateRequestFactory.build()
     user_update_request = UserUpdateRequestFactory.build()
 
-    @transaction.rollback
+    @rollback
     async def test_user_create(self):
         # Creating new user
         response = await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
-        assert response.status_code == status.HTTP_201_CREATED
+        assert response.status_code == status.HTTP_201_CREATED, response.json()
 
-    @transaction.rollback
+    @rollback
     async def test_user_create_exist(self):
         # Creating new user
         await self.client.post(
@@ -45,7 +45,7 @@ class TestUser(BaseTest):
         )
         assert response.status_code == status.HTTP_409_CONFLICT
 
-    @transaction.rollback
+    @rollback
     async def test_user_retrieve(self):
         # Creating new user
         await self.client.post(
@@ -66,7 +66,7 @@ class TestUser(BaseTest):
         response = await self.client.get(self.user_retrieve_url)
         assert response.status_code == status.HTTP_200_OK
 
-    @transaction.rollback
+    @rollback
     async def test_user_update(self):
         # Creating new user
         await self.client.post(
@@ -90,7 +90,7 @@ class TestUser(BaseTest):
 
         assert response.status_code == status.HTTP_200_OK
 
-    @transaction.rollback
+    @rollback
     async def test_user_delete(self):
         """UsersCRUD.get_by_email should raise an error
         if user is deleted.

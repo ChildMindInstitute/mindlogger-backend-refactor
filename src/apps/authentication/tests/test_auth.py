@@ -11,7 +11,7 @@ from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
 from apps.users.router import router as user_router
 from apps.users.tests import UserCreateRequestFactory
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestAuthentication(BaseTest):
@@ -23,7 +23,7 @@ class TestAuthentication(BaseTest):
     create_request_user = UserCreateRequestFactory.build()
     create_request_logout_user = UserLogoutRequestFactory.build()
 
-    @transaction.rollback
+    @rollback
     async def test_get_token(self):
         # Creating new user
         await self.client.post(
@@ -60,7 +60,7 @@ class TestAuthentication(BaseTest):
         )
         assert response.json()["result"]["user"]["id"] == str(user.id)
 
-    @transaction.rollback
+    @rollback
     @patch("apps.authentication.services.core.TokensBlacklistCache.set")
     async def test_delete_access_token(
         self,
@@ -88,7 +88,7 @@ class TestAuthentication(BaseTest):
         assert cache_set_mock.call_count == 1
         assert response.status_code == status.HTTP_200_OK
 
-    @transaction.rollback
+    @rollback
     async def test_refresh_access_token(self):
         # Creating new user
         internal_response = await self.client.post(

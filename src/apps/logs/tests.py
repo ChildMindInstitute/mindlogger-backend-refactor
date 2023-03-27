@@ -1,11 +1,11 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestNotificationLogs(BaseTest):
     logs_url = "/logs/notification"
 
-    @transaction.rollback
+    @rollback
     async def test_create_log(self):
         create_data = dict(
             user_id="test@test.com",
@@ -20,7 +20,7 @@ class TestNotificationLogs(BaseTest):
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-    @transaction.rollback
+    @rollback
     async def test_retrieve_log(self):
         query = dict(user_id="test@test.com", device_id="test_device_id")
 
