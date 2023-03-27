@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, conint
 
 from apps.activities.domain.constants import InputType
 from apps.shared.domain import InternalModel, PublicModel
@@ -15,7 +15,7 @@ __all__ = [
 
 class _ReusableItemChoiceBase(BaseModel):
     token_name: str
-    token_value: int
+    token_value: conint(gt=-2147483648, lt=2147483647)
     input_type: InputType
 
     def __str__(self) -> str:
