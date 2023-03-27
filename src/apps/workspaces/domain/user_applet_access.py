@@ -62,6 +62,7 @@ class RemoveRespondentAccess(RemoveManagerAccess):
         description="This field represents the flag for deleting responses",
     )
 
+
 class AppletUser(InternalModel):
     id: uuid.UUID
     first_name: str

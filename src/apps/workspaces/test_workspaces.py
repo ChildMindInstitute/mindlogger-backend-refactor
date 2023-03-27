@@ -35,7 +35,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
         assert response.json()["count"] == 1
 
-    @transaction.rollback
+    @rollback
     async def test_workspace_remove_manager_access(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -54,7 +54,7 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200
 
-    @transaction.rollback
+    @rollback
     async def test_workspace_remove_respondent_access(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

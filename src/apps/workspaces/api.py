@@ -66,14 +66,16 @@ async def workspace_applets(
 async def workspace_remove_manager_access(
     user: User = Depends(get_current_user),
     schema: RemoveManagerAccess = Body(...),
+    session=Depends(session_manager.get_session),
 ):
     """Remove manager access from a specific user."""
 
-    await UserAccessService(user.id).remove_manager_access(schema)
+    await UserAccessService(session, user.id).remove_manager_access(schema)
 
 
 async def applet_remove_respondent_access(
     user: User = Depends(get_current_user),
     schema: RemoveRespondentAccess = Body(...),
+    session=Depends(session_manager.get_session),
 ):
-    await UserAccessService(user.id).remove_respondent_access(schema)
+    await UserAccessService(session, user.id).remove_respondent_access(schema)
