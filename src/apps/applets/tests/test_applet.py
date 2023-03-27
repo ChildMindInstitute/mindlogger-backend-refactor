@@ -337,7 +337,6 @@ class TestApplet(BaseTest):
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
-
         assert response.status_code == 200
         result = response.json()["result"]
         assert result["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"

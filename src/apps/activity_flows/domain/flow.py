@@ -12,6 +12,7 @@ class Flow(InternalModel):
     is_single_report: bool = False
     hide_badge: bool = False
     ordering: int
+    is_hidden: bool | None = False
 
 
 class FlowPublic(PublicModel):

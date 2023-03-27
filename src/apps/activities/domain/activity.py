@@ -20,6 +20,7 @@ class Activity(InternalModel):
     is_reviewable: bool = False
     response_is_editable: bool = False
     ordering: float
+    is_hidden: bool | None = False
 
 
 class ActivityPublic(PublicModel):

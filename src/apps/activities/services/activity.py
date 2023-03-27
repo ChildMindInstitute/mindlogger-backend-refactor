@@ -49,6 +49,7 @@ class ActivityService:
                     is_skippable=activity_data.is_skippable,
                     is_reviewable=activity_data.is_reviewable,
                     response_is_editable=activity_data.response_is_editable,
+                    is_hidden=activity_data.is_hidden,
                     ordering=index + 1,
                 )
             )
@@ -133,6 +134,7 @@ class ActivityService:
                     is_skippable=activity_data.is_skippable,
                     is_reviewable=activity_data.is_reviewable,
                     response_is_editable=activity_data.response_is_editable,
+                    is_hidden=activity_data.is_hidden,
                     ordering=index + 1,
                 )
             )
@@ -216,6 +218,7 @@ class ActivityService:
                     is_reviewable=schema.is_reviewable,
                     response_is_editable=schema.response_is_editable,
                     ordering=schema.ordering,
+                    is_hidden=schema.is_hidden,
                 )
             )
         return activities
@@ -237,6 +240,7 @@ class ActivityService:
             is_reviewable=schema.is_reviewable,
             response_is_editable=schema.response_is_editable,
             ordering=schema.ordering,
+            is_hidden=schema.is_hidden,
         )
         activity.items = await ActivityItemService(
             self.session
