@@ -54,7 +54,7 @@ async def schedule_get_all(
     """Get all schedules for an applet."""
     schedules = await ScheduleService(session).get_all_schedules(applet_id)
 
-    return ResponseMulti(result=schedules)
+    return ResponseMulti(result=schedules, count=len(schedules))
 
 
 # TODO: Add logic to allow to create events by permissions
@@ -132,7 +132,12 @@ async def schedule_get_all_by_user(
     schedules = await ScheduleService(session).get_events_by_user(
         user_id=user.id
     )
-    return ResponseMulti(result=schedules)
+    return ResponseMulti(
+        result=schedules,
+        count=sum(
+            [len(schedule.events) for schedule in schedules if schedule.events]
+        ),
+    )
 
 
 async def schedule_get_by_user(
