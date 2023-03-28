@@ -1,4 +1,6 @@
-from sqlalchemy import Column, String
+from datetime import datetime
+
+from sqlalchemy import Column, String, DateTime
 
 from infrastructure.database.base import Base
 
@@ -10,3 +12,4 @@ class UserSchema(Base):
     first_name = Column(String(length=50))
     last_name = Column(String(length=50))
     hashed_password = Column(String(length=100))
+    last_seen_at = Column(DateTime(), default=datetime.now)

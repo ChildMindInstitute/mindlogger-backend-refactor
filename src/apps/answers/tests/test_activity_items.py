@@ -22,7 +22,6 @@ class TestAnswerActivityItems(BaseTest):
     login_url = "/auth/login"
     answer_activity_item_create_url = "/answers/"
 
-    @pytest.mark.main
     @rollback
     async def test_answer_activity_items_create_for_respondent(self):
         await self.client.login(
