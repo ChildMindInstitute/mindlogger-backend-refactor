@@ -1,10 +1,11 @@
 import base64
 import uuid
 
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
 
 from apps.answers.db.schemas import AnswerActivityItemsSchema
+from apps.answers.domain import AppletAnswerCreate
 from apps.applets.crud import AppletsCRUD
 from apps.shared.encryption import decrypt, encrypt, generate_iv
 from infrastructure.database.crud import BaseCRUD
@@ -65,3 +66,32 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         query: Query = delete(AnswerActivityItemsSchema)
         query = query.where(AnswerActivityItemsSchema.applet_id == applet_id)
         await self._execute(query)
+
+    async def get(
+        self,
+        applet_answer: AppletAnswerCreate,
+        respondent_id: uuid.UUID,
+        activity_item_id_version,
+    ) -> list[AnswerActivityItemsSchema]:
+
+        answers = list()
+        for activityI_iem_answer in applet_answer.answers:
+            answers.append(activityI_iem_answer.answer)
+
+        query: Query = select(AnswerActivityItemsSchema)
+        query = query.where(
+            AnswerActivityItemsSchema.applet_id == applet_answer.applet_id
+        )
+        query = query.where(
+            AnswerActivityItemsSchema.respondent_id == respondent_id
+        )
+        query = query.where(
+            AnswerActivityItemsSchema.activity_item_history_id == activity_item_id_version
+        )
+        query = query.where(
+            AnswerActivityItemsSchema.answer.in_(answers)
+        )
+
+        result = await self._execute(query)
+
+        return result.scalars().all()

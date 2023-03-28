@@ -65,3 +65,29 @@ class AnswerFlowItemsCRUD(BaseCRUD[AnswerFlowItemsSchema]):
         query: Query = delete(AnswerFlowItemsSchema)
         query = query.where(AnswerFlowItemsSchema.applet_id == applet_id)
         await self._execute(query)
+
+    # async def get(
+    #     self,
+    # ) -> list[AnswerFlowItemsSchema]:
+    #     applet = await AppletsCRUD(self.session).get_by_id(
+    #         schemas[0].applet_id
+    #     )
+    #     system_encrypted_key = base64.b64decode(
+    #         applet.system_encrypted_key.encode()
+    #     )
+    #     iv = generate_iv(str(applet.id))
+    #     key = decrypt(system_encrypted_key, iv=iv)
+    #     for schema in schemas:
+    #         encrypted_answer = self._encrypt(
+    #             schema.id, key, schema.answer.encode()
+    #         )
+    #         schema.answer = base64.b64encode(encrypted_answer).decode()
+    #
+    #     schemas = await self._create_many(schemas)
+    #
+    #     for schema in schemas:
+    #         schema.answer = self._decrypt(
+    #             schema.id, key, base64.b64decode(schema.answer.encode())
+    #         ).decode()
+    #
+    #     return schemas

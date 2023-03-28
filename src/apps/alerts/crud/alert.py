@@ -198,6 +198,8 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
                     respondent_id=schema.respondent_id,
                     alert_config_id=schema.alert_config_id,
                     applet_id=schema.applet_id,
+                    alert_message=schema.alert_message,
+                    specific_answer=schema.specific_answer,
                     activity_item_histories_id_version=(
                         schema.activity_item_histories_id_version
                     ),
