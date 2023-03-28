@@ -7,22 +7,17 @@ from apps.alerts.domain.alert import AlertCreate
 from apps.alerts.domain.alert_config import AlertConfigGet
 from apps.alerts.errors import AlertConfigNotFoundError
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
-from apps.answers.db.schemas import (
-    AnswerActivityItemsSchema,
-    AnswerFlowItemsSchema,
-)
 from apps.answers.domain import AppletAnswerCreate
 
 
 class AlertService:
-    def __init__(self, session, user_id: uuid.UUID | None):
+    def __init__(self, session, user_id: uuid.UUID):
         self.user_id = user_id
         self.session = session
 
     async def create_alert(self, applet_answer: AppletAnswerCreate):
 
         schemas = list()
-
         for answer in applet_answer.answers:
             activity_item_id_version = (
                 f"{answer.activity_item_id}_{applet_answer.version}"
@@ -31,23 +26,32 @@ class AlertService:
                 flow_id_version = (
                     f"{applet_answer.flow_id}_{applet_answer.version}"
                 )
-                # TODO: Do as for AnswerActivityItems
+                schemas = await AnswerFlowItemsCRUD(
+                    self.session
+                ).get_for_answers_created(
+                    self.user_id,
+                    applet_answer,
+                    activity_item_id_version,
+                    flow_id_version,
+                )
             else:
-                schemas: list[AnswerActivityItemsSchema] = await AnswerActivityItemsCRUD(self.session).get(
-                    applet_answer, self.user_id, activity_item_id_version
+                schemas = await AnswerActivityItemsCRUD(
+                    self.session
+                ).get_for_answers_created(
+                    self.user_id, applet_answer, activity_item_id_version
                 )
 
         for schema in schemas:
             try:
-                alert_config = (
-                    await AlertConfigsCRUD(self.session).get_by_applet_item_answer(
-                        AlertConfigGet(
-                            applet_id=schema.applet_id,
-                            activity_item_histories_id_version=(
-                                schema.activity_item_history_id
-                            ),
-                            specific_answer=json.loads(schema.answer)["value"],
-                        )
+                alert_config = await AlertConfigsCRUD(
+                    self.session
+                ).get_by_applet_item_answer(
+                    AlertConfigGet(
+                        applet_id=schema.applet_id,
+                        activity_item_histories_id_version=(
+                            schema.activity_item_history_id
+                        ),
+                        specific_answer=json.loads(schema.answer)["value"],
                     )
                 )
             except AlertConfigNotFoundError:

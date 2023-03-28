@@ -1,10 +1,12 @@
 import base64
+import json
 import uuid
 
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
 
 from apps.answers.db.schemas import AnswerFlowItemsSchema
+from apps.answers.domain import AppletAnswerCreate
 from apps.applets.crud import AppletsCRUD
 from apps.shared.encryption import decrypt, encrypt, generate_iv
 from infrastructure.database.crud import BaseCRUD
@@ -66,28 +68,34 @@ class AnswerFlowItemsCRUD(BaseCRUD[AnswerFlowItemsSchema]):
         query = query.where(AnswerFlowItemsSchema.applet_id == applet_id)
         await self._execute(query)
 
-    # async def get(
-    #     self,
-    # ) -> list[AnswerFlowItemsSchema]:
-    #     applet = await AppletsCRUD(self.session).get_by_id(
-    #         schemas[0].applet_id
-    #     )
-    #     system_encrypted_key = base64.b64decode(
-    #         applet.system_encrypted_key.encode()
-    #     )
-    #     iv = generate_iv(str(applet.id))
-    #     key = decrypt(system_encrypted_key, iv=iv)
-    #     for schema in schemas:
-    #         encrypted_answer = self._encrypt(
-    #             schema.id, key, schema.answer.encode()
-    #         )
-    #         schema.answer = base64.b64encode(encrypted_answer).decode()
-    #
-    #     schemas = await self._create_many(schemas)
-    #
-    #     for schema in schemas:
-    #         schema.answer = self._decrypt(
-    #             schema.id, key, base64.b64decode(schema.answer.encode())
-    #         ).decode()
-    #
-    #     return schemas
+    async def get_for_answers_created(
+        self,
+        respondent_id: uuid.UUID,
+        applet_answer: AppletAnswerCreate,
+        activity_item_id_version,
+        flow_id_version: str,
+    ) -> list[AnswerFlowItemsSchema]:
+
+        answers = list()
+        for activity_item_answer in applet_answer.answers:
+            answers.append(json.dumps(activity_item_answer.answer.dict()))
+
+        query: Query = select(AnswerFlowItemsSchema)
+        query = query.where(
+            AnswerFlowItemsSchema.applet_id == applet_answer.applet_id
+        )
+        query = query.where(
+            AnswerFlowItemsSchema.respondent_id == respondent_id
+        )
+        query = query.where(
+            AnswerFlowItemsSchema.flow_history_id == flow_id_version
+        )
+        query = query.where(
+            AnswerFlowItemsSchema.activity_item_history_id
+            == activity_item_id_version
+        )
+        query = query.where(AnswerFlowItemsSchema.answer.in_(answers))
+
+        result = await self._execute(query)
+
+        return result.scalars().all()

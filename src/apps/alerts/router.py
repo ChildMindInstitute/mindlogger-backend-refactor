@@ -78,12 +78,11 @@ router.get(
 # Alerts create
 router.post(
     "",
-    description="""This endpoint using for create alerts""",
-    response_model_by_alias=True,
-    response_model=ResponseMulti[AlertPublic],
-    status_code=status.HTTP_200_OK,
+    description="""This endpoint using for create alerts and using
+                after create answer. This endpoint is designed according
+                to his principle and uses the same data model""",
+    status_code=status.HTTP_201_CREATED,
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[AlertPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(alerts_create)

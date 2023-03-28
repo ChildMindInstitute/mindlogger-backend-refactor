@@ -1,4 +1,5 @@
 import base64
+import json
 import uuid
 
 from sqlalchemy import delete, select
@@ -67,16 +68,16 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         query = query.where(AnswerActivityItemsSchema.applet_id == applet_id)
         await self._execute(query)
 
-    async def get(
+    async def get_for_answers_created(
         self,
-        applet_answer: AppletAnswerCreate,
         respondent_id: uuid.UUID,
+        applet_answer: AppletAnswerCreate,
         activity_item_id_version,
     ) -> list[AnswerActivityItemsSchema]:
 
         answers = list()
-        for activityI_iem_answer in applet_answer.answers:
-            answers.append(activityI_iem_answer.answer)
+        for activity_item_answer in applet_answer.answers:
+            answers.append(json.dumps(activity_item_answer.answer.dict()))
 
         query: Query = select(AnswerActivityItemsSchema)
         query = query.where(
@@ -86,11 +87,10 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
             AnswerActivityItemsSchema.respondent_id == respondent_id
         )
         query = query.where(
-            AnswerActivityItemsSchema.activity_item_history_id == activity_item_id_version
+            AnswerActivityItemsSchema.activity_item_history_id
+            == activity_item_id_version
         )
-        query = query.where(
-            AnswerActivityItemsSchema.answer.in_(answers)
-        )
+        query = query.where(AnswerActivityItemsSchema.answer.in_(answers))
 
         result = await self._execute(query)
 

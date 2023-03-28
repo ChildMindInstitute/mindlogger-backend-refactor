@@ -1,7 +1,7 @@
 import uuid
 from copy import deepcopy
 
-from fastapi import Depends, Body
+from fastapi import Body, Depends
 
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
