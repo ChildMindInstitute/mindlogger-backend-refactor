@@ -16,6 +16,7 @@ class _BaseActivitySchema:
     is_reviewable = Column(Boolean(), default=False)
     response_is_editable = Column(Boolean(), default=False)
     ordering = Column(REAL())
+    is_hidden = Column(Boolean(), default=False)
 
 
 class ActivitySchema(Base, _BaseActivitySchema):

@@ -12,6 +12,7 @@ class _BaseActivityFlowSchema:
     is_single_report = Column(Boolean(), default=False)
     hide_badge = Column(Boolean(), default=False)
     ordering = Column(REAL())
+    is_hidden = Column(Boolean(), default=False)
 
 
 class ActivityFlowSchema(_BaseActivityFlowSchema, Base):

@@ -38,6 +38,7 @@ class FlowService:
                     description=flow_create.description,
                     is_single_report=flow_create.is_single_report,
                     hide_badge=flow_create.hide_badge,
+                    is_hidden=flow_create.is_hidden,
                     ordering=index + 1,
                 )
             )
@@ -110,6 +111,7 @@ class FlowService:
                     description=flow_update.description,
                     is_single_report=flow_update.is_single_report,
                     hide_badge=flow_update.hide_badge,
+                    is_hidden=flow_update.is_hidden,
                     ordering=index + 1,
                 )
             )
@@ -180,6 +182,7 @@ class FlowService:
                 is_single_report=schema.is_single_report,
                 hide_badge=schema.hide_badge,
                 ordering=schema.ordering,
+                is_hidden=schema.is_hidden,
             )
             flow_map[flow.id] = flow
             flows.append(flow)
