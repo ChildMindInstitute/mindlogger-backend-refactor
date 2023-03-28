@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import delete, distinct, func, select, TEXT, cast
+from sqlalchemy import delete, distinct, func, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
@@ -287,13 +287,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query: Query = select(
             UserSchema,
             func.string_agg(
-                UserAppletAccessSchema.meta.op('->>')('nickname'),
-                "," "").label(
-                "nicknames"
-            ),
-            func.string_agg(UserAppletAccessSchema.meta.op('->>')('secretUserId'), "," "").label(
-                "secret_ids"
-            ),
+                UserAppletAccessSchema.meta.op("->>")("nickname"), "," ""
+            ).label("nicknames"),
+            func.string_agg(
+                UserAppletAccessSchema.meta.op("->>")("secretUserId"), "," ""
+            ).label("secret_ids"),
             func.string_agg(UserAppletAccessSchema.role, "," "").label(
                 "roles"
             ),
@@ -329,7 +327,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     nickname=nicknames[0] if nicknames else None,
                     roles=roles.split(","),
                     secret_id=secret_ids[0] if secret_ids else None,
-                    last_seen=user_schema.last_seen_at or user_schema.created_at
+                    last_seen=user_schema.last_seen_at
+                    or user_schema.created_at,
                 )
             )
         return users

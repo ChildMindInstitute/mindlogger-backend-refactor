@@ -21,8 +21,8 @@ class PublicWorkspace(PublicModel):
     )
     workspace_name: str = Field(
         description="This field represents the name of workspace "
-                    "which is consists of 'first name', 'last name' of user "
-                    "which is applet owner and prefix",
+        "which is consists of 'first name', 'last name' of user "
+        "which is applet owner and prefix",
     )
 
 
@@ -36,8 +36,8 @@ class UserWorkspace(InternalModel):
     )
     workspace_name: str = Field(
         description="This field represents the name of workspace "
-                    "which is consists of 'first name', 'last name' of user "
-                    "which is applet owner and prefix",
+        "which is consists of 'first name', 'last name' of user "
+        "which is applet owner and prefix",
     )
 
 

@@ -4,7 +4,6 @@ from typing import Any
 
 from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Query
 
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import (
@@ -67,7 +66,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         return user, True
 
     async def update(
-            self, user: User, update_schema: UserUpdateRequest
+        self, user: User, update_schema: UserUpdateRequest
     ) -> User:
         # Update user in database
         instance = await self._update_one(
@@ -93,7 +92,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         return user
 
     async def change_password(
-            self, user: User, update_schema: UserChangePassword
+        self, user: User, update_schema: UserChangePassword
     ) -> User:
         # Update user in database
         instance = await self._update_one(

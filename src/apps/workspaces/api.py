@@ -15,7 +15,6 @@ from apps.workspaces.domain.workspace import (
 )
 from apps.workspaces.filters import WorkspaceUsersQueryParams
 from apps.workspaces.service.user_access import UserAccessService
-from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 from infrastructure.http import get_language
