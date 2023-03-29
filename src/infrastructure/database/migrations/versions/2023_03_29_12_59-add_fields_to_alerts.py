@@ -1,16 +1,16 @@
-"""add fields alert_message specific_answer to alerts
+"""add fields to alerts
 
-Revision ID: 702699f11a47
-Revises: ffb241cb1926
-Create Date: 2023-03-27 23:23:38.151617
+Revision ID: 9f910258cf25
+Revises: 8595f5e743f4
+Create Date: 2023-03-29 12:59:36.516858
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "702699f11a47"
-down_revision = "ffb241cb1926"
+revision = "9f910258cf25"
+down_revision = "8595f5e743f4"
 branch_labels = None
 depends_on = None
 
