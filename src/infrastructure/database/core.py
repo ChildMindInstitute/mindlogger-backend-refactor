@@ -77,11 +77,11 @@ class atomic:
             else:
                 await self.session.rollback()
                 await self.session.close()
-                raise exc_type(exc_val)
+                raise
         else:
             if exc_type:
                 await self.session.rollback()
-                raise exc_type
+                raise
 
 
 def rollback(func):
