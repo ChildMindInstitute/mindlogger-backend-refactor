@@ -8,11 +8,9 @@ class ActivityItemHistory(InternalModel):
     id: uuid.UUID
     id_version: str
     activity_id: str
-    header_image: str | None
+    name: str
     question: dict[str, str]
     response_type: ResponseType
-    answers: dict | list | None
+    response_values: dict | list | None
     config: dict
-    ordering: int
-    skippable_item: bool
-    remove_availability_to_go_back: bool
+    order: int

@@ -1,21 +1,14 @@
 import uuid
 
 from pydantic import Field
-
+from apps.activities.domain.activity_item import BaseActivityItem
 from apps.shared.domain import InternalModel
 
 
-class ActivityItemFull(InternalModel):
+class ActivityItemFull(BaseActivityItem, InternalModel):
     id: uuid.UUID
-    header_image: str | None
-    question: dict[str, str]
     activity_id: uuid.UUID
-    response_type: str
-    answers: list
-    config: dict = dict()
-    ordering: int
-    skippable_item: bool = False
-    remove_availability_to_go_back: bool = False
+    order: int
 
 
 class ActivityFull(InternalModel):

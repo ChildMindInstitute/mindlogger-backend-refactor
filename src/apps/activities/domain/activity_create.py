@@ -6,25 +6,16 @@ from apps.activities.domain.response_type_config import (
     ResponseType,
     ResponseTypeConfig,
 )
-from apps.activities.domain.response_values import ResponseValueConfig
+from apps.activities.domain.activity_item import BaseActivityItem
 from apps.shared.domain import InternalModel
 
 
-class ActivityItemCreate(InternalModel):
-    name: str
-    question: dict[str, str]
-    response_type: ResponseType
-    response_values: ResponseValueConfig
-    config: ResponseTypeConfig
+class ActivityItemCreate(BaseActivityItem, InternalModel):
+    pass
 
 
-class PreparedActivityItemCreate(InternalModel):
+class PreparedActivityItemCreate(BaseActivityItem, InternalModel):
     activity_id: uuid.UUID
-    name: str
-    question: dict[str, str]
-    response_type: str
-    response_values: ResponseValueConfig
-    config: ResponseTypeConfig
 
 
 class ActivityCreate(InternalModel):

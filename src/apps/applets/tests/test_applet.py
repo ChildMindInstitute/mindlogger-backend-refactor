@@ -1,5 +1,6 @@
 from apps.shared.test import BaseTest
 from infrastructure.database import transaction
+import pytest
 
 
 class TestApplet(BaseTest):
@@ -25,6 +26,7 @@ class TestApplet(BaseTest):
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
 
+    @pytest.mark.run
     @transaction.rollback
     async def test_creating_applet(self):
         await self.client.login(
@@ -51,13 +53,23 @@ class TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
+                            name="morning_activity_item",
                             question=dict(
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -70,13 +82,23 @@ class TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
+                            name="evening_activity_item",
                             question=dict(
-                                en="How had you spent your time?",
-                                fr="How had you spent your time?",
+                                en="How had you slept?",
+                                fr="How had you slept?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -100,7 +122,7 @@ class TestApplet(BaseTest):
         response = await self.client.post(
             self.applet_list_url, data=create_data
         )
-
+        print(response.json())
         assert response.status_code == 201, response.json()
 
     @transaction.rollback

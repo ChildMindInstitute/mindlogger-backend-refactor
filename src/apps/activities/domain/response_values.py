@@ -1,3 +1,5 @@
+import uuid
+from enum import Enum
 from pydantic import Field, NonNegativeInt, root_validator, validator
 from pydantic.color import Color
 
@@ -9,35 +11,17 @@ from apps.shared.domain import (
 )
 
 
-class TextValues(InternalModel):
-    None
-
-
-class MessageValues(InternalModel):
-    None
-
-
-class TimeRangeValues(InternalModel):
-    None
-
-
-class GeolocationValues(InternalModel):
-    None
-
-
-class PhotoValues(InternalModel):
-    None
-
-
-class VideoValues(InternalModel):
-    None
-
-
-class DateValues(InternalModel):
-    None
+TextValues = None
+MessageValues = None
+TimeRangeValues = None
+GeolocationValues = None
+PhotoValues = None
+VideoValues = None
+DateValues = None
 
 
 class _SingleSelectionValue(InternalModel):
+    id: uuid.UUID
     text: str
     image: str
     score: int
@@ -102,6 +86,7 @@ class DrawingValues(InternalModel):
 
 
 class SliderRowsValue(SliderValues, InternalModel):
+    id: uuid.UUID
     label: str = Field(..., max_length=11)
 
 
@@ -110,6 +95,7 @@ class SliderRowsValues(InternalModel):
 
 
 class _SingleSelectionRowValue(InternalModel):
+    id: uuid.UUID
     text: str
     image: str
     score: int
@@ -121,6 +107,7 @@ class _SingleSelectionRowValue(InternalModel):
 
 
 class _SingleSelectionRowsValue(InternalModel):
+    id: uuid.UUID
     row_name: str
     row_image: str
     tooltip: str
@@ -151,16 +138,37 @@ class AudioPlayerValues(InternalModel):
         return validate_audio(value)
 
 
+ResponseValueConfigOptions = [
+    TextValues,
+    SingleSelectionValues,
+    MultiSelectionValues,
+    MessageValues,
+    SliderValues,
+    NumberSelectionValues,
+    TimeRangeValues,
+    GeolocationValues,
+    DrawingValues,
+    PhotoValues,
+    VideoValues,
+    DateValues,
+    SliderRowsValues,
+    SingleSelectionRowsValues,
+    MultiSelectionRowsValues,
+    AudioValues,
+    AudioPlayerValues,
+]
+
+
 ResponseValueConfig = (
-    SingleSelectionValues
+    TextValues
+    | SingleSelectionValues
     | MultiSelectionValues
+    | MessageValues
     | SliderValues
     | NumberSelectionValues
-    | DrawingValues
-    | TextValues
-    | MessageValues
     | TimeRangeValues
     | GeolocationValues
+    | DrawingValues
     | PhotoValues
     | VideoValues
     | DateValues
