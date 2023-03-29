@@ -36,10 +36,10 @@ class TestActivities(BaseTest):
         assert result["description"] == "PHQ2 en"
         assert len(result["items"]) == 2
         assert (
-                result["items"][0]["question"]
-                == "Little interest or pleasure in doing things?"
+            result["items"][0]["question"]
+            == "Little interest or pleasure in doing things?"
         )
         assert (
-                result["items"][1]["question"]
-                == "Feeling down, depressed, or hopeless?"
+            result["items"][1]["question"]
+            == "Feeling down, depressed, or hopeless?"
         )

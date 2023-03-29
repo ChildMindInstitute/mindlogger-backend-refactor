@@ -23,9 +23,7 @@ class ActivityItemService:
             schemas.append(
                 ActivityItemSchema(
                     **activity_item.dict(),
-                    order=activity_id_ordering_map[
-                        activity_item.activity_id
-                    ]
+                    order=activity_id_ordering_map[activity_item.activity_id]
                     + 1,
                 )
             )
@@ -45,9 +43,7 @@ class ActivityItemService:
             schemas.append(
                 ActivityItemSchema(
                     **activity_item.dict(),
-                    order=activity_id_ordering_map[
-                        activity_item.activity_id
-                    ]
+                    order=activity_id_ordering_map[activity_item.activity_id]
                     + 1,
                 )
             )
