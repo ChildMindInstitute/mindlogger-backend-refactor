@@ -74,23 +74,27 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         """Get alerts by applet_id from the database"""
 
         # Get alert from the database
-        query: Query = select(
-            self.schema_class,
-            AppletSchema.display_name.label("applet_name"),
-            UserAppletAccessSchema.meta.label("meta"),
-        )
-        query = query.where(self.schema_class.applet_id == applet_id)
-        query = query.join(
-            AppletSchema.display_name,
-            AppletSchema.id == self.schema_class.applet_id,
-        )
-        query = query.join(
-            UserAppletAccessSchema.meta,
-            UserAppletAccessSchema.role == Role.RESPONDENT,
-        )
-        query = query.where(
-            UserAppletAccessSchema.user_id == self.schema_class.respondent_id,
-            UserAppletAccessSchema.applet_id == self.schema_class.applet_id,
+        query: Query = (
+            select(
+                self.schema_class,
+                AppletSchema.display_name.label("applet_name"),
+                UserAppletAccessSchema.meta.label("meta"),
+            )
+            .where(self.schema_class.applet_id == applet_id)
+            .join(
+                AppletSchema.display_name,
+                AppletSchema.id == self.schema_class.applet_id,
+            )
+            .join(
+                UserAppletAccessSchema.meta,
+                UserAppletAccessSchema.role == Role.RESPONDENT,
+            )
+            .where(
+                UserAppletAccessSchema.user_id
+                == self.schema_class.respondent_id,
+                UserAppletAccessSchema.applet_id
+                == self.schema_class.applet_id,
+            )
         )
 
         if query_params.search:
