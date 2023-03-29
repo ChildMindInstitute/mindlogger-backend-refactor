@@ -4,6 +4,7 @@ from starlette import status
 from apps.applets.api.applets import (
     applet_create,
     applet_delete,
+    applet_duplicate,
     applet_link_create,
     applet_link_delete,
     applet_link_get,
@@ -101,6 +102,17 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_create)
+
+router.post(
+    "/duplicate/{applet_id}",
+    response_model=Response[public_detail.Applet],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"model": Response[public_detail.Applet]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_duplicate)
 
 router.post(
     "/set_folder",

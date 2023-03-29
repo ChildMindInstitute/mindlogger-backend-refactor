@@ -45,6 +45,7 @@ __all__ = [
     "applet_link_get",
     "applet_link_delete",
     "applet_set_data_retention",
+    "applet_duplicate",
 ]
 
 from infrastructure.database import atomic, session_manager
@@ -101,6 +102,17 @@ async def applet_update(
 ) -> Response[public_detail.Applet]:
     async with atomic(session):
         applet = await AppletService(session, user.id).update(id_, schema)
+    return Response(result=public_detail.Applet(**applet.dict()))
+
+
+async def applet_duplicate(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    schema: AppletCreate = Body(...),
+    session=Depends(session_manager.get_session),
+) -> Response[public_detail.Applet]:
+    async with atomic(session):
+        applet = await AppletService(session, user.id).create(schema)
     return Response(result=public_detail.Applet(**applet.dict()))
 
 
