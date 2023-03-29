@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from pydantic import Field
@@ -7,6 +8,8 @@ from apps.shared.domain import InternalModel, PublicModel
 __all__ = [
     "PublicWorkspace",
     "UserWorkspace",
+    "WorkspaceUser",
+    "PublicWorkspaceUser",
 ]
 
 
@@ -36,3 +39,19 @@ class UserWorkspace(InternalModel):
         "which is consists of 'first name', 'last name' of user "
         "which is applet owner and prefix",
     )
+
+
+class WorkspaceUser(InternalModel):
+    id: uuid.UUID
+    nickname: str | None
+    roles: list[str]
+    secret_id: str | None
+    last_seen: datetime.datetime
+
+
+class PublicWorkspaceUser(PublicModel):
+    id: uuid.UUID
+    nickname: str | None
+    roles: list[str]
+    secret_id: str | None
+    last_seen: datetime.datetime

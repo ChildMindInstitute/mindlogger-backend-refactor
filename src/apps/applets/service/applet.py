@@ -275,6 +275,7 @@ class AppletService:
             retention_period=schema.retention_period,
             retention_type=schema.retention_type,
         )
+
         applet.activities = await ActivityService(
             self.session, self.user_id
         ).get_single_language_by_applet_id(applet_id, language)

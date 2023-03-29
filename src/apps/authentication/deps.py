@@ -45,6 +45,8 @@ async def get_current_user(
         ):
             raise UserNotFound()
 
+        await UsersCRUD(session).update_last_seen_by_id(token_data.sub)
+
         # Check if the token is in the blacklist
         with suppress(CacheNotFound):
             cache_entries = await AuthenticationService(

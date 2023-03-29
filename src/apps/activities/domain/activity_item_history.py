@@ -13,6 +13,6 @@ class ActivityItemHistory(InternalModel):
     response_type: ResponseType
     answers: dict | list | None
     config: dict
-    ordering: int
+    order: int
     skippable_item: bool
     remove_availability_to_go_back: bool

@@ -24,7 +24,7 @@ from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
-from apps.workspaces.crud.roles import UserAppletAccessCRUD
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from infrastructure.database import atomic, session_manager
 

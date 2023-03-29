@@ -26,7 +26,7 @@ class ActivityItemHistoryService:
                     response_type=item.response_type,
                     answers=item.answers,
                     config=item.config,
-                    ordering=item.ordering,
+                    order=item.order,
                     skippable_item=item.skippable_item,
                     remove_availability_to_go_back=(
                         item.remove_availability_to_go_back

@@ -18,7 +18,7 @@
       "is_skippable": false,
       "is_reviewable": false,
       "response_is_editable": false,
-      "ordering": 1.0
+      "order": 1.0
     }
   },
   {
@@ -40,7 +40,7 @@
       "is_skippable": false,
       "is_reviewable": false,
       "response_is_editable": false,
-      "ordering": 2
+      "order": 2
     }
   },
   {
@@ -62,7 +62,7 @@
       "is_skippable": false,
       "is_reviewable": false,
       "response_is_editable": false,
-      "ordering": 1
+      "order": 1
     }
   },
   {
@@ -84,7 +84,7 @@
       "is_skippable": false,
       "is_reviewable": false,
       "response_is_editable": false,
-      "ordering": 1
+      "order": 1
     }
   },
   {
@@ -106,7 +106,7 @@
       "is_skippable": false,
       "is_reviewable": false,
       "response_is_editable": false,
-      "ordering": 2
+      "order": 2
     }
   }
 ]
