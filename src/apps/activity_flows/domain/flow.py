@@ -11,7 +11,7 @@ class Flow(InternalModel):
     description: dict[str, str]
     is_single_report: bool = False
     hide_badge: bool = False
-    ordering: int
+    order: int
     is_hidden: bool | None = False
 
 
@@ -21,7 +21,7 @@ class FlowPublic(PublicModel):
     description: dict[str, str]
     is_single_report: bool = False
     hide_badge: bool = False
-    ordering: int
+    order: int
 
 
 class FlowDetail(Flow):

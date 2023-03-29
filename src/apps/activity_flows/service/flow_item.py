@@ -23,7 +23,7 @@ class FlowItemService:
                 ActivityFlowItemSchema(
                     activity_flow_id=item.activity_flow_id,
                     activity_id=item.activity_id,
-                    ordering=flow_id_ordering_map[item.activity_flow_id] + 1,
+                    order=flow_id_ordering_map[item.activity_flow_id] + 1,
                 )
             )
             flow_id_ordering_map[item.activity_flow_id] += 1
@@ -45,7 +45,7 @@ class FlowItemService:
                     id=item.id,
                     activity_flow_id=item.activity_flow_id,
                     activity_id=item.activity_id,
-                    ordering=flow_id_ordering_map[item.activity_flow_id] + 1,
+                    order=flow_id_ordering_map[item.activity_flow_id] + 1,
                 )
             )
             flow_id_ordering_map[item.activity_flow_id] += 1

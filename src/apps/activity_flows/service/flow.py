@@ -39,7 +39,7 @@ class FlowService:
                     is_single_report=flow_create.is_single_report,
                     hide_badge=flow_create.hide_badge,
                     is_hidden=flow_create.is_hidden,
-                    ordering=index + 1,
+                    order=index + 1,
                 )
             )
             for flow_item_create in flow_create.items:
@@ -112,7 +112,7 @@ class FlowService:
                     is_single_report=flow_update.is_single_report,
                     hide_badge=flow_update.hide_badge,
                     is_hidden=flow_update.is_hidden,
-                    ordering=index + 1,
+                    order=index + 1,
                 )
             )
             for flow_item_update in flow_update.items:
@@ -181,7 +181,7 @@ class FlowService:
                 ),
                 is_single_report=schema.is_single_report,
                 hide_badge=schema.hide_badge,
-                ordering=schema.ordering,
+                order=schema.order,
                 is_hidden=schema.is_hidden,
             )
             flow_map[flow.id] = flow

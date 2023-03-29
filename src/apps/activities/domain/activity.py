@@ -19,7 +19,7 @@ class Activity(InternalModel):
     is_skippable: bool = False
     is_reviewable: bool = False
     response_is_editable: bool = False
-    ordering: float
+    order: int
     is_hidden: bool | None = False
 
 
@@ -33,7 +33,7 @@ class ActivityPublic(PublicModel):
     is_skippable: bool = False
     is_reviewable: bool = False
     response_is_editable: bool = False
-    ordering: float
+    order: int
 
 
 class ActivityDetail(Activity):
