@@ -22,7 +22,7 @@ class ActivityHistory(InternalModel):
     is_skippable: bool
     is_reviewable: bool
     response_is_editable: bool
-    ordering: int
+    order: int
     created_at: datetime.datetime
 
 
@@ -35,7 +35,7 @@ class ActivityHistoryChange(InternalModel):
     is_skippable: str | None = None
     is_reviewable: str | None = None
     response_is_editable: str | None = None
-    ordering: str | None = None
+    order: str | None = None
 
 
 class PublicActivityHistoryChange(PublicModel):
@@ -47,4 +47,4 @@ class PublicActivityHistoryChange(PublicModel):
     is_skippable: str | None = None
     is_reviewable: str | None = None
     response_is_editable: str | None = None
-    ordering: str | None = None
+    order: str | None = None

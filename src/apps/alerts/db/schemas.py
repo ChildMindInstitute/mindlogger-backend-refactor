@@ -45,3 +45,5 @@ class AlertSchema(Base):
         ForeignKey("activity_item_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
     )
+    alert_message = Column(String(), nullable=False)
+    specific_answer = Column(Text(), nullable=False)

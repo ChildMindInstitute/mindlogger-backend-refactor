@@ -27,7 +27,7 @@ class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
     async def get_by_applet_id(self, applet_id) -> list[ActivityFlowSchema]:
         query: Query = select(ActivityFlowSchema)
         query = query.where(ActivityFlowSchema.applet_id == applet_id)
-        query = query.order_by(ActivityFlowSchema.ordering.asc())
+        query = query.order_by(ActivityFlowSchema.order.asc())
         result = await self._execute(query)
         return result.scalars().all()
 

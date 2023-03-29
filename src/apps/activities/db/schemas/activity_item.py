@@ -12,7 +12,7 @@ class _BaseActivityItemSchema:
     response_type = Column(Text())
     answers = Column(JSONB())
     config = Column(JSONB(), default=dict())
-    ordering = Column(REAL())
+    order = Column(REAL())
     skippable_item = Column(Boolean())
     remove_availability_to_go_back = Column(Boolean())
 
