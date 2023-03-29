@@ -1,13 +1,15 @@
 import uuid
 from copy import deepcopy
 
-from fastapi import Depends
+from fastapi import Body, Depends
 
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
 from apps.alerts.domain.alert import Alert, AlertPublic
 from apps.alerts.errors import AlertUpdateAccessDenied, AlertViewAccessDenied
 from apps.alerts.filters import AlertConfigQueryParams
+from apps.alerts.service.alert import AlertService
+from apps.answers.domain import AppletAnswerCreate
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
@@ -15,6 +17,26 @@ from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from infrastructure.database import atomic, session_manager
+
+
+async def alerts_create(
+    user: User = Depends(get_current_user),
+    applet_answer: AppletAnswerCreate = Body(...),
+    session=Depends(session_manager.get_session),
+) -> None:
+    # Check user permissions.
+    # Only respondent role can create alert
+    async with atomic(session):
+        roles = await UserAppletAccessCRUD(session).get_roles_in_roles(
+            user.id,
+            applet_answer.applet_id,
+            [Role.RESPONDENT],
+        )
+        if not roles:
+            raise AlertViewAccessDenied
+
+        await AlertService(session, user.id).create_alert(applet_answer)
+        return
 
 
 async def alert_get_all_by_applet_id(

@@ -4,6 +4,7 @@ from starlette import status
 from apps.alerts.api.alert import (
     alert_get_all_by_applet_id,
     alert_update_status_by_id,
+    alerts_create,
 )
 from apps.alerts.api.alert_config import (
     alert_config_create,
@@ -73,6 +74,18 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(alert_config_get_all_by_applet_id)
+
+# Alerts create
+router.post(
+    "",
+    description="""This endpoint using for create alerts and using
+                after create answer. This endpoint is designed according
+                to his principle and uses the same data model""",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(alerts_create)
 
 # Alerts get all
 router.get(
