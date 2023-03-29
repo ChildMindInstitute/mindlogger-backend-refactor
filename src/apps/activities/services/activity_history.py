@@ -41,7 +41,7 @@ class ActivityHistoryService:
                     is_skippable=activity.is_skippable,
                     is_reviewable=activity.is_reviewable,
                     response_is_editable=activity.response_is_editable,
-                    ordering=activity.ordering,
+                    order=activity.order,
                 )
             )
 
@@ -143,10 +143,10 @@ class ActivityHistoryService:
                             new_activity.response_is_editable,
                         )
                     )
-                if prev_activity.ordering != new_activity.ordering:
+                if prev_activity.order != new_activity.order:
                     has_changes = True
-                    change.ordering = changes_generator.changed_text(
-                        prev_activity.ordering, new_activity.ordering
+                    change.order = changes_generator.changed_text(
+                        prev_activity.order, new_activity.order
                     )
                 if has_changes:
                     activity_changes.append(change)

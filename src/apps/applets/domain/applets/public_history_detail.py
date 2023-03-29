@@ -19,7 +19,7 @@ class ActivityItem(PublicModel):
     is_random: bool = False
     is_able_to_move_to_previous: bool = False
     has_text_response: bool = False
-    ordering: float
+    order: int
 
 
 class Activity(PublicModel):
@@ -32,13 +32,13 @@ class Activity(PublicModel):
     is_skippable: bool = False
     is_reviewable: bool = False
     response_is_editable: bool = False
-    ordering: float
+    order: int
     items: list[ActivityItem] = Field(default_factory=list)
 
 
 class ActivityFlowItem(PublicModel):
     id: uuid.UUID
-    ordering: int
+    order: int
     activity: Activity | None
 
 
@@ -48,7 +48,7 @@ class ActivityFlow(PublicModel):
     description: dict[str, str]
     is_single_report: bool = False
     hide_badge: bool = False
-    ordering: int
+    order: int
     items: list[ActivityFlowItem] = Field(default_factory=list)
 
 

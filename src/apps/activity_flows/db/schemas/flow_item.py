@@ -7,7 +7,7 @@ __all__ = ["ActivityFlowItemSchema", "ActivityFlowItemHistorySchema"]
 
 
 class _BaseActivityFlow:
-    ordering = Column(REAL())
+    order = Column(REAL())
 
 
 class ActivityFlowItemSchema(_BaseActivityFlow, Base):

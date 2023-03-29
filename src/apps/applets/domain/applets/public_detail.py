@@ -12,7 +12,7 @@ class ActivityItem(PublicModel):
     response_type: str
     answers: list
     config: dict = dict()
-    ordering: int
+    order: int
     skippable_item: bool = False
     remove_availability_to_go_back: bool = False
 
@@ -27,7 +27,7 @@ class Activity(PublicModel):
     is_skippable: bool = False
     is_reviewable: bool = False
     response_is_editable: bool = False
-    ordering: int
+    order: int
     items: list[ActivityItem] = Field(default_factory=list)
 
 
@@ -35,7 +35,7 @@ class ActivityFlowItem(PublicModel):
     id: uuid.UUID
     activity_flow_id: uuid.UUID
     activity_id: uuid.UUID
-    ordering: int
+    order: int
     activity: Activity | None
 
 
@@ -45,7 +45,7 @@ class ActivityFlow(PublicModel):
     description: dict[str, str]
     is_single_report: bool = False
     hide_badge: bool = False
-    ordering: int
+    order: int
     items: list[ActivityFlowItem] = Field(default_factory=list)
 
 

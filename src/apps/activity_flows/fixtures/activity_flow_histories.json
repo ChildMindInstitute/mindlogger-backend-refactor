@@ -14,7 +14,7 @@
       },
       "is_single_report": false,
       "hide_badge": false,
-      "ordering": 1,
+      "order": 1,
       "id_version": "1_1.0.0",
       "applet_id": "1_1.0.0"
     }
@@ -34,7 +34,7 @@
       },
       "is_single_report": false,
       "hide_badge": false,
-      "ordering": 2,
+      "order": 2,
       "id_version": "2_1.0.0",
       "applet_id": "1_1.0.0"
     }
