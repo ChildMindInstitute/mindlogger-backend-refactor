@@ -9,7 +9,7 @@ class ActivityFlowItemFull(InternalModel):
     id: uuid.UUID
     activity_id: uuid.UUID
     activity_flow_id: uuid.UUID
-    ordering: int
+    order: int
 
 
 class FlowFull(InternalModel):
@@ -20,4 +20,4 @@ class FlowFull(InternalModel):
     hide_badge: bool = False
     items: list[ActivityFlowItemFull] = Field(default_factory=list)
     is_hidden: bool = False
-    ordering: int
+    order: int

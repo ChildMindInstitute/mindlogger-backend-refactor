@@ -14,7 +14,6 @@ from apps.alerts.domain.alert_config import (
 )
 from apps.alerts.errors import (
     AlertConfigAlreadyExistError,
-    AlertConfigIsDeletedError,
     AlertConfigNotFoundError,
 )
 from apps.shared.ordering import Ordering
@@ -55,18 +54,15 @@ class AlertConfigsCRUD(BaseCRUD[AlertConfigSchema]):
         query = query.where(
             self.schema_class.specific_answer == schema.specific_answer
         )
+        query = query.where(
+            self.schema_class.is_deleted == False  # noqa: E712
+        )
 
         result: Result = await self._execute(query)
         instance = result.scalars().one_or_none()
 
         if not instance:
             raise AlertConfigNotFoundError
-
-        if instance.is_deleted:
-            raise AlertConfigIsDeletedError(
-                "This alert config is deleted. "
-                "The recovery logic is not implemented yet."
-            )
 
         # Get internal model
         alert_config: AlertConfig = AlertConfig.from_orm(instance)
@@ -134,18 +130,15 @@ class AlertConfigsCRUD(BaseCRUD[AlertConfigSchema]):
         # Get alert config from the database
         query: Query = select(self.schema_class)
         query = query.where(self.schema_class.id == alert_config_id)
+        query = query.where(
+            self.schema_class.is_deleted == False  # noqa: E712
+        )
 
         result: Result = await self._execute(query)
         instance = result.scalars().one_or_none()
 
         if not instance:
             raise AlertConfigNotFoundError
-
-        if instance.is_deleted:
-            raise AlertConfigIsDeletedError(
-                message="This alert config is deleted. "
-                "The recovery logic is not implemented yet."
-            )
 
         # Get internal model
         alert_config: AlertConfig = AlertConfig.from_orm(instance)

@@ -7,10 +7,6 @@ from apps.activities.services.activity_item_history import (
 from apps.activity_flows.service.flow_item_history import (
     FlowItemHistoryService,
 )
-from apps.alerts.crud.alert import AlertCRUD
-from apps.alerts.crud.alert_config import AlertConfigsCRUD
-from apps.alerts.domain.alert import AlertCreate
-from apps.alerts.domain.alert_config import AlertConfigGet
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.answers.db.schemas import (
     AnswerActivityItemsSchema,
@@ -27,8 +23,9 @@ from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
 class AnswerService:
-    def __init__(self, user_id: uuid.UUID | None):
+    def __init__(self, session, user_id: uuid.UUID | None):
         self.user_id = user_id
+        self.session = session
 
     async def create_answer(self, activity_answer: AppletAnswerCreate):
         if self.user_id:
@@ -70,13 +67,15 @@ class AnswerService:
                 f"{activity_answer.activity_id}_{activity_answer.version}"
             )
             flow_activity_ids = await FlowItemHistoryService(
-                activity_answer.applet_id, activity_answer.version
+                self.session,
+                activity_answer.applet_id,
+                activity_answer.version,
             ).get_activity_ids_by_flow_id(activity_answer.flow_id)
             if activity_id_version not in flow_activity_ids:
                 raise FlowDoesNotHaveActivity()
 
         activity_items = await ActivityItemHistoryService(
-            activity_answer.applet_id, activity_answer.version
+            self.session, activity_answer.applet_id, activity_answer.version
         ).get_by_activity_id(activity_answer.activity_id)
 
         answer_map = dict()
@@ -94,14 +93,14 @@ class AnswerService:
     async def _validate_applet_for_anonymous_response(
         self, applet_id: uuid.UUID, version: str
     ):
-        await AppletHistoryService(applet_id, version).get()
+        await AppletHistoryService(self.session, applet_id, version).get()
         # TODO: validate applet for anonymous answer
 
     async def _validate_applet_for_user_response(self, applet_id: uuid.UUID):
         assert self.user_id
 
         roles = await UserAppletAccessService(
-            self.user_id, applet_id
+            self.session, self.user_id, applet_id
         ).get_roles()
         if not roles:
             raise UserDoesNotHavePermissionError()
@@ -148,35 +147,36 @@ class AnswerService:
                     )
                 )
 
-        schemas = list()
         if activity_item_answer_schemas:
-            schemas = await AnswerActivityItemsCRUD().create_many(
+            await AnswerActivityItemsCRUD(self.session).create_many(
                 activity_item_answer_schemas
             )
         elif flow_item_answer_schemas:
-            schemas = await AnswerFlowItemsCRUD().create_many(
+            await AnswerFlowItemsCRUD(self.session).create_many(
                 activity_item_answer_schemas
             )
-
-        for schema in schemas:
-            alert_config = await AlertConfigsCRUD().get_by_applet_item_answer(
-                AlertConfigGet(
-                    applet_id=schema.applet_id,
-                    activity_item_histories_id_version=(
-                        schema.activity_item_history_id
-                    ),
-                    specific_answer=schema.answer,
-                )
-            )
-            if alert_config:
-                await AlertCRUD().save(
-                    AlertCreate(
-                        specific_answer=schema.answer,
-                        respondent_id=schema.respondent_id,
-                        alert_config_id=alert_config.id,
-                        applet_id=schema.applet_id,
-                        activity_item_histories_id_version=(
-                            schema.activity_item_history_id
-                        ),
-                    )
-                )
+        # TODO: fix
+        # for schema in schemas:
+        #     alert_config = await AlertConfigsCRUD(
+        #         self.session
+        #     ).get_by_applet_item_answer(
+        #         AlertConfigGet(
+        #             applet_id=schema.applet_id,
+        #             activity_item_histories_id_version=(
+        #                 schema.activity_item_history_id
+        #             ),
+        #             specific_answer=schema.answer,
+        #         )
+        #     )
+        #     if alert_config:
+        #         await AlertCRUD(self.session).save(
+        #             AlertCreate(
+        #                 specific_answer=schema.answer,
+        #                 respondent_id=schema.respondent_id,
+        #                 alert_config_id=alert_config.id,
+        #                 applet_id=schema.applet_id,
+        #                 activity_item_histories_id_version=(
+        #                     schema.activity_item_history_id
+        #                 ),
+        #             )
+        #         )

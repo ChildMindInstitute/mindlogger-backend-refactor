@@ -10,6 +10,9 @@ from apps.activities.domain.activity_update import PreparedActivityItemUpdate
 
 
 class ActivityItemService:
+    def __init__(self, session):
+        self.session = session
+
     async def create(
         self, activity_items: list[PreparedActivityItemCreate]
     ) -> list[ActivityItemFull]:
@@ -25,7 +28,9 @@ class ActivityItemService:
                 )
             )
             activity_id_ordering_map[activity_item.activity_id] += 1
-        item_schemas = await ActivityItemsCRUD().create_many(schemas)
+        item_schemas = await ActivityItemsCRUD(self.session).create_many(
+            schemas
+        )
         return [ActivityItemFull.from_orm(item) for item in item_schemas]
 
     async def update_create(
@@ -43,13 +48,17 @@ class ActivityItemService:
                 )
             )
             activity_id_ordering_map[activity_item.activity_id] += 1
-        item_schemas = await ActivityItemsCRUD().create_many(schemas)
+        item_schemas = await ActivityItemsCRUD(self.session).create_many(
+            schemas
+        )
         return [ActivityItemFull.from_orm(item) for item in item_schemas]
 
     async def get_single_language_by_activity_id(
         self, activity_id: uuid.UUID, language: str
     ) -> list[ActivityItemDetail]:
-        schemas = await ActivityItemsCRUD().get_by_activity_id(activity_id)
+        schemas = await ActivityItemsCRUD(self.session).get_by_activity_id(
+            activity_id
+        )
         items = []
         for schema in schemas:
             items.append(
@@ -68,7 +77,7 @@ class ActivityItemService:
         return items
 
     async def remove_applet_activity_items(self, applet_id: uuid.UUID):
-        await ActivityItemsCRUD().delete_by_applet_id(applet_id)
+        await ActivityItemsCRUD(self.session).delete_by_applet_id(applet_id)
 
     @staticmethod
     def _get_by_language(values: dict, language: str):

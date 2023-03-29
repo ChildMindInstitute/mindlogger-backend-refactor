@@ -32,7 +32,7 @@ class Activity(InternalModel):
     is_skippable: bool = False
     is_reviewable: bool = False
     response_is_editable: bool = False
-    ordering: float
+    order: int
 
 
 class ActivityItem(InternalModel):
@@ -50,7 +50,7 @@ class ActivityItem(InternalModel):
     is_random: bool = False
     is_able_to_move_to_previous: bool = False
     has_text_response: bool = False
-    ordering: float
+    order: int
 
 
 class ActivityFlow(InternalModel):
@@ -59,11 +59,11 @@ class ActivityFlow(InternalModel):
     description: dict[str, str]
     is_single_report: bool = False
     hide_badge: bool = False
-    ordering: int
+    order: int
 
 
 class ActivityFlowItem(InternalModel):
     id: uuid.UUID
     activity_flow_id: uuid.UUID
     activity_id: uuid.UUID
-    ordering: int
+    order: int

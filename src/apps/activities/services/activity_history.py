@@ -16,10 +16,11 @@ from apps.shared.version import get_prev_version
 
 
 class ActivityHistoryService:
-    def __init__(self, applet_id: uuid.UUID, version: str):
+    def __init__(self, session, applet_id: uuid.UUID, version: str):
         self._applet_id = applet_id
         self._version = version
         self._applet_id_version = f"{applet_id}_{version}"
+        self.session = session
 
     async def add(self, activities: list[ActivityFull]):
         activity_items = []
@@ -40,14 +41,14 @@ class ActivityHistoryService:
                     is_skippable=activity.is_skippable,
                     is_reviewable=activity.is_reviewable,
                     response_is_editable=activity.response_is_editable,
-                    ordering=activity.ordering,
+                    order=activity.order,
                 )
             )
 
-        await ActivityHistoriesCRUD().create_many(schemas)
-        await ActivityItemHistoryService(self._applet_id, self._version).add(
-            activity_items
-        )
+        await ActivityHistoriesCRUD(self.session).create_many(schemas)
+        await ActivityItemHistoryService(
+            self.session, self._applet_id, self._version
+        ).add(activity_items)
 
     async def get_changes(self):
         prev_version = get_prev_version(self._version)
@@ -59,10 +60,10 @@ class ActivityHistoryService:
     ) -> list[ActivityHistoryChange]:
         changes_generator = ChangeTextGenerator()
         activity_changes: list[ActivityHistoryChange] = []
-        activity_schemas = (
-            await ActivityHistoriesCRUD().retrieve_by_applet_ids(
-                [self._applet_id_version, old_applet_id_version]
-            )
+        activity_schemas = await ActivityHistoriesCRUD(
+            self.session
+        ).retrieve_by_applet_ids(
+            [self._applet_id_version, old_applet_id_version]
         )
         activities = [
             ActivityHistory.from_orm(schema) for schema in activity_schemas
@@ -142,10 +143,10 @@ class ActivityHistoryService:
                             new_activity.response_is_editable,
                         )
                     )
-                if prev_activity.ordering != new_activity.ordering:
+                if prev_activity.order != new_activity.order:
                     has_changes = True
-                    change.ordering = changes_generator.changed_text(
-                        prev_activity.ordering, new_activity.ordering
+                    change.order = changes_generator.changed_text(
+                        prev_activity.order, new_activity.order
                     )
                 if has_changes:
                     activity_changes.append(change)

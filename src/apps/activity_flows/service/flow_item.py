@@ -9,6 +9,9 @@ from apps.activity_flows.domain.flow_update import PreparedFlowItemUpdate
 
 
 class FlowItemService:
+    def __init__(self, session):
+        self.session = session
+
     async def create(
         self, items: list[PreparedFlowItemCreate]
     ) -> list[ActivityFlowItemFull]:
@@ -20,11 +23,11 @@ class FlowItemService:
                 ActivityFlowItemSchema(
                     activity_flow_id=item.activity_flow_id,
                     activity_id=item.activity_id,
-                    ordering=flow_id_ordering_map[item.activity_flow_id] + 1,
+                    order=flow_id_ordering_map[item.activity_flow_id] + 1,
                 )
             )
             flow_id_ordering_map[item.activity_flow_id] += 1
-        item_schemas = await FlowItemsCRUD().create_many(schemas)
+        item_schemas = await FlowItemsCRUD(self.session).create_many(schemas)
 
         return [
             ActivityFlowItemFull.from_orm(schema) for schema in item_schemas
@@ -42,15 +45,15 @@ class FlowItemService:
                     id=item.id,
                     activity_flow_id=item.activity_flow_id,
                     activity_id=item.activity_id,
-                    ordering=flow_id_ordering_map[item.activity_flow_id] + 1,
+                    order=flow_id_ordering_map[item.activity_flow_id] + 1,
                 )
             )
             flow_id_ordering_map[item.activity_flow_id] += 1
-        item_schemas = await FlowItemsCRUD().create_many(schemas)
+        item_schemas = await FlowItemsCRUD(self.session).create_many(schemas)
 
         return [
             ActivityFlowItemFull.from_orm(schema) for schema in item_schemas
         ]
 
     async def remove_applet_flow_items(self, applet_id: uuid.UUID):
-        await FlowItemsCRUD().delete_by_applet_id(applet_id)
+        await FlowItemsCRUD(self.session).delete_by_applet_id(applet_id)

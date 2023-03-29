@@ -16,11 +16,6 @@ class ActivityItemHistoryNotFoundError(NotFoundError):
         super().__init__(message=message)
 
 
-class AlertConfigIsDeletedError(BadRequestError):
-    def __init__(self, *_, message="Alert config is deleted") -> None:
-        super().__init__(message=message)
-
-
 class AlertConfigAlreadyExistError(ConflictError):
     def __init__(self, *_, message="Alert config already exist") -> None:
         super().__init__(message=message)
@@ -28,6 +23,16 @@ class AlertConfigAlreadyExistError(ConflictError):
 
 class AlertCreateAccessDenied(ValidationError):
     def __init__(self, *_, message="Access to create alerts denied") -> None:
+        super().__init__(message=message)
+
+
+class AlertViewAccessDenied(ValidationError):
+    def __init__(self, *_, message="Access to view alerts denied") -> None:
+        super().__init__(message=message)
+
+
+class AlertUpdateAccessDenied(ValidationError):
+    def __init__(self, *_, message="Access to update alerts denied") -> None:
         super().__init__(message=message)
 
 

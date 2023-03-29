@@ -24,4 +24,4 @@ class ActivityFull(InternalModel):
     response_is_editable: bool = False
     items: list[ActivityItemFull] = Field(default_factory=list)
     is_hidden: bool = False
-    ordering: int
+    order: int

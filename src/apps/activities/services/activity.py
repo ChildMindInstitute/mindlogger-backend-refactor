@@ -20,8 +20,9 @@ from apps.schedule.service.schedule import ScheduleService
 
 
 class ActivityService:
-    def __init__(self, user_id: uuid.UUID):
+    def __init__(self, session, user_id: uuid.UUID):
         self.user_id = user_id
+        self.session = session
 
     async def create(
         self, applet_id: uuid.UUID, activities_create: list[ActivityCreate]
@@ -48,7 +49,8 @@ class ActivityService:
                     is_skippable=activity_data.is_skippable,
                     is_reviewable=activity_data.is_reviewable,
                     response_is_editable=activity_data.response_is_editable,
-                    ordering=index + 1,
+                    is_hidden=activity_data.is_hidden,
+                    order=index + 1,
                 )
             )
 
@@ -63,8 +65,10 @@ class ActivityService:
                         name=item.name,
                     )
                 )
-        activity_schemas = await ActivitiesCRUD().create_many(schemas)
-        activity_items = await ActivityItemService().create(
+        activity_schemas = await ActivitiesCRUD(self.session).create_many(
+            schemas
+        )
+        activity_items = await ActivityItemService(self.session).create(
             prepared_activity_items
         )
         activities = list()
@@ -83,7 +87,7 @@ class ActivityService:
             )
 
         # add default schedule for activities
-        await ScheduleService().create_default_schedules(
+        await ScheduleService(self.session).create_default_schedules(
             applet_id=applet_id,
             activity_ids=[activity.id for activity in activities],
             is_activity=True,
@@ -101,7 +105,9 @@ class ActivityService:
 
         all_activities = [
             activity.id
-            for activity in await ActivitiesCRUD().get_by_applet_id(applet_id)
+            for activity in await ActivitiesCRUD(
+                self.session
+            ).get_by_applet_id(applet_id)
         ]
         # Save new activity ids
         new_activities = []
@@ -129,7 +135,8 @@ class ActivityService:
                     is_skippable=activity_data.is_skippable,
                     is_reviewable=activity_data.is_reviewable,
                     response_is_editable=activity_data.response_is_editable,
-                    ordering=index + 1,
+                    is_hidden=activity_data.is_hidden,
+                    order=index + 1,
                 )
             )
 
@@ -145,8 +152,10 @@ class ActivityService:
                         config=item.config.dict(),
                     )
                 )
-        activity_schemas = await ActivitiesCRUD().create_many(schemas)
-        activity_items = await ActivityItemService().update_create(
+        activity_schemas = await ActivitiesCRUD(self.session).create_many(
+            schemas
+        )
+        activity_items = await ActivityItemService(self.session).update_create(
             prepared_activity_items
         )
         activities = list()
@@ -168,13 +177,13 @@ class ActivityService:
         deleted_activity_ids = set(all_activities) - set(existing_activities)
 
         if deleted_activity_ids:
-            await ScheduleService().delete_by_activity_ids(
+            await ScheduleService(self.session).delete_by_activity_ids(
                 applet_id=applet_id, activity_ids=list(deleted_activity_ids)
             )
 
         # Create default events for new activities
         if new_activities:
-            await ScheduleService().create_default_schedules(
+            await ScheduleService(self.session).create_default_schedules(
                 applet_id=applet_id,
                 activity_ids=list(new_activities),
                 is_activity=True,
@@ -183,13 +192,17 @@ class ActivityService:
         return activities
 
     async def remove_applet_activities(self, applet_id: uuid.UUID):
-        await ActivityItemService().remove_applet_activity_items(applet_id)
-        await ActivitiesCRUD().delete_by_applet_id(applet_id)
+        await ActivityItemService(self.session).remove_applet_activity_items(
+            applet_id
+        )
+        await ActivitiesCRUD(self.session).delete_by_applet_id(applet_id)
 
     async def get_single_language_by_applet_id(
         self, applet_id: uuid.UUID, language: str
     ) -> list[ActivityDetail]:
-        schemas = await ActivitiesCRUD().get_by_applet_id(applet_id)
+        schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
+            applet_id
+        )
         activities = []
         for schema in schemas:
             activities.append(
@@ -205,7 +218,8 @@ class ActivityService:
                     is_skippable=schema.is_skippable,
                     is_reviewable=schema.is_reviewable,
                     response_is_editable=schema.response_is_editable,
-                    ordering=schema.ordering,
+                    order=schema.order,
+                    is_hidden=schema.is_hidden,
                 )
             )
         return activities
@@ -213,7 +227,9 @@ class ActivityService:
     async def get_single_language_by_id(
         self, id_: uuid.UUID, language: str
     ) -> ActivityExtendedDetail:
-        schema = await ActivitiesCRUD().get_by_id(self.user_id, id_)
+        schema = await ActivitiesCRUD(self.session).get_by_id(
+            self.user_id, id_
+        )
         activity = ActivityExtendedDetail(
             id=schema.id,
             name=schema.name,
@@ -224,13 +240,12 @@ class ActivityService:
             is_skippable=schema.is_skippable,
             is_reviewable=schema.is_reviewable,
             response_is_editable=schema.response_is_editable,
-            ordering=schema.ordering,
+            order=schema.order,
+            is_hidden=schema.is_hidden,
         )
-        activity.items = (
-            await ActivityItemService().get_single_language_by_activity_id(
-                id_, language
-            )
-        )
+        activity.items = await ActivityItemService(
+            self.session
+        ).get_single_language_by_activity_id(id_, language)
         return activity
 
     @staticmethod

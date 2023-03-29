@@ -1,5 +1,5 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestAnswerActivityItems(BaseTest):
@@ -20,7 +20,7 @@ class TestAnswerActivityItems(BaseTest):
     login_url = "/auth/login"
     answer_activity_item_create_url = "/answers/"
 
-    @transaction.rollback
+    @rollback
     async def test_answer_activity_items_create_for_respondent(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -46,7 +46,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-    @transaction.rollback
+    @rollback
     async def test_answer_activity_items_create_for_not_respondent(self):
         await self.client.login(self.login_url, "patric@gmail.com", "Test1234")
 

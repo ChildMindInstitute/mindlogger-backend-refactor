@@ -13,19 +13,22 @@ from apps.themes.errors import ThemeAlreadyExist, ThemeNotFoundError
 
 
 class ThemeService:
-    def __init__(self, user_id: uuid.UUID):
+    def __init__(self, session, user_id: uuid.UUID):
         self.user_id = user_id
+        self.session = session
 
     async def get_users_by_ids(self, ids: list[uuid.UUID]) -> list[Theme]:
-        themes = await ThemesCRUD().get_users_themes_by_ids(self.user_id, ids)
+        themes = await ThemesCRUD(self.session).get_users_themes_by_ids(
+            self.user_id, ids
+        )
         return [Theme.from_orm(theme) for theme in themes]
 
     async def get_by_ids(self, ids: list[uuid.UUID]) -> list[Theme]:
-        themes = await ThemesCRUD().get_by_ids(ids)
+        themes = await ThemesCRUD(self.session).get_by_ids(ids)
         return [Theme.from_orm(theme) for theme in themes]
 
     async def get_by_id(self, theme_id: uuid.UUID) -> Theme:
-        theme = await ThemesCRUD().get_users_theme_by_id(
+        theme = await ThemesCRUD(self.session).get_users_theme_by_id(
             self.user_id, theme_id
         )
         if not theme:
@@ -34,14 +37,14 @@ class ThemeService:
 
     async def create(self, theme_request: ThemeRequest) -> PublicTheme:
         # check name and creator_id combination is unique before save
-        if await ThemesCRUD().get_by_name_and_creator_id(
+        if await ThemesCRUD(self.session).get_by_name_and_creator_id(
             theme_request.name, self.user_id
         ):
             raise ThemeAlreadyExist(
                 f"Theme with name {theme_request.name} already exists"
             )
 
-        theme: Theme = await ThemesCRUD().save(
+        theme: Theme = await ThemesCRUD(self.session).save(
             schema=ThemeCreate(
                 **theme_request.dict(),
                 public=False,
@@ -53,18 +56,22 @@ class ThemeService:
         return PublicTheme(**theme.dict())
 
     async def get_all(self, query_params: QueryParams) -> list[PublicTheme]:
-        themes: list[PublicTheme] = await ThemesCRUD().list(query_params)
+        themes: list[PublicTheme] = await ThemesCRUD(self.session).list(
+            query_params
+        )
 
         return themes
 
     async def delete_by_id(self, theme_id: uuid.UUID) -> None:
-        await ThemesCRUD().delete_by_id(pk=theme_id, creator_id=self.user_id)
+        await ThemesCRUD(self.session).delete_by_id(
+            pk=theme_id, creator_id=self.user_id
+        )
 
     async def update(
         self, theme_id: uuid.UUID, theme_request: ThemeRequest
     ) -> PublicTheme:
 
-        theme: Theme = await ThemesCRUD().update(
+        theme: Theme = await ThemesCRUD(self.session).update(
             pk=theme_id,
             update_schema=ThemeUpdate(
                 **theme_request.dict(), public=False, allow_rename=False

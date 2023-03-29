@@ -9,10 +9,11 @@ from apps.activity_flows.service.flow_item_history import (
 
 
 class FlowHistoryService:
-    def __init__(self, applet_id: uuid.UUID, version: str):
+    def __init__(self, session, applet_id: uuid.UUID, version: str):
         self.applet_id = applet_id
         self.version = version
         self.applet_id_version = f"{applet_id}_{version}"
+        self.session = session
 
     async def add(self, flows: list[FlowFull]):
         flow_items = []
@@ -29,11 +30,11 @@ class FlowHistoryService:
                     description=flow.description,
                     is_single_report=flow.is_single_report,
                     hide_badge=flow.hide_badge,
-                    ordering=flow.ordering,
+                    order=flow.order,
                 )
             )
 
-        await FlowsHistoryCRUD().create_many(schemas)
-        await FlowItemHistoryService(self.applet_id, self.version).add(
-            flow_items
-        )
+        await FlowsHistoryCRUD(self.session).create_many(schemas)
+        await FlowItemHistoryService(
+            self.session, self.applet_id, self.version
+        ).add(flow_items)

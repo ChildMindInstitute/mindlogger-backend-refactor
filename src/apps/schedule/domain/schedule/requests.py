@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import root_validator
+from pydantic import Field, root_validator
 
 from apps.schedule.domain.constants import PeriodicityType
 from apps.schedule.domain.schedule.base import BaseEvent, BasePeriodicity
@@ -16,8 +16,14 @@ class PeriodicityRequest(BasePeriodicity, PublicModel):
 class EventRequest(BaseEvent, PublicModel):
     periodicity: PeriodicityRequest
     respondent_id: uuid.UUID | None
-    activity_id: uuid.UUID | None
-    flow_id: uuid.UUID | None
+    activity_id: uuid.UUID | None = Field(
+        None,
+        description="If flow_id is not set, activity_id must be set.",
+    )
+    flow_id: uuid.UUID | None = Field(
+        None,
+        description="If activity_id is not set, flow_id must be set.",
+    )
 
     @root_validator
     def validate_optional_fields(cls, values):

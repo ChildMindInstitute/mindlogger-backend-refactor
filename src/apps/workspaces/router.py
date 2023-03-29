@@ -7,8 +7,15 @@ from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
 )
-from apps.workspaces.api import user_workspaces, workspace_applets
-from apps.workspaces.domain.workspace import PublicWorkspace
+from apps.workspaces.api import (
+    user_workspaces,
+    workspace_applets,
+    workspace_users_list,
+)
+from apps.workspaces.domain.workspace import (
+    PublicWorkspace,
+    PublicWorkspaceUser,
+)
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
 
@@ -26,7 +33,7 @@ router.get(
 
 # Applets in a specific workspace where owner_id is applet owner
 router.get(
-    "/{owner_id}",
+    "/{owner_id}/applets",
     response_model=ResponseMulti[AppletInfoPublic],
     status_code=status.HTTP_200_OK,
     responses={
@@ -35,3 +42,14 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_applets)
+
+router.get(
+    "/{owner_id}/users",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[PublicWorkspaceUser],
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicWorkspaceUser]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_users_list)

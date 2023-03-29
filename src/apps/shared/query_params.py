@@ -15,7 +15,7 @@ class BaseQueryParams(InternalModel):
     search: str | None = None
     page: int = Field(gt=0, default=1)
     limit: int = Field(gt=0, default=10)
-    ordering: str | None = None
+    order: str | None = None
 
 
 class QueryParams(InternalModel):

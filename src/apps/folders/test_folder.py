@@ -1,5 +1,5 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestFolder(BaseTest):
@@ -13,7 +13,7 @@ class TestFolder(BaseTest):
     detail_url = "/folders/{id}"
     pin_url = f"{detail_url}/pin/{{applet_id}}"
 
-    @transaction.rollback
+    @rollback
     async def test_folder_list(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -32,7 +32,7 @@ class TestFolder(BaseTest):
             == "ecf66358-a717-41a7-8027-807374307731"
         )
 
-    @transaction.rollback
+    @rollback
     async def test_create_folder(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -45,7 +45,7 @@ class TestFolder(BaseTest):
         assert response.json()["result"]["name"] == data["name"]
         assert response.json()["result"]["id"]
 
-    @transaction.rollback
+    @rollback
     async def test_create_folder_with_already_exists(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -60,7 +60,7 @@ class TestFolder(BaseTest):
             == "Folder already exists."
         )
 
-    @transaction.rollback
+    @rollback
     async def test_update_folder_name(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -75,7 +75,7 @@ class TestFolder(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["name"] == data["name"]
 
-    @transaction.rollback
+    @rollback
     async def test_update_folder_with_same_name_success(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -90,7 +90,7 @@ class TestFolder(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["name"] == data["name"]
 
-    @transaction.rollback
+    @rollback
     async def test_update_folder_name_with_already_exists(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -108,7 +108,7 @@ class TestFolder(BaseTest):
             == "Folder already exists."
         )
 
-    @transaction.rollback
+    @rollback
     async def test_delete_folder(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -119,7 +119,7 @@ class TestFolder(BaseTest):
         )
         assert response.status_code == 204, response.json()
 
-    @transaction.rollback
+    @rollback
     async def test_delete_not_belonging_folder(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -134,7 +134,7 @@ class TestFolder(BaseTest):
             response.json()["result"][0]["message"]["en"] == "Access denied."
         )
 
-    @transaction.rollback
+    @rollback
     async def test_delete_not_empty_folder(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -149,7 +149,7 @@ class TestFolder(BaseTest):
             == "Folder has applets, move applets from folder to delete it."
         )
 
-    @transaction.rollback
+    @rollback
     async def test_pin_applet(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -164,7 +164,7 @@ class TestFolder(BaseTest):
 
         assert response.status_code == 200, response.json()
 
-    @transaction.rollback
+    @rollback
     async def test_unpin_applet(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

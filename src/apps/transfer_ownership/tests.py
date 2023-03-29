@@ -1,6 +1,6 @@
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
+from infrastructure.database import rollback
 
 
 class TestTransfer(BaseTest):
@@ -16,7 +16,7 @@ class TestTransfer(BaseTest):
     transfer_url = "/applets/{applet_id}/transferOwnership"
     response_url = "/applets/{applet_id}/transferOwnership/{key}"
 
-    @transaction.rollback
+    @rollback
     async def test_initiate_transfer(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -35,7 +35,7 @@ class TestTransfer(BaseTest):
         assert TestMail.mails[0].recipients == [data["email"]]
         TestMail.clear_mails()
 
-    @transaction.rollback
+    @rollback
     async def test_decline_transfer(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await self.client.delete(
@@ -47,7 +47,7 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 204
 
-    @transaction.rollback
+    @rollback
     async def test_accept_transfer(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await self.client.post(

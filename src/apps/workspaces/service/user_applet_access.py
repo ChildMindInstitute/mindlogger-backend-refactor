@@ -3,29 +3,25 @@ import uuid
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.domain import InvitationDetailGeneric
-from apps.shared.query_params import QueryParams
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
 
-from apps.workspaces.domain.user_applet_access import AppletUser
-
 
 class UserAppletAccessService:
-    def __init__(self, user_id: uuid.UUID, applet_id: uuid.UUID):
+    def __init__(self, session, user_id: uuid.UUID, applet_id: uuid.UUID):
         self._user_id = user_id
         self._applet_id = applet_id
+        self.session = session
 
     async def add_role(self, role: Role) -> UserAppletAccess:
-        access_schema = (
-            await UserAppletAccessCRUD().get_applet_role_by_user_id(
-                self._applet_id, self._user_id, role
-            )
-        )
+        access_schema = await UserAppletAccessCRUD(
+            self.session
+        ).get_applet_role_by_user_id(self._applet_id, self._user_id, role)
         if access_schema:
             return UserAppletAccess.from_orm(access_schema)
 
-        access_schema = await UserAppletAccessCRUD().save(
+        access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
                 user_id=self._user_id,
                 applet_id=self._applet_id,
@@ -40,15 +36,15 @@ class UserAppletAccessService:
     async def add_role_by_invitation(
         self, invitation: InvitationDetailGeneric
     ):
-        owner_access = await UserAppletAccessCRUD().get_applet_owner(
-            invitation.applet_id
-        )
+        owner_access = await UserAppletAccessCRUD(
+            self.session
+        ).get_applet_owner(invitation.applet_id)
         if invitation.role in [Role.RESPONDENT, Role.REVIEWER]:
             # TODO: Fix typing
             meta = invitation.meta.dict(by_alias=True)  # type: ignore
         else:
             meta = {}
-        access_schema = await UserAppletAccessCRUD().save(
+        access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
                 user_id=self._user_id,
                 applet_id=invitation.applet_id,
@@ -61,10 +57,10 @@ class UserAppletAccessService:
         return UserAppletAccess.from_orm(access_schema)
 
     async def add_role_by_private_invitation(self, role: Role):
-        owner_access = await UserAppletAccessCRUD().get_applet_owner(
-            self._applet_id
-        )
-        access_schema = await UserAppletAccessCRUD().save(
+        owner_access = await UserAppletAccessCRUD(
+            self.session
+        ).get_applet_owner(self._applet_id)
+        access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
                 user_id=self._user_id,
                 applet_id=self._applet_id,
@@ -77,9 +73,9 @@ class UserAppletAccessService:
         return UserAppletAccess.from_orm(access_schema)
 
     async def get_roles(self) -> list[str]:
-        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
-            self._user_id, self._applet_id
-        )
+        roles = await UserAppletAccessCRUD(
+            self.session
+        ).get_user_roles_to_applet(self._user_id, self._applet_id)
         return roles
 
     async def get_admins_role(self) -> Role | None:
@@ -90,7 +86,7 @@ class UserAppletAccessService:
         - Transfer ownership
         - All permission
         """
-        access = await UserAppletAccessCRUD().get(
+        access = await UserAppletAccessCRUD(self.session).get(
             self._user_id, self._applet_id, Role.ADMIN
         )
         return getattr(access, "role", None)
@@ -104,7 +100,7 @@ class UserAppletAccessService:
         - View all managers/coordinators/editors/reviewers
         - Change roles of managers(for admin)/coordinators/editors/reviewers
         """
-        access = await UserAppletAccessCRUD().get_by_roles(
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(
             self._user_id, self._applet_id, [Role.ADMIN, Role.MANAGER]
         )
         return getattr(access, "role", None)
@@ -120,7 +116,7 @@ class UserAppletAccessService:
         - Invite new reviewer to specific respondent
         - Set schedule/notifications for respondents
         """
-        access = await UserAppletAccessCRUD().get_by_roles(
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(
             self._user_id,
             self._applet_id,
             [Role.ADMIN, Role.MANAGER, Role.COORDINATOR],
@@ -137,7 +133,7 @@ class UserAppletAccessService:
         - Can view all applets
         # TODO: which applets, assigned or all applets in organization
         """
-        access = await UserAppletAccessCRUD().get_by_roles(
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(
             self._user_id,
             self._applet_id,
             [Role.ADMIN, Role.MANAGER, Role.EDITOR],
@@ -152,7 +148,7 @@ class UserAppletAccessService:
         - View/Export all respondents' data
         - Delete specific respondents' data
         """
-        access = await UserAppletAccessCRUD().get_by_roles(
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(
             self._user_id, self._applet_id, [Role.ADMIN, Role.MANAGER]
         )
         return getattr(access, "role", None)
@@ -166,7 +162,7 @@ class UserAppletAccessService:
         - View assigned respondents' data
         - Export assigned respondents' data
         """
-        access = await UserAppletAccessCRUD().get_by_roles(
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(
             self._user_id,
             self._applet_id,
             [Role.ADMIN, Role.MANAGER, Role.REVIEWER],
@@ -180,7 +176,7 @@ class UserAppletAccessService:
         Permissions:
         - Answer to applet
         """
-        access = await UserAppletAccessCRUD().get_by_roles(
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(
             self._user_id,
             self._applet_id,
             [
@@ -193,16 +189,3 @@ class UserAppletAccessService:
             ],
         )
         return getattr(access, "role", None)
-
-    async def get_applet_users(
-        self, query_params: QueryParams
-    ) -> list[AppletUser]:
-        users = await UserAppletAccessCRUD().get_applet_users(
-            self._applet_id, query_params
-        )
-        return users
-
-    async def get_applet_users_count(self, query_params: QueryParams):
-        return await UserAppletAccessCRUD().get_applet_users_count(
-            self._applet_id, query_params
-        )

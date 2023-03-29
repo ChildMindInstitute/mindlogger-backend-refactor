@@ -1,6 +1,5 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import transaction
-import pytest
+from infrastructure.database import rollback
 
 
 class TestApplet(BaseTest):
@@ -20,14 +19,13 @@ class TestApplet(BaseTest):
     login_url = "/auth/login"
     applet_list_url = "applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
-    applet_users_url = f"{applet_list_url}/{{pk}}/users"
     applet_unique_name_url = f"{applet_list_url}/unique_name"
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
 
     @pytest.mark.run
-    @transaction.rollback
+    @rollback
     async def test_creating_applet(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -125,7 +123,7 @@ class TestApplet(BaseTest):
         print(response.json())
         assert response.status_code == 201, response.json()
 
-    @transaction.rollback
+    @rollback
     async def test_create_duplicate_name_applet(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -207,7 +205,7 @@ class TestApplet(BaseTest):
             == "Applet already exists."
         )
 
-    @transaction.rollback
+    @rollback
     async def test_update_applet(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -311,7 +309,7 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == 200, response.json()
 
-    @transaction.rollback
+    @rollback
     async def test_applet_list(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -333,7 +331,7 @@ class TestApplet(BaseTest):
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 
-    @transaction.rollback
+    @rollback
     async def test_applet_list_by_filters(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -349,7 +347,7 @@ class TestApplet(BaseTest):
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 
-    @transaction.rollback
+    @rollback
     async def test_applet_detail(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -359,7 +357,6 @@ class TestApplet(BaseTest):
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
-
         assert response.status_code == 200
         result = response.json()["result"]
         assert result["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
@@ -369,7 +366,7 @@ class TestApplet(BaseTest):
         assert len(result["activityFlows"][0]["activityIds"]) == 1
         assert len(result["activityFlows"][1]["activityIds"]) == 1
 
-    @transaction.rollback
+    @rollback
     async def test_creating_applet_history(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -458,7 +455,7 @@ class TestApplet(BaseTest):
         assert len(versions) == 1
         assert versions[0]["version"] == version
 
-    @transaction.rollback
+    @rollback
     async def test_updating_applet_history(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -570,7 +567,7 @@ class TestApplet(BaseTest):
         applet = response.json()["result"]
         assert applet["version"] == version
 
-    @transaction.rollback
+    @rollback
     async def test_history_changes(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -754,16 +751,3 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["result"]["name"] == "Applet 1 (1)"
-
-    async def test_get_applet_users(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.get(
-            self.applet_users_url.format(
-                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            )
-        )
-
-        assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 4
