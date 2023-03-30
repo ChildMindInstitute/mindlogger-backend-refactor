@@ -129,7 +129,7 @@ class TestFolder(BaseTest):
             self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307733")
         )
 
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 403, response.json()
         assert (
             response.json()["result"][0]["message"]["en"] == "Access denied."
         )
