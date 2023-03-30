@@ -1,8 +1,8 @@
 """activity item fields fix
 
 Revision ID: 343916a84a24
-Revises: 8595f5e743f4
-Create Date: 2023-03-24 22:31:19.491780
+Revises: 9f910258cf25
+Create Date: 2023-03-30 22:31:19.491780
 
 """
 import sqlalchemy as sa
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "343916a84a24"
-down_revision = "8595f5e743f4"
+down_revision = "9f910258cf25"
 branch_labels = None
 depends_on = None
 
