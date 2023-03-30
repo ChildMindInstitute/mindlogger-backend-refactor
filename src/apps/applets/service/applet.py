@@ -325,6 +325,7 @@ class AppletService:
         await AppletsCRUD(self.session).set_applets_folder(applet_id, None)
 
     async def _validate_applet(self, applet_id: uuid.UUID):
+        await AppletsCRUD(self.session).get_by_id(applet_id)
         access = await UserAppletAccessCRUD(self.session).get_applet_owner(
             applet_id
         )
