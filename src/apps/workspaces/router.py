@@ -9,12 +9,9 @@ from apps.shared.domain.response import (
 )
 from apps.workspaces.api import (
     applet_remove_respondent_access,
-    (
     user_workspaces,
-   
     workspace_applets,
     workspace_remove_manager_access,
-),
     workspace_users_list,
 )
 from apps.workspaces.domain.workspace import (
