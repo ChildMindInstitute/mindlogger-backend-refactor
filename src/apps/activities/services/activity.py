@@ -4,6 +4,7 @@ from apps.activities.crud import ActivitiesCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain.activity import (
     ActivityDetail,
+    ActivityDuplicate,
     ActivityExtendedDetail,
 )
 from apps.activities.domain.activity_create import (
@@ -250,6 +251,31 @@ class ActivityService:
         for item in items:
             activity_map[item.activity_id].items.append(item)
 
+        return activities
+
+    async def get_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> list[ActivityDuplicate]:
+        schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
+            applet_id
+        )
+        activities = []
+        for schema in schemas:
+            activities.append(
+                ActivityDuplicate(
+                    id=schema.id,
+                    name=schema.name,
+                    description=schema.description,
+                    splash_screen=schema.splash_screen,
+                    image=schema.image,
+                    show_all_at_once=schema.show_all_at_once,
+                    is_skippable=schema.is_skippable,
+                    is_reviewable=schema.is_reviewable,
+                    response_is_editable=schema.response_is_editable,
+                    order=schema.order,
+                    is_hidden=schema.is_hidden,
+                )
+            )
         return activities
 
     async def get_single_language_by_id(

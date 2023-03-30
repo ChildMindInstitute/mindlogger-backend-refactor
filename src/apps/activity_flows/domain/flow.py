@@ -30,6 +30,10 @@ class FlowDetail(Flow):
     activity_ids: list[uuid.UUID] = Field(default_factory=list)
 
 
+class FlowDuplicate(Flow):
+    activity_ids: list[uuid.UUID] = Field(default_factory=list)
+
+
 class FlowDetailPublic(FlowPublic):
     description: str  # type: ignore[assignment]
     activity_ids: list[uuid.UUID] = Field(default_factory=list)

@@ -3,7 +3,18 @@ import os
 import re
 import uuid
 
+from apps.activities.crud import ActivityItemsCRUD
+from apps.activities.db.schemas import ActivityItemSchema
+from apps.activities.domain.activity import ActivityDuplicate
+from apps.activities.domain.activity_create import (
+    ActivityCreate,
+    ActivityItemCreate,
+)
 from apps.activities.services.activity import ActivityService
+from apps.activity_flows.crud import FlowItemsCRUD
+from apps.activity_flows.db.schemas import ActivityFlowItemSchema
+from apps.activity_flows.domain.flow import FlowDuplicate
+from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.service.flow import FlowService
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.db.schemas import AppletSchema
@@ -14,8 +25,15 @@ from apps.applets.domain import (
     AppletName,
     Role,
 )
-from apps.applets.domain.applet import Applet, AppletDataRetention
-from apps.applets.domain.applet_create import AppletCreate
+from apps.applets.domain.applet import (
+    Applet,
+    AppletDataRetention,
+    AppletDuplicate,
+)
+from apps.applets.domain.applet_create import (
+    AppletCreate,
+    AppletDuplicatePassword,
+)
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applet_update import AppletUpdate
@@ -129,6 +147,96 @@ class AppletService:
         ).add_history(self.user_id, applet)
 
         return applet
+
+    async def duplicate(
+        self, applet_exist: AppletDuplicate, password: AppletDuplicatePassword
+    ) -> AppletCreate:
+        activities = list()
+        for activity in applet_exist.activities:
+            activity_items: list[ActivityItemSchema] = await ActivityItemsCRUD(
+                self.session
+            ).get_by_activity_id(activity.id)
+            items = list()
+            for activity_item in activity_items:
+                items.append(
+                    ActivityItemCreate(
+                        header_image=activity_item.header_image,
+                        question=activity_item.question,
+                        response_type=activity_item.response_type,
+                        answers=activity_item.answers,
+                        config=activity_item.config,
+                        skippable_item=activity_item.skippable_item,
+                        remove_availability_to_go_back=(
+                            activity_item.remove_availability_to_go_back
+                        ),
+                    )
+                )
+            activities.append(
+                ActivityCreate(
+                    name=activity.name,
+                    # Fixme: You need to figure it out - because according
+                    #  to the applet creation scheme, the theme ID
+                    #  is transferred to "key".
+                    #  Looks weird!
+                    key=applet_exist.theme_id,
+                    description=activity.description,
+                    splash_screen=activity.splash_screen,
+                    image=activity.image,
+                    show_all_at_once=activity.show_all_at_once,
+                    is_skippable=activity.is_skippable,
+                    is_reviewable=activity.is_reviewable,
+                    response_is_editable=activity.response_is_editable,
+                    items=items,
+                    is_hidden=activity.is_hidden,
+                )
+            )
+
+        activity_flows = list()
+        for activity_flow in applet_exist.activity_flows:
+            flow_items: list[ActivityFlowItemSchema] = await FlowItemsCRUD(
+                self.session
+            ).get_by_activity_flow_id(activity_flow.id)
+            items_flow = list()
+            for _ in flow_items:
+                items_flow.append(
+                    FlowItemCreate(
+                        # Fixme: You need to figure it out - because according
+                        #  to the applet creation scheme, the theme ID
+                        #  is transferred to "activity_key".
+                        #  Looks weird!
+                        activity_key=applet_exist.theme_id,
+                    )
+                )
+
+            activity_flows.append(
+                FlowCreate(
+                    name=activity_flow.name,
+                    description=activity_flow.description,
+                    is_single_report=activity_flow.is_single_report,
+                    hide_badge=activity_flow.hide_badge,
+                    is_hidden=activity_flow.is_hidden,
+                    items=items_flow,
+                )
+            )
+
+        applet_internal = AppletCreate(
+            display_name=f"{applet_exist.display_name} Copy",
+            description=applet_exist.description,
+            about=applet_exist.about,
+            image=applet_exist.image,
+            watermark=applet_exist.watermark,
+            theme_id=applet_exist.theme_id,
+            report_server_ip=applet_exist.report_server_ip,
+            report_public_key=applet_exist.report_public_key,
+            report_recipients=applet_exist.report_recipients,
+            report_include_user_id=applet_exist.report_include_user_id,
+            report_include_case_id=applet_exist.report_include_case_id,
+            report_email_body=applet_exist.report_email_body,
+            password=password.password,
+            activities=activities,
+            activity_flows=activity_flows,
+        )
+        return applet_internal
 
     async def _validate_applet_name(
         self, display_name: str, exclude_by_id: uuid.UUID | None = None
@@ -283,6 +391,51 @@ class AppletService:
         applet.activity_flows = await FlowService(
             self.session
         ).get_single_language_by_applet_id(applet_id, language)
+        return applet
+
+    async def get_by_id(self, applet_id: uuid.UUID) -> AppletDuplicate:
+        applet_exists = await AppletsCRUD(self.session).exist_by_id(applet_id)
+        if not applet_exists:
+            raise AppletNotFoundError(key="id", value=str(applet_id))
+        schema = await AppletsCRUD(self.session).get_applet_by_roles(
+            self.user_id, applet_id, Role.as_list()
+        )
+        theme = None
+        if not schema:
+            raise AppletAccessDenied()
+        if schema.theme_id:
+            theme = await ThemeService(self.session, self.user_id).get_by_id(
+                schema.theme_id
+            )
+        applet = AppletDuplicate(
+            id=schema.id,
+            display_name=schema.display_name,
+            version=schema.version,
+            description=schema.description,
+            about=schema.about,
+            image=schema.image,
+            theme=theme.dict() if theme else None,
+            watermark=schema.watermark,
+            theme_id=schema.theme_id,
+            report_server_ip=schema.report_server_ip,
+            report_public_key=schema.report_public_key,
+            report_recipients=schema.report_recipients,
+            report_include_user_id=schema.report_include_user_id,
+            report_include_case_id=schema.report_include_case_id,
+            report_email_body=schema.report_email_body,
+            created_at=schema.created_at,
+            updated_at=schema.updated_at,
+            retention_period=schema.retention_period,
+            retention_type=schema.retention_type,
+        )
+        applet.activities: list[  # type: ignore[misc]
+            ActivityDuplicate
+        ] = await ActivityService(self.session, self.user_id).get_by_applet_id(
+            applet_id
+        )
+        applet.activity_flows: list[  # type: ignore[misc]
+            FlowDuplicate
+        ] = await FlowService(self.session).get_by_applet_id(applet_id)
         return applet
 
     def get_prev_version(self, version: str):

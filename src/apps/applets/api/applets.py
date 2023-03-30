@@ -13,9 +13,13 @@ from apps.applets.domain import (
 from apps.applets.domain.applet import (
     AppletDataRetention,
     AppletDetailPublic,
+    AppletDuplicate,
     AppletInfoPublic,
 )
-from apps.applets.domain.applet_create import AppletCreate
+from apps.applets.domain.applet_create import (
+    AppletCreate,
+    AppletDuplicatePassword,
+)
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applet_update import AppletUpdate
 from apps.applets.domain.applets import public_detail, public_history_detail
@@ -108,11 +112,19 @@ async def applet_update(
 async def applet_duplicate(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    schema: AppletCreate = Body(...),
+    password: AppletDuplicatePassword = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[public_detail.Applet]:
     async with atomic(session):
-        applet = await AppletService(session, user.id).create(schema)
+        applet_exist: AppletDuplicate = await AppletService(
+            session, user.id
+        ).get_by_id(applet_id)
+
+        applet_internal: AppletCreate = await AppletService(
+            session, user.id
+        ).duplicate(applet_exist, password)
+
+        applet = await AppletService(session, user.id).create(applet_internal)
     return Response(result=public_detail.Applet(**applet.dict()))
 
 

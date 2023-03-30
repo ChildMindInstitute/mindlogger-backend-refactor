@@ -23,6 +23,20 @@ class Activity(InternalModel):
     is_hidden: bool | None = False
 
 
+class ActivityDuplicate(InternalModel):
+    id: uuid.UUID
+    name: str
+    description: dict[str, str] = Field(default_factory=dict)
+    splash_screen: str = ""
+    image: str = ""
+    show_all_at_once: bool = False
+    is_skippable: bool = False
+    is_reviewable: bool = False
+    response_is_editable: bool = False
+    order: int
+    is_hidden: bool | None = False
+
+
 class ActivityPublic(PublicModel):
     id: uuid.UUID
     name: str

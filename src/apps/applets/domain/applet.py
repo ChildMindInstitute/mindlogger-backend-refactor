@@ -6,8 +6,13 @@ from pydantic import Field, PositiveInt
 from apps.activities.domain.activity import (
     ActivityDetail,
     ActivityDetailPublic,
+    ActivityDuplicate,
 )
-from apps.activity_flows.domain.flow import FlowDetail, FlowDetailPublic
+from apps.activity_flows.domain.flow import (
+    FlowDetail,
+    FlowDetailPublic,
+    FlowDuplicate,
+)
 from apps.shared.domain import InternalModel, PublicModel
 from apps.workspaces.domain.constants import DataRetention
 
@@ -87,6 +92,15 @@ class AppletDetail(Applet):
 
     activities: list[ActivityDetail] = Field(default_factory=list)
     activity_flows: list[FlowDetail] = Field(default_factory=list)
+    theme: Theme | None = None
+
+
+class AppletDuplicate(Applet):
+    retention_period: PositiveInt | None = None
+    retention_type: DataRetention | None = None
+
+    activities: list[ActivityDuplicate] = Field(default_factory=list)
+    activity_flows: list[FlowDuplicate] = Field(default_factory=list)
     theme: Theme | None = None
 
 
