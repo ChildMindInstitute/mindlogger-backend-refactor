@@ -24,3 +24,7 @@ class AppletCreate(InternalModel):
 
     activities: list[ActivityCreate]
     activity_flows: list[FlowCreate]
+
+
+class AppletDuplicatePassword(InternalModel):
+    password: str

@@ -7,6 +7,7 @@ __all__ = [
     "AppletsFolderAccessDenied",
     "AppletLinkNotFoundError",
     "AppletLinkAlreadyExist",
+    "AppletPasswordValidationError",
 ]
 
 

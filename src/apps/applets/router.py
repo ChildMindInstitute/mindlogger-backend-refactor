@@ -104,7 +104,9 @@ router.post(
 )(applet_create)
 
 router.post(
-    "/duplicate/{applet_id}",
+    "/{applet_id}/duplicate",
+    description="""This endpoint using for duplicate existing applet""",
+    response_model_by_alias=True,
     response_model=Response[public_detail.Applet],
     status_code=status.HTTP_201_CREATED,
     responses={

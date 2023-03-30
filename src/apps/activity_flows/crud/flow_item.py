@@ -48,3 +48,17 @@ class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
         result = await self._execute(query)
         results = result.scalars().all()
         return results
+
+    async def get_by_activity_flow_id(
+        self, activity_flow_id
+    ) -> list[ActivityFlowItemSchema]:
+        query = select(ActivityFlowItemSchema)
+        query = query.where(
+            ActivityFlowItemSchema.activity_flow_id == activity_flow_id
+        )
+        query = query.order_by(
+            ActivityFlowItemSchema.order.asc(),
+        )
+        result = await self._execute(query)
+        results = result.scalars().all()
+        return results
