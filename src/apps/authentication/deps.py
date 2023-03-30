@@ -12,7 +12,6 @@ from apps.authentication.errors import AuthenticationError
 from apps.authentication.services import AuthenticationService
 from apps.users.crud import UsersCRUD
 from apps.users.domain import User
-from apps.users.errors import UserNotFound
 from config import settings
 from infrastructure.cache import CacheNotFound
 from infrastructure.database import atomic, session_manager
@@ -40,11 +39,7 @@ async def get_current_user(
         except (JWTError, ValidationError):
             raise AuthenticationError
 
-        if not (
-            user := await UsersCRUD(session).get_by_id(id_=token_data.sub)
-        ):
-            raise UserNotFound()
-
+        user = await UsersCRUD(session).get_by_id(id_=token_data.sub)
         await UsersCRUD(session).update_last_seen_by_id(token_data.sub)
 
         # Check if the token is in the blacklist

@@ -354,7 +354,8 @@ class TestInvite(BaseTest):
 
         assert response.status_code == 422
         assert (
-            response.json()["result"][0]["message"]["en"] == "Access denied."
+            response.json()["result"][0]["message"]["en"]
+            == "You do not have access to send invitation."
         )
 
     @rollback
@@ -378,7 +379,8 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 422
         assert (
-            response.json()["result"][0]["message"]["en"] == "Access denied."
+            response.json()["result"][0]["message"]["en"]
+            == "You do not have access to send invitation."
         )
 
     @rollback

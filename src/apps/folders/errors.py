@@ -1,4 +1,4 @@
-from apps.shared.errors import ValidationError
+from apps.shared.errors import AccessDeniedError, ValidationError
 
 __all__ = [
     "FolderAlreadyExist",
@@ -28,7 +28,7 @@ class FolderIsNotEmpty(ValidationError):
         super().__init__(message=message)
 
 
-class FolderAccessDenied(ValidationError):
+class FolderAccessDenied(AccessDeniedError):
     def __init__(self, *_, message="Access denied.") -> None:
         super().__init__(message=message)
 
