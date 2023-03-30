@@ -5,7 +5,7 @@ from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
 
-from apps.alerts.db.schemas import AlertConfigSchema, AlertSchema
+from apps.alerts.db.schemas import AlertSchema
 from apps.alerts.domain.alert import Alert, AlertCreate, AlertPublic
 from apps.alerts.errors import AlertIsDeletedError, AlertNotFoundError
 from apps.applets.db.schemas import AppletSchema
@@ -74,26 +74,27 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         """Get alerts by applet_id from the database"""
 
         # Get alert from the database
-        query: Query = select(
-            self.schema_class,
-            AlertConfigSchema.alert_message.label("alert_message"),
-            AppletSchema.display_name.label("applet_name"),
-            UserAppletAccessSchema.meta.label("meta"),
-        )
-        query = query.where(self.schema_class.applet_id == applet_id)
-        query = query.join(
-            AlertConfigSchema.alert_message,
-            AlertConfigSchema.id == self.schema_class.alert_config_id,
-        )
-        query = query.join(
-            AppletSchema.display_name,
-            AppletSchema.id == self.schema_class.applet_id,
-        )
-        query = query.join(
-            UserAppletAccessSchema.meta,
-            UserAppletAccessSchema.role == Role.RESPONDENT,
-            UserAppletAccessSchema.user_id == self.schema_class.respondent_id,
-            UserAppletAccessSchema.applet_id == self.schema_class.applet_id,
+        query: Query = (
+            select(
+                self.schema_class,
+                AppletSchema.display_name.label("applet_name"),
+                UserAppletAccessSchema.meta.label("meta"),
+            )
+            .where(self.schema_class.applet_id == applet_id)
+            .join(
+                AppletSchema.display_name,
+                AppletSchema.id == self.schema_class.applet_id,
+            )
+            .join(
+                UserAppletAccessSchema.meta,
+                UserAppletAccessSchema.role == Role.RESPONDENT,
+            )
+            .where(
+                UserAppletAccessSchema.user_id
+                == self.schema_class.respondent_id,
+                UserAppletAccessSchema.applet_id
+                == self.schema_class.applet_id,
+            )
         )
 
         if query_params.search:
@@ -110,12 +111,12 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         query = paging(query, query_params.page, query_params.limit)
         result: Result = await self._execute(query)
         results = []
-        for alert, alert_message, applet_name, meta in result.all():
+        for alert, applet_name, meta in result.all():
             results.append(
                 AlertPublic(
                     id=alert.id,
                     is_watched=alert.is_watched,
-                    alert_message=alert_message,
+                    alert_message=alert.alert_message,
                     respondent_id=alert.respondent_id,
                     alert_config_id=alert.alert_config_id,
                     applet_id=alert.applet_id,
@@ -198,6 +199,8 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
                     respondent_id=schema.respondent_id,
                     alert_config_id=schema.alert_config_id,
                     applet_id=schema.applet_id,
+                    alert_message=schema.alert_message,
+                    specific_answer=schema.specific_answer,
                     activity_item_histories_id_version=(
                         schema.activity_item_histories_id_version
                     ),

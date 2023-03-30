@@ -17,7 +17,7 @@ class FlowItemHistoryService:
         for item in flow_items:
             schemas.append(
                 ActivityFlowItemHistorySchema(
-                    ordering=item.ordering,
+                    order=item.order,
                     id_version=f"{item.id}_{self.version}",
                     id=item.id,
                     activity_flow_id=f"{item.activity_flow_id}_{self.version}",

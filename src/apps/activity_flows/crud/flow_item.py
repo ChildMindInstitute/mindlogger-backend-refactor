@@ -43,7 +43,7 @@ class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
         )
         query = query.where(AppletSchema.id == applet_id)
         query = query.order_by(
-            ActivityFlowItemSchema.ordering.asc(),
+            ActivityFlowItemSchema.order.asc(),
         )
         result = await self._execute(query)
         results = result.scalars().all()

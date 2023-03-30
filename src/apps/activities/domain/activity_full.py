@@ -13,7 +13,7 @@ class ActivityItemFull(InternalModel):
     response_type: str
     answers: list
     config: dict = dict()
-    ordering: int
+    order: int
     skippable_item: bool = False
     remove_availability_to_go_back: bool = False
 
@@ -31,4 +31,4 @@ class ActivityFull(InternalModel):
     response_is_editable: bool = False
     items: list[ActivityItemFull] = Field(default_factory=list)
     is_hidden: bool = False
-    ordering: int
+    order: int

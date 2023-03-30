@@ -22,7 +22,7 @@
       ],
       "skippable_item": false,
       "remove_availability_to_go_back": false,
-      "ordering": 1.0,
+      "order": 1.0,
       "id_version": "a18d3409-2c96-4a5e-a1f3-1c1c14be0011_1.0.0"
     }
   },
@@ -49,7 +49,7 @@
       ],
       "skippable_item": false,
       "remove_availability_to_go_back": false,
-      "ordering": 1.0,
+      "order": 1.0,
       "id_version": "a18d3409-2c96-4a5e-a1f3-1c1c14be0013_1.0.0"
     }
   }

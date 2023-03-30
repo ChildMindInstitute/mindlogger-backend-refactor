@@ -17,7 +17,7 @@ class ActivityItem(InternalModel):
     response_type: ResponseType
     answers: dict | list | None
     config: ResponseTypeConfig = Field(default_factory=TextConfig)
-    ordering: int
+    order: int
 
 
 class ActivityItemPublic(PublicModel):
@@ -26,7 +26,7 @@ class ActivityItemPublic(PublicModel):
     response_type: ResponseType
     answers: dict | list | None
     config: ResponseTypeConfig = Field(default_factory=TextConfig)
-    ordering: int
+    order: int
 
 
 class ActivityItemDetail(ActivityItem):

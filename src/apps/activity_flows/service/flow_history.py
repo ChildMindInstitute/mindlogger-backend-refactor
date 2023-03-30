@@ -30,7 +30,7 @@ class FlowHistoryService:
                     description=flow.description,
                     is_single_report=flow.is_single_report,
                     hide_badge=flow.hide_badge,
-                    ordering=flow.ordering,
+                    order=flow.order,
                 )
             )
 
