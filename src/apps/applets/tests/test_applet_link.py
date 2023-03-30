@@ -66,8 +66,7 @@ class TestAppletLink(BaseTest):
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2"
             )
         )
-        assert response.status_code == 200
-        assert response.json()["result"]["link"] is None
+        assert response.status_code == 404
 
     @rollback
     async def test_applet_access_link_delete(self):
@@ -87,5 +86,4 @@ class TestAppletLink(BaseTest):
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
-        assert response.status_code == 200
-        assert response.json()["result"]["link"] is None
+        assert response.status_code == 404

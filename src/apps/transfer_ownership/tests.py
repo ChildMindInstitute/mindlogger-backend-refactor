@@ -1,5 +1,3 @@
-import pytest
-
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -65,7 +63,6 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 204
 
-    @pytest.mark.main
     @rollback
     async def test_decline_wrong_transfer(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
@@ -111,7 +108,6 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 200
 
-    @pytest.mark.main
     @rollback
     async def test_accept_wrong_transfer(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")

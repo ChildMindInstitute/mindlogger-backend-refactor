@@ -20,6 +20,7 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applet_update import AppletUpdate
 from apps.applets.errors import (
+    AccessLinkDoesNotExistError,
     AppletAlreadyExist,
     AppletLinkAlreadyExist,
     AppletNotFoundError,
@@ -379,11 +380,12 @@ class AppletService:
     async def get_access_link(self, applet_id: uuid.UUID) -> AppletLink:
         await self._validate_applet_access(applet_id)
         applet_instance = await AppletsCRUD(self.session).get_by_id(applet_id)
-        link = None
         if applet_instance.link:
             link = self._generate_link_url(
                 applet_instance.require_login, applet_instance.link
             )
+        else:
+            raise AccessLinkDoesNotExistError
 
         return AppletLink(link=link)
 
