@@ -35,6 +35,19 @@ class TestAppletFolder(BaseTest):
         assert str(applet.folder_id) == "ecf66358-a717-41a7-8027-807374307731"
 
     @rollback
+    async def test_invalid_applet_move_to_folder(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        data = dict(
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15a1",
+            folder_id="ecf66358-a717-41a7-8027-807374307731",
+        )
+
+        response = await self.client.post(self.set_folder_url, data)
+        assert response.status_code == 404
+
+    @rollback
     async def test_move_to_not_accessible_folder(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -45,7 +58,7 @@ class TestAppletFolder(BaseTest):
         )
 
         response = await self.client.post(self.set_folder_url, data)
-        assert response.status_code == 422
+        assert response.status_code == 403
         assert (
             response.json()["result"][0]["message"]["en"]
             == "Access denied to folder."
@@ -62,7 +75,7 @@ class TestAppletFolder(BaseTest):
         )
 
         response = await self.client.post(self.set_folder_url, data)
-        assert response.status_code == 422
+        assert response.status_code == 403
         assert (
             response.json()["result"][0]["message"]["en"]
             == "Access denied to applet."

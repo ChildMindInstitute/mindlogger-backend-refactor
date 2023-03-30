@@ -1,3 +1,5 @@
+import asyncio
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -309,6 +311,28 @@ class TestApplet(BaseTest):
             response.json()["result"][2]["id"]
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
+
+    @rollback
+    async def test_applet_list_with_invalid_token(self):
+        from config import settings
+
+        settings.authentication.access_token.expiration = 0.05
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        await asyncio.sleep(4)
+        response = await self.client.get(self.applet_list_url)
+
+        assert response.status_code == 401, response.json()
+
+    @rollback
+    async def test_applet_list_with_expired_token(self):
+        response = await self.client.get(
+            self.applet_list_url,
+            headers=dict(Authorization="Bearer invalid_token"),
+        )
+
+        assert response.status_code == 401, response.json()
 
     @rollback
     async def test_applet_list_by_filters(self):

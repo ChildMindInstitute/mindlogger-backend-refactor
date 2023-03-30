@@ -11,6 +11,8 @@ from apps.workspaces.domain.workspace import PublicWorkspace
 
 __all__ = ["UserAccessService"]
 
+from apps.workspaces.errors import WorkspaceDoesNotExistError
+
 
 class UserAccessService:
     def __init__(self, session, user_id: uuid.UUID):
@@ -111,3 +113,10 @@ class UserAccessService:
             for key, val in values.items():
                 return val
             return ""
+
+    async def check_access(self, owner_id: uuid.UUID):
+        has_access = await UserAppletAccessCRUD(
+            self.session
+        ).check_access_by_user_and_owner(self._user_id, owner_id)
+        if not has_access:
+            raise WorkspaceDoesNotExistError

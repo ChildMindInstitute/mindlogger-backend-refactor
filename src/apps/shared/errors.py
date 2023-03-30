@@ -51,6 +51,14 @@ class ValidationError(BaseError):
         )
 
 
+class AccessDeniedError(BaseError):
+    def __init__(self, *_, message="Access denied") -> None:
+        super().__init__(
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+
 class NotFoundError(BaseError):
     def __init__(self, *_, message="Not found") -> None:
         super().__init__(
