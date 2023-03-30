@@ -93,5 +93,5 @@ class TestWorkspaces(BaseTest):
         response = await self.client.post(
             self.remove_respondent_access, data=data
         )
-
+        print(response.json())
         assert response.status_code == 200
