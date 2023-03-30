@@ -155,28 +155,3 @@ class AnswerService:
             await AnswerFlowItemsCRUD(self.session).create_many(
                 activity_item_answer_schemas
             )
-        # TODO: fix
-        # for schema in schemas:
-        #     alert_config = await AlertConfigsCRUD(
-        #         self.session
-        #     ).get_by_applet_item_answer(
-        #         AlertConfigGet(
-        #             applet_id=schema.applet_id,
-        #             activity_item_histories_id_version=(
-        #                 schema.activity_item_history_id
-        #             ),
-        #             specific_answer=schema.answer,
-        #         )
-        #     )
-        #     if alert_config:
-        #         await AlertCRUD(self.session).save(
-        #             AlertCreate(
-        #                 specific_answer=schema.answer,
-        #                 respondent_id=schema.respondent_id,
-        #                 alert_config_id=alert_config.id,
-        #                 applet_id=schema.applet_id,
-        #                 activity_item_histories_id_version=(
-        #                     schema.activity_item_history_id
-        #                 ),
-        #             )
-        #         )
