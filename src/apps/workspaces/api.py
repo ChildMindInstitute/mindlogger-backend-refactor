@@ -50,7 +50,8 @@ async def workspace_applets(
     query_params.filters["owner_id"] = owner_id
 
     async with atomic(session):
-        await UserAccessService(session, user.id).check_access(owner_id)
+        # TODO: enable when it is needed
+        # await UserAccessService(session, user.id).check_access(owner_id)
         applets = await UserAccessService(
             session, user.id
         ).get_workspace_applets_by_language(language, deepcopy(query_params))
