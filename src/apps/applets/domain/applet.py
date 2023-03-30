@@ -42,6 +42,11 @@ class Applet(InternalModel):
     report_email_body: str = ""
     created_at: datetime.datetime | None
     updated_at: datetime.datetime | None
+    link: uuid.UUID | None
+    require_login: bool | None
+    pinned_at: datetime.datetime | None
+    retention_period: int | None
+    retention_type: str | None
 
 
 class ThemePublic(PublicModel):

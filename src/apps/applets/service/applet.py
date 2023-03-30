@@ -363,9 +363,7 @@ class AppletService:
     async def create_access_link(
         self, applet_id: uuid.UUID, create_request: CreateAccessLink
     ) -> AppletLink:
-        await self._validate_applet_access(applet_id)
-
-        applet_instance = await AppletsCRUD(self.session).get_by_id(applet_id)
+        applet_instance = await self._validate_applet_access(applet_id)
         if applet_instance.link:
             raise AppletLinkAlreadyExist()
 
@@ -378,11 +376,10 @@ class AppletService:
         return AppletLink(link=link)
 
     async def get_access_link(self, applet_id: uuid.UUID) -> AppletLink:
-        await self._validate_applet_access(applet_id)
-        applet_instance = await AppletsCRUD(self.session).get_by_id(applet_id)
+        applet_instance = await self._validate_applet_access(applet_id)
         if applet_instance.link:
             link = self._generate_link_url(
-                applet_instance.require_login, applet_instance.link
+                bool(applet_instance.require_login), str(applet_instance.link)
             )
         else:
             raise AccessLinkDoesNotExistError
@@ -390,10 +387,9 @@ class AppletService:
         return AppletLink(link=link)
 
     async def delete_access_link(self, applet_id: uuid.UUID):
-        await self._validate_applet_access(applet_id)
-
-        if not await AppletsCRUD(self.session).exist_by_id(applet_id):
-            raise AppletNotFoundError(key="id", value=str(applet_id))
+        applet = await self._validate_applet_access(applet_id)
+        if not applet.link:
+            raise AccessLinkDoesNotExistError
 
         await AppletsCRUD(self.session).delete_access_link(applet_id)
 
@@ -428,19 +424,18 @@ class AppletService:
     ):
         await self._validate_applet_access(applet_id)
 
-        if not await AppletsCRUD(self.session).exist_by_id(applet_id):
-            raise AppletNotFoundError(key="id", value=str(applet_id))
-
         await AppletsCRUD(self.session).set_data_retention(
             applet_id, data_retention
         )
 
-    async def _validate_applet_access(self, applet_id: uuid.UUID):
+    async def _validate_applet_access(self, applet_id: uuid.UUID) -> Applet:
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         roles = await UserAppletAccessCRUD(
             self.session
         ).get_user_roles_to_applet(self.user_id, applet_id)
         if Role.ADMIN not in roles:
             raise AppletAccessDenied()
+        return Applet.from_orm(applet)
 
     def create_keys(self, applet_id: uuid.UUID) -> str:
         key = os.urandom(settings.secrets.key_length)
