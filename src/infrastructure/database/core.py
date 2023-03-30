@@ -87,7 +87,11 @@ class atomic:
 def rollback(func):
     async def _wrap(*args, **kwargs):
         session = session_manager.get_session()
-        await func(*args, **kwargs)
-        await session.rollback()
+        try:
+            await func(*args, **kwargs)
+        except Exception:
+            raise
+        finally:
+            await session.rollback()
 
     return _wrap

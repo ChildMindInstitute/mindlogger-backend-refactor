@@ -25,13 +25,13 @@ class TransferService:
     ):
         """Initiate a transfer of ownership of an applet."""
         # check if user is owner of applet
+        applet = await AppletsCRUD(self.session).get_by_id(id_=applet_id)
+
         access = await UserAppletAccessCRUD(self.session).get_applet_owner(
             applet_id
         )
         if access.user_id != self._user.id:
             raise PermissionsError()
-
-        applet = await AppletsCRUD(self.session).get_by_id(id_=applet_id)
 
         transfer = Transfer(
             email=transfer_request.email,
@@ -75,6 +75,7 @@ class TransferService:
 
     async def accept_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):
         """Respond to a transfer of ownership of an applet."""
+        await AppletsCRUD(self.session).get_by_id(applet_id)
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
         if (
@@ -122,6 +123,7 @@ class TransferService:
 
     async def decline_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):
         """Decline a transfer of ownership of an applet."""
+        await AppletsCRUD(self.session).get_by_id(applet_id)
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
         if transfer.email != self._user.email:

@@ -1,4 +1,9 @@
-from apps.shared.errors import BaseError, NotFoundError, ValidationError
+from apps.shared.errors import (
+    AccessDeniedError,
+    BaseError,
+    NotFoundError,
+    ValidationError,
+)
 
 __all__ = [
     "AppletsError",
@@ -30,7 +35,7 @@ class NotValidAppletHistory(NotFoundError):
         super().__init__(message=message)
 
 
-class AppletsFolderAccessDenied(ValidationError):
+class AppletsFolderAccessDenied(AccessDeniedError):
     def __init__(self, *_, message="Access denied to folder.") -> None:
         super().__init__(message=message)
 
@@ -47,4 +52,9 @@ class AppletLinkAlreadyExist(ValidationError):
 
 class AppletPasswordValidationError(ValidationError):
     def __init__(self, *_, message="Applet password does not match.") -> None:
+        super().__init__(message=message)
+
+
+class AccessLinkDoesNotExistError(NotFoundError):
+    def __init__(self, *_, message="Access link does not exist."):
         super().__init__(message=message)

@@ -44,6 +44,17 @@ class TestWorkspaces(BaseTest):
         assert response.json()["count"] == 1
 
     @rollback
+    async def test_wrong_workspace_applets_list(self):
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+
+        response = await self.client.get(
+            self.workspace_applets_list.format(
+                owner_id="00000000-0000-0000-0000-000000000000"
+            )
+        )
+        assert response.status_code == 404
+
+    @rollback
     async def test_get_workspace_users(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

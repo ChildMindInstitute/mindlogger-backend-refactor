@@ -1,8 +1,8 @@
 from apps.shared.errors import (
+    AccessDeniedError,
     BadRequestError,
     ConflictError,
     NotFoundError,
-    ValidationError,
 )
 
 
@@ -21,17 +21,17 @@ class AlertConfigAlreadyExistError(ConflictError):
         super().__init__(message=message)
 
 
-class AlertCreateAccessDenied(ValidationError):
+class AlertCreateAccessDenied(AccessDeniedError):
     def __init__(self, *_, message="Access to create alerts denied") -> None:
         super().__init__(message=message)
 
 
-class AlertViewAccessDenied(ValidationError):
+class AlertViewAccessDenied(AccessDeniedError):
     def __init__(self, *_, message="Access to view alerts denied") -> None:
         super().__init__(message=message)
 
 
-class AlertUpdateAccessDenied(ValidationError):
+class AlertUpdateAccessDenied(AccessDeniedError):
     def __init__(self, *_, message="Access to update alerts denied") -> None:
         super().__init__(message=message)
 
