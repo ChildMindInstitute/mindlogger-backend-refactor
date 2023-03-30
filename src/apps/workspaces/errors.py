@@ -1,4 +1,4 @@
-from apps.shared.errors import BaseError, ValidationError
+from apps.shared.errors import AccessDeniedError, BaseError
 
 __all__ = [
     "UserAppletAccessesNotFound",
@@ -11,6 +11,6 @@ class UserAppletAccessesNotFound(BaseError):
         super().__init__(message=f"No such UserAppletAccess with id={id_}.")
 
 
-class AppletAccessDenied(ValidationError):
+class AppletAccessDenied(AccessDeniedError):
     def __init__(self, *_, message="Access denied to applet.") -> None:
         super().__init__(message=message)
