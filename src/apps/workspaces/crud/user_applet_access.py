@@ -394,4 +394,3 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().first() is not None
-
