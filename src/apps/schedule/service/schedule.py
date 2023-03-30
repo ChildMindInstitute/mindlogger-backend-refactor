@@ -626,3 +626,31 @@ class ScheduleService:
         )
 
         return events
+
+    async def count_events_by_user(self, user_id: uuid.UUID) -> int:
+        """Count all events for user in applets that user is respondent."""
+        applets = await AppletsCRUD(self.session).get_applets_by_roles(
+            user_id=user_id,
+            roles=Role.as_list(),
+            query_params=QueryParams(),
+        )
+        applet_ids = [applet.id for applet in applets]
+        count = 0
+
+        for applet_id in applet_ids:
+
+            count_user_events = await EventCRUD(
+                self.session
+            ).count_individual_events_by_user(
+                applet_id=applet_id, user_id=user_id
+            )
+
+            count_general_events = await EventCRUD(
+                self.session
+            ).count_general_events_by_user(
+                applet_id=applet_id, user_id=user_id
+            )
+
+            count += count_general_events + count_user_events
+
+        return count

@@ -132,12 +132,10 @@ async def schedule_get_all_by_user(
     schedules = await ScheduleService(session).get_events_by_user(
         user_id=user.id
     )
-    return ResponseMulti(
-        result=schedules,
-        count=sum(
-            [len(schedule.events) for schedule in schedules if schedule.events]
-        ),
+    count = await ScheduleService(session).count_events_by_user(
+        user_id=user.id
     )
+    return ResponseMulti(result=schedules, count=count)
 
 
 async def schedule_get_by_user(
