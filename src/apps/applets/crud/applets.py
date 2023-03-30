@@ -4,6 +4,7 @@ from typing import Any
 
 from sqlalchemy import distinct, or_, select, update
 from sqlalchemy.engine import Result
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
 
@@ -11,6 +12,7 @@ from apps.applets import errors
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import Role
 from apps.applets.domain.applet import AppletDataRetention
+from apps.applets.errors import AppletNotFoundError
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
@@ -244,7 +246,10 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.values(link=uuid.uuid4(), require_login=require_login)
         query = query.returning(AppletSchema.link)
         db_result = await self._execute(query)
-        return db_result.scalars().one()
+        try:
+            return db_result.scalars().one()
+        except NoResultFound:
+            raise AppletNotFoundError(key='id', value=str(applet_id))
 
     async def delete_access_link(self, applet_id: uuid.UUID):
         query: Query = update(AppletSchema)

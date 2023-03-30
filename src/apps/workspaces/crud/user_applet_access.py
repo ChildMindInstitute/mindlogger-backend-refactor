@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy import delete, distinct, func, select
 from sqlalchemy.engine import Result
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
 
@@ -19,7 +20,10 @@ from apps.workspaces.domain.user_applet_access import (
     UserAppletAccessItem,
 )
 from apps.workspaces.domain.workspace import WorkspaceUser
-from apps.workspaces.errors import UserAppletAccessesNotFound
+from apps.workspaces.errors import (
+    AppletAccessDenied,
+    UserAppletAccessesNotFound,
+)
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["UserAppletAccessCRUD"]
@@ -149,8 +153,10 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
         db_result = await self._execute(query)
-
-        return db_result.scalars().one()
+        try:
+            return db_result.scalars().one()
+        except NoResultFound:
+            raise AppletAccessDenied()
 
     async def get_by_id(self, id_: int) -> UserAppletAccess:
         """Fetch UserAppletAccess by id from the database."""

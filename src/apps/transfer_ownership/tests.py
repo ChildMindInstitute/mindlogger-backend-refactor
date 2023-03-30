@@ -36,6 +36,22 @@ class TestTransfer(BaseTest):
         TestMail.clear_mails()
 
     @rollback
+    async def test_initiate_transfer_fail(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        data = {"email": "aloevdamirkhon@gmail.com"}
+
+        response = await self.client.post(
+            self.transfer_url.format(
+                applet_id="00000000-0000-0000-0000-000000000012"
+            ),
+            data=data,
+        )
+
+        assert response.status_code == 404, response.json()
+
+    @rollback
     async def test_decline_transfer(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await self.client.delete(
