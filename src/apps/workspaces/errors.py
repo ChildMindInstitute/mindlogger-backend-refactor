@@ -1,4 +1,4 @@
-from apps.shared.errors import AccessDeniedError, BaseError
+from apps.shared.errors import AccessDeniedError, BaseError, NotFoundError
 
 __all__ = [
     "UserAppletAccessesNotFound",
@@ -13,4 +13,9 @@ class UserAppletAccessesNotFound(BaseError):
 
 class AppletAccessDenied(AccessDeniedError):
     def __init__(self, *_, message="Access denied to applet.") -> None:
+        super().__init__(message=message)
+
+
+class WorkspaceDoesNotExistError(NotFoundError):
+    def __init__(self, *_, message="Workspace does not exist.") -> None:
         super().__init__(message=message)
