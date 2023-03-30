@@ -60,7 +60,9 @@ class ActivityService:
                         activity_id=activity_id,
                         question=item.question,
                         response_type=item.response_type,
-                        response_values=item.response_values,
+                        response_values=item.response_values.dict()
+                        if item.response_values
+                        else None,
                         config=item.config.dict(),
                         name=item.name,
                     )
@@ -148,7 +150,9 @@ class ActivityService:
                         activity_id=activity_id,
                         question=item.question,
                         response_type=item.response_type,
-                        response_values=item.response_values,
+                        response_values=item.response_values.dict()
+                        if item.response_values
+                        else None,
                         config=item.config.dict(),
                     )
                 )

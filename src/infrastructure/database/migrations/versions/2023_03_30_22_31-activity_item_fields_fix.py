@@ -1,7 +1,7 @@
 """activity item fields fix
 
 Revision ID: 343916a84a24
-Revises: 1adbcf5d00f5
+Revises: 8595f5e743f4
 Create Date: 2023-03-24 22:31:19.491780
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "343916a84a24"
-down_revision = "1adbcf5d00f5"
+down_revision = "8595f5e743f4"
 branch_labels = None
 depends_on = None
 
@@ -33,11 +33,8 @@ def upgrade() -> None:
             nullable=True,
         ),
     )
-    op.add_column(
-        "activity_item_histories", sa.Column("order", sa.REAL(), nullable=True)
-    )
+
     op.drop_column("activity_item_histories", "header_image")
-    op.drop_column("activity_item_histories", "ordering")
     op.drop_column("activity_item_histories", "skippable_item")
     op.drop_column("activity_item_histories", "remove_availability_to_go_back")
     op.drop_column("activity_item_histories", "answers")
@@ -56,11 +53,8 @@ def upgrade() -> None:
             nullable=True,
         ),
     )
-    op.add_column(
-        "activity_items", sa.Column("order", sa.REAL(), nullable=True)
-    )
+
     op.drop_column("activity_items", "header_image")
-    op.drop_column("activity_items", "ordering")
     op.drop_column("activity_items", "skippable_item")
     op.drop_column("activity_items", "remove_availability_to_go_back")
     op.drop_column("activity_items", "answers")
@@ -93,17 +87,13 @@ def downgrade() -> None:
             "skippable_item", sa.BOOLEAN(), autoincrement=False, nullable=True
         ),
     )
-    op.add_column(
-        "activity_items",
-        sa.Column("ordering", sa.REAL(), autoincrement=False, nullable=True),
-    )
+
     op.add_column(
         "activity_items",
         sa.Column(
             "header_image", sa.TEXT(), autoincrement=False, nullable=True
         ),
     )
-    op.drop_column("activity_items", "order")
     op.drop_column("activity_items", "response_values")
     op.drop_column("activity_items", "name")
     op.add_column(
@@ -130,17 +120,13 @@ def downgrade() -> None:
             "skippable_item", sa.BOOLEAN(), autoincrement=False, nullable=True
         ),
     )
-    op.add_column(
-        "activity_item_histories",
-        sa.Column("ordering", sa.REAL(), autoincrement=False, nullable=True),
-    )
+
     op.add_column(
         "activity_item_histories",
         sa.Column(
             "header_image", sa.TEXT(), autoincrement=False, nullable=True
         ),
     )
-    op.drop_column("activity_item_histories", "order")
     op.drop_column("activity_item_histories", "response_values")
     op.drop_column("activity_item_histories", "name")
     # ### end Alembic commands ###

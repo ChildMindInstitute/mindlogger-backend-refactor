@@ -3,11 +3,10 @@ import uuid
 from pydantic import BaseModel, Field, root_validator, validator
 
 from apps.activities.domain.response_type_config import (
-    ResponseType,
     NoneResponseType,
+    ResponseType,
     ResponseTypeConfig,
     ResponseTypeValueConfig,
-    TextConfig,
 )
 from apps.activities.domain.response_values import ResponseValueConfig
 from apps.shared.domain import InternalModel, PublicModel
@@ -16,8 +15,8 @@ from apps.shared.domain import InternalModel, PublicModel
 class BaseActivityItem(BaseModel):
     question: dict[str, str] = Field(default_factory=dict)
     response_type: ResponseType
-    response_values: ResponseValueConfig | None
-    config: ResponseTypeConfig = Field(default_factory=TextConfig)
+    response_values: ResponseValueConfig | None = Field(default=None)
+    config: ResponseTypeConfig = Field()
     name: str
 
     @validator("name", allow_reuse=True)
@@ -41,21 +40,20 @@ class BaseActivityItem(BaseModel):
                     type(ResponseTypeValueConfig[response_type]["value"]),
                 ):
                     raise ValueError(
-                        f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"
+                        f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
                     )
             else:
                 if response_values is not None:
                     raise ValueError(
-                        f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"
+                        f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
                     )
 
             if not isinstance(
                 config, ResponseTypeValueConfig[response_type]["config"]
             ):
                 raise ValueError(
-                    f"config must be of type {ResponseTypeValueConfig[response_type]['config']}"
+                    f"config must be of type {ResponseTypeValueConfig[response_type]['config']}"  # noqa: E501
                 )
-            print("hello")
 
         else:
             raise ValueError(f"response_type must be of type {ResponseType}")
@@ -65,6 +63,7 @@ class BaseActivityItem(BaseModel):
 class ActivityItem(BaseActivityItem, InternalModel):
     activity_id: uuid.UUID
     id: uuid.UUID
+    order: int
 
 
 class ActivityItemPublic(BaseActivityItem, PublicModel):

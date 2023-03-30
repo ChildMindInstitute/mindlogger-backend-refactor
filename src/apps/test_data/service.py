@@ -180,6 +180,8 @@ class TestDataService:
                 numerical_response_required=self.random_boolean(),
                 response_data_identifier=self.random_boolean(),
                 response_required=self.random_boolean(),
+                skippable_item=self.random_boolean(),
+                remove_back_button=self.random_boolean(),
             )
         elif type_ == ResponseType.SINGLESELECT:
             return SingleSelectionConfig(

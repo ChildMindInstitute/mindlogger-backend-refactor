@@ -13,13 +13,60 @@
         "fr": "Peu dintérêt ou de plaisir à faire les choses ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 1.0
     }
   },
@@ -37,13 +84,60 @@
         "fr": "Vous vous sentez déprimé, déprimé ou désespéré?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66e2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66e3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66e4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66e5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 2.0
     }
   },
@@ -61,13 +155,60 @@
         "fr": "Peu dintérêt ou de plaisir à faire les choses ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66f2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66f3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66f4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66f5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 1.0
     }
   },
@@ -85,13 +226,60 @@
         "fr": "Vous vous sentez déprimé, déprimé ou désespéré?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66g2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66g3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66g4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66g5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 2.0
     }
   },
@@ -109,13 +297,60 @@
         "fr": "Difficulté à sendormir ou à rester endormi, ou dormir trop ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66h2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66h3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66h4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66h5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 3.0
     }
   },
@@ -133,13 +368,60 @@
         "fr": "Vous vous sentez fatigué ou vous manquez dénergie ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66i2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66i3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66i4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66i5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 4.0
     }
   },
@@ -157,13 +439,60 @@
         "fr": "Manque dappétit ou excès alimentaires ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66j2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66j3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66j4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66j5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 5.0
     }
   },
@@ -181,13 +510,60 @@
         "fr": "Vous vous sentez mal dans votre peau - ou que vous êtes un échec ou que vous vous êtes laissé tomber, vous ou votre famille ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66k2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66k3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66k4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66k5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 6.0
     }
   },
@@ -205,13 +581,60 @@
         "fr": "Vous avez du mal à vous concentrer sur certaines choses, comme lire le journal ou regarder la télévision ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66l2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66l3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66l4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66l5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 7.0
     }
   },
@@ -229,13 +652,60 @@
         "fr": "Bouger ou parler si lentement que dautres personnes auraient pu le remarquer ?\nOu le contraire - être si agité ou agité que vous vous déplacez beaucoup plus que dhabitude ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66m2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66m3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66m4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66m5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 8.0
     }
   },
@@ -253,13 +723,60 @@
         "fr": "Peu dintérêt ou de plaisir à faire les choses ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66n2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66n3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66n4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66n5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 1.0
     }
   },
@@ -277,13 +794,60 @@
         "fr": "Vous vous sentez déprimé, déprimé ou désespéré?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66o2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66o3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66o4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66o5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 2.0
     }
   },
@@ -301,13 +865,60 @@
         "fr": "Difficulté à sendormir ou à rester endormi, ou dormir trop ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66p2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66p3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66p4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66p5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 3.0
     }
   },
@@ -325,13 +936,60 @@
         "fr": "Vous vous sentez fatigué ou vous manquez dénergie ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66q2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66q3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66q4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66q5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 4.0
     }
   },
@@ -349,13 +1007,60 @@
         "fr": "Manque dappétit ou excès alimentaires ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66r2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66r3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66r4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66r5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 5.0
     }
   },
@@ -373,13 +1078,60 @@
         "fr": "Vous vous sentez mal dans votre peau - ou que vous êtes un échec ou que vous vous êtes laissé tomber, vous ou votre famille ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66s2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66s3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66s4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66s5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 6.0
     }
   },
@@ -397,13 +1149,60 @@
         "fr": "Vous avez du mal à vous concentrer sur certaines choses, comme lire le journal ou regarder la télévision ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66t2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66t3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66t4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66t5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 7.0
     }
   },
@@ -421,13 +1220,60 @@
         "fr": "Bouger ou parler si lentement que dautres personnes auraient pu le remarquer ?\nOu le contraire - être si agité ou agité que vous vous déplacez beaucoup plus que dhabitude ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66u2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66u3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66u4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66u5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 8.0
     }
   },
@@ -445,13 +1291,60 @@
         "fr": "Vous pensez quil vaudrait mieux que vous soyez mort ou que vous vous fassiez du mal dune manière ou dune autre ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66v2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66v3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66v4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66v5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 9.0
     }
   },
@@ -469,13 +1362,60 @@
         "fr": "Peu dintérêt ou de plaisir à faire les choses ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66w2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66w3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66w4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66w5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 1.0
     }
   },
@@ -493,13 +1433,60 @@
         "fr": "Vous vous sentez déprimé, déprimé ou désespéré?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66x2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66x3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66x4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66x5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 2.0
     }
   },
@@ -517,13 +1504,60 @@
         "fr": "Difficulté à sendormir ou à rester endormi, ou dormir trop ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66y2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66y3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66y4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66y5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 3.0
     }
   },
@@ -541,13 +1575,60 @@
         "fr": "Vous vous sentez fatigué ou vous manquez dénergie ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66z2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66z3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66z4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66z5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 4.0
     }
   },
@@ -565,13 +1646,60 @@
         "fr": "Manque dappétit ou excès alimentaires ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db67d2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db67d3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db67d4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db67d5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 5.0
     }
   },
@@ -589,13 +1717,60 @@
         "fr": "Vous vous sentez mal dans votre peau - ou que vous êtes un échec ou que vous vous êtes laissé tomber, vous ou votre famille ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db68d2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db68d3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db68d4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db68d5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 6.0
     }
   },
@@ -613,13 +1788,60 @@
         "fr": "Vous avez du mal à vous concentrer sur certaines choses, comme lire le journal ou regarder la télévision ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db69d2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db69d3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db69d4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db69d5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 7.0
     }
   },
@@ -637,13 +1859,60 @@
         "fr": "Bouger ou parler si lentement que dautres personnes auraient pu le remarquer ?\nOu le contraire - être si agité ou agité que vous vous déplacez beaucoup plus que dhabitude ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db61d2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db61d3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db61d4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db61d5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 8.0
     }
   },
@@ -661,13 +1930,60 @@
         "fr": "Vous pensez quil vaudrait mieux que vous soyez mort ou que vous vous fassiez du mal dune manière ou dune autre ?"
       },
       "response_type": "singleSelect",
-      "response_values": [
-        "Not at all",
-        "Several days",
-        "More than half the days",
-        "Nearly every day"
-      ],
-      "config": {},
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db62d2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db62d3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db62d4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db62d5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
       "order": 9.0
     }
   }

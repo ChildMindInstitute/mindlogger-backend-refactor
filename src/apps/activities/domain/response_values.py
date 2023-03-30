@@ -1,6 +1,12 @@
 import uuid
-from enum import Enum
-from pydantic import Field, NonNegativeInt, root_validator, validator
+
+from pydantic import (
+    BaseModel,
+    Field,
+    NonNegativeInt,
+    root_validator,
+    validator,
+)
 from pydantic.color import Color
 
 from apps.shared.domain import (
@@ -11,31 +17,55 @@ from apps.shared.domain import (
 )
 
 
-TextValues = None
-MessageValues = None
-TimeRangeValues = None
-GeolocationValues = None
-PhotoValues = None
-VideoValues = None
-DateValues = None
+class TextValues(BaseModel):
+    pass
+
+
+class MessageValues(BaseModel):
+    pass
+
+
+class TimeRangeValues(BaseModel):
+    pass
+
+
+class GeolocationValues(BaseModel):
+    pass
+
+
+class PhotoValues(BaseModel):
+    pass
+
+
+class VideoValues(BaseModel):
+    pass
+
+
+class DateValues(BaseModel):
+    pass
 
 
 class _SingleSelectionValue(InternalModel):
     id: uuid.UUID
     text: str
-    image: str
-    score: int
-    tooltip: str
+    image: str | None
+    score: int | None
+    tooltip: str | None
     is_hidden: bool
-    color: Color
+    color: Color | None
 
     @validator("image")
     def validate_image(cls, value):
-        return validate_image(value)
+        # validate image if not None
+        if value is not None:
+            return validate_image(value)
+        return value
 
     @validator("color")
     def validate_color(cls, value):
-        return validate_color(value)
+        if value is not None:
+            return validate_color(value)
+        return value
 
 
 class SingleSelectionValues(InternalModel):
@@ -47,21 +77,36 @@ class MultiSelectionValues(SingleSelectionValues, InternalModel):
 
 
 class SliderValues(InternalModel):
-    min_label: str = Field(..., max_length=20)
-    max_label: str = Field(..., max_length=20)
+    min_label: str | None = Field(..., max_length=20)
+    max_label: str | None = Field(..., max_length=20)
     min_value: NonNegativeInt = Field(default=0, max_value=11)
     max_value: NonNegativeInt = Field(default=12, max_value=12)
-    min_image: str
-    max_image: str
+    min_image: str | None
+    max_image: str | None
+    scores: list[int] | None
 
     @validator("min_image", "max_image")
     def validate_image(cls, value):
-        return validate_image(value)
+        if value is not None:
+            return validate_image(value)
+        return value
 
     @root_validator
     def validate_min_max(cls, values):
         if values.get("min_value") >= values.get("max_value"):
             raise ValueError("min_value must be less than max_value")
+        return values
+
+    @root_validator
+    def validate_scores(cls, values):
+        if values.get("scores") is not None:
+            if (
+                len(values.get("scores"))
+                != values.get("max_value") - values.get("min_value") + 1
+            ):
+                raise ValueError(
+                    "scores must have the same length as the range of min_value and max_value"  # noqa: E501
+                )
         return values
 
 
@@ -77,12 +122,14 @@ class NumberSelectionValues(InternalModel):
 
 
 class DrawingValues(InternalModel):
-    drawing_example: str
-    drawing_background: str
+    drawing_example: str | None
+    drawing_background: str | None
 
     @validator("drawing_example", "drawing_background")
     def validate_image(cls, value):
-        return validate_image(value)
+        if value is not None:
+            return validate_image(value)
+        return value
 
 
 class SliderRowsValue(SliderValues, InternalModel):
@@ -96,26 +143,30 @@ class SliderRowsValues(InternalModel):
 
 class _SingleSelectionRowValue(InternalModel):
     id: uuid.UUID
-    text: str
-    image: str
-    score: int
-    tooltip: str
+    text: str = Field(..., max_length=11)
+    image: str | None
+    score: int | None
+    tooltip: str | None
 
     @validator("image")
     def validate_image(cls, value):
-        return validate_image(value)
+        if value is not None:
+            return validate_image(value)
+        return value
 
 
 class _SingleSelectionRowsValue(InternalModel):
     id: uuid.UUID
-    row_name: str
-    row_image: str
-    tooltip: str
+    row_name: str = Field(..., max_length=11)
+    row_image: str | None
+    tooltip: str | None
     options: list[_SingleSelectionRowValue]
 
     @validator("row_image")
     def validate_image(cls, value):
-        return validate_image(value)
+        if value is not None:
+            return validate_image(value)
+        return value
 
 
 class SingleSelectionRowsValues(InternalModel):

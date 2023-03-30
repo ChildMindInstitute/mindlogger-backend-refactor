@@ -1,6 +1,7 @@
 import uuid
 
 from pydantic import Field
+
 from apps.activities.domain.activity_item import BaseActivityItem
 from apps.shared.domain import InternalModel
 
