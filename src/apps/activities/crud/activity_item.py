@@ -34,7 +34,7 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
         query: Query = select(ActivityItemSchema)
         query = query.where(ActivityItemSchema.activity_id == activity_id)
         query = query.order_by(
-            ActivityItemSchema.ordering.asc(),
+            ActivityItemSchema.order.asc(),
         )
         result = await self._execute(query)
         return result.scalars().all()

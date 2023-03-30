@@ -92,3 +92,19 @@ class TestReusableItem(BaseTest):
         )
 
         assert response.status_code == 404, response.json()
+
+    @rollback
+    async def test_create_item_choice_with_long_int_value(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            token_name="Average age",
+            token_value=12321312312312323,
+            input_type="radiobutton",
+        )
+
+        response = await self.client.post(self.create_url, data=create_data)
+
+        res_data = response.json()
+        assert response.status_code == 422, res_data

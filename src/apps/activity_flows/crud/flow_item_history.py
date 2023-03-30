@@ -32,7 +32,7 @@ class FlowItemHistoriesCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
             ActivityFlowHistoriesSchema.applet_id == id_version
         )
         query = query.order_by(
-            ActivityFlowItemHistorySchema.ordering.asc(),
+            ActivityFlowItemHistorySchema.order.asc(),
         )
         result = await self._execute(query)
         return result.scalars().all()

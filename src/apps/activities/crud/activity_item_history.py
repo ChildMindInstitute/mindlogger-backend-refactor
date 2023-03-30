@@ -30,7 +30,7 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         )
         query = query.filter(ActivityHistorySchema.applet_id == id_version)
         query = query.order_by(
-            ActivityItemHistorySchema.ordering.asc(),
+            ActivityItemHistorySchema.order.asc(),
         )
 
         result = await self._execute(query)

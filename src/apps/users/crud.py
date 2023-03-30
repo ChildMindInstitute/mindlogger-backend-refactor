@@ -1,6 +1,8 @@
+import datetime
 import uuid
 from typing import Any
 
+from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 
 from apps.users.db.schemas import UserSchema
@@ -99,3 +101,9 @@ class UsersCRUD(BaseCRUD[UserSchema]):
             schema=UserSchema(hashed_password=update_schema.hashed_password),
         )
         return User.from_orm(instance)
+
+    async def update_last_seen_by_id(self, id_: uuid.UUID):
+        query = update(UserSchema)
+        query = query.where(UserSchema.id == id_)
+        query = query.values(last_seen_at=datetime.datetime.now())
+        await self._execute(query)

@@ -9,11 +9,18 @@ from apps.shared.domain.response import (
 )
 from apps.workspaces.api import (
     applet_remove_respondent_access,
+    (
     user_workspaces,
+   
     workspace_applets,
     workspace_remove_manager_access,
+),
+    workspace_users_list,
 )
-from apps.workspaces.domain.workspace import PublicWorkspace
+from apps.workspaces.domain.workspace import (
+    PublicWorkspace,
+    PublicWorkspaceUser,
+)
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
 
@@ -31,7 +38,7 @@ router.get(
 
 # Applets in a specific workspace where owner_id is applet owner
 router.get(
-    "/{owner_id}",
+    "/{owner_id}/applets",
     response_model=ResponseMulti[AppletInfoPublic],
     status_code=status.HTTP_200_OK,
     responses={
@@ -40,6 +47,17 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_applets)
+
+router.get(
+    "/{owner_id}/users",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[PublicWorkspaceUser],
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicWorkspaceUser]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_users_list)
 
 # Remove manager access from a specific user
 router.post(

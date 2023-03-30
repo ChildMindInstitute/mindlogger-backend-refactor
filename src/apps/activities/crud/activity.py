@@ -31,7 +31,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         # TODO: get by users permission
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.applet_id == applet_id)
-        query = query.order_by(ActivitySchema.ordering.asc())
+        query = query.order_by(ActivitySchema.order.asc())
         result = await self._execute(query)
         return result.scalars().all()
 
@@ -41,7 +41,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         # TODO: get by users permission
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.id == id_)
-        query = query.order_by(ActivitySchema.ordering.asc())
+        query = query.order_by(ActivitySchema.order.asc())
         result = await self._execute(query)
         try:
             return result.scalars().one_or_none()

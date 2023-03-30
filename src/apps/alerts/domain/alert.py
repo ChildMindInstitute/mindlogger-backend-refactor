@@ -41,6 +41,10 @@ class AlertCreate(_AlertBase, InternalModel):
         description="This field represents the specific answer "
         "upon selection of which an alert will be created"
     )
+    alert_message: str = Field(
+        description="This field represents the alert message "
+        "which will be shown"
+    )
 
 
 class Alert(_AlertBase, InternalModel):
