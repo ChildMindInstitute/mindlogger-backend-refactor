@@ -249,7 +249,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         try:
             return db_result.scalars().one()
         except NoResultFound:
-            raise AppletNotFoundError(key='id', value=str(applet_id))
+            raise AppletNotFoundError(key="id", value=str(applet_id))
 
     async def delete_access_link(self, applet_id: uuid.UUID):
         query: Query = update(AppletSchema)
