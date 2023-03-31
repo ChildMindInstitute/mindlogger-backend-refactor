@@ -2,7 +2,11 @@ from enum import Enum
 
 from pydantic import NonNegativeInt, PositiveInt
 
-from apps.activities.domain.response_values import ResponseValueConfigOptions
+from apps.activities.domain.response_values import (
+    ResponseValueConfigOptions,
+    SingleSelectionRowsValues,
+    SingleSelectionValues,
+)
 from apps.shared.domain import InternalModel
 
 
@@ -58,16 +62,16 @@ class NumberSelectionConfig(_ScreenConfig, InternalModel):
     additional_response_option: AdditionalResponseOption
 
 
-class _DefaultConfig(_ScreenConfig, InternalModel):
+class DefaultConfig(_ScreenConfig, InternalModel):
     additional_response_option: AdditionalResponseOption
     timer: NonNegativeInt | None
 
 
-class TimeRangeConfig(_DefaultConfig, InternalModel):
+class TimeRangeConfig(DefaultConfig, InternalModel):
     pass
 
 
-class GeolocationConfig(_DefaultConfig, InternalModel):
+class GeolocationConfig(DefaultConfig, InternalModel):
     pass
 
 
@@ -78,15 +82,15 @@ class DrawingConfig(_ScreenConfig, InternalModel):
     navigation_to_top: bool = False
 
 
-class PhotoConfig(_DefaultConfig, InternalModel):
+class PhotoConfig(DefaultConfig, InternalModel):
     pass
 
 
-class VideoConfig(_DefaultConfig, InternalModel):
+class VideoConfig(DefaultConfig, InternalModel):
     pass
 
 
-class DateConfig(_DefaultConfig, InternalModel):
+class DateConfig(DefaultConfig, InternalModel):
     pass
 
 
@@ -107,7 +111,7 @@ class MultiSelectionRowsConfig(SingleSelectionRowsConfig, InternalModel):
     pass
 
 
-class AudioConfig(_DefaultConfig, InternalModel):
+class AudioConfig(DefaultConfig, InternalModel):
     pass
 
 
@@ -202,3 +206,19 @@ for response_type in ResponseType:
         "value": zipped_type_value[index][0],
     }
     index += 1
+
+ResponseTypeValueConfig[ResponseType.MULTISELECT] = {
+    "config": SingleSelectionConfig,
+    "value": SingleSelectionValues,
+}
+
+ResponseTypeValueConfig[ResponseType.MULTISELECTROWS] = {
+    "config": SingleSelectionRowsConfig,
+    "value": SingleSelectionRowsValues,
+}
+
+ResponseTypeValueConfig[ResponseType.GEOLOCATION]["config"] = TimeRangeConfig
+ResponseTypeValueConfig[ResponseType.PHOTO]["config"] = TimeRangeConfig
+ResponseTypeValueConfig[ResponseType.VIDEO]["config"] = TimeRangeConfig
+ResponseTypeValueConfig[ResponseType.DATE]["config"] = TimeRangeConfig
+ResponseTypeValueConfig[ResponseType.AUDIO]["config"] = TimeRangeConfig

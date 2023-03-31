@@ -1,63 +1,7 @@
 import uuid
 
-from pydantic import BaseModel, Field, root_validator, validator
-
-from apps.activities.domain.response_type_config import (
-    NoneResponseType,
-    ResponseType,
-    ResponseTypeConfig,
-    ResponseTypeValueConfig,
-)
-from apps.activities.domain.response_values import ResponseValueConfig
+from apps.activities.domain.activity_item_base import BaseActivityItem
 from apps.shared.domain import InternalModel, PublicModel
-
-
-class BaseActivityItem(BaseModel):
-    question: dict[str, str] = Field(default_factory=dict)
-    response_type: ResponseType
-    response_values: ResponseValueConfig | None = Field(default=None)
-    config: ResponseTypeConfig = Field()
-    name: str
-
-    @validator("name", allow_reuse=True)
-    def validate_name(cls, value):
-        # name must contain only alphanumeric symbols or underscore
-        if not value.replace("_", "").isalnum():
-            raise ValueError(
-                "Name must contain only alphanumeric symbols or underscore"
-            )
-        return value
-
-    @root_validator(allow_reuse=True)
-    def validate_response_type(cls, values):
-        response_type = values.get("response_type")
-        response_values = values.get("response_values")
-        config = values.get("config")
-        if response_type in ResponseTypeValueConfig:
-            if response_type not in list(NoneResponseType):
-                if not isinstance(
-                    response_values,
-                    type(ResponseTypeValueConfig[response_type]["value"]),
-                ):
-                    raise ValueError(
-                        f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
-                    )
-            else:
-                if response_values is not None:
-                    raise ValueError(
-                        f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
-                    )
-
-            if not isinstance(
-                config, ResponseTypeValueConfig[response_type]["config"]
-            ):
-                raise ValueError(
-                    f"config must be of type {ResponseTypeValueConfig[response_type]['config']}"  # noqa: E501
-                )
-
-        else:
-            raise ValueError(f"response_type must be of type {ResponseType}")
-        return values
 
 
 class ActivityItem(BaseActivityItem, InternalModel):

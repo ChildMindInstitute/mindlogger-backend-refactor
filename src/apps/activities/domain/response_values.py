@@ -46,7 +46,7 @@ class DateValues(BaseModel):
 
 
 class _SingleSelectionValue(InternalModel):
-    id: uuid.UUID
+    id: str | None = None
     text: str
     image: str | None
     score: int | None
@@ -67,13 +67,17 @@ class _SingleSelectionValue(InternalModel):
             return validate_color(value)
         return value
 
+    @validator("id")
+    def validate_id(cls, value):
+        return validate_uuid(value)
+
 
 class SingleSelectionValues(InternalModel):
     options: list[_SingleSelectionValue]
 
 
-class MultiSelectionValues(SingleSelectionValues, InternalModel):
-    pass
+class MultiSelectionValues(InternalModel):
+    options: list[_SingleSelectionValue]
 
 
 class SliderValues(InternalModel):
@@ -133,8 +137,12 @@ class DrawingValues(InternalModel):
 
 
 class SliderRowsValue(SliderValues, InternalModel):
-    id: uuid.UUID
+    id: str | None = None
     label: str = Field(..., max_length=11)
+
+    @validator("id")
+    def validate_id(cls, value):
+        return validate_uuid(value)
 
 
 class SliderRowsValues(InternalModel):
@@ -142,7 +150,7 @@ class SliderRowsValues(InternalModel):
 
 
 class _SingleSelectionRowValue(InternalModel):
-    id: uuid.UUID
+    id: str | None = None
     text: str = Field(..., max_length=11)
     image: str | None
     score: int | None
@@ -154,9 +162,13 @@ class _SingleSelectionRowValue(InternalModel):
             return validate_image(value)
         return value
 
+    @validator("id")
+    def validate_id(cls, value):
+        return validate_uuid(value)
+
 
 class _SingleSelectionRowsValue(InternalModel):
-    id: uuid.UUID
+    id: str | None = None
     row_name: str = Field(..., max_length=11)
     row_image: str | None
     tooltip: str | None
@@ -167,6 +179,10 @@ class _SingleSelectionRowsValue(InternalModel):
         if value is not None:
             return validate_image(value)
         return value
+
+    @validator("id")
+    def validate_id(cls, value):
+        return validate_uuid(value)
 
 
 class SingleSelectionRowsValues(InternalModel):
@@ -211,21 +227,23 @@ ResponseValueConfigOptions = [
 
 
 ResponseValueConfig = (
-    TextValues
-    | SingleSelectionValues
+    SingleSelectionValues
     | MultiSelectionValues
-    | MessageValues
     | SliderValues
     | NumberSelectionValues
-    | TimeRangeValues
-    | GeolocationValues
     | DrawingValues
-    | PhotoValues
-    | VideoValues
-    | DateValues
     | SliderRowsValues
     | SingleSelectionRowsValues
     | MultiSelectionRowsValues
     | AudioValues
     | AudioPlayerValues
 )
+
+
+def validate_uuid(value):
+    # if none, generate a new id
+    if value is None:
+        return str(uuid.uuid4())
+    if not isinstance(value, str) or not uuid.UUID(value):
+        raise ValueError("id must be a valid uuid")
+    return value
