@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 
 from httpx import Response as HttpResponse
@@ -16,6 +17,7 @@ from apps.users.tests.factories import (
     PasswordUpdateRequestFactory,
     UserCreateRequestFactory,
 )
+from config import settings
 from infrastructure.database import rollback
 from infrastructure.utility import RedisCache
 
@@ -170,4 +172,48 @@ class TestPassword(BaseTest):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == expected_result
+        assert len(keys) == 0
+
+    @rollback
+    async def test_password_recovery_approve_expired(
+        self,
+    ):
+        cache = RedisCache()
+        settings.authentication.password_recover.expiration = 1
+
+        # Creating new user
+        await self.client.post(
+            self.user_create_url, data=self.create_request_user.dict()
+        )
+
+        # Password recovery
+        password_recovery_request: PasswordRecoveryRequest = (
+            PasswordRecoveryRequest(
+                email=self.create_request_user.dict()["email"]
+            )
+        )
+
+        response = await self.client.post(
+            url=self.password_recovery_url,
+            data=password_recovery_request.dict(),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        key = (await cache.keys())[0].split(":")[-1]
+        await asyncio.sleep(2)
+
+        data = {
+            "email": self.create_request_user.dict()["email"],
+            "key": key,
+            "password": "new_password",
+        }
+
+        response = await self.client.post(
+            url=self.password_recovery_approve_url,
+            data=data,
+        )
+
+        keys = await cache.keys()
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
         assert len(keys) == 0
