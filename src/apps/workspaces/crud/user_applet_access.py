@@ -293,14 +293,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query: Query = select(
             UserSchema,
             func.string_agg(
-                UserAppletAccessSchema.meta.op("->>")("nickname"), "," ""
+                UserAppletAccessSchema.meta.op("->>")("nickname"), "|"
             ).label("nicknames"),
             func.string_agg(
-                UserAppletAccessSchema.meta.op("->>")("secretUserId"), "," ""
+                UserAppletAccessSchema.meta.op("->>")("secretUserId"), "|"
             ).label("secret_ids"),
-            func.string_agg(UserAppletAccessSchema.role, "," "").label(
-                "roles"
-            ),
+            func.string_agg(UserAppletAccessSchema.role, "|").label("roles"),
         )
         query = query.join(
             UserAppletAccessSchema,
@@ -330,9 +328,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             users.append(
                 WorkspaceUser(
                     id=user_schema.id,
-                    nickname=nicknames[0] if nicknames else None,
-                    roles=roles.split(","),
-                    secret_id=secret_ids[0] if secret_ids else None,
+                    nickname=nicknames.split("|")[0] if nicknames else None,
+                    roles=roles.split("|"),
+                    secret_id=secret_ids.split("|")[0] if secret_ids else None,
                     last_seen=user_schema.last_seen_at
                     or user_schema.created_at,
                 )

@@ -33,8 +33,8 @@ class _Cache:
         self._storage.pop(key)
         return True
 
-    async def keys(self, pattern: str | None = None) -> list[str]:
-        if pattern is None:
+    async def keys(self, pattern: str = "*") -> list[str]:
+        if pattern == "*":
             pattern = ".+"
         filtered_keys = []
         for key, [_, expire] in self._storage.items():
@@ -133,7 +133,7 @@ class RedisCache:
         await self._cache.delete(key)
         return True
 
-    async def keys(self, key: str) -> list[str]:
+    async def keys(self, key: str = "*") -> list[str]:
         if not self._cache:
             return []
         return await self._cache.keys(key)

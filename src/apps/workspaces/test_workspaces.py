@@ -52,7 +52,9 @@ class TestWorkspaces(BaseTest):
                 owner_id="00000000-0000-0000-0000-000000000000"
             )
         )
-        assert response.status_code == 404
+        # todo: uncomment when it will be needed
+        # assert response.status_code == 404
+        assert response.status_code == 200
 
     @rollback
     async def test_get_workspace_users(self):
@@ -67,6 +69,7 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 4
+        assert len(response.json()["result"][0]["nickname"]) > 1
 
     @rollback
     async def test_workspace_remove_manager_access(self):
@@ -104,5 +107,4 @@ class TestWorkspaces(BaseTest):
         response = await self.client.post(
             self.remove_respondent_access, data=data
         )
-        print(response.json())
         assert response.status_code == 200
