@@ -67,3 +67,4 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 4
+        assert len(response.json()["result"][0]["nickname"]) > 1

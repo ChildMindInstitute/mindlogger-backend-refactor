@@ -11,7 +11,10 @@
       "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "admin",
-      "meta": {}
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674781",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674781"
+      }
     }
   },
   {
@@ -26,7 +29,10 @@
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b2",
       "role": "admin",
-      "meta": {}
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674782",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674782"
+      }
     }
   },
   {
@@ -41,7 +47,10 @@
       "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "admin",
-      "meta": {}
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674783",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674783"
+      }
     }
   },
   {
@@ -56,7 +65,10 @@
       "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa3",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "admin",
-      "meta": {}
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674784",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674784"
+      }
     }
   },
   {
@@ -71,7 +83,10 @@
       "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "manager",
-      "meta": {}
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674785",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674785"
+      }
     }
   },
   {
@@ -86,7 +101,10 @@
       "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "coordinator",
-      "meta": {}
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674786",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674786"
+      }
     }
   },
   {
@@ -101,7 +119,10 @@
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "editor",
-      "meta": {}
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674787",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674787"
+      }
     }
   },
   {
@@ -116,7 +137,10 @@
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "respondent",
-      "meta": {}
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674788",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674788"
+      }
     }
   },
   {
@@ -131,7 +155,10 @@
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "respondent",
-      "meta": {}
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674789",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674789"
+      }
     }
   },
   {
@@ -146,7 +173,10 @@
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b4",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "respondent",
-      "meta": {}
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a67478f",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a67478f"
+      }
     }
   }
 ]
