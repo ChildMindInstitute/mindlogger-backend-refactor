@@ -3,6 +3,7 @@ from apps.shared.errors import AccessDeniedError, BaseError, NotFoundError
 __all__ = [
     "UserAppletAccessesNotFound",
     "AppletAccessDenied",
+    "WorkspaceDoesNotExistError",
 ]
 
 

@@ -1,17 +1,14 @@
 import uuid
 
 from apps.applets.crud import UserAppletAccessCRUD
-from apps.applets.domain import UserAppletAccess
 from apps.applets.domain.applet import AppletInfo
 from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
-from apps.users import User, UsersCRUD
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
-from apps.workspaces.domain.workspace import PublicWorkspace
+from apps.workspaces.domain.workspace import UserWorkspace
+from apps.workspaces.errors import WorkspaceDoesNotExistError
 
 __all__ = ["UserAccessService"]
-
-from apps.workspaces.errors import WorkspaceDoesNotExistError
 
 
 class UserAccessService:
@@ -19,33 +16,21 @@ class UserAccessService:
         self._user_id = user_id
         self.session = session
 
-    async def get_user_workspaces(self) -> list[PublicWorkspace]:
+    async def get_user_workspaces(self) -> list[UserWorkspace]:
         """
         Returns the user their current workspaces.
         Workspaces in which the user is the owner or invited user
         """
 
-        accesses: list[UserAppletAccess] = await UserAppletAccessCRUD(
-            self.session
-        ).get_by_user_id(self._user_id)
+        accesses = await UserAppletAccessCRUD(self.session).get_by_user_id(
+            self._user_id
+        )
 
-        workspaces: list[PublicWorkspace] = []
+        user_ids = [access.owner_id for access in accesses]
+        user_ids.append(self._user_id)
 
-        for access in accesses:
-            user_owner: User = await UsersCRUD(self.session).get_by_id(
-                access.owner_id
-            )
-            workspace_internal = await UserWorkspaceCRUD(
-                self.session
-            ).get_by_user_id(user_owner.id)
-            workspace = PublicWorkspace(
-                owner_id=access.owner_id,
-                workspace_name=workspace_internal.workspace_name,
-            )
-            if workspace not in workspaces:
-                workspaces.append(workspace)
-
-        return workspaces
+        workspaces = await UserWorkspaceCRUD().get_by_ids(user_ids)
+        return [UserWorkspace.from_orm(workspace) for workspace in workspaces]
 
     async def get_workspace_applets_by_language(
         self, language: str, query_params: QueryParams
