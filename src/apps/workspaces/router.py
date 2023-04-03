@@ -11,6 +11,7 @@ from apps.workspaces.api import (
     user_workspaces,
     workspace_applets,
     workspace_users_list,
+    workspace_users_pin,
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
@@ -53,3 +54,12 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_users_list)
+
+router.post(
+    "/{owner_id}/users/pin",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_users_pin)

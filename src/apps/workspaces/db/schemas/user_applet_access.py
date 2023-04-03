@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy import Boolean, Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
 
 from infrastructure.database.base import Base
@@ -25,3 +25,4 @@ class UserAppletAccessSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     meta = Column(JSONB())
+    is_pinned = Column(Boolean(), default=False)

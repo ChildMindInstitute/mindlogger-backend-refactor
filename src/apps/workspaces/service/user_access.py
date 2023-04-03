@@ -5,8 +5,12 @@ from apps.applets.domain.applet import AppletInfo
 from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import UserWorkspace
-from apps.workspaces.errors import WorkspaceDoesNotExistError
+from apps.workspaces.errors import (
+    UserAppletAccessesDenied,
+    WorkspaceDoesNotExistError,
+)
 
 __all__ = ["UserAccessService"]
 
@@ -29,7 +33,7 @@ class UserAccessService:
         user_ids = [access.owner_id for access in accesses]
         user_ids.append(self._user_id)
 
-        workspaces = await UserWorkspaceCRUD().get_by_ids(user_ids)
+        workspaces = await UserWorkspaceCRUD(self.session).get_by_ids(user_ids)
         return [UserWorkspace.from_orm(workspace) for workspace in workspaces]
 
     async def get_workspace_applets_by_language(
@@ -105,3 +109,17 @@ class UserAccessService:
         ).check_access_by_user_and_owner(self._user_id, owner_id)
         if not has_access:
             raise WorkspaceDoesNotExistError
+
+    async def pin(self, access_id: uuid.UUID):
+        await self._validate_pin(access_id)
+        await UserAppletAccessCRUD(self.session).pin(access_id)
+
+    async def _validate_pin(self, access_id: uuid.UUID):
+        access = await UserAppletAccessCRUD(self.session).get_by_id(access_id)
+        applet_manager_ids = await UserAppletAccessCRUD(
+            self.session
+        ).get_applet_users_by_roles(
+            access.applet_id, [Role.MANAGER, Role.COORDINATOR, Role.ADMIN]
+        )
+        if self._user_id not in applet_manager_ids:
+            raise UserAppletAccessesDenied
