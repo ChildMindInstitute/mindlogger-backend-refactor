@@ -60,8 +60,11 @@ class ActivityService:
                         activity_id=activity_id,
                         question=item.question,
                         response_type=item.response_type,
-                        answers=item.answers,
+                        response_values=item.response_values.dict()
+                        if item.response_values
+                        else None,
                         config=item.config.dict(),
+                        name=item.name,
                     )
                 )
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
@@ -143,11 +146,13 @@ class ActivityService:
                 prepared_activity_items.append(
                     PreparedActivityItemUpdate(
                         id=item.id or uuid.uuid4(),
-                        header_image=item.header_image,
+                        name=item.name,
                         activity_id=activity_id,
                         question=item.question,
                         response_type=item.response_type,
-                        answers=item.answers,
+                        response_values=item.response_values.dict()
+                        if item.response_values
+                        else None,
                         config=item.config.dict(),
                     )
                 )

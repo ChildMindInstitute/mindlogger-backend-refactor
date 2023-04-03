@@ -12,6 +12,8 @@ __all__ = [
     "PublicWorkspaceUser",
 ]
 
+from apps.workspaces.domain.constants import Role
+
 
 class PublicWorkspace(PublicModel):
     """This model is returned to the user their current workspace."""
@@ -43,15 +45,17 @@ class UserWorkspace(InternalModel):
 
 class WorkspaceUser(InternalModel):
     id: uuid.UUID
+    access_id: uuid.UUID
     nickname: str | None
-    roles: list[str]
+    roles: Role
     secret_id: str | None
     last_seen: datetime.datetime
 
 
 class PublicWorkspaceUser(PublicModel):
     id: uuid.UUID
+    access_id: uuid.UUID
     nickname: str | None
-    roles: list[str]
+    roles: Role
     secret_id: str | None
     last_seen: datetime.datetime

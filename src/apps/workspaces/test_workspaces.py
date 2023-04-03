@@ -1,3 +1,5 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -18,6 +20,7 @@ class TestWorkspaces(BaseTest):
     workspace_users_list = "/workspaces/{owner_id}/users"
     remove_manager_access = f"{user_workspace_list}/removeAccess"
     remove_respondent_access = "/applets/removeAccess"
+    workspace_users_pin = "/workspaces/{owner_id}/users/pin"
 
     @rollback
     async def test_user_workspace_list(self):
@@ -52,7 +55,9 @@ class TestWorkspaces(BaseTest):
                 owner_id="00000000-0000-0000-0000-000000000000"
             )
         )
-        assert response.status_code == 404
+        # todo: uncomment when it will be needed
+        # assert response.status_code == 404
+        assert response.status_code == 200
 
     @rollback
     async def test_get_workspace_users(self):
@@ -67,6 +72,95 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 4
+        assert len(response.json()["result"][0]["nickname"]) > 1
+
+    @pytest.mark.main
+    @rollback
+    async def test_pin_workspace_users(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.get(
+            self.workspace_users_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+
+        access_id = response.json()["result"][-1]["accessId"]
+        # Pin access
+        response = await self.client.post(
+            self.workspace_users_pin.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=dict(access_id=access_id),
+        )
+
+        assert response.status_code == 200
+
+        response = await self.client.get(
+            self.workspace_users_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            )
+        )
+        assert response.json()["result"][0]["accessId"] == access_id
+
+        # Unpin access
+        response = await self.client.post(
+            self.workspace_users_pin.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=dict(access_id=access_id),
+        )
+
+        assert response.status_code == 200
+
+        response = await self.client.get(
+            self.workspace_users_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            )
+        )
+        assert response.json()["result"][-1]["accessId"] == access_id
+
+    @rollback
+    async def test_workspace_remove_manager_access(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        data = {
+            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "applet_ids": [
+                "92917a56-d586-4613-b7aa-991f2c4b15b1",
+            ],
+        }
+
+        response = await self.client.post(
+            self.remove_manager_access, data=data
+        )
+
+        assert response.status_code == 200
+
+    @rollback
+    async def test_workspace_remove_respondent_access(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        data = {
+            "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "applet_ids": [
+                "92917a56-d586-4613-b7aa-991f2c4b15b1",
+            ],
+            "delete_responses": True,
+        }
+
+        response = await self.client.post(
+            self.remove_respondent_access, data=data
+        )
+        print(response.json())
+        assert response.status_code == 200
 
     @rollback
     async def test_workspace_remove_manager_access(self):

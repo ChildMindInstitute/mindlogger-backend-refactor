@@ -2,31 +2,16 @@ import uuid
 
 from pydantic import Field
 
-from apps.activities.domain.response_type_config import (
-    ResponseType,
-    ResponseTypeConfig,
-)
+from apps.activities.domain.activity_item_base import BaseActivityItem
 from apps.shared.domain import InternalModel
 
 
-class ActivityItemCreate(InternalModel):
-    header_image: str | None
-    question: dict[str, str]
-    response_type: ResponseType
-    answers: list
-    config: ResponseTypeConfig
-    skippable_item: bool = False
-    remove_availability_to_go_back: bool = False
+class ActivityItemCreate(BaseActivityItem, InternalModel):
+    pass
 
 
-class PreparedActivityItemCreate(InternalModel):
+class PreparedActivityItemCreate(BaseActivityItem, InternalModel):
     activity_id: uuid.UUID
-    question: dict[str, str]
-    response_type: str
-    answers: list
-    config: ResponseTypeConfig
-    skippable_item: bool = False
-    remove_availability_to_go_back: bool = False
 
 
 class ActivityCreate(InternalModel):

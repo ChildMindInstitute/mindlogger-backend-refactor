@@ -1,7 +1,6 @@
-import mimetypes
 import uuid
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 from pydantic.color import Color
 
 from apps.shared.domain import InternalModel, PublicModel
@@ -14,7 +13,12 @@ __all__ = [
     "ThemeUpdate",
     "ThemeQueryParams",
 ]
+from pydantic import validator
 
+from apps.shared.domain.custom_validations import (
+    validate_color,
+    validate_image,
+)
 from apps.shared.query_params import BaseQueryParams
 
 
@@ -56,15 +60,11 @@ class _ThemeBase(BaseModel):
 
     @validator("logo", "background_image")
     def validate_image(cls, value):
-        if (mimetypes.guess_type(value)[0] or "").startswith("image/"):
-            return value
-        raise ValueError("Not an image")
+        return validate_image(value)
 
     @validator("primary_color", "secondary_color", "tertiary_color")
     def validate_color(cls, value):
-        if type(value) is Color:
-            return value.as_hex()
-        raise ValueError("Not a color")
+        return validate_color(value)
 
 
 class ThemeRequest(_ThemeBase, PublicModel):

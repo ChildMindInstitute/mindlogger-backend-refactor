@@ -23,6 +23,15 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
 
         return result.scalars().one_or_none()
 
+    async def get_by_ids(
+        self, ids: list[uuid.UUID]
+    ) -> list[UserWorkspaceSchema]:
+        query: Query = select(self.schema_class)
+        query = query.filter(self.schema_class.user_id.in_(ids))
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
     async def save(self, schema: UserWorkspaceSchema) -> UserWorkspaceSchema:
         """Return UserWorkspace instance."""
         return await self._create(schema)

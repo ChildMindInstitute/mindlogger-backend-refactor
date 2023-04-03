@@ -9,6 +9,7 @@ from apps.authentication.deps import get_current_user
 from apps.shared.domain import ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
+from apps.workspaces.domain.user_applet_access import PinUser
 from apps.workspaces.domain.user_applet_access import (
     RemoveManagerAccess,
     RemoveRespondentAccess,
@@ -38,7 +39,11 @@ async def user_workspaces(
     return ResponseMulti[PublicWorkspace](
         count=len(workspaces),
         result=[
-            PublicWorkspace(**workspace.dict()) for workspace in workspaces
+            PublicWorkspace(
+                owner_id=workspace.user_id,
+                workspace_name=workspace.workspace_name,
+            )
+            for workspace in workspaces
         ],
     )
 
@@ -107,3 +112,13 @@ async def workspace_users_list(
         count=count,
         result=[PublicWorkspaceUser.from_orm(user) for user in users],
     )
+
+
+async def workspace_users_pin(
+    owner_id: uuid.UUID,
+    data: PinUser,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+):
+    async with atomic(session):
+        await UserAccessService(session, user.id).pin(data.access_id)

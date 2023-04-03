@@ -2,23 +2,24 @@ import uuid
 
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.applets.crud import UserAppletAccessCRUD
-from apps.applets.domain import UserAppletAccess
 from apps.applets.domain.applet import AppletInfo
 from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
-from apps.users import User, UsersCRUD
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
     RemoveManagerAccess,
     RemoveRespondentAccess,
 )
-from apps.workspaces.domain.workspace import PublicWorkspace
+from apps.workspaces.domain.workspace import UserWorkspace
+from apps.workspaces.errors import (
+    UserAppletAccessesDenied,
+    WorkspaceDoesNotExistError,
+)
 from apps.workspaces.errors import AppletAccessDenied
 
 __all__ = ["UserAccessService"]
-
-from apps.workspaces.errors import WorkspaceDoesNotExistError
 
 
 class UserAccessService:
@@ -26,33 +27,21 @@ class UserAccessService:
         self._user_id = user_id
         self.session = session
 
-    async def get_user_workspaces(self) -> list[PublicWorkspace]:
+    async def get_user_workspaces(self) -> list[UserWorkspace]:
         """
         Returns the user their current workspaces.
         Workspaces in which the user is the owner or invited user
         """
 
-        accesses: list[UserAppletAccess] = await UserAppletAccessCRUD(
-            self.session
-        ).get_by_user_id(self._user_id)
+        accesses = await UserAppletAccessCRUD(self.session).get_by_user_id(
+            self._user_id
+        )
 
-        workspaces: list[PublicWorkspace] = []
+        user_ids = [access.owner_id for access in accesses]
+        user_ids.append(self._user_id)
 
-        for access in accesses:
-            user_owner: User = await UsersCRUD(self.session).get_by_id(
-                access.owner_id
-            )
-            workspace_internal = await UserWorkspaceCRUD(
-                self.session
-            ).get_by_user_id(user_owner.id)
-            workspace = PublicWorkspace(
-                owner_id=access.owner_id,
-                workspace_name=workspace_internal.workspace_name,
-            )
-            if workspace not in workspaces:
-                workspaces.append(workspace)
-
-        return workspaces
+        workspaces = await UserWorkspaceCRUD(self.session).get_by_ids(user_ids)
+        return [UserWorkspace.from_orm(workspace) for workspace in workspaces]
 
     async def get_workspace_applets_by_language(
         self, language: str, query_params: QueryParams
@@ -226,3 +215,17 @@ class UserAccessService:
         ).check_access_by_user_and_owner(self._user_id, owner_id)
         if not has_access:
             raise WorkspaceDoesNotExistError
+
+    async def pin(self, access_id: uuid.UUID):
+        await self._validate_pin(access_id)
+        await UserAppletAccessCRUD(self.session).pin(access_id)
+
+    async def _validate_pin(self, access_id: uuid.UUID):
+        access = await UserAppletAccessCRUD(self.session).get_by_id(access_id)
+        applet_manager_ids = await UserAppletAccessCRUD(
+            self.session
+        ).get_applet_users_by_roles(
+            access.applet_id, [Role.MANAGER, Role.COORDINATOR, Role.ADMIN]
+        )
+        if self._user_id not in applet_manager_ids:
+            raise UserAppletAccessesDenied
