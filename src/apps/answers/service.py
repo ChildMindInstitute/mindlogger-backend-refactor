@@ -85,8 +85,10 @@ class AnswerService:
 
         for activity_item in activity_items:
             required = False
-            required |= activity_item.config.get("response_required", False)  # type: ignore # noqa: E501
-            required |= activity_item.config.get("skippable_item", True)  # type: ignore # noqa: E501
+            required |= getattr(
+                activity_item.config, "response_required", False
+            )
+            required |= getattr(activity_item.config, "skippable_item", True)
             if required and activity_item.id not in answer_map:
                 raise AnswerIsNotFull()
 
