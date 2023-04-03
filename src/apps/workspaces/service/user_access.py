@@ -7,17 +7,16 @@ from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
     RemoveManagerAccess,
     RemoveRespondentAccess,
 )
 from apps.workspaces.domain.workspace import UserWorkspace
 from apps.workspaces.errors import (
+    AppletAccessDenied,
     UserAppletAccessesDenied,
     WorkspaceDoesNotExistError,
 )
-from apps.workspaces.errors import AppletAccessDenied
 
 __all__ = ["UserAccessService"]
 
