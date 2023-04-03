@@ -320,6 +320,83 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         return events
 
+    async def count_general_events_by_user(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ) -> int:
+        """Count general events by applet_id and user_id"""
+        flow_ids = (
+            select(distinct(FlowEventsSchema.flow_id))
+            .select_from(FlowEventsSchema)
+            .join(
+                UserEventsSchema,
+                UserEventsSchema.event_id == FlowEventsSchema.event_id,
+            )
+            .join(
+                EventSchema,
+                EventSchema.id == FlowEventsSchema.event_id,
+            )
+            .where(UserEventsSchema.user_id == user_id)
+            .where(EventSchema.applet_id == applet_id)
+        )
+        activity_ids = (
+            select(distinct(ActivityEventsSchema.activity_id))
+            .select_from(ActivityEventsSchema)
+            .join(
+                UserEventsSchema,
+                UserEventsSchema.event_id == ActivityEventsSchema.event_id,
+            )
+            .join(
+                EventSchema,
+                EventSchema.id == ActivityEventsSchema.event_id,
+            )
+            .where(UserEventsSchema.user_id == user_id)
+            .where(EventSchema.applet_id == applet_id)
+        )
+
+        query: Query = select(
+            func.count(EventSchema.id).label("count"),
+        )
+
+        query = query.join(
+            FlowEventsSchema,
+            FlowEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+        query = query.join(
+            ActivityEventsSchema,
+            ActivityEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+
+        query = query.where(EventSchema.applet_id == applet_id)
+        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        query = query.where(FlowEventsSchema.flow_id.not_in(flow_ids))
+        query = query.where(
+            ActivityEventsSchema.activity_id.not_in(activity_ids)
+        )
+        db_result = await self._execute(query)
+
+        return db_result.scalar()
+
+    async def count_individual_events_by_user(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ) -> int:
+        """Count individual events by applet_id and user_id"""
+
+        query: Query = select(func.count(EventSchema.id))
+        query = query.join(
+            UserEventsSchema,
+            and_(
+                EventSchema.id == UserEventsSchema.event_id,
+                UserEventsSchema.user_id == user_id,
+            ),
+        )
+
+        query = query.where(EventSchema.applet_id == applet_id)
+        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        db_result = await self._execute(query)
+        return db_result.scalar()
+
 
 class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
     schema_class = UserEventsSchema

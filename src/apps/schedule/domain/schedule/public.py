@@ -73,11 +73,11 @@ class TimerDto(PublicModel):
 
 
 class EventAvailabilityDto(PublicModel):
-    oneTimeCompletion: bool
+    oneTimeCompletion: bool | None = None
     periodicityType: PeriodicityType
     timeFrom: HourMinute | None = None
     timeTo: HourMinute | None = None
-    allowAccessBeforeFromTime: bool
+    allowAccessBeforeFromTime: bool | None = None
     startDate: date | None = None
     endDate: date | None = None
 
