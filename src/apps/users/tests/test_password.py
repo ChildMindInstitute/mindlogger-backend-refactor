@@ -173,6 +173,7 @@ class TestPassword(BaseTest):
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == expected_result
         assert len(keys) == 0
+        assert len(keys) == 0
 
     @rollback
     async def test_password_recovery_approve_expired(

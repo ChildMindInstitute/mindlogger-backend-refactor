@@ -8,6 +8,7 @@ __all__ = [
     "UserAppletAccess",
     "PublicUserAppletAccess",
     "UserAppletAccessItem",
+    "PinUser",
 ]
 
 
@@ -18,6 +19,7 @@ class UserAppletAccessCreate(InternalModel):
     owner_id: uuid.UUID
     invitor_id: uuid.UUID
     meta: dict
+    is_pinned: bool
 
 
 class UserAppletAccess(UserAppletAccessCreate):
@@ -53,3 +55,7 @@ class PublicAppletUser(PublicModel):
     first_name: str
     last_name: str
     roles: list[str]
+
+
+class PinUser(InternalModel):
+    access_id: uuid.UUID
