@@ -1,6 +1,9 @@
 import uuid
 
-from apps.activities.domain.response_type_config import ResponseType
+from apps.activities.domain.response_type_config import (
+    ResponseType,
+    ResponseTypeConfig,
+)
 from apps.shared.domain import InternalModel
 
 
@@ -8,11 +11,9 @@ class ActivityItemHistory(InternalModel):
     id: uuid.UUID
     id_version: str
     activity_id: str
-    header_image: str | None
+    name: str
     question: dict[str, str]
     response_type: ResponseType
-    answers: dict | list | None
-    config: dict
+    response_values: dict | list | None
+    config: ResponseTypeConfig
     order: int
-    skippable_item: bool
-    remove_availability_to_go_back: bool

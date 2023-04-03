@@ -10,11 +10,9 @@ class ActivityItem(PublicModel):
     activity_id: uuid.UUID
     question: dict[str, str]
     response_type: str
-    answers: list
+    response_values: list | dict | None
     config: dict = dict()
     order: int
-    skippable_item: bool = False
-    remove_availability_to_go_back: bool = False
 
 
 class Activity(PublicModel):

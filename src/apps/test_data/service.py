@@ -8,8 +8,8 @@ from apps.activities.domain.activity_create import (
     ActivityItemCreate,
 )
 from apps.activities.domain.response_type_config import (
-    ChoiceConfig,
     ResponseType,
+    SingleSelectionConfig,
     TextConfig,
 )
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
@@ -158,17 +158,15 @@ class TestDataService:
         for _ in range(count):
             items.append(
                 ActivityItemCreate(
-                    header_image=self.random_image(),
+                    name=self.random_string(),
                     question=dict(
                         en=self.random_string(), fr=self.random_string()
                     ),
                     response_type=ResponseType.TEXT,
-                    answers=[],
+                    response_values=None,
                     config=self._generate_response_type_config(
                         ResponseType.TEXT
                     ),
-                    skippable_item=self.random_boolean(),
-                    remove_availability_to_go_back=self.random_boolean(),
                 )
             )
         return items
@@ -182,12 +180,23 @@ class TestDataService:
                 numerical_response_required=self.random_boolean(),
                 response_data_identifier=self.random_boolean(),
                 response_required=self.random_boolean(),
+                skippable_item=self.random_boolean(),
+                remove_back_button=self.random_boolean(),
             )
-        elif type_ == ResponseType.CHOICE:
-            return ChoiceConfig(
-                set_alert=self.random_boolean(),
-                option_score=self.random_boolean(),
-                randomize_response_options=self.random_boolean(),
+        elif type_ == ResponseType.SINGLESELECT:
+            return SingleSelectionConfig(
+                remove_back_button=self.random_boolean(),
+                skippable_item=self.random_boolean(),
+                randomize_options=self.random_boolean(),
+                timer=0,
+                add_scores=self.random_boolean(),
+                set_alerts=self.random_boolean(),
+                set_palette=self.random_boolean(),
+                add_tooltip=self.random_boolean(),
+                additional_response_option={
+                    "text_input_option": False,
+                    "text_input_required": False,
+                },
             )
 
     def _generate_flow_items(
