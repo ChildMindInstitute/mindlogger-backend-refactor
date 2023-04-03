@@ -63,9 +63,15 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         answer = decrypt(encrypted_value, key, iv)
         return answer
 
-    async def delete_by_applet_id(self, applet_id: uuid.UUID):
+    async def delete_by_applet_user(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID | None = None
+    ):
         query: Query = delete(AnswerActivityItemsSchema)
         query = query.where(AnswerActivityItemsSchema.applet_id == applet_id)
+        if user_id:
+            query = query.where(
+                AnswerActivityItemsSchema.respondent_id == user_id
+            )
         await self._execute(query)
 
     async def get_for_answers_created(
