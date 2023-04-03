@@ -19,7 +19,7 @@ from apps.schedule.domain.constants import PeriodicityType, TimerType
 from apps.schedule.domain.schedule import EventRequest, PeriodicityRequest
 from apps.schedule.service import ScheduleService
 from apps.shared.query_params import QueryParams
-from apps.test_data.domain import AnchorDateTime
+from apps.test_data.domain import AnchorDateTime, image_url
 
 
 class TestDataService:
@@ -36,20 +36,6 @@ class TestDataService:
         ]
 
     async def create_applet(self, anchor_datetime: AnchorDateTime):
-        # delete applets with suffix '-generated'
-
-        old_applets = await AppletService(
-            self.session, self.user_id
-        ).get_list_by_single_language(
-            language="en", query_params=QueryParams(filters={"roles": "ADMIN"})
-        )
-
-        if old_applets:
-            for old_applet in old_applets:
-                if old_applet.display_name.endswith("-generated"):
-                    await AppletService(
-                        self.session, self.user_id
-                    ).delete_applet_by_id(old_applet.id)
 
         applet_create = self._generate_applet()
         applet = await AppletService(self.session, self.user_id).create(
@@ -93,8 +79,8 @@ class TestDataService:
                 en=self.random_string(50), fr=self.random_string(50)
             ),
             about=dict(en=self.random_string(50), fr=self.random_string(50)),
-            image=self.random_string(),
-            watermark=self.random_string(),
+            image=image_url,
+            watermark=image_url,
             theme_id=None,
             report_server_ip="",
             report_public_key="",
@@ -120,8 +106,8 @@ class TestDataService:
                     description=dict(
                         en=self.random_string(), fr=self.random_string()
                     ),
-                    splash_screen=self.random_image(),
-                    image=self.random_image(),
+                    splash_screen=image_url,
+                    image=image_url,
                     show_all_at_once=self.random_boolean(),
                     is_skippable=self.random_boolean(),
                     is_reviewable=self.random_boolean(),
@@ -250,11 +236,7 @@ class TestDataService:
         flow_id: uuid.UUID | None = None,
     ):
         return EventRequest(
-            start_time="00:00:00",
-            end_time="23:59:59",
-            access_before_schedule=False,
-            one_time_completion=self.random_boolean(),
-            timer=timedelta(minutes=random.randint(1, 10)),
+            timer=None,
             timer_type=TimerType.NOT_SET,
             periodicity=PeriodicityRequest(
                 type=PeriodicityType.ALWAYS,
@@ -678,3 +660,20 @@ class TestDataService:
     def _get_timer_option(self, index: int):
         # get from option index mod length
         return self.timer_options[index % len(self.timer_options)]
+
+    async def delete_generated_applets(self):
+        # delete applets with suffix '-generated'
+
+        old_applets = await AppletService(
+            self.session, self.user_id
+        ).get_list_by_single_language(
+            language="en", query_params=QueryParams(filters={"roles": "admin"})
+        )
+
+        print(old_applets)
+        if old_applets:
+            for old_applet in old_applets:
+                if old_applet.display_name.endswith("-generated"):
+                    await AppletService(
+                        self.session, self.user_id
+                    ).delete_applet_by_id(old_applet.id)
