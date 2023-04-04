@@ -9,12 +9,7 @@ from pydantic import (
 )
 from pydantic.color import Color
 
-from apps.shared.domain import (
-    InternalModel,
-    validate_audio,
-    validate_color,
-    validate_image,
-)
+from apps.shared.domain import validate_audio, validate_color, validate_image
 
 
 class TextValues(BaseModel):
