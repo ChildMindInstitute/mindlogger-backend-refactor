@@ -2,7 +2,7 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE
-from apps.test_data.api import test_data_generate, test_data_delete_generated
+from apps.test_data.api import test_data_delete_generated, test_data_generate
 
 router = APIRouter(prefix="/data")
 

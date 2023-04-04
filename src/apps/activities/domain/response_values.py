@@ -209,7 +209,6 @@ ResponseValueConfigOptions = [
     TextValues,
     SingleSelectionValues,
     MultiSelectionValues,
-    MessageValues,
     SliderValues,
     NumberSelectionValues,
     TimeRangeValues,
@@ -223,6 +222,7 @@ ResponseValueConfigOptions = [
     MultiSelectionRowsValues,
     AudioValues,
     AudioPlayerValues,
+    MessageValues,
 ]
 
 
