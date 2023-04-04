@@ -34,9 +34,16 @@ class TestAnswerActivityItems(BaseTest):
                 dict(
                     activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     answer=dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    ),
+                ),
+                dict(
+                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    answer=dict(
                         value="string",
                     ),
-                )
+                ),
             ],
         )
 
@@ -58,9 +65,15 @@ class TestAnswerActivityItems(BaseTest):
                 dict(
                     activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     answer=dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                    ),
+                ),
+                dict(
+                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    answer=dict(
                         value="string",
                     ),
-                )
+                ),
             ],
         )
 
