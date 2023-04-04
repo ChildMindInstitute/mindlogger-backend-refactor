@@ -6,11 +6,11 @@ from apps.activities.domain.activity_item_base import BaseActivityItem
 from apps.shared.domain import InternalModel
 
 
-class ActivityItemUpdate(BaseActivityItem):
+class ActivityItemUpdate(BaseActivityItem, InternalModel):
     id: uuid.UUID | None
 
 
-class PreparedActivityItemUpdate(BaseActivityItem):
+class PreparedActivityItemUpdate(BaseActivityItem, InternalModel):
     id: uuid.UUID | None
     activity_id: uuid.UUID
 

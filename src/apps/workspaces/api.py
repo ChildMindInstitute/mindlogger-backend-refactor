@@ -1,7 +1,7 @@
 import uuid
 from copy import deepcopy
 
-from fastapi import Depends
+from fastapi import Body, Depends
 
 from apps.applets.domain.applet import AppletInfoPublic, AppletPublic
 from apps.applets.filters import AppletQueryParams
@@ -9,7 +9,11 @@ from apps.authentication.deps import get_current_user
 from apps.shared.domain import ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
-from apps.workspaces.domain.user_applet_access import PinUser
+from apps.workspaces.domain.user_applet_access import (
+    PinUser,
+    RemoveManagerAccess,
+    RemoveRespondentAccess,
+)
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
     PublicWorkspaceUser,
@@ -69,6 +73,24 @@ async def workspace_applets(
         result=[AppletInfoPublic.from_orm(applet) for applet in applets],
         count=count,
     )
+
+
+async def workspace_remove_manager_access(
+    user: User = Depends(get_current_user),
+    schema: RemoveManagerAccess = Body(...),
+    session=Depends(session_manager.get_session),
+):
+    """Remove manager access from a specific user."""
+
+    await UserAccessService(session, user.id).remove_manager_access(schema)
+
+
+async def applet_remove_respondent_access(
+    user: User = Depends(get_current_user),
+    schema: RemoveRespondentAccess = Body(...),
+    session=Depends(session_manager.get_session),
+):
+    await UserAccessService(session, user.id).remove_respondent_access(schema)
 
 
 async def workspace_users_list(

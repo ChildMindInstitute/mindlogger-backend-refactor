@@ -8,8 +8,10 @@ from apps.shared.domain.response import (
     DEFAULT_OPENAPI_RESPONSE,
 )
 from apps.workspaces.api import (
+    applet_remove_respondent_access,
     user_workspaces,
     workspace_applets,
+    workspace_remove_manager_access,
     workspace_users_list,
     workspace_users_pin,
 )
@@ -63,3 +65,25 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_users_pin)
+
+# Remove manager access from a specific user
+router.post(
+    "/removeAccess",
+    response_model=None,
+    responses={
+        status.HTTP_200_OK: {"model": None},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(workspace_remove_manager_access)
+
+
+applet_router = APIRouter(prefix="/applets", tags=["Applets"])
+
+applet_router.post(
+    "/removeAccess",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_remove_respondent_access)
