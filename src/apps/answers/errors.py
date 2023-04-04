@@ -20,6 +20,11 @@ class AnswerIsNotFull(ValidationError):
         super().__init__(message=message)
 
 
+class WrongAnswerType(ValidationError):
+    def __init__(self, *_, message="Answer contract is wrong."):
+        super().__init__(message=message)
+
+
 class FlowDoesNotHaveActivity(ValidationError):
     def __init__(
         self, *_, message="Activity flow does not have such activity."

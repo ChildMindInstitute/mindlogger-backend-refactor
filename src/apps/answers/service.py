@@ -1,6 +1,7 @@
 import json
 import uuid
 
+from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
@@ -12,11 +13,12 @@ from apps.answers.db.schemas import (
     AnswerActivityItemsSchema,
     AnswerFlowItemsSchema,
 )
-from apps.answers.domain import AppletAnswerCreate
+from apps.answers.domain import ANSWER_TYPE_MAP, AppletAnswerCreate
 from apps.answers.errors import (
     AnswerIsNotFull,
     FlowDoesNotHaveActivity,
     UserDoesNotHavePermissionError,
+    WrongAnswerType,
 )
 from apps.applets.service import AppletHistoryService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
@@ -84,13 +86,24 @@ class AnswerService:
             answer_map[answer.activity_item_id] = answer
 
         for activity_item in activity_items:
-            required = False
-            required |= getattr(
-                activity_item.config, "response_required", False
-            )
-            required |= getattr(activity_item.config, "skippable_item", True)
-            if required and activity_item.id not in answer_map:
-                raise AnswerIsNotFull()
+            if activity_item.response_type == ResponseType.TEXT:
+                required = False
+                required |= getattr(
+                    activity_item.config, "response_required", False
+                )
+            else:
+                required = True
+            required |= getattr(activity_item.config, "skippable_item", False)
+            if required:
+                answer_class = ANSWER_TYPE_MAP.get(activity_item.response_type)
+
+                if activity_item.id not in answer_map:
+                    raise AnswerIsNotFull()
+
+                if not isinstance(
+                    answer_map[activity_item.id].answer, answer_class
+                ):
+                    raise WrongAnswerType()
 
     async def _validate_applet_for_anonymous_response(
         self, applet_id: uuid.UUID, version: str
@@ -129,7 +142,7 @@ class AnswerService:
                         id=uuid.uuid4(),
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
-                        answer=json.dumps(answer.answer.dict()),
+                        answer=json.dumps(answer.answer.dict(), default=str),
                         applet_history_id=applet_id_version,
                         flow_history_id=flow_id_version,
                         activity_history_id=activity_id_version,
@@ -142,7 +155,7 @@ class AnswerService:
                         id=uuid.uuid4(),
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
-                        answer=json.dumps(answer.answer.dict()),
+                        answer=json.dumps(answer.answer.dict(), default=str),
                         applet_history_id=applet_id_version,
                         activity_history_id=activity_id_version,
                         activity_item_history_id=activity_item_id_version,
