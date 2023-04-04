@@ -12,6 +12,7 @@ __all__ = [
     "UserAppletAccessItem",
     "PinUser",
     "RemoveRespondentAccess",
+    "RemoveManagerAccess",
 ]
 
 

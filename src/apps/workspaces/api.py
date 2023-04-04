@@ -16,7 +16,8 @@ from apps.workspaces.domain.user_applet_access import (
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
-    PublicWorkspaceUser,
+    PublicWorkspaceManager,
+    PublicWorkspaceRespondent,
 )
 from apps.workspaces.filters import WorkspaceUsersQueryParams
 from apps.workspaces.service.user_access import UserAccessService
@@ -93,24 +94,45 @@ async def applet_remove_respondent_access(
     await UserAccessService(session, user.id).remove_respondent_access(schema)
 
 
-async def workspace_users_list(
+async def workspace_respondents_list(
     owner_id: uuid.UUID,
     user: User = Depends(get_current_user),
     query_params: QueryParams = Depends(
         parse_query_params(WorkspaceUsersQueryParams)
     ),
     session=Depends(session_manager.get_session),
-) -> ResponseMulti[PublicWorkspaceUser]:
+) -> ResponseMulti[PublicWorkspaceRespondent]:
     async with atomic(session):
-        users = await WorkspaceService(session, user.id).get_workspace_users(
-            owner_id, deepcopy(query_params)
-        )
+        users = await WorkspaceService(
+            session, user.id
+        ).get_workspace_respondents(owner_id, deepcopy(query_params))
         count = await WorkspaceService(
             session, user.id
-        ).get_workspace_users_count(owner_id, deepcopy(query_params))
+        ).get_workspace_respondents_count(owner_id, deepcopy(query_params))
     return ResponseMulti(
         count=count,
-        result=[PublicWorkspaceUser.from_orm(user) for user in users],
+        result=[PublicWorkspaceRespondent.from_orm(user) for user in users],
+    )
+
+
+async def workspace_managers_list(
+    owner_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(
+        parse_query_params(WorkspaceUsersQueryParams)
+    ),
+    session=Depends(session_manager.get_session),
+) -> ResponseMulti[PublicWorkspaceManager]:
+    async with atomic(session):
+        users = await WorkspaceService(
+            session, user.id
+        ).get_workspace_managers(owner_id, deepcopy(query_params))
+        count = await WorkspaceService(
+            session, user.id
+        ).get_workspace_managers_count(owner_id, deepcopy(query_params))
+    return ResponseMulti(
+        count=count,
+        result=[PublicWorkspaceManager.from_orm(user) for user in users],
     )
 
 

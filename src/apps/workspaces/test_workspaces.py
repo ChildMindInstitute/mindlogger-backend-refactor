@@ -1,4 +1,5 @@
 from apps.shared.test import BaseTest
+from apps.workspaces.domain.constants import Role
 from infrastructure.database import rollback
 
 
@@ -15,10 +16,11 @@ class TestWorkspaces(BaseTest):
     login_url = "/auth/login"
     user_workspace_list = "/workspaces"
     workspace_applets_list = "/workspaces/{owner_id}/applets"
-    workspace_users_list = "/workspaces/{owner_id}/users"
+    workspace_respondents_list = "/workspaces/{owner_id}/respondents"
+    workspace_managers_list = "/workspaces/{owner_id}/managers"
     remove_manager_access = f"{user_workspace_list}/removeAccess"
     remove_respondent_access = "/applets/removeAccess"
-    workspace_users_pin = "/workspaces/{owner_id}/users/pin"
+    workspace_respondents_pin = "/workspaces/{owner_id}/respondents/pin"
 
     @rollback
     async def test_user_workspace_list(self):
@@ -58,19 +60,35 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
 
     @rollback
-    async def test_get_workspace_users(self):
+    async def test_get_workspace_respondents(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         response = await self.client.get(
-            self.workspace_users_list.format(
+            self.workspace_respondents_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 2
+        assert len(response.json()["result"][0]["nickname"]) > 1
+        assert response.json()["result"][0]["role"] == Role.RESPONDENT
+        assert response.json()["result"][1]["role"] == Role.RESPONDENT
+
+    @rollback
+    async def test_get_workspace_managers(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.get(
+            self.workspace_managers_list.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             )
         )
 
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 4
-        assert len(response.json()["result"][0]["nickname"]) > 1
 
     @rollback
     async def test_pin_workspace_users(self):
@@ -78,7 +96,7 @@ class TestWorkspaces(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         response = await self.client.get(
-            self.workspace_users_list.format(
+            self.workspace_respondents_list.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             )
         )
@@ -88,7 +106,7 @@ class TestWorkspaces(BaseTest):
         access_id = response.json()["result"][-1]["accessId"]
         # Pin access
         response = await self.client.post(
-            self.workspace_users_pin.format(
+            self.workspace_respondents_pin.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
             data=dict(access_id=access_id),
@@ -97,7 +115,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
 
         response = await self.client.get(
-            self.workspace_users_list.format(
+            self.workspace_respondents_list.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             )
         )
@@ -105,7 +123,7 @@ class TestWorkspaces(BaseTest):
 
         # Unpin access
         response = await self.client.post(
-            self.workspace_users_pin.format(
+            self.workspace_respondents_pin.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
             data=dict(access_id=access_id),
@@ -114,7 +132,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
 
         response = await self.client.get(
-            self.workspace_users_list.format(
+            self.workspace_respondents_list.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             )
         )

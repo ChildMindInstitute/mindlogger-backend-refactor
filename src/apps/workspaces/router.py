@@ -11,13 +11,15 @@ from apps.workspaces.api import (
     applet_remove_respondent_access,
     user_workspaces,
     workspace_applets,
+    workspace_managers_list,
     workspace_remove_manager_access,
-    workspace_users_list,
+    workspace_respondents_list,
     workspace_users_pin,
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
-    PublicWorkspaceUser,
+    PublicWorkspaceManager,
+    PublicWorkspaceRespondent,
 )
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
@@ -47,18 +49,31 @@ router.get(
 )(workspace_applets)
 
 router.get(
-    "/{owner_id}/users",
+    "/{owner_id}/respondents",
     status_code=status.HTTP_200_OK,
-    response_model=ResponseMulti[PublicWorkspaceUser],
+    response_model=ResponseMulti[PublicWorkspaceRespondent],
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[PublicWorkspaceUser]},
+        status.HTTP_200_OK: {
+            "model": ResponseMulti[PublicWorkspaceRespondent]
+        },
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(workspace_users_list)
+)(workspace_respondents_list)
+
+router.get(
+    "/{owner_id}/managers",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[PublicWorkspaceManager],
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicWorkspaceManager]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_managers_list)
 
 router.post(
-    "/{owner_id}/users/pin",
+    "/{owner_id}/respondents/pin",
     status_code=status.HTTP_200_OK,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
