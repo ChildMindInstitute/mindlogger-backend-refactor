@@ -41,15 +41,20 @@ class TestDataService:
         applet = await AppletService(self.session, self.user_id).create(
             applet_create
         )
-
-        await self._create_activity_events(
-            applet_id=applet.id,
-            activity_ids=[activity.id for activity in applet.activities],
-            anchor_datetime=anchor_datetime.anchor_date_time,
+        entity_ids = [
+            {"id": activity.id, "is_activity": True}
+            for activity in applet.activities
+        ]
+        entity_ids.extend(
+            [
+                {"id": flow.id, "is_activity": False}
+                for flow in applet.activity_flows
+            ]
         )
-        await self._create_flow_events(
+
+        await self._create_all_events(
             applet_id=applet.id,
-            flow_ids=[flow.id for flow in applet.activity_flows],
+            entity_ids=entity_ids,
             anchor_datetime=anchor_datetime.anchor_date_time,
         )
         return applet
@@ -72,9 +77,7 @@ class TestDataService:
             activities
         )
         applet_create = AppletCreate(
-            display_name=f"{self.random_string()}-password-"
-            "Test1234!-generated",
-            # noqa: E501
+            display_name=f"{self.random_string()}-generated",  # noqa: E501
             description=dict(
                 en=self.random_string(50), fr=self.random_string(50)
             ),
@@ -95,13 +98,13 @@ class TestDataService:
 
         return applet_create
 
-    def _generate_activities(self, count=10) -> list[ActivityCreate]:
+    def _generate_activities(self, count=5) -> list[ActivityCreate]:
         activities = []
-        for _ in range(count):
+        for index in range(count):
             items = self._generate_activity_items()
             activities.append(
                 ActivityCreate(
-                    name=self.random_string(),
+                    name=f"Activity {index+1}",
                     key=uuid.uuid4(),
                     description=dict(
                         en=self.random_string(), fr=self.random_string()
@@ -120,14 +123,14 @@ class TestDataService:
         return activities
 
     def _generate_activity_flows_from_activities(
-        self, activities: list[ActivityCreate], count=10
+        self, activities: list[ActivityCreate], count=5
     ) -> list[FlowCreate]:
         flows = []
-        for _ in range(count):
+        for index in range(count):
             flow_items = self._generate_flow_items(activities)
             flows.append(
                 FlowCreate(
-                    name=self.random_string(),
+                    name=f"Flow {index+1}",
                     description=dict(
                         en=self.random_string(), fr=self.random_string()
                     ),
@@ -196,36 +199,18 @@ class TestDataService:
 
         return items
 
-    async def _create_activity_events(
+    async def _create_all_events(
         self,
         anchor_datetime: datetime,
         applet_id: uuid.UUID,
-        activity_ids: list[uuid.UUID] | None = None,
+        entity_ids: list[dict] | None = None,
     ):
         # create events for activities
         events = []
-        if activity_ids:
+        if entity_ids:
             events = await self._create_events(
                 applet_id=applet_id,
-                entity_ids=activity_ids,
-                is_activity=True,
-                anchor_datetime=anchor_datetime,
-            )
-        return events
-
-    async def _create_flow_events(
-        self,
-        anchor_datetime: datetime,
-        applet_id: uuid.UUID,
-        flow_ids: list[uuid.UUID] | None = None,
-    ):
-        # create events for flows
-        events = []
-        if flow_ids:
-            events = await self._create_events(
-                applet_id=applet_id,
-                entity_ids=flow_ids,
-                is_activity=False,
+                entity_ids=entity_ids,
                 anchor_datetime=anchor_datetime,
             )
         return events
@@ -236,8 +221,11 @@ class TestDataService:
         flow_id: uuid.UUID | None = None,
     ):
         return EventRequest(
-            timer=None,
+            timer=timedelta(minutes=1),
             timer_type=TimerType.NOT_SET,
+            one_time_completion=self.random_boolean(),
+            start_time="00:00",
+            end_time="23:59",
             periodicity=PeriodicityRequest(
                 type=PeriodicityType.ALWAYS,
                 start_date=None,
@@ -252,17 +240,16 @@ class TestDataService:
     def _get_generated_event(
         self,
         is_activity: bool,
-        entity_ids: list[uuid.UUID],
-        current_entity_index: int,
+        entity_id: uuid.UUID,
     ):
 
         if is_activity:
             default_event = self._generate_event_request(
-                activity_id=entity_ids[current_entity_index],
+                activity_id=entity_id,
             )
         else:
             default_event = self._generate_event_request(
-                flow_id=entity_ids[current_entity_index],
+                flow_id=entity_id,
             )
         return default_event
 
@@ -270,17 +257,17 @@ class TestDataService:
         self,
         applet_id: uuid.UUID,
         anchor_datetime: datetime,
-        entity_ids: list[uuid.UUID] | None = None,
-        is_activity: bool = True,
+        entity_ids: list[dict] | None = None,
     ):
         events = []
         if entity_ids:
             current_entity_index = 0
             # first event always available and allow_access_before_schedule false # noqa: E501
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
             default_event.access_before_schedule = False
             default_event = self._set_timer(
@@ -298,9 +285,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
             default_event.access_before_schedule = True
             default_event = self._set_timer(
@@ -318,9 +306,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
             default_event.periodicity.start_date = (
                 anchor_datetime.date() - timedelta(days=5)
@@ -344,9 +333,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
             default_event.periodicity.start_date = (
                 anchor_datetime.date() - timedelta(days=2)
@@ -370,9 +360,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
             default_event.periodicity.start_date = (
                 anchor_datetime.date() + timedelta(days=2)
@@ -396,9 +387,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -425,9 +417,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -454,9 +447,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -482,9 +476,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -510,9 +505,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
 
             default_event.periodicity.selected_date = (
@@ -535,9 +531,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
 
             default_event.periodicity.selected_date = anchor_datetime.date()
@@ -557,9 +554,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
 
             default_event.periodicity.selected_date = (
@@ -581,9 +579,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
 
             default_event.periodicity.selected_date = anchor_datetime.date()
@@ -604,9 +603,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
 
             default_event.periodicity.type = PeriodicityType.WEEKDAYS
@@ -626,9 +626,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),
             )
 
             default_event.periodicity.selected_date = anchor_datetime.date()

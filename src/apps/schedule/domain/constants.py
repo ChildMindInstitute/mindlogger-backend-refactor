@@ -35,8 +35,8 @@ class DefaultEvent(BaseModel):
     timer_type: TimerType = TimerType.NOT_SET
     periodicity: dict = {
         "type": PeriodicityType.ALWAYS,
-        "start_date": date.min,
-        "end_date": date.max,
+        "start_date": None,
+        "end_date": None,
         "selectedDate": date.today(),
     }
     user_id: uuid.UUID | None = None
