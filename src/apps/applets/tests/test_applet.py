@@ -1,7 +1,5 @@
 import asyncio
 
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -488,7 +486,6 @@ class TestApplet(BaseTest):
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 
-    @pytest.mark.main
     @rollback
     async def test_applet_delete(self):
         await self.client.login(
