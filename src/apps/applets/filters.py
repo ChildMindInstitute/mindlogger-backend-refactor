@@ -7,7 +7,6 @@ from apps.shared.query_params import BaseQueryParams
 class AppletQueryParams(BaseQueryParams):
     roles: str = ",".join(Role.as_list())
     ordering: str = "-id"
-    folder_id: uuid.UUID | None = None
 
 
 class AppletUsersQueryParams(BaseQueryParams):
