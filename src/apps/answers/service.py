@@ -100,8 +100,9 @@ class AnswerService:
                 if activity_item.id not in answer_map:
                     raise AnswerIsNotFull()
 
-                if not isinstance(
-                    answer_map[activity_item.id].answer, answer_class
+                if (
+                    not type(answer_map[activity_item.id].answer)
+                    == answer_class
                 ):
                     raise WrongAnswerType()
 

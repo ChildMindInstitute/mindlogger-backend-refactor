@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from apps.activities.domain.response_type_config import ResponseType
 from apps.shared.domain import InternalModel
@@ -26,7 +27,7 @@ class Slider(InternalModel):
 
 AnswerTypes = SingleSelection | Slider | MultipleSelection | Text
 
-ANSWER_TYPE_MAP = {
+ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
     ResponseType.TEXT: Text,
     ResponseType.SINGLESELECT: SingleSelection,
     ResponseType.MULTISELECT: MultipleSelection,
