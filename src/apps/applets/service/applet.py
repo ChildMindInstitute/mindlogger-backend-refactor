@@ -445,6 +445,27 @@ class AppletService:
         system_encrypted_key = encrypt(key, iv=iv)
         return base64.b64encode(system_encrypted_key).decode()
 
+    async def get_full_applet(self, applet_id: uuid.UUID) -> AppletFull:
+        applet = await self._validate_get_full_applet(applet_id)
+        applet.activities = await ActivityService(
+            self.session, self.user_id
+        ).get_full_activities(applet_id)
+        applet.activity_flows = await FlowService(self.session).get_full_flows(
+            applet_id
+        )
+        return applet
+
+    async def _validate_get_full_applet(
+        self, applet_id: uuid.UUID
+    ) -> AppletFull:
+        applet = await AppletsCRUD().get_by_id(applet_id)
+        role = await UserAppletAccessService(
+            self.session, self.user_id, applet_id
+        ).get_editors_role()
+        if not role:
+            raise AppletAccessDenied()
+        return AppletFull.from_orm(applet)
+
 
 class PublicAppletService:
     def __init__(self, session):

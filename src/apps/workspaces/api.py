@@ -4,9 +4,11 @@ from copy import deepcopy
 from fastapi import Body, Depends
 
 from apps.applets.domain.applet import AppletInfoPublic, AppletPublic
+from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.filters import AppletQueryParams
+from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
-from apps.shared.domain import ResponseMulti
+from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.workspaces.domain.user_applet_access import (
@@ -74,6 +76,18 @@ async def workspace_applets(
         result=[AppletInfoPublic.from_orm(applet) for applet in applets],
         count=count,
     )
+
+
+async def workspace_applet_detail(
+    owner_id: uuid.UUID,
+    id_: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+) -> Response[PublicAppletFull]:
+    async with atomic(session):
+        applet = await AppletService(session, user.id).get_full_applet(id_)
+
+    return Response(result=PublicAppletFull.from_orm(applet))
 
 
 async def workspace_remove_manager_access(

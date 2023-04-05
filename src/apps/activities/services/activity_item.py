@@ -76,6 +76,14 @@ class ActivityItemService:
             )
         return items
 
+    async def get_items_by_activity_ids(
+        self, activity_ids: list[uuid.UUID]
+    ) -> list[ActivityItemFull]:
+        schemas = await ActivityItemsCRUD(self.session).get_by_activity_ids(
+            activity_ids
+        )
+        return [ActivityItemFull.from_orm(schema) for schema in schemas]
+
     async def remove_applet_activity_items(self, applet_id: uuid.UUID):
         await ActivityItemsCRUD(self.session).delete_by_applet_id(applet_id)
 

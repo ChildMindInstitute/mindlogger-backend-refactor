@@ -2,7 +2,8 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.applets.domain.applet import AppletInfoPublic
-from apps.shared.domain import ResponseMulti
+from apps.applets.domain.applet_full import PublicAppletFull
+from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
@@ -10,6 +11,7 @@ from apps.shared.domain.response import (
 from apps.workspaces.api import (
     applet_remove_respondent_access,
     user_workspaces,
+    workspace_applet_detail,
     workspace_applets,
     workspace_managers_list,
     workspace_remove_manager_access,
@@ -47,6 +49,17 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_applets)
+
+router.get(
+    "/{owner_id}/applets/{id_}",
+    response_model=Response[PublicAppletFull],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicAppletFull]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_applet_detail)
 
 router.get(
     "/{owner_id}/respondents",

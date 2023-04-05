@@ -194,6 +194,22 @@ class FlowService:
 
         return flows
 
+    async def get_full_flows(self, applet_id: uuid.UUID) -> list[FlowFull]:
+        schemas = await FlowsCRUD(self.session).get_by_applet_id(applet_id)
+        flow_map = dict()
+        flows = []
+        for schema in schemas:
+            flow = FlowFull.from_orm(schema)
+            flow_map[flow.id] = flow
+            flows.append(flow)
+        items = await FlowItemService(self.session).get_by_flow_ids(
+            list(flow_map.keys())
+        )
+        for item in items:
+            flow_map[item.activity_flow_id].items.append(item)
+
+        return flows
+
     @staticmethod
     def _get_by_language(values: dict, language: str):
         """
