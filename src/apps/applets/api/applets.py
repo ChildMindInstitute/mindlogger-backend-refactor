@@ -111,7 +111,10 @@ async def applet_versions_retrieve(
 ) -> ResponseMulti[PublicHistory]:
     async with atomic(session):
         histories = await retrieve_versions(session, id_)
-    return ResponseMulti(result=[PublicHistory(**h.dict()) for h in histories])
+    return ResponseMulti(
+        result=[PublicHistory(**h.dict()) for h in histories],
+        count=len(histories),
+    )
 
 
 async def applet_version_retrieve(
