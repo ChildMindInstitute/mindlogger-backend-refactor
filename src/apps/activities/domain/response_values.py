@@ -1,46 +1,54 @@
 import uuid
 
-from pydantic import (
-    BaseModel,
-    Field,
-    NonNegativeInt,
-    root_validator,
-    validator,
-)
+from pydantic import Field, NonNegativeInt, root_validator, validator
 from pydantic.color import Color
 
-from apps.shared.domain import validate_audio, validate_color, validate_image
+from apps.shared.domain import (
+    PublicModel,
+    validate_audio,
+    validate_color,
+    validate_image,
+)
+
+# class CustomModel(PublicModel):
+#     class Config:
+#         extra = Extra.allow
+#         orm_mode = True
+#         use_enum_values = True
+#         allow_population_by_field_name = True
+#         validate_assignment = True
+#         alias_generator = to_camelcase
 
 
-class TextValues(BaseModel):
+class TextValues(PublicModel):
     pass
 
 
-class MessageValues(BaseModel):
+class MessageValues(PublicModel):
     pass
 
 
-class TimeRangeValues(BaseModel):
+class TimeRangeValues(PublicModel):
     pass
 
 
-class GeolocationValues(BaseModel):
+class GeolocationValues(PublicModel):
     pass
 
 
-class PhotoValues(BaseModel):
+class PhotoValues(PublicModel):
     pass
 
 
-class VideoValues(BaseModel):
+class VideoValues(PublicModel):
     pass
 
 
-class DateValues(BaseModel):
+class DateValues(PublicModel):
     pass
 
 
-class _SingleSelectionValue(BaseModel):
+class _SingleSelectionValue(PublicModel):
     id: str | None = None
     text: str
     image: str | None
@@ -67,15 +75,15 @@ class _SingleSelectionValue(BaseModel):
         return validate_uuid(value)
 
 
-class SingleSelectionValues(BaseModel):
+class SingleSelectionValues(PublicModel):
     options: list[_SingleSelectionValue]
 
 
-class MultiSelectionValues(BaseModel):
+class MultiSelectionValues(PublicModel):
     options: list[_SingleSelectionValue]
 
 
-class SliderValues(BaseModel):
+class SliderValues(PublicModel):
     min_label: str | None = Field(..., max_length=20)
     max_label: str | None = Field(..., max_length=20)
     min_value: NonNegativeInt = Field(default=0, max_value=11)
@@ -109,7 +117,7 @@ class SliderValues(BaseModel):
         return values
 
 
-class NumberSelectionValues(BaseModel):
+class NumberSelectionValues(PublicModel):
     min_value: NonNegativeInt = Field(default=0)
     max_value: NonNegativeInt = Field(default=100)
 
@@ -120,7 +128,7 @@ class NumberSelectionValues(BaseModel):
         return values
 
 
-class DrawingValues(BaseModel):
+class DrawingValues(PublicModel):
     drawing_example: str | None
     drawing_background: str | None
 
@@ -131,7 +139,7 @@ class DrawingValues(BaseModel):
         return value
 
 
-class SliderRowsValue(SliderValues, BaseModel):
+class SliderRowsValue(SliderValues, PublicModel):
     id: str | None = None
     label: str = Field(..., max_length=11)
 
@@ -140,11 +148,11 @@ class SliderRowsValue(SliderValues, BaseModel):
         return validate_uuid(value)
 
 
-class SliderRowsValues(BaseModel):
+class SliderRowsValues(PublicModel):
     rows: list[SliderRowsValue]
 
 
-class _SingleSelectionRowValue(BaseModel):
+class _SingleSelectionRowValue(PublicModel):
     id: str | None = None
     text: str = Field(..., max_length=11)
     image: str | None
@@ -162,7 +170,7 @@ class _SingleSelectionRowValue(BaseModel):
         return validate_uuid(value)
 
 
-class _SingleSelectionRowsValue(BaseModel):
+class _SingleSelectionRowsValue(PublicModel):
     id: str | None = None
     row_name: str = Field(..., max_length=11)
     row_image: str | None
@@ -180,19 +188,19 @@ class _SingleSelectionRowsValue(BaseModel):
         return validate_uuid(value)
 
 
-class SingleSelectionRowsValues(BaseModel):
+class SingleSelectionRowsValues(PublicModel):
     rows: list[_SingleSelectionRowsValue]
 
 
-class MultiSelectionRowsValues(SingleSelectionRowsValues, BaseModel):
+class MultiSelectionRowsValues(SingleSelectionRowsValues, PublicModel):
     pass
 
 
-class AudioValues(BaseModel):
+class AudioValues(PublicModel):
     max_duration: NonNegativeInt = 300
 
 
-class AudioPlayerValues(BaseModel):
+class AudioPlayerValues(PublicModel):
     file: str
 
     @validator("file")
