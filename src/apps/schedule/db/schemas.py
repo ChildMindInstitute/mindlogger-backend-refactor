@@ -3,6 +3,7 @@ from sqlalchemy import (
     Column,
     Date,
     ForeignKey,
+    Integer,
     Interval,
     String,
     Time,
@@ -95,3 +96,25 @@ class FlowEventsSchema(Base):
             name="_unique_flow_events",
         ),
     )
+
+
+class NotificationSchema(Base):
+    __tablename__ = "notifications"
+
+    event_id = Column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
+    from_time = Column(Time, nullable=True)
+    to_time = Column(Time, nullable=True)
+    at_time = Column(Time, nullable=True)
+    trigger_type = Column(String(10), nullable=False)  # fixed, random
+
+
+class ReminderSchema(Base):
+    __tablename__ = "reminders"
+
+    event_id = Column(
+        ForeignKey("events.id", ondelete="CASCADE", nullable=False)
+    )
+    activity_incomplete = Column(Integer(), nullable=False)
+    reminder_time = Column(Time, nullable=False)
