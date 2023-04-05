@@ -1,3 +1,5 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from apps.workspaces.domain.constants import Role
 from infrastructure.database import rollback
@@ -8,6 +10,10 @@ class TestWorkspaces(BaseTest):
         "users/fixtures/users.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
+        "activities/fixtures/activities.json",
+        "activities/fixtures/activity_items.json",
+        "activity_flows/fixtures/activity_flows.json",
+        "activity_flows/fixtures/activity_flow_items.json",
         "applets/fixtures/applet_user_accesses.json",
         "invitations/fixtures/invitations.json",
         "workspaces/fixtures/workspaces.json",
@@ -16,6 +22,7 @@ class TestWorkspaces(BaseTest):
     login_url = "/auth/login"
     user_workspace_list = "/workspaces"
     workspace_applets_list = "/workspaces/{owner_id}/applets"
+    workspace_applets_detail = "/workspaces/{owner_id}/applets/{id_}"
     workspace_respondents_list = "/workspaces/{owner_id}/respondents"
     workspace_managers_list = "/workspaces/{owner_id}/managers"
     remove_manager_access = f"{user_workspace_list}/removeAccess"
@@ -45,6 +52,19 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == 200
         assert response.json()["count"] == 1
+
+    @pytest.mark.main
+    @rollback
+    async def test_workspace_applets_detail(self):
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+
+        response = await self.client.get(
+            self.workspace_applets_detail.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            )
+        )
+        assert response.status_code == 200
 
     @rollback
     async def test_wrong_workspace_applets_list(self):

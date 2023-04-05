@@ -1,7 +1,5 @@
 import asyncio
 
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -28,7 +26,6 @@ class TestApplet(BaseTest):
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
 
-    @pytest.mark.main
     @rollback
     async def test_creating_applet(self):
         await self.client.login(
