@@ -1,25 +1,26 @@
 from enum import Enum
 
-from pydantic import BaseModel, NonNegativeInt, PositiveInt
+from pydantic import NonNegativeInt, PositiveInt
 
 from apps.activities.domain.response_values import (
     ResponseValueConfigOptions,
     SingleSelectionRowsValues,
     SingleSelectionValues,
 )
+from apps.shared.domain import PublicModel
 
 
-class AdditionalResponseOption(BaseModel):
+class AdditionalResponseOption(PublicModel):
     text_input_option: bool
     text_input_required: bool
 
 
-class _ScreenConfig(BaseModel):
+class _ScreenConfig(PublicModel):
     remove_back_button: bool
     skippable_item: bool
 
 
-class TextConfig(_ScreenConfig, BaseModel):
+class TextConfig(_ScreenConfig, PublicModel):
     max_response_length: PositiveInt = 300
     correct_answer_required: bool
     correct_answer: str | None = None
@@ -28,7 +29,7 @@ class TextConfig(_ScreenConfig, BaseModel):
     response_required: bool
 
 
-class SingleSelectionConfig(_ScreenConfig, BaseModel):
+class SingleSelectionConfig(_ScreenConfig, PublicModel):
     randomize_options: bool
     timer: NonNegativeInt | None
     add_scores: bool
@@ -38,16 +39,16 @@ class SingleSelectionConfig(_ScreenConfig, BaseModel):
     additional_response_option: AdditionalResponseOption
 
 
-class MultiSelectionConfig(SingleSelectionConfig, BaseModel):
+class MultiSelectionConfig(SingleSelectionConfig, PublicModel):
     pass
 
 
-class MessageConfig(BaseModel):
+class MessageConfig(PublicModel):
     remove_back_button: bool
     timer: NonNegativeInt | None
 
 
-class SliderConfig(_ScreenConfig, BaseModel):
+class SliderConfig(_ScreenConfig, PublicModel):
     add_scores: bool
     set_alerts: bool
     additional_response_option: AdditionalResponseOption
@@ -57,64 +58,64 @@ class SliderConfig(_ScreenConfig, BaseModel):
     timer: NonNegativeInt | None
 
 
-class NumberSelectionConfig(_ScreenConfig, BaseModel):
+class NumberSelectionConfig(_ScreenConfig, PublicModel):
     additional_response_option: AdditionalResponseOption
 
 
-class DefaultConfig(_ScreenConfig, BaseModel):
+class DefaultConfig(_ScreenConfig, PublicModel):
     additional_response_option: AdditionalResponseOption
     timer: NonNegativeInt | None
 
 
-class TimeRangeConfig(DefaultConfig, BaseModel):
+class TimeRangeConfig(DefaultConfig, PublicModel):
     pass
 
 
-class GeolocationConfig(DefaultConfig, BaseModel):
+class GeolocationConfig(DefaultConfig, PublicModel):
     pass
 
 
-class DrawingConfig(_ScreenConfig, BaseModel):
+class DrawingConfig(_ScreenConfig, PublicModel):
     additional_response_option: AdditionalResponseOption
     timer: NonNegativeInt | None
     remove_undo_button: bool = False
     navigation_to_top: bool = False
 
 
-class PhotoConfig(DefaultConfig, BaseModel):
+class PhotoConfig(DefaultConfig, PublicModel):
     pass
 
 
-class VideoConfig(DefaultConfig, BaseModel):
+class VideoConfig(DefaultConfig, PublicModel):
     pass
 
 
-class DateConfig(DefaultConfig, BaseModel):
+class DateConfig(DefaultConfig, PublicModel):
     pass
 
 
-class SliderRowsConfig(_ScreenConfig, BaseModel):
+class SliderRowsConfig(_ScreenConfig, PublicModel):
     add_scores: bool
     set_alerts: bool
     timer: NonNegativeInt | None
 
 
-class SingleSelectionRowsConfig(_ScreenConfig, BaseModel):
+class SingleSelectionRowsConfig(_ScreenConfig, PublicModel):
     timer: NonNegativeInt | None
     add_scores: bool
     set_alerts: bool
     add_tooltip: bool
 
 
-class MultiSelectionRowsConfig(SingleSelectionRowsConfig, BaseModel):
+class MultiSelectionRowsConfig(SingleSelectionRowsConfig, PublicModel):
     pass
 
 
-class AudioConfig(DefaultConfig, BaseModel):
+class AudioConfig(DefaultConfig, PublicModel):
     pass
 
 
-class AudioPlayerConfig(_ScreenConfig, BaseModel):
+class AudioPlayerConfig(_ScreenConfig, PublicModel):
     additional_response_option: AdditionalResponseOption
     play_once: bool
 
