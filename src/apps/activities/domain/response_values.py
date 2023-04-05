@@ -9,12 +9,7 @@ from pydantic import (
 )
 from pydantic.color import Color
 
-from apps.shared.domain import (
-    InternalModel,
-    validate_audio,
-    validate_color,
-    validate_image,
-)
+from apps.shared.domain import validate_audio, validate_color, validate_image
 
 
 class TextValues(BaseModel):
@@ -45,7 +40,7 @@ class DateValues(BaseModel):
     pass
 
 
-class _SingleSelectionValue(InternalModel):
+class _SingleSelectionValue(BaseModel):
     id: str | None = None
     text: str
     image: str | None
@@ -72,15 +67,15 @@ class _SingleSelectionValue(InternalModel):
         return validate_uuid(value)
 
 
-class SingleSelectionValues(InternalModel):
+class SingleSelectionValues(BaseModel):
     options: list[_SingleSelectionValue]
 
 
-class MultiSelectionValues(InternalModel):
+class MultiSelectionValues(BaseModel):
     options: list[_SingleSelectionValue]
 
 
-class SliderValues(InternalModel):
+class SliderValues(BaseModel):
     min_label: str | None = Field(..., max_length=20)
     max_label: str | None = Field(..., max_length=20)
     min_value: NonNegativeInt = Field(default=0, max_value=11)
@@ -114,7 +109,7 @@ class SliderValues(InternalModel):
         return values
 
 
-class NumberSelectionValues(InternalModel):
+class NumberSelectionValues(BaseModel):
     min_value: NonNegativeInt = Field(default=0)
     max_value: NonNegativeInt = Field(default=100)
 
@@ -125,7 +120,7 @@ class NumberSelectionValues(InternalModel):
         return values
 
 
-class DrawingValues(InternalModel):
+class DrawingValues(BaseModel):
     drawing_example: str | None
     drawing_background: str | None
 
@@ -136,7 +131,7 @@ class DrawingValues(InternalModel):
         return value
 
 
-class SliderRowsValue(SliderValues, InternalModel):
+class SliderRowsValue(SliderValues, BaseModel):
     id: str | None = None
     label: str = Field(..., max_length=11)
 
@@ -145,11 +140,11 @@ class SliderRowsValue(SliderValues, InternalModel):
         return validate_uuid(value)
 
 
-class SliderRowsValues(InternalModel):
+class SliderRowsValues(BaseModel):
     rows: list[SliderRowsValue]
 
 
-class _SingleSelectionRowValue(InternalModel):
+class _SingleSelectionRowValue(BaseModel):
     id: str | None = None
     text: str = Field(..., max_length=11)
     image: str | None
@@ -167,7 +162,7 @@ class _SingleSelectionRowValue(InternalModel):
         return validate_uuid(value)
 
 
-class _SingleSelectionRowsValue(InternalModel):
+class _SingleSelectionRowsValue(BaseModel):
     id: str | None = None
     row_name: str = Field(..., max_length=11)
     row_image: str | None
@@ -185,19 +180,19 @@ class _SingleSelectionRowsValue(InternalModel):
         return validate_uuid(value)
 
 
-class SingleSelectionRowsValues(InternalModel):
+class SingleSelectionRowsValues(BaseModel):
     rows: list[_SingleSelectionRowsValue]
 
 
-class MultiSelectionRowsValues(SingleSelectionRowsValues, InternalModel):
+class MultiSelectionRowsValues(SingleSelectionRowsValues, BaseModel):
     pass
 
 
-class AudioValues(InternalModel):
+class AudioValues(BaseModel):
     max_duration: NonNegativeInt = 300
 
 
-class AudioPlayerValues(InternalModel):
+class AudioPlayerValues(BaseModel):
     file: str
 
     @validator("file")
@@ -209,7 +204,6 @@ ResponseValueConfigOptions = [
     TextValues,
     SingleSelectionValues,
     MultiSelectionValues,
-    MessageValues,
     SliderValues,
     NumberSelectionValues,
     TimeRangeValues,
@@ -223,6 +217,7 @@ ResponseValueConfigOptions = [
     MultiSelectionRowsValues,
     AudioValues,
     AudioPlayerValues,
+    MessageValues,
 ]
 
 

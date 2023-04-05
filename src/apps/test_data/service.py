@@ -7,11 +7,7 @@ from apps.activities.domain.activity_create import (
     ActivityCreate,
     ActivityItemCreate,
 )
-from apps.activities.domain.response_type_config import (
-    ResponseType,
-    SingleSelectionConfig,
-    TextConfig,
-)
+from apps.activities.domain.response_type_config import ResponseType
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.applets.domain.applet_create import AppletCreate
 from apps.applets.service import AppletService
@@ -19,7 +15,7 @@ from apps.schedule.domain.constants import PeriodicityType, TimerType
 from apps.schedule.domain.schedule import EventRequest, PeriodicityRequest
 from apps.schedule.service import ScheduleService
 from apps.shared.query_params import QueryParams
-from apps.test_data.domain import AnchorDateTime
+from apps.test_data.domain import AnchorDateTime, image_url
 
 
 class TestDataService:
@@ -34,36 +30,33 @@ class TestDataService:
             {"type": TimerType.TIMER, "value": timedelta(minutes=195)},
             {"type": TimerType.IDLE, "value": timedelta(minutes=195)},
         ]
+        self.activity_item_options = [
+            ResponseType.TEXT,
+            ResponseType.SINGLESELECT,
+            ResponseType.MULTISELECT,
+            ResponseType.SLIDER,
+        ]
 
     async def create_applet(self, anchor_datetime: AnchorDateTime):
-        # delete applets with suffix '-generated'
-
-        old_applets = await AppletService(
-            self.session, self.user_id
-        ).get_list_by_single_language(
-            language="en", query_params=QueryParams(filters={"roles": "ADMIN"})
-        )
-
-        if old_applets:
-            for old_applet in old_applets:
-                if old_applet.display_name.endswith("-generated"):
-                    await AppletService(
-                        self.session, self.user_id
-                    ).delete_applet_by_id(old_applet.id)
 
         applet_create = self._generate_applet()
         applet = await AppletService(self.session, self.user_id).create(
             applet_create
         )
-
-        await self._create_activity_events(
-            applet_id=applet.id,
-            activity_ids=[activity.id for activity in applet.activities],
-            anchor_datetime=anchor_datetime.anchor_date_time,
+        entity_ids = [
+            {"id": activity.id, "is_activity": True}
+            for activity in applet.activities
+        ]
+        entity_ids.extend(
+            [
+                {"id": flow.id, "is_activity": False}
+                for flow in applet.activity_flows
+            ]
         )
-        await self._create_flow_events(
+
+        await self._create_all_events(
             applet_id=applet.id,
-            flow_ids=[flow.id for flow in applet.activity_flows],
+            entity_ids=entity_ids,
             anchor_datetime=anchor_datetime.anchor_date_time,
         )
         return applet
@@ -86,15 +79,13 @@ class TestDataService:
             activities
         )
         applet_create = AppletCreate(
-            display_name=f"{self.random_string()}-password-"
-            "Test1234!-generated",
-            # noqa: E501
+            display_name=f"{self.random_string()}-generated",  # noqa: E501
             description=dict(
                 en=self.random_string(50), fr=self.random_string(50)
             ),
             about=dict(en=self.random_string(50), fr=self.random_string(50)),
-            image=self.random_string(),
-            watermark=self.random_string(),
+            image=image_url,
+            watermark=image_url,
             theme_id=None,
             report_server_ip="",
             report_public_key="",
@@ -109,19 +100,19 @@ class TestDataService:
 
         return applet_create
 
-    def _generate_activities(self, count=10) -> list[ActivityCreate]:
+    def _generate_activities(self, count=5) -> list[ActivityCreate]:
         activities = []
-        for _ in range(count):
+        for index in range(count):
             items = self._generate_activity_items()
             activities.append(
                 ActivityCreate(
-                    name=self.random_string(),
+                    name=f"Activity {index+1}",
                     key=uuid.uuid4(),
                     description=dict(
                         en=self.random_string(), fr=self.random_string()
                     ),
-                    splash_screen=self.random_image(),
-                    image=self.random_image(),
+                    splash_screen=image_url,
+                    image=image_url,
                     show_all_at_once=self.random_boolean(),
                     is_skippable=self.random_boolean(),
                     is_reviewable=self.random_boolean(),
@@ -134,14 +125,14 @@ class TestDataService:
         return activities
 
     def _generate_activity_flows_from_activities(
-        self, activities: list[ActivityCreate], count=10
+        self, activities: list[ActivityCreate], count=5
     ) -> list[FlowCreate]:
         flows = []
-        for _ in range(count):
+        for index in range(count):
             flow_items = self._generate_flow_items(activities)
             flows.append(
                 FlowCreate(
-                    name=self.random_string(),
+                    name=f"Flow {index+1}",
                     description=dict(
                         en=self.random_string(), fr=self.random_string()
                     ),
@@ -155,49 +146,147 @@ class TestDataService:
 
     def _generate_activity_items(self, count=10) -> list[ActivityItemCreate]:
         items = []
-        for _ in range(count):
+        for index in range(count):
+            response_config = self._generate_response_value_config(
+                type_=self.activity_item_options[
+                    index % len(self.activity_item_options)
+                ]
+            )
+
             items.append(
                 ActivityItemCreate(
                     name=self.random_string(),
                     question=dict(
                         en=self.random_string(), fr=self.random_string()
                     ),
-                    response_type=ResponseType.TEXT,
-                    response_values=None,
-                    config=self._generate_response_type_config(
-                        ResponseType.TEXT
-                    ),
+                    response_type=self.activity_item_options[
+                        index % len(self.activity_item_options)
+                    ],
+                    response_values=response_config["response_values"],
+                    config=response_config["config"],
                 )
             )
         return items
 
-    def _generate_response_type_config(self, type_: ResponseType):
+    def _generate_response_value_config(self, type_: ResponseType):
+        result = dict()
         if type_ == ResponseType.TEXT:
-            return TextConfig(
-                max_response_length=random.randint(10, 100),
-                correct_answer_required=self.random_boolean(),
-                correct_answer=self.random_boolean(),
-                numerical_response_required=self.random_boolean(),
-                response_data_identifier=self.random_boolean(),
-                response_required=self.random_boolean(),
-                skippable_item=self.random_boolean(),
-                remove_back_button=self.random_boolean(),
+            result["config"] = dict(
+                max_response_length=200,
+                correct_answer_required=False,
+                correct_answer=None,
+                numerical_response_required=False,
+                response_data_identifier=False,
+                response_required=False,
+                remove_back_button=False,
+                skippable_item=True,
             )
+
+            result["response_values"] = None  # type: ignore  # noqa: E501
         elif type_ == ResponseType.SINGLESELECT:
-            return SingleSelectionConfig(
-                remove_back_button=self.random_boolean(),
-                skippable_item=self.random_boolean(),
-                randomize_options=self.random_boolean(),
-                timer=0,
-                add_scores=self.random_boolean(),
-                set_alerts=self.random_boolean(),
-                set_palette=self.random_boolean(),
-                add_tooltip=self.random_boolean(),
-                additional_response_option={
-                    "text_input_option": False,
-                    "text_input_required": False,
-                },
+            result["config"] = dict(
+                remove_back_button=False,
+                skippable_item=True,
+                randomize_options=False,
+                timer=None,
+                add_scores=False,
+                set_alerts=False,
+                add_tooltip=False,
+                set_palette=False,
+                additional_response_option=dict(  # type: ignore  # noqa: E501
+                    text_input_option=False,
+                    text_input_required=False,
+                ),
             )
+            result["response_values"] = {
+                "options": [  # type: ignore  # noqa: E501
+                    {
+                        "id": str(uuid.uuid4()),
+                        "text": self.random_string(),
+                        "image": None,
+                        "score": None,
+                        "tooltip": None,
+                        "is_hidden": False,
+                        "color": None,
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "text": self.random_string(),
+                        "image": None,
+                        "score": None,
+                        "tooltip": None,
+                        "is_hidden": False,
+                        "color": None,
+                    },
+                ]
+            }
+
+        elif type_ == ResponseType.MULTISELECT:
+            result["config"] = dict(
+                remove_back_button=False,
+                skippable_item=True,
+                randomize_options=False,
+                timer=None,
+                add_scores=False,
+                set_alerts=False,
+                add_tooltip=False,
+                set_palette=False,
+                additional_response_option=dict(  # type: ignore  # noqa: E501
+                    text_input_option=False,
+                    text_input_required=False,
+                ),
+            )
+
+            result["response_values"] = {
+                "options": [  # type: ignore  # noqa: E501
+                    {
+                        "id": str(uuid.uuid4()),
+                        "text": self.random_string(),
+                        "image": None,
+                        "score": None,
+                        "tooltip": None,
+                        "is_hidden": False,
+                        "color": None,
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "text": self.random_string(),
+                        "image": None,
+                        "score": None,
+                        "tooltip": None,
+                        "is_hidden": False,
+                        "color": None,
+                    },
+                ]
+            }
+
+        elif type_ == ResponseType.SLIDER:
+            result["config"] = dict(
+                add_scores=False,
+                set_alerts=False,
+                show_tick_marks=False,
+                show_tick_labels=False,
+                continuous_slider=False,
+                timer=None,
+                remove_back_button=False,
+                skippable_item=True,
+                additional_response_option=dict(  # type: ignore  # noqa: E501
+                    text_input_option=False,
+                    text_input_required=False,
+                ),
+            )
+
+            result["response_values"] = {
+                "min_value": 0,
+                "max_value": 10,
+                "min_label": self.random_string(),
+                "max_label": self.random_string(),
+                "min_image": None,
+                "max_image": None,
+                "scores": None,
+            }
+
+        return result
 
     def _generate_flow_items(
         self, activities: list[ActivityCreate]
@@ -210,36 +299,18 @@ class TestDataService:
 
         return items
 
-    async def _create_activity_events(
+    async def _create_all_events(
         self,
         anchor_datetime: datetime,
         applet_id: uuid.UUID,
-        activity_ids: list[uuid.UUID] | None = None,
+        entity_ids: list[dict] | None = None,
     ):
         # create events for activities
         events = []
-        if activity_ids:
+        if entity_ids:
             events = await self._create_events(
                 applet_id=applet_id,
-                entity_ids=activity_ids,
-                is_activity=True,
-                anchor_datetime=anchor_datetime,
-            )
-        return events
-
-    async def _create_flow_events(
-        self,
-        anchor_datetime: datetime,
-        applet_id: uuid.UUID,
-        flow_ids: list[uuid.UUID] | None = None,
-    ):
-        # create events for flows
-        events = []
-        if flow_ids:
-            events = await self._create_events(
-                applet_id=applet_id,
-                entity_ids=flow_ids,
-                is_activity=False,
+                entity_ids=entity_ids,
                 anchor_datetime=anchor_datetime,
             )
         return events
@@ -250,12 +321,11 @@ class TestDataService:
         flow_id: uuid.UUID | None = None,
     ):
         return EventRequest(
-            start_time="00:00:00",
-            end_time="23:59:59",
-            access_before_schedule=False,
-            one_time_completion=self.random_boolean(),
-            timer=timedelta(minutes=random.randint(1, 10)),
+            timer=timedelta(minutes=1),
             timer_type=TimerType.NOT_SET,
+            one_time_completion=self.random_boolean(),
+            start_time="00:00",
+            end_time="23:59",
             periodicity=PeriodicityRequest(
                 type=PeriodicityType.ALWAYS,
                 start_date=None,
@@ -270,17 +340,16 @@ class TestDataService:
     def _get_generated_event(
         self,
         is_activity: bool,
-        entity_ids: list[uuid.UUID],
-        current_entity_index: int,
+        entity_id: uuid.UUID,
     ):
 
         if is_activity:
             default_event = self._generate_event_request(
-                activity_id=entity_ids[current_entity_index],
+                activity_id=entity_id,
             )
         else:
             default_event = self._generate_event_request(
-                flow_id=entity_ids[current_entity_index],
+                flow_id=entity_id,
             )
         return default_event
 
@@ -288,17 +357,17 @@ class TestDataService:
         self,
         applet_id: uuid.UUID,
         anchor_datetime: datetime,
-        entity_ids: list[uuid.UUID] | None = None,
-        is_activity: bool = True,
+        entity_ids: list[dict] | None = None,
     ):
         events = []
         if entity_ids:
             current_entity_index = 0
             # first event always available and allow_access_before_schedule false # noqa: E501
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
             default_event.access_before_schedule = False
             default_event = self._set_timer(
@@ -316,9 +385,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
             default_event.access_before_schedule = True
             default_event = self._set_timer(
@@ -336,9 +406,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
             default_event.periodicity.start_date = (
                 anchor_datetime.date() - timedelta(days=5)
@@ -362,9 +433,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
             default_event.periodicity.start_date = (
                 anchor_datetime.date() - timedelta(days=2)
@@ -388,9 +460,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
             default_event.periodicity.start_date = (
                 anchor_datetime.date() + timedelta(days=2)
@@ -414,9 +487,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -443,9 +517,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -472,9 +547,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -500,9 +576,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -528,9 +605,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
             default_event.periodicity.selected_date = (
@@ -553,9 +631,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
             default_event.periodicity.selected_date = anchor_datetime.date()
@@ -575,9 +654,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
             default_event.periodicity.selected_date = (
@@ -599,9 +679,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
             default_event.periodicity.selected_date = anchor_datetime.date()
@@ -622,9 +703,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
             default_event.periodicity.type = PeriodicityType.WEEKDAYS
@@ -644,9 +726,10 @@ class TestDataService:
                 current_entity_index, len(entity_ids)
             )
             default_event = self._get_generated_event(
-                is_activity,
-                entity_ids,
-                current_entity_index,
+                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                    "is_activity"
+                ),
+                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
             default_event.periodicity.selected_date = anchor_datetime.date()
@@ -678,3 +761,19 @@ class TestDataService:
     def _get_timer_option(self, index: int):
         # get from option index mod length
         return self.timer_options[index % len(self.timer_options)]
+
+    async def delete_generated_applets(self):
+        # delete applets with suffix '-generated'
+
+        old_applets = await AppletService(
+            self.session, self.user_id
+        ).get_list_by_single_language(
+            language="en", query_params=QueryParams(filters={"roles": "admin"})
+        )
+
+        if old_applets:
+            for old_applet in old_applets:
+                if old_applet.display_name.endswith("-generated"):
+                    await AppletService(
+                        self.session, self.user_id
+                    ).delete_applet_by_id(old_applet.id)
