@@ -23,8 +23,6 @@ async def retrieve_applet_by_version(
     applet_schema = await AppletHistoriesCRUD(
         session
     ).retrieve_by_applet_version(id_version)
-    if not applet_schema:
-        return None
     activity_schemas = await ActivityHistoriesCRUD(
         session
     ).retrieve_by_applet_version(id_version)

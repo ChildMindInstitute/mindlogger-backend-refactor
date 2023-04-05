@@ -820,6 +820,12 @@ class TestApplet(BaseTest):
         applet = response.json()["result"]
         assert applet["version"] == version
 
+        response = await self.client.get(
+            self.history_url.format(pk=applet_id, version='0.0.0')
+        )
+
+        assert response.status_code == 404, response.json()
+
     @rollback
     async def test_history_changes(self):
         await self.client.login(
