@@ -241,6 +241,11 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == 201, response.json()
 
+        response = await self.client.get(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"])
+        )
+        assert response.status_code == 200
+
     @rollback
     async def test_create_duplicate_name_applet(self):
         await self.client.login(
@@ -485,6 +490,27 @@ class TestApplet(BaseTest):
             response.json()["result"][2]["id"]
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
+
+    @rollback
+    async def test_applet_delete(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.delete(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+
+        assert response.status_code == 204, response.json()
+
+        response = await self.client.delete(
+            self.applet_detail_url.format(
+                pk="00000000-0000-0000-0000-000000000000"
+            )
+        )
+
+        assert response.status_code == 404, response.json()
 
     @rollback
     async def test_applet_list_with_invalid_token(self):

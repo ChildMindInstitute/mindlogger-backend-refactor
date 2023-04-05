@@ -8,8 +8,10 @@ from apps.shared.domain import InternalModel, PublicModel
 __all__ = [
     "PublicWorkspace",
     "UserWorkspace",
-    "WorkspaceUser",
-    "PublicWorkspaceUser",
+    "WorkspaceRespondent",
+    "PublicWorkspaceRespondent",
+    "WorkspaceManager",
+    "PublicWorkspaceManager",
 ]
 
 from apps.workspaces.domain.constants import Role
@@ -43,19 +45,37 @@ class UserWorkspace(InternalModel):
     )
 
 
-class WorkspaceUser(InternalModel):
+class WorkspaceRespondent(InternalModel):
     id: uuid.UUID
     access_id: uuid.UUID
     nickname: str | None
-    roles: Role
+    role: Role
     secret_id: str | None
     last_seen: datetime.datetime
 
 
-class PublicWorkspaceUser(PublicModel):
+class WorkspaceManager(InternalModel):
+    id: uuid.UUID
+    first_name: str
+    last_name: str
+    email: str
+    roles: list[Role]
+    last_seen: datetime.datetime
+
+
+class PublicWorkspaceRespondent(PublicModel):
     id: uuid.UUID
     access_id: uuid.UUID
     nickname: str | None
-    roles: Role
+    role: Role
     secret_id: str | None
+    last_seen: datetime.datetime
+
+
+class PublicWorkspaceManager(PublicModel):
+    id: uuid.UUID
+    first_name: str
+    last_name: str
+    email: str
+    roles: list[Role]
     last_seen: datetime.datetime

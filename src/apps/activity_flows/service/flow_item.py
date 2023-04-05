@@ -57,3 +57,9 @@ class FlowItemService:
 
     async def remove_applet_flow_items(self, applet_id: uuid.UUID):
         await FlowItemsCRUD(self.session).delete_by_applet_id(applet_id)
+
+    async def get_by_flow_ids(
+        self, flow_ids: list[uuid.UUID]
+    ) -> list[ActivityFlowItemFull]:
+        schemas = await FlowItemsCRUD(self.session).get_by_flow_ids(flow_ids)
+        return [ActivityFlowItemFull.from_orm(schema) for schema in schemas]

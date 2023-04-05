@@ -30,7 +30,7 @@ class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
         await self._execute(query)
 
     async def get_by_applet_id(
-        self, applet_id
+        self, applet_id: uuid.UUID
     ) -> list[ActivityFlowItemSchema]:
         query = select(ActivityFlowItemSchema)
         query = query.join(
@@ -42,6 +42,20 @@ class FlowItemsCRUD(BaseCRUD[ActivityFlowItemSchema]):
             (AppletSchema.id == ActivityFlowSchema.applet_id),
         )
         query = query.where(AppletSchema.id == applet_id)
+        query = query.order_by(
+            ActivityFlowItemSchema.order.asc(),
+        )
+        result = await self._execute(query)
+        results = result.scalars().all()
+        return results
+
+    async def get_by_flow_ids(
+        self, flow_ids: list[uuid.UUID]
+    ) -> list[ActivityFlowItemSchema]:
+        query = select(ActivityFlowItemSchema)
+        query = query.where(
+            ActivityFlowItemSchema.activity_flow_id.in_(flow_ids)
+        )
         query = query.order_by(
             ActivityFlowItemSchema.order.asc(),
         )

@@ -39,6 +39,17 @@ class ActivityItemsCRUD(BaseCRUD[ActivityItemSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
+    async def get_by_activity_ids(
+        self, activity_ids: list[uuid.UUID]
+    ) -> list[ActivityItemSchema]:
+        query: Query = select(ActivityItemSchema)
+        query = query.where(ActivityItemSchema.activity_id.in_(activity_ids))
+        query = query.order_by(
+            ActivityItemSchema.order.asc(),
+        )
+        result = await self._execute(query)
+        return result.scalars().all()
+
     async def get_by_id(
         self, activity_item_id: uuid.UUID
     ) -> ActivityItemSchema:
