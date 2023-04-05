@@ -50,9 +50,8 @@ types-python-jose = "==3.3.4"
 typing-extensions = "~=4.4.0"
 # https://github.com/sqlalchemy/sqlalchemy/issues/7714
 greenlet = "~=2.0.1"
-
 # Old project requirements
-pymongo = "==3.7.1"
+pymongo = "==4.3.3"
 cherrypy = "==11.0.0"
 "dogpile.cache" = "==0.7.1"
 six = "==1.12.0"
