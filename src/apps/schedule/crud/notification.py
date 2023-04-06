@@ -1,20 +1,13 @@
 import uuid
 
 from sqlalchemy.orm import Query
-from sqlalchemy.sql import select, delete, update
+from sqlalchemy.sql import delete, select
+
 from apps.schedule.db.schemas import NotificationSchema, ReminderSchema
 from apps.schedule.domain.schedule.internal import (
-    NotificationSettingCreate,
     NotificationSetting,
-    ReminderSettingCreate,
     ReminderSetting,
-)
-from apps.schedule.domain.schedule.public import (
-    PublicNotificationSetting,
-    PublicReminderSetting,
-)
-from apps.schedule.errors import (
-    UserEventAlreadyExists,
+    ReminderSettingCreate,
 )
 from infrastructure.database import BaseCRUD
 
@@ -29,9 +22,12 @@ class NotificationCRUD(BaseCRUD[NotificationSchema]):
     async def create_many(
         self,
         notifications: list[NotificationSchema],
-    ):
+    ) -> list[NotificationSetting]:
         result = await self._create_many(notifications)
-        return result
+        return [
+            NotificationSetting.from_orm(notification)
+            for notification in result
+        ]
 
     async def get_all_by_event_id(
         self, event_id: uuid.UUID
@@ -46,9 +42,8 @@ class NotificationCRUD(BaseCRUD[NotificationSchema]):
 
     async def delete_by_event_ids(self, event_ids: list[uuid.UUID]):
         """Delete all notifications by event id."""
-        query: Query = update(NotificationSchema)
+        query: Query = delete(NotificationSchema)
         query = query.where(NotificationSchema.event_id.in_(event_ids))
-        query = query.values(is_deleted=True)
         await self._execute(query)
 
 
@@ -72,9 +67,8 @@ class ReminderCRUD(BaseCRUD[ReminderSchema]):
 
     async def delete_by_event_ids(self, event_ids: list[uuid.UUID]):
         """Delete all reminders by event id."""
-        query: Query = update(ReminderSchema)
+        query: Query = delete(ReminderSchema)
         query = query.where(ReminderSchema.event_id.in_(event_ids))
-        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def update(self, schema: ReminderSettingCreate) -> ReminderSetting:

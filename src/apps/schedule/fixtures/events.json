@@ -110,7 +110,7 @@
             "id": "04c93c4a-2cd4-45ce-9aec-b1912f330587",
             "periodicity_id": "a354399f-282d-4c26-8db6-5e8264a9a72d",
             "start_time": "00:00:00",
-            "end_time": "00:00:00",
+            "end_time": "23:00:00",
             "access_before_schedule": false,
             "one_time_completion": false,
             "timer": "00:00:00",

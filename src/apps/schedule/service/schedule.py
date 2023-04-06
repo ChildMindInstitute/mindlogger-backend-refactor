@@ -9,8 +9,8 @@ from apps.schedule.crud.events import (
     FlowEventsCRUD,
     UserEventsCRUD,
 )
-from apps.schedule.crud.periodicity import PeriodicityCRUD
 from apps.schedule.crud.notification import NotificationCRUD, ReminderCRUD
+from apps.schedule.crud.periodicity import PeriodicityCRUD
 from apps.schedule.db.schemas import EventSchema, NotificationSchema
 from apps.schedule.domain.constants import (
     AvailabilityType,
@@ -25,29 +25,27 @@ from apps.schedule.domain.schedule.internal import (
     EventFull,
     EventUpdate,
     FlowEventCreate,
+    NotificationSetting,
     Periodicity,
-    UserEventCreate,
     ReminderSetting,
     ReminderSettingCreate,
-    NotificationSetting,
-    NotificationSettingCreate,
-    Notification,
+    UserEventCreate,
 )
 from apps.schedule.domain.schedule.public import (
     EventAvailabilityDto,
     HourMinute,
+    NotificationDTO,
+    NotificationSettingDTO,
     PublicEvent,
     PublicEventByUser,
     PublicEventCount,
-    PublicPeriodicity,
-    ScheduleEventDto,
-    TimerDto,
     PublicNotification,
     PublicNotificationSetting,
+    PublicPeriodicity,
     PublicReminderSetting,
-    NotificationDTO,
     ReminderSettingDTO,
-    NotificationSettingDTO,
+    ScheduleEventDto,
+    TimerDto,
 )
 from apps.schedule.domain.schedule.requests import EventRequest
 from apps.shared.errors import NotFoundError
@@ -137,8 +135,8 @@ class ScheduleService:
                 reminder = await ReminderCRUD(self.session).create(
                     ReminderSettingCreate(
                         event_id=event.id,
-                        activity_incomplete=schedule.notification.reminder.activity_incomplete,
-                        reminder_time=schedule.notification.reminder.reminder_time,
+                        activity_incomplete=schedule.notification.reminder.activity_incomplete,  # noqa: E501
+                        reminder_time=schedule.notification.reminder.reminder_time,  # noqa: E501
                     )
                 )
             notification_public = PublicNotification(
@@ -400,10 +398,12 @@ class ScheduleService:
 
         notification_public = None
         if schedule.notification:
+            notifications = None
+            reminder = None
             if schedule.notification.notifications:
-                notification_create = []
+                notifications_create = []
                 for notification in schedule.notification.notifications:
-                    notification_create.append(
+                    notifications_create.append(
                         NotificationSchema(
                             event_id=event.id,
                             from_time=notification.from_time,
@@ -414,14 +414,14 @@ class ScheduleService:
                     )
                 notifications = await NotificationCRUD(
                     self.session
-                ).create_many(notification_create)
+                ).create_many(notifications_create)
 
             if schedule.notification.reminder:
                 reminder = await ReminderCRUD(self.session).update(
                     schema=ReminderSettingCreate(
                         event_id=event.id,
-                        activity_incomplete=schedule.notification.reminder.activity_incomplete,
-                        reminder_time=schedule.notification.reminder.reminder_time,
+                        activity_incomplete=schedule.notification.reminder.activity_incomplete,  # noqa: E501
+                        reminder_time=schedule.notification.reminder.reminder_time,  # noqa: E501
                     ),
                 )
             notification_public = PublicNotification(

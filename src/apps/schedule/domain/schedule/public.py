@@ -1,17 +1,17 @@
 import uuid
 from datetime import date
 
-from pydantic import NonNegativeInt, validator, Field
+from pydantic import NonNegativeInt, validator
 
 from apps.schedule.domain.constants import (
     AvailabilityType,
-    PeriodicityType,
     NotificationTriggerType,
+    PeriodicityType,
 )
 from apps.schedule.domain.schedule import (
     BaseEvent,
-    BasePeriodicity,
     BaseNotificationSetting,
+    BasePeriodicity,
     BaseReminderSetting,
 )
 from apps.shared.domain import PublicModel

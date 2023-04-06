@@ -1,11 +1,11 @@
 from datetime import date, time, timedelta
 
-from pydantic import BaseModel, Field, root_validator, NonNegativeInt
+from pydantic import BaseModel, Field, NonNegativeInt, root_validator
 
 from apps.schedule.domain.constants import (
+    NotificationTriggerType,
     PeriodicityType,
     TimerType,
-    NotificationTriggerType,
 )
 from apps.shared.errors import ValidationError
 
@@ -80,6 +80,20 @@ class BaseNotificationSetting(BaseModel):
     from_time: time | None = None
     to_time: time | None = None
     at_time: time | None = None
+
+    @root_validator
+    def validate_notification(cls, values):
+        if values.get("trigger_type") == NotificationTriggerType.FIXED:
+            if not values.get("at_time"):
+                raise ValidationError(
+                    message="at_time is required for this trigger type."
+                )
+        elif values.get("trigger_type") == NotificationTriggerType.RANDOM:
+            if not values.get("from_time") or not values.get("to_time"):
+                raise ValidationError(
+                    message="from_time and to_time are required for this trigger type."  # noqa: E501
+                )
+        return values
 
 
 class BaseReminderSetting(BaseModel):
