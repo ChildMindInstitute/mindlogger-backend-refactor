@@ -502,3 +502,30 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         results = db_result.scalars().all()
         return [r.user_id for r in results]
+
+    async def has_managers(self, user_id: uuid.UUID) -> bool:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.owner_id == user_id)
+        query = query.where(
+            UserAppletAccessSchema.role.in_(
+                [Role.MANAGER, Role.COORDINATOR, Role.EDITOR, Role.REVIEWER]
+            )
+        )
+        query = query.limit(1)
+        query = query.exists()
+
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first()
+
+    async def has_access(
+        self, user_id: uuid.UUID, owner_id: uuid.UUID, roles: list[Role]
+    ) -> bool:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        query = query.where(UserAppletAccessSchema.role.in_(roles))
+        query = query.limit(1)
+        query = query.exists()
+
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first()

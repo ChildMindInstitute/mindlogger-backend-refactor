@@ -5,10 +5,13 @@ from apps.users import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import (
+    WorkspaceInfo,
     WorkspaceManager,
     WorkspaceRespondent,
 )
+from apps.workspaces.errors import WorkspaceAccessDenied
 
 
 class WorkspaceService:
@@ -27,6 +30,37 @@ class WorkspaceService:
             )
         )
         return schema
+
+    async def get_workspace(self, user_id: uuid.UUID) -> WorkspaceInfo:
+        await self.has_access(
+            user_id,
+            self._user_id,
+            [
+                Role.ADMIN,
+                Role.MANAGER,
+                Role.COORDINATOR,
+                Role.EDITOR,
+                Role.REVIEWER,
+            ],
+        )
+        schema = await UserWorkspaceCRUD(self.session).get_by_user_id(
+            self._user_id
+        )
+        has_managers = await UserAppletAccessCRUD(self.session).has_managers(
+            self._user_id
+        )
+        return WorkspaceInfo(
+            name=schema.workspace_name, has_managers=has_managers
+        )
+
+    async def has_access(
+        self, user_id: uuid.UUID, owner_id: uuid.UUID, roles: list[Role]
+    ):
+        has_access = await UserAppletAccessCRUD(self.session).has_access(
+            user_id, owner_id, roles
+        )
+        if not has_access:
+            raise WorkspaceAccessDenied()
 
     async def update_workspace_name(
         self, user: User, workspace_prefix: str | None = None

@@ -28,3 +28,8 @@ class AppletAccessDenied(AccessDeniedError):
 class WorkspaceDoesNotExistError(NotFoundError):
     def __init__(self, *_, message="Workspace does not exist.") -> None:
         super().__init__(message=message)
+
+
+class WorkspaceAccessDenied(AccessDeniedError):
+    def __init__(self, *_, message="Access denied to workspace.") -> None:
+        super().__init__(message=message)
