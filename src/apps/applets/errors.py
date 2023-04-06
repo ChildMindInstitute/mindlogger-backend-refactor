@@ -12,7 +12,7 @@ __all__ = [
     "AppletsFolderAccessDenied",
     "AppletLinkNotFoundError",
     "AppletLinkAlreadyExist",
-    "InvalidVersionError"
+    "InvalidVersionError",
 ]
 
 
@@ -32,7 +32,7 @@ class AppletNotFoundError(NotFoundError):
 
 
 class AppletVersionNotFoundError(NotFoundError):
-    def __init__(self, *_, message='Applet version not found') -> None:
+    def __init__(self, *_, message="Applet version not found") -> None:
         super().__init__(message=message)
 
 

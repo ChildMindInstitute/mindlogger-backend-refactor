@@ -9,7 +9,7 @@ from apps.applets.domain import AppletHistory, AppletHistoryChange
 __all__ = ["AppletHistoryService"]
 
 from apps.applets.domain.applet_full import AppletFull
-from apps.applets.errors import NotValidAppletHistory, InvalidVersionError
+from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.shared.changes_generator import ChangeTextGenerator
 from apps.shared.version import get_prev_version
 

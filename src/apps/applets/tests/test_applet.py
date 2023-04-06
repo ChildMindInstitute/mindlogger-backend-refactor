@@ -832,7 +832,7 @@ class TestApplet(BaseTest):
         assert applet["version"] == "1.0.0"
 
         response = await self.client.get(
-            self.history_url.format(pk=applet_id, version='0.0.0')
+            self.history_url.format(pk=applet_id, version="0.0.0")
         )
 
         assert response.status_code == 404, response.json()
