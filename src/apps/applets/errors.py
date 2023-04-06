@@ -12,6 +12,7 @@ __all__ = [
     "AppletsFolderAccessDenied",
     "AppletLinkNotFoundError",
     "AppletLinkAlreadyExist",
+    "InvalidVersionError"
 ]
 
 
@@ -62,4 +63,9 @@ class AppletPasswordValidationError(ValidationError):
 
 class AccessLinkDoesNotExistError(NotFoundError):
     def __init__(self, *_, message="Access link does not exist."):
+        super().__init__(message=message)
+
+
+class InvalidVersionError(ValidationError):
+    def __init__(self, *_, message="Invalid version.") -> None:
         super().__init__(message=message)

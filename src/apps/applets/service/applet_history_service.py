@@ -9,7 +9,7 @@ from apps.applets.domain import AppletHistory, AppletHistoryChange
 __all__ = ["AppletHistoryService"]
 
 from apps.applets.domain.applet_full import AppletFull
-from apps.applets.errors import NotValidAppletHistory
+from apps.applets.errors import NotValidAppletHistory, InvalidVersionError
 from apps.shared.changes_generator import ChangeTextGenerator
 from apps.shared.version import get_prev_version
 
@@ -50,7 +50,10 @@ class AppletHistoryService:
         )
 
     async def get_changes(self) -> AppletHistoryChange:
-        prev_version = get_prev_version(self._version)
+        try:
+            prev_version = get_prev_version(self._version)
+        except ValueError:
+            raise InvalidVersionError()
         old_id_version = f"{self._applet_id}_{prev_version}"
 
         changes = await self._get_applet_changes(old_id_version)

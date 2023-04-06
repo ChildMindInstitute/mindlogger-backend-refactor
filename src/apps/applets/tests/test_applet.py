@@ -1,7 +1,5 @@
 import asyncio
 
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -681,7 +679,6 @@ class TestApplet(BaseTest):
         assert len(versions) == 1
         assert versions[0]["version"] == version
 
-    @pytest.mark.main
     @rollback
     async def test_updating_applet_history(self):
         await self.client.login(
