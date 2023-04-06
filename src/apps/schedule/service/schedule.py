@@ -398,6 +398,7 @@ class ScheduleService:
         # Update notification
         await NotificationCRUD(self.session).delete_by_event_ids([schedule_id])
 
+        notification_public = None
         if schedule.notification:
             if schedule.notification.notifications:
                 notification_create = []
