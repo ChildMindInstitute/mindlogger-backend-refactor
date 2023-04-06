@@ -386,7 +386,9 @@ class AppletService:
         else:
             raise AccessLinkDoesNotExistError
 
-        return AppletLink(link=link)
+        return AppletLink(
+            link=link, require_login=applet_instance.require_login
+        )
 
     async def delete_access_link(self, applet_id: uuid.UUID):
         applet = await self._validate_applet_access(applet_id)
