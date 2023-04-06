@@ -6,12 +6,18 @@ from apps.jsonld_converter.domain import LdActivityCreate
 from apps.jsonld_converter.errors import JsonLDNotSupportedError
 from apps.jsonld_converter.service.document import (
     ReproFieldText,
+    ReproFieldRadio,
+    ReproFieldSlider,
 )
 from apps.jsonld_converter.service.document.base import (
     LdDocumentBase,
     ContainsNestedMixin,
     CommonFieldsMixin,
     LdKeyword,
+)
+from apps.jsonld_converter.service.document.field import (
+    ReproFieldBase,
+    ReproFieldSliderStacked,
 )
 from apps.shared.domain import InternalModel
 
@@ -42,7 +48,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
 
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
-        return [ReproFieldText]
+        return [ReproFieldText, ReproFieldRadio, ReproFieldSlider, ReproFieldSliderStacked]
 
     async def load(self, doc: dict, base_url: str | None = None):
         await super().load(doc, base_url)
@@ -85,7 +91,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             self.extra[k] = v
 
     def export(self) -> InternalModel:
-        items = []
+        items = [nested.export() for nested in self.nested_by_order if isinstance(nested, ReproFieldBase)]
         return LdActivityCreate(
             name=self.ld_pref_label or self.ld_alt_label,
             description=self.ld_description or {},
