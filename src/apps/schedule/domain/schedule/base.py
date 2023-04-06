@@ -77,9 +77,18 @@ class BaseNotificationSetting(BaseModel):
     """Notification settings of an event"""
 
     trigger_type: NotificationTriggerType
-    from_time: time | None = None
-    to_time: time | None = None
-    at_time: time | None = None
+    from_time: time | None = Field(
+        None,
+        description="If triggerType is RANDOM, fromTime must be set.",
+    )
+    to_time: time | None = Field(
+        None,
+        description="If triggerType is RANDOM, toTime must be set.",
+    )
+    at_time: time | None = Field(
+        None,
+        description="If triggerType is FIXED, atTime must be set.",
+    )
 
     @root_validator
     def validate_notification(cls, values):
