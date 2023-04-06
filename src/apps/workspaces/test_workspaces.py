@@ -1,5 +1,3 @@
-import pytest
-
 from apps.shared.test import BaseTest
 from apps.workspaces.domain.constants import Role
 from infrastructure.database import rollback
@@ -53,7 +51,6 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
         assert response.json()["count"] == 1
 
-    @pytest.mark.main
     @rollback
     async def test_workspace_applets_detail(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")

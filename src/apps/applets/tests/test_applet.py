@@ -11,6 +11,7 @@ class TestApplet(BaseTest):
         "themes/fixtures/themes.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
+        "applets/fixtures/applet_histories.json",
         "applets/fixtures/applet_user_accesses.json",
         "activities/fixtures/activities.json",
         "activities/fixtures/activity_items.json",
@@ -800,8 +801,9 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == 200, response.json()
 
-        version = response.json()["result"]["version"]
         applet_id = response.json()["result"]["id"]
+
+        assert response.json()["result"]["version"] == "1.0.1"
 
         response = await self.client.get(
             self.histories_url.format(pk=applet_id)
@@ -809,16 +811,31 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200, response.json()
         versions = response.json()["result"]
-        assert len(versions) == 1
+        assert len(versions) == 2
         assert versions[0]["version"] == "1.0.1"
+        assert versions[1]["version"] == "1.0.0"
 
         response = await self.client.get(
-            self.history_url.format(pk=applet_id, version=version)
+            self.history_url.format(pk=applet_id, version="1.0.1")
         )
 
         assert response.status_code == 200, response.json()
         applet = response.json()["result"]
-        assert applet["version"] == version
+        assert applet["version"] == "1.0.1"
+
+        response = await self.client.get(
+            self.history_url.format(pk=applet_id, version="1.0.0")
+        )
+
+        assert response.status_code == 200, response.json()
+        applet = response.json()["result"]
+        assert applet["version"] == "1.0.0"
+
+        response = await self.client.get(
+            self.history_url.format(pk=applet_id, version="0.0.0")
+        )
+
+        assert response.status_code == 404, response.json()
 
     @rollback
     async def test_history_changes(self):

@@ -17,14 +17,12 @@ from apps.applets.domain.applets.history_detail import (
 
 async def retrieve_applet_by_version(
     session, applet_id: uuid.UUID, version: str
-) -> None | Applet:
+) -> Applet:
     id_version = f"{applet_id}_{version}"
 
     applet_schema = await AppletHistoriesCRUD(
         session
     ).retrieve_by_applet_version(id_version)
-    if not applet_schema:
-        return None
     activity_schemas = await ActivityHistoriesCRUD(
         session
     ).retrieve_by_applet_version(id_version)
