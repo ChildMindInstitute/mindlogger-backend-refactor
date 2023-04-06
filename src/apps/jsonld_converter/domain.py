@@ -17,5 +17,5 @@ class LdActivityCreate(ActivityCreate):
     extra_fields: dict
 
 
-class LdActivityItemCreate(ActivityItemCreate):
+class LdActivityItemCreate(ActivityItemCreate):  # TODO
     extra_fields: dict

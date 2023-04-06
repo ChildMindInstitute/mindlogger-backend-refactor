@@ -11,6 +11,9 @@ from apps.jsonld_converter.service.document import (
     ReproActivity,
     ReproProtocol,
     ReproFieldText,
+    ReproFieldRadio,
+    ReproFieldSlider,
+    ReproFieldSliderStacked,
 )
 from apps.jsonld_converter.service.document.base import (
     ContainsNestedMixin,
@@ -31,13 +34,15 @@ class JsonLDModelConverter(ContainsNestedMixin):
         converter = JsonLDModelConverter(context_resolver, document_loader)
         protocol = await converter.convert(document_url)
     """
+
     def __init__(self, context_resolver: ContextResolver, document_loader: Callable):
         self.context_resolver: ContextResolver = context_resolver
         self.document_loader: Callable = document_loader
 
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
-        return [ReproProtocol, ReproActivity, ReproFieldText]
+        return [ReproProtocol, ReproActivity, ReproFieldText, ReproFieldRadio, ReproFieldSlider,
+                ReproFieldSliderStacked]
 
     async def convert(self, input_: str | dict,
                       base_url: str | None = None) -> InternalModel:

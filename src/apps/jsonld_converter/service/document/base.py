@@ -45,6 +45,7 @@ class LdAttributeProcessor:
         ],
         'schema': ["http://schema.org/"],
         'skos': ["http://www.w3.org/2004/02/skos/core#"],
+        "xsd": ["http://www.w3.org/2001/XMLSchema#"],
     }
 
     @classmethod
@@ -61,6 +62,13 @@ class LdAttributeProcessor:
         keys = [url + attr for url in base_urls]
 
         return keys
+
+    @classmethod
+    def is_equal_term_val(cls, val, term_val):
+        for _val in cls.resolve_key(term_val):
+            if val == _val:
+                return True
+        return False
 
     @classmethod
     def get_key(cls, doc: dict, attr: str) -> str | None:
@@ -218,6 +226,11 @@ class CommonFieldsMixin:
         for keyword in [LdKeyword.id, LdKeyword.value]:
             if img := self.attr_processor.get_attr_single(doc, 'schema:image', drop=drop, ld_key=keyword):
                 break
+        if not img:
+            img_obj = self.attr_processor.get_attr_single(doc, 'schema:image', drop=drop)
+            if isinstance(img_obj, dict):
+                img = self.attr_processor.get_attr_single(img_obj, 'schema:contentUrl', ld_key=LdKeyword.id)
+
         return img
 
     def _get_ld_properties_formatted(self, doc: dict, drop=False) -> dict:
