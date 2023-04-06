@@ -114,7 +114,8 @@ class ReminderSchema(Base):
     __tablename__ = "reminders"
 
     event_id = Column(
-        ForeignKey("events.id", ondelete="CASCADE", nullable=False)
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
     )
+
     activity_incomplete = Column(Integer(), nullable=False)
     reminder_time = Column(Time, nullable=False)

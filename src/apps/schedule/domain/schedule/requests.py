@@ -3,7 +3,12 @@ import uuid
 from pydantic import Field, root_validator
 
 from apps.schedule.domain.constants import PeriodicityType
-from apps.schedule.domain.schedule.base import BaseEvent, BasePeriodicity
+from apps.schedule.domain.schedule.base import (
+    BaseEvent,
+    BasePeriodicity,
+    BaseNotificationSetting,
+    BaseReminderSetting,
+)
 from apps.shared.domain import PublicModel
 
 __all__ = ["EventRequest", "PeriodicityRequest"]
@@ -11,6 +16,20 @@ __all__ = ["EventRequest", "PeriodicityRequest"]
 
 class PeriodicityRequest(BasePeriodicity, PublicModel):
     pass
+
+
+class NotificationSettingRequest(BaseNotificationSetting, PublicModel):
+    pass
+
+
+class ReminderSettingRequest(BaseReminderSetting, PublicModel):
+    pass
+
+
+class Notification(PublicModel):
+
+    notifications: list[NotificationSettingRequest] | None = None
+    reminder: ReminderSettingRequest | None = None
 
 
 class EventRequest(BaseEvent, PublicModel):
@@ -24,6 +43,7 @@ class EventRequest(BaseEvent, PublicModel):
         None,
         description="If activity_id is not set, flow_id must be set.",
     )
+    notification: Notification | None = None
 
     @root_validator
     def validate_optional_fields(cls, values):

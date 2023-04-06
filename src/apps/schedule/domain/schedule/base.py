@@ -1,8 +1,12 @@
 from datetime import date, time, timedelta
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, root_validator, NonNegativeInt
 
-from apps.schedule.domain.constants import PeriodicityType, TimerType
+from apps.schedule.domain.constants import (
+    PeriodicityType,
+    TimerType,
+    NotificationTriggerType,
+)
 from apps.shared.errors import ValidationError
 
 
@@ -67,3 +71,19 @@ class BaseEvent(BaseModel):
             )
 
         return values
+
+
+class BaseNotificationSetting(BaseModel):
+    """Notification settings of an event"""
+
+    trigger_type: NotificationTriggerType
+    from_time: time | None = None
+    to_time: time | None = None
+    at_time: time | None = None
+
+
+class BaseReminderSetting(BaseModel):
+    """Reminder settings of an event"""
+
+    activity_incomplete: NonNegativeInt
+    reminder_time: time

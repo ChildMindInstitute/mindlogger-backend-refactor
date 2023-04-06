@@ -47,3 +47,8 @@ class DefaultEvent(BaseModel):
 class AvailabilityType(str, Enum):
     ALWAYS_AVAILABLE = "AlwaysAvailable"
     SCHEDULED_ACCESS = "ScheduledAccess"
+
+
+class NotificationTriggerType(str, Enum):
+    FIXED = "FIXED"
+    RANDOM = "RANDOM"
