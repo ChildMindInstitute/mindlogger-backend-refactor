@@ -8,6 +8,7 @@ from apps.activities.domain import ActivityHistory, ActivityHistoryChange
 __all__ = ["ActivityHistoryService"]
 
 from apps.activities.domain.activity_full import ActivityFull
+from apps.activities.errors import InvalidVersionError
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
@@ -51,7 +52,10 @@ class ActivityHistoryService:
         ).add(activity_items)
 
     async def get_changes(self):
-        prev_version = get_prev_version(self._version)
+        try:
+            prev_version = get_prev_version(self._version)
+        except ValueError:
+            raise InvalidVersionError()
         old_id_version = f"{self._applet_id}_{prev_version}"
         return await self._get_activity_changes(old_id_version)
 

@@ -7,20 +7,20 @@ from apps.activities.domain.response_values import (
     SingleSelectionRowsValues,
     SingleSelectionValues,
 )
-from apps.shared.domain import InternalModel
+from apps.shared.domain import PublicModel
 
 
-class AdditionalResponseOption(InternalModel):
+class AdditionalResponseOption(PublicModel):
     text_input_option: bool
     text_input_required: bool
 
 
-class _ScreenConfig(InternalModel):
+class _ScreenConfig(PublicModel):
     remove_back_button: bool
     skippable_item: bool
 
 
-class TextConfig(_ScreenConfig, InternalModel):
+class TextConfig(_ScreenConfig, PublicModel):
     max_response_length: PositiveInt = 300
     correct_answer_required: bool
     correct_answer: str | None = None
@@ -29,7 +29,7 @@ class TextConfig(_ScreenConfig, InternalModel):
     response_required: bool
 
 
-class SingleSelectionConfig(_ScreenConfig, InternalModel):
+class SingleSelectionConfig(_ScreenConfig, PublicModel):
     randomize_options: bool
     timer: NonNegativeInt | None
     add_scores: bool
@@ -39,16 +39,16 @@ class SingleSelectionConfig(_ScreenConfig, InternalModel):
     additional_response_option: AdditionalResponseOption
 
 
-class MultiSelectionConfig(SingleSelectionConfig, InternalModel):
+class MultiSelectionConfig(SingleSelectionConfig, PublicModel):
     pass
 
 
-class MessageConfig(InternalModel):
+class MessageConfig(PublicModel):
     remove_back_button: bool
     timer: NonNegativeInt | None
 
 
-class SliderConfig(_ScreenConfig, InternalModel):
+class SliderConfig(_ScreenConfig, PublicModel):
     add_scores: bool
     set_alerts: bool
     additional_response_option: AdditionalResponseOption
@@ -58,64 +58,64 @@ class SliderConfig(_ScreenConfig, InternalModel):
     timer: NonNegativeInt | None
 
 
-class NumberSelectionConfig(_ScreenConfig, InternalModel):
+class NumberSelectionConfig(_ScreenConfig, PublicModel):
     additional_response_option: AdditionalResponseOption
 
 
-class DefaultConfig(_ScreenConfig, InternalModel):
+class DefaultConfig(_ScreenConfig, PublicModel):
     additional_response_option: AdditionalResponseOption
     timer: NonNegativeInt | None
 
 
-class TimeRangeConfig(DefaultConfig, InternalModel):
+class TimeRangeConfig(DefaultConfig, PublicModel):
     pass
 
 
-class GeolocationConfig(DefaultConfig, InternalModel):
+class GeolocationConfig(DefaultConfig, PublicModel):
     pass
 
 
-class DrawingConfig(_ScreenConfig, InternalModel):
+class DrawingConfig(_ScreenConfig, PublicModel):
     additional_response_option: AdditionalResponseOption
     timer: NonNegativeInt | None
     remove_undo_button: bool = False
     navigation_to_top: bool = False
 
 
-class PhotoConfig(DefaultConfig, InternalModel):
+class PhotoConfig(DefaultConfig, PublicModel):
     pass
 
 
-class VideoConfig(DefaultConfig, InternalModel):
+class VideoConfig(DefaultConfig, PublicModel):
     pass
 
 
-class DateConfig(DefaultConfig, InternalModel):
+class DateConfig(DefaultConfig, PublicModel):
     pass
 
 
-class SliderRowsConfig(_ScreenConfig, InternalModel):
+class SliderRowsConfig(_ScreenConfig, PublicModel):
     add_scores: bool
     set_alerts: bool
     timer: NonNegativeInt | None
 
 
-class SingleSelectionRowsConfig(_ScreenConfig, InternalModel):
+class SingleSelectionRowsConfig(_ScreenConfig, PublicModel):
     timer: NonNegativeInt | None
     add_scores: bool
     set_alerts: bool
     add_tooltip: bool
 
 
-class MultiSelectionRowsConfig(SingleSelectionRowsConfig, InternalModel):
+class MultiSelectionRowsConfig(SingleSelectionRowsConfig, PublicModel):
     pass
 
 
-class AudioConfig(DefaultConfig, InternalModel):
+class AudioConfig(DefaultConfig, PublicModel):
     pass
 
 
-class AudioPlayerConfig(_ScreenConfig, InternalModel):
+class AudioPlayerConfig(_ScreenConfig, PublicModel):
     additional_response_option: AdditionalResponseOption
     play_once: bool
 
@@ -134,7 +134,6 @@ class ResponseType(str, Enum):
     TEXT = "text"
     SINGLESELECT = "singleSelect"
     MULTISELECT = "multiSelect"
-    MESSAGE = "message"
     SLIDER = "slider"
     NUMBERSELECT = "numberSelect"
     TIMERANGE = "timeRange"
@@ -148,6 +147,7 @@ class ResponseType(str, Enum):
     MULTISELECTROWS = "multiSelectRows"
     AUDIO = "audio"
     AUDIOPLAYER = "audioPlayer"
+    MESSAGE = "message"
     # FLANKER = "flanker"
     # ABTEST = "abTest"
 
@@ -156,7 +156,6 @@ ResponseTypeConfigOptions = [
     TextConfig,
     SingleSelectionConfig,
     MultiSelectionConfig,
-    MessageConfig,
     SliderConfig,
     NumberSelectionConfig,
     TimeRangeConfig,
@@ -170,6 +169,7 @@ ResponseTypeConfigOptions = [
     MultiSelectionRowsConfig,
     AudioConfig,
     AudioPlayerConfig,
+    MessageConfig,
 ]
 
 
@@ -177,7 +177,6 @@ ResponseTypeConfig = (
     TextConfig
     | SingleSelectionConfig
     | MultiSelectionConfig
-    | MessageConfig
     | SliderConfig
     | NumberSelectionConfig
     | TimeRangeConfig
@@ -191,6 +190,7 @@ ResponseTypeConfig = (
     | MultiSelectionRowsConfig
     | AudioConfig
     | AudioPlayerConfig
+    | MessageConfig
 )
 
 ResponseTypeValueConfig = {}

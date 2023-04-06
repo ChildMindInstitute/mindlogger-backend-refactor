@@ -1,51 +1,54 @@
 import uuid
 
-from pydantic import (
-    BaseModel,
-    Field,
-    NonNegativeInt,
-    root_validator,
-    validator,
-)
+from pydantic import Field, NonNegativeInt, root_validator, validator
 from pydantic.color import Color
 
 from apps.shared.domain import (
-    InternalModel,
+    PublicModel,
     validate_audio,
     validate_color,
     validate_image,
 )
 
+# class CustomModel(PublicModel):
+#     class Config:
+#         extra = Extra.allow
+#         orm_mode = True
+#         use_enum_values = True
+#         allow_population_by_field_name = True
+#         validate_assignment = True
+#         alias_generator = to_camelcase
 
-class TextValues(BaseModel):
+
+class TextValues(PublicModel):
     pass
 
 
-class MessageValues(BaseModel):
+class MessageValues(PublicModel):
     pass
 
 
-class TimeRangeValues(BaseModel):
+class TimeRangeValues(PublicModel):
     pass
 
 
-class GeolocationValues(BaseModel):
+class GeolocationValues(PublicModel):
     pass
 
 
-class PhotoValues(BaseModel):
+class PhotoValues(PublicModel):
     pass
 
 
-class VideoValues(BaseModel):
+class VideoValues(PublicModel):
     pass
 
 
-class DateValues(BaseModel):
+class DateValues(PublicModel):
     pass
 
 
-class _SingleSelectionValue(InternalModel):
+class _SingleSelectionValue(PublicModel):
     id: str | None = None
     text: str
     image: str | None
@@ -72,15 +75,15 @@ class _SingleSelectionValue(InternalModel):
         return validate_uuid(value)
 
 
-class SingleSelectionValues(InternalModel):
+class SingleSelectionValues(PublicModel):
     options: list[_SingleSelectionValue]
 
 
-class MultiSelectionValues(InternalModel):
+class MultiSelectionValues(PublicModel):
     options: list[_SingleSelectionValue]
 
 
-class SliderValues(InternalModel):
+class SliderValues(PublicModel):
     min_label: str | None = Field(..., max_length=20)
     max_label: str | None = Field(..., max_length=20)
     min_value: NonNegativeInt = Field(default=0, max_value=11)
@@ -114,7 +117,7 @@ class SliderValues(InternalModel):
         return values
 
 
-class NumberSelectionValues(InternalModel):
+class NumberSelectionValues(PublicModel):
     min_value: NonNegativeInt = Field(default=0)
     max_value: NonNegativeInt = Field(default=100)
 
@@ -125,7 +128,7 @@ class NumberSelectionValues(InternalModel):
         return values
 
 
-class DrawingValues(InternalModel):
+class DrawingValues(PublicModel):
     drawing_example: str | None
     drawing_background: str | None
 
@@ -136,7 +139,7 @@ class DrawingValues(InternalModel):
         return value
 
 
-class SliderRowsValue(SliderValues, InternalModel):
+class SliderRowsValue(SliderValues, PublicModel):
     id: str | None = None
     label: str = Field(..., max_length=11)
 
@@ -145,11 +148,11 @@ class SliderRowsValue(SliderValues, InternalModel):
         return validate_uuid(value)
 
 
-class SliderRowsValues(InternalModel):
+class SliderRowsValues(PublicModel):
     rows: list[SliderRowsValue]
 
 
-class _SingleSelectionRowValue(InternalModel):
+class _SingleSelectionRowValue(PublicModel):
     id: str | None = None
     text: str = Field(..., max_length=11)
     image: str | None
@@ -167,7 +170,7 @@ class _SingleSelectionRowValue(InternalModel):
         return validate_uuid(value)
 
 
-class _SingleSelectionRowsValue(InternalModel):
+class _SingleSelectionRowsValue(PublicModel):
     id: str | None = None
     row_name: str = Field(..., max_length=11)
     row_image: str | None
@@ -185,19 +188,19 @@ class _SingleSelectionRowsValue(InternalModel):
         return validate_uuid(value)
 
 
-class SingleSelectionRowsValues(InternalModel):
+class SingleSelectionRowsValues(PublicModel):
     rows: list[_SingleSelectionRowsValue]
 
 
-class MultiSelectionRowsValues(SingleSelectionRowsValues, InternalModel):
+class MultiSelectionRowsValues(SingleSelectionRowsValues, PublicModel):
     pass
 
 
-class AudioValues(InternalModel):
+class AudioValues(PublicModel):
     max_duration: NonNegativeInt = 300
 
 
-class AudioPlayerValues(InternalModel):
+class AudioPlayerValues(PublicModel):
     file: str
 
     @validator("file")
@@ -209,7 +212,6 @@ ResponseValueConfigOptions = [
     TextValues,
     SingleSelectionValues,
     MultiSelectionValues,
-    MessageValues,
     SliderValues,
     NumberSelectionValues,
     TimeRangeValues,
@@ -223,6 +225,7 @@ ResponseValueConfigOptions = [
     MultiSelectionRowsValues,
     AudioValues,
     AudioPlayerValues,
+    MessageValues,
 ]
 
 

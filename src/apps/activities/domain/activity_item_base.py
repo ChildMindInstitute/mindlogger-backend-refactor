@@ -16,7 +16,7 @@ class BaseActivityItem(BaseModel):
     config: ResponseTypeConfig
     name: str
 
-    @validator("name", allow_reuse=True)
+    @validator("name")
     def validate_name(cls, value):
         # name must contain only alphanumeric symbols or underscore
         if not value.replace("_", "").isalnum():
@@ -25,11 +25,21 @@ class BaseActivityItem(BaseModel):
             )
         return value
 
-    @root_validator(allow_reuse=True)
+    @validator("config", pre=True)
+    def validate_config(cls, value, values, **kwargs):
+        response_type = values.get("response_type")
+        if not ResponseTypeValueConfig[response_type]["config"].parse_obj(
+            value
+        ):
+            raise ValueError(
+                f"config must be of type {ResponseTypeValueConfig[response_type]['config']}"  # noqa: E501
+            )
+        return value
+
+    @root_validator()
     def validate_response_type(cls, values):
         response_type = values.get("response_type")
         response_values = values.get("response_values")
-        config = values.get("config")
 
         if response_type in ResponseTypeValueConfig:
             if response_type not in list(NoneResponseType):
@@ -45,19 +55,11 @@ class BaseActivityItem(BaseModel):
                     raise ValueError(
                         f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
                     )
-
-            if not isinstance(
-                config, ResponseTypeValueConfig[response_type]["config"]
-            ):
-                raise ValueError(
-                    f"config must be of type {ResponseTypeValueConfig[response_type]['config']}"  # noqa: E501
-                )
-
         else:
             raise ValueError(f"response_type must be of type {ResponseType}")
         return values
 
-    @root_validator(allow_reuse=True)
+    @root_validator()
     def validate_score_required(cls, values):
         # validate score fields of response values for each response type
 

@@ -228,6 +228,29 @@ class ActivityService:
             )
         return activities
 
+    async def get_full_activities(
+        self, applet_id: uuid.UUID
+    ) -> list[ActivityFull]:
+        schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
+            applet_id
+        )
+
+        activities = []
+        activity_map = dict()
+        for schema in schemas:
+            schema.key = uuid.uuid4()
+            activity = ActivityFull.from_orm(schema)
+            activities.append(activity)
+            activity_map[activity.id] = activity
+
+        items = await ActivityItemService(
+            self.session
+        ).get_items_by_activity_ids(list(activity_map.keys()))
+        for item in items:
+            activity_map[item.activity_id].items.append(item)
+
+        return activities
+
     async def get_single_language_by_id(
         self, id_: uuid.UUID, language: str
     ) -> ActivityExtendedDetail:

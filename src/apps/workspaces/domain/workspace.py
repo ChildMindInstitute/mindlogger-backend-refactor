@@ -12,6 +12,8 @@ __all__ = [
     "PublicWorkspaceRespondent",
     "WorkspaceManager",
     "PublicWorkspaceManager",
+    "WorkspaceInfo",
+    "PublicWorkspaceInfo",
 ]
 
 from apps.workspaces.domain.constants import Role
@@ -79,3 +81,13 @@ class PublicWorkspaceManager(PublicModel):
     email: str
     roles: list[Role]
     last_seen: datetime.datetime
+
+
+class WorkspaceInfo(InternalModel):
+    name: str
+    has_managers: bool
+
+
+class PublicWorkspaceInfo(PublicModel):
+    name: str
+    has_managers: bool
