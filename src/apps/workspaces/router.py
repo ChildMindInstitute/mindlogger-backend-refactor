@@ -16,10 +16,12 @@ from apps.workspaces.api import (
     workspace_managers_list,
     workspace_remove_manager_access,
     workspace_respondents_list,
+    workspace_retrieve,
     workspace_users_pin,
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
+    PublicWorkspaceInfo,
     PublicWorkspaceManager,
     PublicWorkspaceRespondent,
 )
@@ -37,6 +39,17 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(user_workspaces)
+
+router.get(
+    "/{owner_id}",
+    response_model=Response[PublicWorkspaceInfo],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicWorkspaceInfo]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_retrieve)
 
 # Applets in a specific workspace where owner_id is applet owner
 router.get(

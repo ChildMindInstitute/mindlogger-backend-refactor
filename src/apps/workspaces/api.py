@@ -18,6 +18,7 @@ from apps.workspaces.domain.user_applet_access import (
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
+    PublicWorkspaceInfo,
     PublicWorkspaceManager,
     PublicWorkspaceRespondent,
 )
@@ -49,6 +50,21 @@ async def user_workspaces(
             for workspace in workspaces
         ],
     )
+
+
+async def workspace_retrieve(
+    owner_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+) -> Response[PublicWorkspaceInfo]:
+    """Fetch all workspaces for the specific user."""
+
+    async with atomic(session):
+        workspace = await WorkspaceService(session, owner_id).get_workspace(
+            user.id
+        )
+
+    return Response(result=PublicWorkspaceInfo.from_orm(workspace))
 
 
 async def workspace_applets(
