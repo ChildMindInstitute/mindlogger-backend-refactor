@@ -17,6 +17,8 @@ class TestSchedule(BaseTest):
         "schedule/fixtures/activity_events.json",
         "schedule/fixtures/flow_events.json",
         "schedule/fixtures/user_events.json",
+        "schedule/fixtures/notifications.json",
+        "schedule/fixtures/reminders.json",
     ]
 
     login_url = "/auth/login"
@@ -52,6 +54,15 @@ class TestSchedule(BaseTest):
             "respondent_id": None,
             "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             "flow_id": None,
+            "notification": {
+                "notifications": [
+                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
+                ],
+                "reminder": {
+                    "activity_incomplete": 1,
+                    "reminder_time": "08:30:00",
+                },
+            },
         }
 
         response = await self.client.post(
@@ -340,6 +351,15 @@ class TestSchedule(BaseTest):
             "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
+            "notification": {
+                "notifications": [
+                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
+                ],
+                "reminder": {
+                    "activity_incomplete": 1,
+                    "reminder_time": "08:30:00",
+                },
+            },
         }
 
         response = await self.client.post(
@@ -353,6 +373,17 @@ class TestSchedule(BaseTest):
         create_data["activity_id"] = "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
         create_data["flow_id"] = None
         create_data["respondent_id"] = "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+        create_data["notification"]["notifications"] = [
+            {
+                "trigger_type": "RANDOM",
+                "from_time": "08:30:00",
+                "to_time": "08:40:00",
+            },
+        ]
+        create_data["notification"]["reminder"] = {
+            "activity_incomplete": 2,
+            "reminder_time": "08:40:00",
+        }
 
         response = await self.client.put(
             self.schedule_detail_url.format(
@@ -368,6 +399,10 @@ class TestSchedule(BaseTest):
         assert event["flowId"] == create_data["flow_id"]
         assert event["respondentId"] == create_data["respondent_id"]
         assert event["activityId"] == create_data["activity_id"]
+        assert (
+            event["notification"]["reminder"]["reminderTime"]
+            == create_data["notification"]["reminder"]["reminder_time"]
+        )
 
     @rollback
     async def test_count(self):

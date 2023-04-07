@@ -1,0 +1,14 @@
+[
+    {
+        "table": "reminders",
+        "fields": {
+            "created_at": "2023-01-05T15:49:51.752113",
+            "updated_at": "2023-01-05T15:49:51.752113",
+            "is_deleted": false,
+            "id": "2c9b7de2-ae4f-4eb6-b32c-7960988b57ef",
+            "event_id": "04c93c4a-2cd4-45ce-9aec-b1912f330587",
+            "activity_incomplete": 1,
+            "reminder_time": "15:50:00"
+        }
+    }
+]

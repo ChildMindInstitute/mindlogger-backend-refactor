@@ -3,8 +3,17 @@ from datetime import date
 
 from pydantic import NonNegativeInt, validator
 
-from apps.schedule.domain.constants import AvailabilityType, PeriodicityType
-from apps.schedule.domain.schedule import BaseEvent, BasePeriodicity
+from apps.schedule.domain.constants import (
+    AvailabilityType,
+    NotificationTriggerType,
+    PeriodicityType,
+)
+from apps.schedule.domain.schedule import (
+    BaseEvent,
+    BaseNotificationSetting,
+    BasePeriodicity,
+    BaseReminderSetting,
+)
 from apps.shared.domain import PublicModel
 
 __all__ = [
@@ -25,12 +34,26 @@ class PublicPeriodicity(PublicModel, BasePeriodicity):
     pass
 
 
+class PublicNotificationSetting(PublicModel, BaseNotificationSetting):
+    id: uuid.UUID
+
+
+class PublicReminderSetting(PublicModel, BaseReminderSetting):
+    id: uuid.UUID
+
+
+class PublicNotification(PublicModel):
+    notifications: list[PublicNotificationSetting] | None = None
+    reminder: PublicReminderSetting | None = None
+
+
 class PublicEvent(PublicModel, BaseEvent):
     id: uuid.UUID
     periodicity: PublicPeriodicity
     respondent_id: uuid.UUID | None
     activity_id: uuid.UUID | None
     flow_id: uuid.UUID | None
+    notification: PublicNotification | None = None
 
 
 class ActivityEventCount(PublicModel):
@@ -72,6 +95,23 @@ class TimerDto(PublicModel):
     idleTimer: HourMinute | None = None
 
 
+class ReminderSettingDTO(PublicModel):
+    activity_incomplete: int
+    reminder_time: HourMinute
+
+
+class NotificationSettingDTO(PublicModel):
+    trigger_type: NotificationTriggerType
+    from_time: HourMinute | None = None
+    to_time: HourMinute | None = None
+    at_time: HourMinute | None = None
+
+
+class NotificationDTO(PublicModel):
+    notifications: list[NotificationSettingDTO] | None = None
+    reminder: ReminderSettingDTO | None = None
+
+
 class EventAvailabilityDto(PublicModel):
     oneTimeCompletion: bool | None = None
     periodicityType: PeriodicityType
@@ -89,6 +129,7 @@ class ScheduleEventDto(PublicModel):
     selectedDate: date | None = None
     timers: TimerDto
     availabilityType: AvailabilityType
+    notificationSettings: NotificationDTO | None = None
 
 
 class PublicEventByUser(PublicModel):

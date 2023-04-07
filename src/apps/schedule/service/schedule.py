@@ -9,8 +9,9 @@ from apps.schedule.crud.events import (
     FlowEventsCRUD,
     UserEventsCRUD,
 )
+from apps.schedule.crud.notification import NotificationCRUD, ReminderCRUD
 from apps.schedule.crud.periodicity import PeriodicityCRUD
-from apps.schedule.db.schemas import EventSchema
+from apps.schedule.db.schemas import EventSchema, NotificationSchema
 from apps.schedule.domain.constants import (
     AvailabilityType,
     DefaultEvent,
@@ -24,16 +25,25 @@ from apps.schedule.domain.schedule.internal import (
     EventFull,
     EventUpdate,
     FlowEventCreate,
+    NotificationSetting,
     Periodicity,
+    ReminderSetting,
+    ReminderSettingCreate,
     UserEventCreate,
 )
 from apps.schedule.domain.schedule.public import (
     EventAvailabilityDto,
     HourMinute,
+    NotificationDTO,
+    NotificationSettingDTO,
     PublicEvent,
     PublicEventByUser,
     PublicEventCount,
+    PublicNotification,
+    PublicNotificationSetting,
     PublicPeriodicity,
+    PublicReminderSetting,
+    ReminderSettingDTO,
     ScheduleEventDto,
     TimerDto,
 )
@@ -103,12 +113,57 @@ class ScheduleService:
                 FlowEventCreate(event_id=event.id, flow_id=schedule.flow_id)
             )
 
+        # Create notification and reminder
+        if schedule.notification:
+            if schedule.notification.notifications:
+                notification_create = []
+                for notification in schedule.notification.notifications:
+                    notification_create.append(
+                        NotificationSchema(
+                            event_id=event.id,
+                            from_time=notification.from_time,
+                            to_time=notification.to_time,
+                            at_time=notification.at_time,
+                            trigger_type=notification.trigger_type,
+                        )
+                    )
+                notifications = await NotificationCRUD(
+                    self.session
+                ).create_many(notification_create)
+
+            if schedule.notification.reminder:
+                reminder = await ReminderCRUD(self.session).create(
+                    ReminderSettingCreate(
+                        event_id=event.id,
+                        activity_incomplete=schedule.notification.reminder.activity_incomplete,  # noqa: E501
+                        reminder_time=schedule.notification.reminder.reminder_time,  # noqa: E501
+                    )
+                )
+            notification_public = PublicNotification(
+                notifications=[
+                    PublicNotificationSetting(
+                        **notification.dict(),
+                    )
+                    for notification in notifications
+                ]
+                if notifications
+                else None,
+                reminder=PublicReminderSetting(
+                    **reminder.dict(),
+                )
+                if reminder
+                else None,
+            )
+
         return PublicEvent(
             **event.dict(),
             periodicity=PublicPeriodicity(**periodicity.dict()),
             respondent_id=schedule.respondent_id,
             activity_id=schedule.activity_id,
             flow_id=schedule.flow_id,
+            notification=notification_public
+            if schedule.notification
+            else None,
         )
 
     async def get_schedule_by_id(self, schedule_id: uuid.UUID) -> PublicEvent:
@@ -125,6 +180,7 @@ class ScheduleService:
         flow_id = await FlowEventsCRUD(self.session).get_by_event_id(
             event_id=event.id
         )
+        notification = self._get_notifications_and_reminder(event.id)
 
         return PublicEvent(
             **event.dict(),
@@ -132,6 +188,7 @@ class ScheduleService:
             respondent_id=user_id,
             activity_id=activity_id,
             flow_id=flow_id,
+            notification=notification,
         )
 
     async def get_all_schedules(
@@ -157,6 +214,7 @@ class ScheduleService:
             flow_id = await FlowEventsCRUD(self.session).get_by_event_id(
                 event_id=event.id
             )
+            notification = self._get_notifications_and_reminder(event.id)
 
             events.append(
                 PublicEvent(
@@ -165,6 +223,7 @@ class ScheduleService:
                     respondent_id=user_id,
                     activity_id=activity_id,
                     flow_id=flow_id,
+                    notification=notification,
                 )
             )
 
@@ -197,6 +256,8 @@ class ScheduleService:
         )
         await FlowEventsCRUD(self.session).delete_all_by_event_ids(event_ids)
         await PeriodicityCRUD(self.session).delete_by_ids(periodicity_ids)
+        await NotificationCRUD(self.session).delete_by_event_ids(event_ids)
+        await ReminderCRUD(self.session).delete_by_event_ids(event_ids)
         await EventCRUD(self.session).delete_by_applet_id(applet_id)
 
         # Create default events for activities and flows
@@ -233,6 +294,8 @@ class ScheduleService:
             event_ids=[schedule_id]
         )
         await PeriodicityCRUD(self.session).delete_by_ids([periodicity_id])
+        await NotificationCRUD(self.session).delete_by_event_ids([schedule_id])
+        await ReminderCRUD(self.session).delete_by_event_ids([schedule_id])
         await EventCRUD(self.session).delete_by_id(pk=schedule_id)
 
         # Create default event for activity or flow if another event doesn't exist # noqa: E501
@@ -330,12 +393,60 @@ class ScheduleService:
                 FlowEventCreate(event_id=event.id, flow_id=schedule.flow_id)
             )
 
+        # Update notification
+        await NotificationCRUD(self.session).delete_by_event_ids([schedule_id])
+
+        notification_public = None
+        if schedule.notification:
+            notifications = None
+            reminder = None
+            if schedule.notification.notifications:
+                notifications_create = []
+                for notification in schedule.notification.notifications:
+                    notifications_create.append(
+                        NotificationSchema(
+                            event_id=event.id,
+                            from_time=notification.from_time,
+                            to_time=notification.to_time,
+                            at_time=notification.at_time,
+                            trigger_type=notification.trigger_type,
+                        )
+                    )
+                notifications = await NotificationCRUD(
+                    self.session
+                ).create_many(notifications_create)
+
+            if schedule.notification.reminder:
+                reminder = await ReminderCRUD(self.session).update(
+                    schema=ReminderSettingCreate(
+                        event_id=event.id,
+                        activity_incomplete=schedule.notification.reminder.activity_incomplete,  # noqa: E501
+                        reminder_time=schedule.notification.reminder.reminder_time,  # noqa: E501
+                    ),
+                )
+            notification_public = PublicNotification(
+                notifications=[
+                    PublicNotificationSetting(
+                        **notification.dict(),
+                    )
+                    for notification in notifications
+                ]
+                if notifications
+                else None,
+                reminder=PublicReminderSetting(
+                    **reminder.dict(),
+                )
+                if reminder
+                else None,
+            )
+
         return PublicEvent(
             **event.dict(),
             periodicity=PublicPeriodicity(**periodicity.dict()),
             respondent_id=schedule.respondent_id,
             activity_id=schedule.activity_id,
             flow_id=schedule.flow_id,
+            notification=notification_public,
         )
 
     async def _validate_schedule(
@@ -423,6 +534,8 @@ class ScheduleService:
         )
         await FlowEventsCRUD(self.session).delete_all_by_event_ids(event_ids)
         await PeriodicityCRUD(self.session).delete_by_ids(periodicity_ids)
+        await NotificationCRUD(self.session).delete_by_event_ids(event_ids)
+        await ReminderCRUD(self.session).delete_by_event_ids(event_ids)
         await EventCRUD(self.session).delete_by_ids(event_ids)
 
     async def _create_default_event(
@@ -475,6 +588,8 @@ class ScheduleService:
                 event_ids
             )
             await PeriodicityCRUD(self.session).delete_by_ids(periodicity_ids)
+            await NotificationCRUD(self.session).delete_by_event_ids(event_ids)
+            await ReminderCRUD(self.session).delete_by_event_ids(event_ids)
             await EventCRUD(self.session).delete_by_ids(event_ids)
 
     async def delete_by_activity_ids(
@@ -536,7 +651,15 @@ class ScheduleService:
                 PublicEventByUser(
                     applet_id=applet_id,
                     events=[
-                        self._convert_to_dto(event=event)
+                        self._convert_to_dto(
+                            event=event,
+                            notifications=await NotificationCRUD(
+                                self.session
+                            ).get_all_by_event_id(event.id),
+                            reminder=await ReminderCRUD(
+                                self.session
+                            ).get_by_event_id(event.id),
+                        )
                         for event in all_events
                     ],
                 )
@@ -544,7 +667,12 @@ class ScheduleService:
 
         return events
 
-    def _convert_to_dto(self, event: EventFull) -> ScheduleEventDto:
+    def _convert_to_dto(
+        self,
+        event: EventFull,
+        notifications: list[NotificationSetting] | None = None,
+        reminder: ReminderSetting | None = None,
+    ) -> ScheduleEventDto:
         """Convert event to dto."""
         timers = TimerDto(
             timer=HourMinute(
@@ -582,6 +710,48 @@ class ScheduleService:
             startDate=event.periodicity.start_date,
             endDate=event.periodicity.end_date,
         )
+
+        notificationSettings = None
+        if notifications or reminder:
+            notificationsDTO = None
+            reminderDTO = None
+            if notifications:
+                notificationsDTO = [
+                    NotificationSettingDTO(
+                        trigger_type=notification.trigger_type,
+                        from_time=HourMinute(
+                            hours=notification.from_time.hour,
+                            minutes=notification.from_time.minute,
+                        )
+                        if notification.from_time
+                        else None,
+                        to_time=HourMinute(
+                            hours=notification.to_time.hour,
+                            minutes=notification.to_time.minute,
+                        )
+                        if notification.to_time
+                        else None,
+                        at_time=HourMinute(
+                            hours=notification.at_time.hour,
+                            minutes=notification.at_time.minute,
+                        )
+                        if notification.at_time
+                        else None,
+                    )
+                    for notification in notifications
+                ]
+            if reminder:
+                reminderDTO = ReminderSettingDTO(
+                    activity_incomplete=reminder.activity_incomplete,
+                    reminder_time=HourMinute(
+                        hours=reminder.reminder_time.hour,
+                        minutes=reminder.reminder_time.minute,
+                    ),
+                )
+            notificationSettings = NotificationDTO(
+                notifications=notificationsDTO, reminder=reminderDTO
+            )
+
         return ScheduleEventDto(
             id=event.id,
             entityId=event.activity_id if event.activity_id else event.flow_id,
@@ -589,6 +759,7 @@ class ScheduleService:
             availabilityType=availabilityType,
             availability=availability,
             selectedDate=event.periodicity.selected_date,
+            notificationSettings=notificationSettings,
         )
 
     async def get_events_by_user_and_applet(
@@ -620,7 +791,15 @@ class ScheduleService:
         events = PublicEventByUser(
             applet_id=applet_id,
             events=[
-                self._convert_to_dto(event=event)
+                self._convert_to_dto(
+                    event=event,
+                    notifications=await NotificationCRUD(
+                        self.session
+                    ).get_all_by_event_id(event.id),
+                    reminder=await ReminderCRUD(self.session).get_by_event_id(
+                        event.id
+                    ),
+                )
                 for event in (user_events + general_events)
             ],
         )
@@ -654,3 +833,35 @@ class ScheduleService:
             count += count_general_events + count_user_events
 
         return count
+
+    async def _get_notifications_and_reminder(
+        self, event_id: uuid.UUID
+    ) -> (PublicNotification | None):
+        """Get notifications and reminder for event."""
+        notifications = await NotificationCRUD(
+            self.session
+        ).get_all_by_event_id(event_id=event_id)
+
+        reminder = await ReminderCRUD(self.session).get_by_event_id(
+            event_id=event_id
+        )
+
+        return (
+            PublicNotification(
+                notifications=[
+                    PublicNotificationSetting(
+                        **notification.dict(),
+                    )
+                    for notification in notifications
+                ]
+                if notifications
+                else None,
+                reminder=PublicReminderSetting(
+                    **reminder.dict(),
+                )
+                if reminder
+                else None,
+            )
+            if notifications or reminder
+            else None
+        )
