@@ -119,6 +119,17 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
 
         return options_doc
 
+    def _is_skippable(self, allow_list: list):
+        keys = ['reproschema:DontKnow', 'reproschema:dont_know_answer']
+        for key in keys:
+            for rule in allow_list:
+                if isinstance(rule, dict):
+                    rule = rule.get(LdKeyword.id)
+
+                if self.attr_processor.is_equal_term_val(rule, key):
+                    return True
+        return False
+
 
 class ReproFieldText(ReproFieldBase):
 
@@ -141,6 +152,7 @@ class ReproFieldText(ReproFieldBase):
     choices: list[dict] | None = None
 
     extra: dict | None = None
+    is_skippable: bool = False
 
     @classmethod
     def _get_supported_input_types(cls) -> list[str]:
@@ -158,6 +170,10 @@ class ReproFieldText(ReproFieldBase):
         self.ld_question = self._get_ld_question(processed_doc, drop=True)
         self.ld_is_vis = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isVis')
         self.ld_correct_answer = self.attr_processor.get_translation(processed_doc, 'schema:correctAnswer', self.lang)
+
+        allow_list = self.attr_processor.get_attr_list(processed_doc, 'reproschema:allow')
+        if allow_list:
+            self.is_skippable = self._is_skippable(allow_list)
 
         await self._process_ld_response_options(processed_doc)
 
@@ -187,7 +203,7 @@ class ReproFieldText(ReproFieldBase):
 
         config = TextConfig(
             remove_back_button=bool(self.ld_remove_back_option),
-            skippable_item=False,
+            skippable_item=self.is_skippable,
             max_response_length=self.ld_max_length or None,
             correct_answer_required=self.ld_correct_answer not in [None, ''],
             correct_answer=self.ld_correct_answer or None,
@@ -228,6 +244,7 @@ class ReproFieldRadio(ReproFieldBase):
     choices: list[str, dict] | None = None
 
     extra: dict | None = None
+    is_skippable: bool = False
 
     def __init__(self, context_resolver: ContextResolver, document_loader: Callable):
         super().__init__(context_resolver, document_loader)
@@ -250,6 +267,10 @@ class ReproFieldRadio(ReproFieldBase):
         self.ld_allow_edit = self.attr_processor.get_attr_value(processed_doc, 'reproschema:allowEdit')
         self.ld_is_optional_text = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isOptionalText')
         self.ld_timer = self.attr_processor.get_attr_value(processed_doc, 'reproschema:timer')
+
+        allow_list = self.attr_processor.get_attr_list(processed_doc, 'reproschema:allow')
+        if allow_list:
+            self.is_skippable = self._is_skippable(allow_list)
 
         await self._process_ld_response_options(processed_doc)
 
@@ -303,7 +324,7 @@ class ReproFieldRadio(ReproFieldBase):
         )
         args = dict(
             remove_back_button=bool(self.ld_remove_back_option),
-            skippable_item=False,  # TODO
+            skippable_item=self.is_skippable,
             randomize_options=bool(self.ld_randomize_options),  # TODO use allow
             timer=self.ld_timer or None,
             add_scores=bool(self.ld_scoring),
@@ -358,6 +379,7 @@ class ReproFieldSliderBase(ReproFieldBase, ABC):
     ld_response_alert_min_value: int | None = None
     ld_response_alert_max_value: int | None = None
 
+    is_skippable: bool = False
     extra: dict | None = None
 
     def _get_slider_option(self, doc: dict) -> LdSliderOption:
@@ -384,6 +406,10 @@ class ReproFieldSliderBase(ReproFieldBase, ABC):
 
         self.ld_is_optional_text = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isOptionalText')
         self.ld_timer = self.attr_processor.get_attr_value(processed_doc, 'reproschema:timer')
+
+        allow_list = self.attr_processor.get_attr_list(processed_doc, 'reproschema:allow')
+        if allow_list:
+            self.is_skippable = self._is_skippable(allow_list)
 
         options_doc = await self._get_ld_response_options_doc(processed_doc)
         await self._process_ld_response_options(options_doc)
@@ -464,7 +490,7 @@ class ReproFieldSlider(ReproFieldSliderBase):
 
         config = SliderConfig(
             remove_back_button=bool(self.ld_remove_back_option),
-            skippable_item=False,  # TODO
+            skippable_item=self.is_skippable,
             add_scores=bool(self.ld_scoring),
             set_alerts=bool(self.ld_response_alert),
             additional_response_option=additional_response_option,
@@ -526,7 +552,7 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
 
         config = SliderRowsConfig(
             remove_back_button=bool(self.ld_remove_back_option),
-            skippable_item=False,  # TODO
+            skippable_item=self.is_skippable,
             add_scores=bool(self.ld_scoring),
             set_alerts=bool(self.ld_response_alert),
             timer=self.ld_timer or None,
