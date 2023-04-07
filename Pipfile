@@ -56,6 +56,7 @@ cherrypy = "==11.0.0"
 "dogpile.cache" = "==0.7.1"
 six = "==1.12.0"
 types-six = "==1.16.21.4"
+psycopg2-binary = "==2.9.6"
 
 [requires]
 python_version = "3.10"
