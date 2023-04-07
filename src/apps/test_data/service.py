@@ -326,6 +326,7 @@ class TestDataService:
             one_time_completion=self.random_boolean(),
             start_time="00:00",
             end_time="23:59",
+            access_before_schedule=False,
             periodicity=PeriodicityRequest(
                 type=PeriodicityType.ALWAYS,
                 start_date=None,
