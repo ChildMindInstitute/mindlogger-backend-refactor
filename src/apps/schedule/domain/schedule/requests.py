@@ -14,7 +14,12 @@ from apps.schedule.domain.schedule.base import (
 )
 from apps.shared.domain import PublicModel
 
-__all__ = ["EventRequest", "PeriodicityRequest"]
+__all__ = [
+    "EventRequest",
+    "PeriodicityRequest",
+    "NotificationSettingRequest",
+    "ReminderSettingRequest",
+]
 
 
 class PeriodicityRequest(BasePeriodicity, PublicModel):
@@ -116,5 +121,4 @@ class EventRequest(BaseEvent, PublicModel):
                         raise ValueError(
                             """Activity/flow is unavailable at this time"""
                         )
-
         return values
