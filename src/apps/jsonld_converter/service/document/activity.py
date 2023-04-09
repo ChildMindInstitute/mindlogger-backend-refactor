@@ -19,6 +19,7 @@ from apps.jsonld_converter.service.document.field import (
     ReproFieldDate,
     ReproFieldGeolocation,
     ReproFieldAge,
+    ReproFieldRadioStacked,
 )
 from apps.jsonld_converter.service.document.base import (
     LdDocumentBase,
@@ -61,7 +62,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
         return [ReproFieldText, ReproFieldRadio, ReproFieldSlider, ReproFieldSliderStacked, ReproFieldPhoto,
                 ReproFieldVideo, ReproFieldAudio, ReproFieldDrawing, ReproFieldMessage, ReproFieldTimeRange,
-                ReproFieldDate, ReproFieldGeolocation, ReproFieldAge]
+                ReproFieldDate, ReproFieldGeolocation, ReproFieldAge, ReproFieldRadioStacked]
 
     async def load(self, doc: dict, base_url: str | None = None):
         await super().load(doc, base_url)
