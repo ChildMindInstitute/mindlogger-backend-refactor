@@ -39,10 +39,15 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     ld_image: str | None = None
     ld_splash: str | None = None
     ld_is_vis: str | bool | None = None
+    ld_is_reviewer: bool | None = None
+    ld_is_one_page: bool | None = None
 
-    extra: dict | None = None
     properties: dict
     nested_by_order: list[LdDocumentBase] | None = None
+
+    extra: dict | None = None
+    is_skippable: bool = False
+    is_back_disabled: bool = False
 
     @classmethod
     def supports(cls, doc: dict) -> bool:
@@ -69,6 +74,13 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         self.ld_description = self._get_ld_description(processed_doc, drop=True)
         self.ld_about = self._get_ld_about(processed_doc, drop=True)
         self.ld_is_vis = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isVis')
+        self.ld_is_reviewer = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isReviewerActivity')
+        self.ld_is_one_page = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isOnePageAssessment')
+
+        allow_list = self.attr_processor.get_attr_list(processed_doc, 'reproschema:allow')
+        if allow_list:
+            self.is_skippable = self._is_skippable(allow_list)
+            self.is_back_disabled = self._is_back_disabled(allow_list)
 
         self.properties = self._get_ld_properties_formatted(processed_doc)
         self.nested_by_order = await self._get_nested_items(processed_doc)
@@ -104,10 +116,10 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             name=self.ld_pref_label or self.ld_alt_label,
             description=self.ld_description or {},
             splash_screen=self.ld_splash or '',
-            show_all_at_once=False,
-            is_skippable=False,
-            is_reviewable=False,
-            response_is_editable=False,
+            show_all_at_once=bool(self.ld_is_one_page),
+            is_skippable=self.is_skippable,
+            is_reviewable=bool(self.ld_is_reviewer),
+            response_is_editable=bool(self.is_back_disabled),  # TODO why back disabled?
             is_hidden=self.ld_is_vis is False,
             image=self.ld_image or '',
             items=items,
