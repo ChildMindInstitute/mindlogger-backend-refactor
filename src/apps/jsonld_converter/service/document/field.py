@@ -30,6 +30,10 @@ from apps.activities.domain.response_type_config import (
     AudioConfig,
     DrawingConfig,
     MessageConfig,
+    TimeRangeConfig,
+    DateConfig,
+    GeolocationConfig,
+    NumberSelectionConfig,
 )
 from apps.activities.domain.response_values import (
     SingleSelectionValues,
@@ -41,6 +45,7 @@ from apps.activities.domain.response_values import (
     MultiSelectionValues,
     AudioValues,
     DrawingValues,
+    NumberSelectionValues,
 )
 from apps.jsonld_converter.domain import LdActivityItemCreate
 from apps.jsonld_converter.service.document.base import (
@@ -595,3 +600,74 @@ class ReproFieldMessage(ReproFieldBase):
         )
 
         return config
+
+
+class ReproFieldTimeRange(ReproFieldBase):
+    INPUT_TYPE = 'timeRange'
+    RESPONSE_TYPE = ResponseType.TIMERANGE
+    CFG_TYPE = TimeRangeConfig
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+
+class ReproFieldDate(ReproFieldBase):
+    INPUT_TYPE = 'date'
+    RESPONSE_TYPE = ResponseType.DATE
+    CFG_TYPE = DateConfig
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+
+class ReproFieldGeolocation(ReproFieldBase):
+    INPUT_TYPE = 'geolocation'
+    RESPONSE_TYPE = ResponseType.GEOLOCATION
+    CFG_TYPE = GeolocationConfig
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+
+class ReproFieldAge(ReproFieldBase):
+    INPUT_TYPE = 'ageSelector'
+    RESPONSE_TYPE = ResponseType.NUMBERSELECT
+    CFG_TYPE = NumberSelectionConfig
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+        await super()._process_ld_response_options(options_doc, drop=drop)
+        self.ld_min_age = self.attr_processor.get_attr_value(options_doc, 'schema:minAge')
+        self.ld_max_age = self.attr_processor.get_attr_value(options_doc, 'schema:maxAge')
+
+    def _build_config(self, _cls: Type, **attrs):
+        if self.ld_is_optional_text:
+            additional_response_option = AdditionalResponseOption(
+                text_input_option=True,
+                text_input_required=bool(self.ld_is_optional_text_required),
+            )
+        else:
+            additional_response_option = AdditionalResponseOption(
+                text_input_option=False,
+                text_input_required=False,
+            )
+
+        config = _cls(
+            remove_back_button=bool(self.ld_remove_back_option),
+            skippable_item=self.is_skippable,
+            additional_response_option=additional_response_option,
+        )
+
+        return config
+
+    def _build_response_values(self) -> NumberSelectionValues | None:
+        return NumberSelectionValues(
+            min_value=self.ld_min_age,
+            max_value=self.ld_max_age
+        )
