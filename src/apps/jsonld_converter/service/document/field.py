@@ -28,6 +28,8 @@ from apps.activities.domain.response_type_config import (
     ResponseTypeConfig,
     VideoConfig,
     AudioConfig,
+    DrawingConfig,
+    MessageConfig,
 )
 from apps.activities.domain.response_values import (
     SingleSelectionValues,
@@ -38,6 +40,7 @@ from apps.activities.domain.response_values import (
     ResponseValueConfig,
     MultiSelectionValues,
     AudioValues,
+    DrawingValues,
 )
 from apps.jsonld_converter.domain import LdActivityItemCreate
 from apps.jsonld_converter.service.document.base import (
@@ -48,7 +51,7 @@ from apps.jsonld_converter.service.document.base import (
 
 
 class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
-    CFG_TYPE: Type[ResponseTypeConfig]
+    CFG_TYPE: Type[ResponseTypeConfig] | None = None
     RESPONSE_TYPE: ResponseType
 
     ld_pref_label: str | None = None
@@ -121,8 +124,8 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
 
         return choices
 
-    async def _get_ld_response_options_doc(self, doc: dict, drop=False):
-        term_attr = 'reproschema:responseOptions'
+    async def _get_ld_response_options_doc(self, doc: dict, drop=False, term_attr: str | None = None):
+        term_attr = term_attr or 'reproschema:responseOptions'
         key = self.attr_processor.get_key(doc, term_attr)
         options_doc = self.attr_processor.get_attr_single(doc, term_attr)
         if len(options_doc) == 1 and LdKeyword.id in options_doc:
@@ -512,7 +515,7 @@ class ReproFieldVideo(ReproFieldBase):
 
 
 class ReproFieldAudio(ReproFieldBase):
-
+    INPUT_TYPE = 'audioRecord'
     RESPONSE_TYPE = ResponseType.AUDIO
     CFG_TYPE = AudioConfig
 
@@ -520,7 +523,7 @@ class ReproFieldAudio(ReproFieldBase):
 
     @classmethod
     def _get_supported_input_types(cls) -> list[str]:
-        return ['audioRecord']
+        return [cls.INPUT_TYPE]
 
     async def _process_ld_response_options(self, options_doc: dict, drop=False):
         await super()._process_ld_response_options(options_doc, drop=drop)
@@ -528,3 +531,67 @@ class ReproFieldAudio(ReproFieldBase):
 
     def _build_response_values(self) -> AudioValues | None:
         return AudioValues(max_duration=self.ld_max_duration or 300)
+
+
+class ReproFieldDrawing(ReproFieldBase):
+
+    INPUT_TYPE = 'drawing'
+    RESPONSE_TYPE = ResponseType.DRAWING
+    CFG_TYPE = DrawingConfig
+
+    ld_remove_undo_option: bool = False
+    ld_top_navigation_option: bool = False
+
+    options_image: str | None = None
+    background_image: str | None = None
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+    async def _load_from_processed_doc(self, processed_doc: dict, base_url: str | None = None):
+        await super()._load_from_processed_doc(processed_doc, base_url)
+
+        input_options = self.attr_processor.get_attr_list(processed_doc, "reproschema:inputs") or []
+        if input_options:
+            for obj in input_options:
+                name = self.attr_processor.get_translation(obj, 'schema:name', self.lang)
+                if name == 'backgroundImage':
+                    self.background_image = self._get_choice_value(obj)
+                    break
+
+    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+        await super()._process_ld_response_options(options_doc, drop=drop)
+        self.ld_remove_undo_option = self.attr_processor.get_attr_value(options_doc, 'reproschema:removeUndoOption')
+        self.ld_top_navigation_option = self.attr_processor.get_attr_value(options_doc, 'reproschema:topNavigationOption')
+        self.options_image = self._get_ld_image(options_doc)
+
+    def _build_config(self, _cls: Type, **attrs):
+        attrs = dict(
+            remove_undo_button=bool(self.ld_remove_undo_option),
+            navigation_to_top=bool(self.ld_top_navigation_option),
+        )
+        return super()._build_config(_cls, **attrs)
+
+    def _build_response_values(self) -> DrawingValues | None:
+        return DrawingValues(
+            drawing_example=self.options_image,
+            drawing_background=self.background_image,
+        )
+
+
+class ReproFieldMessage(ReproFieldBase):
+    INPUT_TYPE = 'markdownMessage'
+    RESPONSE_TYPE = ResponseType.MESSAGE
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+    def _build_config(self, _cls: Type, **attrs):
+        config = MessageConfig(
+            remove_back_button=bool(self.ld_remove_back_option),
+            timer=self.ld_timer or None,
+        )
+
+        return config

@@ -4,7 +4,8 @@ from typing import Type
 
 from apps.jsonld_converter.domain import LdActivityCreate
 from apps.jsonld_converter.errors import JsonLDNotSupportedError
-from apps.jsonld_converter.service.document import (
+from apps.jsonld_converter.service.document.field import (
+    ReproFieldBase,
     ReproFieldText,
     ReproFieldRadio,
     ReproFieldSlider,
@@ -12,15 +13,14 @@ from apps.jsonld_converter.service.document import (
     ReproFieldPhoto,
     ReproFieldVideo,
     ReproFieldAudio,
+    ReproFieldDrawing,
+    ReproFieldMessage,
 )
 from apps.jsonld_converter.service.document.base import (
     LdDocumentBase,
     ContainsNestedMixin,
     CommonFieldsMixin,
     LdKeyword,
-)
-from apps.jsonld_converter.service.document.field import (
-    ReproFieldBase,
 )
 from apps.shared.domain import InternalModel
 
@@ -51,7 +51,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
         return [ReproFieldText, ReproFieldRadio, ReproFieldSlider, ReproFieldSliderStacked, ReproFieldPhoto,
-                ReproFieldVideo, ReproFieldAudio]
+                ReproFieldVideo, ReproFieldAudio, ReproFieldDrawing, ReproFieldMessage]
 
     async def load(self, doc: dict, base_url: str | None = None):
         await super().load(doc, base_url)
