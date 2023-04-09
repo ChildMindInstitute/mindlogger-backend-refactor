@@ -253,6 +253,24 @@ class CommonFieldsMixin:
 
         return properties_by_id
 
+    def _is_allowed(self, allow_list: list[dict], keys: list[str]) -> bool:
+        for key in keys:
+            for rule in allow_list:
+                if isinstance(rule, dict):
+                    rule = rule.get(LdKeyword.id)
+
+                if self.attr_processor.is_equal_term_val(rule, key):
+                    return True
+        return False
+
+    def _is_skippable(self, allow_list: list[dict]) -> bool:
+        keys = ['reproschema:DontKnow', 'reproschema:dont_know_answer', 'reproschema:refused_to_answer']
+        return self._is_allowed(allow_list, keys)
+
+    def _is_back_disabled(self, allow_list: list[dict]) -> bool:
+        keys = ['reproschema:DisableBack', 'reproschema:disable_back']
+        return self._is_allowed(allow_list, keys)
+
 
 class LdDocumentBase(ABC, ContextResolverAwareMixin):
     attr_processor: LdAttributeProcessor = LdAttributeProcessor()

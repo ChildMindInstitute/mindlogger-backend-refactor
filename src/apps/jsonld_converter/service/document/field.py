@@ -146,17 +146,6 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
 
         return options_doc
 
-    def _is_skippable(self, allow_list: list):
-        keys = ['reproschema:DontKnow', 'reproschema:dont_know_answer']
-        for key in keys:
-            for rule in allow_list:
-                if isinstance(rule, dict):
-                    rule = rule.get(LdKeyword.id)
-
-                if self.attr_processor.is_equal_term_val(rule, key):
-                    return True
-        return False
-
     async def _load_from_processed_doc(self, processed_doc: dict, base_url: str | None = None):
         self.ld_pref_label = self._get_ld_pref_label(processed_doc)
         self.ld_alt_label = self._get_ld_alt_label(processed_doc)
