@@ -26,6 +26,8 @@ from apps.activities.domain.response_type_config import (
     SliderRowsConfig,
     PhotoConfig,
     ResponseTypeConfig,
+    VideoConfig,
+    AudioConfig,
 )
 from apps.activities.domain.response_values import (
     SingleSelectionValues,
@@ -35,6 +37,7 @@ from apps.activities.domain.response_values import (
     SliderRowsValues,
     ResponseValueConfig,
     MultiSelectionValues,
+    AudioValues,
 )
 from apps.jsonld_converter.domain import LdActivityItemCreate
 from apps.jsonld_converter.service.document.base import (
@@ -42,7 +45,6 @@ from apps.jsonld_converter.service.document.base import (
     CommonFieldsMixin,
     LdKeyword,
 )
-from apps.shared.domain import InternalModel
 
 
 class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
@@ -496,3 +498,33 @@ class ReproFieldPhoto(ReproFieldBase):
     @classmethod
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
+
+
+class ReproFieldVideo(ReproFieldBase):
+
+    INPUT_TYPE = 'video'
+    RESPONSE_TYPE = ResponseType.VIDEO
+    CFG_TYPE = VideoConfig
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+
+class ReproFieldAudio(ReproFieldBase):
+
+    RESPONSE_TYPE = ResponseType.AUDIO
+    CFG_TYPE = AudioConfig
+
+    ld_max_duration: int | None = None
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return ['audioRecord']
+
+    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+        await super()._process_ld_response_options(options_doc, drop=drop)
+        self.ld_max_duration = self.attr_processor.get_translation(options_doc, 'schema:maxValue', lang=self.lang)
+
+    def _build_response_values(self) -> AudioValues | None:
+        return AudioValues(max_duration=self.ld_max_duration or 300)

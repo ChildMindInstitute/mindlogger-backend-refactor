@@ -8,6 +8,10 @@ from apps.jsonld_converter.service.document import (
     ReproFieldText,
     ReproFieldRadio,
     ReproFieldSlider,
+    ReproFieldSliderStacked,
+    ReproFieldPhoto,
+    ReproFieldVideo,
+    ReproFieldAudio,
 )
 from apps.jsonld_converter.service.document.base import (
     LdDocumentBase,
@@ -17,14 +21,11 @@ from apps.jsonld_converter.service.document.base import (
 )
 from apps.jsonld_converter.service.document.field import (
     ReproFieldBase,
-    ReproFieldSliderStacked,
-    ReproFieldPhoto,
 )
 from apps.shared.domain import InternalModel
 
 
 class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
-
     ld_pref_label: str | None = None
     ld_alt_label: str | None = None
     ld_description: dict[str, str] | None = None
@@ -49,7 +50,8 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
 
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
-        return [ReproFieldText, ReproFieldRadio, ReproFieldSlider, ReproFieldSliderStacked, ReproFieldPhoto]
+        return [ReproFieldText, ReproFieldRadio, ReproFieldSlider, ReproFieldSliderStacked, ReproFieldPhoto,
+                ReproFieldVideo, ReproFieldAudio]
 
     async def load(self, doc: dict, base_url: str | None = None):
         await super().load(doc, base_url)

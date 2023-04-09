@@ -4,6 +4,8 @@ from apps.jsonld_converter.service.document.field import (
     ReproFieldSlider,
     ReproFieldSliderStacked,
     ReproFieldPhoto,
+    ReproFieldVideo,
+    ReproFieldAudio,
 )
 from apps.jsonld_converter.service.document.activity import ReproActivity  # noqa: F401, F403
 from apps.jsonld_converter.service.document.protocol import ReproProtocol  # noqa: F401, F403
