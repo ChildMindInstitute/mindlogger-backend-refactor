@@ -34,6 +34,8 @@ from apps.activities.domain.response_type_config import (
     DateConfig,
     GeolocationConfig,
     NumberSelectionConfig,
+    MultiSelectionRowsConfig,
+    SingleSelectionRowsConfig,
 )
 from apps.activities.domain.response_values import (
     SingleSelectionValues,
@@ -46,6 +48,10 @@ from apps.activities.domain.response_values import (
     AudioValues,
     DrawingValues,
     NumberSelectionValues,
+    MultiSelectionRowsValues,
+    SingleSelectionRowsValues,
+    _SingleSelectionRowsValue,
+    _SingleSelectionRowValue,
 )
 from apps.jsonld_converter.domain import LdActivityItemCreate
 from apps.jsonld_converter.service.document.base import (
@@ -108,23 +114,31 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
 
         return res
 
-    def _get_ld_choices_formatted(self, doc: dict, drop=False) -> list[dict] | None:
-        obj_list = self.attr_processor.get_attr_list(doc, 'reproschema:choices', drop=drop)
-        if obj_list is None:
-            obj_list = self.attr_processor.get_attr_list(doc, 'schema:itemListElement', drop=drop)
+    def _format_choice(self, doc: dict):
+        choice = {
+            'name': self.attr_processor.get_translation(doc, 'schema:name', self.lang),
+            'value': self._get_choice_value(doc),
+            'image': self._get_ld_image(doc),
+            'is_vis': self.attr_processor.get_attr_value(doc, 'reproschema:isVis'),
+            'alert': self.attr_processor.get_translation(doc, 'schema:alert', self.lang),
+            'color': self.attr_processor.get_attr_value(doc, 'schema:color'),
+            'tooltip': self.attr_processor.get_attr_value(doc, 'schema:description'),
+            'score': self.attr_processor.get_attr_value(doc, 'schema:score'),
+        }
+        return choice
+
+    def _get_ld_choices_formatted(self, doc: dict, drop=False, keys: list[str] | None = None) -> list[dict] | None:
+        keys = keys or ['reproschema:choices', 'schema:itemListElement']
         choices = []
+
+        for key in keys:
+            obj_list = self.attr_processor.get_attr_list(doc, key, drop=drop)
+            if obj_list:
+                break
+
         if obj_list:
             for obj in obj_list:
-                choice = {
-                    'name': self.attr_processor.get_translation(obj, 'schema:name', self.lang),
-                    'value': self._get_choice_value(obj),
-                    'image': self._get_ld_image(obj),
-                    'is_vis': self.attr_processor.get_attr_value(obj, 'reproschema:isVis'),
-                    'alert': self.attr_processor.get_translation(obj, 'schema:alert', self.lang),
-                    'color': self.attr_processor.get_attr_value(obj, 'schema:color'),
-                    'tooltip': self.attr_processor.get_attr_value(obj, 'schema:description'),
-                    'score': self.attr_processor.get_attr_value(obj, 'schema:score'),
-                }
+                choice = self._format_choice(obj)
                 choices.append(choice)
 
         return choices
@@ -279,12 +293,10 @@ class ReproFieldRadio(ReproFieldBase):
     ld_color_palette: bool | None = None
     ld_randomize_options: bool | None = None
     ld_scoring: bool | None = None
+    ld_response_alert: bool | None = None
 
     is_multiple: bool = False
     choices: list[str, dict] | None = None
-
-    def __init__(self, context_resolver: ContextResolver, document_loader: Callable):
-        super().__init__(context_resolver, document_loader)
 
     @classmethod
     def _get_supported_input_types(cls) -> list[str]:
@@ -296,6 +308,7 @@ class ReproFieldRadio(ReproFieldBase):
         self.ld_color_palette = self.attr_processor.get_attr_value(options_doc, 'reproschema:colorPalette')
         self.ld_randomize_options = self.attr_processor.get_attr_value(options_doc, 'reproschema:randomizeOptions')
         self.ld_scoring = self.attr_processor.get_attr_value(options_doc, 'reproschema:scoring')
+        self.ld_response_alert = self.attr_processor.get_attr_value(options_doc, 'reproschema:responseAlert')
 
         self.choices = self._get_ld_choices_formatted(options_doc)
 
@@ -303,8 +316,8 @@ class ReproFieldRadio(ReproFieldBase):
         args = dict(
             randomize_options=bool(self.ld_randomize_options),  # TODO use allow
             add_scores=bool(self.ld_scoring),
-            set_alerts=False,
-            add_tooltip=False,
+            set_alerts=bool(self.ld_response_alert),
+            add_tooltip=False,  # TODO
             set_palette=bool(self.ld_color_palette),  # TODO
         )
         cfg_cls = MultiSelectionConfig if self.is_multiple else SingleSelectionConfig
@@ -334,6 +347,83 @@ class ReproFieldRadio(ReproFieldBase):
     def export(self) -> LdActivityItemCreate:
         if self.is_multiple:
             self.RESPONSE_TYPE = ResponseType.MULTISELECT
+        return super().export()
+
+
+class ReproFieldRadioStacked(ReproFieldBase):
+
+    INPUT_TYPE = 'stackedRadio'
+    RESPONSE_TYPE = ResponseType.SINGLESELECTROWS
+
+    ld_scoring: bool | None = None
+    ld_response_alert: bool | None = None
+    ld_item_list: list[dict] | None = None
+    ld_options: list[dict] | None = None
+    ld_item_options: list[dict] | None = None
+
+    is_multiple: bool = False
+    choices: list[str, dict] | None = None
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+        await super()._process_ld_response_options(options_doc, drop=drop)
+        self.is_multiple = self._get_ld_is_multiple(options_doc)
+        self.ld_scoring = self.attr_processor.get_attr_value(options_doc, 'reproschema:scoring')
+        self.ld_response_alert = self.attr_processor.get_attr_value(options_doc, 'reproschema:responseAlert')
+
+        self.ld_item_list = self._get_ld_choices_formatted(options_doc, keys=['reproschema:itemList'])
+        self.ld_options = self._get_ld_choices_formatted(options_doc, keys=['reproschema:options'])
+        self.ld_item_options = self._get_ld_choices_formatted(options_doc, keys=['reproschema:itemOptions'])
+
+    def _build_config(self, _cls: Type, **attrs):
+        cfg_cls = MultiSelectionRowsConfig if self.is_multiple else SingleSelectionRowsConfig
+
+        config = cfg_cls(
+            remove_back_button=bool(self.ld_remove_back_option),
+            skippable_item=self.is_skippable,
+            timer=self.ld_timer or None,
+            add_scores=bool(self.ld_scoring),
+            set_alerts=bool(self.ld_response_alert),
+            add_tooltip=False,  # TODO
+        )
+
+        return config
+
+    def _build_response_values(self) -> ResponseValueConfig | None:
+        rows = []
+        chunk_size = len(self.ld_options)
+        vals = [self.ld_item_options[i:i + chunk_size] for i in range(0, len(self.ld_item_options), chunk_size)]
+
+        for i, item in enumerate(self.ld_item_list or []):
+            options = []
+            for j, choice in enumerate(self.ld_options or []):
+                val = vals[i][j]  # TODO key error
+                options.append(_SingleSelectionRowValue(
+                    text=choice.get('name'),
+                    image=choice.get('image') or None,
+                    score=val.get('score') if bool(self.ld_scoring) else None,
+                    tooltip=choice.get('tooltip') or None,
+                ))
+
+            row = _SingleSelectionRowsValue(
+                row_name=item.get('name'),
+                row_image=item.get('image') or None,
+                tooltip=item.get('tooltip') or None,
+                options=options
+            )
+            rows.append(row)
+
+        _cls = MultiSelectionRowsValues if self.is_multiple else SingleSelectionRowsValues
+        response_values = _cls(rows=rows)
+
+        return response_values
+
+    def export(self) -> LdActivityItemCreate:
+        if self.is_multiple:
+            self.RESPONSE_TYPE = ResponseType.MULTISELECTROWS
         return super().export()
 
 
