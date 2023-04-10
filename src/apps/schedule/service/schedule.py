@@ -167,7 +167,12 @@ class ScheduleService:
             else None,
         )
 
-    async def get_schedule_by_id(self, schedule_id: uuid.UUID) -> PublicEvent:
+    async def get_schedule_by_id(
+        self, schedule_id: uuid.UUID, applet_id: uuid.UUID
+    ) -> PublicEvent:
+        # Check if applet exists
+        await self._validate_applet(applet_id=applet_id)
+
         event: Event = await EventCRUD(self.session).get_by_id(pk=schedule_id)
         periodicity: Periodicity = await PeriodicityCRUD(
             self.session
@@ -195,6 +200,9 @@ class ScheduleService:
     async def get_all_schedules(
         self, applet_id: uuid.UUID
     ) -> list[PublicEvent]:
+        # Check if applet exists
+        await self._validate_applet(applet_id=applet_id)
+
         event_schemas: list[EventSchema] = await EventCRUD(
             self.session
         ).get_all_by_applet_id(applet_id)
@@ -328,6 +336,9 @@ class ScheduleService:
         schedule_id: uuid.UUID,
         schedule: EventRequest,
     ) -> PublicEvent:
+        # Validate schedule
+        await self._validate_schedule(applet_id=applet_id, schedule=schedule)
+
         # Delete all events of this activity or flow
         # if new periodicity type is "always"
 
@@ -339,8 +350,6 @@ class ScheduleService:
             )
 
         event: Event = await EventCRUD(self.session).get_by_id(pk=schedule_id)
-
-        await self._validate_schedule(applet_id=applet_id, schedule=schedule)
 
         # Update periodicity
         periodicity: Periodicity = await PeriodicityCRUD(
@@ -455,11 +464,7 @@ class ScheduleService:
     ) -> None:
         """Validate schedule before saving it to the database."""
         # Check if applet exists
-        applet_exist = await AppletsCRUD(self.session).exist_by_id(
-            id_=applet_id
-        )
-        if not applet_exist:
-            raise AppletNotFoundError(key="id", value=applet_id)
+        await self._validate_applet(applet_id=applet_id)
 
         # Check if user has access to applet
         if schedule.respondent_id:
@@ -498,6 +503,8 @@ class ScheduleService:
             )  # noqa: E501
 
     async def count_schedules(self, applet_id: uuid.UUID) -> PublicEventCount:
+        # Check if applet exists
+        await self._validate_applet(applet_id=applet_id)
 
         event_count = PublicEventCount(activity_events=[], flow_events=[])
 
@@ -873,3 +880,12 @@ class ScheduleService:
             if notifications or reminder
             else None
         )
+
+    async def _validate_applet(self, applet_id: uuid.UUID):
+
+        # Check if applet exists
+        applet_exist = await AppletsCRUD(self.session).exist_by_id(
+            id_=applet_id
+        )
+        if not applet_exist:
+            raise AppletNotFoundError(key="id", value=applet_id)

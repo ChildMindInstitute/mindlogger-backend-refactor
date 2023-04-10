@@ -40,7 +40,9 @@ async def schedule_get_by_id(
     session=Depends(session_manager.get_session),
 ) -> Response[PublicEvent]:
     """Get a schedule by id."""
-    schedule = await ScheduleService(session).get_schedule_by_id(schedule_id)
+    schedule = await ScheduleService(session).get_schedule_by_id(
+        applet_id=applet_id, schedule_id=schedule_id
+    )
     return Response(result=PublicEvent(**schedule.dict()))
 
 
