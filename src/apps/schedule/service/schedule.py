@@ -186,7 +186,7 @@ class ScheduleService:
         flow_id = await FlowEventsCRUD(self.session).get_by_event_id(
             event_id=event.id
         )
-        notification = self._get_notifications_and_reminder(event.id)
+        notification = await self._get_notifications_and_reminder(event.id)
 
         return PublicEvent(
             **event.dict(),
@@ -223,7 +223,7 @@ class ScheduleService:
             flow_id = await FlowEventsCRUD(self.session).get_by_event_id(
                 event_id=event.id
             )
-            notification = self._get_notifications_and_reminder(event.id)
+            notification = await self._get_notifications_and_reminder(event.id)
 
             events.append(
                 PublicEvent(
@@ -280,7 +280,12 @@ class ScheduleService:
                 applet_id=applet_id, activity_id=flow_id, is_activity=False
             )
 
-    async def delete_schedule_by_id(self, schedule_id: uuid.UUID):
+    async def delete_schedule_by_id(
+        self, schedule_id: uuid.UUID, applet_id: uuid.UUID
+    ):
+        # Check if applet exists
+        await self._validate_applet(applet_id=applet_id)
+
         event: Event = await EventCRUD(self.session).get_by_id(pk=schedule_id)
         periodicity_id = event.periodicity_id
 
@@ -307,6 +312,8 @@ class ScheduleService:
         await ReminderCRUD(self.session).delete_by_event_ids([schedule_id])
         await EventCRUD(self.session).delete_by_id(pk=schedule_id)
 
+        print("applet_id", applet_id)
+        print("schedule_id", schedule_id)
         # Create default event for activity or flow if another event doesn't exist # noqa: E501
         if activity_id:
             count_events = await ActivityEventsCRUD(
@@ -888,4 +895,4 @@ class ScheduleService:
             id_=applet_id
         )
         if not applet_exist:
-            raise AppletNotFoundError(key="id", value=applet_id)
+            raise AppletNotFoundError(key="id", value=str(applet_id))

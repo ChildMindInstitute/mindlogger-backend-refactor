@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import Query
-from sqlalchemy.sql import and_, distinct, func, select, update
+from sqlalchemy.sql import and_, delete, distinct, func, select, update
 
 from apps.activities.db.schemas import ActivitySchema
 from apps.activity_flows.db.schemas import ActivityFlowSchema
@@ -91,16 +91,14 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
     async def delete_by_applet_id(self, applet_id: uuid.UUID) -> None:
         """Delete all events by applet id."""
-        query: Query = update(EventSchema)
+        query: Query = delete(EventSchema)
         query = query.where(EventSchema.applet_id == applet_id)
-        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def delete_by_id(self, pk: uuid.UUID) -> None:
         """Delete event by event id."""
-        query: Query = update(EventSchema)
+        query: Query = delete(EventSchema)
         query = query.where(EventSchema.id == pk)
-        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def update(self, pk: uuid.UUID, schema: EventUpdate) -> Event:
@@ -183,9 +181,8 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
     async def delete_by_ids(self, ids: list[uuid.UUID]) -> None:
         """Delete event by event ids."""
-        query: Query = update(EventSchema)
+        query: Query = delete(EventSchema)
         query = query.where(EventSchema.id.in_(ids))
-        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def get_all_by_applet_and_activity(
@@ -436,19 +433,17 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
 
     async def delete_all_by_event_ids(self, event_ids: list[uuid.UUID]):
         """Delete all user events by event ids."""
-        query: Query = update(UserEventsSchema)
+        query: Query = delete(UserEventsSchema)
         query = query.where(UserEventsSchema.event_id.in_(event_ids))
-        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def delete_all_by_events_and_user(
         self, event_ids: list[uuid.UUID], user_id: uuid.UUID
     ):
         """Delete all user events by event ids."""
-        query: Query = update(UserEventsSchema)
+        query: Query = delete(UserEventsSchema)
         query = query.where(UserEventsSchema.event_id.in_(event_ids))
         query = query.where(UserEventsSchema.user_id == user_id)
-        query = query.values(is_deleted=True)
         await self._execute(query)
 
 
@@ -491,9 +486,8 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
 
     async def delete_all_by_event_ids(self, event_ids: list[uuid.UUID]):
         """Delete all activity events by event ids."""
-        query: Query = update(ActivityEventsSchema)
+        query: Query = delete(ActivityEventsSchema)
         query = query.where(ActivityEventsSchema.event_id.in_(event_ids))
-        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def count_by_applet(
@@ -603,9 +597,8 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
 
     async def delete_all_by_event_ids(self, event_ids: list[uuid.UUID]):
         """Delete all flow events by event ids."""
-        query: Query = update(FlowEventsSchema)
+        query: Query = delete(FlowEventsSchema)
         query = query.where(FlowEventsSchema.event_id.in_(event_ids))
-        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def count_by_applet(

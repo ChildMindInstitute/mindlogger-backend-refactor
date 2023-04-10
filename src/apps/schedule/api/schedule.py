@@ -79,7 +79,9 @@ async def schedule_delete_by_id(
     session=Depends(session_manager.get_session),
 ):
     """Delete a schedule by id."""
-    await ScheduleService(session).delete_schedule_by_id(schedule_id)
+    await ScheduleService(session).delete_schedule_by_id(
+        schedule_id, applet_id
+    )
 
 
 # TODO: Add logic to allow to create events by permissions
