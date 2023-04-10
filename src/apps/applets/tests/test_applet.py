@@ -435,7 +435,7 @@ class TestApplet(BaseTest):
                     items=[
                         dict(
                             activity_key="577dbbda-3afc-"
-                                         "4962-842b-8d8d11588bfe"
+                            "4962-842b-8d8d11588bfe"
                         )
                     ],
                 )
@@ -446,8 +446,8 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == 422, response.json()
         assert (
-                response.json()["result"][0]["message"]["en"]
-                == "Applet already exists."
+            response.json()["result"][0]["message"]["en"]
+            == "Applet already exists."
         )
 
     @rollback
@@ -1169,7 +1169,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 200
         assert (
             response.json()["result"]["displayName"]
-            == "User daily behave is changed to user daily behave updated."
+            == '"User daily behave" is changed to "User daily behave updated".'
         )
         assert len(response.json()["result"]["activities"]) == 4
 

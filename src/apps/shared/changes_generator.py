@@ -5,12 +5,12 @@ Dictionary to generate needed text in one format
 """
 _DICTIONARY = dict(
     en=dict(
-        added="New {0} is added.",
-        removed="{0} is removed.",
-        changed="{0} is changed to {1}.",
-        cleared="{0} is cleared.",
-        filled="{0} is updated to {1}.",
-        updated="{0} is updated.",
+        added='New "{0}" is added.',
+        removed='"{0}" is removed.',
+        changed='"{0}" is changed to "{1}".',
+        cleared='"{0}" is cleared.',
+        filled='"{0}" is updated to "{1}".',
+        updated='"{0}" is updated.',
     )
 )
 
@@ -33,38 +33,34 @@ class ChangeTextGenerator:
         """
         Generates text for object adding.
         """
-        return self._dictionary["added"].format(object_name).capitalize()
+        return self._dictionary["added"].format(object_name)
 
     def removed_text(self, object_name: str) -> str:
         """
         Generates text when object removing.
         """
-        return self._dictionary["removed"].format(object_name).capitalize()
+        return self._dictionary["removed"].format(object_name)
 
     def changed_text(self, from_, to_) -> str:
         """
         Generates text for value updating.
         """
-        return (
-            self._dictionary["changed"]
-            .format(str(from_), str(to_))
-            .capitalize()
-        )
+        return self._dictionary["changed"].format(str(from_), str(to_))
 
     def cleared_text(self, field: str) -> str:
         """
         Generates text for clearing field value.
         """
-        return self._dictionary["cleared"].format(field).capitalize()
+        return self._dictionary["cleared"].format(field)
 
     def filled_text(self, field: str, value: str) -> str:
         """
         Generates text for setting value.
         """
-        return self._dictionary["filled"].format(field, value).capitalize()
+        return self._dictionary["filled"].format(field, value)
 
     def updated_text(self, field: str) -> str:
         """
         Generates text for setting value.
         """
-        return self._dictionary["filled"].format(field).capitalize()
+        return self._dictionary["filled"].format(field)
