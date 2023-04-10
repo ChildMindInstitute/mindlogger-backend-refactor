@@ -71,7 +71,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         exclude_id: uuid.UUID | None,
     ) -> list[AppletSchema]:
         query: Query = select(AppletSchema)
-        query = query.where(AppletSchema.display_name == display_name)
+        query = query.where(
+            AppletSchema.display_name.ilike(display_name)
+        )
         query = query.where(AppletSchema.id.in_(applet_ids))
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
         if exclude_id:
