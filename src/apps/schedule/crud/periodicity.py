@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import update
+from sqlalchemy import delete
 from sqlalchemy.orm import Query
 
 from apps.schedule.db.schemas import PeriodicitySchema
@@ -34,7 +34,7 @@ class PeriodicityCRUD(BaseCRUD[PeriodicitySchema]):
 
     async def delete_by_ids(self, periodicity_ids: list[uuid.UUID]) -> None:
         """Delete all periodicities by if id in list."""
-        query: Query = update(PeriodicitySchema)
+        query: Query = delete(PeriodicitySchema)
         query = query.where(PeriodicitySchema.id.in_(periodicity_ids))
         query = query.values(is_deleted=True)
         await self._execute(query)

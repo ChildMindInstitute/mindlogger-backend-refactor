@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import Query
-from sqlalchemy.sql import and_, delete, distinct, func, select, update
+from sqlalchemy.sql import and_, delete, distinct, func, select
 
 from apps.activities.db.schemas import ActivitySchema
 from apps.activity_flows.db.schemas import ActivityFlowSchema
@@ -75,7 +75,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         instance = result.scalars().first()
 
         if not instance:
-            raise EventNotFoundError(key="id", value=str(id))
+            raise EventNotFoundError(key="id", value=str(pk))
 
         event: Event = Event.from_orm(instance)
         return event
