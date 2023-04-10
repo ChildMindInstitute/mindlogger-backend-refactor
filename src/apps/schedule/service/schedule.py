@@ -239,6 +239,9 @@ class ScheduleService:
         return events
 
     async def delete_all_schedules(self, applet_id: uuid.UUID):
+        # Check if applet exists
+        await self._validate_applet(applet_id=applet_id)
+
         event_schemas: list[EventSchema] = await EventCRUD(
             self.session
         ).get_all_by_applet_id(applet_id)
@@ -531,8 +534,10 @@ class ScheduleService:
         return event_count
 
     async def delete_by_user_id(self, applet_id, user_id):
-        # Get list of event_ids for user and delete them all
+        # Check if applet exists
+        await self._validate_applet(applet_id=applet_id)
 
+        # Get list of event_ids for user and delete them all
         event_schemas = await EventCRUD(
             self.session
         ).get_all_by_applet_and_user(applet_id, user_id)
@@ -786,6 +791,8 @@ class ScheduleService:
         self, user_id: uuid.UUID, applet_id: uuid.UUID
     ) -> PublicEventByUser:
         """Get all events for user in applet."""
+        # Check if applet exists
+        await self._validate_applet(applet_id=applet_id)
 
         if not (
             await AppletsCRUD(self.session).get_applet_by_roles(
