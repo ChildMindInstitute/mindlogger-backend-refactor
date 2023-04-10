@@ -11,8 +11,17 @@ from apps.activities.domain.response_type_config import ResponseType
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.applets.domain.applet_create import AppletCreate
 from apps.applets.service import AppletService
-from apps.schedule.domain.constants import PeriodicityType, TimerType
-from apps.schedule.domain.schedule import EventRequest, PeriodicityRequest
+from apps.schedule.domain.constants import (
+    NotificationTriggerType,
+    PeriodicityType,
+    TimerType,
+)
+from apps.schedule.domain.schedule import (
+    EventRequest,
+    NotificationSettingRequest,
+    PeriodicityRequest,
+    ReminderSettingRequest,
+)
 from apps.schedule.service import ScheduleService
 from apps.shared.query_params import QueryParams
 from apps.test_data.domain import AnchorDateTime, image_url
@@ -336,6 +345,22 @@ class TestDataService:
             respondent_id=None,
             activity_id=activity_id if activity_id else None,
             flow_id=flow_id if flow_id else None,
+            notification={
+                "notifications": [
+                    NotificationSettingRequest(
+                        trigger_type=NotificationTriggerType.FIXED,
+                        at_time="08:00:00",
+                    ),
+                    NotificationSettingRequest(
+                        trigger_type=NotificationTriggerType.RANDOM,
+                        from_time="08:00:00",
+                        to_time="09:00:00",
+                    ),
+                ],
+                "reminder": ReminderSettingRequest(
+                    activity_incomplete=1, reminder_time="08:00:00"
+                ),
+            },
         )
 
     def _get_generated_event(
@@ -482,7 +507,6 @@ class TestDataService:
                     schedule=default_event,
                 )
             )
-
             # sixth event daily
             current_entity_index = self._increment_index(
                 current_entity_index, len(entity_ids)
@@ -496,16 +520,29 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.DAILY
 
+            default_event.notification.notifications[0].at_time = (
+                anchor_datetime + timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+            default_event.notification.notifications[1].from_time = (
+                anchor_datetime + timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+            default_event.notification.notifications[1].to_time = (
+                anchor_datetime + timedelta(minutes=120)
+            ).strftime("%H:%M:%S")
+            default_event.notification.reminder.reminder_time = (
+                anchor_datetime + timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+
             default_event.start_time = (
                 anchor_datetime + timedelta(minutes=60)
-            ).time()
+            ).strftime("%H:%M:%S")
             default_event.end_time = (
                 anchor_datetime + timedelta(minutes=180)
-            ).time()
-
+            ).strftime("%H:%M:%S")
             default_event = self._set_timer(
                 default_event, current_entity_index
             )
+
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -525,17 +562,32 @@ class TestDataService:
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
+
+            default_event.notification.notifications[0].at_time = (
+                anchor_datetime + timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+            default_event.notification.notifications[1].from_time = (
+                anchor_datetime + timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+            default_event.notification.notifications[1].to_time = (
+                anchor_datetime + timedelta(minutes=120)
+            ).strftime("%H:%M:%S")
+            default_event.notification.reminder.reminder_time = (
+                anchor_datetime + timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+
             default_event.start_time = (
                 anchor_datetime + timedelta(minutes=60)
-            ).time()
+            ).strftime("%H:%M:%S")
             default_event.end_time = (
                 anchor_datetime + timedelta(minutes=180)
-            ).time()
+            ).strftime("%H:%M:%S")
             default_event.access_before_schedule = True
 
             default_event = self._set_timer(
                 default_event, current_entity_index
             )
+
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -555,16 +607,31 @@ class TestDataService:
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
+
+            default_event.notification.notifications[0].at_time = (
+                anchor_datetime - timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+            default_event.notification.notifications[1].from_time = (
+                anchor_datetime - timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+            default_event.notification.notifications[1].to_time = (
+                anchor_datetime - timedelta(minutes=70)
+            ).strftime("%H:%M:%S")
+            default_event.notification.reminder.reminder_time = (
+                anchor_datetime - timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+
             default_event.start_time = (
                 anchor_datetime - timedelta(minutes=180)
-            ).time()
+            ).strftime("%H:%M:%S")
             default_event.end_time = (
                 anchor_datetime - timedelta(minutes=60)
-            ).time()
+            ).strftime("%H:%M:%S")
 
             default_event = self._set_timer(
                 default_event, current_entity_index
             )
+
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -584,16 +651,31 @@ class TestDataService:
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
+
+            default_event.notification.notifications[0].at_time = (
+                anchor_datetime + timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+            default_event.notification.notifications[1].from_time = (
+                anchor_datetime + timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+            default_event.notification.notifications[1].to_time = (
+                anchor_datetime + timedelta(minutes=120)
+            ).strftime("%H:%M:%S")
+            default_event.notification.reminder.reminder_time = (
+                anchor_datetime + timedelta(minutes=90)
+            ).strftime("%H:%M:%S")
+
             default_event.start_time = (
                 anchor_datetime - timedelta(minutes=180)
-            ).time()
+            ).strftime("%H:%M:%S")
             default_event.end_time = (
                 anchor_datetime + timedelta(minutes=180)
-            ).time()
+            ).strftime("%H:%M:%S")
 
             default_event = self._set_timer(
                 default_event, current_entity_index
             )
+
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,

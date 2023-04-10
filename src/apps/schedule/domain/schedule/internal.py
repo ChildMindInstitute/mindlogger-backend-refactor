@@ -24,7 +24,7 @@ __all__ = [
     "NotificationSetting",
     "ReminderSettingCreate",
     "ReminderSetting",
-    "Notification",
+    # "Notification",
 ]
 
 
@@ -94,9 +94,9 @@ class ReminderSetting(ReminderSettingCreate, InternalModel):
     id: uuid.UUID
 
 
-class Notification(InternalModel):
-    notifications: list[NotificationSetting] | None = None
-    reminder: ReminderSetting | None = None
+# class Notification(InternalModel):
+#     notifications: list[NotificationSetting] | None = None
+#     reminder: ReminderSetting | None = None
 
 
 class EventFull(InternalModel, BaseEvent):
