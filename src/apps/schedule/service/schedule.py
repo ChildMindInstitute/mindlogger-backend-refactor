@@ -3,6 +3,7 @@ import uuid
 from apps.activities.crud import ActivitiesCRUD
 from apps.activity_flows.crud import FlowsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.applets.errors import AppletNotFoundError
 from apps.schedule.crud.events import (
     ActivityEventsCRUD,
     EventCRUD,
@@ -62,6 +63,9 @@ class ScheduleService:
     async def create_schedule(
         self, schedule: EventRequest, applet_id: uuid.UUID
     ) -> PublicEvent:
+        # Validate schedule data before saving
+        await self._validate_schedule(applet_id=applet_id, schedule=schedule)
+
         # Delete all events of this activity or flow
         # if new periodicity type is "always"
 
@@ -71,9 +75,6 @@ class ScheduleService:
                 activity_id=schedule.activity_id,
                 flow_id=schedule.flow_id,
             )
-
-        # Validate schedule data before saving
-        await self._validate_schedule(applet_id=applet_id, schedule=schedule)
 
         # Create periodicity
         periodicity: Periodicity = await PeriodicityCRUD(self.session).save(
@@ -453,6 +454,13 @@ class ScheduleService:
         self, applet_id: uuid.UUID, schedule: EventRequest
     ) -> None:
         """Validate schedule before saving it to the database."""
+        # Check if applet exists
+        applet_exist = await AppletsCRUD(self.session).exist_by_id(
+            id_=applet_id
+        )
+        if not applet_exist:
+            raise AppletNotFoundError(key="id", value=applet_id)
+
         # Check if user has access to applet
         if schedule.respondent_id:
             user_applet_access = await (
