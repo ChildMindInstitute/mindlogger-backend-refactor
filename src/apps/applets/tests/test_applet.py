@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -255,6 +256,107 @@ class TestApplet(BaseTest):
         create_data = dict(
             password="Test1234!",
             display_name="Applet 1",
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    name="Morning activity",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="evening_activity_item",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="text",
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                        ),
+                    ],
+                ),
+                dict(
+                    name="Evening activity",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    description=dict(
+                        en="Understand evening feelings.",
+                        fr="Understand evening feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="evening_activity_item",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="text",
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="Morning questionnaire",
+                    description=dict(
+                        en="Understand how was the morning",
+                        fr="Understand how was the morning",
+                    ),
+                    items=[
+                        dict(
+                            activity_key="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_list_url, data=create_data
+        )
+        assert response.status_code == 422, response.json()
+        assert (
+            response.json()["result"][0]["message"]["en"]
+            == "Applet already exists."
+        )
+
+    @rollback
+    async def test_create_duplicate_case_sensitive_name_applet(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            password="Test1234!",
+            display_name="AppleT 1",
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -680,6 +782,17 @@ class TestApplet(BaseTest):
         assert versions[0]["version"] == version
 
     @rollback
+    async def test_versions_for_not_existed_applet(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.get(
+            self.histories_url.format(pk=uuid.uuid4())
+        )
+
+        assert response.status_code == 404, response.json()
+
+    @rollback
     async def test_updating_applet_history(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -1056,7 +1169,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 200
         assert (
             response.json()["result"]["displayName"]
-            == "User daily behave is changed to user daily behave updated."
+            == '"User daily behave" is changed to "User daily behave updated".'
         )
         assert len(response.json()["result"]["activities"]) == 4
 

@@ -186,7 +186,7 @@ class ScheduleService:
         flow_id = await FlowEventsCRUD(self.session).get_by_event_id(
             event_id=event.id
         )
-        notification = await self._get_notifications_and_reminder(event.id)
+        notification = self._get_notifications_and_reminder(event.id)
 
         return PublicEvent(
             **event.dict(),
@@ -878,9 +878,7 @@ class ScheduleService:
                 ]
                 if notifications
                 else None,
-                reminder=PublicReminderSetting(
-                    **reminder.dict(),
-                )
+                reminder=PublicReminderSetting.from_orm(reminder)
                 if reminder
                 else None,
             )

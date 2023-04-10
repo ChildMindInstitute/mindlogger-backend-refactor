@@ -38,7 +38,12 @@ class NotificationCRUD(BaseCRUD[NotificationSchema]):
         query = query.where(NotificationSchema.event_id == event_id)
         query = query.order_by(NotificationSchema.id.asc())
         db_result = await self._execute(query)
-        return db_result.scalars().all()
+        result = db_result.scalars().all()
+
+        return [
+            NotificationSetting.from_orm(notification)
+            for notification in result
+        ]
 
     async def delete_by_event_ids(self, event_ids: list[uuid.UUID]):
         """Delete all notifications by event id."""
@@ -56,13 +61,14 @@ class ReminderCRUD(BaseCRUD[ReminderSchema]):
         db_reminder = await self._create(ReminderSchema(**reminder.dict()))
         return ReminderSetting.from_orm(db_reminder)
 
-    async def get_by_event_id(self, event_id: uuid.UUID) -> ReminderSetting:
+    async def get_by_event_id(self, event_id: uuid.UUID) -> ReminderSchema:
         """Return all reminders by event id."""
 
         query: Query = select(ReminderSchema)
         query = query.where(ReminderSchema.event_id == event_id)
         query = query.order_by(ReminderSchema.id.asc())
         db_result = await self._execute(query)
+
         return db_result.scalars().first()
 
     async def delete_by_event_ids(self, event_ids: list[uuid.UUID]):
