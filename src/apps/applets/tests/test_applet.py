@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -779,6 +780,17 @@ class TestApplet(BaseTest):
         versions = response.json()["result"]
         assert len(versions) == 1
         assert versions[0]["version"] == version
+
+    @rollback
+    async def test_versions_for_not_existed_applet(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.get(
+            self.histories_url.format(pk=uuid.uuid4())
+        )
+
+        assert response.status_code == 404, response.json()
 
     @rollback
     async def test_updating_applet_history(self):
