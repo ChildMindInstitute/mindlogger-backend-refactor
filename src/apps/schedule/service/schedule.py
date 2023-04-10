@@ -51,6 +51,8 @@ from apps.schedule.domain.schedule.public import (
 from apps.schedule.domain.schedule.requests import EventRequest
 from apps.shared.errors import NotFoundError
 from apps.shared.query_params import QueryParams
+from apps.users.crud import UsersCRUD
+from apps.users.errors import UserNotFound
 from apps.workspaces.domain.constants import Role
 
 __all__ = ["ScheduleService"]
@@ -537,6 +539,9 @@ class ScheduleService:
         # Check if applet exists
         await self._validate_applet(applet_id=applet_id)
 
+        # Check if user exists
+        await self._validate_user(user_id=user_id)
+
         # Get list of event_ids for user and delete them all
         event_schemas = await EventCRUD(
             self.session
@@ -899,3 +904,9 @@ class ScheduleService:
         )
         if not applet_exist:
             raise AppletNotFoundError(key="id", value=str(applet_id))
+
+    async def _validate_user(self, user_id: uuid.UUID):
+        # Check if user exists
+        user_exist = await UsersCRUD(self.session).exist_by_id(id_=user_id)
+        if not user_exist:
+            raise UserNotFound(message=f"No such user with id={user_id}.")

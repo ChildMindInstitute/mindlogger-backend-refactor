@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import Any
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
 from apps.users.db.schemas import UserSchema
@@ -107,3 +107,12 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         query = query.where(UserSchema.id == id_)
         query = query.values(last_seen_at=datetime.datetime.now())
         await self._execute(query)
+
+    async def exist_by_id(self, id_: uuid.UUID) -> bool:
+        query = select(UserSchema)
+        query = query.where(UserSchema.id == id_)
+        query = query.where(UserSchema.is_deleted == False)  # noqa: E712
+
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first() is not None
