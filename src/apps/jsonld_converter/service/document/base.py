@@ -264,7 +264,7 @@ class CommonFieldsMixin:
         return False
 
     def _is_skippable(self, allow_list: list[dict]) -> bool:
-        keys = ['reproschema:DontKnow', 'reproschema:dont_know_answer', 'reproschema:refused_to_answer']
+        keys = ['reproschema:DontKnow', 'reproschema:dont_know_answer', 'reproschema:Skipped', 'reproschema:refused_to_answer']
         return self._is_allowed(allow_list, keys)
 
     def _is_back_disabled(self, allow_list: list[dict]) -> bool:

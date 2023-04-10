@@ -109,7 +109,7 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
 
     def _get_choice_value(self, doc: dict, drop=False):
         for attr in ['reproschema:value', 'schema:value']:
-            if res := self.attr_processor.get_attr_value(doc, attr, drop=drop):
+            if (res := self.attr_processor.get_attr_value(doc, attr, drop=drop)) is not None:
                 break
 
         return res
@@ -154,6 +154,8 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
                 documentLoader=self.document_loader,
             )
             options_doc = await asyncio.to_thread(jsonld.expand, options_id, processor_options)  # TODO exception
+            if isinstance(options_doc, list):
+                options_doc = options_doc[0]
 
         if drop:
             del doc[key]
@@ -511,10 +513,10 @@ class ReproFieldSlider(ReproFieldSliderBase):
         response_values = SliderValues(
             min_value=first_choice.get('value'),
             max_value=last_choice.get('value'),
-            min_label=self.slider_option.ld_min_value or first_choice.get('name'),
-            max_label=self.slider_option.ld_max_value or last_choice.get('name'),
-            min_image=self.slider_option.ld_min_value_img or first_choice.get('image'),
-            max_image=self.slider_option.ld_max_value_img or last_choice.get('image'),
+            min_label=first_choice.get('name') or self.slider_option.ld_min_value,
+            max_label=last_choice.get('name') or self.slider_option.ld_max_value,
+            min_image=first_choice.get('image') or self.slider_option.ld_min_value_img,
+            max_image=last_choice.get('image') or self.slider_option.ld_max_value_img,
             scores=scores
         )
 
