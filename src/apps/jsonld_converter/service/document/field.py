@@ -36,6 +36,7 @@ from apps.activities.domain.response_type_config import (
     NumberSelectionConfig,
     MultiSelectionRowsConfig,
     SingleSelectionRowsConfig,
+    AudioPlayerConfig,
 )
 from apps.activities.domain.response_values import (
     SingleSelectionValues,
@@ -52,6 +53,7 @@ from apps.activities.domain.response_values import (
     SingleSelectionRowsValues,
     _SingleSelectionRowsValue,
     _SingleSelectionRowValue,
+    AudioPlayerValues,
 )
 from apps.jsonld_converter.domain import LdActivityItemCreate
 from apps.jsonld_converter.service.document.base import (
@@ -751,4 +753,57 @@ class ReproFieldAge(ReproFieldBase):
         return NumberSelectionValues(
             min_value=self.ld_min_age,
             max_value=self.ld_max_age
+        )
+
+
+class ReproFieldAudioStimulus(ReproFieldBase):
+    INPUT_TYPE = 'audioStimulus'
+    RESPONSE_TYPE = ResponseType.AUDIOPLAYER
+
+    LD_OPT_STIMULUS = 'stimulus'
+    LD_OPT_ALLOW_REPLAY = 'allowReplay'
+
+    allow_replay: bool = False
+    audio_file: str | None = None
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+    async def _load_from_processed_doc(self, processed_doc: dict, base_url: str | None = None):
+        await super()._load_from_processed_doc(processed_doc, base_url)
+        input_options = self.attr_processor.get_attr_list(processed_doc, 'reproschema:inputs')
+        if input_options:
+            for option in input_options:
+                name = self.attr_processor.get_translation(option, 'schema:name', self.lang)
+                val = self._get_choice_value(option)
+                if name == self.LD_OPT_STIMULUS:
+                    self.audio_file = val
+                elif name == self.LD_OPT_ALLOW_REPLAY:
+                    self.allow_replay = val
+
+    def _build_config(self, _cls: Type, **attrs):
+        if self.ld_is_optional_text:
+            additional_response_option = AdditionalResponseOption(
+                text_input_option=True,
+                text_input_required=bool(self.ld_is_optional_text_required),
+            )
+        else:
+            additional_response_option = AdditionalResponseOption(
+                text_input_option=False,
+                text_input_required=False,
+            )
+
+        config = AudioPlayerConfig(
+            remove_back_button=bool(self.ld_remove_back_option),
+            skippable_item=self.is_skippable,
+            additional_response_option=additional_response_option,
+            play_once=self.allow_replay is False
+        )
+
+        return config
+
+    def _build_response_values(self) -> AudioPlayerValues | None:
+        return AudioPlayerValues(
+            file=self.audio_file,
         )
