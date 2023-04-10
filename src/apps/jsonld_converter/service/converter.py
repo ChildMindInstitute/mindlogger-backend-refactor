@@ -24,6 +24,7 @@ from apps.jsonld_converter.service.document import (
     ReproFieldGeolocation,
     ReproFieldAge,
     ReproFieldRadioStacked,
+    ReproFieldAudioStimulus,
 )
 from apps.jsonld_converter.service.document.base import (
     ContainsNestedMixin,
@@ -54,7 +55,7 @@ class JsonLDModelConverter(ContainsNestedMixin):
         return [ReproProtocol, ReproActivity, ReproFieldText, ReproFieldRadio, ReproFieldSlider,
                 ReproFieldSliderStacked, ReproFieldPhoto, ReproFieldVideo, ReproFieldAudio, ReproFieldDrawing,
                 ReproFieldMessage, ReproFieldTimeRange, ReproFieldDate, ReproFieldGeolocation, ReproFieldAge,
-                ReproFieldRadioStacked]
+                ReproFieldRadioStacked, ReproFieldAudioStimulus]
 
     async def convert(self, input_: str | dict,
                       base_url: str | None = None) -> InternalModel:
