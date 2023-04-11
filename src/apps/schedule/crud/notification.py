@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy.orm import Query
-from sqlalchemy.sql import delete, select
+from sqlalchemy.sql import delete, select, update
 
 from apps.schedule.db.schemas import NotificationSchema, ReminderSchema
 from apps.schedule.domain.schedule.internal import (
@@ -79,9 +79,10 @@ class ReminderCRUD(BaseCRUD[ReminderSchema]):
 
     async def update(self, schema: ReminderSettingCreate) -> ReminderSetting:
         """Update reminder instance."""
-        instance = await self._update_one(
-            lookup="event_id",
-            value=schema.event_id,
-            schema=ReminderSchema(**schema.dict()),
-        )
-        return ReminderSetting.from_orm(instance)
+        query: Query = update(ReminderSchema)
+        query = query.where(ReminderSchema.event_id == schema.event_id)
+        query = query.values(**schema.dict(exclude={"event_id"}))
+        query = query.returning(self.schema_class)
+        db_result = await self._execute(query)
+        result = db_result.scalars().first()
+        return ReminderSetting.from_orm(result)
