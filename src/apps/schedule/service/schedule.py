@@ -351,7 +351,6 @@ class ScheduleService:
 
         # Delete all events of this activity or flow
         # if new periodicity type is "always"
-
         if schedule.periodicity.type == PeriodicityType.ALWAYS:
             await self._delete_by_activity_or_flow(
                 applet_id=applet_id,
@@ -437,12 +436,16 @@ class ScheduleService:
                 ).create_many(notifications_create)
 
             if schedule.notification.reminder:
-                reminder = await ReminderCRUD(self.session).update(
-                    schema=ReminderSettingCreate(
+                await ReminderCRUD(self.session).delete_by_event_ids(
+                    [schedule_id]
+                )
+
+                reminder = await ReminderCRUD(self.session).create(
+                    reminder=ReminderSettingCreate(
                         event_id=event.id,
                         activity_incomplete=schedule.notification.reminder.activity_incomplete,  # noqa: E501
                         reminder_time=schedule.notification.reminder.reminder_time,  # noqa: E501
-                    ),
+                    )
                 )
             notification_public = PublicNotification(
                 notifications=[
