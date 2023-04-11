@@ -6,14 +6,12 @@ from abc import (
 )
 from copy import deepcopy
 from typing import (
-    Callable,
     Type,
 )
 
 from pydantic.color import Color
 from pyld import (
     jsonld,
-    ContextResolver,
 )
 
 from apps.activities.domain.response_type_config import (
@@ -175,9 +173,8 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
         self.ld_is_optional_text = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isOptionalText')
         self.ld_timer = self.attr_processor.get_attr_value(processed_doc, 'reproschema:timer')
 
-        allow_list = self.attr_processor.get_attr_list(processed_doc, 'reproschema:allow')
-        if allow_list:
-            self.is_skippable = self._is_skippable(allow_list)
+        allow_list = self._get_allow_list(processed_doc)
+        self.is_skippable = self._is_skippable(allow_list)
 
         options_doc = await self._get_ld_response_options_doc(processed_doc)
         if options_doc:

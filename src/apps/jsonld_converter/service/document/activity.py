@@ -79,20 +79,20 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         self.ld_is_reviewer = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isReviewerActivity')
         self.ld_is_one_page = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isOnePageAssessment')
 
-        allow_list = self.attr_processor.get_attr_list(processed_doc, 'reproschema:allow')
-        if allow_list:
-            self.is_skippable = self._is_skippable(allow_list)
-            self.is_back_disabled = self._is_back_disabled(allow_list)
+        allow_list = self._get_allow_list(processed_doc)
+        self.is_skippable = self._is_skippable(allow_list)
+        self.is_back_disabled = self._is_back_disabled(allow_list)
 
         self.properties = self._get_ld_properties_formatted(processed_doc)
         self.nested_by_order = await self._get_nested_items(processed_doc)
 
         self._load_extra(processed_doc)
 
-    async def _get_nested_items(self, doc: dict, drop=False):
+    async def _get_nested_items(self, doc: dict, drop=False) -> list:
         if items := self.attr_processor.get_attr_list(doc, 'reproschema:order', drop=drop):
             nested = await asyncio.gather(*[self._load_nested_doc(item) for item in items])
             return [node for node in nested if node]
+        return []
 
     async def _load_nested_doc(self, doc: dict):
         try:

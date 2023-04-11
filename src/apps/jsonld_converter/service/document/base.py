@@ -233,8 +233,8 @@ class CommonFieldsMixin:
 
         return img
 
-    def _get_ld_properties_formatted(self, doc: dict, drop=False) -> dict:
-        items = self.attr_processor.get_attr_list(doc, 'reproschema:addProperties', drop=drop)
+    def _get_ld_properties_formatted(self, doc: dict, drop=False, key='reproschema:addProperties') -> dict:
+        items = self.attr_processor.get_attr_list(doc, key, drop=drop)
 
         properties_by_id = {}
         if items:
@@ -253,21 +253,22 @@ class CommonFieldsMixin:
 
         return properties_by_id
 
-    def _is_allowed(self, allow_list: list[dict], keys: list[str]) -> bool:
+    def _get_allow_list(self, doc: dict, drop=False) -> list[str]:
+        rules = self.attr_processor.get_attr_list(doc, 'reproschema:allow', drop=drop) or []
+        return [rule.get(LdKeyword.id) if isinstance(rule, dict) else rule for rule in rules]
+
+    def _is_allowed(self, allow_list: list[str], keys: list[str]) -> bool:
         for key in keys:
             for rule in allow_list:
-                if isinstance(rule, dict):
-                    rule = rule.get(LdKeyword.id)
-
                 if self.attr_processor.is_equal_term_val(rule, key):
                     return True
         return False
 
-    def _is_skippable(self, allow_list: list[dict]) -> bool:
+    def _is_skippable(self, allow_list: list[str]) -> bool:
         keys = ['reproschema:DontKnow', 'reproschema:dont_know_answer', 'reproschema:Skipped', 'reproschema:refused_to_answer']
         return self._is_allowed(allow_list, keys)
 
-    def _is_back_disabled(self, allow_list: list[dict]) -> bool:
+    def _is_back_disabled(self, allow_list: list[str]) -> bool:
         keys = ['reproschema:DisableBack', 'reproschema:disable_back']
         return self._is_allowed(allow_list, keys)
 
