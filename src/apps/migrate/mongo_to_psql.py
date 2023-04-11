@@ -1,9 +1,26 @@
 import uuid
 from datetime import datetime
+from Cryptodome.Cipher import AES
 
 import psycopg2  # type: ignore[import]
 from fastapi import FastAPI
 from pymongo import MongoClient
+
+
+def decrypt(data):
+    aes_key = b"n]fwen%Z.,Ce4!/0(1D-Q0#ZUOBoqJrV"
+    max_count = 4
+    try:
+        cipher = AES.new(aes_key, AES.MODE_EAX, nonce=data[-32:-16])
+        plaintext = cipher.decrypt(data[:-32])
+        cipher.verify(data[-16:])
+
+        txt = plaintext.decode("utf-8")
+        length = int(txt[-max_count:])
+    except:
+        return None
+
+    return txt[:length]
 
 
 def create_app():
@@ -31,26 +48,11 @@ def create_app():
     for user in users:
         count += 1
 
-        # If you want to decrypt values during migration
-        # you need the AES_KEY.
-        # And you should use something similar to this:
-        # pipenv install --dev pycryptodomex == 3.9.7
-        # from Cryptodome.Cipher import AES
-        #
-        # def decrypt(self, data):
-        #     try:
-        #         cipher = AES.new(
-        #               self.AES_KEY, AES.MODE_EAX, nonce=data[-32:-16]
-        #         )
-        #         plaintext = cipher.decrypt(data[:-32])
-        #         cipher.verify(data[-16:])
-        #
-        #         txt = plaintext.decode('utf-8')
-        #         length = int(txt[-self.maxCount:])
-        #
-        #         return ('ok', txt[:length])
-        #     except:
-        #         return ('error', None)
+        last_name = user.get("lastName")
+        if last_name:
+            last_name = decrypt(last_name)
+        else:
+            last_name = "-"
 
         users_list.append(
             {
@@ -60,8 +62,8 @@ def create_app():
                 "email": user.get("email"),
                 "hashed_password": user.get("salt"),
                 "id": uuid.uuid4(),
-                "first_name": user.get("firstName"),
-                "last_name": user.get("lastName"),
+                "first_name": decrypt(user.get("firstName")),
+                "last_name": last_name,
                 "last_seen_at": datetime.now(),
             }
         )
