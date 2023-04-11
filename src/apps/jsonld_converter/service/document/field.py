@@ -87,48 +87,71 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
     @classmethod
     def supports(cls, doc: dict) -> bool:
         ld_types = [
-            'reproschema:Field',
-            *cls.attr_processor.resolve_key('reproschema:Field')
+            "reproschema:Field",
+            *cls.attr_processor.resolve_key("reproschema:Field"),
         ]
         _type = cls.attr_processor.first(doc.get(LdKeyword.type))
-        _input_type = cls.attr_processor.get_attr_value(doc, 'reproschema:inputType')
+        _input_type = cls.attr_processor.get_attr_value(
+            doc, "reproschema:inputType"
+        )
         if not _input_type:
             # try fetch from compact
-            _input_type = doc.get('ui', {}).get('inputType')
+            _input_type = doc.get("ui", {}).get("inputType")
 
-        return _type in ld_types and _input_type in cls._get_supported_input_types()
+        return (
+            _type in ld_types
+            and _input_type in cls._get_supported_input_types()
+        )
 
     def _get_ld_question(self, doc: dict, drop=False):
-        return self.attr_processor.get_translations(doc, 'schema:question', drop=drop)
+        return self.attr_processor.get_translations(
+            doc, "schema:question", drop=drop
+        )
 
     def _get_ld_readonly(self, doc: dict, drop=False):
-        return self.attr_processor.get_attr_value(doc, 'schema:readonlyValue', drop=drop)
+        return self.attr_processor.get_attr_value(
+            doc, "schema:readonlyValue", drop=drop
+        )
 
     def _get_ld_is_multiple(self, doc: dict, drop=False):
-        return self.attr_processor.get_attr_value(doc, 'reproschema:multipleChoice', drop=drop)
+        return self.attr_processor.get_attr_value(
+            doc, "reproschema:multipleChoice", drop=drop
+        )
 
     def _get_choice_value(self, doc: dict, drop=False):
-        for attr in ['reproschema:value', 'schema:value']:
-            if (res := self.attr_processor.get_attr_value(doc, attr, drop=drop)) is not None:
+        for attr in ["reproschema:value", "schema:value"]:
+            if (
+                res := self.attr_processor.get_attr_value(doc, attr, drop=drop)
+            ) is not None:
                 break
 
         return res
 
     def _format_choice(self, doc: dict):
         choice = {
-            'name': self.attr_processor.get_translation(doc, 'schema:name', self.lang),
-            'value': self._get_choice_value(doc),
-            'image': self._get_ld_image(doc),
-            'is_vis': self.attr_processor.get_attr_value(doc, 'reproschema:isVis'),
-            'alert': self.attr_processor.get_translation(doc, 'schema:alert', self.lang),
-            'color': self.attr_processor.get_attr_value(doc, 'schema:color'),
-            'tooltip': self.attr_processor.get_attr_value(doc, 'schema:description'),
-            'score': self.attr_processor.get_attr_value(doc, 'schema:score'),
+            "name": self.attr_processor.get_translation(
+                doc, "schema:name", self.lang
+            ),
+            "value": self._get_choice_value(doc),
+            "image": self._get_ld_image(doc),
+            "is_vis": self.attr_processor.get_attr_value(
+                doc, "reproschema:isVis"
+            ),
+            "alert": self.attr_processor.get_translation(
+                doc, "schema:alert", self.lang
+            ),
+            "color": self.attr_processor.get_attr_value(doc, "schema:color"),
+            "tooltip": self.attr_processor.get_attr_value(
+                doc, "schema:description"
+            ),
+            "score": self.attr_processor.get_attr_value(doc, "schema:score"),
         }
         return choice
 
-    def _get_ld_choices_formatted(self, doc: dict, drop=False, keys: list[str] | None = None) -> list[dict] | None:
-        keys = keys or ['reproschema:choices', 'schema:itemListElement']
+    def _get_ld_choices_formatted(
+        self, doc: dict, drop=False, keys: list[str] | None = None
+    ) -> list[dict] | None:
+        keys = keys or ["reproschema:choices", "schema:itemListElement"]
         choices = []
 
         for key in keys:
@@ -143,8 +166,10 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
 
         return choices
 
-    async def _get_ld_response_options_doc(self, doc: dict, drop=False, term_attr: str | None = None):
-        term_attr = term_attr or 'reproschema:responseOptions'
+    async def _get_ld_response_options_doc(
+        self, doc: dict, drop=False, term_attr: str | None = None
+    ):
+        term_attr = term_attr or "reproschema:responseOptions"
         key = self.attr_processor.get_key(doc, term_attr)
         options_doc = self.attr_processor.get_attr_single(doc, term_attr)
         if len(options_doc) == 1 and LdKeyword.id in options_doc:
@@ -153,7 +178,9 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
                 contextResolver=self.context_resolver,
                 documentLoader=self.document_loader,
             )
-            options_doc = await asyncio.to_thread(jsonld.expand, options_id, processor_options)  # TODO exception
+            options_doc = await asyncio.to_thread(
+                jsonld.expand, options_id, processor_options
+            )  # TODO exception
             if isinstance(options_doc, list):
                 options_doc = options_doc[0]
 
@@ -162,16 +189,26 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
 
         return options_doc
 
-    async def _load_from_processed_doc(self, processed_doc: dict, base_url: str | None = None):
+    async def _load_from_processed_doc(
+        self, processed_doc: dict, base_url: str | None = None
+    ):
         self.ld_pref_label = self._get_ld_pref_label(processed_doc)
         self.ld_alt_label = self._get_ld_alt_label(processed_doc)
         self.ld_image = self._get_ld_image(processed_doc)
         self.ld_question = self._get_ld_question(processed_doc, drop=True)
-        self.ld_is_vis = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isVis')
-        self.ld_allow_edit = self.attr_processor.get_attr_value(processed_doc, 'reproschema:allowEdit')
+        self.ld_is_vis = self.attr_processor.get_attr_value(
+            processed_doc, "reproschema:isVis"
+        )
+        self.ld_allow_edit = self.attr_processor.get_attr_value(
+            processed_doc, "reproschema:allowEdit"
+        )
 
-        self.ld_is_optional_text = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isOptionalText')
-        self.ld_timer = self.attr_processor.get_attr_value(processed_doc, 'reproschema:timer')
+        self.ld_is_optional_text = self.attr_processor.get_attr_value(
+            processed_doc, "reproschema:isOptionalText"
+        )
+        self.ld_timer = self.attr_processor.get_attr_value(
+            processed_doc, "reproschema:timer"
+        )
 
         allow_list = self._get_allow_list(processed_doc)
         self.is_skippable = self._is_skippable(allow_list)
@@ -187,10 +224,15 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
         await self._load_from_processed_doc(processed_doc, base_url)
         self._load_extra(processed_doc)
 
-    async def _process_ld_response_options(self, options_doc: dict, drop=False):
-        self.ld_is_optional_text_required = self.attr_processor.get_attr_value(options_doc,
-                                                                               'reproschema:isOptionalTextRequired')
-        self.ld_remove_back_option = self.attr_processor.get_attr_value(options_doc, 'reproschema:removeBackOption')
+    async def _process_ld_response_options(
+        self, options_doc: dict, drop=False
+    ):
+        self.ld_is_optional_text_required = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:isOptionalTextRequired"
+        )
+        self.ld_remove_back_option = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:removeBackOption"
+        )
 
     def _load_extra(self, doc: dict):
         if self.extra is None:
@@ -214,8 +256,8 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
             remove_back_button=bool(self.ld_remove_back_option),
             skippable_item=self.is_skippable,
             additional_response_option=additional_response_option,
-            timer=self.ld_timer or None,
-            **attrs
+            timer=self.ld_timer,
+            **attrs,
         )
 
         return config
@@ -233,13 +275,13 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
             response_values=response_values,
             config=config,
             name=self.ld_pref_label or self.ld_alt_label,
-            extra_fields=self.extra
+            extra_fields=self.extra,
         )
 
 
 class ReproFieldText(ReproFieldBase):
 
-    INPUT_TYPE = 'text'
+    INPUT_TYPE = "text"
     RESPONSE_TYPE = ResponseType.TEXT
 
     ld_correct_answer: str | None = None
@@ -254,30 +296,46 @@ class ReproFieldText(ReproFieldBase):
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
 
-    async def _load_from_processed_doc(self, processed_doc: dict, base_url: str | None = None):
+    async def _load_from_processed_doc(
+        self, processed_doc: dict, base_url: str | None = None
+    ):
         await super()._load_from_processed_doc(processed_doc, base_url)
-        self.ld_correct_answer = self.attr_processor.get_translation(processed_doc, 'schema:correctAnswer', self.lang)
+        self.ld_correct_answer = self.attr_processor.get_translation(
+            processed_doc, "schema:correctAnswer", self.lang
+        )
 
-    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+    async def _process_ld_response_options(
+        self, options_doc: dict, drop=False
+    ):
         await super()._process_ld_response_options(options_doc, drop=drop)
         self.is_multiple = self._get_ld_is_multiple(options_doc)
-        self.ld_is_response_identifier = self.attr_processor.get_attr_value(options_doc, 'reproschema:isResponseIdentifier')
-        self.ld_max_length = self.attr_processor.get_attr_value(options_doc, 'reproschema:maxLength')
-        self.ld_required_value = self.attr_processor.get_attr_value(options_doc, 'reproschema:requiredValue')
-        self.ld_value_type = self.attr_processor.get_attr_single(options_doc, 'reproschema:valueType', ld_key=LdKeyword.id)
+        self.ld_is_response_identifier = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:isResponseIdentifier"
+        )
+        self.ld_max_length = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:maxLength"
+        )
+        self.ld_required_value = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:requiredValue"
+        )
+        self.ld_value_type = self.attr_processor.get_attr_single(
+            options_doc, "reproschema:valueType", ld_key=LdKeyword.id
+        )
 
         self.choices = self._get_ld_choices_formatted(options_doc)
 
     def _build_config(self, _cls: Type, **attrs):
         numerical_response_required = False
-        if self.ld_value_type and self.attr_processor.is_equal_term_val(self.ld_value_type, 'xsd:integer'):
+        if self.ld_value_type and self.attr_processor.is_equal_term_val(
+            self.ld_value_type, "xsd:integer"
+        ):
             numerical_response_required = True
 
         config = TextConfig(
             remove_back_button=bool(self.ld_remove_back_option),
             skippable_item=self.is_skippable,
             max_response_length=self.ld_max_length or None,
-            correct_answer_required=self.ld_correct_answer not in [None, ''],
+            correct_answer_required=self.ld_correct_answer not in [None, ""],
             correct_answer=self.ld_correct_answer or None,
             numerical_response_required=numerical_response_required,
             response_data_identifier=bool(self.ld_is_response_identifier),
@@ -288,7 +346,7 @@ class ReproFieldText(ReproFieldBase):
 
 class ReproFieldRadio(ReproFieldBase):
 
-    INPUT_TYPE = 'radio'
+    INPUT_TYPE = "radio"
     RESPONSE_TYPE = ResponseType.SINGLESELECT
 
     ld_color_palette: bool | None = None
@@ -303,25 +361,37 @@ class ReproFieldRadio(ReproFieldBase):
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
 
-    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+    async def _process_ld_response_options(
+        self, options_doc: dict, drop=False
+    ):
         await super()._process_ld_response_options(options_doc, drop=drop)
         self.is_multiple = self._get_ld_is_multiple(options_doc)
-        self.ld_color_palette = self.attr_processor.get_attr_value(options_doc, 'reproschema:colorPalette')
-        self.ld_randomize_options = self.attr_processor.get_attr_value(options_doc, 'reproschema:randomizeOptions')
-        self.ld_scoring = self.attr_processor.get_attr_value(options_doc, 'reproschema:scoring')
-        self.ld_response_alert = self.attr_processor.get_attr_value(options_doc, 'reproschema:responseAlert')
+        self.ld_color_palette = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:colorPalette"
+        )
+        self.ld_randomize_options = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:randomizeOptions"
+        )
+        self.ld_scoring = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:scoring"
+        )
+        self.ld_response_alert = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:responseAlert"
+        )
 
         self.choices = self._get_ld_choices_formatted(options_doc)
 
     def _build_config(self, _cls: Type, **attrs):
         args = dict(
-            randomize_options=bool(self.ld_randomize_options),  # TODO use allow
+            randomize_options=bool(self.ld_randomize_options),  # TODO use allow?
             add_scores=bool(self.ld_scoring),
             set_alerts=bool(self.ld_response_alert),
             add_tooltip=False,  # TODO
             set_palette=bool(self.ld_color_palette),  # TODO
         )
-        cfg_cls = MultiSelectionConfig if self.is_multiple else SingleSelectionConfig
+        cfg_cls = (
+            MultiSelectionConfig if self.is_multiple else SingleSelectionConfig
+        )
 
         return super()._build_config(cfg_cls, **args)
 
@@ -329,18 +399,24 @@ class ReproFieldRadio(ReproFieldBase):
         values = []
         for choice in self.choices:
             color = None
-            if color_val := choice.get('color'):
+            if color_val := choice.get("color"):
                 color = Color(color_val)  # TODO process error
 
-            values.append(_SingleSelectionValue(  # TODO where is value???
-                text=choice.get('name'),
-                image=choice.get('image') or None,
-                score=choice.get('score') if bool(self.ld_scoring) else None,
-                tooltip=choice.get('tooltip') or None,
-                is_hidden=True if choice.get('is_vis') is False else False,
-                color=color,
-            ))
-        _cls = MultiSelectionValues if self.is_multiple else SingleSelectionValues
+            values.append(
+                _SingleSelectionValue(  # TODO where is value???
+                    text=choice.get("name"),
+                    image=choice.get("image"),
+                    score=choice.get("score")
+                    if bool(self.ld_scoring)
+                    else None,
+                    tooltip=choice.get("tooltip"),
+                    is_hidden=True if choice.get("is_vis") is False else False,
+                    color=color,
+                )
+            )
+        _cls = (
+            MultiSelectionValues if self.is_multiple else SingleSelectionValues
+        )
         response_values = _cls(options=values)
 
         return response_values
@@ -353,7 +429,7 @@ class ReproFieldRadio(ReproFieldBase):
 
 class ReproFieldRadioStacked(ReproFieldBase):
 
-    INPUT_TYPE = 'stackedRadio'
+    INPUT_TYPE = "stackedRadio"
     RESPONSE_TYPE = ResponseType.SINGLESELECTROWS
 
     ld_scoring: bool | None = None
@@ -369,26 +445,47 @@ class ReproFieldRadioStacked(ReproFieldBase):
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
 
-    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+    async def _process_ld_response_options(
+        self, options_doc: dict, drop=False
+    ):
         await super()._process_ld_response_options(options_doc, drop=drop)
         self.is_multiple = self._get_ld_is_multiple(options_doc)
-        self.ld_scoring = self.attr_processor.get_attr_value(options_doc, 'reproschema:scoring')
-        self.ld_response_alert = self.attr_processor.get_attr_value(options_doc, 'reproschema:responseAlert')
+        self.ld_scoring = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:scoring"
+        )
+        self.ld_response_alert = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:responseAlert"
+        )
 
-        self.ld_item_list = self._get_ld_choices_formatted(options_doc, keys=['reproschema:itemList'])
-        self.ld_options = self._get_ld_choices_formatted(options_doc, keys=['reproschema:options'])
-        self.ld_item_options = self._get_ld_choices_formatted(options_doc, keys=['reproschema:itemOptions'])
+        self.ld_item_list = self._get_ld_choices_formatted(
+            options_doc, keys=["reproschema:itemList"]
+        )
+        self.ld_options = self._get_ld_choices_formatted(
+            options_doc, keys=["reproschema:options"]
+        )
+        self.ld_item_options = self._get_ld_choices_formatted(
+            options_doc, keys=["reproschema:itemOptions"]
+        )
 
     def _build_config(self, _cls: Type, **attrs):
-        cfg_cls = MultiSelectionRowsConfig if self.is_multiple else SingleSelectionRowsConfig
+        cfg_cls = (
+            MultiSelectionRowsConfig
+            if self.is_multiple
+            else SingleSelectionRowsConfig
+        )
+
+        add_tooltip = any(
+            bool(opt.get("tooltip"))
+            for opt in [*self.ld_options, *self.ld_item_list]
+        )
 
         config = cfg_cls(
             remove_back_button=bool(self.ld_remove_back_option),
             skippable_item=self.is_skippable,
-            timer=self.ld_timer or None,
+            timer=self.ld_timer,
             add_scores=bool(self.ld_scoring),
             set_alerts=bool(self.ld_response_alert),
-            add_tooltip=False,  # TODO
+            add_tooltip=add_tooltip,
         )
 
         return config
@@ -396,28 +493,39 @@ class ReproFieldRadioStacked(ReproFieldBase):
     def _build_response_values(self) -> ResponseValueConfig | None:
         rows = []
         chunk_size = len(self.ld_options)
-        vals = [self.ld_item_options[i:i + chunk_size] for i in range(0, len(self.ld_item_options), chunk_size)]
+        vals = [
+            self.ld_item_options[i: i + chunk_size]
+            for i in range(0, len(self.ld_item_options), chunk_size)
+        ]
 
         for i, item in enumerate(self.ld_item_list or []):
             options = []
             for j, choice in enumerate(self.ld_options or []):
                 val = vals[i][j]  # TODO key error
-                options.append(_SingleSelectionRowValue(
-                    text=choice.get('name'),
-                    image=choice.get('image') or None,
-                    score=val.get('score') if bool(self.ld_scoring) else None,
-                    tooltip=choice.get('tooltip') or None,
-                ))
+                options.append(
+                    _SingleSelectionRowValue(
+                        text=choice.get("name"),
+                        image=choice.get("image") or None,
+                        score=val.get("score")
+                        if bool(self.ld_scoring)
+                        else None,
+                        tooltip=choice.get("tooltip") or None,
+                    )
+                )
 
             row = _SingleSelectionRowsValue(
-                row_name=item.get('name'),
-                row_image=item.get('image') or None,
-                tooltip=item.get('tooltip') or None,
-                options=options
+                row_name=item.get("name"),
+                row_image=item.get("image") or None,
+                tooltip=item.get("tooltip") or None,
+                options=options,
             )
             rows.append(row)
 
-        _cls = MultiSelectionRowsValues if self.is_multiple else SingleSelectionRowsValues
+        _cls = (
+            MultiSelectionRowsValues
+            if self.is_multiple
+            else SingleSelectionRowsValues
+        )
         response_values = _cls(rows=rows)
 
         return response_values
@@ -447,27 +555,49 @@ class ReproFieldSliderBase(ReproFieldBase, ABC):
 
     def _get_slider_option(self, doc: dict) -> LdSliderOption:
         option = LdSliderOption(
-            ld_label=self.attr_processor.get_translation(doc, 'schema:sliderLabel', self.lang),
-            ld_min_value=self.attr_processor.get_attr_value(doc, 'schema:minValue'),
-            ld_max_value=self.attr_processor.get_attr_value(doc, 'schema:maxValue'),
-            ld_min_value_img=self.attr_processor.get_attr_value(doc, 'schema:minValueImg'),
-            ld_max_value_img=self.attr_processor.get_attr_value(doc, 'schema:maxValueImg'),
+            ld_label=self.attr_processor.get_translation(
+                doc, "schema:sliderLabel", self.lang
+            ),
+            ld_min_value=self.attr_processor.get_attr_value(
+                doc, "schema:minValue"
+            ),
+            ld_max_value=self.attr_processor.get_attr_value(
+                doc, "schema:maxValue"
+            ),
+            ld_min_value_img=self.attr_processor.get_attr_value(
+                doc, "schema:minValueImg"
+            ),
+            ld_max_value_img=self.attr_processor.get_attr_value(
+                doc, "schema:maxValueImg"
+            ),
             choices=self._get_ld_choices_formatted(doc),
         )
         return option
 
-    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+    async def _process_ld_response_options(
+        self, options_doc: dict, drop=False
+    ):
         await super()._process_ld_response_options(options_doc, drop=drop)
-        self.ld_scoring = self.attr_processor.get_attr_value(options_doc, 'reproschema:scoring')
-        self.ld_response_alert = self.attr_processor.get_attr_value(options_doc, 'reproschema:responseAlert')
-        self.ld_response_alert_message = self.attr_processor.get_attr_value(options_doc, 'schema:responseAlertMessage')
-        self.ld_response_alert_min_value = self.attr_processor.get_attr_value(options_doc, 'schema:minAlertValue')
-        self.ld_response_alert_max_value = self.attr_processor.get_attr_value(options_doc, 'schema:maxAlertValue')
+        self.ld_scoring = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:scoring"
+        )
+        self.ld_response_alert = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:responseAlert"
+        )
+        self.ld_response_alert_message = self.attr_processor.get_attr_value(
+            options_doc, "schema:responseAlertMessage"
+        )
+        self.ld_response_alert_min_value = self.attr_processor.get_attr_value(
+            options_doc, "schema:minAlertValue"
+        )
+        self.ld_response_alert_max_value = self.attr_processor.get_attr_value(
+            options_doc, "schema:maxAlertValue"
+        )
 
 
 class ReproFieldSlider(ReproFieldSliderBase):
 
-    INPUT_TYPE = 'slider'
+    INPUT_TYPE = "slider"
     RESPONSE_TYPE = ResponseType.SLIDER
     CFG_TYPE = SliderConfig
 
@@ -481,13 +611,21 @@ class ReproFieldSlider(ReproFieldSliderBase):
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
 
-    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+    async def _process_ld_response_options(
+        self, options_doc: dict, drop=False
+    ):
         await super()._process_ld_response_options(options_doc, drop=drop)
         self.slider_option = self._get_slider_option(options_doc)
 
-        self.ld_tick_label = self.attr_processor.get_attr_value(options_doc, 'reproschema:tickLabel')
-        self.ld_tick_mark = self.attr_processor.get_attr_value(options_doc, 'reproschema:tickMark')
-        self.ld_continuous_slider = self.attr_processor.get_attr_value(options_doc, 'reproschema:continousSlider')
+        self.ld_tick_label = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:tickLabel"
+        )
+        self.ld_tick_mark = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:tickMark"
+        )
+        self.ld_continuous_slider = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:continousSlider"
+        )
 
     def _build_config(self, _cls: Type, **attrs):
         attrs = dict(
@@ -505,18 +643,22 @@ class ReproFieldSlider(ReproFieldSliderBase):
         if self.slider_option.choices:
             first_choice = self.slider_option.choices[0]
             last_choice = self.slider_option.choices[-1]
-        scores = [x.get('score') for x in self.slider_option.choices]
+        scores = [x.get("score") for x in self.slider_option.choices]
         if scores and scores[0] is None:
             scores = None
 
         response_values = SliderValues(
-            min_value=first_choice.get('value'),
-            max_value=last_choice.get('value'),
-            min_label=first_choice.get('name') or self.slider_option.ld_min_value,
-            max_label=last_choice.get('name') or self.slider_option.ld_max_value,
-            min_image=first_choice.get('image') or self.slider_option.ld_min_value_img,
-            max_image=last_choice.get('image') or self.slider_option.ld_max_value_img,
-            scores=scores
+            min_value=first_choice.get("value"),
+            max_value=last_choice.get("value"),
+            min_label=first_choice.get("name")
+            or self.slider_option.ld_min_value,
+            max_label=last_choice.get("name")
+            or self.slider_option.ld_max_value,
+            min_image=first_choice.get("image")
+            or self.slider_option.ld_min_value_img,
+            max_image=last_choice.get("image")
+            or self.slider_option.ld_max_value_img,
+            scores=scores,
         )
 
         return response_values
@@ -524,7 +666,7 @@ class ReproFieldSlider(ReproFieldSliderBase):
 
 class ReproFieldSliderStacked(ReproFieldSliderBase):
 
-    INPUT_TYPE = 'stackedSlider'
+    INPUT_TYPE = "stackedSlider"
     RESPONSE_TYPE = ResponseType.SLIDERROWS
 
     slider_options: list[LdSliderOption] | None = None
@@ -533,11 +675,20 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
 
-    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+    async def _process_ld_response_options(
+        self, options_doc: dict, drop=False
+    ):
         await super()._process_ld_response_options(options_doc, drop=drop)
 
-        ld_slider_options = self.attr_processor.get_attr_list(options_doc, 'reproschema:sliderOptions') or []
-        self.slider_options = [self._get_slider_option(opt) for opt in ld_slider_options]
+        ld_slider_options = (
+            self.attr_processor.get_attr_list(
+                options_doc, "reproschema:sliderOptions"
+            )
+            or []
+        )
+        self.slider_options = [
+            self._get_slider_option(opt) for opt in ld_slider_options
+        ]
 
     def _build_config(self, _cls: Type, **attrs):
         config = SliderRowsConfig(
@@ -545,7 +696,7 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
             skippable_item=self.is_skippable,
             add_scores=bool(self.ld_scoring),
             set_alerts=bool(self.ld_response_alert),
-            timer=self.ld_timer or None,
+            timer=self.ld_timer,
         )
         return config
 
@@ -557,18 +708,18 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
             if option.choices:
                 first_choice = option.choices[0]
                 last_choice = option.choices[-1]
-            scores = [x.get('score') for x in option.choices]
+            scores = [x.get("score") for x in option.choices]
             if scores and scores[0] is None:
                 scores = []
             response_value = SliderRowsValue(
                 label=option.ld_label,
-                min_value=first_choice.get('value'),
-                max_value=last_choice.get('value'),
-                min_label=option.ld_min_value or first_choice.get('name'),
-                max_label=option.ld_max_value or last_choice.get('name'),
-                min_image=option.ld_min_value_img or first_choice.get('image'),
-                max_image=option.ld_max_value_img or last_choice.get('image'),
-                scores=scores
+                min_value=first_choice.get("value"),
+                max_value=last_choice.get("value"),
+                min_label=option.ld_min_value or first_choice.get("name"),
+                max_label=option.ld_max_value or last_choice.get("name"),
+                min_image=option.ld_min_value_img or first_choice.get("image"),
+                max_image=option.ld_max_value_img or last_choice.get("image"),
+                scores=scores,
             )
             rows.append(response_value)
 
@@ -579,7 +730,7 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
 
 class ReproFieldPhoto(ReproFieldBase):
 
-    INPUT_TYPE = 'photo'
+    INPUT_TYPE = "photo"
     RESPONSE_TYPE = ResponseType.PHOTO
     CFG_TYPE = PhotoConfig
 
@@ -590,7 +741,7 @@ class ReproFieldPhoto(ReproFieldBase):
 
 class ReproFieldVideo(ReproFieldBase):
 
-    INPUT_TYPE = 'video'
+    INPUT_TYPE = "video"
     RESPONSE_TYPE = ResponseType.VIDEO
     CFG_TYPE = VideoConfig
 
@@ -600,7 +751,7 @@ class ReproFieldVideo(ReproFieldBase):
 
 
 class ReproFieldAudio(ReproFieldBase):
-    INPUT_TYPE = 'audioRecord'
+    INPUT_TYPE = "audioRecord"
     RESPONSE_TYPE = ResponseType.AUDIO
     CFG_TYPE = AudioConfig
 
@@ -610,9 +761,13 @@ class ReproFieldAudio(ReproFieldBase):
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
 
-    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+    async def _process_ld_response_options(
+        self, options_doc: dict, drop=False
+    ):
         await super()._process_ld_response_options(options_doc, drop=drop)
-        self.ld_max_duration = self.attr_processor.get_translation(options_doc, 'schema:maxValue', lang=self.lang)
+        self.ld_max_duration = self.attr_processor.get_translation(
+            options_doc, "schema:maxValue", lang=self.lang
+        )
 
     def _build_response_values(self) -> AudioValues | None:
         return AudioValues(max_duration=self.ld_max_duration or 300)
@@ -620,7 +775,7 @@ class ReproFieldAudio(ReproFieldBase):
 
 class ReproFieldDrawing(ReproFieldBase):
 
-    INPUT_TYPE = 'drawing'
+    INPUT_TYPE = "drawing"
     RESPONSE_TYPE = ResponseType.DRAWING
     CFG_TYPE = DrawingConfig
 
@@ -634,21 +789,36 @@ class ReproFieldDrawing(ReproFieldBase):
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
 
-    async def _load_from_processed_doc(self, processed_doc: dict, base_url: str | None = None):
+    async def _load_from_processed_doc(
+        self, processed_doc: dict, base_url: str | None = None
+    ):
         await super()._load_from_processed_doc(processed_doc, base_url)
 
-        input_options = self.attr_processor.get_attr_list(processed_doc, "reproschema:inputs") or []
+        input_options = (
+            self.attr_processor.get_attr_list(
+                processed_doc, "reproschema:inputs"
+            )
+            or []
+        )
         if input_options:
             for obj in input_options:
-                name = self.attr_processor.get_translation(obj, 'schema:name', self.lang)
-                if name == 'backgroundImage':
+                name = self.attr_processor.get_translation(
+                    obj, "schema:name", self.lang
+                )
+                if name == "backgroundImage":
                     self.background_image = self._get_choice_value(obj)
                     break
 
-    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+    async def _process_ld_response_options(
+        self, options_doc: dict, drop=False
+    ):
         await super()._process_ld_response_options(options_doc, drop=drop)
-        self.ld_remove_undo_option = self.attr_processor.get_attr_value(options_doc, 'reproschema:removeUndoOption')
-        self.ld_top_navigation_option = self.attr_processor.get_attr_value(options_doc, 'reproschema:topNavigationOption')
+        self.ld_remove_undo_option = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:removeUndoOption"
+        )
+        self.ld_top_navigation_option = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:topNavigationOption"
+        )
         self.options_image = self._get_ld_image(options_doc)
 
     def _build_config(self, _cls: Type, **attrs):
@@ -666,7 +836,7 @@ class ReproFieldDrawing(ReproFieldBase):
 
 
 class ReproFieldMessage(ReproFieldBase):
-    INPUT_TYPE = 'markdownMessage'
+    INPUT_TYPE = "markdownMessage"
     RESPONSE_TYPE = ResponseType.MESSAGE
 
     @classmethod
@@ -676,14 +846,14 @@ class ReproFieldMessage(ReproFieldBase):
     def _build_config(self, _cls: Type, **attrs):
         config = MessageConfig(
             remove_back_button=bool(self.ld_remove_back_option),
-            timer=self.ld_timer or None,
+            timer=self.ld_timer,
         )
 
         return config
 
 
 class ReproFieldTimeRange(ReproFieldBase):
-    INPUT_TYPE = 'timeRange'
+    INPUT_TYPE = "timeRange"
     RESPONSE_TYPE = ResponseType.TIMERANGE
     CFG_TYPE = TimeRangeConfig
 
@@ -693,7 +863,7 @@ class ReproFieldTimeRange(ReproFieldBase):
 
 
 class ReproFieldDate(ReproFieldBase):
-    INPUT_TYPE = 'date'
+    INPUT_TYPE = "date"
     RESPONSE_TYPE = ResponseType.DATE
     CFG_TYPE = DateConfig
 
@@ -703,7 +873,7 @@ class ReproFieldDate(ReproFieldBase):
 
 
 class ReproFieldGeolocation(ReproFieldBase):
-    INPUT_TYPE = 'geolocation'
+    INPUT_TYPE = "geolocation"
     RESPONSE_TYPE = ResponseType.GEOLOCATION
     CFG_TYPE = GeolocationConfig
 
@@ -713,7 +883,7 @@ class ReproFieldGeolocation(ReproFieldBase):
 
 
 class ReproFieldAge(ReproFieldBase):
-    INPUT_TYPE = 'ageSelector'
+    INPUT_TYPE = "ageSelector"
     RESPONSE_TYPE = ResponseType.NUMBERSELECT
     CFG_TYPE = NumberSelectionConfig
 
@@ -721,10 +891,16 @@ class ReproFieldAge(ReproFieldBase):
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
 
-    async def _process_ld_response_options(self, options_doc: dict, drop=False):
+    async def _process_ld_response_options(
+        self, options_doc: dict, drop=False
+    ):
         await super()._process_ld_response_options(options_doc, drop=drop)
-        self.ld_min_age = self.attr_processor.get_attr_value(options_doc, 'schema:minAge')
-        self.ld_max_age = self.attr_processor.get_attr_value(options_doc, 'schema:maxAge')
+        self.ld_min_age = self.attr_processor.get_attr_value(
+            options_doc, "schema:minAge"
+        )
+        self.ld_max_age = self.attr_processor.get_attr_value(
+            options_doc, "schema:maxAge"
+        )
 
     def _build_config(self, _cls: Type, **attrs):
         if self.ld_is_optional_text:
@@ -748,17 +924,16 @@ class ReproFieldAge(ReproFieldBase):
 
     def _build_response_values(self) -> NumberSelectionValues | None:
         return NumberSelectionValues(
-            min_value=self.ld_min_age,
-            max_value=self.ld_max_age
+            min_value=self.ld_min_age, max_value=self.ld_max_age
         )
 
 
 class ReproFieldAudioStimulus(ReproFieldBase):
-    INPUT_TYPE = 'audioStimulus'
+    INPUT_TYPE = "audioStimulus"
     RESPONSE_TYPE = ResponseType.AUDIOPLAYER
 
-    LD_OPT_STIMULUS = 'stimulus'
-    LD_OPT_ALLOW_REPLAY = 'allowReplay'
+    LD_OPT_STIMULUS = "stimulus"
+    LD_OPT_ALLOW_REPLAY = "allowReplay"
 
     allow_replay: bool = False
     audio_file: str | None = None
@@ -767,12 +942,18 @@ class ReproFieldAudioStimulus(ReproFieldBase):
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
 
-    async def _load_from_processed_doc(self, processed_doc: dict, base_url: str | None = None):
+    async def _load_from_processed_doc(
+        self, processed_doc: dict, base_url: str | None = None
+    ):
         await super()._load_from_processed_doc(processed_doc, base_url)
-        input_options = self.attr_processor.get_attr_list(processed_doc, 'reproschema:inputs')
+        input_options = self.attr_processor.get_attr_list(
+            processed_doc, "reproschema:inputs"
+        )
         if input_options:
             for option in input_options:
-                name = self.attr_processor.get_translation(option, 'schema:name', self.lang)
+                name = self.attr_processor.get_translation(
+                    option, "schema:name", self.lang
+                )
                 val = self._get_choice_value(option)
                 if name == self.LD_OPT_STIMULUS:
                     self.audio_file = val
@@ -795,7 +976,7 @@ class ReproFieldAudioStimulus(ReproFieldBase):
             remove_back_button=bool(self.ld_remove_back_option),
             skippable_item=self.is_skippable,
             additional_response_option=additional_response_option,
-            play_once=self.allow_replay is False
+            play_once=self.allow_replay is False,
         )
 
         return config
