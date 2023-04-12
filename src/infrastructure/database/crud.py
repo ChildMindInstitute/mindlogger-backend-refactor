@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, Generic, Type, TypeVar
 
 from sqlalchemy import delete, func, select, update
@@ -89,7 +90,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         await self.session.flush()
         await self.session.refresh(schema)
 
-        return schema
+        return deepcopy(schema)
 
     async def _create_many(
         self, schemas: list[ConcreteSchema]
@@ -99,7 +100,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         await self.session.flush()
         for schema in schemas:
             await self.session.refresh(schema)
-        return schemas
+        return deepcopy(schemas)
 
     async def _all(self) -> list[ConcreteSchema]:
         query = select(self.schema_class)

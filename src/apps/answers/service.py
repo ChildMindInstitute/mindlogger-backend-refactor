@@ -1,3 +1,4 @@
+import datetime
 import json
 import uuid
 
@@ -9,18 +10,28 @@ from apps.activity_flows.service.flow_item_history import (
     FlowItemHistoryService,
 )
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
+from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.db.schemas import (
     AnswerActivityItemsSchema,
     AnswerFlowItemsSchema,
+    AnswerSchema,
 )
-from apps.answers.domain import ANSWER_TYPE_MAP, AppletAnswerCreate
+from apps.answers.domain import (
+    ANSWER_TYPE_MAP,
+    ActivityAnswer,
+    AnsweredAppletActivity,
+    AppletAnswerCreate,
+)
 from apps.answers.errors import (
+    AnswerAccessDeniedError,
     AnswerIsNotFull,
     FlowDoesNotHaveActivity,
     UserDoesNotHavePermissionError,
     WrongAnswerType,
 )
+from apps.applets.crud import AppletsCRUD
 from apps.applets.service import AppletHistoryService
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
@@ -122,12 +133,18 @@ class AnswerService:
             raise UserDoesNotHavePermissionError()
 
     async def _create_answer(self, applet_answer: AppletAnswerCreate):
+        created_at = datetime.datetime.now()
+        if applet_answer.created_at:
+            created_at = datetime.datetime.fromtimestamp(
+                applet_answer.created_at
+            )
         applet_id_version = (
             f"{applet_answer.applet_id}_{applet_answer.version}"
         )
         activity_id_version = (
             f"{applet_answer.activity_id}_{applet_answer.version}"
         )
+        answer_groups: dict[str, AnswerSchema] = dict()
         activity_item_answer_schemas = []
         flow_item_answer_schemas = []
         for answer in applet_answer.answers:
@@ -138,9 +155,26 @@ class AnswerService:
                 flow_id_version = (
                     f"{applet_answer.flow_id}_{applet_answer.version}"
                 )
+                answer_key = (
+                    f"{applet_answer.flow_id}_{applet_answer.activity_id}"
+                )
+                answer_group = answer_groups.get(
+                    answer_key,
+                    AnswerSchema(
+                        id=uuid.uuid4(),
+                        created_at=created_at,
+                        applet_id=applet_answer.applet_id,
+                        flow_history_id=flow_id_version,
+                        activity_history_id=activity_id_version,
+                        respondent_id=self.user_id,
+                    ),
+                )
+                answer_groups[answer_key] = answer_group
+
                 flow_item_answer_schemas.append(
                     AnswerFlowItemsSchema(
                         id=uuid.uuid4(),
+                        answer_id=answer_group.id,
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
                         answer=json.dumps(answer.answer.dict(), default=str),
@@ -151,9 +185,24 @@ class AnswerService:
                     )
                 )
             else:
+                answer_key = str(applet_answer.activity_id)
+                answer_group = answer_groups.get(
+                    answer_key,
+                    AnswerSchema(
+                        id=uuid.uuid4(),
+                        created_at=created_at,
+                        applet_id=applet_answer.applet_id,
+                        flow_history_id=None,
+                        activity_history_id=activity_id_version,
+                        respondent_id=self.user_id,
+                    ),
+                )
+                answer_groups[answer_key] = answer_group
+
                 activity_item_answer_schemas.append(
                     AnswerActivityItemsSchema(
                         id=uuid.uuid4(),
+                        answer_id=answer_group.id,
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
                         answer=json.dumps(answer.answer.dict(), default=str),
@@ -162,6 +211,7 @@ class AnswerService:
                         activity_item_history_id=activity_item_id_version,
                     )
                 )
+        await AnswersCRUD().create_many(list(answer_groups.values()))
 
         if activity_item_answer_schemas:
             await AnswerActivityItemsCRUD(self.session).create_many(
@@ -171,3 +221,46 @@ class AnswerService:
             await AnswerFlowItemsCRUD(self.session).create_many(
                 activity_item_answer_schemas
             )
+
+    async def applet_activities(
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID
+    ) -> list[AnsweredAppletActivity]:
+        await self._validate_applet_activity_access(applet_id, respondent_id)
+        return await AnswersCRUD(
+            self.session
+        ).get_users_answered_activities_by_applet_id(respondent_id, applet_id)
+
+    async def _validate_applet_activity_access(
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID
+    ):
+        assert self.user_id, "User id is required"
+
+        await AppletsCRUD(self.session).get_by_id(applet_id)
+        role = await UserAppletAccessService(
+            self.session, self.user_id, applet_id
+        ).get_reviewer_for_respondent_role()
+        if not role:
+            raise AnswerAccessDeniedError()
+        if role == Role.REVIEWER:
+            access = await UserAppletAccessService(
+                self.session, self.user_id, applet_id
+            ).get_access(Role.REVIEWER)
+            if str(respondent_id) not in access.meta.get("respondents", []):
+                raise AnswerAccessDeniedError()
+
+    async def get_by_id(
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+    ) -> ActivityAnswer:
+        await self._validate_answer_access(applet_id, answer_id)
+        answer = await AnswerActivityItemsCRUD(self.session).get_by_answer_id(
+            applet_id, answer_id
+        )
+        return answer
+
+    async def _validate_answer_access(
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+    ):
+        answer_schema = await AnswersCRUD().get_by_id(answer_id)
+        await self._validate_applet_activity_access(
+            applet_id, answer_schema.respondent_id
+        )
