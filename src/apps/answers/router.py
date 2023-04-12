@@ -1,7 +1,16 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.answers.api import create_answer
+from apps.answers.api import (
+    applet_activities_list,
+    applet_answer_retrieve,
+    create_answer,
+)
+from apps.answers.domain import (
+    ActivityAnswerPublic,
+    PublicAnsweredAppletActivity,
+)
+from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE
 
 router = APIRouter(prefix="/answers", tags=["Answers"])
@@ -14,3 +23,22 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(create_answer)
+
+router.get(
+    "/applet/{id_}/activities",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[PublicAnsweredAppletActivity],
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(applet_activities_list)
+
+
+router.get(
+    "/applet/{applet_id}/answers/{answer_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[ActivityAnswerPublic],
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(applet_answer_retrieve)

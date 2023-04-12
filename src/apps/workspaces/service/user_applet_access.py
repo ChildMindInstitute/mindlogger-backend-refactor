@@ -7,6 +7,8 @@ from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
 
+from apps.workspaces.errors import UserAppletAccessesDenied
+
 
 class UserAppletAccessService:
     def __init__(self, session, user_id: uuid.UUID, applet_id: uuid.UUID):
@@ -189,3 +191,12 @@ class UserAppletAccessService:
             ],
         )
         return getattr(access, "role", None)
+
+    async def get_access(self, role: Role) -> UserAppletAccess:
+        schema = await UserAppletAccessCRUD().get(
+            self._user_id, self._applet_id, role
+        )
+        if not schema:
+            raise UserAppletAccessesDenied()
+
+        return UserAppletAccess.from_orm(schema)
