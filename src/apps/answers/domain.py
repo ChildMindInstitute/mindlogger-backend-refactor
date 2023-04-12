@@ -95,3 +95,29 @@ class ActivityAnswerPublic(PublicModel):
     activity_item_answers: list[ActivityItemAnswerPublic] = Field(
         default_factory=list
     )
+
+
+class AnswerNote(InternalModel):
+    note: str
+
+
+class NoteOwner(InternalModel):
+    first_name: str
+    last_name: str
+
+
+class AnswerNoteDetail(InternalModel):
+    user: NoteOwner
+    note: str
+    created_at: datetime.datetime
+
+
+class NoteOwnerPublic(InternalModel):
+    first_name: str
+    last_name: str
+
+
+class AnswerNoteDetailPublic(InternalModel):
+    user: NoteOwnerPublic
+    note: str
+    created_at: datetime.datetime

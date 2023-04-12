@@ -4,12 +4,19 @@ from fastapi import Body, Depends
 
 from apps.answers.domain import (
     ActivityAnswerPublic,
+    AnswerNote,
+    AnswerNoteDetailPublic,
     AppletAnswerCreate,
     PublicAnsweredAppletActivity,
 )
 from apps.answers.service import AnswerService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.query_params import (
+    BaseQueryParams,
+    QueryParams,
+    parse_query_params,
+)
 from apps.users.domain import User
 from infrastructure.database import atomic, session_manager
 
@@ -55,4 +62,38 @@ async def applet_answer_retrieve(
         )
     return Response(
         result=ActivityAnswerPublic.from_orm(answer),
+    )
+
+
+async def note_add(
+    applet_id: uuid.UUID,
+    answer_id: uuid.UUID,
+    schema: AnswerNote = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+):
+    async with atomic(session):
+        await AnswerService(session, user.id).add_note(
+            applet_id, answer_id, schema.note
+        )
+    return
+
+
+async def note_list(
+    applet_id: uuid.UUID,
+    answer_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+    query_params: QueryParams = Depends(parse_query_params(BaseQueryParams)),
+) -> ResponseMulti[AnswerNoteDetailPublic]:
+    async with atomic(session):
+        notes = await AnswerService(session, user.id).get_note_list(
+            applet_id, answer_id, query_params
+        )
+        count = await AnswerService(session, user.id).get_notes_count(
+            answer_id
+        )
+    return ResponseMulti(
+        result=[AnswerNoteDetailPublic.from_orm(note) for note in notes],
+        count=count,
     )
