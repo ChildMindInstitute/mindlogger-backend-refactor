@@ -22,6 +22,19 @@ class AnswerSchema(Base):
     )
 
 
+class AnswerNoteSchema(Base):
+    __tablename__ = "answer_notes"
+
+    answer_id = Column(
+        ForeignKey("answers.id", ondelete="RESTRICT"),
+    )
+    note = Column(Text())
+    user_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+
+
 class AnswerActivityItemsSchema(Base):
     """This table is used as responses to specific activity items"""
 

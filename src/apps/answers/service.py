@@ -11,15 +11,18 @@ from apps.activity_flows.service.flow_item_history import (
 )
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
+from apps.answers.crud.notes import AnswerNotesCRUD
 from apps.answers.db.schemas import (
     AnswerActivityItemsSchema,
     AnswerFlowItemsSchema,
+    AnswerNoteSchema,
     AnswerSchema,
 )
 from apps.answers.domain import (
     ANSWER_TYPE_MAP,
     ActivityAnswer,
     AnsweredAppletActivity,
+    AnswerNoteDetail,
     AppletAnswerCreate,
 )
 from apps.answers.errors import (
@@ -31,6 +34,7 @@ from apps.answers.errors import (
 )
 from apps.applets.crud import AppletsCRUD
 from apps.applets.service import AppletHistoryService
+from apps.shared.query_params import QueryParams
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
@@ -260,7 +264,36 @@ class AnswerService:
     async def _validate_answer_access(
         self, applet_id: uuid.UUID, answer_id: uuid.UUID
     ):
-        answer_schema = await AnswersCRUD().get_by_id(answer_id)
+        answer_schema = await AnswersCRUD(self.session).get_by_id(answer_id)
         await self._validate_applet_activity_access(
             applet_id, answer_schema.respondent_id
+        )
+
+    async def add_note(
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID, note: str
+    ):
+        await self._validate_answer_access(applet_id, answer_id)
+        schema = AnswerNoteSchema(
+            answer_id=answer_id, note=note, user_id=self.user_id
+        )
+        await AnswerNotesCRUD(self.session).save(schema)
+
+    async def get_note_list(
+        self,
+        applet_id: uuid.UUID,
+        answer_id: uuid.UUID,
+        query_params: QueryParams,
+    ) -> list[AnswerNoteDetail]:
+        await self._validate_answer_access(applet_id, answer_id)
+        notes = await AnswerNotesCRUD(self.session).get_by_answer_id(
+            answer_id, query_params
+        )
+        return notes
+
+    async def get_notes_count(
+        self,
+        answer_id: uuid.UUID,
+    ) -> int:
+        return await AnswerNotesCRUD(self.session).get_count_by_answer_id(
+            answer_id
         )
