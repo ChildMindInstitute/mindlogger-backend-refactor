@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from fastapi import Body, Depends
@@ -34,12 +35,13 @@ async def create_answer(
 async def applet_activities_list(
     id_: uuid.UUID,
     respondent_id: uuid.UUID,
+    created_date: datetime.date,
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicAnsweredAppletActivity]:
     async with atomic(session):
         activities = await AnswerService(session, user.id).applet_activities(
-            id_, respondent_id
+            id_, respondent_id, created_date
         )
     return ResponseMulti(
         result=[

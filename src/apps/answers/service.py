@@ -227,12 +227,17 @@ class AnswerService:
             )
 
     async def applet_activities(
-        self, applet_id: uuid.UUID, respondent_id: uuid.UUID
+        self,
+        applet_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+        created_date: datetime.date,
     ) -> list[AnsweredAppletActivity]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
         return await AnswersCRUD(
             self.session
-        ).get_users_answered_activities_by_applet_id(respondent_id, applet_id)
+        ).get_users_answered_activities_by_applet_id(
+            respondent_id, applet_id, created_date
+        )
 
     async def _validate_applet_activity_access(
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID

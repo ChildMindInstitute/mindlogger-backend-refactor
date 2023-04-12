@@ -1,6 +1,7 @@
+import datetime
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from apps.activities.db.schemas import ActivityHistorySchema
 from apps.alerts.errors import AnswerNotFoundError
@@ -19,7 +20,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return schemas
 
     async def get_users_answered_activities_by_applet_id(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID
+        self,
+        user_id: uuid.UUID,
+        applet_id: uuid.UUID,
+        created_date: datetime.date,
     ) -> list[AnsweredAppletActivity]:
         db_result = await self._execute(
             select(
@@ -34,6 +38,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
             .where(AnswerSchema.applet_id == applet_id)
             .where(AnswerSchema.respondent_id == user_id)
+            .where(func.date(AnswerSchema.created_at) == created_date)
             .order_by(AnswerSchema.created_at.asc())
         )
 
