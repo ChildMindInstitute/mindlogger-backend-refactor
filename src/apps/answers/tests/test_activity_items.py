@@ -1,3 +1,5 @@
+import datetime
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -93,7 +95,10 @@ class TestAnswerActivityItems(BaseTest):
             self.answered_applet_activities_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            dict(respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            dict(
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                created_date=datetime.date.today(),
+            ),
         )
 
         assert response.status_code == 200, response.json()
@@ -148,7 +153,10 @@ class TestAnswerActivityItems(BaseTest):
             self.answered_applet_activities_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            dict(respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            dict(
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                created_date=datetime.date.today(),
+            ),
         )
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
 
