@@ -8,7 +8,6 @@ from apps.applets.domain.applet_create import AppletCreate
 
 
 class LdAppletCreate(AppletCreate):
-    password: str | None = None
     extra_fields: dict
 
 

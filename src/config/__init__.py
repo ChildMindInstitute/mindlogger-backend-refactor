@@ -11,7 +11,10 @@ from config.notification import NotificationSettings
 from config.redis import RedisSettings
 from config.secret import SecretSettings
 from config.sentry import SentrySettings
-from config.service import ServiceSettings
+from config.service import (
+    ServiceSettings,
+    JsonLdConverterSettings,
+)
 
 
 # NOTE: Settings powered by pydantic
@@ -55,6 +58,9 @@ class Settings(BaseSettings):
 
     # FCM Notification configs
     notification: NotificationSettings = NotificationSettings()
+
+    # json-ld converter settings
+    jsonld_converter: JsonLdConverterSettings = JsonLdConverterSettings()
 
     # NOTE: This config is used by SQLAlchemy for imports
     migrations_apps: list[str]

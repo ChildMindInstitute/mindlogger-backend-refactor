@@ -169,7 +169,7 @@ class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
                 return candidate
         return None
 
-    async def load_supported_document(self, doc: str | dict, base_url) -> "LdDocumentBase":
+    async def load_supported_document(self, doc: str | dict, base_url, settings: dict | None = None) -> "LdDocumentBase":
         assert self.document_loader is not None
         assert self.context_resolver is not None
 
@@ -185,7 +185,7 @@ class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
         if type_ is None:
             raise JsonLDNotSupportedError(new_doc)
 
-        obj = type_(self.context_resolver, self.document_loader)
+        obj = type_(self.context_resolver, self.document_loader, settings=settings)
         await obj.load(new_doc, base_url)
 
         return obj
@@ -298,9 +298,10 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
     ld_id: str | None = None
     ld_variable_name: str | None = None
 
-    def __init__(self, context_resolver: ContextResolver, document_loader: Callable):
+    def __init__(self, context_resolver: ContextResolver, document_loader: Callable, settings: dict | None = None):
         self.context_resolver: ContextResolver = context_resolver
         self.document_loader = document_loader
+        self.settings: dict = settings or {}
 
     @classmethod
     @abstractmethod
