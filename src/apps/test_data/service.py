@@ -385,6 +385,9 @@ class TestDataService:
         anchor_datetime: datetime,
         entity_ids: list[dict] | None = None,
     ):
+        # remove first entity id to keep it for default event
+        entity_ids.pop(0)
+
         events = []
         if entity_ids:
             current_entity_index = 0
