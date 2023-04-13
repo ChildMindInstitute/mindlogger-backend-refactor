@@ -385,11 +385,12 @@ class TestDataService:
         anchor_datetime: datetime,
         entity_ids: list[dict] | None = None,
     ):
-        # remove first entity id to keep it for default event
-        entity_ids.pop(0)
 
         events = []
         if entity_ids:
+            # remove first entity id to keep it for default event
+            entity_ids.pop(0)
+
             current_entity_index = 0
             # # first event always available and allow_access_before_schedule false # noqa: E501
             # default_event = self._get_generated_event(
