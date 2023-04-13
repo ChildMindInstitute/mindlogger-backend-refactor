@@ -1,4 +1,4 @@
-from apps.jsonld_converter.service.document.field import (
+from apps.jsonld_converter.service.document.field import (  # noqa: F401, F403
     ReproFieldText,
     ReproFieldRadio,
     ReproFieldSlider,

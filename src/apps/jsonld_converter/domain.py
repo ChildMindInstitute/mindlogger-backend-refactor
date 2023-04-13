@@ -13,7 +13,6 @@ class LdAppletCreate(AppletCreate):
 
 
 class LdActivityCreate(ActivityCreate):
-    key: uuid.UUID | None = None
     extra_fields: dict
 
 

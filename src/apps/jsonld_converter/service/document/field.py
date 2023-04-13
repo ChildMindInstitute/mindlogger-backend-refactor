@@ -81,7 +81,7 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
 
     @classmethod
     @abstractmethod
-    def _get_supported_input_types(cls) -> [str]:
+    def _get_supported_input_types(cls) -> list[str]:
         ...
 
     @classmethod
@@ -355,7 +355,7 @@ class ReproFieldRadio(ReproFieldBase):
     ld_response_alert: bool | None = None
 
     is_multiple: bool = False
-    choices: list[str, dict] | None = None
+    choices: list[dict] | None = None
 
     @classmethod
     def _get_supported_input_types(cls) -> list[str]:
@@ -414,7 +414,7 @@ class ReproFieldRadio(ReproFieldBase):
                     color=color,
                 )
             )
-        _cls = (
+        _cls: Type[MultiSelectionValues | SingleSelectionValues] = (
             MultiSelectionValues if self.is_multiple else SingleSelectionValues
         )
         response_values = _cls(options=values)
@@ -439,7 +439,7 @@ class ReproFieldRadioStacked(ReproFieldBase):
     ld_item_options: list[dict] | None = None
 
     is_multiple: bool = False
-    choices: list[str, dict] | None = None
+    choices: list[dict] | None = None
 
     @classmethod
     def _get_supported_input_types(cls) -> list[str]:
@@ -638,26 +638,31 @@ class ReproFieldSlider(ReproFieldSliderBase):
         return super()._build_config(_cls, **attrs)
 
     def _build_response_values(self) -> ResponseValueConfig | None:
-        first_choice = {}
-        last_choice = {}
-        if self.slider_option.choices:
+        first_choice: dict = {}
+        last_choice: dict = {}
+        scores: list | None = None
+        if self.slider_option and self.slider_option.choices:
             first_choice = self.slider_option.choices[0]
             last_choice = self.slider_option.choices[-1]
-        scores = [x.get("score") for x in self.slider_option.choices]
-        if scores and scores[0] is None:
-            scores = None
+            scores = [x.get("score") for x in self.slider_option.choices]
+            if scores and scores[0] is None:
+                scores = None
 
         response_values = SliderValues(
             min_value=first_choice.get("value"),
             max_value=last_choice.get("value"),
             min_label=first_choice.get("name")
             or self.slider_option.ld_min_value,
+
             max_label=last_choice.get("name")
             or self.slider_option.ld_max_value,
+
             min_image=first_choice.get("image")
             or self.slider_option.ld_min_value_img,
+
             max_image=last_choice.get("image")
             or self.slider_option.ld_max_value_img,
+
             scores=scores,
         )
 
@@ -703,8 +708,8 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
     def _build_response_values(self) -> SliderRowsValues | None:
         rows = []
         for option in self.slider_options:
-            first_choice = {}
-            last_choice = {}
+            first_choice: dict = {}
+            last_choice: dict = {}
             if option.choices:
                 first_choice = option.choices[0]
                 last_choice = option.choices[-1]

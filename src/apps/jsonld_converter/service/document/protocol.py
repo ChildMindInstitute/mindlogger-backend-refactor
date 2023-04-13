@@ -97,8 +97,18 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             self.extra[k] = v
 
     def export(self):
-        activities = [nested.export() for nested in self.nested_by_order if isinstance(nested, ReproActivity)]
-        activity_flows = [flow.export() for flow in self.flows_by_order if isinstance(flow, ReproActivityFlow)]
+        activity_keys = {}
+        activities = []
+        for nested in self.nested_by_order:
+            if isinstance(nested, ReproActivity):
+                activity = nested.export()
+                activity_keys[nested.ld_id] = activity.key
+                activities.append(activity)
+        activity_flows = []
+        for flow in self.flows_by_order:
+            if isinstance(flow, ReproActivityFlow):
+                flow.activity_keys = activity_keys
+                activity_flows.append(flow.export())
 
         return LdAppletCreate(
             display_name=self.ld_pref_label or self.ld_alt_label,
