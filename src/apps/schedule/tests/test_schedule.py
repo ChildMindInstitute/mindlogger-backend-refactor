@@ -71,7 +71,6 @@ class TestSchedule(BaseTest):
             ),
             data=create_data,
         )
-
         assert response.status_code == 201, response.json()
         event = response.json()["result"]
         assert event["startTime"] == create_data["start_time"]

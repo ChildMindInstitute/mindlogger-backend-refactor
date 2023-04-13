@@ -49,6 +49,7 @@ from apps.schedule.domain.schedule.public import (
     TimerDto,
 )
 from apps.schedule.domain.schedule.requests import EventRequest
+from apps.schedule.errors import EventAlwaysAvailableExistsError
 from apps.shared.errors import NotFoundError
 from apps.shared.query_params import QueryParams
 from apps.users.crud import UsersCRUD
@@ -65,6 +66,7 @@ class ScheduleService:
     async def create_schedule(
         self, schedule: EventRequest, applet_id: uuid.UUID
     ) -> PublicEvent:
+
         # Validate schedule data before saving
         await self._validate_schedule(applet_id=applet_id, schedule=schedule)
 
@@ -72,11 +74,26 @@ class ScheduleService:
         # if new periodicity type is "always"
 
         if schedule.periodicity.type == PeriodicityType.ALWAYS:
-            await self._delete_by_activity_or_flow(
+            # check if there is any AlwaysAvailable event, if yes, raise error
+            await self._validate_existing_alwaysavailable(
                 applet_id=applet_id,
                 activity_id=schedule.activity_id,
                 flow_id=schedule.flow_id,
+                respondent_id=schedule.respondent_id,
             )
+
+        # delete alwaysAvailable events of this activity or flow,
+        # if new event type is not AA
+        # else, delete all types
+        await self._delete_by_activity_or_flow(
+            applet_id=applet_id,
+            activity_id=schedule.activity_id,
+            flow_id=schedule.flow_id,
+            respondent_id=schedule.respondent_id,
+            only_always_available=(
+                schedule.periodicity.type != PeriodicityType.ALWAYS
+            ),
+        )
 
         # Create periodicity
         periodicity: Periodicity = await PeriodicityCRUD(self.session).save(
@@ -356,6 +373,8 @@ class ScheduleService:
                 applet_id=applet_id,
                 activity_id=schedule.activity_id,
                 flow_id=schedule.flow_id,
+                respondent_id=schedule.respondent_id,
+                only_always_available=False,
             )
 
         event: Event = await EventCRUD(self.session).get_by_id(pk=schedule_id)
@@ -591,6 +610,8 @@ class ScheduleService:
         applet_id: uuid.UUID,
         activity_id: uuid.UUID | None,
         flow_id: uuid.UUID | None,
+        respondent_id: uuid.UUID | None = None,
+        only_always_available: bool = False,
     ) -> None:
         """Delete schedules by activity or flow id."""
         event_schemas = []
@@ -599,12 +620,23 @@ class ScheduleService:
             # Get list of event_ids for activity and delete them all
             event_schemas = await EventCRUD(
                 self.session
-            ).get_all_by_applet_and_activity(applet_id, activity_id)
+            ).get_all_by_applet_and_activity(
+                applet_id,
+                activity_id,
+                respondent_id,
+                only_always_available,
+            )
         elif flow_id:
             # Get list of event_ids for flow and delete them all
             event_schemas = await EventCRUD(
                 self.session
-            ).get_all_by_applet_and_flow(applet_id, flow_id)
+            ).get_all_by_applet_and_flow(
+                applet_id,
+                flow_id,
+                respondent_id,
+                only_always_available,
+            )
+
         event_ids = [event_schema.id for event_schema in event_schemas]
 
         periodicity_ids = [
@@ -913,3 +945,33 @@ class ScheduleService:
         user_exist = await UsersCRUD(self.session).exist_by_id(id_=user_id)
         if not user_exist:
             raise UserNotFound(message=f"No such user with id={user_id}.")
+
+    async def _validate_existing_alwaysavailable(
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID | None,
+        flow_id: uuid.UUID | None,
+        respondent_id: uuid.UUID | None,
+    ):
+        event_schemas = []
+
+        if activity_id:
+            event_schemas = await EventCRUD(
+                self.session
+            ).get_all_by_applet_and_activity(
+                applet_id,
+                activity_id,
+                respondent_id,
+                True,
+            )
+        elif flow_id:
+            event_schemas = await EventCRUD(
+                self.session
+            ).get_all_by_applet_and_flow(
+                applet_id,
+                flow_id,
+                respondent_id,
+                True,
+            )
+        if event_schemas:
+            raise EventAlwaysAvailableExistsError
