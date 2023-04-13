@@ -108,7 +108,9 @@ class AnswerService:
                 )
             else:
                 required = True
-            required |= getattr(activity_item.config, "skippable_item", False)
+            required |= not getattr(
+                activity_item.config, "skippable_item", False
+            )
             if required:
                 answer_class = ANSWER_TYPE_MAP.get(activity_item.response_type)
 
