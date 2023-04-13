@@ -590,6 +590,8 @@ class ScheduleService:
         await EventCRUD(self.session).delete_by_ids(event_ids)
         await PeriodicityCRUD(self.session).delete_by_ids(periodicity_ids)
 
+        # TODO: create AA events for all activities and flows
+
     async def _create_default_event(
         self, applet_id: uuid.UUID, activity_id: uuid.UUID, is_activity: bool
     ) -> None:
