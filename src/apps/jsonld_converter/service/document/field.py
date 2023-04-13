@@ -134,9 +134,7 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
             ),
             "value": self._get_choice_value(doc),
             "image": self._get_ld_image(doc),
-            "is_vis": self.attr_processor.get_attr_value(
-                doc, "reproschema:isVis"
-            ),
+            "is_vis": self._is_visible(doc),
             "alert": self.attr_processor.get_translation(
                 doc, "schema:alert", self.lang
             ),
@@ -196,9 +194,7 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
         self.ld_alt_label = self._get_ld_alt_label(processed_doc)
         self.ld_image = self._get_ld_image(processed_doc)
         self.ld_question = self._get_ld_question(processed_doc, drop=True)
-        self.ld_is_vis = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:isVis"
-        )
+        self.ld_is_vis = self._is_visible(processed_doc, drop=True)
         self.ld_allow_edit = self.attr_processor.get_attr_value(
             processed_doc, "reproschema:allowEdit"
         )
@@ -206,9 +202,7 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
         self.ld_is_optional_text = self.attr_processor.get_attr_value(
             processed_doc, "reproschema:isOptionalText"
         )
-        self.ld_timer = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:timer"
-        )
+        self.ld_timer = self._get_timer(processed_doc, drop=True)
 
         allow_list = self._get_allow_list(processed_doc)
         self.is_skippable = self._is_skippable(allow_list)
@@ -256,7 +250,8 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
             remove_back_button=bool(self.ld_remove_back_option),
             skippable_item=self.is_skippable,
             additional_response_option=additional_response_option,
-            timer=self.ld_timer,
+            timer=int(self.ld_timer / 1000) if self.ld_timer else None,
+            # is_hidden=self.ld_is_vis is False,
             **attrs,
         )
 
@@ -340,6 +335,7 @@ class ReproFieldText(ReproFieldBase):
             numerical_response_required=numerical_response_required,
             response_data_identifier=bool(self.ld_is_response_identifier),
             response_required=bool(self.ld_required_value),
+            # is_hidden=self.ld_is_vis is False,
         )
         return config
 
@@ -482,10 +478,11 @@ class ReproFieldRadioStacked(ReproFieldBase):
         config = cfg_cls(
             remove_back_button=bool(self.ld_remove_back_option),
             skippable_item=self.is_skippable,
-            timer=self.ld_timer,
+            timer=int(self.ld_timer / 1000) if self.ld_timer else None,
             add_scores=bool(self.ld_scoring),
             set_alerts=bool(self.ld_response_alert),
             add_tooltip=add_tooltip,
+            # is_hidden=self.ld_is_vis is False,
         )
 
         return config
@@ -701,7 +698,8 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
             skippable_item=self.is_skippable,
             add_scores=bool(self.ld_scoring),
             set_alerts=bool(self.ld_response_alert),
-            timer=self.ld_timer,
+            timer=int(self.ld_timer / 1000) if self.ld_timer else None,
+            # is_hidden=self.ld_is_vis is False,
         )
         return config
 
@@ -851,7 +849,8 @@ class ReproFieldMessage(ReproFieldBase):
     def _build_config(self, _cls: Type, **attrs):
         config = MessageConfig(
             remove_back_button=bool(self.ld_remove_back_option),
-            timer=self.ld_timer,
+            timer=int(self.ld_timer / 1000) if self.ld_timer else None,
+            # is_hidden=self.ld_is_vis is False,
         )
 
         return config
@@ -923,6 +922,7 @@ class ReproFieldAge(ReproFieldBase):
             remove_back_button=bool(self.ld_remove_back_option),
             skippable_item=self.is_skippable,
             additional_response_option=additional_response_option,
+            # is_hidden=self.ld_is_vis is False,
         )
 
         return config
@@ -982,6 +982,7 @@ class ReproFieldAudioStimulus(ReproFieldBase):
             skippable_item=self.is_skippable,
             additional_response_option=additional_response_option,
             play_once=self.allow_replay is False,
+            # is_hidden=self.ld_is_vis is False,
         )
 
         return config
