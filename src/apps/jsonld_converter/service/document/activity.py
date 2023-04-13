@@ -97,7 +97,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
 
     async def _load_nested_doc(self, doc: dict):
         try:
-            node = await self.load_supported_document(doc, self.base_url)
+            node = await self.load_supported_document(doc, self.base_url, settings=self.settings)
             # override from properties
             if node.ld_id in self.properties:
                 for prop, val in self.properties[node.ld_id].items():
