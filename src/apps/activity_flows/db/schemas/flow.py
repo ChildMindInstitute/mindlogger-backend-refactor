@@ -1,4 +1,12 @@
-from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text
+from sqlalchemy import (
+    REAL,
+    Boolean,
+    Column,
+    ForeignKey,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database import Base
@@ -19,6 +27,9 @@ class ActivityFlowSchema(_BaseActivityFlowSchema, Base):
     __tablename__ = "flows"
 
     applet_id = Column(ForeignKey("applets.id", ondelete="RESTRICT"))
+    extra_fields = Column(
+        JSONB(), default=dict, server_default=text("'{}'::jsonb")
+    )
 
 
 class ActivityFlowHistoriesSchema(_BaseActivityFlowSchema, Base):

@@ -76,5 +76,6 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
             hide_badge=self.ld_show_badge is False,
             items=flow_items,
             is_hidden=self.ld_is_vis is False,
+            extra_fields=self.extra,
         )
         return flow

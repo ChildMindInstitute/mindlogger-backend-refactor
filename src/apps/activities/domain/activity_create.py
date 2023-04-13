@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import root_validator
+from pydantic import root_validator, Field
 
 from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_item_base import BaseActivityItem
@@ -14,7 +14,7 @@ from apps.shared.domain import InternalModel
 
 
 class ActivityItemCreate(BaseActivityItem, InternalModel):
-    pass
+    extra_fields: dict = Field(default_factory=dict)
 
 
 class PreparedActivityItemCreate(BaseActivityItem, InternalModel):
@@ -24,6 +24,7 @@ class PreparedActivityItemCreate(BaseActivityItem, InternalModel):
 class ActivityCreate(ActivityBase, InternalModel):
     key: uuid.UUID
     items: list[ActivityItemCreate]
+    extra_fields: dict = Field(default_factory=dict)
 
     @root_validator()
     def validate_existing_ids_for_duplicate(cls, values):

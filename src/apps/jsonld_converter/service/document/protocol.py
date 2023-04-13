@@ -2,7 +2,7 @@ import asyncio
 from copy import deepcopy
 from typing import Type
 
-from apps.jsonld_converter.domain import LdAppletCreate
+from apps.applets.domain.applet_create import AppletCreate
 from apps.jsonld_converter.errors import JsonLDNotSupportedError
 from apps.jsonld_converter.service.document import ReproActivity
 from apps.jsonld_converter.service.document.activity_flow import ReproActivityFlow
@@ -98,7 +98,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         for k, v in doc.items():
             self.extra[k] = v
 
-    def export(self):
+    def export(self) -> AppletCreate:
         activity_keys = {}
         activities = []
         for nested in self.nested_by_order:
@@ -112,7 +112,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                 flow.activity_keys = activity_keys
                 activity_flows.append(flow.export())
 
-        return LdAppletCreate(
+        return AppletCreate(
             display_name=self.ld_pref_label or self.ld_alt_label,
             description=self.ld_description or {},
             about=self.ld_about or {},

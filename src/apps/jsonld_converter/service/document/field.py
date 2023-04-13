@@ -10,6 +10,7 @@ from typing import (
 
 from pydantic.color import Color
 
+from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.response_type_config import (
     ResponseType,
     TextConfig,
@@ -49,7 +50,6 @@ from apps.activities.domain.response_values import (
     _SingleSelectionRowValue,
     AudioPlayerValues,
 )
-from apps.jsonld_converter.domain import LdActivityItemCreate
 from apps.jsonld_converter.errors import JsonLDStructureError
 from apps.jsonld_converter.service.document.base import (
     LdDocumentBase,
@@ -254,18 +254,18 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
     def _build_response_values(self) -> ResponseValueConfig | None:
         return None
 
-    def export(self) -> LdActivityItemCreate:
+    def export(self) -> ActivityItemCreate:
         cfg_cls = self.CFG_TYPE
         config = self._build_config(cfg_cls)
         response_values = self._build_response_values()
-        return LdActivityItemCreate(
+        return ActivityItemCreate(
             question=self.ld_question or {},
             response_type=self.RESPONSE_TYPE,
             response_values=response_values,
             config=config,
             name=self.ld_pref_label or self.ld_alt_label,
-            extra_fields=self.extra,
             is_hidden=self.ld_is_vis is False,
+            extra_fields=self.extra,
         )
 
 
@@ -411,7 +411,7 @@ class ReproFieldRadio(ReproFieldBase):
 
         return response_values
 
-    def export(self) -> LdActivityItemCreate:
+    def export(self) -> ActivityItemCreate:
         if self.is_multiple:
             self.RESPONSE_TYPE = ResponseType.MULTISELECT
         return super().export()
@@ -520,7 +520,7 @@ class ReproFieldRadioStacked(ReproFieldBase):
 
         return response_values
 
-    def export(self) -> LdActivityItemCreate:
+    def export(self) -> ActivityItemCreate:
         if self.is_multiple:
             self.RESPONSE_TYPE = ResponseType.MULTISELECTROWS
         return super().export()

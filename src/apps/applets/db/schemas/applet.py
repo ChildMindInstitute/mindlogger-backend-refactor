@@ -6,6 +6,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
@@ -42,6 +43,9 @@ class AppletSchema(_BaseAppletSchema, Base):
     retention_period = Column(Integer(), nullable=True)
     retention_type = Column(String(20), nullable=True)
     is_published = Column(Boolean(), default=False)
+    extra_fields = Column(
+        JSONB(), default=dict, server_default=text("'{}'::jsonb")
+    )
 
 
 class AppletHistorySchema(_BaseAppletSchema, Base):
