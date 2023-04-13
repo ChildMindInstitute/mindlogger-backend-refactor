@@ -1,6 +1,11 @@
 import uuid
 
-from apps.shared.errors import BaseError, NotFoundError, ValidationError
+from apps.shared.errors import (
+    BadRequestError,
+    BaseError,
+    NotFoundError,
+    ValidationError,
+)
 
 
 class EventError(BaseError):
@@ -38,3 +43,8 @@ class EventNotFoundError(NotFoundError):
 class PeriodicityNotFoundError(NotFoundError):
     def __init__(self, key: str, value: str) -> None:
         super().__init__(message=f"No such periodicity with {key}={value}.")
+
+
+class EventAlwaysAvailableExistsError(BadRequestError):
+    def __init__(self) -> None:
+        super().__init__(message="'AlwaysAvailable' event already exists.")

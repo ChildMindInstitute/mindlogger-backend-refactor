@@ -186,7 +186,11 @@ class EventCRUD(BaseCRUD[EventSchema]):
         await self._execute(query)
 
     async def get_all_by_applet_and_activity(
-        self, applet_id: uuid.UUID, activity_id: uuid.UUID
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        respondent_id: uuid.UUID | None,
+        only_always_available: bool = False,
     ) -> list[EventSchema]:
         """Get events by applet_id and activity_id"""
         query: Query = select(EventSchema)
@@ -197,6 +201,24 @@ class EventCRUD(BaseCRUD[EventSchema]):
                 ActivityEventsSchema.activity_id == activity_id,
             ),
         )
+        # differentiate general and individual events
+        if respondent_id:
+            query = query.join(
+                UserEventsSchema,
+                and_(
+                    EventSchema.id == UserEventsSchema.event_id,
+                    UserEventsSchema.user_id == respondent_id,
+                ),
+            )
+        # select only always available if requested
+        if only_always_available:
+            query = query.join(
+                PeriodicitySchema,
+                and_(
+                    EventSchema.periodicity_id == PeriodicitySchema.id,
+                    PeriodicitySchema.type == PeriodicityType.ALWAYS,
+                ),
+            )
 
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
@@ -205,7 +227,11 @@ class EventCRUD(BaseCRUD[EventSchema]):
         return result.scalars().all()
 
     async def get_all_by_applet_and_flow(
-        self, applet_id: uuid.UUID, flow_id: uuid.UUID
+        self,
+        applet_id: uuid.UUID,
+        flow_id: uuid.UUID,
+        respondent_id: uuid.UUID | None,
+        only_always_available: bool = False,
     ) -> list[EventSchema]:
         """Get events by applet_id and flow_id"""
         query: Query = select(EventSchema)
@@ -216,6 +242,25 @@ class EventCRUD(BaseCRUD[EventSchema]):
                 FlowEventsSchema.flow_id == flow_id,
             ),
         )
+
+        # differentiate general and individual events
+        if respondent_id:
+            query = query.join(
+                UserEventsSchema,
+                and_(
+                    EventSchema.id == UserEventsSchema.event_id,
+                    UserEventsSchema.user_id == respondent_id,
+                ),
+            )
+        # select only always available if requested
+        if only_always_available:
+            query = query.join(
+                PeriodicitySchema,
+                and_(
+                    EventSchema.periodicity_id == PeriodicitySchema.id,
+                    PeriodicitySchema.type == PeriodicityType.ALWAYS,
+                ),
+            )
 
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712

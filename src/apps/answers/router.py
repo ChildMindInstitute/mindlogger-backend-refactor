@@ -10,10 +10,14 @@ from apps.answers.api import (
 )
 from apps.answers.domain import (
     ActivityAnswerPublic,
-    PublicAnsweredAppletActivity, AnswerNoteDetailPublic,
+    AnswerNoteDetailPublic,
+    PublicAnsweredAppletActivity,
 )
-from apps.shared.domain import Response, ResponseMulti, \
-    AUTHENTICATION_ERROR_RESPONSES
+from apps.shared.domain import (
+    AUTHENTICATION_ERROR_RESPONSES,
+    Response,
+    ResponseMulti,
+)
 from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE
 
 router = APIRouter(prefix="/answers", tags=["Answers"])

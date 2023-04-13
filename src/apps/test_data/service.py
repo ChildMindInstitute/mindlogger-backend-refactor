@@ -385,47 +385,51 @@ class TestDataService:
         anchor_datetime: datetime,
         entity_ids: list[dict] | None = None,
     ):
+
         events = []
         if entity_ids:
-            current_entity_index = 0
-            # first event always available and allow_access_before_schedule false # noqa: E501
-            default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
-                    "is_activity"
-                ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
-            )
-            default_event.access_before_schedule = False
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            # remove first entity id to keep it for default event
+            entity_ids.pop(0)
 
-            events.append(
-                await ScheduleService(self.session).create_schedule(
-                    applet_id=applet_id,
-                    schedule=default_event,
-                )
-            )
-            # second event always available and allow_access_before_schedule true # noqa: E501
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
-            default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
-                    "is_activity"
-                ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
-            )
-            default_event.access_before_schedule = True
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
-            events.append(
-                await ScheduleService(self.session).create_schedule(
-                    applet_id=applet_id,
-                    schedule=default_event,
-                )
-            )
+            current_entity_index = 0
+            # # first event always available and allow_access_before_schedule false # noqa: E501
+            # default_event = self._get_generated_event(
+            #     is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+            #         "is_activity"
+            #     ),
+            #     entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+            # )
+            # default_event.access_before_schedule = False
+            # default_event = self._set_timer(
+            #     default_event, current_entity_index
+            # )
+
+            # events.append(
+            #     await ScheduleService(self.session).create_schedule(
+            #         applet_id=applet_id,
+            #         schedule=default_event,
+            #     )
+            # )
+            # # second event always available and allow_access_before_schedule true # noqa: E501
+            # current_entity_index = self._increment_index(
+            #     current_entity_index, len(entity_ids)
+            # )
+            # default_event = self._get_generated_event(
+            #     is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+            #         "is_activity"
+            #     ),
+            #     entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+            # )
+            # default_event.access_before_schedule = True
+            # default_event = self._set_timer(
+            #     default_event, current_entity_index
+            # )
+            # events.append(
+            #     await ScheduleService(self.session).create_schedule(
+            #         applet_id=applet_id,
+            #         schedule=default_event,
+            #     )
+            # )
 
             # third event daily
             current_entity_index = self._increment_index(

@@ -152,3 +152,5 @@ user_router.get(
         **NO_CONTENT_ERROR_RESPONSES,
     },
 )(schedule_get_by_user)
+
+# TODO: Add route to remove individual calendar
