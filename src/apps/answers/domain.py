@@ -1,8 +1,12 @@
+import datetime
 import uuid
 from typing import Any
 
+from pydantic import Field
+
+from apps.activities.domain.activity_full import PublicActivityItemFull
 from apps.activities.domain.response_type_config import ResponseType
-from apps.shared.domain import InternalModel
+from apps.shared.domain import InternalModel, PublicModel
 
 
 class Text(InternalModel):
@@ -47,3 +51,73 @@ class AppletAnswerCreate(InternalModel):
     activity_id: uuid.UUID
     answers: list[ActivityItemAnswerCreate]
     created_at: int | None
+
+
+class AnswerDate(InternalModel):
+    created_at: datetime.datetime
+    answer_id: uuid.UUID
+
+
+class AnsweredAppletActivity(InternalModel):
+    name: str
+    answer_dates: list[AnswerDate] = Field(default_factory=list)
+
+
+class PublicAnswerDate(PublicModel):
+    created_at: datetime.datetime
+    answer_id: uuid.UUID
+
+
+class PublicAnsweredAppletActivity(PublicModel):
+    name: str
+    answer_dates: list[PublicAnswerDate] = Field(default_factory=list)
+
+
+class ActivityItemAnswer(InternalModel):
+    type: ResponseType
+    activity_item: PublicActivityItemFull
+    answer: AnswerTypes
+
+
+class ActivityAnswer(InternalModel):
+    activity_item_answers: list[ActivityItemAnswer] = Field(
+        default_factory=list
+    )
+
+
+class ActivityItemAnswerPublic(PublicModel):
+    type: ResponseType
+    activity_item: PublicActivityItemFull
+    answer: AnswerTypes
+
+
+class ActivityAnswerPublic(PublicModel):
+    activity_item_answers: list[ActivityItemAnswerPublic] = Field(
+        default_factory=list
+    )
+
+
+class AnswerNote(InternalModel):
+    note: str
+
+
+class NoteOwner(InternalModel):
+    first_name: str
+    last_name: str
+
+
+class AnswerNoteDetail(InternalModel):
+    user: NoteOwner
+    note: str
+    created_at: datetime.datetime
+
+
+class NoteOwnerPublic(PublicModel):
+    first_name: str
+    last_name: str
+
+
+class AnswerNoteDetailPublic(PublicModel):
+    user: NoteOwnerPublic
+    note: str
+    created_at: datetime.datetime

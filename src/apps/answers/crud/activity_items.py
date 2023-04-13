@@ -5,8 +5,13 @@ import uuid
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
 
+from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.answers.db.schemas import AnswerActivityItemsSchema
-from apps.answers.domain import AppletAnswerCreate
+from apps.answers.domain import (
+    ActivityAnswer,
+    ActivityItemAnswer,
+    AppletAnswerCreate,
+)
 from apps.applets.crud import AppletsCRUD
 from apps.shared.encryption import decrypt, encrypt, generate_iv
 from infrastructure.database.crud import BaseCRUD
@@ -101,3 +106,45 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         result = await self._execute(query)
 
         return result.scalars().all()
+
+    async def get_by_answer_id(
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+    ) -> ActivityAnswer:
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        system_encrypted_key = base64.b64decode(
+            applet.system_encrypted_key.encode()
+        )
+        iv = generate_iv(str(applet.id))
+        key = decrypt(system_encrypted_key, iv=iv)
+
+        query: Query = select(
+            AnswerActivityItemsSchema, ActivityItemHistorySchema
+        )
+        query = query.join(
+            ActivityItemHistorySchema,
+            ActivityItemHistorySchema.id_version
+            == AnswerActivityItemsSchema.activity_item_history_id,
+        )
+        query = query.where(AnswerActivityItemsSchema.answer_id == answer_id)
+        query = query.order_by(ActivityItemHistorySchema.order.asc())
+
+        db_result = await self._execute(query)
+        answer = ActivityAnswer()
+        for (
+            schema,
+            item_schema,
+        ) in (
+            db_result.all()
+        ):  # type: AnswerActivityItemsSchema, ActivityItemHistorySchema
+            answer_value = self._decrypt(
+                schema.id, key, base64.b64decode(schema.answer.encode())
+            ).decode()
+            answer.activity_item_answers.append(
+                ActivityItemAnswer(
+                    type=item_schema.response_type,
+                    activity_item=item_schema,
+                    answer=json.loads(answer_value),
+                )
+            )
+
+        return answer

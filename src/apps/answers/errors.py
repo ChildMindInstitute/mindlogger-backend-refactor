@@ -1,6 +1,8 @@
 from apps.shared.errors import (
+    AccessDeniedError,
     BadRequestError,
     InternalServerError,
+    NotFoundError,
     ValidationError,
 )
 
@@ -12,6 +14,11 @@ class UserDoesNotHavePermissionError(BadRequestError):
 
 class AnswerError(InternalServerError):
     def __init__(self, *_, message="Answer error") -> None:
+        super().__init__(message=message)
+
+
+class AnswerNotFoundError(NotFoundError):
+    def __init__(self, *_, message="Answer not found.") -> None:
         super().__init__(message=message)
 
 
@@ -29,4 +36,9 @@ class FlowDoesNotHaveActivity(ValidationError):
     def __init__(
         self, *_, message="Activity flow does not have such activity."
     ):
+        super().__init__(message=message)
+
+
+class AnswerAccessDeniedError(AccessDeniedError):
+    def __init__(self, *_, message="Access denied."):
         super().__init__(message=message)
