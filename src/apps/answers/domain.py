@@ -112,12 +112,12 @@ class AnswerNoteDetail(InternalModel):
     created_at: datetime.datetime
 
 
-class NoteOwnerPublic(InternalModel):
+class NoteOwnerPublic(PublicModel):
     first_name: str
     last_name: str
 
 
-class AnswerNoteDetailPublic(InternalModel):
+class AnswerNoteDetailPublic(PublicModel):
     user: NoteOwnerPublic
     note: str
     created_at: datetime.datetime
