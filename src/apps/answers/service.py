@@ -215,7 +215,9 @@ class AnswerService:
                         activity_item_history_id=activity_item_id_version,
                     )
                 )
-        await AnswersCRUD().create_many(list(answer_groups.values()))
+        await AnswersCRUD(self.session).create_many(
+            list(answer_groups.values())
+        )
 
         if activity_item_answer_schemas:
             await AnswerActivityItemsCRUD(self.session).create_many(

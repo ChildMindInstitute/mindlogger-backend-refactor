@@ -299,7 +299,7 @@ class AppletService:
         await AppletsCRUD(self.session).delete_by_id(applet_id)
 
     async def _validate_delete_applet(self, user_id, applet_id):
-        await AppletsCRUD().get_by_id(applet_id)
+        await AppletsCRUD(self.session).get_by_id(applet_id)
         role = await UserAppletAccessService(
             self.session, user_id, applet_id
         ).get_admins_role()
@@ -460,7 +460,7 @@ class AppletService:
     async def _validate_get_full_applet(
         self, applet_id: uuid.UUID
     ) -> AppletFull:
-        applet = await AppletsCRUD().get_by_id(applet_id)
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         role = await UserAppletAccessService(
             self.session, self.user_id, applet_id
         ).get_editors_role()

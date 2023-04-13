@@ -193,7 +193,7 @@ class UserAppletAccessService:
         return getattr(access, "role", None)
 
     async def get_access(self, role: Role) -> UserAppletAccess:
-        schema = await UserAppletAccessCRUD().get(
+        schema = await UserAppletAccessCRUD(self.session).get(
             self._user_id, self._applet_id, role
         )
         if not schema:
