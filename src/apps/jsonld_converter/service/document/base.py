@@ -17,7 +17,12 @@ from pyld import (
     jsonld,
 )
 
-from apps.jsonld_converter.errors import JsonLDNotSupportedError
+from apps.jsonld_converter.errors import (
+    JsonLDNotSupportedError,
+    JsonLDLoaderError,
+    JsonLDStructureError,
+    JsonLDProcessingError,
+)
 from apps.shared.domain import InternalModel
 
 
@@ -153,7 +158,7 @@ class ContextResolverAwareMixin:
         try:
             return await asyncio.to_thread(self.document_loader, remote_doc)
         except Exception as e:
-            raise
+            raise JsonLDLoaderError(remote_doc) from e
 
 
 class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
@@ -177,7 +182,6 @@ class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
             new_doc, base_url = await self._load_by_url(doc)
         elif LdKeyword.type not in doc:
             new_doc, base_url = await self._load_by_id(doc, base_url)
-            # TODO override with original doc values?
         else:
             new_doc = doc
 
@@ -191,13 +195,15 @@ class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
         return obj
 
     async def _load_by_id(self, doc: dict, base_url: str) -> Tuple[dict, str]:
-        doc_id = doc[LdKeyword.id]
-        # TODO try load, try to fix url with base_url and id
+        try:
+            doc_id = doc[LdKeyword.id]
+        except KeyError as e:
+            raise JsonLDStructureError(f'{LdKeyword.id} missed in doc', doc) from e
         doc, base_url = await self._load_by_url(doc_id)
         return doc, base_url
 
     async def _load_by_url(self, remote_doc: str) -> Tuple[dict, str]:
-        loaded = await self.load_remote_doc(remote_doc)  # TODO exceptions
+        loaded = await self.load_remote_doc(remote_doc)
         return loaded['document'], loaded['documentUrl'] or remote_doc
 
 
@@ -320,10 +326,14 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
         self.doc_expanded = expanded[0]
         self.ld_id = self.attr_processor.first(self.doc_expanded.get(LdKeyword.id))
 
-    async def _expand(self, doc: dict, base_url: str | None = None):
+    async def _expand(self, doc: dict | str, base_url: str | None = None):
         options = dict(
             base=base_url,
             contextResolver=self.context_resolver,
             documentLoader=self.document_loader,
         )
-        return await asyncio.to_thread(jsonld.expand, doc, options)
+        try:
+            return await asyncio.to_thread(jsonld.expand, doc, options)
+        except Exception as e:
+            raise JsonLDProcessingError(None, doc) from e
+
