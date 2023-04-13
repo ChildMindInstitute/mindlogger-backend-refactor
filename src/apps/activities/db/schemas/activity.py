@@ -1,4 +1,12 @@
-from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text
+from sqlalchemy import (
+    REAL,
+    Boolean,
+    Column,
+    ForeignKey,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
@@ -24,6 +32,9 @@ class ActivitySchema(Base, _BaseActivitySchema):
 
     applet_id = Column(
         ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
+    )
+    extra_fields = Column(
+        JSONB(), default=dict, server_default=text("'{}'::jsonb")
     )
 
 

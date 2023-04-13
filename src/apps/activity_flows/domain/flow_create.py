@@ -21,3 +21,4 @@ class FlowCreate(InternalModel):
     hide_badge: bool = False
     items: list[FlowItemCreate]
     is_hidden: bool = False
+    extra_fields: dict = Field(default_factory=dict)

@@ -7,7 +7,7 @@ from apps.shared.domain import InternalModel
 
 
 class ActivityItemCreate(BaseActivityItem, InternalModel):
-    pass
+    extra_fields: dict = Field(default_factory=dict)
 
 
 class PreparedActivityItemCreate(BaseActivityItem, InternalModel):
@@ -26,3 +26,4 @@ class ActivityCreate(InternalModel):
     response_is_editable: bool = False
     items: list[ActivityItemCreate]
     is_hidden: bool = False
+    extra_fields: dict = Field(default_factory=dict)

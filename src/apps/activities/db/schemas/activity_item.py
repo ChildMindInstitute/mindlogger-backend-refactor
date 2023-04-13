@@ -1,4 +1,11 @@
-from sqlalchemy import REAL, Column, ForeignKey, String, Text
+from sqlalchemy import (
+    REAL,
+    Column,
+    ForeignKey,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
@@ -20,6 +27,9 @@ class ActivityItemSchema(_BaseActivityItemSchema, Base):
 
     activity_id = Column(
         ForeignKey("activities.id", ondelete="CASCADE"), nullable=False
+    )
+    extra_fields = Column(
+        JSONB(), default=dict, server_default=text("'{}'::jsonb")
     )
 
 

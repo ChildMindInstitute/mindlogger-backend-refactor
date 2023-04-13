@@ -3,7 +3,7 @@ from copy import deepcopy
 from typing import Type
 from uuid import uuid4
 
-from apps.jsonld_converter.domain import LdActivityCreate
+from apps.activities.domain.activity_create import ActivityCreate
 from apps.jsonld_converter.errors import JsonLDNotSupportedError
 from apps.jsonld_converter.service.document.field import (
     ReproFieldBase,
@@ -113,9 +113,9 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         for k, v in doc.items():
             self.extra[k] = v
 
-    def export(self) -> LdActivityCreate:
+    def export(self) -> ActivityCreate:
         items = [nested.export() for nested in self.nested_by_order if isinstance(nested, ReproFieldBase)]
-        return LdActivityCreate(
+        return ActivityCreate(
             key=uuid4(),
             name=self.ld_pref_label or self.ld_alt_label,
             description=self.ld_description or {},

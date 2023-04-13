@@ -21,6 +21,7 @@ class AppletCreate(InternalModel):
     report_include_case_id: bool = False
     report_email_body: str = ""
     password: str
+    extra_fields: dict = Field(default_factory=dict)
 
     activities: list[ActivityCreate]
     activity_flows: list[FlowCreate]
