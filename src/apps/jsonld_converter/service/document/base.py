@@ -243,7 +243,7 @@ class CommonFieldsMixin:
             for item in items:
                 _id = self.attr_processor.get_attr_single(item, 'reproschema:isAbout', ld_key=LdKeyword.id)
                 _var = self.attr_processor.get_translation(item, 'reproschema:variableName', self.lang)
-                _is_visible = self.attr_processor.get_attr_value(item, 'reproschema:isVis')
+                _is_visible = self._is_visible(item)
                 _pref_label = self._get_ld_pref_label(item)
                 _is_required = self.attr_processor.get_attr_value(item, 'reproschema:requiredValue')
                 properties_by_id[_id] = {
@@ -273,6 +273,17 @@ class CommonFieldsMixin:
     def _is_back_disabled(self, allow_list: list[str]) -> bool:
         keys = ['reproschema:DisableBack', 'reproschema:disable_back']
         return self._is_allowed(allow_list, keys)
+
+    def _is_visible(self, doc: dict, drop=False) -> bool | str | None:
+        return self.attr_processor.get_attr_value(doc, 'reproschema:isVis', drop=drop)
+
+    def _get_timer(self, doc: dict, drop=False) -> int | None:
+        val = self.attr_processor.get_attr_value(
+            doc, "reproschema:timer", drop=drop
+        )
+        if val is not None:
+            return int(val)
+        return None
 
 
 class LdDocumentBase(ABC, ContextResolverAwareMixin):

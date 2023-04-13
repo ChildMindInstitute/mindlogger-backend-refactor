@@ -41,7 +41,7 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
         self.ld_alt_label = self._get_ld_alt_label(processed_doc)
         self.ld_name = self.attr_processor.get_translation(processed_doc, 'schema:name', lang=self.lang)
         self.ld_description = self._get_ld_description(processed_doc, drop=True)
-        self.ld_is_vis = self.attr_processor.get_attr_value(processed_doc, 'reproschema:isVis')
+        self.ld_is_vis = self._is_visible(processed_doc, drop=True)
 
         self.ld_combine_reports = self.attr_processor.get_attr_value(processed_doc, 'reproschema:combineReports')
         self.ld_show_badge = self.attr_processor.get_attr_value(processed_doc, 'reproschema:showBadge')
