@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from copy import deepcopy
 
 from apps.activity_flows.domain.flow_create import (
@@ -23,6 +22,7 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
     ld_show_badge: bool | None = None
 
     flow_items: list[str] = None
+    activity_keys: dict[str, str] = None
     extra: dict | None = None
 
     @classmethod
@@ -61,10 +61,11 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
             self.extra[k] = v
 
     def export(self) -> FlowCreate:
+        activity_keys = self.activity_keys or {}
         flow_items = []
         for activity_id in self.flow_items:
             item = FlowItemCreate(
-                activity_key=activity_id,  # TODO activity key
+                activity_key=activity_keys.get(activity_id),
             )
             flow_items.append(item)
 

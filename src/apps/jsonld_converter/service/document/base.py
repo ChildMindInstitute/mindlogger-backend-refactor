@@ -107,6 +107,7 @@ class LdAttributeProcessor:
             if drop:
                 del doc[key]
             return obj_list
+        return None
 
     @classmethod
     def get_attr_value(cls, doc: dict, attr: str, *, drop: bool = False):
@@ -124,12 +125,13 @@ class LdAttributeProcessor:
         return None
 
     @classmethod
-    def get_translation(cls, doc: dict, term_attr: str, lang: str, *, drop=False) -> str | None:
+    def get_translation(cls, doc: dict, term_attr: str, lang: str, *, drop=False):
         items = cls.get_translations(doc, term_attr, drop=drop)
         if items:
             if val := items.get(lang):
                 return val
             return next(iter(items.values()))
+        return None
 
     @classmethod
     def _get_lang_formatted(cls, items: list[dict]) -> dict:

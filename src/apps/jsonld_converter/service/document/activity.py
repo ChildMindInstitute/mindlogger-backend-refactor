@@ -1,6 +1,7 @@
 import asyncio
 from copy import deepcopy
 from typing import Type
+from uuid import uuid4
 
 from apps.jsonld_converter.domain import LdActivityCreate
 from apps.jsonld_converter.errors import JsonLDNotSupportedError
@@ -112,9 +113,10 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         for k, v in doc.items():
             self.extra[k] = v
 
-    def export(self) -> InternalModel:
+    def export(self) -> LdActivityCreate:
         items = [nested.export() for nested in self.nested_by_order if isinstance(nested, ReproFieldBase)]
         return LdActivityCreate(
+            key=uuid4(),
             name=self.ld_pref_label or self.ld_alt_label,
             description=self.ld_description or {},
             splash_screen=self.ld_splash or '',
