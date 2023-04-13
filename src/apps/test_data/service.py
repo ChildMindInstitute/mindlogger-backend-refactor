@@ -173,6 +173,7 @@ class TestDataService:
                     ],
                     response_values=response_config["response_values"],
                     config=response_config["config"],
+                    is_hidden=self.random_boolean(),
                 )
             )
         return items

@@ -34,6 +34,7 @@ class ActivityPublic(PublicModel):
     is_reviewable: bool = False
     response_is_editable: bool = False
     order: int
+    is_hidden: bool | None = False
 
 
 class ActivityDetail(Activity):

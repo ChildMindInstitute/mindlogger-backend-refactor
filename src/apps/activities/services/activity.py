@@ -65,6 +65,7 @@ class ActivityService:
                         else None,
                         config=item.config.dict(),
                         name=item.name,
+                        is_hidden=item.is_hidden,
                     )
                 )
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
