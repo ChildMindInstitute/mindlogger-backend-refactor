@@ -35,7 +35,9 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     def supports(cls, doc: dict) -> bool:
         ld_types = [
             'reproschema:Protocol',
-            *cls.attr_processor.resolve_key('reproschema:Protocol')
+            'reproschema:ActivitySet',
+            *cls.attr_processor.resolve_key('reproschema:Protocol'),
+            *cls.attr_processor.resolve_key('reproschema:ActivitySet'),
         ]
         return cls.attr_processor.first(doc.get(LdKeyword.type)) in ld_types
 

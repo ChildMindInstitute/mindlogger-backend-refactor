@@ -1,4 +1,3 @@
-import asyncio
 import dataclasses
 from abc import (
     abstractmethod,
@@ -10,9 +9,6 @@ from typing import (
 )
 
 from pydantic.color import Color
-from pyld import (
-    jsonld,
-)
 
 from apps.activities.domain.response_type_config import (
     ResponseType,
@@ -54,6 +50,7 @@ from apps.activities.domain.response_values import (
     AudioPlayerValues,
 )
 from apps.jsonld_converter.domain import LdActivityItemCreate
+from apps.jsonld_converter.errors import JsonLDStructureError
 from apps.jsonld_converter.service.document.base import (
     LdDocumentBase,
     CommonFieldsMixin,
@@ -171,14 +168,12 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
         key = self.attr_processor.get_key(doc, term_attr)
         options_doc = self.attr_processor.get_attr_single(doc, term_attr)
         if len(options_doc) == 1 and LdKeyword.id in options_doc:
-            options_id = options_doc[LdKeyword.id]
-            processor_options = dict(
-                contextResolver=self.context_resolver,
-                documentLoader=self.document_loader,
-            )
-            options_doc = await asyncio.to_thread(
-                jsonld.expand, options_id, processor_options
-            )  # TODO exception
+            try:
+                options_id = options_doc[LdKeyword.id]
+            except KeyError as e:
+                raise JsonLDStructureError(f'{LdKeyword.id} missed in doc', doc) from e
+
+            options_doc = await self._expand(options_id, self.base_url)
             if isinstance(options_doc, list):
                 options_doc = options_doc[0]
 
@@ -251,7 +246,6 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
             skippable_item=self.is_skippable,
             additional_response_option=additional_response_option,
             timer=int(self.ld_timer / 1000) if self.ld_timer else None,
-            # is_hidden=self.ld_is_vis is False,
             **attrs,
         )
 
@@ -271,6 +265,7 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
             config=config,
             name=self.ld_pref_label or self.ld_alt_label,
             extra_fields=self.extra,
+            is_hidden=self.ld_is_vis is False,
         )
 
 
@@ -335,7 +330,6 @@ class ReproFieldText(ReproFieldBase):
             numerical_response_required=numerical_response_required,
             response_data_identifier=bool(self.ld_is_response_identifier),
             response_required=bool(self.ld_required_value),
-            # is_hidden=self.ld_is_vis is False,
         )
         return config
 
@@ -482,7 +476,6 @@ class ReproFieldRadioStacked(ReproFieldBase):
             add_scores=bool(self.ld_scoring),
             set_alerts=bool(self.ld_response_alert),
             add_tooltip=add_tooltip,
-            # is_hidden=self.ld_is_vis is False,
         )
 
         return config
@@ -699,7 +692,6 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
             add_scores=bool(self.ld_scoring),
             set_alerts=bool(self.ld_response_alert),
             timer=int(self.ld_timer / 1000) if self.ld_timer else None,
-            # is_hidden=self.ld_is_vis is False,
         )
         return config
 
@@ -850,7 +842,6 @@ class ReproFieldMessage(ReproFieldBase):
         config = MessageConfig(
             remove_back_button=bool(self.ld_remove_back_option),
             timer=int(self.ld_timer / 1000) if self.ld_timer else None,
-            # is_hidden=self.ld_is_vis is False,
         )
 
         return config
@@ -922,7 +913,6 @@ class ReproFieldAge(ReproFieldBase):
             remove_back_button=bool(self.ld_remove_back_option),
             skippable_item=self.is_skippable,
             additional_response_option=additional_response_option,
-            # is_hidden=self.ld_is_vis is False,
         )
 
         return config
@@ -982,7 +972,6 @@ class ReproFieldAudioStimulus(ReproFieldBase):
             skippable_item=self.is_skippable,
             additional_response_option=additional_response_option,
             play_once=self.allow_replay is False,
-            # is_hidden=self.ld_is_vis is False,
         )
 
         return config
