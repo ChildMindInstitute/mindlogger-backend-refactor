@@ -1,7 +1,6 @@
 import uuid
 
 from sqlalchemy import select
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
 

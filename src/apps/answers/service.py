@@ -108,7 +108,7 @@ class AnswerService:
                     activity_item.config, "response_required", False
                 )
             else:
-                required = True
+                required = False
             required |= not getattr(
                 activity_item.config, "skippable_item", False
             )

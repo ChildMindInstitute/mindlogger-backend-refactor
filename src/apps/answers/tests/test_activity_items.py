@@ -62,6 +62,26 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 201, response.json()
 
     @rollback
+    async def test_answer_with_skipping_all(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3612",
+            created_at=1681216969,
+            answers=[],
+        )
+
+        response = await self.client.post(
+            self.answer_activity_item_create_url, data=create_data
+        )
+
+        assert response.status_code == 201, response.json()
+
+    @rollback
     async def test_answered_applet_activities(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
