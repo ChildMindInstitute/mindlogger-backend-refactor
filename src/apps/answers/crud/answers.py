@@ -49,7 +49,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             activity_id,
         ) in db_result.all():  # type: AnswerSchema, str, uuid.UUID
             answered_activity = activity_map.get(
-                activity_id, AnsweredAppletActivity(name=name)
+                activity_id, AnsweredAppletActivity(id=activity_id, name=name)
             )
             answered_activity.name = name
             answered_activity.answer_dates.append(
