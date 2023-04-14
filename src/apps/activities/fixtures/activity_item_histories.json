@@ -133,7 +133,7 @@
         "add_tooltip": false,
         "set_palette": false,
         "remove_back_button": false,
-        "skippable_item": false,
+        "skippable_item": true,
         "additional_response_option": {
           "text_input_option": false,
           "text_input_required": false
