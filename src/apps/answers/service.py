@@ -28,6 +28,7 @@ from apps.answers.domain import (
 from apps.answers.errors import (
     AnswerAccessDeniedError,
     AnswerIsNotFull,
+    AnswerNoteAccessDeniedError,
     FlowDoesNotHaveActivity,
     UserDoesNotHavePermissionError,
     WrongAnswerType,
@@ -306,3 +307,26 @@ class AnswerService:
         return await AnswerNotesCRUD(self.session).get_count_by_answer_id(
             answer_id
         )
+
+    async def edit_note(
+        self,
+        applet_id: uuid.UUID,
+        answer_id: uuid.UUID,
+        note_id: uuid.UUID,
+        note: str,
+    ):
+        await self._validate_answer_access(applet_id, answer_id)
+        await self._validate_note_access(note_id)
+        await AnswerNotesCRUD(self.session).update_note_by_id(note_id, note)
+
+    async def delete_note(
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID, note_id: uuid.UUID
+    ):
+        await self._validate_answer_access(applet_id, answer_id)
+        await self._validate_note_access(note_id)
+        await AnswerNotesCRUD(self.session).delete_note_by_id(note_id)
+
+    async def _validate_note_access(self, note_id: uuid.UUID):
+        note = await AnswerNotesCRUD(self.session).get_by_id(note_id)
+        if note.user_id != self.user_id:
+            raise AnswerNoteAccessDeniedError()

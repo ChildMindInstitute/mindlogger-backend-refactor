@@ -23,6 +23,9 @@ class TestAnswerActivityItems(BaseTest):
     answered_applet_activities_url = "/answers/applet/{id_}/activities"
     answers_url = "/answers/applet/{id_}/answers/{answer_id}"
     answer_notes_url = "/answers/applet/{id_}/answers/{answer_id}/notes"
+    answer_note_detail_url = (
+        "/answers/applet/{id_}/answers/{answer_id}/notes/{note_id}"
+    )
 
     @rollback
     async def test_answer_activity_items_create_for_respondent(self):
@@ -117,7 +120,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
 
     @rollback
-    async def test_add_edit_notes(self):
+    async def test_add_note(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -179,6 +182,176 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 1
+
+    @rollback
+    async def test_edit_note(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answers=[
+                dict(
+                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    answer=dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    ),
+                ),
+                dict(
+                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    answer=dict(
+                        value="string",
+                    ),
+                ),
+            ],
+        )
+
+        response = await self.client.post(
+            self.answer_activity_item_create_url, data=create_data
+        )
+
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.answered_applet_activities_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            dict(
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                created_date=datetime.date.today(),
+            ),
+        )
+        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
+
+        response = await self.client.post(
+            self.answer_notes_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+            ),
+            dict(note="Some note"),
+        )
+
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.answer_notes_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0]["note"] == "Some note"
+
+        response = await self.client.put(
+            self.answer_note_detail_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+                note_id=response.json()["result"][0]["id"],
+            ),
+            dict(note="Some note 2"),
+        )
+        assert response.status_code == 200
+
+        response = await self.client.get(
+            self.answer_notes_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0]["note"] == "Some note 2"
+
+    @rollback
+    async def test_delete_note(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answers=[
+                dict(
+                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    answer=dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    ),
+                ),
+                dict(
+                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    answer=dict(
+                        value="string",
+                    ),
+                ),
+            ],
+        )
+
+        response = await self.client.post(
+            self.answer_activity_item_create_url, data=create_data
+        )
+
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.answered_applet_activities_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            dict(
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                created_date=datetime.date.today(),
+            ),
+        )
+        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
+
+        response = await self.client.post(
+            self.answer_notes_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+            ),
+            dict(note="Some note"),
+        )
+
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.answer_notes_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0]["note"] == "Some note"
+
+        response = await self.client.delete(
+            self.answer_note_detail_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+                note_id=response.json()["result"][0]["id"],
+            )
+        )
+        assert response.status_code == 204
+
+        response = await self.client.get(
+            self.answer_notes_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 0
 
     @rollback
     async def test_answer_activity_items_create_for_not_respondent(self):

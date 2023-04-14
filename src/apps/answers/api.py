@@ -99,3 +99,32 @@ async def note_list(
         result=[AnswerNoteDetailPublic.from_orm(note) for note in notes],
         count=count,
     )
+
+
+async def note_edit(
+    applet_id: uuid.UUID,
+    answer_id: uuid.UUID,
+    note_id: uuid.UUID,
+    schema: AnswerNote = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+):
+    async with atomic(session):
+        await AnswerService(session, user.id).edit_note(
+            applet_id, answer_id, note_id, schema.note
+        )
+    return
+
+
+async def note_delete(
+    applet_id: uuid.UUID,
+    answer_id: uuid.UUID,
+    note_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+):
+    async with atomic(session):
+        await AnswerService(session, user.id).delete_note(
+            applet_id, answer_id, note_id
+        )
+    return
