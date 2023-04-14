@@ -15,6 +15,7 @@ class BaseActivityItem(BaseModel):
     response_values: ResponseValueConfig | None = Field(default=None)
     config: ResponseTypeConfig
     name: str
+    is_hidden: bool | None = False
 
     @validator("name")
     def validate_name(cls, value):

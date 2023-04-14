@@ -20,7 +20,7 @@ class FlowFull(InternalModel):
     is_single_report: bool = False
     hide_badge: bool = False
     items: list[ActivityFlowItemFull] = Field(default_factory=list)
-    is_hidden: bool = False
+    is_hidden: bool | None = False
     order: int
 
 
