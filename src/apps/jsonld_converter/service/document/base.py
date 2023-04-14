@@ -11,6 +11,10 @@ from apps.jsonld_converter.errors import (
     JsonLDProcessingError,
     JsonLDStructureError,
 )
+from apps.jsonld_converter.service.base import (
+    LdKeyword,
+    ContextResolverAwareMixin,
+)
 from apps.shared.domain import InternalModel
 
 
@@ -26,7 +30,7 @@ class LdKeyword(str, enum.Enum):
 
 class LdAttributeProcessor:
     """
-    https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json
+    context: https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json
     """
 
     TERMS = {
@@ -154,18 +158,6 @@ class LdAttributeProcessor:
                 res[lang] = val
 
         return res
-
-
-class ContextResolverAwareMixin:
-    document_loader: Optional[Callable] = None
-    context_resolver: ContextResolver = None
-
-    async def load_remote_doc(self, remote_doc: str) -> dict:
-        assert self.document_loader is not None
-        try:
-            return await asyncio.to_thread(self.document_loader, remote_doc)
-        except Exception as e:
-            raise JsonLDLoaderError(remote_doc) from e
 
 
 class ContainsNestedMixin(ABC, ContextResolverAwareMixin):

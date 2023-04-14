@@ -56,8 +56,8 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         self.ld_description = self._get_ld_description(
             processed_doc, drop=True
         )
-        self.ld_about = self._get_ld_about(processed_doc, drop=True)
-        self.ld_shuffle = self._get_ld_shuffle(processed_doc, drop=True)
+        self.ld_about = self._get_ld_about(processed_doc)  # TODO
+        self.ld_shuffle = self._get_ld_shuffle(processed_doc)
         self.ld_pref_label = self._get_ld_pref_label(processed_doc)
         self.ld_alt_label = self._get_ld_alt_label(processed_doc)
         self.ld_image = self._get_ld_image(processed_doc, drop=True)

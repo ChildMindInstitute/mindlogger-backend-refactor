@@ -5,7 +5,10 @@ from fastapi import Depends
 from pyld import ContextResolver  # type: ignore[import]
 from pyld.jsonld import requests_document_loader  # type: ignore[import]
 
-from apps.jsonld_converter.service import JsonLDModelConverter
+from apps.jsonld_converter.service import (
+    JsonLDModelConverter,
+    ModelJsonLDConverter,
+)
 from config import settings
 
 
@@ -27,3 +30,10 @@ def get_jsonld_model_converter(
     return JsonLDModelConverter(
         context_resolver, document_loader, settings.jsonld_converter.dict()
     )
+
+
+def get_model_jsonld_converter(
+    document_loader: Callable = Depends(get_document_loader),
+    context_resolver: ContextResolver = Depends(get_context_resolver),
+) -> ModelJsonLDConverter:
+    return ModelJsonLDConverter(context_resolver, document_loader)
