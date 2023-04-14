@@ -228,7 +228,7 @@ class AnswerService:
             )
         elif flow_item_answer_schemas:
             await AnswerFlowItemsCRUD(self.session).create_many(
-                activity_item_answer_schemas
+                flow_item_answer_schemas
             )
 
     async def applet_activities(
