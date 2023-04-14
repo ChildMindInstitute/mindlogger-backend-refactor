@@ -10,6 +10,7 @@ from apps.answers.domain import (
     AppletAnswerCreate,
     PublicAnsweredAppletActivity,
 )
+from apps.answers.filters import AppletActivityFilter
 from apps.answers.service import AnswerService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
@@ -34,14 +35,15 @@ async def create_answer(
 
 async def applet_activities_list(
     id_: uuid.UUID,
-    respondent_id: uuid.UUID,
-    created_date: datetime.date,
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
+    query_params: QueryParams = Depends(
+        parse_query_params(AppletActivityFilter)
+    ),
 ) -> ResponseMulti[PublicAnsweredAppletActivity]:
     async with atomic(session):
         activities = await AnswerService(session, user.id).applet_activities(
-            id_, respondent_id, created_date
+            id_, **query_params.filters
         )
     return ResponseMulti(
         result=[
