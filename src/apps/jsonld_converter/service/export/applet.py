@@ -1,0 +1,103 @@
+import asyncio
+from typing import Type
+
+from apps.applets.domain.applet_full import AppletFull
+from apps.jsonld_converter.service.base import LdKeyword
+from apps.jsonld_converter.service.export import ActivityFlowExport
+from apps.jsonld_converter.service.export.base import (
+    BaseModelExport,
+    ContainsNestedModelMixin,
+)
+from apps.shared.domain import InternalModel
+
+
+class AppletExport(BaseModelExport, ContainsNestedModelMixin):
+    @classmethod
+    def supports(cls, model: InternalModel) -> bool:
+        return isinstance(model, AppletFull)
+
+    @classmethod
+    def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
+        return [ActivityFlowExport]
+
+    async def export(self, model: AppletFull) -> dict:
+        ui, activity_flows = await asyncio.gather(
+            self._build_ui_prop(model),
+            self._build_activity_flows_prop(model)
+        )
+        doc = {
+            LdKeyword.context: self.context,
+            LdKeyword.id: f"_:{model.id}",
+            LdKeyword.type: "reproschema:Protocol",
+            "skos:prefLabel": model.display_name,
+            "skos:altLabel": model.display_name,
+            "schema:description": model.description,
+            "landingPageContent": self._build_about(model),
+            "landingPageType": "markdown",
+            "schema:image": model.image,
+            "schema:watermark": model.watermark,
+            "schema:schemaVersion": self.schema_version,  # TODO load from extra
+            "schema:version": model.version,
+            "ui": ui,
+            "activityFlows": activity_flows,
+        }
+
+        expanded = await self._expand(doc)
+
+        return expanded[0]
+
+    def _build_about(self, model: AppletFull):
+        if model.about:
+            about = []
+            for lang, val in model.about.items():
+                about.append({
+                    LdKeyword.language: lang,
+                    LdKeyword.value: val
+                })
+            return about
+        return None
+
+    async def _build_ui_prop(self, model: AppletFull) -> dict:
+        order = []
+        properties = []
+        for i, activity in enumerate(model.activities):
+            _id = f"_:{activity.id}"
+            _var = f"activity_{i}"  # TODO load from extra if exists
+            order.append(_id)  # TODO export activity
+            properties.append({
+                "isAbout": _id,
+                "prefLabel": activity.name,
+                "isVis": not activity.is_hidden,
+                "variableName": _var
+            })
+
+        return {
+            "addProperties": properties,
+            "order": order,
+            # "shuffle": False,  # TODO from extra
+        }
+
+    async def _build_activity_flows_prop(self, model: AppletFull) -> dict:
+        order = []
+        properties = []
+        if model.activity_flows:
+            order_cors = []
+            for i, flow in enumerate(model.activity_flows):
+                _id = f"_:{flow.id}"
+                _var = f"flow_{i}"  # TODO load from extra if exists
+
+                processor = self.get_supported_processor(flow)
+                order_cors.append(processor.export(flow))
+                properties.append({
+                    "isAbout": _id,
+                    "prefLabel": flow.name,
+                    "isVis": not flow.is_hidden,
+                    "variableName": _var
+                })
+
+            order = await asyncio.gather(*order_cors)
+
+        return {
+            "activityFlowProperties": properties,
+            "activityFlowOrder": list(order),
+        }

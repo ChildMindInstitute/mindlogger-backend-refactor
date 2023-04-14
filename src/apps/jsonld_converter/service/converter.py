@@ -7,6 +7,7 @@ from pyld import (
     ContextResolver,
 )
 
+from apps.jsonld_converter.service.base import ContextResolverAwareMixin
 from apps.jsonld_converter.service.document import (
     ReproActivity,
     ReproProtocol,
@@ -29,6 +30,11 @@ from apps.jsonld_converter.service.document import (
 from apps.jsonld_converter.service.document.base import (
     ContainsNestedMixin,
     LdDocumentBase,
+)
+from apps.jsonld_converter.service.export import AppletExport
+from apps.jsonld_converter.service.export.base import (
+    ContainsNestedModelMixin,
+    BaseModelExport,
 )
 from apps.shared.domain import InternalModel
 
@@ -68,3 +74,20 @@ class JsonLDModelConverter(ContainsNestedMixin):
         obj = await self.load_supported_document(input_, base_url, self.settings)
 
         return obj.export()
+
+
+class ModelJsonLDConverter(ContainsNestedModelMixin):
+
+    @classmethod
+    def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
+        return [AppletExport]
+
+    def __init__(self, context_resolver: ContextResolver, document_loader: Callable):
+        self.context_resolver: ContextResolver = context_resolver
+        self.document_loader: Callable = document_loader
+
+    async def convert(self, model) -> dict:
+        exporter = self.get_supported_processor(model)
+        doc = await exporter.export(model)
+
+        return doc
