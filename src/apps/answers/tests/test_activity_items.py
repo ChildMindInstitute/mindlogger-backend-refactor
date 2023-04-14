@@ -119,8 +119,8 @@ class TestAnswerActivityItems(BaseTest):
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
-                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                created_date=datetime.date.today(),
+                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                createdDate=datetime.date.today(),
             ),
         )
 
@@ -177,8 +177,8 @@ class TestAnswerActivityItems(BaseTest):
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
-                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                created_date=datetime.date.today(),
+                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                createdDate=datetime.date.today(),
             ),
         )
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
@@ -241,8 +241,8 @@ class TestAnswerActivityItems(BaseTest):
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
-                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                created_date=datetime.date.today(),
+                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                createdDate=datetime.date.today(),
             ),
         )
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
@@ -327,8 +327,8 @@ class TestAnswerActivityItems(BaseTest):
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
-                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                created_date=datetime.date.today(),
+                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                createdDate=datetime.date.today(),
             ),
         )
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
