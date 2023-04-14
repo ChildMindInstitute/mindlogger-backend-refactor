@@ -1,11 +1,13 @@
 import uuid
 
 from sqlalchemy import select
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
 
 from apps.answers.db.schemas import AnswerNoteSchema
 from apps.answers.domain import AnswerNoteDetail
+from apps.answers.errors import AnswerNoteNotFoundError
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.users import UserSchema
@@ -37,6 +39,7 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
         ) in db_result.all():  # type: AnswerNoteSchema, UserSchema
             results.append(
                 AnswerNoteDetail(
+                    id=schema.id,
                     user=dict(
                         first_name=user_schema.first_name,
                         last_name=user_schema.last_name,
@@ -52,3 +55,19 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
         query = query.where(AnswerNoteSchema.answer_id == answer_id)
         db_result = await self._execute(query)
         return db_result.scalars().first() or 0
+
+    async def get_by_id(self, note_id) -> AnswerNoteSchema:
+        note = await self._get("id", note_id)
+        if not note:
+            raise AnswerNoteNotFoundError()
+        return note
+
+    async def update_note_by_id(
+        self, note_id: uuid.UUID, note: str
+    ) -> AnswerNoteSchema:
+        return await self._update_one(
+            "id", note_id, AnswerNoteSchema(note=note)
+        )
+
+    async def delete_note_by_id(self, note_id: uuid.UUID):
+        await self._delete("id", note_id)

@@ -11,7 +11,10 @@ from apps.activities.domain.reusable_item_choices import (
     ReusableItemChoice,
     ReusableItemChoiceCreate,
 )
-from apps.activities.errors import ReusableItemChoiceAlreadyExist
+from apps.activities.errors import (
+    ReusableItemChoiceAlreadyExist,
+    ReusableItemChoiceDoeNotExist,
+)
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["ReusableItemChoiceCRUD"]
@@ -63,5 +66,8 @@ class ReusableItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
 
     async def delete_by_id(self, id_: uuid.UUID):
         """Delete item template by id."""
+        schema = await self._get("id", id_)
+        if not schema:
+            raise ReusableItemChoiceDoeNotExist()
 
         await self._delete(key="id", value=id_)

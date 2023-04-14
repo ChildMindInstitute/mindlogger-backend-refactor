@@ -6,6 +6,8 @@ from apps.answers.api import (
     applet_answer_retrieve,
     create_answer,
     note_add,
+    note_delete,
+    note_edit,
     note_list,
 )
 from apps.answers.domain import (
@@ -70,3 +72,21 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(note_list)
+
+router.put(
+    "/applet/{applet_id}/answers/{answer_id}/notes/{note_id}",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(note_edit)
+
+router.delete(
+    "/applet/{applet_id}/answers/{answer_id}/notes/{note_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(note_delete)

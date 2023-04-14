@@ -107,6 +107,7 @@ class NoteOwner(InternalModel):
 
 
 class AnswerNoteDetail(InternalModel):
+    id: uuid.UUID
     user: NoteOwner
     note: str
     created_at: datetime.datetime
@@ -118,6 +119,7 @@ class NoteOwnerPublic(PublicModel):
 
 
 class AnswerNoteDetailPublic(PublicModel):
+    id: uuid.UUID
     user: NoteOwnerPublic
     note: str
     created_at: datetime.datetime
