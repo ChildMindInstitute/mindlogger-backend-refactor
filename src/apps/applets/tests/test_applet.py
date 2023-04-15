@@ -121,6 +121,7 @@ class TestApplet(BaseTest):
                             ),
                             response_type="singleSelect",
                             response_values=dict(
+                                paletteName="default",
                                 options=[
                                     dict(
                                         # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
@@ -140,7 +141,7 @@ class TestApplet(BaseTest):
                                         is_hidden=False,
                                         color=None,
                                     ),
-                                ]
+                                ],
                             ),
                             config=dict(
                                 remove_back_button=False,
@@ -165,6 +166,7 @@ class TestApplet(BaseTest):
                             ),
                             response_type="multiSelect",
                             response_values=dict(
+                                paletteName=None,
                                 options=[
                                     dict(
                                         # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
@@ -184,7 +186,7 @@ class TestApplet(BaseTest):
                                         is_hidden=False,
                                         color=None,
                                     ),
-                                ]
+                                ],
                             ),
                             config=dict(
                                 remove_back_button=False,
