@@ -14,9 +14,15 @@ class ActivityItemPublic(BaseActivityItem, PublicModel):
     id: uuid.UUID
 
 
-class ActivityItemDetail(ActivityItem):
+class ActivityItemSingleLanguageDetail(ActivityItem):
     question: str  # type: ignore[assignment]
 
 
-class ActivityItemDetailPublic(ActivityItemPublic):
+class ActivityItemSingleLanguageDetailPublic(ActivityItemPublic):
     question: str  # type: ignore[assignment]
+
+
+class ActivityItemDuplicate(BaseActivityItem, InternalModel):
+    activity_id: uuid.UUID
+    id: uuid.UUID
+    order: int

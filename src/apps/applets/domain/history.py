@@ -1,30 +1,17 @@
-import uuid
-
 from pydantic import Field
 
 from apps.activities.domain import (
     ActivityHistoryChange,
     PublicActivityHistoryChange,
 )
+from apps.applets.domain.base import AppletBase
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = ["AppletHistory", "AppletHistoryChange", "PublicAppletHistoryChange"]
 
 
-class AppletHistory(InternalModel):
-    display_name: str
-    description: dict
-    about: dict
-    image: str
-    watermark: str
-    theme_id: uuid.UUID | None
-    version: str
-    report_server_ip: str
-    report_public_key: str
-    report_recipients: list[str]
-    report_include_user_id: str
-    report_include_case_id: str
-    report_email_body: str
+class AppletHistory(AppletBase, InternalModel):
+    pass
 
 
 class AppletHistoryChange(InternalModel):

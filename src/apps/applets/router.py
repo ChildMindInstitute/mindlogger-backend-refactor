@@ -4,6 +4,7 @@ from starlette import status
 from apps.applets.api.applets import (
     applet_create,
     applet_delete,
+    applet_duplicate,
     applet_link_create,
     applet_link_delete,
     applet_link_get,
@@ -22,7 +23,10 @@ from apps.applets.domain import (
     PublicAppletHistoryChange,
     PublicHistory,
 )
-from apps.applets.domain.applet import AppletDetailPublic, AppletInfoPublic
+from apps.applets.domain.applet import (
+    AppletSingleLanguageDetailPublic,
+    AppletSingleLanguageInfoPublic,
+)
 from apps.applets.domain.applet_link import AppletLink
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.shared.domain import Response, ResponseMulti
@@ -36,10 +40,12 @@ router = APIRouter(prefix="/applets", tags=["Applets"])
 
 router.get(
     "",
-    response_model=ResponseMulti[AppletInfoPublic],
+    response_model=ResponseMulti[AppletSingleLanguageInfoPublic],
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[AppletInfoPublic]},
+        status.HTTP_200_OK: {
+            "model": ResponseMulti[AppletSingleLanguageInfoPublic]
+        },
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -48,9 +54,11 @@ router.get(
 router.get(
     "/{id_}",
     status_code=status.HTTP_200_OK,
-    response_model=Response[AppletDetailPublic],
+    response_model=Response[AppletSingleLanguageDetailPublic],
     responses={
-        status.HTTP_200_OK: {"model": Response[AppletDetailPublic]},
+        status.HTTP_200_OK: {
+            "model": Response[AppletSingleLanguageDetailPublic]
+        },
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -101,6 +109,19 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_create)
+
+router.post(
+    "/{applet_id}/duplicate",
+    description="""This endpoint using for duplicate existing applet""",
+    response_model_by_alias=True,
+    response_model=Response[public_detail.Applet],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"model": Response[public_detail.Applet]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_duplicate)
 
 router.post(
     "/set_folder",

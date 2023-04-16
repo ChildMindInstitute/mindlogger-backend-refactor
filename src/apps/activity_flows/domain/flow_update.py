@@ -1,7 +1,6 @@
 import uuid
 
-from pydantic import Field
-
+from apps.activity_flows.domain.base import FlowBase
 from apps.shared.domain import InternalModel
 
 
@@ -16,11 +15,6 @@ class PreparedFlowItemUpdate(InternalModel):
     activity_id: uuid.UUID
 
 
-class FlowUpdate(InternalModel):
+class FlowUpdate(FlowBase, InternalModel):
     id: uuid.UUID | None
-    name: str
-    description: dict[str, str] = Field(default_factory=dict)
-    is_single_report: bool = False
-    hide_badge: bool = False
     items: list[ActivityFlowItemUpdate]
-    is_hidden: bool = False

@@ -1,7 +1,7 @@
 from apps.applets.domain.applet import (  # noqa: F401, F403
-    AppletDetail,
-    AppletInfo,
     AppletName,
+    AppletSingleLanguageDetail,
+    AppletSingleLanguageInfo,
     AppletUniqueName,
 )
 from apps.applets.domain.applet_folder import *  # noqa: F401, F403

@@ -13,6 +13,7 @@ __all__ = [
     "AppletLinkNotFoundError",
     "AppletLinkAlreadyExist",
     "InvalidVersionError",
+    "AppletPasswordValidationError",
 ]
 
 

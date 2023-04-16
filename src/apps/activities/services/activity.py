@@ -3,8 +3,9 @@ import uuid
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain.activity import (
-    ActivityDetail,
-    ActivityExtendedDetail,
+    ActivityDuplicate,
+    ActivitySingleLanguageDetail,
+    ActivitySingleLanguageWithItemsDetail,
 )
 from apps.activities.domain.activity_create import (
     ActivityCreate,
@@ -204,14 +205,14 @@ class ActivityService:
 
     async def get_single_language_by_applet_id(
         self, applet_id: uuid.UUID, language: str
-    ) -> list[ActivityDetail]:
+    ) -> list[ActivitySingleLanguageDetail]:
         schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
             applet_id
         )
         activities = []
         for schema in schemas:
             activities.append(
-                ActivityDetail(
+                ActivitySingleLanguageDetail(
                     id=schema.id,
                     name=schema.name,
                     description=self._get_by_language(
@@ -252,13 +253,46 @@ class ActivityService:
 
         return activities
 
+    async def get_by_applet_id_for_duplicate(
+        self, applet_id: uuid.UUID
+    ) -> list[ActivityDuplicate]:
+        schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
+            applet_id
+        )
+        activity_map = dict()
+        activities = []
+        for schema in schemas:
+            activity = ActivityDuplicate(
+                id=schema.id,
+                key=schema.id,
+                name=schema.name,
+                description=schema.description,
+                splash_screen=schema.splash_screen,
+                image=schema.image,
+                show_all_at_once=schema.show_all_at_once,
+                is_skippable=schema.is_skippable,
+                is_reviewable=schema.is_reviewable,
+                response_is_editable=schema.response_is_editable,
+                order=schema.order,
+                is_hidden=schema.is_hidden,
+            )
+            activity_map[activity.id] = activity
+            activities.append(activity)
+        activity_items = await ActivityItemService(
+            self.session
+        ).get_items_by_activity_ids_for_duplicate(list(activity_map.keys()))
+        for activity_item in activity_items:
+            activity_map[activity_item.activity_id].items.append(activity_item)
+
+        return activities
+
     async def get_single_language_by_id(
         self, id_: uuid.UUID, language: str
-    ) -> ActivityExtendedDetail:
+    ) -> ActivitySingleLanguageWithItemsDetail:
         schema = await ActivitiesCRUD(self.session).get_by_id(
             self.user_id, id_
         )
-        activity = ActivityExtendedDetail(
+        activity = ActivitySingleLanguageWithItemsDetail(
             id=schema.id,
             name=schema.name,
             description=self._get_by_language(schema.description, language),
