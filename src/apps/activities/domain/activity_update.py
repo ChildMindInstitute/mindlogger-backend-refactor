@@ -1,7 +1,6 @@
 import uuid
 
-from pydantic import Field
-
+from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_item_base import BaseActivityItem
 from apps.shared.domain import InternalModel
 
@@ -15,16 +14,7 @@ class PreparedActivityItemUpdate(BaseActivityItem, InternalModel):
     activity_id: uuid.UUID
 
 
-class ActivityUpdate(InternalModel):
+class ActivityUpdate(ActivityBase, InternalModel):
     id: uuid.UUID | None
-    name: str
     key: uuid.UUID
-    description: dict[str, str] = Field(default_factory=dict)
-    splash_screen: str = ""
-    image: str = ""
-    show_all_at_once: bool = False
-    is_skippable: bool = False
-    is_reviewable: bool = False
-    response_is_editable: bool = False
     items: list[ActivityItemUpdate]
-    is_hidden: bool = False

@@ -12,16 +12,15 @@ from apps.applets.domain import (
 )
 from apps.applets.domain.applet import (
     AppletDataRetention,
-    AppletDetailPublic,
-    AppletDuplicate,
-    AppletInfoPublic,
+    AppletSingleLanguageDetailPublic,
+    AppletSingleLanguageInfoPublic,
 )
-from apps.applets.domain.applet_create import (
+from apps.applets.domain.applet_create_update import (
     AppletCreate,
     AppletDuplicatePassword,
+    AppletUpdate,
 )
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
-from apps.applets.domain.applet_update import AppletUpdate
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletHistoryService, AppletService
@@ -61,7 +60,7 @@ async def applet_list(
     language: str = Depends(get_language),
     query_params: QueryParams = Depends(parse_query_params(AppletQueryParams)),
     session=Depends(session_manager.get_session),
-) -> ResponseMulti[AppletInfoPublic]:
+) -> ResponseMulti[AppletSingleLanguageInfoPublic]:
     async with atomic(session):
         applets = await AppletService(
             session, user.id
@@ -70,7 +69,10 @@ async def applet_list(
             session, user.id
         ).get_list_by_single_language_count(deepcopy(query_params))
     return ResponseMulti(
-        result=[AppletInfoPublic.from_orm(applet) for applet in applets],
+        result=[
+            AppletSingleLanguageInfoPublic.from_orm(applet)
+            for applet in applets
+        ],
         count=count,
     )
 
@@ -80,12 +82,12 @@ async def applet_retrieve(
     user: User = Depends(get_current_user),
     language: str = Depends(get_language),
     session=Depends(session_manager.get_session),
-) -> Response[AppletDetailPublic]:
+) -> Response[AppletSingleLanguageDetailPublic]:
     async with atomic(session):
         applet = await AppletService(
             session, user.id
         ).get_single_language_by_id(id_, language)
-    return Response(result=AppletDetailPublic.from_orm(applet))
+    return Response(result=AppletSingleLanguageDetailPublic.from_orm(applet))
 
 
 async def applet_create(
@@ -116,15 +118,17 @@ async def applet_duplicate(
     session=Depends(session_manager.get_session),
 ) -> Response[public_detail.Applet]:
     async with atomic(session):
-        applet_exist: AppletDuplicate = await AppletService(
+        applet_for_duplicate = await AppletService(
             session, user.id
-        ).get_by_id(applet_id)
+        ).get_by_id_for_duplicate(applet_id)
 
-        applet_internal: AppletCreate = await AppletService(
-            session, user.id
-        ).duplicate(applet_exist, password)
+        applet_for_create = await AppletService(session, user.id).duplicate(
+            applet_for_duplicate, password
+        )
 
-        applet = await AppletService(session, user.id).create(applet_internal)
+        applet = await AppletService(session, user.id).create(
+            applet_for_create
+        )
     return Response(result=public_detail.Applet(**applet.dict()))
 
 

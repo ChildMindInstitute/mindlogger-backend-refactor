@@ -2,7 +2,7 @@ import uuid
 
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.applets.crud import UserAppletAccessCRUD
-from apps.applets.domain.applet import AppletInfo
+from apps.applets.domain.applet import AppletSingleLanguageInfo
 from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
@@ -44,7 +44,7 @@ class UserAccessService:
 
     async def get_workspace_applets_by_language(
         self, language: str, query_params: QueryParams
-    ) -> list[AppletInfo]:
+    ) -> list[AppletSingleLanguageInfo]:
         """Returns the user their chosen workspace applets."""
 
         schemas = await UserAppletAccessCRUD(
@@ -63,7 +63,7 @@ class UserAccessService:
         for schema in schemas:
             theme = theme_map.get(schema.theme_id)
             applets.append(
-                AppletInfo(
+                AppletSingleLanguageInfo(
                     id=schema.id,
                     display_name=schema.display_name,
                     version=schema.version,
