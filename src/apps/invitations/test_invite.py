@@ -336,6 +336,29 @@ class TestInvite(BaseTest):
         TestMail.clear_mails()
 
     @rollback
+    async def test_coordinator_invite_reviewer_success(self):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        request_data = dict(
+            email="patric@gmail.com",
+            first_name="Patric",
+            last_name="Daniel",
+            role=Role.REVIEWER,
+            language="en",
+            respondents=["7484f34a-3acc-4ee6-8a94-fd7299502fa1"],
+        )
+        response = await self.client.post(
+            self.invite_reviewer_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
+        assert response.status_code == 200
+
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].recipients == [request_data["email"]]
+        TestMail.clear_mails()
+
+    @rollback
     async def test_coordinator_invite_manager_fail(self):
         await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
         request_data = dict(
