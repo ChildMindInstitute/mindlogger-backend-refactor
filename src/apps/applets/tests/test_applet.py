@@ -1217,3 +1217,15 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["result"]["name"] == "Applet 1 (1)"
+
+    async def test_get_applet_unique_name_case_insensitive(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.applet_unique_name_url, data=dict(name="AppleT 1")
+        )
+
+        assert response.status_code == 200
+        assert response.json()["result"]["name"] == "AppleT 1 (1)"
