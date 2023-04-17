@@ -3,6 +3,7 @@ import uuid
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.domain import InvitationDetailGeneric
+from apps.users import UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
@@ -56,6 +57,27 @@ class UserAppletAccessService:
                 meta=meta,
             )
         )
+        if invitation.role in [
+            Role.MANAGER,
+            Role.COORDINATOR,
+            Role.EDITOR,
+            Role.REVIEWER,
+        ]:
+            user = await UsersCRUD(self.session).get_by_id(self._user_id)
+
+            await UserAppletAccessCRUD(self.session).save(
+                UserAppletAccessSchema(
+                    user_id=self._user_id,
+                    applet_id=invitation.applet_id,
+                    role=Role.RESPONDENT,
+                    owner_id=owner_access.user_id,
+                    invitor_id=invitation.invitor_id,
+                    meta=dict(
+                        secretUserId=str(uuid.uuid4()),
+                        nickname=f"{user.first_name} {user.last_name}",
+                    ),
+                )
+            )
         return UserAppletAccess.from_orm(access_schema)
 
     async def add_role_by_private_invitation(self, role: Role):

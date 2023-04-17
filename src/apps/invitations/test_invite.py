@@ -416,6 +416,14 @@ class TestInvite(BaseTest):
             self.accept_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6")
         )
         assert response.status_code == 200
+        roles = await UserAppletAccessCRUD().get_user_roles_to_applet(
+            uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1"),
+        )
+        assert len(roles) == 3
+        assert roles[0] == Role.ADMIN
+        assert roles[1] == Role.MANAGER
+        assert roles[2] == Role.RESPONDENT
 
     @rollback
     async def test_private_invitation_accept(self):
