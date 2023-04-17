@@ -1,7 +1,5 @@
 import datetime
 
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -66,7 +64,6 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-    @pytest.mark.main
     @rollback
     async def test_answer_flow_items_create_for_respondent(self):
         await self.client.login(

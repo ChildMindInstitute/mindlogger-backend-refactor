@@ -498,9 +498,10 @@ class InvitationsService:
             Role.MANAGER,
             Role.COORDINATOR,
             Role.EDITOR,
-            Role.REVIEWER,
         ]:
             role = await access_service.get_organizers_role()
+        elif request_role == Role.REVIEWER:
+            role = await access_service.get_respondent_managers_role()
         else:
             # Wrong role to invite
             raise DoesNotHaveAccess(
