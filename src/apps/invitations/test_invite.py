@@ -40,6 +40,20 @@ class TestInvite(BaseTest):
         assert len(response.json()["result"]) == 2
 
     @rollback
+    async def test_applets_invitation_list(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.invitation_list,
+            dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
+        )
+        assert response.status_code == 200
+
+        assert len(response.json()["result"]) == 1
+
+    @rollback
     async def test_invitation_retrieve(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
