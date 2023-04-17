@@ -2,6 +2,7 @@ import uuid
 
 from pydantic import Field
 
+from apps.activity_flows.domain.base import FlowBase
 from apps.shared.domain import InternalModel
 
 
@@ -14,11 +15,6 @@ class PreparedFlowItemCreate(InternalModel):
     activity_id: uuid.UUID
 
 
-class FlowCreate(InternalModel):
-    name: str
-    description: dict[str, str] = Field(default_factory=dict)
-    is_single_report: bool = False
-    hide_badge: bool = False
+class FlowCreate(FlowBase, InternalModel):
     items: list[FlowItemCreate]
-    is_hidden: bool = False
     extra_fields: dict = Field(default_factory=dict)

@@ -9,7 +9,7 @@ from apps.activities.domain.activity_create import (
 )
 from apps.activities.domain.response_type_config import ResponseType
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
-from apps.applets.domain.applet_create import AppletCreate
+from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.service import AppletService
 from apps.schedule.domain.constants import (
     NotificationTriggerType,
@@ -173,6 +173,7 @@ class TestDataService:
                     ],
                     response_values=response_config["response_values"],
                     config=response_config["config"],
+                    is_hidden=self.random_boolean(),
                 )
             )
         return items

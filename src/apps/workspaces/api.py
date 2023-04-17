@@ -3,7 +3,10 @@ from copy import deepcopy
 
 from fastapi import Body, Depends
 
-from apps.applets.domain.applet import AppletInfoPublic, AppletPublic
+from apps.applets.domain.applet import (
+    AppletPublic,
+    AppletSingleLanguageInfoPublic,
+)
 from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletService
@@ -89,7 +92,10 @@ async def workspace_applets(
         ).get_workspace_applets_count(deepcopy(query_params))
 
     return ResponseMulti(
-        result=[AppletInfoPublic.from_orm(applet) for applet in applets],
+        result=[
+            AppletSingleLanguageInfoPublic.from_orm(applet)
+            for applet in applets
+        ],
         count=count,
     )
 

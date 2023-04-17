@@ -2,7 +2,7 @@ import asyncio
 from copy import deepcopy
 from typing import Type
 
-from apps.applets.domain.applet_create import AppletCreate
+from apps.applets.domain.applet_create_update import AppletCreate
 from apps.jsonld_converter.errors import JsonLDNotSupportedError
 from apps.jsonld_converter.service.document import ReproActivity
 from apps.jsonld_converter.service.document.activity_flow import ReproActivityFlow

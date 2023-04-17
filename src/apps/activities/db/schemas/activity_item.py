@@ -1,11 +1,4 @@
-from sqlalchemy import (
-    REAL,
-    Column,
-    ForeignKey,
-    String,
-    Text,
-    text,
-)
+from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
@@ -20,6 +13,7 @@ class _BaseActivityItemSchema:
     response_values = Column(JSONB())
     config = Column(JSONB(), default=dict())
     order = Column(REAL())
+    is_hidden = Column(Boolean(), default=False)
 
 
 class ActivityItemSchema(_BaseActivityItemSchema, Base):

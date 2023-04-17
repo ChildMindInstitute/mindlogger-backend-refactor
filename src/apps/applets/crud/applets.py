@@ -6,7 +6,7 @@ from sqlalchemy import distinct, or_, select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
-from sqlalchemy.sql.functions import count
+from sqlalchemy.sql.functions import count, func
 
 from apps.applets import errors
 from apps.applets.db.schemas import AppletSchema
@@ -221,6 +221,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         name: str,
         exclude_applet_id: uuid.UUID | None = None,
     ) -> list[str]:
+        name = name.lower()
         query: Query = select(distinct(AppletSchema.display_name))
         query = query.join(
             UserAppletAccessSchema,
@@ -231,8 +232,10 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             query = query.where(AppletSchema.id != exclude_applet_id)
         query = query.where(
             or_(
-                AppletSchema.display_name.op("~")(f"{name} \\(\\d+\\)"),
-                AppletSchema.display_name == name,
+                func.lower(AppletSchema.display_name).op("~")(
+                    f"{name} \\(\\d+\\)"
+                ),
+                func.lower(AppletSchema.display_name) == name,
             )
         )
         db_result = await self._execute(query)

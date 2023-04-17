@@ -20,6 +20,7 @@ from apps.invitations.domain import (
     InvitationRespondent,
     InvitationReviewer,
 )
+from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
@@ -28,6 +29,12 @@ from apps.workspaces.domain.constants import ManagersRole
 from infrastructure.database import BaseCRUD
 
 __all__ = ["InvitationCRUD"]
+
+
+class _InvitationFiltering(Filtering):
+    applet_id = FilterField(InvitationSchema.applet_id)
+    invitor_id = FilterField(InvitationSchema.invitor_id)
+    role = FilterField(InvitationSchema.role)
 
 
 class _InvitationSearching(Searching):
@@ -136,6 +143,10 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(
             InvitationSchema.status == InvitationStatus.PENDING
         )
+        if query_params.filters:
+            query = query.where(
+                *_InvitationFiltering().get_clauses(**query_params.filters)
+            )
         if query_params.search:
             query = query.where(
                 _InvitationSearching().get_clauses(query_params.search)

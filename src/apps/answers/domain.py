@@ -59,6 +59,7 @@ class AnswerDate(InternalModel):
 
 
 class AnsweredAppletActivity(InternalModel):
+    id: uuid.UUID
     name: str
     answer_dates: list[AnswerDate] = Field(default_factory=list)
 
@@ -69,6 +70,7 @@ class PublicAnswerDate(PublicModel):
 
 
 class PublicAnsweredAppletActivity(PublicModel):
+    id: uuid.UUID
     name: str
     answer_dates: list[PublicAnswerDate] = Field(default_factory=list)
 
@@ -107,6 +109,7 @@ class NoteOwner(InternalModel):
 
 
 class AnswerNoteDetail(InternalModel):
+    id: uuid.UUID
     user: NoteOwner
     note: str
     created_at: datetime.datetime
@@ -118,6 +121,7 @@ class NoteOwnerPublic(PublicModel):
 
 
 class AnswerNoteDetailPublic(PublicModel):
+    id: uuid.UUID
     user: NoteOwnerPublic
     note: str
     created_at: datetime.datetime

@@ -23,6 +23,7 @@ class TestApplet(BaseTest):
     login_url = "/auth/login"
     applet_list_url = "applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
+    applet_duplicate_url = f"{applet_detail_url}/duplicate"
     applet_unique_name_url = f"{applet_list_url}/unique_name"
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
@@ -121,6 +122,7 @@ class TestApplet(BaseTest):
                             ),
                             response_type="singleSelect",
                             response_values=dict(
+                                paletteName="default",
                                 options=[
                                     dict(
                                         # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
@@ -140,7 +142,7 @@ class TestApplet(BaseTest):
                                         is_hidden=False,
                                         color=None,
                                     ),
-                                ]
+                                ],
                             ),
                             config=dict(
                                 remove_back_button=False,
@@ -165,6 +167,7 @@ class TestApplet(BaseTest):
                             ),
                             response_type="multiSelect",
                             response_values=dict(
+                                paletteName=None,
                                 options=[
                                     dict(
                                         # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
@@ -184,7 +187,7 @@ class TestApplet(BaseTest):
                                         is_hidden=False,
                                         color=None,
                                     ),
-                                ]
+                                ],
                             ),
                             config=dict(
                                 remove_back_button=False,
@@ -571,6 +574,38 @@ class TestApplet(BaseTest):
             data=update_data,
         )
         assert response.status_code == 200, response.json()
+
+    @rollback
+    async def test_duplicate_applet(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.applet_duplicate_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=dict(password="Test1234567890"),
+        )
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(self.applet_list_url)
+        assert len(response.json()["result"]) == 4
+        assert response.json()["result"][0]["displayName"] == "Applet 1 Copy"
+
+        response = await self.client.post(
+            self.applet_duplicate_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=dict(password="Test1234567890123"),
+        )
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(self.applet_list_url)
+        assert len(response.json()["result"]) == 5
+        assert (
+            response.json()["result"][0]["displayName"] == "Applet 1 Copy (1)"
+        )
 
     @rollback
     async def test_applet_list(self):
@@ -1184,3 +1219,15 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["result"]["name"] == "Applet 1 (1)"
+
+    async def test_get_applet_unique_name_case_insensitive(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.applet_unique_name_url, data=dict(name="AppleT 1")
+        )
+
+        assert response.status_code == 200
+        assert response.json()["result"]["name"] == "AppleT 1 (1)"

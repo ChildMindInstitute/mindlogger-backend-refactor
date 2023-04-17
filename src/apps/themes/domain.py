@@ -7,12 +7,11 @@ from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
     "ThemeRequest",
-    "ThemeCreate",
     "PublicTheme",
     "Theme",
-    "ThemeUpdate",
     "ThemeQueryParams",
 ]
+
 from pydantic import validator
 
 from apps.shared.domain.custom_validations import (
@@ -22,7 +21,7 @@ from apps.shared.domain.custom_validations import (
 from apps.shared.query_params import BaseQueryParams
 
 
-class _ThemeBase(BaseModel):
+class ThemeBase(BaseModel):
     name: str = Field(
         ...,
         description="Name of the theme",
@@ -67,27 +66,21 @@ class _ThemeBase(BaseModel):
         return validate_color(value)
 
 
-class ThemeRequest(_ThemeBase, PublicModel):
-    pass
-
-
-class ThemeUpdate(_ThemeBase, InternalModel):
+class Theme(ThemeBase, InternalModel):
+    id: uuid.UUID
+    creator_id: uuid.UUID
     public: bool
     allow_rename: bool
 
 
-class ThemeCreate(ThemeUpdate, InternalModel):
-    creator_id: uuid.UUID
-
-
-class PublicTheme(_ThemeBase, PublicModel):
-    """Public theme model."""
-
+class PublicTheme(ThemeBase, PublicModel):
     id: uuid.UUID
+    public: bool
+    allow_rename: bool
 
 
-class Theme(ThemeCreate):
-    id: uuid.UUID
+class ThemeRequest(ThemeBase, PublicModel):
+    pass
 
 
 class ThemeQueryParams(BaseQueryParams):

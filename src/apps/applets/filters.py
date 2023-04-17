@@ -4,7 +4,7 @@ from apps.shared.query_params import BaseQueryParams
 
 class AppletQueryParams(BaseQueryParams):
     roles: str = ",".join(Role.as_list())
-    ordering: str = "-id"
+    ordering: str = "-createdAt"
 
 
 class AppletUsersQueryParams(BaseQueryParams):
