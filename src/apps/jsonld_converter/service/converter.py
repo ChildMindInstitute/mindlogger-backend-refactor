@@ -98,6 +98,8 @@ class JsonLDModelConverter(ContainsNestedMixin):
 
 class ModelJsonLDConverter(ContainsNestedModelMixin):
 
+    CONTEXT_TO_COMPACT = "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+
     @classmethod
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
         return [AppletExport]
@@ -110,4 +112,6 @@ class ModelJsonLDConverter(ContainsNestedModelMixin):
         exporter = self.get_supported_processor(model)
         doc = await exporter.export(model)
 
-        return doc
+        compact = await self._compact(doc, self.CONTEXT_TO_COMPACT)
+
+        return compact
