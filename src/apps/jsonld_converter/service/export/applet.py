@@ -3,7 +3,10 @@ from typing import Type
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.jsonld_converter.service.base import LdKeyword
-from apps.jsonld_converter.service.export import ActivityFlowExport
+from apps.jsonld_converter.service.export import (
+    ActivityFlowExport,
+    ActivityExport,
+)
 from apps.jsonld_converter.service.export.base import (
     BaseModelExport,
     ContainsNestedModelMixin,
@@ -18,7 +21,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
 
     @classmethod
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
-        return [ActivityFlowExport]
+        return [ActivityExport, ActivityFlowExport]
 
     async def export(self, model: AppletFull) -> dict:
         ui, activity_flows = await asyncio.gather(
@@ -60,16 +63,22 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
     async def _build_ui_prop(self, model: AppletFull) -> dict:
         order = []
         properties = []
-        for i, activity in enumerate(model.activities):
-            _id = f"_:{activity.id}"
-            _var = f"activity_{i}"  # TODO load from extra if exists
-            order.append(_id)  # TODO export activity
-            properties.append({
-                "isAbout": _id,
-                "prefLabel": activity.name,
-                "isVis": not activity.is_hidden,
-                "variableName": _var
-            })
+        if model.activities:
+            order_cors = []
+            for i, activity in enumerate(model.activities):
+                _id = f"_:{activity.id}"
+                _var = f"activity_{i}"  # TODO load from extra if exists
+
+                processor = self.get_supported_processor(activity)
+                order_cors.append(processor.export(activity))
+
+                properties.append({
+                    "isAbout": _id,
+                    "prefLabel": activity.name,
+                    "isVis": not activity.is_hidden,
+                    "variableName": _var
+                })
+            order = await asyncio.gather(*order_cors)
 
         return {
             "addProperties": properties,

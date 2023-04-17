@@ -46,4 +46,15 @@ class ContextResolverAwareMixin:
         try:
             return await asyncio.to_thread(jsonld.expand, doc, options)
         except Exception as e:
-            raise JsonLDProcessingError(None, doc) from e
+            raise JsonLDProcessingError("Document compacting error", doc) from e
+
+    async def _compact(self, doc: dict | str, context: str | dict | list | None, base_url: str | None = None):
+        options = dict(
+            base=base_url,
+            contextResolver=self.context_resolver,
+            documentLoader=self.document_loader,
+        )
+        try:
+            return await asyncio.to_thread(jsonld.compact, doc, context, options)
+        except Exception as e:
+            raise JsonLDProcessingError("Document expanding error", doc) from e
