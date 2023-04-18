@@ -291,6 +291,10 @@ class CommonFieldsMixin:
             return int(val)
         return None
 
+    @classmethod
+    def _wrap_wysiwyg_img(cls, url, placeholder='image'):
+        return f"![{placeholder}]({url})"
+
 
 class LdDocumentBase(ABC, ContextResolverAwareMixin):
     attr_processor: LdAttributeProcessor = LdAttributeProcessor()
@@ -336,4 +340,3 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
             return await asyncio.to_thread(jsonld.expand, doc, options)
         except Exception as e:
             raise JsonLDProcessingError(None, doc) from e
-
