@@ -7,9 +7,7 @@ from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.answers.db.schemas import AnswerActivityItemsSchema
-from apps.answers.domain import (
-    AppletAnswerCreate,
-)
+from apps.answers.domain import AppletAnswerCreate
 from apps.applets.crud import AppletsCRUD
 from apps.shared.encryption import decrypt, encrypt, generate_iv
 from infrastructure.database.crud import BaseCRUD
