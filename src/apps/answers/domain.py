@@ -75,6 +75,10 @@ class PublicAnsweredAppletActivity(PublicModel):
     answer_dates: list[PublicAnswerDate] = Field(default_factory=list)
 
 
+class PublicAnswerDates(PublicModel):
+    dates: list[datetime.date]
+
+
 class ActivityItemAnswer(InternalModel):
     type: ResponseType
     activity_item: PublicActivityItemFull
