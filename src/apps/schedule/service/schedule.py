@@ -642,6 +642,8 @@ class ScheduleService:
             )
 
         event_ids = [event_schema.id for event_schema in event_schemas]
+
+        # keep exception event id
         if except_event_id and except_event_id in event_ids:
             event_ids.remove(except_event_id)
 
@@ -837,6 +839,7 @@ class ScheduleService:
         self, user_id: uuid.UUID, applet_id: uuid.UUID
     ) -> PublicEventByUser:
         """Get all events for user in applet."""
+
         # Check if applet exists
         await self._validate_applet(applet_id=applet_id)
 
