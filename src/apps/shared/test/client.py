@@ -76,13 +76,17 @@ class TestClient:
     async def delete(
         self,
         url: str,
+        data: dict | None = None,
         query: dict | None = None,
         headers: dict | None = None,
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
-        response = await self.client.delete(
-            url, headers=self._get_updated_headers(headers)
+        response = await self.client.request(
+            "DELETE",
+            url,
+            content=self._get_body(data),
+            headers=self._get_updated_headers(headers),
         )
         return response
 
