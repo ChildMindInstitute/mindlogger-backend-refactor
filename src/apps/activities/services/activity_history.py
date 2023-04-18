@@ -179,3 +179,9 @@ class ActivityHistoryService:
             groups_map[activity.id] = group
 
         return groups_map
+
+    async def list(self) -> list[ActivityHistory]:
+        schemas = await ActivityHistoriesCRUD(
+            self.session
+        ).retrieve_by_applet_version(self._applet_id_version)
+        return [ActivityHistory.from_orm(schema) for schema in schemas]

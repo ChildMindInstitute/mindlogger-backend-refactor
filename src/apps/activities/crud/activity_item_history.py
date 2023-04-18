@@ -56,5 +56,6 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         query = query.where(
             ActivityItemHistorySchema.activity_id == activity_id
         )
+        query = query.order_by(ActivityItemHistorySchema.order.asc())
         db_result = await self._execute(query)
         return db_result.scalars().all()
