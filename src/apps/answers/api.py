@@ -7,9 +7,10 @@ from apps.answers.domain import (
     AnswerNote,
     AnswerNoteDetailPublic,
     AppletAnswerCreate,
+    PublicAnswerDates,
     PublicAnsweredAppletActivity,
 )
-from apps.answers.filters import AppletActivityFilter
+from apps.answers.filters import AppletActivityFilter, AppletSubmitDateFilter
 from apps.answers.service import AnswerService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
@@ -33,7 +34,7 @@ async def create_answer(
 
 
 async def applet_activities_list(
-    id_: uuid.UUID,
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
     query_params: QueryParams = Depends(
@@ -42,7 +43,7 @@ async def applet_activities_list(
 ) -> ResponseMulti[PublicAnsweredAppletActivity]:
     async with atomic(session):
         activities = await AnswerService(session, user.id).applet_activities(
-            id_, **query_params.filters
+            applet_id, **query_params.filters
         )
     return ResponseMulti(
         result=[
@@ -51,6 +52,21 @@ async def applet_activities_list(
         ],
         count=len(activities),
     )
+
+
+async def applet_submit_date_list(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+    query_params: QueryParams = Depends(
+        parse_query_params(AppletSubmitDateFilter)
+    ),
+) -> Response[PublicAnswerDates]:
+    async with atomic(session):
+        dates = await AnswerService(session, user.id).get_applet_submit_dates(
+            applet_id, **query_params.filters
+        )
+    return Response(result=PublicAnswerDates(dates=dates))
 
 
 async def applet_answer_retrieve(

@@ -240,8 +240,20 @@ class AnswerService:
         await self._validate_applet_activity_access(applet_id, respondent_id)
         return await AnswersCRUD(
             self.session
-        ).get_users_answered_activities_by_applet_id(
+        ).get_respondents_answered_activities_by_applet_id(
             respondent_id, applet_id, created_date
+        )
+
+    async def get_applet_submit_dates(
+        self,
+        applet_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+        from_date: datetime.date,
+        to_date: datetime.date,
+    ) -> list[datetime.date]:
+        await self._validate_applet_activity_access(applet_id, respondent_id)
+        return await AnswersCRUD(self.session).get_respondents_submit_dates(
+            respondent_id, applet_id, from_date, to_date
         )
 
     async def _validate_applet_activity_access(
