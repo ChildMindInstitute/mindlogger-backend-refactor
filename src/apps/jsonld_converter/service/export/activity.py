@@ -3,6 +3,7 @@ from typing import Type
 
 from apps.activities.domain.activity_full import ActivityFull
 from apps.jsonld_converter.service.base import LdKeyword
+from apps.jsonld_converter.service.export import ActivityItemTextExport
 from apps.jsonld_converter.service.export.base import (
     BaseModelExport,
     ContainsNestedModelMixin,
@@ -17,7 +18,9 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
 
     @classmethod
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
-        return []
+        return [
+            ActivityItemTextExport,
+        ]
 
     async def export(self, model: ActivityFull) -> dict:
         ui = await self._build_ui_prop(model)
