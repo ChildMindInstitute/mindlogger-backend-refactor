@@ -3,7 +3,11 @@ from typing import Type
 
 from apps.activities.domain.activity_full import ActivityFull
 from apps.jsonld_converter.service.base import LdKeyword
-from apps.jsonld_converter.service.export import ActivityItemTextExport
+from apps.jsonld_converter.service.export import (
+    ActivityItemTextExport,
+    ActivityItemSingleSelectExport,
+    ActivityItemMultipleSelectExport,
+)
 from apps.jsonld_converter.service.export.base import (
     BaseModelExport,
     ContainsNestedModelMixin,
@@ -20,6 +24,8 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
         return [
             ActivityItemTextExport,
+            ActivityItemSingleSelectExport,
+            ActivityItemMultipleSelectExport,
         ]
 
     async def export(self, model: ActivityFull) -> dict:
