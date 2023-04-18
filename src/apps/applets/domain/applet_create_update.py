@@ -18,5 +18,5 @@ class AppletUpdate(AppletBase, InternalModel):
     activity_flows: list[FlowUpdate]
 
 
-class AppletDuplicatePassword(InternalModel):
+class AppletPassword(InternalModel):
     password: str

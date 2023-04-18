@@ -22,7 +22,7 @@ from apps.applets.domain import (
 from apps.applets.domain.applet import Applet, AppletDataRetention
 from apps.applets.domain.applet_create_update import (
     AppletCreate,
-    AppletDuplicatePassword,
+    AppletPassword,
     AppletUpdate,
 )
 from apps.applets.domain.applet_duplicate import AppletDuplicate
@@ -140,7 +140,7 @@ class AppletService:
         return applet
 
     async def duplicate(
-        self, applet_exist: AppletDuplicate, password: AppletDuplicatePassword
+        self, applet_exist: AppletDuplicate, password: AppletPassword
     ) -> AppletCreate:
         activities = list()
         applet_name = await self.get_unique_name_for_duplicate(
@@ -221,6 +221,9 @@ class AppletService:
         )
         if not is_verified:
             raise AppletPasswordValidationError()
+
+    async def check_applet_password(self, applet_id: uuid.UUID, password: str):
+        await self._validate_applet_password(password, applet_id)
 
     async def _update(
         self, applet_id: uuid.UUID, update_data: AppletUpdate
@@ -409,7 +412,8 @@ class AppletService:
     async def exist_by_id(self, applet_id: uuid.UUID) -> bool:
         return await AppletsCRUD(self.session).exist_by_id(applet_id)
 
-    async def delete_applet_by_id(self, applet_id: uuid.UUID):
+    async def delete_applet_by_id(self, applet_id: uuid.UUID, password: str):
+        await self._validate_applet_password(password, applet_id)
         await self._validate_delete_applet(self.user_id, applet_id)
         await AppletsCRUD(self.session).delete_by_id(applet_id)
 

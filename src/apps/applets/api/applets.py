@@ -17,7 +17,7 @@ from apps.applets.domain.applet import (
 )
 from apps.applets.domain.applet_create_update import (
     AppletCreate,
-    AppletDuplicatePassword,
+    AppletPassword,
     AppletUpdate,
 )
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
@@ -114,7 +114,7 @@ async def applet_update(
 async def applet_duplicate(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    password: AppletDuplicatePassword = Body(...),
+    password: AppletPassword = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[public_detail.Applet]:
     async with atomic(session):
@@ -130,6 +130,18 @@ async def applet_duplicate(
             applet_for_create
         )
     return Response(result=public_detail.Applet(**applet.dict()))
+
+
+async def applet_check_password(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    password: AppletPassword = Body(...),
+    session=Depends(session_manager.get_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).check_applet_password(
+            applet_id, password.password
+        )
 
 
 async def applet_versions_retrieve(
@@ -173,11 +185,14 @@ async def applet_version_changes_retrieve(
 
 async def applet_delete(
     id_: uuid.UUID,
+    password: AppletPassword = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
-        await AppletService(session, user.id).delete_applet_by_id(id_)
+        await AppletService(session, user.id).delete_applet_by_id(
+            id_, password.password
+        )
 
 
 async def applet_set_folder(
