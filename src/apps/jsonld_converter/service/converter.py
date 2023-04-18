@@ -108,10 +108,11 @@ class ModelJsonLDConverter(ContainsNestedModelMixin):
         self.context_resolver: ContextResolver = context_resolver
         self.document_loader: Callable = document_loader
 
-    async def convert(self, model) -> dict:
+    async def convert(self, model, compact=False) -> dict:
         exporter = self.get_supported_processor(model)
         doc = await exporter.export(model)
 
-        compact = await self._compact(doc, self.CONTEXT_TO_COMPACT)
+        if compact:
+            return await self._compact(doc, self.CONTEXT_TO_COMPACT)
 
-        return compact
+        return doc
