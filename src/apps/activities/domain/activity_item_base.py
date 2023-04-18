@@ -7,6 +7,7 @@ from apps.activities.domain.response_type_config import (
     ResponseTypeValueConfig,
 )
 from apps.activities.domain.response_values import ResponseValueConfig
+from apps.shared.errors import ValidationError
 
 
 class BaseActivityItem(BaseModel):
@@ -21,8 +22,8 @@ class BaseActivityItem(BaseModel):
     def validate_name(cls, value):
         # name must contain only alphanumeric symbols or underscore
         if not value.replace("_", "").isalnum():
-            raise ValueError(
-                "Name must contain only alphanumeric symbols or underscore"
+            raise ValidationError(
+                message="Name must contain only alphanumeric symbols or underscore"  # noqa: E501
             )
         return value
 
@@ -32,8 +33,8 @@ class BaseActivityItem(BaseModel):
         if not ResponseTypeValueConfig[response_type]["config"].parse_obj(
             value
         ):
-            raise ValueError(
-                f"config must be of type {ResponseTypeValueConfig[response_type]['config']}"  # noqa: E501
+            raise ValidationError(
+                message=f"config must be of type {ResponseTypeValueConfig[response_type]['config']}"  # noqa: E501
             )
         return value
 
@@ -48,16 +49,18 @@ class BaseActivityItem(BaseModel):
                     response_values,
                     ResponseTypeValueConfig[response_type]["value"],
                 ):
-                    raise ValueError(
-                        f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
+                    raise ValidationError(
+                        message=f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
                     )
             else:
                 if response_values is not None:
-                    raise ValueError(
-                        f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
+                    raise ValidationError(
+                        message=f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
                     )
         else:
-            raise ValueError(f"response_type must be of type {ResponseType}")
+            raise ValidationError(
+                message=f"response_type must be of type {ResponseType}"
+            )
         return values
 
     @root_validator()
@@ -76,8 +79,8 @@ class BaseActivityItem(BaseModel):
             if config.add_scores:
                 scores = [option.score for option in response_values.options]
                 if None in scores:
-                    raise ValueError(
-                        "score must be provided in each option of response_values"  # noqa: E501
+                    raise ValidationError(
+                        message="score must be provided in each option of response_values"  # noqa: E501
                     )
 
         if response_type is ResponseType.SLIDER:
@@ -86,12 +89,12 @@ class BaseActivityItem(BaseModel):
                 if len(response_values.scores) != (
                     response_values.max_value - response_values.min_value + 1
                 ):
-                    raise ValueError(
-                        "scores must be provided for each value"  # noqa: E501
+                    raise ValidationError(
+                        message="scores must be provided for each value"  # noqa: E501
                     )
                 if None in response_values.scores:
-                    raise ValueError(
-                        "scores must not include None values"  # noqa: E501
+                    raise ValidationError(
+                        message="scores must not include None values"  # noqa: E501
                     )
 
         if response_type is ResponseType.SLIDERROWS:
@@ -99,12 +102,12 @@ class BaseActivityItem(BaseModel):
             if config.add_scores:
                 for row in response_values.rows:
                     if len(row.scores) != (row.max_value - row.min_value + 1):
-                        raise ValueError(
-                            "scores must be provided for each value"  # noqa: E501
+                        raise ValidationError(
+                            message="scores must be provided for each value"  # noqa: E501
                         )
                     if None in row.scores:
-                        raise ValueError(
-                            "scores must not include None values"  # noqa: E501
+                        raise ValidationError(
+                            message="scores must not include None values"  # noqa: E501
                         )
 
         if response_type in [
@@ -116,8 +119,8 @@ class BaseActivityItem(BaseModel):
                 for row in response_values.rows:
                     scores = [option.score for option in row.options]
                     if None in scores:
-                        raise ValueError(
-                            "score must be provided in each option of response_values"  # noqa: E501
+                        raise ValidationError(
+                            message="score must be provided in each option of response_values"  # noqa: E501
                         )
 
         return values

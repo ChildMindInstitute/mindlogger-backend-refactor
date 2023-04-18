@@ -9,6 +9,7 @@ from apps.shared.domain import (
     validate_color,
     validate_image,
 )
+from apps.shared.errors import ValidationError
 
 # class CustomModel(PublicModel):
 #     class Config:
@@ -101,7 +102,9 @@ class SliderValues(PublicModel):
     @root_validator
     def validate_min_max(cls, values):
         if values.get("min_value") >= values.get("max_value"):
-            raise ValueError("min_value must be less than max_value")
+            raise ValidationError(
+                message="min_value must be less than max_value"
+            )
         return values
 
     @root_validator
@@ -111,8 +114,8 @@ class SliderValues(PublicModel):
                 len(values.get("scores"))
                 != values.get("max_value") - values.get("min_value") + 1
             ):
-                raise ValueError(
-                    "scores must have the same length as the range of min_value and max_value"  # noqa: E501
+                raise ValidationError(
+                    message="scores must have the same length as the range of min_value and max_value"  # noqa: E501
                 )
         return values
 
@@ -124,7 +127,9 @@ class NumberSelectionValues(PublicModel):
     @root_validator
     def validate_min_max(cls, values):
         if values.get("min_value") >= values.get("max_value"):
-            raise ValueError("min_value must be less than max_value")
+            raise ValidationError(
+                message="min_value must be less than max_value"
+            )
         return values
 
 
@@ -248,5 +253,5 @@ def validate_uuid(value):
     if value is None:
         return str(uuid.uuid4())
     if not isinstance(value, str) or not uuid.UUID(value):
-        raise ValueError("id must be a valid uuid")
+        raise ValidationError(message="id must be a valid uuid")
     return value
