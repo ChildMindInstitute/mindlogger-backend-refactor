@@ -167,7 +167,7 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
         term_attr = term_attr or "reproschema:responseOptions"
         key = self.attr_processor.get_key(doc, term_attr)
         options_doc = self.attr_processor.get_attr_single(doc, term_attr)
-        if len(options_doc) == 1 and LdKeyword.id in options_doc:
+        if options_doc and len(options_doc) == 1 and LdKeyword.id in options_doc:
             try:
                 options_id = options_doc[LdKeyword.id]
             except KeyError as e:

@@ -74,6 +74,18 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     def _get_ld_shuffle(self, doc: dict, drop=False):
         return self.attr_processor.get_attr_value(doc, 'reproschema:shuffle', drop=drop)
 
+    def _get_ld_about(self, doc: dict, drop=False):
+        about = super()._get_ld_about(doc, drop=drop)
+        if not about:
+            landing_page_content = self.attr_processor.get_translations(doc, 'reproschema:landingPageContent', drop=drop)
+            if landing_page_content:
+                landing_page_type = self.attr_processor.get_attr_value(doc, 'reproschema:landingPageType', drop=drop)
+                if landing_page_type == 'image':
+                    return {lang: self._wrap_wysiwyg_img(url) for lang, url in landing_page_content.items() if url}
+                return landing_page_content
+
+        return about
+
     async def _get_nested_items(self, doc: dict, drop=False, attr_container='reproschema:order') -> list:
         if items := self.attr_processor.get_attr_list(doc, attr_container, drop=drop):
             nested = await asyncio.gather(*[self._load_nested_doc(item) for item in items])
