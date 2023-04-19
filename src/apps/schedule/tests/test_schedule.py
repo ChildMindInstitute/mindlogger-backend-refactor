@@ -28,7 +28,13 @@ class TestSchedule(BaseTest):
     schedule_detail_user_url = f"{schedule_user_url}/{{applet_id}}"
 
     schedule_url = f"{applet_detail_url}/events"
-    delete_user_url = f"{schedule_url}/delete_individual/{{respondent_id}}"
+    delete_user_url = (
+        f"{applet_detail_url}/events/delete_individual/{{respondent_id}}"
+    )
+    remove_ind_url = (
+        f"{applet_detail_url}/events/remove_individual/{{respondent_id}}"
+    )
+
     schedule_detail_url = f"{applet_detail_url}/events/{{event_id}}"
 
     count_url = "applets/{applet_id}/events/count"
@@ -527,7 +533,6 @@ class TestSchedule(BaseTest):
                 respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             )
         )
-
         assert response.status_code == 204
 
         response = await self.client.get(
@@ -561,3 +566,74 @@ class TestSchedule(BaseTest):
             )
         )
         assert response.status_code == 200
+
+    @rollback
+    async def test_schedule_remove_individual(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.delete(
+            self.remove_ind_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            )
+        )
+
+        assert response.status_code == 404  # event for user not found
+
+        create_data = {
+            "start_time": "08:00:00",
+            "end_time": "09:00:00",
+            "access_before_schedule": True,
+            "one_time_completion": True,
+            "timer": None,
+            "timer_type": "NOT_SET",
+            "periodicity": {
+                "type": "MONTHLY",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
+            },
+            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            "activity_id": None,
+            "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
+        }
+
+        response = await self.client.post(
+            self.schedule_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=create_data,
+        )
+        event_id = response.json()["result"]["id"]
+
+        response = await self.client.get(
+            self.schedule_detail_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                event_id=event_id,
+            )
+        )
+
+        assert response.status_code == 200
+        assert (
+            response.json()["result"]["respondentId"]
+            == create_data["respondent_id"]
+        )
+
+        response = await self.client.delete(
+            self.remove_ind_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            )
+        )
+
+        assert response.status_code == 204
+
+        response = await self.client.get(
+            self.schedule_detail_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                event_id=event_id,
+            )
+        )
+        assert response.status_code == 404

@@ -635,6 +635,27 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
             for activity_event in activity_events
         ]
 
+    async def get_by_applet_and_user_id(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ) -> list[ActivityEvent]:
+        """Return activity event instances."""
+        query: Query = select(ActivityEventsSchema)
+        query = query.join(
+            EventSchema, ActivityEventsSchema.event_id == EventSchema.id
+        )
+        query = query.join(
+            UserEventsSchema, EventSchema.id == UserEventsSchema.event_id
+        )
+        query = query.where(EventSchema.applet_id == applet_id)
+        query = query.where(UserEventsSchema.user_id == user_id)
+        result = await self._execute(query)
+        activity_events = result.scalars().all()
+
+        return [
+            ActivityEvent.from_orm(activity_event)
+            for activity_event in activity_events
+        ]
+
 
 class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
     schema_class = FlowEventsSchema
@@ -759,6 +780,24 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
             EventSchema, FlowEventsSchema.event_id == EventSchema.id
         )
         query = query.where(EventSchema.applet_id == applet_id)
+        result = await self._execute(query)
+        flow_events = result.scalars().all()
+
+        return [FlowEvent.from_orm(flow_event) for flow_event in flow_events]
+
+    async def get_by_applet_and_user_id(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ) -> list[FlowEvent]:
+        """Return flow event instances."""
+        query: Query = select(FlowEventsSchema)
+        query = query.join(
+            EventSchema, FlowEventsSchema.event_id == EventSchema.id
+        )
+        query = query.join(
+            UserEventsSchema, EventSchema.id == UserEventsSchema.event_id
+        )
+        query = query.where(EventSchema.applet_id == applet_id)
+        query = query.where(UserEventsSchema.user_id == user_id)
         result = await self._execute(query)
         flow_events = result.scalars().all()
 
