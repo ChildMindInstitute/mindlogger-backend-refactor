@@ -511,7 +511,9 @@ class AppletService:
         link = self._generate_link_url(
             create_request.require_login, applet_link
         )
-        return AppletLink(link=link)
+        return AppletLink(
+            link=link, require_login=create_request.require_login
+        )
 
     async def get_access_link(self, applet_id: uuid.UUID) -> AppletLink:
         applet_instance = await self._validate_applet_access(applet_id)
