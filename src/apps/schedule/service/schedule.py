@@ -565,6 +565,17 @@ class ScheduleService:
         # Check if user exists
         await self._validate_user(user_id=user_id)
 
+        # Get list of activity-event ids and flow-event ids for user to create default events  # noqa: E501
+        activities = await ActivityEventsCRUD(
+            self.session
+        ).get_by_applet_and_user_id(applet_id, user_id)
+        activity_ids = [activity.activity_id for activity in activities]
+
+        flows = await FlowEventsCRUD(self.session).get_by_applet_and_user_id(
+            applet_id, user_id
+        )
+        flow_ids = [flow.flow_id for flow in flows]
+
         # Get list of event_ids for user and delete them all
         event_schemas = await EventCRUD(
             self.session
@@ -591,10 +602,26 @@ class ScheduleService:
         await EventCRUD(self.session).delete_by_ids(event_ids)
         await PeriodicityCRUD(self.session).delete_by_ids(periodicity_ids)
 
-        # TODO: create AA events for all activities and flows
+        # Create AA events for all activities and flows
+        await self.create_default_schedules(
+            applet_id=applet_id,
+            activity_ids=activity_ids,
+            is_activity=True,
+            respondent_id=user_id,
+        )
+        await self.create_default_schedules(
+            applet_id=applet_id,
+            activity_ids=flow_ids,
+            is_activity=False,
+            respondent_id=user_id,
+        )
 
     async def _create_default_event(
-        self, applet_id: uuid.UUID, activity_id: uuid.UUID, is_activity: bool
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        is_activity: bool,
+        respondent_id: uuid.UUID | None = None,
     ) -> None:
         """Create default schedules for applet."""
         default_event = DefaultEvent()
@@ -602,6 +629,8 @@ class ScheduleService:
             default_event.activity_id = activity_id
         else:
             default_event.flow_id = activity_id
+
+        default_event.respondent_id = respondent_id
 
         # Create default event
         await self.create_schedule(
@@ -688,6 +717,7 @@ class ScheduleService:
         applet_id: uuid.UUID,
         activity_ids: list[uuid.UUID],
         is_activity: bool,
+        respondent_id: uuid.UUID | None = None,
     ) -> None:
         """Create default schedules for applet."""
         for activity_id in activity_ids:
@@ -695,6 +725,7 @@ class ScheduleService:
                 applet_id=applet_id,
                 activity_id=activity_id,
                 is_activity=is_activity,
+                respondent_id=respondent_id,
             )
 
     async def get_events_by_user(
@@ -982,3 +1013,39 @@ class ScheduleService:
             )
         if event_schemas:
             raise EventAlwaysAvailableExistsError
+
+    async def remove_individual_calendar(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
+    ) -> None:
+        """Remove individual calendar for user in applet."""
+        # Check if applet exists
+        await self._validate_applet(applet_id=applet_id)
+
+        # Check if user exists
+        await self._validate_user(user_id=user_id)
+
+        # Get list of event_ids for user and delete them all
+        event_schemas = await EventCRUD(
+            self.session
+        ).get_all_by_applet_and_user(applet_id, user_id)
+        event_ids = [event_schema.id for event_schema in event_schemas]
+        periodicity_ids = [
+            event_schema.periodicity.id for event_schema in event_schemas
+        ]
+        if not event_ids:
+            raise NotFoundError(
+                message=f"No schedules found in applet "
+                f"{applet_id} for user {user_id}"
+            )  # noqa: E501
+
+        await UserEventsCRUD(self.session).delete_all_by_events_and_user(
+            event_ids, user_id
+        )
+        await ActivityEventsCRUD(self.session).delete_all_by_event_ids(
+            event_ids
+        )
+        await FlowEventsCRUD(self.session).delete_all_by_event_ids(event_ids)
+        await NotificationCRUD(self.session).delete_by_event_ids(event_ids)
+        await ReminderCRUD(self.session).delete_by_event_ids(event_ids)
+        await EventCRUD(self.session).delete_by_ids(event_ids)
+        await PeriodicityCRUD(self.session).delete_by_ids(periodicity_ids)

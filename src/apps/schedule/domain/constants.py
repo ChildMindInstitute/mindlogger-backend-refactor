@@ -39,7 +39,7 @@ class DefaultEvent(BaseModel):
         "end_date": None,
         "selectedDate": date.today(),
     }
-    user_id: uuid.UUID | None = None
+    respondent_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None
     flow_id: uuid.UUID | None
 

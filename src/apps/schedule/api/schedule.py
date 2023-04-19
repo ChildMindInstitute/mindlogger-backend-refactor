@@ -124,14 +124,14 @@ async def schedule_count(
 # TODO: Restrict by admin
 async def schedule_delete_by_user(
     applet_id: uuid.UUID,
-    user_id: uuid.UUID,
+    respondent_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
-    """Delete all schedules for a user."""
+    """Delete all schedules for a respondent and create default ones."""
     async with atomic(session):
         await ScheduleService(session).delete_by_user_id(
-            applet_id=applet_id, user_id=user_id
+            applet_id=applet_id, user_id=respondent_id
         )
 
 
@@ -155,9 +155,22 @@ async def schedule_get_by_user(
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ) -> Response[PublicEventByUser]:
-    """Get all schedules for a user per applet id."""
+    """Get all schedules for a respondent per applet id."""
     async with atomic(session):
         schedules = await ScheduleService(
             session
         ).get_events_by_user_and_applet(user_id=user.id, applet_id=applet_id)
     return Response(result=schedules)
+
+
+async def schedule_remove_individual_calendar(
+    applet_id: uuid.UUID,
+    respondent_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+):
+    """Remove individual calendar for a respondent."""
+    async with atomic(session):
+        await ScheduleService(session).remove_individual_calendar(
+            applet_id=applet_id, user_id=respondent_id
+        )
