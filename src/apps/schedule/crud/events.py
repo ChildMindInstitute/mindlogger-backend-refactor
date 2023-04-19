@@ -618,6 +618,23 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         activity_ids = result.scalars().all()
         return activity_ids
 
+    async def get_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> list[ActivityEvent]:
+        """Return activity event instances."""
+        query: Query = select(ActivityEventsSchema)
+        query = query.join(
+            EventSchema, ActivityEventsSchema.event_id == EventSchema.id
+        )
+        query = query.where(EventSchema.applet_id == applet_id)
+        result = await self._execute(query)
+        activity_events = result.scalars().all()
+
+        return [
+            ActivityEvent.from_orm(activity_event)
+            for activity_event in activity_events
+        ]
+
 
 class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
     schema_class = FlowEventsSchema
@@ -734,3 +751,15 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
 
         count: int = result.scalar()
         return count
+
+    async def get_by_applet_id(self, applet_id: uuid.UUID) -> list[FlowEvent]:
+        """Return flow event instances."""
+        query: Query = select(FlowEventsSchema)
+        query = query.join(
+            EventSchema, FlowEventsSchema.event_id == EventSchema.id
+        )
+        query = query.where(EventSchema.applet_id == applet_id)
+        result = await self._execute(query)
+        flow_events = result.scalars().all()
+
+        return [FlowEvent.from_orm(flow_event) for flow_event in flow_events]

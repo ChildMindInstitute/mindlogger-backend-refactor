@@ -17,6 +17,7 @@ from apps.activities.domain.activity_update import (
     PreparedActivityItemUpdate,
 )
 from apps.activities.services.activity_item import ActivityItemService
+from apps.schedule.crud.events import ActivityEventsCRUD
 from apps.schedule.service.schedule import ScheduleService
 
 
@@ -107,12 +108,14 @@ class ActivityService:
         activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
         prepared_activity_items = list()
 
-        all_activities = [
-            activity.id
-            for activity in await ActivitiesCRUD(
-                self.session
-            ).get_by_applet_id(applet_id)
+        all_activities = await ActivityEventsCRUD(
+            self.session
+        ).get_by_applet_id(applet_id)
+
+        all_activity_ids = [
+            activity.activity_id for activity in all_activities
         ]
+
         # Save new activity ids
         new_activities = []
         existing_activities = []
@@ -180,7 +183,7 @@ class ActivityService:
             )
 
         # Remove events for deleted activities
-        deleted_activity_ids = set(all_activities) - set(existing_activities)
+        deleted_activity_ids = set(all_activity_ids) - set(existing_activities)
 
         if deleted_activity_ids:
             await ScheduleService(self.session).delete_by_activity_ids(
