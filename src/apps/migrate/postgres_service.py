@@ -24,8 +24,9 @@ class Postgres:
                 # new_user = cursor.execute(
                 cursor.execute(
                     "INSERT INTO users"
-                    "(created_at, updated_at, is_deleted, email, hashed_password, "
-                    "id, first_name, last_name, last_seen_at)"
+                    "(created_at, updated_at, is_deleted, email, "
+                    "hashed_password, id, first_name, last_name, "
+                    "last_seen_at)"
                     "VALUES"
                     f"('{user['created_at']}', '{user['updated_at']}', "
                     f"'{user['is_deleted']}', '{user['email']}', "
@@ -58,19 +59,22 @@ class Postgres:
     ):
         pass
 
-    def save_activities(self, activities: list[dict])
+    def save_activities(self, activities: list[dict]):
         """Returns the mapping between old activity ID and the created activity.
 
         {
             17: {id: 6, value: {}}
         }
-        Where 17 is a old id and the object on the right side is a new created object in the database
+        Where 17 is a old id and the object on the right side
+        is a new created object in the database
         """
 
         # TODO
         return {}
 
-    def save_activity_items(self, items: list[dict], activity_mapping: dict[str, dict]):
+    def save_activity_items(
+        self, items: list[dict], activity_mapping: dict[str, dict]
+    ):
         """
         items = [
             {id: 1, activity_id: 17, data: {}}

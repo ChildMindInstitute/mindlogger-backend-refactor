@@ -16,7 +16,8 @@ def decrypt(data):
     except Exception:
         return None
 
-    txt = plaintext.decode("utf-8") length = int(txt[-max_count:])
+    txt = plaintext.decode("utf-8")
+    length = int(txt[-max_count:])
 
     return txt[:length]
 
@@ -24,7 +25,7 @@ def decrypt(data):
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        self.client = MongoClient("localhost", 27017)
+        self.client = MongoClient("localhost", 27017)  # type: ignore
         self.db = self.client["newdb"]
 
     def close_connection(self):
