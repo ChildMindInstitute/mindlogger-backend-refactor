@@ -24,31 +24,16 @@ def decrypt(data):
     return txt[:length]
 
 
-def create_app():
-    """Create the app"""
-    _app = FastAPI(
-        description="Migrate mongo to psql",
-    )
-
-    # Mongodb connection options
-    db_name = "newdb"
-    host = "localhost"
-    port = 27017
-
-    # Connection to Mongodb
-    client = MongoClient(host, port)
-
-    db = client[db_name]
-
+def get_users_from_mongo(db) -> list[dict]:
     collection = db["user"]
     users = collection.find(
         {}, {"email": 1, "firstName": 1, "lastName": 1, "salt": 1}
     )
 
     count = 0
-    users_list = []
-    for user in users:
+    results = []
 
+    for user in users:
         first_name = decrypt(user.get("firstName"))
         if not first_name:
             first_name = "-"
@@ -62,7 +47,7 @@ def create_app():
             last_name = last_name[:50]
 
         if user.get("email"):
-            users_list.append(
+            results.append(
                 {
                     "created_at": datetime.now(),
                     "updated_at": datetime.now(),
@@ -79,20 +64,13 @@ def create_app():
         # break
     print("!!! count =", count)
 
-    # Close Mongodb connection
-    client.close()
+    return results
 
-    # Connection to Postgresql
-    conn = psycopg2.connect(
-        host="localhost",
-        dbname="mindlogger_backend",
-        user="postgres",
-        password="postgres",
-    )
 
-    cursor = conn.cursor()
+def save_users_to_postgres(connection, users: list[dict]):
+    cursor = connection.cursor()
 
-    for user in users_list:
+    for user in users:
         try:
             cursor.execute(
                 "INSERT INTO users"
@@ -111,11 +89,33 @@ def create_app():
                 f"Key (email)=({user['email']}) already exists!"
             )
 
-    conn.commit()
+    connection.commit()
     cursor.close()
-    conn.close()
-
-    return _app
 
 
-app = create_app()
+def main():
+    # Setup MongoDB connection
+    mongo_client = MongoClient("localhost", 27017)
+    mongo_db = mongo_client["newdb"]
+
+    # Setup PostgreSQL connection
+    postgres_connection = psycopg2.connect(
+        host="localhost",
+        dbname="mindlogger_backend",
+        user="postgres",
+        password="postgres",
+    )
+
+    # Migrate with users
+    users: list[dict] = get_users_from_mongo(mongo_db)
+    save_users_to_postgres(postgres_connection, users)
+
+    # TODO: add other migrations there
+
+    # Close connections
+    mongo_client.close()
+    postgres_connection.close()
+
+
+if __name__ == "__main__":
+    main()
