@@ -23,6 +23,9 @@ class TestWorkspaces(BaseTest):
     workspace_applets_list = "/workspaces/{owner_id}/applets"
     workspace_applets_detail = "/workspaces/{owner_id}/applets/{id_}"
     workspace_respondents_list = "/workspaces/{owner_id}/respondents"
+    workspace_respondent_applet_accesses = (
+        "/workspaces/{owner_id}/respondents/{respondent_id}/accesses"
+    )
     workspace_managers_list = "/workspaces/{owner_id}/managers"
     remove_manager_access = "/workspaces/removeAccess"
     remove_respondent_access = "/applets/removeAccess"
@@ -134,6 +137,21 @@ class TestWorkspaces(BaseTest):
         assert len(response.json()["result"][0]["nickname"]) > 1
         assert response.json()["result"][0]["role"] == Role.RESPONDENT
         assert response.json()["result"][1]["role"] == Role.RESPONDENT
+
+    @rollback
+    async def test_get_workspace_respondent_accesses(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.get(
+            self.workspace_respondent_applet_accesses.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 1
 
     @rollback
     async def test_get_workspace_managers(self):

@@ -12,10 +12,15 @@ from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.query_params import QueryParams, parse_query_params
+from apps.shared.query_params import (
+    BaseQueryParams,
+    QueryParams,
+    parse_query_params,
+)
 from apps.users.domain import User
 from apps.workspaces.domain.user_applet_access import (
     PinUser,
+    PublicRespondentAppletAccess,
     RemoveManagerAccess,
     RemoveRespondentAccess,
 )
@@ -180,3 +185,28 @@ async def workspace_users_pin(
 ):
     async with atomic(session):
         await UserAccessService(session, user.id).pin(data.access_id)
+
+
+async def workspace_users_applet_access_list(
+    owner_id: uuid.UUID,
+    respondent_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+    query_params: QueryParams = Depends(parse_query_params(BaseQueryParams)),
+) -> ResponseMulti[PublicRespondentAppletAccess]:
+    async with atomic(session):
+        service = UserAccessService(session, user.id)
+        accesses = await service.get_respondent_accesses_by_workspace(
+            owner_id, respondent_id, query_params
+        )
+        count = await service.get_respondent_accesses_by_workspace_count(
+            owner_id, respondent_id
+        )
+
+    return ResponseMulti(
+        result=[
+            PublicRespondentAppletAccess.from_orm(access)
+            for access in accesses
+        ],
+        count=count,
+    )

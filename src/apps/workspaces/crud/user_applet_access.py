@@ -1,12 +1,13 @@
 import uuid
 
-from sqlalchemy import case, delete, distinct, func, select, update
+from sqlalchemy import case, delete, distinct, exists, func, select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
 
 from apps.applets.db.schemas import AppletSchema
+from apps.schedule.db.schemas import EventSchema, UserEventsSchema
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
@@ -16,6 +17,7 @@ from apps.users import UserSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
+    RespondentAppletAccess,
     UserAppletAccess,
     UserAppletAccessItem,
 )
@@ -529,3 +531,67 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         db_result = await self._execute(select(query))
         return db_result.scalars().first()
+
+    async def get_respondent_accesses_by_owner_id(
+        self,
+        owner_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+        page: int,
+        limit: int,
+    ) -> list[RespondentAppletAccess]:
+        individual_event_query: Query = select(UserEventsSchema.id)
+        individual_event_query = individual_event_query.join(
+            EventSchema, EventSchema.id == UserEventsSchema.event_id
+        )
+        individual_event_query = individual_event_query.where(
+            UserEventsSchema.user_id == UserAppletAccessSchema.user_id
+        )
+        individual_event_query = individual_event_query.where(
+            EventSchema.applet_id == UserAppletAccessSchema.applet_id
+        )
+
+        query: Query = select(
+            UserAppletAccessSchema.meta,
+            AppletSchema.display_name,
+            AppletSchema.image,
+            exists(individual_event_query),
+        )
+        query = query.join(
+            AppletSchema, AppletSchema.id == UserAppletAccessSchema.applet_id
+        )
+        query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
+        query = query.where(UserAppletAccessSchema.user_id == respondent_id)
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        query = paging(query, page, limit)
+
+        db_result = await self._execute(query)
+
+        accesses = []
+        results = db_result.all()
+        for meta, display_name, image, has_individual in results:
+            accesses.append(
+                RespondentAppletAccess(
+                    applet_name=display_name,
+                    applet_image=image,
+                    secret_user_id=meta.get("nickname"),
+                    nickname=meta.get("secretUserId"),
+                    has_individual_schedule=has_individual,
+                )
+            )
+
+        return accesses
+
+    async def get_respondent_accesses_by_owner_id_count(
+        self,
+        owner_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+    ) -> int:
+        query: Query = select(
+            count(UserAppletAccessSchema.id),
+        )
+        query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
+        query = query.where(UserAppletAccessSchema.user_id == respondent_id)
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first() or 0
