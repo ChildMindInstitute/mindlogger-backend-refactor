@@ -7,11 +7,7 @@ from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.answers.db.schemas import AnswerActivityItemsSchema
-from apps.answers.domain import (
-    ActivityAnswer,
-    ActivityItemAnswer,
-    AppletAnswerCreate,
-)
+from apps.answers.domain import AppletAnswerCreate
 from apps.applets.crud import AppletsCRUD
 from apps.shared.encryption import decrypt, encrypt, generate_iv
 from infrastructure.database.crud import BaseCRUD
@@ -109,7 +105,7 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
 
     async def get_by_answer_id(
         self, applet_id: uuid.UUID, answer_id: uuid.UUID
-    ) -> ActivityAnswer:
+    ) -> list[AnswerActivityItemsSchema]:
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         system_encrypted_key = base64.b64decode(
             applet.system_encrypted_key.encode()
@@ -117,9 +113,7 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         iv = generate_iv(str(applet.id))
         key = decrypt(system_encrypted_key, iv=iv)
 
-        query: Query = select(
-            AnswerActivityItemsSchema, ActivityItemHistorySchema
-        )
+        query: Query = select(AnswerActivityItemsSchema)
         query = query.join(
             ActivityItemHistorySchema,
             ActivityItemHistorySchema.id_version
@@ -129,22 +123,11 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         query = query.order_by(ActivityItemHistorySchema.order.asc())
 
         db_result = await self._execute(query)
-        answer = ActivityAnswer()
-        for (
-            schema,
-            item_schema,
-        ) in (
-            db_result.all()
-        ):  # type: AnswerActivityItemsSchema, ActivityItemHistorySchema
+        schemas = db_result.scalars().all()
+        for schema in schemas:  # type: AnswerActivityItemsSchema
             answer_value = self._decrypt(
                 schema.id, key, base64.b64decode(schema.answer.encode())
             ).decode()
-            answer.activity_item_answers.append(
-                ActivityItemAnswer(
-                    type=item_schema.response_type,
-                    activity_item=item_schema,
-                    answer=json.loads(answer_value),
-                )
-            )
+            schema.answer = answer_value
 
-        return answer
+        return schemas

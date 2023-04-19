@@ -2,7 +2,9 @@ import datetime
 import json
 import uuid
 
+from apps.activities.domain.activity_full import PublicActivityItemFull
 from apps.activities.domain.response_type_config import ResponseType
+from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
@@ -21,6 +23,8 @@ from apps.answers.db.schemas import (
 from apps.answers.domain import (
     ANSWER_TYPE_MAP,
     ActivityAnswer,
+    ActivityItemAnswer,
+    AnswerDate,
     AnsweredAppletActivity,
     AnswerNoteDetail,
     AppletAnswerCreate,
@@ -238,10 +242,38 @@ class AnswerService:
         created_date: datetime.date,
     ) -> list[AnsweredAppletActivity]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
-        return await AnswersCRUD(
+        answers = await AnswersCRUD(
             self.session
-        ).get_users_answered_activities_by_applet_id(
+        ).get_respondents_answered_activities_by_applet_id(
             respondent_id, applet_id, created_date
+        )
+        activity_id, version = answers[0].activity_history_id.split("_")
+
+        activities = await ActivityHistoryService(
+            self.session, applet_id, version
+        ).list()
+        activity_map: dict[str, AnsweredAppletActivity] = dict()
+        for activity in activities:
+            activity_map[str(activity.id)] = AnsweredAppletActivity(
+                id=activity.id, name=activity.name
+            )
+        for answer in answers:
+            activity_id, version = answer.activity_history_id.split("_")
+            activity_map[activity_id].answer_dates.append(
+                AnswerDate(created_at=answer.created_at, answer_id=answer.id)
+            )
+        return list(activity_map.values())
+
+    async def get_applet_submit_dates(
+        self,
+        applet_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+        from_date: datetime.date,
+        to_date: datetime.date,
+    ) -> list[datetime.date]:
+        await self._validate_applet_activity_access(applet_id, respondent_id)
+        return await AnswersCRUD(self.session).get_respondents_submit_dates(
+            respondent_id, applet_id, from_date, to_date
         )
 
     async def _validate_applet_activity_access(
@@ -266,9 +298,34 @@ class AnswerService:
         self, applet_id: uuid.UUID, answer_id: uuid.UUID
     ) -> ActivityAnswer:
         await self._validate_answer_access(applet_id, answer_id)
-        answer = await AnswerActivityItemsCRUD(self.session).get_by_answer_id(
-            applet_id, answer_id
-        )
+        item_answers = await AnswerActivityItemsCRUD(
+            self.session
+        ).get_by_answer_id(applet_id, answer_id)
+
+        schema = await AnswersCRUD(self.session).get_by_id(answer_id)
+        activity_id, version = schema.activity_history_id.split("_")
+        activity_items = await ActivityItemHistoryService(
+            self.session, applet_id, version
+        ).get_by_activity_id(activity_id)
+
+        item_answer_map = dict()
+        for item_answer in item_answers:
+            item_answer_map[item_answer.activity_item_history_id] = json.loads(
+                item_answer.answer
+            )
+
+        answer = ActivityAnswer()
+        for activity_item in activity_items:
+            answer.activity_item_answers.append(
+                ActivityItemAnswer(
+                    type=activity_item.response_type,
+                    activity_item=PublicActivityItemFull.from_orm(
+                        activity_item
+                    ),
+                    answer=item_answer_map[activity_item.id_version],
+                )
+            )
+
         return answer
 
     async def _validate_answer_access(

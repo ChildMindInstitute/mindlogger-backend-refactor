@@ -77,10 +77,12 @@ class _SingleSelectionValue(PublicModel):
 
 
 class SingleSelectionValues(PublicModel):
+    palette_name: str | None
     options: list[_SingleSelectionValue]
 
 
 class MultiSelectionValues(PublicModel):
+    palette_name: str | None
     options: list[_SingleSelectionValue]
 
 

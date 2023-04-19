@@ -6,7 +6,6 @@ from infrastructure.database import rollback
 
 
 class TestApplet(BaseTest):
-    # TODO: fix text
     fixtures = [
         "users/fixtures/users.json",
         "themes/fixtures/themes.json",
@@ -24,6 +23,7 @@ class TestApplet(BaseTest):
     applet_list_url = "applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
     applet_duplicate_url = f"{applet_detail_url}/duplicate"
+    applet_password_check_url = f"{applet_detail_url}/password/check"
     applet_unique_name_url = f"{applet_list_url}/unique_name"
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
@@ -122,6 +122,7 @@ class TestApplet(BaseTest):
                             ),
                             response_type="singleSelect",
                             response_values=dict(
+                                paletteName="default",
                                 options=[
                                     dict(
                                         # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
@@ -141,7 +142,7 @@ class TestApplet(BaseTest):
                                         is_hidden=False,
                                         color=None,
                                     ),
-                                ]
+                                ],
                             ),
                             config=dict(
                                 remove_back_button=False,
@@ -166,6 +167,7 @@ class TestApplet(BaseTest):
                             ),
                             response_type="multiSelect",
                             response_values=dict(
+                                paletteName=None,
                                 options=[
                                     dict(
                                         # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
@@ -185,7 +187,7 @@ class TestApplet(BaseTest):
                                         is_hidden=False,
                                         color=None,
                                     ),
-                                ]
+                                ],
                             ),
                             config=dict(
                                 remove_back_button=False,
@@ -606,6 +608,28 @@ class TestApplet(BaseTest):
         )
 
     @rollback
+    async def test_check_applet_password(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.applet_password_check_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=dict(password="Test1234!"),
+        )
+        assert response.status_code == 200, response.json()
+
+        response = await self.client.post(
+            self.applet_password_check_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=dict(password="Test1234"),
+        )
+        assert response.status_code == 422, response.json()
+
+    @rollback
     async def test_applet_list(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -635,7 +659,8 @@ class TestApplet(BaseTest):
         response = await self.client.delete(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            )
+            ),
+            dict(password="Test1234!"),
         )
 
         assert response.status_code == 204, response.json()
@@ -643,10 +668,20 @@ class TestApplet(BaseTest):
         response = await self.client.delete(
             self.applet_detail_url.format(
                 pk="00000000-0000-0000-0000-000000000000"
-            )
+            ),
+            dict(password="Test1234!"),
         )
 
         assert response.status_code == 404, response.json()
+
+        response = await self.client.delete(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            dict(password="Test1234"),
+        )
+
+        assert response.status_code == 422, response.json()
 
     @rollback
     async def test_applet_list_with_invalid_token(self):
