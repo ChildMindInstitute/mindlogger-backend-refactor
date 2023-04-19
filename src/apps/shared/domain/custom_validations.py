@@ -2,6 +2,8 @@ import mimetypes
 
 from pydantic.color import Color
 
+from apps.shared.errors import ValidationError
+
 __all__ = [
     "validate_image",
     "validate_color",
@@ -12,13 +14,13 @@ __all__ = [
 def validate_image(value: str) -> str:
     if (mimetypes.guess_type(value)[0] or "").startswith("image/"):
         return value
-    raise ValueError("Not an image")
+    raise ValidationError(message="Not an image")
 
 
 def validate_color(value: str | Color) -> str:
     if type(value) is Color:
         return value.as_hex()
-    raise ValueError("Not a color")
+    raise ValidationError(message="Not a color")
 
 
 def validate_audio(value: str) -> str:
@@ -31,4 +33,4 @@ def validate_audio(value: str) -> str:
         or (mimetypes.guess_type(value)[0] or "").startswith("audio/wave")
     ):
         return value
-    raise ValueError("Not an audio file")
+    raise ValidationError(message="Not an audio file")

@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import Query
-from sqlalchemy.sql import and_, delete, distinct, func, select
+from sqlalchemy.sql import and_, delete, distinct, func, or_, select
 
 from apps.activities.db.schemas import ActivitySchema
 from apps.activity_flows.db.schemas import ActivityFlowSchema
@@ -67,12 +67,12 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
     async def get_by_id(self, pk: uuid.UUID) -> Event:
         """Return event instance."""
-        query: Query = select(EventSchema)
-        query = query.where(EventSchema.id == pk)
-        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        query: Query = select(self.schema_class)
+        query = query.where(self.schema_class.id == pk)
+        # query = query.where(EventSchema.is_deleted == False)  # noqa: E712
 
         result = await self._execute(query)
-        instance = result.scalars().first()
+        instance = result.scalars().one_or_none()
 
         if not instance:
             raise EventNotFoundError(key="id", value=str(pk))
@@ -329,9 +329,17 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
-        query = query.where(FlowEventsSchema.flow_id.not_in(flow_ids))
         query = query.where(
-            ActivityEventsSchema.activity_id.not_in(activity_ids)
+            or_(
+                FlowEventsSchema.flow_id.is_(None),
+                FlowEventsSchema.flow_id.not_in(flow_ids),
+            )
+        )
+        query = query.where(
+            or_(
+                ActivityEventsSchema.activity_id.is_(None),
+                ActivityEventsSchema.activity_id.not_in(activity_ids),
+            )
         )
 
         db_result = await self._execute(query)
@@ -359,7 +367,6 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     flow_id=row.flow_id,
                 )
             )
-
         return events
 
     async def count_general_events_by_user(
@@ -412,9 +419,17 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
-        query = query.where(FlowEventsSchema.flow_id.not_in(flow_ids))
         query = query.where(
-            ActivityEventsSchema.activity_id.not_in(activity_ids)
+            or_(
+                FlowEventsSchema.flow_id.is_(None),
+                FlowEventsSchema.flow_id.not_in(flow_ids),
+            )
+        )
+        query = query.where(
+            or_(
+                ActivityEventsSchema.activity_id.is_(None),
+                ActivityEventsSchema.activity_id.not_in(activity_ids),
+            )
         )
         db_result = await self._execute(query)
 
@@ -446,7 +461,6 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
     async def save(self, schema: UserEventCreate) -> UserEvent:
         """Return user event instance and the created information."""
         try:
-
             instance: UserEventsSchema = await self._create(
                 UserEventsSchema(**schema.dict())
             )
@@ -604,6 +618,23 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         activity_ids = result.scalars().all()
         return activity_ids
 
+    async def get_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> list[ActivityEvent]:
+        """Return activity event instances."""
+        query: Query = select(ActivityEventsSchema)
+        query = query.join(
+            EventSchema, ActivityEventsSchema.event_id == EventSchema.id
+        )
+        query = query.where(EventSchema.applet_id == applet_id)
+        result = await self._execute(query)
+        activity_events = result.scalars().all()
+
+        return [
+            ActivityEvent.from_orm(activity_event)
+            for activity_event in activity_events
+        ]
+
 
 class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
     schema_class = FlowEventsSchema
@@ -720,3 +751,15 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
 
         count: int = result.scalar()
         return count
+
+    async def get_by_applet_id(self, applet_id: uuid.UUID) -> list[FlowEvent]:
+        """Return flow event instances."""
+        query: Query = select(FlowEventsSchema)
+        query = query.join(
+            EventSchema, FlowEventsSchema.event_id == EventSchema.id
+        )
+        query = query.where(EventSchema.applet_id == applet_id)
+        result = await self._execute(query)
+        flow_events = result.scalars().all()
+
+        return [FlowEvent.from_orm(flow_event) for flow_event in flow_events]

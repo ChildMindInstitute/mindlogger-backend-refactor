@@ -66,7 +66,6 @@ class ScheduleService:
     async def create_schedule(
         self, schedule: EventRequest, applet_id: uuid.UUID
     ) -> PublicEvent:
-
         # Validate schedule data before saving
         await self._validate_schedule(applet_id=applet_id, schedule=schedule)
 
@@ -366,23 +365,27 @@ class ScheduleService:
         # Validate schedule
         await self._validate_schedule(applet_id=applet_id, schedule=schedule)
 
+        event: Event = await EventCRUD(self.session).get_by_id(pk=schedule_id)
+        periodicity: Periodicity = await PeriodicityCRUD(
+            self.session
+        ).get_by_id(event.periodicity_id)
+
         # Delete all events of this activity or flow
-        # if new periodicity type is "always"
-        if schedule.periodicity.type == PeriodicityType.ALWAYS:
+        # if new periodicity type is "always" and old periodicity type is not "always" # noqa: E501
+        if (
+            schedule.periodicity.type == PeriodicityType.ALWAYS
+            and periodicity.type != PeriodicityType.ALWAYS
+        ):  # noqa: E501
             await self._delete_by_activity_or_flow(
                 applet_id=applet_id,
                 activity_id=schedule.activity_id,
                 flow_id=schedule.flow_id,
                 respondent_id=schedule.respondent_id,
                 only_always_available=False,
+                except_event_id=schedule_id,
             )
 
-        event: Event = await EventCRUD(self.session).get_by_id(pk=schedule_id)
-
         # Update periodicity
-        periodicity: Periodicity = await PeriodicityCRUD(
-            self.session
-        ).get_by_id(event.periodicity_id)
         periodicity = await PeriodicityCRUD(self.session).update(
             pk=periodicity.id, schema=schedule.periodicity
         )
@@ -500,12 +503,10 @@ class ScheduleService:
 
         # Check if user has access to applet
         if schedule.respondent_id:
-            user_applet_access = await (
-                UserAppletAccessCRUD(
-                    self.session
-                ).get_by_applet_and_user_as_respondent(
-                    applet_id=applet_id, user_id=schedule.respondent_id
-                )
+            user_applet_access = await UserAppletAccessCRUD(
+                self.session
+            ).get_by_applet_and_user_as_respondent(
+                applet_id=applet_id, user_id=schedule.respondent_id
             )  # noqa: E501
             if not user_applet_access:
                 raise NotFoundError(
@@ -614,6 +615,7 @@ class ScheduleService:
         flow_id: uuid.UUID | None,
         respondent_id: uuid.UUID | None = None,
         only_always_available: bool = False,
+        except_event_id: uuid.UUID | None = None,
     ) -> None:
         """Delete schedules by activity or flow id."""
         event_schemas = []
@@ -640,6 +642,10 @@ class ScheduleService:
             )
 
         event_ids = [event_schema.id for event_schema in event_schemas]
+
+        # keep exception event id
+        if except_event_id and except_event_id in event_ids:
+            event_ids.remove(except_event_id)
 
         periodicity_ids = [
             event_schema.periodicity_id for event_schema in event_schemas
@@ -833,6 +839,7 @@ class ScheduleService:
         self, user_id: uuid.UUID, applet_id: uuid.UUID
     ) -> PublicEventByUser:
         """Get all events for user in applet."""
+
         # Check if applet exists
         await self._validate_applet(applet_id=applet_id)
 
@@ -886,7 +893,6 @@ class ScheduleService:
         count = 0
 
         for applet_id in applet_ids:
-
             count_user_events = await EventCRUD(
                 self.session
             ).count_individual_events_by_user(
@@ -934,7 +940,6 @@ class ScheduleService:
         )
 
     async def _validate_applet(self, applet_id: uuid.UUID):
-
         # Check if applet exists
         applet_exist = await AppletsCRUD(self.session).exist_by_id(
             id_=applet_id
