@@ -85,6 +85,7 @@ class PinUser(InternalModel):
 
 
 class RespondentAppletAccess(InternalModel):
+    applet_id: uuid.UUID
     applet_name: str
     applet_image: str
     secret_user_id: str
@@ -93,6 +94,7 @@ class RespondentAppletAccess(InternalModel):
 
 
 class PublicRespondentAppletAccess(PublicModel):
+    applet_id: uuid.UUID
     applet_name: str
     applet_image: str
     secret_user_id: str
