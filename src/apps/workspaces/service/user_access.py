@@ -10,6 +10,7 @@ from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
     RemoveManagerAccess,
     RemoveRespondentAccess,
+    RespondentAppletAccess,
 )
 from apps.workspaces.domain.workspace import UserWorkspace
 from apps.workspaces.errors import (
@@ -228,3 +229,28 @@ class UserAccessService:
         )
         if self._user_id not in applet_manager_ids:
             raise UserAppletAccessesDenied
+
+    async def get_respondent_accesses_by_workspace(
+        self,
+        owner_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+        query_params: QueryParams,
+    ) -> list[RespondentAppletAccess]:
+        accesses = await UserAppletAccessCRUD(
+            self.session
+        ).get_respondent_accesses_by_owner_id(
+            owner_id, respondent_id, query_params.page, query_params.limit
+        )
+
+        return accesses
+
+    async def get_respondent_accesses_by_workspace_count(
+        self,
+        owner_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+    ) -> int:
+        count = await UserAppletAccessCRUD(
+            self.session
+        ).get_respondent_accesses_by_owner_id_count(owner_id, respondent_id)
+
+        return count

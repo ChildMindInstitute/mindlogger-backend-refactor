@@ -82,3 +82,19 @@ class PublicAppletUser(PublicModel):
 
 class PinUser(InternalModel):
     access_id: uuid.UUID
+
+
+class RespondentAppletAccess(InternalModel):
+    applet_name: str
+    applet_image: str
+    secret_user_id: str
+    nickname: str
+    has_individual_schedule: bool
+
+
+class PublicRespondentAppletAccess(PublicModel):
+    applet_name: str
+    applet_image: str
+    secret_user_id: str
+    nickname: str
+    has_individual_schedule: bool

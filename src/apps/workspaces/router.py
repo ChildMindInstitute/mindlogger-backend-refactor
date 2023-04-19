@@ -17,7 +17,11 @@ from apps.workspaces.api import (
     workspace_remove_manager_access,
     workspace_respondents_list,
     workspace_retrieve,
+    workspace_users_applet_access_list,
     workspace_users_pin,
+)
+from apps.workspaces.domain.user_applet_access import (
+    PublicRespondentAppletAccess,
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
@@ -109,6 +113,19 @@ router.post(
     },
 )(workspace_users_pin)
 
+router.get(
+    "/{owner_id}/respondents/{respondent_id}/accesses",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[PublicRespondentAppletAccess],
+    responses={
+        status.HTTP_200_OK: {
+            "model": ResponseMulti[PublicRespondentAppletAccess]
+        },
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_users_applet_access_list)
+
 # Remove manager access from a specific user
 router.post(
     "/removeAccess",
@@ -118,7 +135,6 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(workspace_remove_manager_access)
-
 
 applet_router = APIRouter(prefix="/applets", tags=["Applets"])
 
