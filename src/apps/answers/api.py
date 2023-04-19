@@ -66,7 +66,7 @@ async def applet_submit_date_list(
         dates = await AnswerService(session, user.id).get_applet_submit_dates(
             applet_id, **query_params.filters
         )
-    return Response(result=PublicAnswerDates(dates=dates))
+    return Response(result=PublicAnswerDates(dates=list(set(dates))))
 
 
 async def applet_answer_retrieve(

@@ -224,6 +224,26 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
 
     @rollback
+    async def test_applet_activities(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.answered_applet_activities_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            dict(
+                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                createdDate=datetime.date.today(),
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 1
+        assert len(response.json()["result"][0]["answerDates"]) == 0
+
+    @rollback
     async def test_add_note(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
