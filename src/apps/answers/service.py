@@ -247,19 +247,27 @@ class AnswerService:
         ).get_respondents_answered_activities_by_applet_id(
             respondent_id, applet_id, created_date
         )
-        if not answers:
-            return []
         activity_map: dict[str, AnsweredAppletActivity] = dict()
-        for answer in answers:
-            _, version = answer.activity_history_id.split("_")
-
+        if not answers:
+            applet = await AppletsCRUD().get_by_id(applet_id)
             activities = await ActivityHistoryService(
-                self.session, applet_id, version
+                self.session, applet_id, applet.version
             ).list()
             for activity in activities:
                 activity_map[str(activity.id)] = AnsweredAppletActivity(
                     id=activity.id, name=activity.name
                 )
+        else:
+            for answer in answers:
+                _, version = answer.activity_history_id.split("_")
+
+                activities = await ActivityHistoryService(
+                    self.session, applet_id, version
+                ).list()
+                for activity in activities:
+                    activity_map[str(activity.id)] = AnsweredAppletActivity(
+                        id=activity.id, name=activity.name
+                    )
         for answer in answers:
             activity_id, version = answer.activity_history_id.split("_")
             activity_map[activity_id].answer_dates.append(
