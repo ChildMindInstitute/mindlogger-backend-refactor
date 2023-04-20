@@ -11,15 +11,18 @@ from apps.activities.domain.response_type_config import (
     SingleSelectionConfig,
     SliderConfig,
     TextConfig,
-    MessageConfig,
     NumberSelectionConfig,
-    DateConfig,
     DefaultConfig,
+    DrawingConfig,
+    AudioPlayerConfig,
 )
 from apps.activities.domain.response_values import (
     SingleSelectionValues,
     SliderValues,
     NumberSelectionValues,
+    AudioValues,
+    DrawingValues,
+    AudioPlayerValues,
 )
 from apps.jsonld_converter.service.base import LdKeyword
 from apps.jsonld_converter.service.export.base import (
@@ -172,7 +175,7 @@ class ActivityItemSingleSelectExport(ActivityItemBaseExport):
         values: SingleSelectionValues = model.response_values
         for i, option in enumerate(values.options):
             choice = {
-                "@type": "schema:option",
+                LdKeyword.type: "schema:option",
                 "schema:name": option.text,
                 # "schema:value": i,  # TODO value???
                 "isVis": not option.is_hidden,
@@ -405,3 +408,146 @@ class ActivityItemGeolocationExport(ActivityItemDefaultConfigExport):
 
     def _get_input_type(self):
         return 'geolocation'
+
+
+class ActivityItemAudioExport(ActivityItemDefaultConfigExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.AUDIO
+
+    def _get_input_type(self):
+        return 'audio'
+
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
+        options = super()._build_response_options_prop(model)
+        values: AudioValues = model.response_values
+        options.update({
+            "schema:maxValue": values.max_duration * 1000,  # milliseconds
+            "schema:minValue": 0
+        })
+
+        return options
+
+
+class ActivityItemPhotoExport(ActivityItemDefaultConfigExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.PHOTO
+
+    def _get_input_type(self):
+        return 'photo'
+
+
+class ActivityItemVideoExport(ActivityItemDefaultConfigExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.VIDEO
+
+    def _get_input_type(self):
+        return 'video'
+
+
+class ActivityItemDrawingExport(ActivityItemDefaultConfigExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.DRAWING
+
+    def _get_input_type(self):
+        return 'drawing'
+
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
+        options = super()._build_response_options_prop(model)
+
+        config: DrawingConfig = model.config
+        values: DrawingValues = model.response_values
+        options.update({
+            "removeUndoOption": config.remove_undo_button,
+            "topNavigationOption": config.navigation_to_top,
+        })
+        if example_img := values.drawing_example:
+            options["schema:image"] = example_img
+
+        return options
+
+    def _build_ui_prop(self, model: ActivityItemFull) -> dict:
+        ui = super()._build_ui_prop(model)
+
+        values: DrawingValues = model.response_values
+        if bg_img := values.drawing_example:
+            ui["inputOptions"] = [
+                {
+                    LdKeyword.type: "http://schema.org/URL",
+                    "schema:name": "backgroundImage",
+                    "schema:value": bg_img,
+                }
+            ]
+
+        return ui
+
+
+class ActivityItemAudioPlayerExport(ActivityItemBaseExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.AUDIOPLAYER
+
+    def _get_input_type(self):
+        return 'audioStimulus'
+
+    def _build_doc(self, model: ActivityItemFull) -> dict:
+        doc = super()._build_doc(model)
+
+        config: AudioPlayerConfig = model.config
+        values: AudioPlayerValues = model.response_values
+
+        additional_option = config.additional_response_option
+        if additional_option:
+            doc["isOptionalText"] = additional_option.text_input_option
+
+        doc["media"] = {
+            values.file: {
+                "schema:name": "stimulus",
+                "schema:contentUrl": values.file
+            }
+        }
+
+        return doc
+
+    def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
+        allow = super()._build_allow_prop(model)
+
+        config: AudioPlayerConfig = model.config
+        if config.skippable_item:
+            allow.append("dontKnow")
+        return allow
+
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
+        config: AudioPlayerConfig = model.config
+        options = {
+            "removeBackOption": config.remove_back_button,
+        }
+        additional_option = config.additional_response_option
+        if additional_option and additional_option.text_input_option:
+            options["isOptionalTextRequired"] = additional_option.text_input_required
+
+        return options
+
+    def _build_ui_prop(self, model: ActivityItemFull) -> dict:
+        ui = super()._build_ui_prop(model)
+
+        config: AudioPlayerConfig = model.config
+        values: AudioPlayerValues = model.response_values
+        ui["inputOptions"] = [
+            {
+                LdKeyword.type: "http://schema.org/URL",
+                "schema:name": "stimulus",
+                "schema:value": values.file,
+                "schema:contentUrl": values.file,
+            },
+            {
+                LdKeyword.type: "http://schema.org/Boolean",
+                "schema:name": "allowReplay",
+                "schema:value": not config.play_once,
+            }
+        ]
+
+        return ui

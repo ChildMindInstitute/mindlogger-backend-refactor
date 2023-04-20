@@ -13,6 +13,11 @@ from apps.jsonld_converter.service.export import (
     ActivityItemDateExport,
     ActivityItemTimeRangeExport,
     ActivityItemGeolocationExport,
+    ActivityItemAudioExport,
+    ActivityItemPhotoExport,
+    ActivityItemVideoExport,
+    ActivityItemDrawingExport,
+    ActivityItemAudioPlayerExport,
 )
 from apps.jsonld_converter.service.export.base import (
     BaseModelExport,
@@ -38,6 +43,11 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             ActivityItemDateExport,
             ActivityItemTimeRangeExport,
             ActivityItemGeolocationExport,
+            ActivityItemAudioExport,
+            ActivityItemPhotoExport,
+            ActivityItemVideoExport,
+            ActivityItemDrawingExport,
+            ActivityItemAudioPlayerExport,
         ]
 
     async def export(self, model: ActivityFull) -> dict:
