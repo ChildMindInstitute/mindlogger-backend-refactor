@@ -44,6 +44,11 @@ class ActivityItemAnswerCreate(InternalModel):
     answer: AnswerTypes
 
 
+class AnsweredActivityItem(InternalModel):
+    activity_item_history_id: str
+    answer: str
+
+
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
