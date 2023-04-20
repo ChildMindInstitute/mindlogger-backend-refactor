@@ -22,7 +22,6 @@ from apps.applets.domain import (
 from apps.applets.domain.applet import Applet, AppletDataRetention
 from apps.applets.domain.applet_create_update import (
     AppletCreate,
-    AppletPassword,
     AppletUpdate,
 )
 from apps.applets.domain.applet_duplicate import AppletDuplicate
@@ -140,12 +139,10 @@ class AppletService:
         return applet
 
     async def duplicate(
-        self, applet_exist: AppletDuplicate, password: AppletPassword
+        self, applet_exist: AppletDuplicate, new_name: str, password: str
     ) -> AppletCreate:
         activities = list()
-        applet_name = await self.get_unique_name_for_duplicate(
-            f"{applet_exist.display_name} Copy"
-        )
+        await self._validate_applet_name(new_name)
         for activity in applet_exist.activities:
             activities.append(
                 ActivityCreate(
@@ -183,19 +180,13 @@ class AppletService:
             )
 
         return AppletCreate(
-            display_name=applet_name,
+            display_name=new_name,
             description=applet_exist.description,
             about=applet_exist.about,
             image=applet_exist.image,
             watermark=applet_exist.watermark,
             theme_id=applet_exist.theme_id,
-            report_server_ip=applet_exist.report_server_ip,
-            report_public_key=applet_exist.report_public_key,
-            report_recipients=applet_exist.report_recipients,
-            report_include_user_id=applet_exist.report_include_user_id,
-            report_include_case_id=applet_exist.report_include_case_id,
-            report_email_body=applet_exist.report_email_body,
-            password=password.password,
+            password=password,
             activities=activities,
             activity_flows=activity_flows,
         )

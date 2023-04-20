@@ -585,27 +585,21 @@ class TestApplet(BaseTest):
             self.applet_duplicate_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            data=dict(password="Test1234567890"),
+            data=dict(display_name="New name", password="Test1234567890"),
         )
         assert response.status_code == 201, response.json()
 
         response = await self.client.get(self.applet_list_url)
         assert len(response.json()["result"]) == 4
-        assert response.json()["result"][0]["displayName"] == "Applet 1 Copy"
+        assert response.json()["result"][0]["displayName"] == "New name"
 
         response = await self.client.post(
             self.applet_duplicate_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            data=dict(password="Test1234567890123"),
+            data=dict(display_name="New name", password="Test1234567890123"),
         )
-        assert response.status_code == 201, response.json()
-
-        response = await self.client.get(self.applet_list_url)
-        assert len(response.json()["result"]) == 5
-        assert (
-            response.json()["result"][0]["displayName"] == "Applet 1 Copy (1)"
-        )
+        assert response.status_code == 422, response.json()
 
     @rollback
     async def test_check_applet_password(self):
