@@ -21,7 +21,7 @@ class TestTransfer(BaseTest):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
-        data = {"email": "aloevdamirkhon@gmail.com"}
+        data = {"email": "lucy@gmail.com"}
 
         response = await self.client.post(
             self.transfer_url.format(

@@ -9,6 +9,8 @@ from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.domain import InitiateTransfer, Transfer
+from apps.transfer_ownership.errors import TransferEmailError
+from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from config import settings
@@ -38,8 +40,10 @@ class TransferService:
             key=uuid.uuid4(),
         )
         await TransferCRUD(self.session).create(transfer)
+        receiver = await UsersCRUD(self.session).get_by_email(transfer.email)
+        if receiver.id == self._user.id:
+            raise TransferEmailError()
 
-        # TODO: send email with URL for accepting(or declining)
         url = self._generate_transfer_url()
 
         # Send email to the user
@@ -47,7 +51,7 @@ class TransferService:
 
         html_payload: dict = {
             "applet_owner": f"{self._user.first_name} {self._user.last_name}",
-            "receiver_name": transfer_request.email,
+            "receiver_name": f"{receiver.first_name} {receiver.last_name}",
             "applet_name": applet.display_name,
             "applet_id": applet.id,
             "key": transfer.key,
