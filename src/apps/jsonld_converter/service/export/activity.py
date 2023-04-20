@@ -7,6 +7,7 @@ from apps.jsonld_converter.service.export import (
     ActivityItemTextExport,
     ActivityItemSingleSelectExport,
     ActivityItemMultipleSelectExport,
+    ActivityItemSliderExport,
 )
 from apps.jsonld_converter.service.export.base import (
     BaseModelExport,
@@ -26,6 +27,7 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             ActivityItemTextExport,
             ActivityItemSingleSelectExport,
             ActivityItemMultipleSelectExport,
+            ActivityItemSliderExport,
         ]
 
     async def export(self, model: ActivityFull) -> dict:
