@@ -1,3 +1,6 @@
+import uuid
+from datetime import datetime
+
 import psycopg2  # type: ignore[import]
 
 
@@ -38,9 +41,11 @@ class Postgres:
         cursor = self.connection.cursor()
 
         results: dict[str, dict] = {}
+        count = 0
 
         for user in users:
             try:
+                # Create Users
                 cursor.execute(
                     "INSERT INTO users"
                     "(created_at, updated_at, is_deleted, email, "
@@ -67,15 +72,73 @@ class Postgres:
                 }
 
                 results[user["_id"]] = new_user
+                count += 1
 
-            except Exception:
+            except Exception as e:
                 print(
-                    "Unable to insert data! "
-                    f"Key (email)=({user['email']}) already exists!"
+                    "Unable to insert data user for "
+                    f"(email)=({user['email']})",
+                    e,
                 )
 
         self.connection.commit()
         cursor.close()
+
+        print(f"Successfully migrated {count} users")
+
+        return results
+
+    def save_users_workspace(
+        self, users_mapping: dict[str, dict]
+    ) -> list[dict]:
+
+        cursor = self.connection.cursor()
+
+        results: list[dict] = []
+        count = 0
+
+        for _, user in users_mapping.items():
+            try:
+                # Create users workspace
+                user_workspace = {
+                    "id": uuid.uuid4(),
+                    "created_at": datetime.now(),
+                    "updated_at": datetime.now(),
+                    "is_deleted": False,
+                    "user_id": user["id"],
+                    "workspace_name": f"{user['first_name']} "
+                    f"{user['last_name']}",
+                    "is_modified": False,
+                }
+
+                cursor.execute(
+                    "INSERT INTO users_workspaces"
+                    "(user_id, id, created_at, updated_at, is_deleted, "
+                    "workspace_name, is_modified)"
+                    "VALUES"
+                    f"((SELECT id FROM users WHERE id = '{user['id']}'), "
+                    f"'{user_workspace['id']}', "
+                    f"'{user_workspace['created_at']}', "
+                    f"'{user_workspace['updated_at']}', "
+                    f"'{user_workspace['is_deleted']}', "
+                    f"'{user_workspace['workspace_name']}', "
+                    f"'{user_workspace['is_modified']}');"
+                )
+
+                results.append(user_workspace)
+                count += 1
+
+            except Exception as e:
+                print(
+                    "Unable to insert data user_workspace for "
+                    f"(user_id)=({user['id']})",
+                    e,
+                )
+
+        self.connection.commit()
+        cursor.close()
+
+        print(f"Successfully migrated {count} users_workspace")
 
         return results
 

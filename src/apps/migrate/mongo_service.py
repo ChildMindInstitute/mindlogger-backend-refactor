@@ -46,14 +46,14 @@ class Mongo:
             first_name = decrypt(user.get("firstName"))
             if not first_name:
                 first_name = "-"
-            elif len(first_name) > 50:
-                first_name = first_name[:50]
+            elif len(first_name) >= 50:
+                first_name = first_name[:49]
 
             last_name = decrypt(user.get("lastName"))
             if not last_name:
                 last_name = "-"
-            elif len(last_name) > 50:
-                last_name = last_name[:50]
+            elif len(last_name) >= 50:
+                last_name = last_name[:49]
 
             if user.get("email"):
                 results.append(
@@ -73,8 +73,8 @@ class Mongo:
                 count += 1
             total_documents += 1
         print(
-            f"Documents in total - {total_documents}, "
-            f"Successfully transferred - {count}"
+            f"Total Users Documents - {total_documents}, "
+            f"Successfully prepared for migration - {count}"
         )
 
         return results
