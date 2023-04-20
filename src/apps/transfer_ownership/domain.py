@@ -2,7 +2,7 @@ import uuid
 
 from pydantic import EmailStr
 
-from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain import InternalModel
 
 __all__ = [
     "Transfer",
@@ -18,5 +18,5 @@ class Transfer(InternalModel):
     key: uuid.UUID
 
 
-class InitiateTransfer(PublicModel):
+class InitiateTransfer(InternalModel):
     email: EmailStr
