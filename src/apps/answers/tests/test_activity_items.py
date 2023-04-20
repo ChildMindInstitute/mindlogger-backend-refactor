@@ -232,12 +232,20 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert len(response.json()["result"][0]["answerDates"]) == 1
 
+        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
         response = await self.client.get(
             self.answers_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
-                answer_id=response.json()["result"][0]["answerDates"][0][
-                    "answerId"
-                ],
+                answer_id=answer_id,
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+
+        response = await self.client.get(
+            self.answers_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
             )
         )
 
