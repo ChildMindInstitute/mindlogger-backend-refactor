@@ -185,3 +185,9 @@ class ActivityHistoryService:
             self.session
         ).retrieve_by_applet_version(self._applet_id_version)
         return [ActivityHistory.from_orm(schema) for schema in schemas]
+
+    async def get_by_id(self, activity_id: uuid.UUID) -> ActivityHistory:
+        schema = await ActivityHistoriesCRUD(self.session).get_by_id(
+            f"{activity_id}_{self._version}"
+        )
+        return ActivityHistory.from_orm(schema)

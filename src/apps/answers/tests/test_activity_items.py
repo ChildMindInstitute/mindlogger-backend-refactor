@@ -1,5 +1,7 @@
 import datetime
 
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -57,6 +59,26 @@ class TestAnswerActivityItems(BaseTest):
                     ),
                 ),
             ],
+        )
+
+        response = await self.client.post(
+            self.answer_activity_item_create_url, data=create_data
+        )
+
+        assert response.status_code == 201, response.json()
+
+    @pytest.mark.main
+    @rollback
+    async def test_answer_skippable_activity_items_create_for_respondent(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
+            version="2.0.1",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3612",
+            answers=[],
         )
 
         response = await self.client.post(
