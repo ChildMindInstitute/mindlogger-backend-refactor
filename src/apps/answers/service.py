@@ -95,6 +95,9 @@ class AnswerService:
             ).get_activity_ids_by_flow_id(activity_answer.flow_id)
             if activity_id_version not in flow_activity_ids:
                 raise FlowDoesNotHaveActivity()
+        activity = await ActivityHistoryService(
+            self.session, activity_answer.applet_id, activity_answer.version
+        ).get_by_id(activity_answer.activity_id)
 
         activity_items = await ActivityItemHistoryService(
             self.session, activity_answer.applet_id, activity_answer.version
@@ -106,16 +109,17 @@ class AnswerService:
             answer_map[answer.activity_item_id] = answer
 
         for activity_item in activity_items:
-            if activity_item.response_type == ResponseType.TEXT:
+            if activity.is_skippable:
                 required = False
-                required |= getattr(
-                    activity_item.config, "response_required", False
-                )
             else:
                 required = False
-            required |= not getattr(
-                activity_item.config, "skippable_item", False
-            )
+                if activity_item.response_type == ResponseType.TEXT:
+                    required = getattr(
+                        activity_item.config, "response_required", False
+                    )
+                required |= not getattr(
+                    activity_item.config, "skippable_item", False
+                )
             if required:
                 answer_class = ANSWER_TYPE_MAP.get(activity_item.response_type)
 
