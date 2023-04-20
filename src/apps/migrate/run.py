@@ -15,8 +15,7 @@ def main():
 
     # Migrate with users
     users: list[dict] = mongo.get_users()
-    new_users_mapping: dict[str, dict] = postgres.save_users(users)
-    print(new_users_mapping)
+    postgres.save_users(users)
 
     # TODO: Migrate with applets
     # applets: list[dict] = mongo.get_applets()

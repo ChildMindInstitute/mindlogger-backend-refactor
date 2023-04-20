@@ -15,13 +15,32 @@ class Postgres:
         self.connection.close()
 
     def save_users(self, users: list[dict]) -> dict[str, dict]:
+        """Returns the mapping between old Users ID and the created Users.
+
+        {
+            ObjectId('5ea689...14e806'):
+            {
+                'id': UUID('f96014b9-...-4239f959e07e'),
+                'created_at': datetime(2023, 4, 20, 2, 51, 9, 860661),
+                'updated_at': datetime(2023, 4, 20, 2, 51, 9, 860665),
+                'is_deleted': False,
+                'email': 'avocado7989@gmail.com',
+                'hashed_password': '$2b$12$Y.../PO',
+                'first_name': 'firstname',
+                'last_name': '-',
+                'last_seen_at': datetime(2023, 4, 20, 2, 51, 9, 860667)
+            }
+        }
+        Where ObjectId('5ea689...14e806') is the old '_id'
+        and a new object created in the Postgres database
+        """
+
         cursor = self.connection.cursor()
 
         results: dict[str, dict] = {}
 
         for user in users:
             try:
-                # new_user = cursor.execute(
                 cursor.execute(
                     "INSERT INTO users"
                     "(created_at, updated_at, is_deleted, email, "
@@ -35,8 +54,19 @@ class Postgres:
                     f"'{user['last_seen_at']}');"
                 )
 
-                # TODO: Check this
-                # results[user["id"]] = new_user
+                new_user = {
+                    "id": user["id"],
+                    "created_at": user["created_at"],
+                    "updated_at": user["updated_at"],
+                    "is_deleted": user["is_deleted"],
+                    "email": user["email"],
+                    "hashed_password": user["hashed_password"],
+                    "first_name": user["first_name"],
+                    "last_name": user["last_name"],
+                    "last_seen_at": user["last_seen_at"],
+                }
+
+                results[user["_id"]] = new_user
 
             except Exception:
                 print(
@@ -47,11 +77,6 @@ class Postgres:
         self.connection.commit()
         cursor.close()
 
-        # ------------------------------------
-        # Return the users mapping
-        # {"<old_user_id>": {<new_user_object>}}
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # TODO: Return new users mapping from postgres
         return results
 
     def save_applets(

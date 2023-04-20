@@ -34,10 +34,12 @@ class Mongo:
     def get_users(self) -> list[dict]:
         collection = self.db["user"]
         users = collection.find(
-            {}, {"email": 1, "firstName": 1, "lastName": 1, "salt": 1}
+            {},
+            {"_id": 1, "email": 1, "firstName": 1, "lastName": 1, "salt": 1},
         )
 
         count = 0
+        total_documents = 0
         results = []
 
         for user in users:
@@ -56,20 +58,24 @@ class Mongo:
             if user.get("email"):
                 results.append(
                     {
+                        "_id": user.get("_id"),
+                        "id": uuid.uuid4(),
                         "created_at": datetime.now(),
                         "updated_at": datetime.now(),
                         "is_deleted": False,
                         "email": user.get("email"),
                         "hashed_password": user.get("salt"),
-                        "id": uuid.uuid4(),
                         "first_name": first_name,
                         "last_name": last_name,
                         "last_seen_at": datetime.now(),
                     }
                 )
                 count += 1
-            # break
-        print("!!! count =", count)
+            total_documents += 1
+        print(
+            f"Documents in total - {total_documents}, "
+            f"Successfully transferred - {count}"
+        )
 
         return results
 
