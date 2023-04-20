@@ -17,6 +17,7 @@ from apps.applets.domain.applet import (
 )
 from apps.applets.domain.applet_create_update import (
     AppletCreate,
+    AppletDuplicateRequest,
     AppletPassword,
     AppletUpdate,
 )
@@ -114,7 +115,7 @@ async def applet_update(
 async def applet_duplicate(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    password: AppletPassword = Body(...),
+    schema: AppletDuplicateRequest = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[public_detail.Applet]:
     async with atomic(session):
@@ -123,7 +124,7 @@ async def applet_duplicate(
         ).get_by_id_for_duplicate(applet_id)
 
         applet_for_create = await AppletService(session, user.id).duplicate(
-            applet_for_duplicate, password
+            applet_for_duplicate, schema.display_name, schema.password
         )
 
         applet = await AppletService(session, user.id).create(
