@@ -10,7 +10,7 @@ from apps.mailing.services import MailingService
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.domain import InitiateTransfer, Transfer
 from apps.transfer_ownership.errors import TransferEmailError
-from apps.users import UsersCRUD
+from apps.users import UserNotFound, UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from config import settings
@@ -40,18 +40,23 @@ class TransferService:
             key=uuid.uuid4(),
         )
         await TransferCRUD(self.session).create(transfer)
-        receiver = await UsersCRUD(self.session).get_by_email(transfer.email)
-        if receiver.id == self._user.id:
-            raise TransferEmailError()
+        try:
+            receiver = await UsersCRUD(self.session).get_by_email(
+                transfer.email
+            )
+            if receiver.id == self._user.id:
+                raise TransferEmailError()
+            receiver_name = f"{receiver.first_name} {receiver.last_name}"
+        except UserNotFound:
+            receiver_name = transfer.email
 
         url = self._generate_transfer_url()
 
-        # Send email to the user
         service: MailingService = MailingService()
 
         html_payload: dict = {
             "applet_owner": f"{self._user.first_name} {self._user.last_name}",
-            "receiver_name": f"{receiver.first_name} {receiver.last_name}",
+            "receiver_name": receiver_name,
             "applet_name": applet.display_name,
             "applet_id": applet.id,
             "key": transfer.key,
