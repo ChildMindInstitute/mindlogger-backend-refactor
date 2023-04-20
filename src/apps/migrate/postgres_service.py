@@ -1,4 +1,5 @@
 import uuid
+from contextlib import suppress
 from datetime import datetime
 
 import psycopg2  # type: ignore[import]
@@ -43,47 +44,40 @@ class Postgres:
         results: dict[str, dict] = {}
         count = 0
 
-        for user in users:
-            try:
-                # Create Users
+        for old_user in users:
+            time_now = datetime.now()
+            new_user = {
+                "id": uuid.uuid4(),
+                "created_at": time_now,
+                "updated_at": time_now,
+                "last_seen_at": time_now,
+                "is_deleted": False,
+                "email": old_user["email"],
+                "hashed_password": old_user["hashed_password"],
+                "first_name": old_user["first_name"],
+                "last_name": old_user["last_name"],
+            }
+            with suppress(Exception):
                 cursor.execute(
                     "INSERT INTO users"
                     "(created_at, updated_at, is_deleted, email, "
                     "hashed_password, id, first_name, last_name, "
                     "last_seen_at)"
                     "VALUES"
-                    f"('{user['created_at']}', '{user['updated_at']}', "
-                    f"'{user['is_deleted']}', '{user['email']}', "
-                    f"'{user['hashed_password']}', '{user['id']}', "
-                    f"'{user['first_name']}', '{user['last_name']}', "
-                    f"'{user['last_seen_at']}');"
+                    f"('{new_user['created_at']}', '{new_user['updated_at']}', "
+                    f"'{new_user['is_deleted']}', '{new_user['email']}', "
+                    f"'{new_user['hashed_password']}', '{new_user['id']}', "
+                    f"'{new_user['first_name']}', '{new_user['last_name']}', "
+                    f"'{new_user['last_seen_at']}');"
                 )
 
-                new_user = {
-                    "id": user["id"],
-                    "created_at": user["created_at"],
-                    "updated_at": user["updated_at"],
-                    "is_deleted": user["is_deleted"],
-                    "email": user["email"],
-                    "hashed_password": user["hashed_password"],
-                    "first_name": user["first_name"],
-                    "last_name": user["last_name"],
-                    "last_seen_at": user["last_seen_at"],
-                }
-
-                results[user["_id"]] = new_user
+                results[old_user["id_"]] = new_user
                 count += 1
-
-            except Exception as e:
-                print(
-                    "Unable to insert data user for "
-                    f"(email)=({user['email']})",
-                    e,
-                )
 
         self.connection.commit()
         cursor.close()
 
+        print(f"Errors in {len(users) - count} users")
         print(f"Successfully migrated {count} users")
 
         return results
@@ -97,7 +91,7 @@ class Postgres:
         results: list[dict] = []
         count = 0
 
-        for _, user in users_mapping.items():
+        for user in users_mapping.values():
             try:
                 # Create users workspace
                 user_workspace = {

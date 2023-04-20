@@ -13,4 +13,4 @@ class CorsSettings(BaseModel):
 
     @validator("allow_origins", "allow_methods", "allow_headers", pre=True)
     def as_list(cls, value: str):
-        return value.split(",")
+        return [el for el in value.split(",") if el]

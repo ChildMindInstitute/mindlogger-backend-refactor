@@ -1,3 +1,5 @@
+from pprint import pprint as print
+
 from apps.migrate.mongo_service import Mongo
 from apps.migrate.postgres_service import Postgres
 
@@ -7,6 +9,10 @@ from apps.migrate.postgres_service import Postgres
 #         """Convert user from mongo into user
 #         that can be stored into the Postgres"""
 #         pass
+
+
+def foo(item, key):
+    return item()
 
 
 def main():
@@ -20,7 +26,7 @@ def main():
     # Migrate with users_workspace
     postgres.save_users_workspace(users_mapping)
 
-    mongo.get_applets()
+    # mongo.get_applets()
 
     # TODO: Migrate with applets
     # applets: list[dict] = mongo.get_applets()

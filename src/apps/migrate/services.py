@@ -1,31 +1,26 @@
-from typing import (
-    Callable,
-    Type,
-)
+from typing import Callable, Type
 
-from pyld import (
-    ContextResolver,
-)
+from pyld import ContextResolver
 
 from apps.jsonld_converter.service.base import ContextResolverAwareMixin
 from apps.jsonld_converter.service.document import (
     ReproActivity,
-    ReproProtocol,
-    ReproFieldText,
+    ReproFieldAge,
+    ReproFieldAudio,
+    ReproFieldAudioStimulus,
+    ReproFieldDate,
+    ReproFieldDrawing,
+    ReproFieldGeolocation,
+    ReproFieldMessage,
+    ReproFieldPhoto,
     ReproFieldRadio,
+    ReproFieldRadioStacked,
     ReproFieldSlider,
     ReproFieldSliderStacked,
-    ReproFieldPhoto,
-    ReproFieldVideo,
-    ReproFieldAudio,
-    ReproFieldDrawing,
-    ReproFieldMessage,
+    ReproFieldText,
     ReproFieldTimeRange,
-    ReproFieldDate,
-    ReproFieldGeolocation,
-    ReproFieldAge,
-    ReproFieldRadioStacked,
-    ReproFieldAudioStimulus,
+    ReproFieldVideo,
+    ReproProtocol,
 )
 from apps.jsonld_converter.service.document.base import (
     ContainsNestedMixin,
@@ -33,8 +28,8 @@ from apps.jsonld_converter.service.document.base import (
 )
 from apps.jsonld_converter.service.export import AppletExport
 from apps.jsonld_converter.service.export.base import (
-    ContainsNestedModelMixin,
     BaseModelExport,
+    ContainsNestedModelMixin,
 )
 from apps.shared.domain import InternalModel
 
@@ -51,7 +46,12 @@ class JsonLDModelConverter(ContainsNestedMixin):
         protocol = await converter.convert(document_url)
     """
 
-    def __init__(self, context_resolver: ContextResolver, document_loader: Callable, settings: dict):
+    def __init__(
+        self,
+        context_resolver: ContextResolver,
+        document_loader: Callable,
+        settings: dict,
+    ):
         """
         @type settings: dict
             - protocol_password: protocol default password
@@ -62,14 +62,32 @@ class JsonLDModelConverter(ContainsNestedMixin):
 
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
-        return [ReproProtocol, ReproActivity, ReproFieldText, ReproFieldRadio, ReproFieldSlider,
-                ReproFieldSliderStacked, ReproFieldPhoto, ReproFieldVideo, ReproFieldAudio, ReproFieldDrawing,
-                ReproFieldMessage, ReproFieldTimeRange, ReproFieldDate, ReproFieldGeolocation, ReproFieldAge,
-                ReproFieldRadioStacked, ReproFieldAudioStimulus]
+        return [
+            ReproProtocol,
+            ReproActivity,
+            ReproFieldText,
+            ReproFieldRadio,
+            ReproFieldSlider,
+            ReproFieldSliderStacked,
+            ReproFieldPhoto,
+            ReproFieldVideo,
+            ReproFieldAudio,
+            ReproFieldDrawing,
+            ReproFieldMessage,
+            ReproFieldTimeRange,
+            ReproFieldDate,
+            ReproFieldGeolocation,
+            ReproFieldAge,
+            ReproFieldRadioStacked,
+            ReproFieldAudioStimulus,
+        ]
 
-    async def convert(self, input_: str | dict,
-                      base_url: str | None = None) -> InternalModel:
-        obj = await self.load_supported_document(input_, base_url, self.settings)
+    async def convert(
+        self, input_: str | dict, base_url: str | None = None
+    ) -> InternalModel:
+        obj = await self.load_supported_document(
+            input_, base_url, self.settings
+        )
 
         return obj.export()
 
@@ -82,7 +100,9 @@ class ModelJsonLDConverter(ContainsNestedModelMixin):
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
         return [AppletExport]
 
-    def __init__(self, context_resolver: ContextResolver, document_loader: Callable):
+    def __init__(
+        self, context_resolver: ContextResolver, document_loader: Callable
+    ):
         self.context_resolver: ContextResolver = context_resolver
         self.document_loader: Callable = document_loader
 

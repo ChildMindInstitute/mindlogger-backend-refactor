@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime
 
 from Cryptodome.Cipher import AES
@@ -13,7 +12,7 @@ def decrypt(data):
         cipher = AES.new(aes_key, AES.MODE_EAX, nonce=data[-32:-16])
         plaintext = cipher.decrypt(data[:-32])
         cipher.verify(data[-16:])
-    except Exception:
+    except Exception as error:
         return None
 
     txt = plaintext.decode("utf-8")
@@ -26,7 +25,7 @@ class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
         self.client = MongoClient("localhost", 27017)  # type: ignore
-        self.db = self.client["newdb"]
+        self.db = self.client["mindlogger"]
 
     def close_connection(self):
         self.client.close()
@@ -35,7 +34,13 @@ class Mongo:
         collection = self.db["user"]
         users = collection.find(
             {},
-            {"_id": 1, "email": 1, "firstName": 1, "lastName": 1, "salt": 1},
+            {
+                "_id": 1,
+                "email": 1,
+                "firstName": 1,
+                "lastName": 1,
+                "salt": 1,
+            },
         )
 
         count = 0
@@ -58,16 +63,11 @@ class Mongo:
             if user.get("email"):
                 results.append(
                     {
-                        "_id": user.get("_id"),
-                        "id": uuid.uuid4(),
-                        "created_at": datetime.now(),
-                        "updated_at": datetime.now(),
-                        "is_deleted": False,
+                        "id": user.get("_id"),
                         "email": user.get("email"),
                         "hashed_password": user.get("salt"),
                         "first_name": first_name,
                         "last_name": last_name,
-                        "last_seen_at": datetime.now(),
                     }
                 )
                 count += 1
