@@ -80,7 +80,16 @@ class Mongo:
         return results
 
     def get_applets(self) -> list[dict]:
-        # TODO
+        collection = self.db["folder"]
+        folder = collection.find_one()
+        # folder = collection.find(
+        #     {},
+        #     {
+        #         "_id": 1, "name": 1, "description": 1,
+        #         "parentCollection": 1, "baseParentId": 1
+        #     },
+        # )
+        print(folder)
         return []
 
     def get_activities(self) -> list[dict]:

@@ -20,6 +20,8 @@ def main():
     # Migrate with users_workspace
     postgres.save_users_workspace(users_mapping)
 
+    mongo.get_applets()
+
     # TODO: Migrate with applets
     # applets: list[dict] = mongo.get_applets()
     # postgres.save_applets(new_users_mapping, applets)
