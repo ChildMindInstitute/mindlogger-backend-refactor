@@ -15,6 +15,7 @@ from apps.activities.domain.response_type_config import (
     DefaultConfig,
     DrawingConfig,
     AudioPlayerConfig,
+    SliderRowsConfig,
 )
 from apps.activities.domain.response_values import (
     SingleSelectionValues,
@@ -23,6 +24,8 @@ from apps.activities.domain.response_values import (
     AudioValues,
     DrawingValues,
     AudioPlayerValues,
+    SliderRowsValues,
+    SliderRowsValue,
 )
 from apps.jsonld_converter.service.base import LdKeyword
 from apps.jsonld_converter.service.export.base import (
@@ -201,7 +204,35 @@ class ActivityItemMultipleSelectExport(ActivityItemSingleSelectExport):
         return options
 
 
-class ActivityItemSliderExport(ActivityItemBaseExport):
+class SliderValuesMixin:
+
+    def _build_choices_prop(self, values: SliderValues) -> list:
+        choices = []
+        scores = values.scores
+        for i, v in enumerate(range(values.min_value, values.max_value + 1)):
+            lbl = str(v)
+            image = None
+            if v == values.min_value:
+                lbl = values.min_label
+                image = values.min_image
+            elif v == values.max_value:
+                lbl = values.max_label
+                image = values.max_image
+            choice = {
+                "schema:name": lbl,
+                "schema:value": v,
+            }
+            if scores:
+                choice["schema:score"] = scores[i]
+            if image:
+                choice["schema:image"] = image
+
+            choices.append(choice)
+
+        return choices
+
+
+class ActivityItemSliderExport(ActivityItemBaseExport, SliderValuesMixin):
     @classmethod
     def _get_supported_response_type(cls) -> ResponseType:
         return ResponseType.SLIDER
@@ -237,7 +268,7 @@ class ActivityItemSliderExport(ActivityItemBaseExport):
             "removeBackOption": config.remove_back_button,
             "scoring": config.add_scores,
             "responseAlert": config.set_alerts,
-            "choices": self._build_choices_prop(model),
+            "choices": self._build_choices_prop(model.response_values),
             "continousSlider": config.continuous_slider,
             "tickLabel": config.show_tick_labels,
             # "textAnchors": true,  # TODO
@@ -253,31 +284,61 @@ class ActivityItemSliderExport(ActivityItemBaseExport):
 
         return options
 
-    def _build_choices_prop(self, model: ActivityItemFull) -> list:
-        choices = []
-        values: SliderValues = model.response_values
-        scores = values.scores
-        for i, v in enumerate(range(values.min_value, values.max_value + 1)):
-            lbl = str(v)
-            image = None
-            if v == values.min_value:
-                lbl = values.min_label
-                image = values.min_image
-            elif v == values.max_value:
-                lbl = values.max_label
-                image = values.max_image
-            choice = {
-                "schema:name": lbl,
-                "schema:value": v,
+
+class ActivityItemSliderRowsExport(ActivityItemBaseExport, SliderValuesMixin):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.SLIDERROWS
+
+    def _get_input_type(self):
+        return 'stackedSlider'
+
+    def _build_doc(self, model: ActivityItemFull) -> dict:
+        doc = super()._build_doc(model)
+
+        config: SliderRowsConfig = model.config
+
+        if config.timer:
+            doc.update({
+                "timer": config.timer * 1000  # set in milliseconds
+            })
+
+        return doc
+
+    def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
+        allow = super()._build_allow_prop(model)
+
+        config: SliderRowsConfig = model.config
+        if config.skippable_item:
+            allow.append("dontKnow")
+
+        return allow
+
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
+        config: SliderRowsConfig = model.config
+        values: SliderRowsValues = model.response_values
+
+        slider_options = []
+        for row in values.rows:
+            option = {
+                "schema:sliderLabel": row.label,
+                "schema:minValue": row.min_label,
+                "schema:maxValue": row.max_label,
+                "schema:minValueImg": row.min_image,
+                "schema:maxValueImg": row.max_image,
+                "choices": self._build_choices_prop(model.response_values)
             }
-            if scores:
-                choice["schema:score"] = scores[i]
-            if image:
-                choice["schema:image"] = image
+            slider_options.append(option)
 
-            choices.append(choice)
+        options = {
+            "valueType": "xsd:integer",
+            "removeBackOption": config.remove_back_button,
+            "scoring": config.add_scores,
+            "responseAlert": config.set_alerts,
+            "sliderOptions": slider_options
+        }
 
-        return choices
+        return options
 
 
 class ActivityItemMessageExport(ActivityItemBaseExport):
