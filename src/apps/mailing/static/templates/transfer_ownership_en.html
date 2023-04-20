@@ -1,0 +1,68 @@
+<html style="max-width: 700px" lang="en">
+<body>
+{% include 'header.html' %}
+<table style="padding: 0">
+    <tr>
+        <td style="padding-bottom: 1%">
+            Hello {{receiver_name}}!
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            {{applet_owner}} sent you an invitation to transfer ownership of
+            "{{applet_name}}" applet on MindLogger.
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            To accept this invitation, click below and your internet browser
+            will open to the "{{ applet_name }}" invitation page:
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table>
+                <tr>
+                    <td>
+                        <a
+                                href="{{ link }}/{{applet_id}}?key={{ key }}&action=accept&lang={{ language }}"
+                                style="padding: 0.4rem 1rem; font-size: 0.8rem; line-height: 1.5; border-radius: 0.3rem; display: inline-block; font-weight: 400; text-align: center; vertical-align: middle; text-decoration: none; color: #ffffff; background-color: rgb(88, 217, 65); border-color: rgb(88, 217, 65);"
+                        >
+                            Accept
+                        </a>
+                    </td>
+                    <td>
+                        <a
+                                href="{{ link }}/{{applet_id}}?key={{ key }}&action=decline&lang={{ language }}"
+                                style="padding: 0.4rem 1rem; font-size: 0.8rem; line-height: 1.5; border-radius: 0.3rem; display: inline-block; font-weight: 400; text-align: center; vertical-align: middle; text-decoration: none; color: #ffffff; background-color: rgb(217,65,65); border-color: rgb(217,65,65);"
+                        >
+                            Decline
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            If you have any issues joining an applet or creating an account,
+            please
+            <a href="https://gitreports.com/issue/ChildMindInstitute/MindLogger-bug-reports">write
+                us</a> and we can help you.
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Thanks,
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            The MindLogger team
+        </td>
+    </tr>
+</table>
+{% include 'footer_transfer_ownership_en.html' %}
+</body>
+
+</html>
