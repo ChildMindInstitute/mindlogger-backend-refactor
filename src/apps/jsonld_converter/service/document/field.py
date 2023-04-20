@@ -3,7 +3,10 @@ from abc import (
     abstractmethod,
     ABC,
 )
-from copy import deepcopy
+from copy import (
+    deepcopy,
+    copy,
+)
 from typing import (
     Type,
 )
@@ -875,9 +878,27 @@ class ReproFieldGeolocation(ReproFieldBase):
     RESPONSE_TYPE = ResponseType.GEOLOCATION
     CFG_TYPE = GeolocationConfig
 
+    ld_geolocation_image: str | None = None
+
     @classmethod
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
+
+    async def _process_ld_response_options(
+        self, options_doc: dict, drop=False
+    ):
+        await super()._process_ld_response_options(options_doc, drop=drop)
+
+        self.ld_geolocation_image = self._get_ld_image(options_doc, drop=drop)
+
+    def export(self) -> ActivityItemCreate:
+        if self.ld_geolocation_image and self.ld_question:
+            question = {}
+            for lang, val in copy(self.ld_question.items()):
+                question[lang] = "\r\n\r\n".join([val, self._wrap_wysiwyg_img(self.ld_geolocation_image)])
+            self.ld_question = question
+
+        return super().export()
 
 
 class ReproFieldAge(ReproFieldBase):
