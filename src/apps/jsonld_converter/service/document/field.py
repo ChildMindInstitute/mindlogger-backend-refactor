@@ -765,7 +765,10 @@ class ReproFieldAudio(ReproFieldBase):
         )
 
     def _build_response_values(self) -> AudioValues | None:
-        return AudioValues(max_duration=self.ld_max_duration or 300)
+        max_duration = 300
+        if self.ld_max_duration is not None:
+            max_duration = int(int(self.ld_max_duration) / 1000)  # seconds
+        return AudioValues(max_duration=max_duration)
 
 
 class ReproFieldDrawing(ReproFieldBase):
