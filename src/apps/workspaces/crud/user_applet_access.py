@@ -1,6 +1,15 @@
 import uuid
 
-from sqlalchemy import case, delete, distinct, exists, func, select, update
+from sqlalchemy import (
+    and_,
+    case,
+    delete,
+    distinct,
+    exists,
+    func,
+    select,
+    update,
+)
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
@@ -303,10 +312,37 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     async def get_workspace_respondents(
         self, owner_id: uuid.UUID, query_params: QueryParams
     ) -> list[WorkspaceRespondent]:
-        query: Query = select(UserSchema, UserAppletAccessSchema)
+        schedule_query: Query = select(
+            UserEventsSchema.user_id,
+            EventSchema.applet_id,
+        )
+        schedule_query = schedule_query.join(
+            EventSchema, EventSchema.id == UserEventsSchema.event_id
+        )
+        schedule_query = schedule_query.distinct().alias("schedules")
+
+        query: Query = select(
+            UserSchema,
+            UserAppletAccessSchema,
+            case(
+                (schedule_query.c.user_id != None, True),  # noqa: E711
+                else_=False,
+            ).label("individual_schedule"),
+        )
         query = query.join(
             UserAppletAccessSchema,
-            UserAppletAccessSchema.user_id == UserSchema.id,
+            and_(
+                UserAppletAccessSchema.user_id == UserSchema.id,
+                UserAppletAccessSchema.role == Role.RESPONDENT,
+            ),
+        )
+        query = query.join(
+            schedule_query,
+            and_(
+                schedule_query.c.user_id == UserAppletAccessSchema.user_id,
+                schedule_query.c.applet_id == UserAppletAccessSchema.applet_id,
+            ),
+            isouter=True,
         )
         query = query.where(UserAppletAccessSchema.owner_id == owner_id)
         query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
@@ -333,7 +369,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         for (
             user_schema,
             access,
-        ) in results:  # type: UserSchema, UserAppletAccess
+            has_individual_schedule,
+        ) in results:  # type: UserSchema, UserAppletAccess, bool
             users.append(
                 WorkspaceRespondent(
                     id=user_schema.id,
@@ -343,6 +380,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     secret_id=access.meta.get("secretUserId"),
                     last_seen=user_schema.last_seen_at
                     or user_schema.created_at,
+                    has_individual_schedule=has_individual_schedule,
                 )
             )
         return users
@@ -350,7 +388,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     async def get_workspace_respondents_count(
         self, owner_id: uuid.UUID, query_params: QueryParams
     ) -> int:
-        query: Query = select(count(distinct(UserSchema.id)))
+        query: Query = select(count(UserSchema.id))
         query = query.join(
             UserAppletAccessSchema,
             UserAppletAccessSchema.user_id == UserSchema.id,

@@ -8,13 +8,18 @@ class TestWorkspaces(BaseTest):
         "users/fixtures/users.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
+        "applets/fixtures/applet_user_accesses.json",
         "activities/fixtures/activities.json",
         "activities/fixtures/activity_items.json",
         "activity_flows/fixtures/activity_flows.json",
         "activity_flows/fixtures/activity_flow_items.json",
-        "applets/fixtures/applet_user_accesses.json",
         "invitations/fixtures/invitations.json",
         "workspaces/fixtures/workspaces.json",
+        "schedule/fixtures/periodicity.json",
+        "schedule/fixtures/events.json",
+        "schedule/fixtures/activity_events.json",
+        "schedule/fixtures/flow_events.json",
+        "schedule/fixtures/user_events.json",
     ]
 
     login_url = "/auth/login"
@@ -129,7 +134,8 @@ class TestWorkspaces(BaseTest):
         response = await self.client.get(
             self.workspace_respondents_list.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            )
+            ),
+            dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
 
         assert response.status_code == 200, response.json()
@@ -161,7 +167,8 @@ class TestWorkspaces(BaseTest):
         response = await self.client.get(
             self.workspace_managers_list.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            )
+            ),
+            dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
 
         assert response.status_code == 200, response.json()
@@ -175,7 +182,8 @@ class TestWorkspaces(BaseTest):
         response = await self.client.get(
             self.workspace_respondents_list.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            )
+            ),
+            dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
 
         assert response.status_code == 200, response.json()
@@ -194,7 +202,8 @@ class TestWorkspaces(BaseTest):
         response = await self.client.get(
             self.workspace_respondents_list.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            )
+            ),
+            dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
         assert response.json()["result"][0]["accessId"] == access_id
 
@@ -211,7 +220,8 @@ class TestWorkspaces(BaseTest):
         response = await self.client.get(
             self.workspace_respondents_list.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            )
+            ),
+            dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
         assert response.json()["result"][-1]["accessId"] == access_id
 

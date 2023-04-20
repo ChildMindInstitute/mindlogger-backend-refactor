@@ -20,10 +20,7 @@ from apps.applets.domain import (
     Role,
 )
 from apps.applets.domain.applet import Applet, AppletDataRetention
-from apps.applets.domain.applet_create_update import (
-    AppletCreate,
-    AppletUpdate,
-)
+from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
 from apps.applets.domain.applet_duplicate import AppletDuplicate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink

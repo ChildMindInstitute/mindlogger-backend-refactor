@@ -54,6 +54,7 @@ class WorkspaceRespondent(InternalModel):
     role: Role
     secret_id: str | None
     last_seen: datetime.datetime
+    has_individual_schedule: bool
 
 
 class WorkspaceManager(InternalModel):
@@ -72,6 +73,7 @@ class PublicWorkspaceRespondent(PublicModel):
     role: Role
     secret_id: str | None
     last_seen: datetime.datetime
+    has_individual_schedule: bool
 
 
 class PublicWorkspaceManager(PublicModel):
