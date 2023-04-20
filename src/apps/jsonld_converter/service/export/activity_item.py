@@ -1,4 +1,7 @@
-from abc import abstractmethod
+from abc import (
+    abstractmethod,
+    ABC,
+)
 
 from apps.activities.domain.activity_full import (
     ActivityItemFull,
@@ -8,10 +11,15 @@ from apps.activities.domain.response_type_config import (
     SingleSelectionConfig,
     SliderConfig,
     TextConfig,
+    MessageConfig,
+    NumberSelectionConfig,
+    DateConfig,
+    DefaultConfig,
 )
 from apps.activities.domain.response_values import (
     SingleSelectionValues,
     SliderValues,
+    NumberSelectionValues,
 )
 from apps.jsonld_converter.service.base import LdKeyword
 from apps.jsonld_converter.service.export.base import (
@@ -68,7 +76,7 @@ class ActivityItemBaseExport(BaseModelExport):
 
     def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
         allow = []
-        if not model.config.remove_back_button:
+        if model.config.remove_back_button:
             allow.append("disableBack")
         return allow
 
@@ -127,9 +135,10 @@ class ActivityItemSingleSelectExport(ActivityItemBaseExport):
         if additional_option:
             doc["isOptionalText"] = additional_option.text_input_option
 
-        doc.update({
-            "timer": model.config.timer * 1000  # set in milliseconds
-        })
+        if model.config.timer:
+            doc.update({
+                "timer": model.config.timer * 1000  # set in milliseconds
+            })
 
         return doc
 
@@ -203,9 +212,10 @@ class ActivityItemSliderExport(ActivityItemBaseExport):
         if additional_option:
             doc["isOptionalText"] = additional_option.text_input_option
 
-        doc.update({
-            "timer": model.config.timer * 1000  # set in milliseconds
-        })
+        if model.config.timer:
+            doc.update({
+                "timer": model.config.timer * 1000  # set in milliseconds
+            })
 
         return doc
 
@@ -265,3 +275,133 @@ class ActivityItemSliderExport(ActivityItemBaseExport):
             choices.append(choice)
 
         return choices
+
+
+class ActivityItemMessageExport(ActivityItemBaseExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.MESSAGE
+
+    def _get_input_type(self):
+        return 'markdownMessage'
+
+    def _build_doc(self, model: ActivityItemFull) -> dict:
+        doc = super()._build_doc(model)
+        if model.config.timer:
+            doc.update({
+                "timer": model.config.timer * 1000  # set in milliseconds
+            })
+
+        return doc
+
+
+class ActivityItemNumberExport(ActivityItemBaseExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.NUMBERSELECT
+
+    def _get_input_type(self):
+        return 'ageSelector'
+
+    def _build_doc(self, model: ActivityItemFull) -> dict:
+        doc = super()._build_doc(model)
+        config: NumberSelectionConfig = model.config
+        additional_option = config.additional_response_option
+        if additional_option:
+            doc["isOptionalText"] = additional_option.text_input_option
+
+        return doc
+
+    def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
+        allow = super()._build_allow_prop(model)
+        if model.config.skippable_item:
+            allow.append("dontKnow")
+        return allow
+
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
+        config: NumberSelectionConfig = model.config
+        values: NumberSelectionValues = model.response_values
+
+        options = {
+            "schema:minAge": values.min_value,
+            "schema:maxAge": values.max_value,
+            "minValue": values.min_value,
+            "maxValue": values.max_value,
+            "removeBackOption": config.remove_back_button,
+        }
+        additional_option = config.additional_response_option
+        if additional_option and additional_option.text_input_option:
+            options["isOptionalTextRequired"] = additional_option.text_input_required
+
+        return options
+
+
+class ActivityItemDefaultConfigExport(ActivityItemBaseExport, ABC):
+
+    def _build_doc(self, model: ActivityItemFull) -> dict:
+        doc = super()._build_doc(model)
+        config: DefaultConfig = model.config
+        additional_option = config.additional_response_option
+        if additional_option:
+            doc["isOptionalText"] = additional_option.text_input_option
+
+        if config.timer:
+            doc.update({
+                "timer": model.config.timer * 1000  # set in milliseconds
+            })
+
+        return doc
+
+    def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
+        allow = super()._build_allow_prop(model)
+        if model.config.skippable_item:
+            allow.append("dontKnow")
+        return allow
+
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
+        config: DefaultConfig = model.config
+        options = {
+            "removeBackOption": config.remove_back_button,
+        }
+        additional_option = config.additional_response_option
+        if additional_option and additional_option.text_input_option:
+            options["isOptionalTextRequired"] = additional_option.text_input_required
+
+        return options
+
+
+class ActivityItemDateExport(ActivityItemDefaultConfigExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.DATE
+
+    def _get_input_type(self):
+        return 'date'
+
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
+        options = super()._build_response_options_prop(model)
+        options.update({
+            "valueType": "xsd:date",
+            "requiredValue": True,
+            "schema:maxValue": "new Date()",
+        })
+
+        return options
+
+
+class ActivityItemTimeRangeExport(ActivityItemDefaultConfigExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.TIMERANGE
+
+    def _get_input_type(self):
+        return 'timeRange'
+
+
+class ActivityItemGeolocationExport(ActivityItemDefaultConfigExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.GEOLOCATION
+
+    def _get_input_type(self):
+        return 'geolocation'
