@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from apps.shared.test import BaseTest
 from apps.workspaces.domain.constants import Role
 from infrastructure.database import rollback
@@ -189,6 +191,15 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
 
         access_id = response.json()["result"][-1]["accessId"]
+
+        # Pin access wrong owner
+        response = await self.client.post(
+            self.workspace_respondents_pin.format(owner_id=uuid4()),
+            data=dict(access_id=access_id),
+        )
+
+        assert response.status_code == 404
+
         # Pin access
         response = await self.client.post(
             self.workspace_respondents_pin.format(
