@@ -9,6 +9,7 @@ import apps.alerts.router as alerts
 import apps.answers.router as answers
 import apps.applets.router as applets
 import apps.authentication.router as auth
+import apps.file.router as files
 import apps.folders.router as folders
 import apps.healthcheck.router as healthcheck
 import apps.invitations.router as invitations
@@ -21,7 +22,6 @@ import apps.users.router as users
 import apps.workspaces.router as workspaces
 import middlewares as middlewares_
 from config import settings
-import apps.file.router as files
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
