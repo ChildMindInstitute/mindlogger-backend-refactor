@@ -74,6 +74,13 @@ class _AppletRespondentsOrdering(Ordering):
     created_at = UserAppletAccessSchema.created_at
 
 
+class _AppletRespondentSearch(Searching):
+    search_fields = [
+        UserAppletAccessSchema.meta["nickname"].astext,
+        UserAppletAccessSchema.meta["secretUserId"].astext,
+    ]
+
+
 class _AppletManagersOrdering(Ordering):
     email = UserSchema.email
     first_name = UserSchema.first_name
@@ -81,7 +88,11 @@ class _AppletManagersOrdering(Ordering):
 
 
 class _AppletUsersSearch(Searching):
-    search_fields = [UserSchema.first_name, UserSchema.last_name]
+    search_fields = [
+        UserSchema.first_name,
+        UserSchema.last_name,
+        UserSchema.email,
+    ]
 
 
 class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
@@ -352,7 +363,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             )
         if query_params.search:
             query = query.where(
-                _AppletUsersSearch().get_clauses(query_params.search)
+                _AppletRespondentSearch().get_clauses(query_params.search)
             )
         if query_params.ordering:
             query = query.order_by(
@@ -401,7 +412,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             )
         if query_params.search:
             query = query.where(
-                _AppletUsersSearch().get_clauses(query_params.search)
+                _AppletRespondentSearch().get_clauses(query_params.search)
             )
         db_result = await self._execute(query)
 

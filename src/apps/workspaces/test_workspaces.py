@@ -144,6 +144,36 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"][0]["role"] == Role.RESPONDENT
         assert response.json()["result"][1]["role"] == Role.RESPONDENT
 
+        # test search
+        search_params = {
+            "f0dd4996-e0eb-461f-b2f8-ba873a674788": [
+                "jane",
+                "b2f8-ba873a674788",
+            ],
+            "f0dd4996-e0eb-461f-b2f8-ba873a674789": [
+                "john",
+                "f0dd4996-e0eb-461f-b2f8-ba873a674789",
+            ],
+        }
+        for access_id, params in search_params.items():
+            for val in params:
+                response = await self.client.get(
+                    self.workspace_respondents_list.format(
+                        owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+                    ),
+                    dict(
+                        appletId="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                        search=val,
+                    ),
+                )
+                assert response.status_code == 200
+                data = response.json()
+                assert set(data.keys()) == {"count", "result"}
+                assert data["count"] == 1
+                result = data["result"]
+                assert len(result) == 1
+                assert result[0]["accessId"] == access_id
+
     @rollback
     async def test_get_workspace_respondent_accesses(self):
         await self.client.login(
@@ -173,6 +203,34 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 4
+
+        # test search
+        search_params = {
+            "7484f34a-3acc-4ee6-8a94-fd7299502fa2": [
+                "lucy",
+                "gabe",
+                "lucy@gmail",
+            ],
+        }
+        for id_, params in search_params.items():
+            for val in params:
+                response = await self.client.get(
+                    self.workspace_managers_list.format(
+                        owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+                    ),
+                    dict(
+                        appletId="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                        search=val,
+                    ),
+                )
+
+                assert response.status_code == 200
+                data = response.json()
+                assert set(data.keys()) == {"count", "result"}
+                assert data["count"] == 1
+                result = data["result"]
+                assert len(result) == 1
+                assert result[0]["id"] == id_
 
     @rollback
     async def test_pin_workspace_users(self):
