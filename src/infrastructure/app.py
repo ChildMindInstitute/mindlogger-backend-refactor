@@ -21,6 +21,7 @@ import apps.users.router as users
 import apps.workspaces.router as workspaces
 import middlewares as middlewares_
 from config import settings
+import apps.file.router as files
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -41,6 +42,7 @@ routers: Iterable[APIRouter] = (
     transfer_ownership.router,
     alerts.router,
     test_data.router,
+    files.router,
 )
 
 # Declare your middlewares here

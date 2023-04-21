@@ -19,10 +19,9 @@ async def upload(
 ) -> Response[UploadedFile]:
     cdn_client = CDNClient(settings.cdn, env=settings.env)
 
-    # generate key
-    key = CDNClient.generate_key(str(uuid.uuid4()), file.filename)
+    _, fmt = file.filename.split('.')
+    key = CDNClient.generate_key(hash(user.id), f'{uuid.uuid4()}.{fmt}')
 
-    # upload file
     cdn_client.upload(key, file.file)
 
     result = UploadedFile(key=key)
