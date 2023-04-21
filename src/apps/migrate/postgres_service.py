@@ -92,19 +92,21 @@ class Postgres:
         count = 0
 
         for user in users_mapping.values():
-            try:
-                # Create users workspace
-                user_workspace = {
-                    "id": uuid.uuid4(),
-                    "created_at": datetime.now(),
-                    "updated_at": datetime.now(),
-                    "is_deleted": False,
-                    "user_id": user["id"],
-                    "workspace_name": f"{user['first_name']} "
-                    f"{user['last_name']}",
-                    "is_modified": False,
-                }
+            time_now = datetime.now()
 
+            # Create users workspace
+            user_workspace = {
+                "id": uuid.uuid4(),
+                "created_at": time_now,
+                "updated_at": time_now,
+                "is_deleted": False,
+                "user_id": user["id"],
+                "workspace_name": f"{user['first_name']} "
+                f"{user['last_name']}",
+                "is_modified": False,
+            }
+
+            with suppress(Exception):
                 cursor.execute(
                     "INSERT INTO users_workspaces"
                     "(user_id, id, created_at, updated_at, is_deleted, "
@@ -122,16 +124,10 @@ class Postgres:
                 results.append(user_workspace)
                 count += 1
 
-            except Exception as e:
-                print(
-                    "Unable to insert data user_workspace for "
-                    f"(user_id)=({user['id']})",
-                    e,
-                )
-
         self.connection.commit()
         cursor.close()
 
+        print(f"Errors in {len(users_mapping) - count} users_workspace")
         print(f"Successfully migrated {count} users_workspace")
 
         return results

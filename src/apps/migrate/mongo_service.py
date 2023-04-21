@@ -63,7 +63,7 @@ class Mongo:
             if user.get("email"):
                 results.append(
                     {
-                        "id": user.get("_id"),
+                        "id_": user.get("_id"),
                         "email": user.get("email"),
                         "hashed_password": user.get("salt"),
                         "first_name": first_name,
