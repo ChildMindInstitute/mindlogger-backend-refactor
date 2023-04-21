@@ -111,6 +111,7 @@ async def workspace_applet_detail(
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ) -> Response[PublicAppletFull]:
+    await UserAccessService(session, user.id).check_access(owner_id)
     async with atomic(session):
         applet = await AppletService(session, user.id).get_full_applet(id_)
 

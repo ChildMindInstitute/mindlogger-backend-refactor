@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from apps.shared.test import BaseTest
 from apps.workspaces.domain.constants import Role
 from infrastructure.database import rollback
@@ -104,6 +106,15 @@ class TestWorkspaces(BaseTest):
     @rollback
     async def test_workspace_applets_detail(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+
+        # check access not exists
+        response = await self.client.get(
+            self.workspace_applets_detail.format(
+                owner_id=uuid4(),
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            )
+        )
+        assert response.status_code == 404
 
         response = await self.client.get(
             self.workspace_applets_detail.format(
