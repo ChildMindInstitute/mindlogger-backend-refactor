@@ -230,6 +230,15 @@ class TestWorkspaces(BaseTest):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
+        response = await self.client.get(
+            self.workspace_managers_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            )
+        )
+
+        assert response.status_code == 200
+
+        managers_count = response.json()["count"]
 
         data = {
             "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
@@ -243,6 +252,15 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200
+
+        response = await self.client.get(
+            self.workspace_managers_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            )
+        )
+
+        assert response.status_code == 200
+        assert response.json()["count"] == managers_count - 1
 
     @rollback
     async def test_workspace_remove_respondent_access(self):

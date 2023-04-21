@@ -106,12 +106,9 @@ class UserAccessService:
         )
 
         # remove manager access
-        for applet_id in schema.applet_ids:
-            await UserAppletAccessCRUD(
-                self.session
-            ).delete_all_by_user_and_applet(
-                user_id=schema.user_id, applet_id=applet_id
-            )
+        await UserAppletAccessCRUD(self.session).delete_all_by_user_and_applet(
+            schema.user_id, schema.applet_ids
+        )
 
     async def remove_respondent_access(self, schema: RemoveRespondentAccess):
         """Remove respondent access from a specific user."""
@@ -126,12 +123,9 @@ class UserAccessService:
         )
 
         # remove respondent access
-        for applet_id in schema.applet_ids:
-            await UserAppletAccessCRUD(
-                self.session
-            ).delete_all_by_user_and_applet(
-                user_id=schema.user_id, applet_id=applet_id
-            )
+        await UserAppletAccessCRUD(self.session).delete_all_by_user_and_applet(
+            schema.user_id, schema.applet_ids
+        )
 
         # delete all responses of respondent in applets
         if schema.delete_responses:
