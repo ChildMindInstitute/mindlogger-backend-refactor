@@ -491,11 +491,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         ]
 
     async def delete_all_by_user_and_applet(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID
+        self, user_id: uuid.UUID, applet_ids: list[uuid.UUID]
     ):
         query: Query = delete(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.applet_id.in_(applet_ids))
         await self._execute(query)
 
     async def check_access_by_user_and_owner(

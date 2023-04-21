@@ -123,8 +123,8 @@ async def workspace_remove_manager_access(
     session=Depends(session_manager.get_session),
 ):
     """Remove manager access from a specific user."""
-
-    await UserAccessService(session, user.id).remove_manager_access(schema)
+    async with atomic(session):
+        await UserAccessService(session, user.id).remove_manager_access(schema)
 
 
 async def applet_remove_respondent_access(
@@ -132,7 +132,10 @@ async def applet_remove_respondent_access(
     schema: RemoveRespondentAccess = Body(...),
     session=Depends(session_manager.get_session),
 ):
-    await UserAccessService(session, user.id).remove_respondent_access(schema)
+    async with atomic(session):
+        await UserAccessService(session, user.id).remove_respondent_access(
+            schema
+        )
 
 
 async def workspace_respondents_list(
