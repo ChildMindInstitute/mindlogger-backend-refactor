@@ -63,6 +63,7 @@ class TestApplet(BaseTest):
                             ),
                             response_type="text",
                             response_values=None,
+                            is_hidden=True,
                             config=dict(
                                 max_response_length=200,
                                 correct_answer_required=False,
