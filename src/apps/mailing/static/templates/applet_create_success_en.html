@@ -1,0 +1,46 @@
+<html style="max-width: 700px" lang="en">
+<body>
+{% include 'header.html' %}
+<table style="padding: 0">
+    <tr>
+        <td style="padding-bottom: 1%">
+            Hi {{first_name}}!
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Your applet {{applet_name}} was successfully uploaded!
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            You can now send invitations and create schedules.
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <b>Important</b>: Please ensure your applet password is stored securely outside of MindLogger. This password can never be changed or retrieved if forgotten due to security reasons. You will lose all data previously collected if this password is lost.
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            If you have had any issues joining an applet or creating an account, please
+            <a href="https://gitreports.com/issue/ChildMindInstitute/MindLogger-bug-reports">write
+                us</a> and we can help you.
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Thanks,
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            The MindLogger team
+        </td>
+    </tr>
+</table>
+{% include 'footers/footer_contact_us_en.html' %}
+</body>
+
+</html>

@@ -1,6 +1,7 @@
 import asyncio
 import uuid
 
+from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -250,6 +251,8 @@ class TestApplet(BaseTest):
             self.applet_detail_url.format(pk=response.json()["result"]["id"])
         )
         assert response.status_code == 200
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].subject == "Applet upload success!"
 
     @rollback
     async def test_create_duplicate_name_applet(self):
@@ -351,6 +354,7 @@ class TestApplet(BaseTest):
             response.json()["result"][0]["message"]["en"]
             == "Applet already exists."
         )
+        assert TestMail.mails[0].subject == "Applet upload failed!"
 
     @rollback
     async def test_create_duplicate_case_sensitive_name_applet(self):
@@ -574,6 +578,8 @@ class TestApplet(BaseTest):
             data=update_data,
         )
         assert response.status_code == 200, response.json()
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].subject == "Applet edit success!"
 
     @rollback
     async def test_duplicate_applet(self):
@@ -588,6 +594,9 @@ class TestApplet(BaseTest):
             data=dict(display_name="New name", password="Test1234567890"),
         )
         assert response.status_code == 201, response.json()
+
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].subject == "Applet duplicate success!"
 
         response = await self.client.get(self.applet_list_url)
         assert len(response.json()["result"]) == 4

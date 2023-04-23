@@ -111,7 +111,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_admin_invite_coordinator_success(self):
@@ -135,7 +134,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_admin_invite_editor_success(self):
@@ -159,7 +157,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_admin_invite_reviewer_success(self):
@@ -184,7 +181,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_admin_invite_respondent_success(self):
@@ -210,7 +206,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_manager_invite_manager_success(self):
@@ -232,7 +227,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_manager_invite_coordinator_success(self):
@@ -254,7 +248,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_manager_invite_editor_success(self):
@@ -276,7 +269,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_manager_invite_reviewer_success(self):
@@ -299,7 +291,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_manager_invite_respondent_success(self):
@@ -323,7 +314,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_coordinator_invite_respondent_success(self):
@@ -347,7 +337,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_coordinator_invite_reviewer_success(self):
@@ -370,7 +359,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
-        TestMail.clear_mails()
 
     @rollback
     async def test_coordinator_invite_manager_fail(self):

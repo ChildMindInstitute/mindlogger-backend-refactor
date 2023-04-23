@@ -48,28 +48,28 @@ class TransferService:
                 raise TransferEmailError()
             receiver_name = f"{receiver.first_name} {receiver.last_name}"
         except UserNotFound:
+            path = "transfer_ownership_unregistered_user_en"
             receiver_name = transfer.email
+        else:
+            path = "transfer_ownership_registered_user_en"
 
         url = self._generate_transfer_url()
 
-        service: MailingService = MailingService()
-
-        html_payload: dict = {
-            "applet_owner": f"{self._user.first_name} {self._user.last_name}",
-            "receiver_name": receiver_name,
-            "applet_name": applet.display_name,
-            "applet_id": applet.id,
-            "key": transfer.key,
-            "title": "Transfer ownership of an Applet",
-            "link": url,
-            "current_year": datetime.date.today().year,
-        }
+        service = MailingService()
 
         message = MessageSchema(
             recipients=[transfer_request.email],
-            subject="Transfer ownership of an Applet",
+            subject="Transfer ownership of an applet",
             body=service.get_template(
-                path="transfer_ownership_en", **html_payload
+                path=path,
+                applet_owner=f"{self._user.first_name} {self._user.last_name}",
+                receiver_name=receiver_name,
+                applet_name=applet.display_name,
+                applet_id=applet.id,
+                key=transfer.key,
+                title="Transfer ownership of an Applet",
+                link=url,
+                current_year=datetime.date.today().year,
             ),
         )
 
