@@ -1,3 +1,5 @@
+import pytest
+
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -16,6 +18,7 @@ class TestTransfer(BaseTest):
     transfer_url = "/applets/{applet_id}/transferOwnership"
     response_url = "/applets/{applet_id}/transferOwnership/{key}"
 
+    @pytest.mark.main
     @rollback
     async def test_initiate_transfer(self):
         await self.client.login(
@@ -33,7 +36,7 @@ class TestTransfer(BaseTest):
         assert response.status_code == 200
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [data["email"]]
-        TestMail.clear_mails()
+        assert TestMail.mails[0].subject == "Transfer ownership of an applet"
 
     @rollback
     async def test_initiate_transfer_fail(self):

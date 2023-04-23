@@ -30,6 +30,8 @@ from apps.applets.service.applet_history import (
     retrieve_versions,
 )
 from apps.authentication.deps import get_current_user
+from apps.mailing.domain import MessageSchema
+from apps.mailing.services import MailingService
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
@@ -50,6 +52,7 @@ __all__ = [
     "applet_link_delete",
     "applet_set_data_retention",
     "applet_duplicate",
+    "applet_check_password",
 ]
 
 from infrastructure.database import atomic, session_manager
@@ -97,7 +100,33 @@ async def applet_create(
     session=Depends(session_manager.get_session),
 ) -> Response[public_detail.Applet]:
     async with atomic(session):
-        applet = await AppletService(session, user.id).create(schema)
+        mail_service = MailingService()
+        try:
+            applet = await AppletService(session, user.id).create(schema)
+        except Exception:
+            await mail_service.send(
+                MessageSchema(
+                    recipients=[user.email],
+                    subject="Applet upload failed!",
+                    body=mail_service.get_template(
+                        path="applet_create_success_en",
+                        first_name=user.first_name,
+                        applet_name=schema.display_name,
+                    ),
+                )
+            )
+            raise
+        await mail_service.send(
+            MessageSchema(
+                recipients=[user.email],
+                subject="Applet upload success!",
+                body=mail_service.get_template(
+                    path="applet_create_success_en",
+                    first_name=user.first_name,
+                    applet_name=applet.display_name,
+                ),
+            )
+        )
     return Response(result=public_detail.Applet(**applet.dict()))
 
 
@@ -107,8 +136,20 @@ async def applet_update(
     schema: AppletUpdate = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[public_detail.Applet]:
+    mail_service = MailingService()
     async with atomic(session):
         applet = await AppletService(session, user.id).update(id_, schema)
+        await mail_service.send(
+            MessageSchema(
+                recipients=[user.email],
+                subject="Applet edit success!",
+                body=mail_service.get_template(
+                    path="applet_edit_success_en",
+                    first_name=user.first_name,
+                    applet_name=applet.display_name,
+                ),
+            )
+        )
     return Response(result=public_detail.Applet(**applet.dict()))
 
 
@@ -118,6 +159,7 @@ async def applet_duplicate(
     schema: AppletDuplicateRequest = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[public_detail.Applet]:
+    mail_service = MailingService()
     async with atomic(session):
         applet_for_duplicate = await AppletService(
             session, user.id
@@ -129,6 +171,17 @@ async def applet_duplicate(
 
         applet = await AppletService(session, user.id).create(
             applet_for_create
+        )
+        await mail_service.send(
+            MessageSchema(
+                recipients=[user.email],
+                subject="Applet duplicate success!",
+                body=mail_service.get_template(
+                    path="applet_duplicate_success_en",
+                    first_name=user.first_name,
+                    applet_name=applet.display_name,
+                ),
+            )
         )
     return Response(result=public_detail.Applet(**applet.dict()))
 
