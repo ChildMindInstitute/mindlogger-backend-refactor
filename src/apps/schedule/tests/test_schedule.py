@@ -17,6 +17,8 @@ class TestSchedule(BaseTest):
         "schedule/fixtures/activity_events.json",
         "schedule/fixtures/flow_events.json",
         "schedule/fixtures/user_events.json",
+        "schedule/fixtures/notifications.json",
+        "schedule/fixtures/reminders.json",
     ]
 
     login_url = "/auth/login"
@@ -26,7 +28,13 @@ class TestSchedule(BaseTest):
     schedule_detail_user_url = f"{schedule_user_url}/{{applet_id}}"
 
     schedule_url = f"{applet_detail_url}/events"
-    delete_user_url = f"{schedule_url}/delete_individual/{{respondent_id}}"
+    delete_user_url = (
+        f"{applet_detail_url}/events/delete_individual/{{respondent_id}}"
+    )
+    remove_ind_url = (
+        f"{applet_detail_url}/events/remove_individual/{{respondent_id}}"
+    )
+
     schedule_detail_url = f"{applet_detail_url}/events/{{event_id}}"
 
     count_url = "applets/{applet_id}/events/count"
@@ -52,6 +60,15 @@ class TestSchedule(BaseTest):
             "respondent_id": None,
             "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             "flow_id": None,
+            "notification": {
+                "notifications": [
+                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
+                ],
+                "reminder": {
+                    "activity_incomplete": 1,
+                    "reminder_time": "08:30:00",
+                },
+            },
         }
 
         response = await self.client.post(
@@ -60,7 +77,6 @@ class TestSchedule(BaseTest):
             ),
             data=create_data,
         )
-
         assert response.status_code == 201, response.json()
         event = response.json()["result"]
         assert event["startTime"] == create_data["start_time"]
@@ -340,6 +356,15 @@ class TestSchedule(BaseTest):
             "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
+            "notification": {
+                "notifications": [
+                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
+                ],
+                "reminder": {
+                    "activity_incomplete": 1,
+                    "reminder_time": "08:30:00",
+                },
+            },
         }
 
         response = await self.client.post(
@@ -353,6 +378,17 @@ class TestSchedule(BaseTest):
         create_data["activity_id"] = "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
         create_data["flow_id"] = None
         create_data["respondent_id"] = "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+        create_data["notification"]["notifications"] = [
+            {
+                "trigger_type": "RANDOM",
+                "from_time": "08:30:00",
+                "to_time": "08:40:00",
+            },
+        ]
+        create_data["notification"]["reminder"] = {
+            "activity_incomplete": 2,
+            "reminder_time": "08:40:00",
+        }
 
         response = await self.client.put(
             self.schedule_detail_url.format(
@@ -368,6 +404,10 @@ class TestSchedule(BaseTest):
         assert event["flowId"] == create_data["flow_id"]
         assert event["respondentId"] == create_data["respondent_id"]
         assert event["activityId"] == create_data["activity_id"]
+        assert (
+            event["notification"]["reminder"]["reminderTime"]
+            == create_data["notification"]["reminder"]["reminder_time"]
+        )
 
     @rollback
     async def test_count(self):
@@ -493,7 +533,6 @@ class TestSchedule(BaseTest):
                 respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             )
         )
-
         assert response.status_code == 204
 
         response = await self.client.get(
@@ -511,7 +550,9 @@ class TestSchedule(BaseTest):
         )
 
         response = await self.client.get(self.schedule_user_url)
+
         assert response.status_code == 200
+        assert response.json()["count"] == 6
 
     @rollback
     async def test_schedule_get_user_by_applet(self):
@@ -525,3 +566,74 @@ class TestSchedule(BaseTest):
             )
         )
         assert response.status_code == 200
+
+    @rollback
+    async def test_schedule_remove_individual(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.delete(
+            self.remove_ind_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            )
+        )
+
+        assert response.status_code == 404  # event for user not found
+
+        create_data = {
+            "start_time": "08:00:00",
+            "end_time": "09:00:00",
+            "access_before_schedule": True,
+            "one_time_completion": True,
+            "timer": None,
+            "timer_type": "NOT_SET",
+            "periodicity": {
+                "type": "MONTHLY",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
+            },
+            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            "activity_id": None,
+            "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
+        }
+
+        response = await self.client.post(
+            self.schedule_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=create_data,
+        )
+        event_id = response.json()["result"]["id"]
+
+        response = await self.client.get(
+            self.schedule_detail_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                event_id=event_id,
+            )
+        )
+
+        assert response.status_code == 200
+        assert (
+            response.json()["result"]["respondentId"]
+            == create_data["respondent_id"]
+        )
+
+        response = await self.client.delete(
+            self.remove_ind_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            )
+        )
+
+        assert response.status_code == 204
+
+        response = await self.client.get(
+            self.schedule_detail_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                event_id=event_id,
+            )
+        )
+        assert response.status_code == 404

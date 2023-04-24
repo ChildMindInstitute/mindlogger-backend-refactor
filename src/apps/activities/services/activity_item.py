@@ -5,7 +5,10 @@ from apps.activities.crud import ActivityItemsCRUD
 from apps.activities.db.schemas import ActivityItemSchema
 from apps.activities.domain.activity_create import PreparedActivityItemCreate
 from apps.activities.domain.activity_full import ActivityItemFull
-from apps.activities.domain.activity_item import ActivityItemDetail
+from apps.activities.domain.activity_item import (
+    ActivityItemDuplicate,
+    ActivityItemSingleLanguageDetail,
+)
 from apps.activities.domain.activity_update import PreparedActivityItemUpdate
 
 
@@ -55,25 +58,42 @@ class ActivityItemService:
 
     async def get_single_language_by_activity_id(
         self, activity_id: uuid.UUID, language: str
-    ) -> list[ActivityItemDetail]:
+    ) -> list[ActivityItemSingleLanguageDetail]:
         schemas = await ActivityItemsCRUD(self.session).get_by_activity_id(
             activity_id
         )
         items = []
         for schema in schemas:
             items.append(
-                ActivityItemDetail(
+                ActivityItemSingleLanguageDetail(
                     id=schema.id,
                     activity_id=schema.activity_id,
                     question=self._get_by_language(schema.question, language),
                     response_type=schema.response_type,
                     # TODO: get answers by language
-                    answers=schema.answers,
+                    response_values=schema.response_values,
                     config=schema.config,
                     order=schema.order,
+                    name=schema.name,
                 )
             )
         return items
+
+    async def get_items_by_activity_ids(
+        self, activity_ids: list[uuid.UUID]
+    ) -> list[ActivityItemFull]:
+        schemas = await ActivityItemsCRUD(self.session).get_by_activity_ids(
+            activity_ids
+        )
+        return [ActivityItemFull.from_orm(schema) for schema in schemas]
+
+    async def get_items_by_activity_ids_for_duplicate(
+        self, activity_ids: list[uuid.UUID]
+    ) -> list[ActivityItemDuplicate]:
+        schemas = await ActivityItemsCRUD(self.session).get_by_activity_ids(
+            activity_ids
+        )
+        return [ActivityItemDuplicate.from_orm(schema) for schema in schemas]
 
     async def remove_applet_activity_items(self, applet_id: uuid.UUID):
         await ActivityItemsCRUD(self.session).delete_by_applet_id(applet_id)

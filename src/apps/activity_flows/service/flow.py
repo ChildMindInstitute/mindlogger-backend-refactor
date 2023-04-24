@@ -2,7 +2,10 @@ import uuid
 
 from apps.activity_flows.crud import FlowItemsCRUD, FlowsCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
-from apps.activity_flows.domain.flow import FlowDetail
+from apps.activity_flows.domain.flow import (
+    FlowDuplicate,
+    FlowSingleLanguageDetail,
+)
 from apps.activity_flows.domain.flow_create import (
     FlowCreate,
     PreparedFlowItemCreate,
@@ -13,6 +16,7 @@ from apps.activity_flows.domain.flow_update import (
     PreparedFlowItemUpdate,
 )
 from apps.activity_flows.service.flow_item import FlowItemService
+from apps.schedule.crud.events import FlowEventsCRUD
 from apps.schedule.service.schedule import ScheduleService
 
 
@@ -86,11 +90,12 @@ class FlowService:
         prepared_flow_items = list()
 
         all_flows = [
-            flow.id
-            for flow in await FlowsCRUD(self.session).get_by_applet_id(
+            flow.flow_id
+            for flow in await FlowEventsCRUD(self.session).get_by_applet_id(
                 applet_id
             )
         ]
+
         # Save new flow ids
         new_flows = []
         existing_flows = []
@@ -143,7 +148,6 @@ class FlowService:
 
         # Remove events for deleted flows
         deleted_flow_ids = set(all_flows) - set(existing_flows)
-
         if deleted_flow_ids:
             await ScheduleService(self.session).delete_by_flow_ids(
                 applet_id=applet_id, flow_ids=list(deleted_flow_ids)
@@ -165,7 +169,7 @@ class FlowService:
 
     async def get_single_language_by_applet_id(
         self, applet_id: uuid.UUID, language: str
-    ) -> list[FlowDetail]:
+    ) -> list[FlowSingleLanguageDetail]:
         schemas = await FlowsCRUD(self.session).get_by_applet_id(applet_id)
         flow_ids = []
         flow_map = dict()
@@ -173,7 +177,7 @@ class FlowService:
         for schema in schemas:
             flow_ids.append(schema.id)
 
-            flow = FlowDetail(
+            flow = FlowSingleLanguageDetail(
                 id=schema.id,
                 name=schema.name,
                 description=self._get_by_language(
@@ -191,6 +195,51 @@ class FlowService:
             flow_map[schema.activity_flow_id].activity_ids.append(
                 schema.activity_id
             )
+
+        return flows
+
+    async def get_by_applet_id_duplicate(
+        self, applet_id: uuid.UUID
+    ) -> list[FlowDuplicate]:
+        schemas = await FlowsCRUD(self.session).get_by_applet_id(applet_id)
+        flow_ids = []
+        flow_map = dict()
+        flows = []
+        for schema in schemas:
+            flow_ids.append(schema.id)
+
+            flow = FlowDuplicate(
+                id=schema.id,
+                name=schema.name,
+                description=schema.description,
+                is_single_report=schema.is_single_report,
+                hide_badge=schema.hide_badge,
+                order=schema.order,
+                is_hidden=schema.is_hidden,
+            )
+            flow_map[flow.id] = flow
+            flows.append(flow)
+        schemas = await FlowItemsCRUD(self.session).get_by_applet_id(applet_id)
+        for schema in schemas:
+            flow_map[schema.activity_flow_id].activity_ids.append(
+                schema.activity_id
+            )
+
+        return flows
+
+    async def get_full_flows(self, applet_id: uuid.UUID) -> list[FlowFull]:
+        schemas = await FlowsCRUD(self.session).get_by_applet_id(applet_id)
+        flow_map = dict()
+        flows = []
+        for schema in schemas:
+            flow = FlowFull.from_orm(schema)
+            flow_map[flow.id] = flow
+            flows.append(flow)
+        items = await FlowItemService(self.session).get_by_flow_ids(
+            list(flow_map.keys())
+        )
+        for item in items:
+            flow_map[item.activity_flow_id].items.append(item)
 
         return flows
 

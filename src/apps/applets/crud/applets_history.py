@@ -2,10 +2,12 @@ import datetime
 import uuid
 
 from sqlalchemy import select
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 
 from apps.applets import errors
 from apps.applets.db.schemas import AppletHistorySchema
+from apps.applets.errors import AppletVersionNotFoundError
 from apps.users.db.schemas import UserSchema
 from infrastructure.database.crud import BaseCRUD
 
@@ -46,11 +48,14 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
 
     async def retrieve_by_applet_version(
         self, id_version: str
-    ) -> AppletHistorySchema | None:
+    ) -> AppletHistorySchema:
         query: Query = select(AppletHistorySchema)
         query = query.where(AppletHistorySchema.id_version == id_version)
         result = await self._execute(query)
-        return result.scalars().one_or_none()
+        try:
+            return result.scalars().one()
+        except NoResultFound:
+            raise AppletVersionNotFoundError()
 
     async def fetch_by_id_version(self, value: str) -> AppletHistorySchema:
         schema = await self._get("id_version", value)

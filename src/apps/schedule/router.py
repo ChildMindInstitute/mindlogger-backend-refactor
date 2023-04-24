@@ -11,6 +11,7 @@ from apps.schedule.api.schedule import (
     schedule_get_all_by_user,
     schedule_get_by_id,
     schedule_get_by_user,
+    schedule_remove_individual_calendar,
     schedule_update,
 )
 from apps.schedule.domain.schedule.public import (
@@ -69,7 +70,7 @@ router.get(
 
 # Delete all schedules by user
 router.delete(
-    "/{applet_id}/events/delete_individual/{user_id}",
+    "/{applet_id}/events/delete_individual/{respondent_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         **AUTHENTICATION_ERROR_RESPONSES,
@@ -77,6 +78,17 @@ router.delete(
         **NO_CONTENT_ERROR_RESPONSES,
     },
 )(schedule_delete_by_user)
+
+# Remove individual calendar
+router.delete(
+    "/{applet_id}/events/remove_individual/{respondent_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+        **NO_CONTENT_ERROR_RESPONSES,
+    },
+)(schedule_remove_individual_calendar)
 
 # Get schedule by id
 router.get(

@@ -34,7 +34,7 @@ class TestReusableItem(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            token_name="Average age",
+            token_name="Average age 2",
             token_value="21",
             input_type="radiobutton",
         )
@@ -45,7 +45,7 @@ class TestReusableItem(BaseTest):
         assert response.json()["result"]["id"]
 
         create_data = dict(
-            token_name="Average age",
+            token_name="Average age 2",
             token_value="21",
             input_type="radiobutton",
         )
@@ -65,7 +65,7 @@ class TestReusableItem(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            token_name="Average age",
+            token_name="Average age 3",
             token_value="21",
             input_type="radiobutton",
         )

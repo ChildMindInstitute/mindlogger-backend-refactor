@@ -1,24 +1,25 @@
+import asyncio
 import datetime
-import uuid
-from unittest.mock import patch
 
 from httpx import Response as HttpResponse
 from starlette import status
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.router import router as auth_router
+from apps.mailing.services import TestMail
 from apps.shared.domain import Response
 from apps.shared.test import BaseTest
 from apps.users.domain import PasswordRecoveryRequest, PublicUser
 from apps.users.router import router as user_router
-from apps.users.services import PasswordRecoveryCache
 from apps.users.tests.factories import (
     CacheEntryFactory,
     PasswordRecoveryInfoFactory,
     PasswordUpdateRequestFactory,
     UserCreateRequestFactory,
 )
+from config import settings
 from infrastructure.database import rollback
+from infrastructure.utility import RedisCache
 
 
 class TestPassword(BaseTest):
@@ -80,14 +81,8 @@ class TestPassword(BaseTest):
         assert internal_response.status_code == status.HTTP_200_OK
 
     @rollback
-    @patch("apps.users.services.core.MailingService.send")
-    @patch("apps.users.services.core.PasswordRecoveryCache.set")
-    @patch("apps.users.services.core.PasswordRecoveryCache.delete_all_entries")
     async def test_password_recovery(
         self,
-        cache_delete_all_entries_mock,
-        cache_set_mock,
-        mailing_send_mock,
     ):
         # Creating new user
         internal_response: HttpResponse = await self.client.post(
@@ -106,27 +101,44 @@ class TestPassword(BaseTest):
             data=password_recovery_request.dict(),
         )
 
-        assert (
-            cache_delete_all_entries_mock
-            is PasswordRecoveryCache.delete_all_entries
-        )
+        cache = RedisCache()
+
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == internal_response.json()
-        assert cache_delete_all_entries_mock.call_count == 1
-        assert cache_set_mock.call_count == 1
-        assert mailing_send_mock.call_count == 1
+        keys = await cache.keys()
+        assert len(keys) == 1
+        assert password_recovery_request.email in keys[0]
+        assert len(TestMail.mails) == 1
+        assert (
+            TestMail.mails[0].recipients[0] == password_recovery_request.email
+        )
+        assert (
+            TestMail.mails[0].subject
+            == "Girder for MindLogger (development instance): Temporary access"
+        )
+
+        response = await self.client.post(
+            url=self.password_recovery_url,
+            data=password_recovery_request.dict(),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == internal_response.json()
+
+        new_keys = await cache.keys()
+        assert len(keys) == 1
+        assert keys[0] != new_keys[0]
+        assert len(TestMail.mails) == 2
+        assert (
+            TestMail.mails[0].recipients[0] == password_recovery_request.email
+        )
 
     @rollback
-    @patch("apps.users.services.core.PasswordRecoveryCache.delete_all_entries")
-    @patch(
-        "apps.users.services.core.PasswordRecoveryCache.get",
-        return_value=cache_entry,
-    )
     async def test_password_recovery_approve(
         self,
-        cache_get_mock,
-        cache_delete_all_entries_mock,
     ):
+        cache = RedisCache()
+
         # Creating new user
         internal_response: Response[PublicUser] = await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -134,9 +146,20 @@ class TestPassword(BaseTest):
 
         expected_result = internal_response.json()
 
-        key = str(
-            uuid.uuid3(uuid.uuid4(), self.create_request_user.dict()["email"])
+        # Password recovery
+        password_recovery_request: PasswordRecoveryRequest = (
+            PasswordRecoveryRequest(
+                email=self.create_request_user.dict()["email"]
+            )
         )
+
+        response = await self.client.post(
+            url=self.password_recovery_url,
+            data=password_recovery_request.dict(),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        key = (await cache.keys())[0].split(":")[-1]
 
         data = {
             "email": self.create_request_user.dict()["email"],
@@ -149,12 +172,53 @@ class TestPassword(BaseTest):
             data=data,
         )
 
+        keys = await cache.keys()
+
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == expected_result
-        assert cache_get_mock is PasswordRecoveryCache.get
-        assert (
-            cache_delete_all_entries_mock
-            is PasswordRecoveryCache.delete_all_entries
+        assert len(keys) == 0
+        assert len(keys) == 0
+
+    @rollback
+    async def test_password_recovery_approve_expired(
+        self,
+    ):
+        cache = RedisCache()
+        settings.authentication.password_recover.expiration = 1
+
+        # Creating new user
+        await self.client.post(
+            self.user_create_url, data=self.create_request_user.dict()
         )
-        assert cache_get_mock.call_count == 1
-        assert cache_delete_all_entries_mock.call_count == 1
+
+        # Password recovery
+        password_recovery_request: PasswordRecoveryRequest = (
+            PasswordRecoveryRequest(
+                email=self.create_request_user.dict()["email"]
+            )
+        )
+
+        response = await self.client.post(
+            url=self.password_recovery_url,
+            data=password_recovery_request.dict(),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        key = (await cache.keys())[0].split(":")[-1]
+        await asyncio.sleep(2)
+
+        data = {
+            "email": self.create_request_user.dict()["email"],
+            "key": key,
+            "password": "new_password",
+        }
+
+        response = await self.client.post(
+            url=self.password_recovery_approve_url,
+            data=data,
+        )
+
+        keys = await cache.keys()
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert len(keys) == 0

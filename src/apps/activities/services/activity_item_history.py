@@ -21,16 +21,14 @@ class ActivityItemHistoryService:
                     id=item.id,
                     id_version=f"{item.id}_{self.version}",
                     activity_id=f"{item.activity_id}_{self.version}",
-                    header_image=item.header_image,
                     question=item.question,
                     response_type=item.response_type,
-                    answers=item.answers,
-                    config=item.config,
+                    response_values=item.response_values.dict()
+                    if item.response_values
+                    else None,
+                    config=item.config.dict(),
                     order=item.order,
-                    skippable_item=item.skippable_item,
-                    remove_availability_to_go_back=(
-                        item.remove_availability_to_go_back
-                    ),
+                    name=item.name,
                 )
             )
         await ActivityItemHistoriesCRUD(self.session).create_many(schemas)

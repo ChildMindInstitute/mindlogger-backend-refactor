@@ -5,7 +5,15 @@ from apps.users import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
-from apps.workspaces.domain.workspace import WorkspaceUser
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.workspace import (
+    WorkspaceApplet,
+    WorkspaceInfo,
+    WorkspaceManager,
+    WorkspaceRespondent,
+)
+from apps.workspaces.errors import WorkspaceAccessDenied
+from apps.workspaces.service.user_access import UserAccessService
 
 
 class WorkspaceService:
@@ -24,6 +32,37 @@ class WorkspaceService:
             )
         )
         return schema
+
+    async def get_workspace(self, user_id: uuid.UUID) -> WorkspaceInfo:
+        await self.has_access(
+            user_id,
+            self._user_id,
+            [
+                Role.ADMIN,
+                Role.MANAGER,
+                Role.COORDINATOR,
+                Role.EDITOR,
+                Role.REVIEWER,
+            ],
+        )
+        schema = await UserWorkspaceCRUD(self.session).get_by_user_id(
+            self._user_id
+        )
+        has_managers = await UserAppletAccessCRUD(self.session).has_managers(
+            self._user_id
+        )
+        return WorkspaceInfo(
+            name=schema.workspace_name, has_managers=has_managers
+        )
+
+    async def has_access(
+        self, user_id: uuid.UUID, owner_id: uuid.UUID, roles: list[Role]
+    ):
+        has_access = await UserAppletAccessCRUD(self.session).has_access(
+            user_id, owner_id, roles
+        )
+        if not has_access:
+            raise WorkspaceAccessDenied()
 
     async def update_workspace_name(
         self, user: User, workspace_prefix: str | None = None
@@ -45,17 +84,56 @@ class WorkspaceService:
                 workspace_prefix,
             )
 
-    async def get_workspace_users(
+    async def get_workspace_respondents(
         self, owner_id: uuid.UUID, query_params: QueryParams
-    ) -> list[WorkspaceUser]:
-        users = await UserAppletAccessCRUD(self.session).get_workspace_users(
-            owner_id, query_params
-        )
+    ) -> list[WorkspaceRespondent]:
+        users = await UserAppletAccessCRUD(
+            self.session
+        ).get_workspace_respondents(owner_id, query_params)
         return users
 
-    async def get_workspace_users_count(
+    async def get_workspace_managers(
+        self, owner_id: uuid.UUID, query_params: QueryParams
+    ) -> list[WorkspaceManager]:
+        users = await UserAppletAccessCRUD(
+            self.session
+        ).get_workspace_managers(owner_id, query_params)
+        return users
+
+    async def get_workspace_respondents_count(
         self, owner_id: uuid.UUID, query_params: QueryParams
     ):
         return await UserAppletAccessCRUD(
             self.session
-        ).get_workspace_users_count(owner_id, query_params)
+        ).get_workspace_respondents_count(owner_id, query_params)
+
+    async def get_workspace_managers_count(
+        self, owner_id: uuid.UUID, query_params: QueryParams
+    ):
+        return await UserAppletAccessCRUD(
+            self.session
+        ).get_workspace_managers_count(owner_id, query_params)
+
+    async def get_workspace_applets(
+        self, language: str, query_params: QueryParams
+    ) -> list[WorkspaceApplet]:
+        applets = await UserAccessService(
+            self.session, self._user_id
+        ).get_workspace_applets_by_language(language, query_params)
+
+        applet_ids = [applet.id for applet in applets]
+
+        workspace_applets = []
+        workspace_applet_map = dict()
+        for applet in applets:
+            workspace_applet = WorkspaceApplet.from_orm(applet)
+            workspace_applet_map[workspace_applet.id] = workspace_applet
+            workspace_applets.append(workspace_applet)
+
+        applet_role_map = await UserAccessService(
+            self.session, self._user_id
+        ).get_applets_roles_by_priority(applet_ids)
+
+        for applet_id, role in applet_role_map.items():
+            workspace_applet_map[applet_id].role = role
+        return workspace_applets

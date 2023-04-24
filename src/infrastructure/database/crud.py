@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, Generic, Type, TypeVar
 
 from sqlalchemy import delete, func, select, update
@@ -6,7 +7,6 @@ from sqlalchemy.engine import Result
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Query
 
-from apps.activities.errors import ReusableItemChoiceDoeNotExist
 from infrastructure.database import session_manager
 from infrastructure.database.base import Base
 
@@ -89,7 +89,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         await self.session.flush()
         await self.session.refresh(schema)
 
-        return schema
+        return deepcopy(schema)
 
     async def _create_many(
         self, schemas: list[ConcreteSchema]
@@ -99,7 +99,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         await self.session.flush()
         for schema in schemas:
             await self.session.refresh(schema)
-        return schemas
+        return deepcopy(schemas)
 
     async def _all(self) -> list[ConcreteSchema]:
         query = select(self.schema_class)
@@ -122,12 +122,8 @@ class BaseCRUD(Generic[ConcreteSchema]):
         return value
 
     async def _delete(self, key: str, value: Any) -> None:
-        schema = await self._get(key, value)
-        if not schema:
-            raise ReusableItemChoiceDoeNotExist()
-
         query: Query = delete(self.schema_class).where(
-            self.schema_class.id == schema.id
+            getattr(self.schema_class, key) == value
         )
         await self._execute(query)
 

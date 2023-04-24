@@ -1,24 +1,27 @@
-import mimetypes
 import uuid
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 from pydantic.color import Color
 
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
     "ThemeRequest",
-    "ThemeCreate",
     "PublicTheme",
     "Theme",
-    "ThemeUpdate",
     "ThemeQueryParams",
 ]
 
+from pydantic import validator
+
+from apps.shared.domain.custom_validations import (
+    validate_color,
+    validate_image,
+)
 from apps.shared.query_params import BaseQueryParams
 
 
-class _ThemeBase(BaseModel):
+class ThemeBase(BaseModel):
     name: str = Field(
         ...,
         description="Name of the theme",
@@ -56,38 +59,28 @@ class _ThemeBase(BaseModel):
 
     @validator("logo", "background_image")
     def validate_image(cls, value):
-        if (mimetypes.guess_type(value)[0] or "").startswith("image/"):
-            return value
-        raise ValueError("Not an image")
+        return validate_image(value)
 
     @validator("primary_color", "secondary_color", "tertiary_color")
     def validate_color(cls, value):
-        if type(value) is Color:
-            return value.as_hex()
-        raise ValueError("Not a color")
+        return validate_color(value)
 
 
-class ThemeRequest(_ThemeBase, PublicModel):
-    pass
-
-
-class ThemeUpdate(_ThemeBase, InternalModel):
+class Theme(ThemeBase, InternalModel):
+    id: uuid.UUID
+    creator_id: uuid.UUID
     public: bool
     allow_rename: bool
 
 
-class ThemeCreate(ThemeUpdate, InternalModel):
-    creator_id: uuid.UUID
-
-
-class PublicTheme(_ThemeBase, PublicModel):
-    """Public theme model."""
-
+class PublicTheme(ThemeBase, PublicModel):
     id: uuid.UUID
+    public: bool
+    allow_rename: bool
 
 
-class Theme(ThemeCreate):
-    id: uuid.UUID
+class ThemeRequest(ThemeBase, PublicModel):
+    pass
 
 
 class ThemeQueryParams(BaseQueryParams):

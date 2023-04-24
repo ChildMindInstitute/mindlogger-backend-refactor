@@ -2,6 +2,7 @@ import uuid
 
 from pydantic import Field
 
+from apps.activities.domain.response_type_config import ResponseTypeConfig
 from apps.shared.domain import PublicModel
 
 
@@ -10,11 +11,10 @@ class ActivityItem(PublicModel):
     activity_id: uuid.UUID
     question: dict[str, str]
     response_type: str
-    answers: list
-    config: dict = dict()
+    response_values: list | dict | None
+    config: ResponseTypeConfig
     order: int
-    skippable_item: bool = False
-    remove_availability_to_go_back: bool = False
+    is_hidden: bool | None
 
 
 class Activity(PublicModel):

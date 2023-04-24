@@ -1,6 +1,11 @@
 import uuid
 
-from apps.schedule.domain.schedule.base import BaseEvent, BasePeriodicity
+from apps.schedule.domain.schedule.base import (
+    BaseEvent,
+    BaseNotificationSetting,
+    BasePeriodicity,
+    BaseReminderSetting,
+)
 from apps.shared.domain import InternalModel
 
 __all__ = [
@@ -15,6 +20,11 @@ __all__ = [
     "ActivityEventCreate",
     "FlowEventCreate",
     "EventFull",
+    "NotificationSettingCreate",
+    "NotificationSetting",
+    "ReminderSettingCreate",
+    "ReminderSetting",
+    # "Notification",
 ]
 
 
@@ -66,6 +76,27 @@ class FlowEvent(FlowEventCreate, InternalModel):
     """FlowEvent of a schedule"""
 
     id: uuid.UUID
+
+
+class NotificationSettingCreate(BaseNotificationSetting, InternalModel):
+    event_id: uuid.UUID
+
+
+class NotificationSetting(NotificationSettingCreate, InternalModel):
+    id: uuid.UUID
+
+
+class ReminderSettingCreate(BaseReminderSetting, InternalModel):
+    event_id: uuid.UUID
+
+
+class ReminderSetting(ReminderSettingCreate, InternalModel):
+    id: uuid.UUID
+
+
+# class Notification(InternalModel):
+#     notifications: list[NotificationSetting] | None = None
+#     reminder: ReminderSetting | None = None
 
 
 class EventFull(InternalModel, BaseEvent):

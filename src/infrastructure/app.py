@@ -9,6 +9,7 @@ import apps.alerts.router as alerts
 import apps.answers.router as answers
 import apps.applets.router as applets
 import apps.authentication.router as auth
+import apps.file.router as files
 import apps.folders.router as folders
 import apps.healthcheck.router as healthcheck
 import apps.invitations.router as invitations
@@ -37,9 +38,11 @@ routers: Iterable[APIRouter] = (
     folders.router,
     answers.router,
     workspaces.router,
+    workspaces.applet_router,
     transfer_ownership.router,
     alerts.router,
     test_data.router,
+    files.router,
 )
 
 # Declare your middlewares here

@@ -1,12 +1,22 @@
 import uuid
 
-from sqlalchemy import delete, distinct, func, select
+from sqlalchemy import (
+    and_,
+    case,
+    delete,
+    distinct,
+    exists,
+    func,
+    select,
+    update,
+)
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
 
 from apps.applets.db.schemas import AppletSchema
+from apps.schedule.db.schemas import EventSchema, UserEventsSchema
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
@@ -16,10 +26,14 @@ from apps.users import UserSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
+    RespondentAppletAccess,
     UserAppletAccess,
     UserAppletAccessItem,
 )
-from apps.workspaces.domain.workspace import WorkspaceUser
+from apps.workspaces.domain.workspace import (
+    WorkspaceManager,
+    WorkspaceRespondent,
+)
 from apps.workspaces.errors import (
     AppletAccessDenied,
     UserAppletAccessesNotFound,
@@ -53,9 +67,17 @@ class _AppletUsersFilter(Filtering):
     role = FilterField(UserAppletAccessSchema.role)
 
 
-class _AppletUsersOrdering(Ordering):
+class _AppletRespondentsOrdering(Ordering):
     email = UserSchema.email
     first_name = UserSchema.first_name
+    pinned = UserAppletAccessSchema.is_pinned
+    created_at = UserAppletAccessSchema.created_at
+
+
+class _AppletManagersOrdering(Ordering):
+    email = UserSchema.email
+    first_name = UserSchema.first_name
+    created_at = UserSchema.created_at
 
 
 class _AppletUsersSearch(Searching):
@@ -158,7 +180,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         except NoResultFound:
             raise AppletAccessDenied()
 
-    async def get_by_id(self, id_: int) -> UserAppletAccess:
+    async def get_by_id(self, id_: uuid.UUID) -> UserAppletAccess:
         """Fetch UserAppletAccess by id from the database."""
 
         # Get UserAppletAccess from the database
@@ -287,27 +309,43 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         await self._execute(query)
 
-    async def get_workspace_users(
+    async def get_workspace_respondents(
         self, owner_id: uuid.UUID, query_params: QueryParams
-    ) -> list[WorkspaceUser]:
+    ) -> list[WorkspaceRespondent]:
+        schedule_query: Query = select(
+            UserEventsSchema.user_id,
+            EventSchema.applet_id,
+        )
+        schedule_query = schedule_query.join(
+            EventSchema, EventSchema.id == UserEventsSchema.event_id
+        )
+        schedule_query = schedule_query.distinct().alias("schedules")
+
         query: Query = select(
             UserSchema,
-            func.string_agg(
-                UserAppletAccessSchema.meta.op("->>")("nickname"), "," ""
-            ).label("nicknames"),
-            func.string_agg(
-                UserAppletAccessSchema.meta.op("->>")("secretUserId"), "," ""
-            ).label("secret_ids"),
-            func.string_agg(UserAppletAccessSchema.role, "," "").label(
-                "roles"
-            ),
+            UserAppletAccessSchema,
+            case(
+                (schedule_query.c.user_id != None, True),  # noqa: E711
+                else_=False,
+            ).label("individual_schedule"),
         )
         query = query.join(
             UserAppletAccessSchema,
-            UserAppletAccessSchema.user_id == UserSchema.id,
+            and_(
+                UserAppletAccessSchema.user_id == UserSchema.id,
+                UserAppletAccessSchema.role == Role.RESPONDENT,
+            ),
         )
-        query = query.group_by(UserSchema.id)
+        query = query.join(
+            schedule_query,
+            and_(
+                schedule_query.c.user_id == UserAppletAccessSchema.user_id,
+                schedule_query.c.applet_id == UserAppletAccessSchema.applet_id,
+            ),
+            isouter=True,
+        )
         query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
         if query_params.filters:
             query = query.where(
                 *_AppletUsersFilter().get_clauses(**query_params.filters)
@@ -317,8 +355,10 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 _AppletUsersSearch().get_clauses(query_params.search)
             )
         if query_params.ordering:
-            query = query.where(
-                *_AppletUsersOrdering().get_clauses(*query_params.ordering)
+            query = query.order_by(
+                *_AppletRespondentsOrdering().get_clauses(
+                    *query_params.ordering
+                )
             )
         query = paging(query, query_params.page, query_params.limit)
 
@@ -326,28 +366,35 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         users = []
         results = db_result.all()
-        for user_schema, nicknames, secret_ids, roles in results:
+        for (
+            user_schema,
+            access,
+            has_individual_schedule,
+        ) in results:  # type: UserSchema, UserAppletAccess, bool
             users.append(
-                WorkspaceUser(
+                WorkspaceRespondent(
                     id=user_schema.id,
-                    nickname=nicknames[0] if nicknames else None,
-                    roles=roles.split(","),
-                    secret_id=secret_ids[0] if secret_ids else None,
+                    access_id=access.id,
+                    nickname=access.meta.get("nickname"),
+                    role=access.role,
+                    secret_id=access.meta.get("secretUserId"),
                     last_seen=user_schema.last_seen_at
                     or user_schema.created_at,
+                    has_individual_schedule=has_individual_schedule,
                 )
             )
         return users
 
-    async def get_workspace_users_count(
+    async def get_workspace_respondents_count(
         self, owner_id: uuid.UUID, query_params: QueryParams
     ) -> int:
-        query: Query = select(count(distinct(UserSchema.id)))
+        query: Query = select(count(UserSchema.id))
         query = query.join(
             UserAppletAccessSchema,
             UserAppletAccessSchema.user_id == UserSchema.id,
         )
         query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
         if query_params.filters:
             query = query.where(
                 *_AppletUsersFilter().get_clauses(**query_params.filters)
@@ -360,6 +407,97 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return db_result.scalars().first() or 0
 
+    async def get_workspace_managers(
+        self, owner_id: uuid.UUID, query_params: QueryParams
+    ) -> list[WorkspaceManager]:
+        query: Query = select(
+            UserSchema,
+            func.string_agg(UserAppletAccessSchema.role, "|").label("roles"),
+        )
+        query = query.join(
+            UserAppletAccessSchema,
+            UserAppletAccessSchema.user_id == UserSchema.id,
+        )
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        query = query.where(UserAppletAccessSchema.role != Role.RESPONDENT)
+        query = query.group_by(UserSchema.id)
+        if query_params.filters:
+            query = query.where(
+                *_AppletUsersFilter().get_clauses(**query_params.filters)
+            )
+        if query_params.search:
+            query = query.where(
+                _AppletUsersSearch().get_clauses(query_params.search)
+            )
+        if query_params.ordering:
+            query = query.order_by(
+                *_AppletManagersOrdering().get_clauses(*query_params.ordering)
+            )
+        query = paging(query, query_params.page, query_params.limit)
+
+        db_result = await self._execute(query)
+
+        users = []
+        results = db_result.all()
+        for user_schema, roles in results:  # type:UserSchema, str
+            users.append(
+                WorkspaceManager(
+                    id=user_schema.id,
+                    first_name=user_schema.first_name,
+                    last_name=user_schema.last_name,
+                    email=user_schema.email,
+                    roles=list(set(roles.split("|"))),
+                    last_seen=user_schema.last_seen_at
+                    or user_schema.created_at,
+                )
+            )
+        return users
+
+    async def get_workspace_managers_count(
+        self, owner_id: uuid.UUID, query_params: QueryParams
+    ) -> int:
+        query: Query = select(count(distinct(UserSchema.id)))
+        query = query.join(
+            UserAppletAccessSchema,
+            UserAppletAccessSchema.user_id == UserSchema.id,
+        )
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        query = query.where(UserAppletAccessSchema.role != Role.RESPONDENT)
+        if query_params.filters:
+            query = query.where(
+                *_AppletUsersFilter().get_clauses(**query_params.filters)
+            )
+        if query_params.search:
+            query = query.where(
+                _AppletUsersSearch().get_clauses(query_params.search)
+            )
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first() or 0
+
+    async def get_all_by_user_id_and_roles(
+        self, user_id_: uuid.UUID, roles: list[Role]
+    ) -> list[UserAppletAccess]:
+        query: Query = select(self.schema_class).filter(
+            self.schema_class.user_id == user_id_,
+            self.schema_class.role.in_(roles),
+        )
+        result: Result = await self._execute(query)
+        results: list[UserAppletAccessSchema] = result.scalars().all()
+
+        return [
+            UserAppletAccess.from_orm(user_applet_access)
+            for user_applet_access in results
+        ]
+
+    async def delete_all_by_user_and_applet(
+        self, user_id: uuid.UUID, applet_ids: list[uuid.UUID]
+    ):
+        query: Query = delete(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.applet_id.in_(applet_ids))
+        await self._execute(query)
+
     async def check_access_by_user_and_owner(
         self, user_id: uuid.UUID, owner_id: uuid.UUID
     ) -> bool:
@@ -371,3 +509,183 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().first() is not None
+
+    async def pin(self, id_: uuid.UUID):
+        query: Query = update(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.id == id_)
+        query = query.values(
+            is_pinned=case(
+                (
+                    UserAppletAccessSchema.is_pinned == False,  # noqa: E712
+                    True,
+                ),
+                else_=False,
+            )
+        )
+
+        await self._execute(query)
+
+    async def unpin(self, id_: uuid.UUID):
+        query: Query = update(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.id == id_)
+        query = query.values(pinned_at=None)
+
+        await self._execute(query)
+
+    async def get_applet_users_by_roles(
+        self, applet_id: uuid.UUID, roles: list[Role]
+    ) -> list[uuid.UUID]:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.role.in_(roles))
+        db_result = await self._execute(query)
+
+        results = db_result.scalars().all()
+        return [r.user_id for r in results]
+
+    async def has_managers(self, user_id: uuid.UUID) -> bool:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.owner_id == user_id)
+        query = query.where(
+            UserAppletAccessSchema.role.in_(
+                [Role.MANAGER, Role.COORDINATOR, Role.EDITOR, Role.REVIEWER]
+            )
+        )
+        query = query.limit(1)
+        query = query.exists()
+
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first()
+
+    async def has_access(
+        self, user_id: uuid.UUID, owner_id: uuid.UUID, roles: list[Role]
+    ) -> bool:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        query = query.where(UserAppletAccessSchema.role.in_(roles))
+        query = query.limit(1)
+        query = query.exists()
+
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first()
+
+    async def get_respondent_accesses_by_owner_id(
+        self,
+        owner_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+        page: int,
+        limit: int,
+    ) -> list[RespondentAppletAccess]:
+        individual_event_query: Query = select(UserEventsSchema.id)
+        individual_event_query = individual_event_query.join(
+            EventSchema, EventSchema.id == UserEventsSchema.event_id
+        )
+        individual_event_query = individual_event_query.where(
+            UserEventsSchema.user_id == UserAppletAccessSchema.user_id
+        )
+        individual_event_query = individual_event_query.where(
+            EventSchema.applet_id == UserAppletAccessSchema.applet_id
+        )
+
+        query: Query = select(
+            UserAppletAccessSchema.meta,
+            AppletSchema.id,
+            AppletSchema.display_name,
+            AppletSchema.image,
+            exists(individual_event_query),
+        )
+        query = query.join(
+            AppletSchema, AppletSchema.id == UserAppletAccessSchema.applet_id
+        )
+        query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
+        query = query.where(UserAppletAccessSchema.user_id == respondent_id)
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        query = paging(query, page, limit)
+
+        db_result = await self._execute(query)
+
+        accesses = []
+        results = db_result.all()
+        for meta, applet_id, display_name, image, has_individual in results:
+            accesses.append(
+                RespondentAppletAccess(
+                    applet_id=applet_id,
+                    applet_name=display_name,
+                    applet_image=image,
+                    secret_user_id=meta.get("nickname"),
+                    nickname=meta.get("secretUserId"),
+                    has_individual_schedule=has_individual,
+                )
+            )
+
+        return accesses
+
+    async def get_respondent_accesses_by_owner_id_count(
+        self,
+        owner_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+    ) -> int:
+        query: Query = select(
+            count(UserAppletAccessSchema.id),
+        )
+        query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
+        query = query.where(UserAppletAccessSchema.user_id == respondent_id)
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first() or 0
+
+    async def clean_manager_accesses(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ):
+        query: Query = delete(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(
+            UserAppletAccessSchema.role.in_(
+                [Role.COORDINATOR, Role.EDITOR, Role.REVIEWER]
+            )
+        )
+        await self._execute(query)
+
+    async def has_role(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
+    ) -> bool:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.role == role)
+        query = query.exists()
+
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first()
+
+    async def get_applets_roles_by_priority(
+        self, applet_ids: list[uuid.UUID], user_id: uuid.UUID
+    ) -> dict[uuid.UUID, Role]:
+        from_query: Query = select(UserAppletAccessSchema)
+        from_query = from_query.where(
+            UserAppletAccessSchema.user_id == user_id
+        )
+        from_query = from_query.where(
+            UserAppletAccessSchema.applet_id.in_(applet_ids)
+        )
+        from_query = from_query.order_by(
+            case(
+                (UserAppletAccessSchema.role == Role.ADMIN, 1),
+                (UserAppletAccessSchema.role == Role.MANAGER, 2),
+                (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
+                (UserAppletAccessSchema.role == Role.EDITOR, 4),
+                (UserAppletAccessSchema.role == Role.REVIEWER, 5),
+                (UserAppletAccessSchema.role == Role.RESPONDENT, 6),
+                else_=10,
+            ).asc()
+        ).alias("prioritized_access")
+
+        query = select(from_query.c.applet_id, from_query.c.role)
+        query = query.distinct(from_query.c.applet_id)
+
+        db_result = await self._execute(query)
+
+        return dict(db_result.all())

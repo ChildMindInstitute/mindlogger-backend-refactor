@@ -5,8 +5,9 @@ import uuid
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
 
+from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.answers.db.schemas import AnswerActivityItemsSchema
-from apps.answers.domain import AppletAnswerCreate
+from apps.answers.domain import AnsweredActivityItem, AppletAnswerCreate
 from apps.applets.crud import AppletsCRUD
 from apps.shared.encryption import decrypt, encrypt, generate_iv
 from infrastructure.database.crud import BaseCRUD
@@ -63,9 +64,15 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         answer = decrypt(encrypted_value, key, iv)
         return answer
 
-    async def delete_by_applet_id(self, applet_id: uuid.UUID):
+    async def delete_by_applet_user(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID | None = None
+    ):
         query: Query = delete(AnswerActivityItemsSchema)
         query = query.where(AnswerActivityItemsSchema.applet_id == applet_id)
+        if user_id:
+            query = query.where(
+                AnswerActivityItemsSchema.respondent_id == user_id
+            )
         await self._execute(query)
 
     async def get_for_answers_created(
@@ -95,3 +102,38 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         result = await self._execute(query)
 
         return result.scalars().all()
+
+    async def get_by_answer_id(
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+    ) -> list[AnsweredActivityItem]:
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        system_encrypted_key = base64.b64decode(
+            applet.system_encrypted_key.encode()
+        )
+        iv = generate_iv(str(applet.id))
+        key = decrypt(system_encrypted_key, iv=iv)
+
+        query: Query = select(AnswerActivityItemsSchema)
+        query = query.join(
+            ActivityItemHistorySchema,
+            ActivityItemHistorySchema.id_version
+            == AnswerActivityItemsSchema.activity_item_history_id,
+        )
+        query = query.where(AnswerActivityItemsSchema.answer_id == answer_id)
+        query = query.order_by(ActivityItemHistorySchema.order.asc())
+
+        db_result = await self._execute(query)
+        schemas = db_result.scalars().all()
+        answers = []
+        for schema in schemas:  # type: AnswerActivityItemsSchema
+            answer_value = self._decrypt(
+                schema.id, key, base64.b64decode(schema.answer.encode())
+            ).decode()
+            answers.append(
+                AnsweredActivityItem(
+                    activity_item_history_id=schema.activity_item_history_id,
+                    answer=answer_value,
+                )
+            )
+
+        return answers

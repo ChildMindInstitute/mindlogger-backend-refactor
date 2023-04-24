@@ -35,11 +35,11 @@ class DefaultEvent(BaseModel):
     timer_type: TimerType = TimerType.NOT_SET
     periodicity: dict = {
         "type": PeriodicityType.ALWAYS,
-        "start_date": date.min,
-        "end_date": date.max,
+        "start_date": None,
+        "end_date": None,
         "selectedDate": date.today(),
     }
-    user_id: uuid.UUID | None = None
+    respondent_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None
     flow_id: uuid.UUID | None
 
@@ -47,3 +47,8 @@ class DefaultEvent(BaseModel):
 class AvailabilityType(str, Enum):
     ALWAYS_AVAILABLE = "AlwaysAvailable"
     SCHEDULED_ACCESS = "ScheduledAccess"
+
+
+class NotificationTriggerType(str, Enum):
+    FIXED = "FIXED"
+    RANDOM = "RANDOM"

@@ -3,9 +3,19 @@ from datetime import date
 
 from pydantic import NonNegativeInt, validator
 
-from apps.schedule.domain.constants import AvailabilityType, PeriodicityType
-from apps.schedule.domain.schedule import BaseEvent, BasePeriodicity
+from apps.schedule.domain.constants import (
+    AvailabilityType,
+    NotificationTriggerType,
+    PeriodicityType,
+)
+from apps.schedule.domain.schedule import (
+    BaseEvent,
+    BaseNotificationSetting,
+    BasePeriodicity,
+    BaseReminderSetting,
+)
 from apps.shared.domain import PublicModel
+from apps.shared.errors import ValidationError
 
 __all__ = [
     "PublicPeriodicity",
@@ -25,12 +35,26 @@ class PublicPeriodicity(PublicModel, BasePeriodicity):
     pass
 
 
+class PublicNotificationSetting(PublicModel, BaseNotificationSetting):
+    id: uuid.UUID
+
+
+class PublicReminderSetting(PublicModel, BaseReminderSetting):
+    id: uuid.UUID
+
+
+class PublicNotification(PublicModel):
+    notifications: list[PublicNotificationSetting] | None = None
+    reminder: PublicReminderSetting | None = None
+
+
 class PublicEvent(PublicModel, BaseEvent):
     id: uuid.UUID
     periodicity: PublicPeriodicity
     respondent_id: uuid.UUID | None
     activity_id: uuid.UUID | None
     flow_id: uuid.UUID | None
+    notification: PublicNotification | None = None
 
 
 class ActivityEventCount(PublicModel):
@@ -57,13 +81,13 @@ class HourMinute(PublicModel):
     @validator("hours")
     def validate_hour(cls, value):
         if value > 23:
-            raise ValueError("Hours must be between 0 and 23")
+            raise ValidationError(message="Hours must be between 0 and 23")
         return value
 
     @validator("minutes")
     def validate_minute(cls, value):
         if value > 59:
-            raise ValueError("Minutes must be between 0 and 59")
+            raise ValidationError(message="Minutes must be between 0 and 59")
         return value
 
 
@@ -72,12 +96,29 @@ class TimerDto(PublicModel):
     idleTimer: HourMinute | None = None
 
 
+class ReminderSettingDTO(PublicModel):
+    activity_incomplete: int
+    reminder_time: HourMinute
+
+
+class NotificationSettingDTO(PublicModel):
+    trigger_type: NotificationTriggerType
+    from_time: HourMinute | None = None
+    to_time: HourMinute | None = None
+    at_time: HourMinute | None = None
+
+
+class NotificationDTO(PublicModel):
+    notifications: list[NotificationSettingDTO] | None = None
+    reminder: ReminderSettingDTO | None = None
+
+
 class EventAvailabilityDto(PublicModel):
-    oneTimeCompletion: bool
+    oneTimeCompletion: bool | None = None
     periodicityType: PeriodicityType
     timeFrom: HourMinute | None = None
     timeTo: HourMinute | None = None
-    allowAccessBeforeFromTime: bool
+    allowAccessBeforeFromTime: bool | None = None
     startDate: date | None = None
     endDate: date | None = None
 
@@ -89,6 +130,7 @@ class ScheduleEventDto(PublicModel):
     selectedDate: date | None = None
     timers: TimerDto
     availabilityType: AvailabilityType
+    notificationSettings: NotificationDTO | None = None
 
 
 class PublicEventByUser(PublicModel):

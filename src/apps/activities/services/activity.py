@@ -3,8 +3,9 @@ import uuid
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain.activity import (
-    ActivityDetail,
-    ActivityExtendedDetail,
+    ActivityDuplicate,
+    ActivitySingleLanguageDetail,
+    ActivitySingleLanguageWithItemsDetail,
 )
 from apps.activities.domain.activity_create import (
     ActivityCreate,
@@ -16,6 +17,7 @@ from apps.activities.domain.activity_update import (
     PreparedActivityItemUpdate,
 )
 from apps.activities.services.activity_item import ActivityItemService
+from apps.schedule.crud.events import ActivityEventsCRUD
 from apps.schedule.service.schedule import ScheduleService
 
 
@@ -60,8 +62,12 @@ class ActivityService:
                         activity_id=activity_id,
                         question=item.question,
                         response_type=item.response_type,
-                        answers=item.answers,
+                        response_values=item.response_values.dict()
+                        if item.response_values
+                        else None,
                         config=item.config.dict(),
+                        name=item.name,
+                        is_hidden=item.is_hidden,
                     )
                 )
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
@@ -102,12 +108,14 @@ class ActivityService:
         activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
         prepared_activity_items = list()
 
-        all_activities = [
-            activity.id
-            for activity in await ActivitiesCRUD(
-                self.session
-            ).get_by_applet_id(applet_id)
+        all_activities = await ActivityEventsCRUD(
+            self.session
+        ).get_by_applet_id(applet_id)
+
+        all_activity_ids = [
+            activity.activity_id for activity in all_activities
         ]
+
         # Save new activity ids
         new_activities = []
         existing_activities = []
@@ -143,11 +151,13 @@ class ActivityService:
                 prepared_activity_items.append(
                     PreparedActivityItemUpdate(
                         id=item.id or uuid.uuid4(),
-                        header_image=item.header_image,
+                        name=item.name,
                         activity_id=activity_id,
                         question=item.question,
                         response_type=item.response_type,
-                        answers=item.answers,
+                        response_values=item.response_values.dict()
+                        if item.response_values
+                        else None,
                         config=item.config.dict(),
                     )
                 )
@@ -173,7 +183,7 @@ class ActivityService:
             )
 
         # Remove events for deleted activities
-        deleted_activity_ids = set(all_activities) - set(existing_activities)
+        deleted_activity_ids = set(all_activity_ids) - set(existing_activities)
 
         if deleted_activity_ids:
             await ScheduleService(self.session).delete_by_activity_ids(
@@ -198,14 +208,14 @@ class ActivityService:
 
     async def get_single_language_by_applet_id(
         self, applet_id: uuid.UUID, language: str
-    ) -> list[ActivityDetail]:
+    ) -> list[ActivitySingleLanguageDetail]:
         schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
             applet_id
         )
         activities = []
         for schema in schemas:
             activities.append(
-                ActivityDetail(
+                ActivitySingleLanguageDetail(
                     id=schema.id,
                     name=schema.name,
                     description=self._get_by_language(
@@ -223,13 +233,69 @@ class ActivityService:
             )
         return activities
 
+    async def get_full_activities(
+        self, applet_id: uuid.UUID
+    ) -> list[ActivityFull]:
+        schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
+            applet_id
+        )
+
+        activities = []
+        activity_map = dict()
+        for schema in schemas:
+            schema.key = uuid.uuid4()
+            activity = ActivityFull.from_orm(schema)
+            activities.append(activity)
+            activity_map[activity.id] = activity
+
+        items = await ActivityItemService(
+            self.session
+        ).get_items_by_activity_ids(list(activity_map.keys()))
+        for item in items:
+            activity_map[item.activity_id].items.append(item)
+
+        return activities
+
+    async def get_by_applet_id_for_duplicate(
+        self, applet_id: uuid.UUID
+    ) -> list[ActivityDuplicate]:
+        schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
+            applet_id
+        )
+        activity_map = dict()
+        activities = []
+        for schema in schemas:
+            activity = ActivityDuplicate(
+                id=schema.id,
+                key=schema.id,
+                name=schema.name,
+                description=schema.description,
+                splash_screen=schema.splash_screen,
+                image=schema.image,
+                show_all_at_once=schema.show_all_at_once,
+                is_skippable=schema.is_skippable,
+                is_reviewable=schema.is_reviewable,
+                response_is_editable=schema.response_is_editable,
+                order=schema.order,
+                is_hidden=schema.is_hidden,
+            )
+            activity_map[activity.id] = activity
+            activities.append(activity)
+        activity_items = await ActivityItemService(
+            self.session
+        ).get_items_by_activity_ids_for_duplicate(list(activity_map.keys()))
+        for activity_item in activity_items:
+            activity_map[activity_item.activity_id].items.append(activity_item)
+
+        return activities
+
     async def get_single_language_by_id(
         self, id_: uuid.UUID, language: str
-    ) -> ActivityExtendedDetail:
+    ) -> ActivitySingleLanguageWithItemsDetail:
         schema = await ActivitiesCRUD(self.session).get_by_id(
             self.user_id, id_
         )
-        activity = ActivityExtendedDetail(
+        activity = ActivitySingleLanguageWithItemsDetail(
             id=schema.id,
             name=schema.name,
             description=self._get_by_language(schema.description, language),

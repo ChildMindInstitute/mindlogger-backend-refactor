@@ -13,7 +13,7 @@ from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
 from apps.themes.db.schemas import ThemeSchema
-from apps.themes.domain import PublicTheme, Theme, ThemeCreate, ThemeUpdate
+from apps.themes.domain import PublicTheme, Theme
 from apps.themes.errors import (
     ThemeAlreadyExist,
     ThemeNotFoundError,
@@ -113,13 +113,11 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
         return [PublicTheme.from_orm(theme) for theme in results]
 
-    async def save(self, schema: ThemeCreate) -> Theme:
+    async def save(self, schema: ThemeSchema) -> Theme:
         """Return theme instance and the created information."""
         # Save theme into the database
         try:
-            instance: ThemeSchema = await self._create(
-                ThemeSchema(**schema.dict())
-            )
+            instance: ThemeSchema = await self._create(schema)
         except IntegrityError:
             raise ThemeAlreadyExist()
 
@@ -139,7 +137,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
         await self._delete(key="id", value=pk)
 
     async def update(
-        self, pk: uuid.UUID, update_schema: ThemeUpdate, creator_id: uuid.UUID
+        self, pk: uuid.UUID, update_schema: ThemeSchema, creator_id: uuid.UUID
     ) -> Theme:
         # Update theme in database
 
@@ -151,18 +149,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
             )
         try:
             instance = await self._update_one(
-                lookup="id",
-                value=pk,
-                schema=ThemeSchema(
-                    name=update_schema.name,
-                    logo=update_schema.logo,
-                    background_image=update_schema.background_image,
-                    primary_color=str(update_schema.primary_color),
-                    secondary_color=str(update_schema.secondary_color),
-                    tertiary_color=str(update_schema.tertiary_color),
-                    public=update_schema.public,
-                    allow_rename=update_schema.allow_rename,
-                ),
+                lookup="id", value=pk, schema=update_schema
             )
         except IntegrityError:
             raise ThemeAlreadyExist()

@@ -2,13 +2,8 @@ import uuid
 
 from apps.shared.query_params import QueryParams
 from apps.themes.crud import ThemesCRUD
-from apps.themes.domain import (
-    PublicTheme,
-    Theme,
-    ThemeCreate,
-    ThemeRequest,
-    ThemeUpdate,
-)
+from apps.themes.db.schemas import ThemeSchema
+from apps.themes.domain import PublicTheme, Theme, ThemeRequest
 from apps.themes.errors import ThemeAlreadyExist, ThemeNotFoundError
 
 
@@ -45,15 +40,15 @@ class ThemeService:
             )
 
         theme: Theme = await ThemesCRUD(self.session).save(
-            schema=ThemeCreate(
+            ThemeSchema(
                 **theme_request.dict(),
+                creator_id=self.user_id,
                 public=False,
                 allow_rename=False,
-                creator_id=self.user_id,
             )
         )
 
-        return PublicTheme(**theme.dict())
+        return PublicTheme.from_orm(theme)
 
     async def get_all(self, query_params: QueryParams) -> list[PublicTheme]:
         themes: list[PublicTheme] = await ThemesCRUD(self.session).list(
@@ -73,7 +68,7 @@ class ThemeService:
 
         theme: Theme = await ThemesCRUD(self.session).update(
             pk=theme_id,
-            update_schema=ThemeUpdate(
+            update_schema=ThemeSchema(
                 **theme_request.dict(), public=False, allow_rename=False
             ),
             creator_id=self.user_id,

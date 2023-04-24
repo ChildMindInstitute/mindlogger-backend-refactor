@@ -8,6 +8,7 @@ from apps.activities.domain import ActivityHistory, ActivityHistoryChange
 __all__ = ["ActivityHistoryService"]
 
 from apps.activities.domain.activity_full import ActivityFull
+from apps.activities.errors import InvalidVersionError
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
@@ -51,7 +52,10 @@ class ActivityHistoryService:
         ).add(activity_items)
 
     async def get_changes(self):
-        prev_version = get_prev_version(self._version)
+        try:
+            prev_version = get_prev_version(self._version)
+        except ValueError:
+            raise InvalidVersionError()
         old_id_version = f"{self._applet_id}_{prev_version}"
         return await self._get_activity_changes(old_id_version)
 
@@ -175,3 +179,15 @@ class ActivityHistoryService:
             groups_map[activity.id] = group
 
         return groups_map
+
+    async def list(self) -> list[ActivityHistory]:
+        schemas = await ActivityHistoriesCRUD(
+            self.session
+        ).retrieve_by_applet_version(self._applet_id_version)
+        return [ActivityHistory.from_orm(schema) for schema in schemas]
+
+    async def get_by_id(self, activity_id: uuid.UUID) -> ActivityHistory:
+        schema = await ActivityHistoriesCRUD(self.session).get_by_id(
+            f"{activity_id}_{self._version}"
+        )
+        return ActivityHistory.from_orm(schema)

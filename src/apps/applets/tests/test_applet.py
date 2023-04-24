@@ -1,16 +1,18 @@
 import asyncio
+import uuid
 
+from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
 
 class TestApplet(BaseTest):
-    # TODO: fix text
     fixtures = [
         "users/fixtures/users.json",
         "themes/fixtures/themes.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
+        "applets/fixtures/applet_histories.json",
         "applets/fixtures/applet_user_accesses.json",
         "activities/fixtures/activities.json",
         "activities/fixtures/activity_items.json",
@@ -21,6 +23,8 @@ class TestApplet(BaseTest):
     login_url = "/auth/login"
     applet_list_url = "applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
+    applet_duplicate_url = f"{applet_detail_url}/duplicate"
+    applet_password_check_url = f"{applet_detail_url}/password/check"
     applet_unique_name_url = f"{applet_list_url}/unique_name"
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
@@ -52,13 +56,55 @@ class TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
+                            name="morning_activity_item",
                             question=dict(
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            is_hidden=True,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                        ),
+                        dict(
+                            name="morning_activity_item_2",
+                            question=dict(
+                                en="How had you woke?",
+                                fr="How had you woke?",
+                            ),
+                            response_type="slider",
+                            response_values=dict(
+                                min_label="Not at all",
+                                max_label="Very much",
+                                min_value=1,
+                                max_value=5,
+                                min_image=None,
+                                max_image=None,
+                                scores=None,
+                            ),
+                            config=dict(
+                                add_scores=False,
+                                set_alerts=False,
+                                show_tick_marks=False,
+                                show_tick_labels=False,
+                                continuous_slider=False,
+                                timer=None,
+                                remove_back_button=False,
+                                skippable_item=True,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
                         ),
                     ],
                 ),
@@ -71,13 +117,112 @@ class TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
+                            name="evening_activity_item",
                             question=dict(
-                                en="How had you spent your time?",
-                                fr="How had you spent your time?",
+                                en="How had you slept?",
+                                fr="How had you slept?",
                             ),
-                            response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_type="singleSelect",
+                            response_values=dict(
+                                paletteName="default",
+                                options=[
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
+                                        text="Very well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
+                                        text="Well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=True,
+                                randomize_options=False,
+                                timer=None,
+                                add_scores=False,
+                                set_alerts=False,
+                                add_tooltip=False,
+                                set_palette=False,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
+                        dict(
+                            name="evening_activity_item",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="multiSelect",
+                            response_values=dict(
+                                paletteName=None,
+                                options=[
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
+                                        text="Very well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
+                                        text="Well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=True,
+                                randomize_options=False,
+                                timer=None,
+                                add_scores=False,
+                                set_alerts=False,
+                                add_tooltip=False,
+                                set_palette=False,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
+                        dict(
+                            name="evening_activity_item33",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="photo",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=True,
+                                timer=None,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
                         ),
                     ],
                 ),
@@ -101,8 +246,14 @@ class TestApplet(BaseTest):
         response = await self.client.post(
             self.applet_list_url, data=create_data
         )
-
         assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"])
+        )
+        assert response.status_code == 200
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].subject == "Applet upload success!"
 
     @rollback
     async def test_create_duplicate_name_applet(self):
@@ -130,13 +281,23 @@ class TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
+                            name="evening_activity_item",
                             question=dict(
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -149,13 +310,23 @@ class TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
+                            name="evening_activity_item",
                             question=dict(
-                                en="How had you spent your time?",
-                                fr="How had you spent your time?",
+                                en="How had you slept?",
+                                fr="How had you slept?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -179,7 +350,108 @@ class TestApplet(BaseTest):
         response = await self.client.post(
             self.applet_list_url, data=create_data
         )
+        assert response.status_code == 422, response.json()
+        assert (
+            response.json()["result"][0]["message"]["en"]
+            == "Applet already exists."
+        )
+        assert TestMail.mails[0].subject == "Applet upload failed!"
 
+    @rollback
+    async def test_create_duplicate_case_sensitive_name_applet(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            password="Test1234!",
+            display_name="AppleT 1",
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    name="Morning activity",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="evening_activity_item",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="text",
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                        ),
+                    ],
+                ),
+                dict(
+                    name="Evening activity",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    description=dict(
+                        en="Understand evening feelings.",
+                        fr="Understand evening feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="evening_activity_item",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="text",
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="Morning questionnaire",
+                    description=dict(
+                        en="Understand how was the morning",
+                        fr="Understand how was the morning",
+                    ),
+                    items=[
+                        dict(
+                            activity_key="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_list_url, data=create_data
+        )
         assert response.status_code == 422, response.json()
         assert (
             response.json()["result"][0]["message"]["en"]
@@ -214,29 +486,41 @@ class TestApplet(BaseTest):
                     items=[
                         dict(
                             id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                            name="evening_activity_item",
                             question=dict(
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
+                            response_values=None,
                             config=dict(
-                                setAlert=True,
-                                optionScore=True,
-                                randomizeResponseOptions=True,
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
                             ),
                         ),
                         dict(
+                            name="evening_activity_item2",
                             question=dict(
                                 en="How was your breakfast?",
                                 fr="How was your breakfast?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
+                            response_values=None,
                             config=dict(
-                                setAlert=True,
-                                optionScore=True,
-                                randomizeResponseOptions=True,
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
                             ),
                         ),
                     ],
@@ -254,12 +538,18 @@ class TestApplet(BaseTest):
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
+                            name="evening_activity_item3",
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
+                            response_values=None,
                             config=dict(
-                                setAlert=True,
-                                optionScore=True,
-                                randomizeResponseOptions=True,
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
                             ),
                         ),
                     ],
@@ -289,6 +579,59 @@ class TestApplet(BaseTest):
             data=update_data,
         )
         assert response.status_code == 200, response.json()
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].subject == "Applet edit success!"
+
+    @rollback
+    async def test_duplicate_applet(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.applet_duplicate_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=dict(display_name="New name", password="Test1234567890"),
+        )
+        assert response.status_code == 201, response.json()
+
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].subject == "Applet duplicate success!"
+
+        response = await self.client.get(self.applet_list_url)
+        assert len(response.json()["result"]) == 4
+        assert response.json()["result"][0]["displayName"] == "New name"
+
+        response = await self.client.post(
+            self.applet_duplicate_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=dict(display_name="New name", password="Test1234567890123"),
+        )
+        assert response.status_code == 422, response.json()
+
+    @rollback
+    async def test_check_applet_password(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.applet_password_check_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=dict(password="Test1234!"),
+        )
+        assert response.status_code == 200, response.json()
+
+        response = await self.client.post(
+            self.applet_password_check_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=dict(password="Test1234"),
+        )
+        assert response.status_code == 422, response.json()
 
     @rollback
     async def test_applet_list(self):
@@ -311,6 +654,38 @@ class TestApplet(BaseTest):
             response.json()["result"][2]["id"]
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
+
+    @rollback
+    async def test_applet_delete(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.delete(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            dict(password="Test1234!"),
+        )
+
+        assert response.status_code == 204, response.json()
+
+        response = await self.client.delete(
+            self.applet_detail_url.format(
+                pk="00000000-0000-0000-0000-000000000000"
+            ),
+            dict(password="Test1234!"),
+        )
+
+        assert response.status_code == 404, response.json()
+
+        response = await self.client.delete(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            dict(password="Test1234"),
+        )
+
+        assert response.status_code == 422, response.json()
 
     @rollback
     async def test_applet_list_with_invalid_token(self):
@@ -395,13 +770,23 @@ class TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
+                            name="morning_activity_item1",
                             question=dict(
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -414,13 +799,23 @@ class TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
+                            name="evening_activity_item1",
                             question=dict(
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -459,6 +854,17 @@ class TestApplet(BaseTest):
         assert versions[0]["version"] == version
 
     @rollback
+    async def test_versions_for_not_existed_applet(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.get(
+            self.histories_url.format(pk=uuid.uuid4())
+        )
+
+        assert response.status_code == 404, response.json()
+
+    @rollback
     async def test_updating_applet_history(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -486,22 +892,42 @@ class TestApplet(BaseTest):
                     items=[
                         dict(
                             id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                            name="morning_activity_item132",
                             question=dict(
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                         dict(
+                            name="morning_activity_item133",
                             question=dict(
                                 en="How was your breakfast?",
                                 fr="How was your breakfast?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -514,13 +940,23 @@ class TestApplet(BaseTest):
                     ),
                     items=[
                         dict(
+                            name="evening_activity_item132",
                             question=dict(
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -550,8 +986,9 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == 200, response.json()
 
-        version = response.json()["result"]["version"]
         applet_id = response.json()["result"]["id"]
+
+        assert response.json()["result"]["version"] == "1.0.1"
 
         response = await self.client.get(
             self.histories_url.format(pk=applet_id)
@@ -559,16 +996,31 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200, response.json()
         versions = response.json()["result"]
-        assert len(versions) == 1
+        assert len(versions) == 2
         assert versions[0]["version"] == "1.0.1"
+        assert versions[1]["version"] == "1.0.0"
 
         response = await self.client.get(
-            self.history_url.format(pk=applet_id, version=version)
+            self.history_url.format(pk=applet_id, version="1.0.1")
         )
 
         assert response.status_code == 200, response.json()
         applet = response.json()["result"]
-        assert applet["version"] == version
+        assert applet["version"] == "1.0.1"
+
+        response = await self.client.get(
+            self.history_url.format(pk=applet_id, version="1.0.0")
+        )
+
+        assert response.status_code == 200, response.json()
+        applet = response.json()["result"]
+        assert applet["version"] == "1.0.0"
+
+        response = await self.client.get(
+            self.history_url.format(pk=applet_id, version="0.0.0")
+        )
+
+        assert response.status_code == 404, response.json()
 
     @rollback
     async def test_history_changes(self):
@@ -600,9 +1052,19 @@ class TestApplet(BaseTest):
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
+                            name="morning_activity_item132",
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -619,9 +1081,19 @@ class TestApplet(BaseTest):
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
+                            name="evening_activity_item132",
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -672,18 +1144,38 @@ class TestApplet(BaseTest):
                                 en="How had you slept?",
                                 fr="How had you slept?",
                             ),
+                            name="morning_activity_item132",
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                         dict(
                             question=dict(
                                 en="How was your breakfast?",
                                 fr="How was your breakfast?",
                             ),
+                            name="morning_activity_item133",
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -700,9 +1192,19 @@ class TestApplet(BaseTest):
                                 en="How had you spent your time?",
                                 fr="How had you spent your time?",
                             ),
+                            name="evening_activity_item132",
                             response_type="text",
-                            answers=["Bad", "Normal", "Good"],
-                            config=dict(set_alert=True),
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
                         ),
                     ],
                 ),
@@ -739,7 +1241,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 200
         assert (
             response.json()["result"]["displayName"]
-            == "User daily behave is changed to user daily behave updated."
+            == '"User daily behave" is changed to "User daily behave updated".'
         )
         assert len(response.json()["result"]["activities"]) == 4
 
@@ -754,3 +1256,15 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["result"]["name"] == "Applet 1 (1)"
+
+    async def test_get_applet_unique_name_case_insensitive(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.applet_unique_name_url, data=dict(name="AppleT 1")
+        )
+
+        assert response.status_code == 200
+        assert response.json()["result"]["name"] == "AppleT 1 (1)"
