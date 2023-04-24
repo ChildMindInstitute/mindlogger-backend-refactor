@@ -100,6 +100,7 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == 200
         assert response.json()["count"] == 1
+        assert response.json()["result"][0]["role"] == Role.ADMIN
 
     @rollback
     async def test_workspace_applets_detail(self):

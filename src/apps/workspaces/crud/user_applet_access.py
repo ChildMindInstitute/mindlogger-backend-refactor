@@ -660,3 +660,32 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         db_result = await self._execute(select(query))
         return db_result.scalars().first()
+
+    async def get_applets_roles_by_priority(
+        self, applet_ids: list[uuid.UUID], user_id: uuid.UUID
+    ) -> dict[uuid.UUID, Role]:
+        from_query: Query = select(UserAppletAccessSchema)
+        from_query = from_query.where(
+            UserAppletAccessSchema.user_id == user_id
+        )
+        from_query = from_query.where(
+            UserAppletAccessSchema.applet_id.in_(applet_ids)
+        )
+        from_query = from_query.order_by(
+            case(
+                (UserAppletAccessSchema.role == Role.ADMIN, 1),
+                (UserAppletAccessSchema.role == Role.MANAGER, 2),
+                (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
+                (UserAppletAccessSchema.role == Role.EDITOR, 4),
+                (UserAppletAccessSchema.role == Role.REVIEWER, 5),
+                (UserAppletAccessSchema.role == Role.RESPONDENT, 6),
+                else_=10,
+            ).asc()
+        ).alias("prioritized_access")
+
+        query = select(from_query.c.applet_id, from_query.c.role)
+        query = query.distinct(from_query.c.applet_id)
+
+        db_result = await self._execute(query)
+
+        return dict(db_result.all())
