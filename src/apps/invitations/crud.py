@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
@@ -300,4 +300,9 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(InvitationSchema.id == id_)
         query = query.values(status=InvitationStatus.DECLINED)
 
+        await self._execute(query)
+
+    async def delete_by_applet_id(self, applet_id: uuid.UUID):
+        query: Query = delete(InvitationSchema)
+        query = query.where(InvitationSchema.applet_id == applet_id)
         await self._execute(query)
