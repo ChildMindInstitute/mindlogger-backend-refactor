@@ -248,3 +248,12 @@ class UserAccessService:
         ).get_respondent_accesses_by_owner_id_count(owner_id, respondent_id)
 
         return count
+
+    async def get_applets_roles_by_priority(
+        self, applet_ids: list[uuid.UUID]
+    ) -> dict:
+        applet_role_map = await UserAppletAccessCRUD(
+            self.session
+        ).get_applets_roles_by_priority(applet_ids, self._user_id)
+
+        return applet_role_map

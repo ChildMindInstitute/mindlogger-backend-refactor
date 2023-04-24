@@ -7,11 +7,13 @@ from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import (
+    WorkspaceApplet,
     WorkspaceInfo,
     WorkspaceManager,
     WorkspaceRespondent,
 )
 from apps.workspaces.errors import WorkspaceAccessDenied
+from apps.workspaces.service.user_access import UserAccessService
 
 
 class WorkspaceService:
@@ -111,3 +113,27 @@ class WorkspaceService:
         return await UserAppletAccessCRUD(
             self.session
         ).get_workspace_managers_count(owner_id, query_params)
+
+    async def get_workspace_applets(
+        self, language: str, query_params: QueryParams
+    ) -> list[WorkspaceApplet]:
+        applets = await UserAccessService(
+            self.session, self._user_id
+        ).get_workspace_applets_by_language(language, query_params)
+
+        applet_ids = [applet.id for applet in applets]
+
+        workspace_applets = []
+        workspace_applet_map = dict()
+        for applet in applets:
+            workspace_applet = WorkspaceApplet.from_orm(applet)
+            workspace_applet_map[workspace_applet.id] = workspace_applet
+            workspace_applets.append(workspace_applet)
+
+        applet_role_map = await UserAccessService(
+            self.session, self._user_id
+        ).get_applets_roles_by_priority(applet_ids)
+
+        for applet_id, role in applet_role_map.items():
+            workspace_applet_map[applet_id].role = role
+        return workspace_applets
