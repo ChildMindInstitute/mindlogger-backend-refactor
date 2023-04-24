@@ -5,6 +5,7 @@ from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
+from apps.invitations.services import InvitationsService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.transfer_ownership.crud import TransferCRUD
@@ -86,8 +87,21 @@ class TransferService:
         ):
             raise PermissionsError()
 
-        # delete all users from applet
         await UserAppletAccessCRUD(self.session).delete_all_by_applet_id(
+            applet_id=transfer.applet_id
+        )
+        await InvitationsService(
+            self.session, self._user
+        ).clear_applets_invitations(applet_id)
+
+        await AnswerActivityItemsCRUD(self.session).delete_by_applet_user(
+            applet_id=transfer.applet_id
+        )
+        await AnswerFlowItemsCRUD(self.session).delete_by_applet_user(
+            applet_id=transfer.applet_id
+        )
+
+        await TransferCRUD(self.session).delete_all_by_applet_id(
             applet_id=transfer.applet_id
         )
 
@@ -101,21 +115,6 @@ class TransferService:
                 invitor_id=self._user.id,
                 meta={},
             )
-        )
-
-        # delete responses from applet?
-        await AnswerActivityItemsCRUD(self.session).delete_by_applet_user(
-            applet_id=transfer.applet_id
-        )
-        await AnswerFlowItemsCRUD(self.session).delete_by_applet_user(
-            applet_id=transfer.applet_id
-        )
-
-        # TODO: remove password from applet
-
-        # delete all other transfers for this applet
-        await TransferCRUD(self.session).delete_all_by_applet_id(
-            applet_id=transfer.applet_id
         )
 
     def _generate_transfer_url(self) -> str:

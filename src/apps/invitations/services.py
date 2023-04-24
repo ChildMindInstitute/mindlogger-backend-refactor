@@ -555,6 +555,9 @@ class InvitationsService:
 
         await InvitationCRUD(self.session).decline_by_id(invitation.id)
 
+    async def clear_applets_invitations(self, applet_id: uuid.UUID):
+        await InvitationCRUD(self.session).delete_by_applet_id(applet_id)
+
 
 class PrivateInvitationService:
     def __init__(self, session):
