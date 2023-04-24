@@ -27,9 +27,11 @@ async def main():
     converter = get_jsonld_model_converter(document_loader, context_resolver)
 
     # doc = get_json("ld_repro_example.json")
-    doc = get_json("/Users/ushviachko/work/ChildMind/mindlogger-backend-refactor/_tmp_docs/media/protocols/schema.json")
+    # doc = get_json("/Users/ushviachko/work/ChildMind/mindlogger-backend-refactor/_tmp_docs/media/protocols/schema.json")
 
     # doc = {'_id': ObjectId('5ef14aa5cf98a62237946010'), 'name': '/mindlogger-demo_schema (373)', 'description': '', 'parentCollection': 'collection', 'baseParentId': ObjectId('5ea689a286d25a5dbb14e82c'), 'baseParentType': 'collection', 'parentId': ObjectId('5ea689a286d25a5dbb14e82c'), 'creatorId': ObjectId('5ef14941cf98a6223794600e'), 'created': datetime.datetime(2020, 6, 23, 0, 19, 48, 668000), 'updated': datetime.datetime(2022, 11, 13, 8, 49, 37, 87000), 'size': 1557, 'meta': {'protocol': {'_id': 'protocol/5ea7175c86d25a5dbb14ea29', 'url': 'https://raw.githubusercontent.com/ReproNim/reproschema/master/protocols/mindlogger-demo/mindlogger-demo_schema', 'activities': ['5ea7175d86d25a5dbb14ea2a'], 'activityFlows': []}, 'applet': {'_id': 'applet/5ef14aa5cf98a62237946010'}, 'schema': '1.0.1'}, 'appletName': 'https://raw.githubusercontent.com/ReproNim/reproschema/master/protocols/mindlogger-demo/mindlogger-demo_schema/', 'accountId': ObjectId('5ef14941cf98a6223794600f'), 'access': {'users': [{'id': ObjectId('5ef14941cf98a6223794600e'), 'level': 2, 'flags': []}], 'groups': [{'id': ObjectId('5ef14aa5cf98a62237946011'), 'level': 0, 'flags': []}, {'id': ObjectId('5ef14aa5cf98a62237946012'), 'level': 2, 'flags': []}, {'id': ObjectId('5ef14aa5cf98a62237946013'), 'level': 1, 'flags': []}, {'id': ObjectId('5ef14aa5cf98a62237946014'), 'level': 2, 'flags': []}, {'id': ObjectId('5ef14aa5cf98a62237946015'), 'level': 0, 'flags': []}]}, 'public': True, 'lowerName': '/mindlogger-demo_schema (373)', 'roles': {'user': {'groups': [{'id': ObjectId('5ef14aa5cf98a62237946011'), 'subject': None}]}, 'coordinator': {'groups': [{'id': ObjectId('5ef14aa5cf98a62237946012')}]}, 'editor': {'groups': [{'id': ObjectId('5ef14aa5cf98a62237946013')}]}, 'manager': {'groups': [{'id': ObjectId('5ef14aa5cf98a62237946014')}]}, 'reviewer': {'groups': [{'id': ObjectId('5ef14aa5cf98a62237946015'), 'subject': None}]}}, 'displayName': 'MindLogger Demo', 'cached': ObjectId('62d5a6f0759c7d6caf665003')}
+
+    doc = get_json("src/apps/migrate/applet_test_refactor.json")
 
     base_url = 'https://raw.githubusercontent.com/ReproNim/demo-protocol/master/DemoProtocol/DemoProtocol_schema'
 

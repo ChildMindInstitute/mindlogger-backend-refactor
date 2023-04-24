@@ -1,0 +1,120 @@
+{
+   "_id":"5ef14aa5cf98a62237946010",
+   "name":"/mindlogger-demo_schema (373)",
+   "description":"",
+   "parentCollection":"collection",
+   "baseParentId":"5ea689a286d25a5dbb14e82c",
+   "baseParentType":"collection",
+   "parentId":"5ea689a286d25a5dbb14e82c",
+   "creatorId":"5ef14941cf98a6223794600e",
+   "size":1557,
+   "meta":{
+      "protocol":{
+         "_id":"protocol/5ea7175c86d25a5dbb14ea29",
+         "url":"https://raw.githubusercontent.com/ReproNim/reproschema/master/protocols/mindlogger-demo/mindlogger-demo_schema",
+         "activities":[
+            "5ea7175d86d25a5dbb14ea2a"
+         ],
+         "activityFlows":[
+
+         ]
+      },
+      "applet":{
+         "_id":"applet/5ef14aa5cf98a62237946010"
+      },
+      "schema":"1.0.1"
+   },
+   "appletName":"https://raw.githubusercontent.com/ReproNim/reproschema/master/protocols/mindlogger-demo/mindlogger-demo_schema/",
+   "accountId":"5ef14941cf98a6223794600f",
+   "access":{
+      "users":[
+         {
+            "id":"5ef14941cf98a6223794600e",
+            "level":2,
+            "flags":[
+
+            ]
+         }
+      ],
+      "groups":[
+         {
+            "id":"5ef14aa5cf98a62237946011",
+            "level":0,
+            "flags":[
+
+            ]
+         },
+         {
+            "id":"5ef14aa5cf98a62237946012",
+            "level":2,
+            "flags":[
+
+            ]
+         },
+         {
+            "id":"5ef14aa5cf98a62237946013",
+            "level":1,
+            "flags":[
+
+            ]
+         },
+         {
+            "id":"5ef14aa5cf98a62237946014",
+            "level":2,
+            "flags":[
+
+            ]
+         },
+         {
+            "id":"5ef14aa5cf98a62237946015",
+            "level":0,
+            "flags":[
+
+            ]
+         }
+      ]
+   },
+   "public":true,
+   "lowerName":"/mindlogger-demo_schema (373)",
+   "roles":{
+      "user":{
+         "groups":[
+            {
+               "id":"5ef14aa5cf98a62237946011",
+               "subject":"None"
+            }
+         ]
+      },
+      "coordinator":{
+         "groups":[
+            {
+               "id":"5ef14aa5cf98a62237946012"
+            }
+         ]
+      },
+      "editor":{
+         "groups":[
+            {
+               "id":"5ef14aa5cf98a62237946013"
+            }
+         ]
+      },
+      "manager":{
+         "groups":[
+            {
+               "id":"5ef14aa5cf98a62237946014"
+            }
+         ]
+      },
+      "reviewer":{
+         "groups":[
+            {
+               "id":"5ef14aa5cf98a62237946015",
+               "subject":"None"
+            }
+         ]
+      }
+   },
+   "displayName":"MindLogger Demo",
+   "cached":"62d5a6f0759c7d6caf665003"
+}
