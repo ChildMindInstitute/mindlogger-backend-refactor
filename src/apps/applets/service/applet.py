@@ -489,7 +489,7 @@ class AppletService:
     async def create_access_link(
         self, applet_id: uuid.UUID, create_request: CreateAccessLink
     ) -> AppletLink:
-        applet_instance = await self._validate_applet_access(applet_id)
+        applet_instance = await self._validate_applet_link_access(applet_id)
         if applet_instance.link:
             raise AppletLinkAlreadyExist()
 
@@ -504,7 +504,7 @@ class AppletService:
         )
 
     async def get_access_link(self, applet_id: uuid.UUID) -> AppletLink:
-        applet_instance = await self._validate_applet_access(applet_id)
+        applet_instance = await self._validate_applet_link_access(applet_id)
         if applet_instance.link:
             link = self._generate_link_url(
                 bool(applet_instance.require_login), str(applet_instance.link)
@@ -517,7 +517,7 @@ class AppletService:
         )
 
     async def delete_access_link(self, applet_id: uuid.UUID):
-        applet = await self._validate_applet_access(applet_id)
+        applet = await self._validate_applet_link_access(applet_id)
         if not applet.link:
             raise AccessLinkDoesNotExistError
 
@@ -564,6 +564,19 @@ class AppletService:
             self.session
         ).get_user_roles_to_applet(self.user_id, applet_id)
         if Role.ADMIN not in roles:
+            raise AppletAccessDenied()
+        return Applet.from_orm(applet)
+
+    async def _validate_applet_link_access(
+        self, applet_id: uuid.UUID
+    ) -> Applet:
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        roles = await UserAppletAccessCRUD(
+            self.session
+        ).get_user_roles_to_applet(self.user_id, applet_id)
+        if not {Role.ADMIN, Role.COORDINATOR, Role.MANAGER}.intersection(
+            roles
+        ):
             raise AppletAccessDenied()
         return Applet.from_orm(applet)
 
