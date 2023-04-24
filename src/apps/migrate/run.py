@@ -20,13 +20,13 @@ def main():
     postgres = Postgres()
 
     # Migrate with users
-    users: list[dict] = mongo.get_users()
-    users_mapping = postgres.save_users(users)
+    # users: list[dict] = mongo.get_users()
+    # users_mapping = postgres.save_users(users)
 
     # Migrate with users_workspace
-    postgres.save_users_workspace(users_mapping)
+    # postgres.save_users_workspace(users_mapping)
 
-    # mongo.get_applets()
+    mongo.get_applets()
 
     # TODO: Migrate with applets
     # applets: list[dict] = mongo.get_applets()

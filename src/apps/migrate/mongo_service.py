@@ -81,7 +81,16 @@ class Mongo:
 
     def get_applets(self) -> list[dict]:
         collection = self.db["folder"]
-        folder = collection.find_one()
+
+        folders = collection.find()
+        for folder in folders:
+            if str(folder.get("_id")) == "5ef14aa5cf98a62237946010":
+                print(folder)
+
+        # folder = collection.find(
+        #     {'_id': '5ef14aa5cf98a62237946010'}
+        # )
+
         # folder = collection.find(
         #     {},
         #     {
@@ -89,7 +98,6 @@ class Mongo:
         #         "parentCollection": 1, "baseParentId": 1
         #     },
         # )
-        print(folder)
         return []
 
     def get_activities(self) -> list[dict]:
