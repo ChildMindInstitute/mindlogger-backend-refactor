@@ -124,7 +124,10 @@ class AnswerService:
                 answer_class = ANSWER_TYPE_MAP.get(activity_item.response_type)
 
                 if activity_item.id not in answer_map:
-                    raise AnswerIsNotFull()
+                    timer = getattr(activity_item.config, "timer", None)
+                    if not timer:
+                        raise AnswerIsNotFull()
+                    continue
 
                 if (
                     not type(answer_map[activity_item.id].answer)
