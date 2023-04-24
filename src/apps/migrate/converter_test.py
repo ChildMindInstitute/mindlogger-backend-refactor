@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from apps.migrate.dependencies import (
+from apps.jsonld_converter.dependencies import (
     get_jsonld_model_converter,
     get_document_loader,
     get_context_resolver,

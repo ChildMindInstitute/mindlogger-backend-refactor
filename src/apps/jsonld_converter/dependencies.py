@@ -5,10 +5,7 @@ from fastapi import Depends
 from pyld import ContextResolver
 from pyld.jsonld import requests_document_loader
 
-from apps.migrate.services import (
-    JsonLDModelConverter,
-    ModelJsonLDConverter,
-)
+from apps.jsonld_converter.service import JsonLDModelConverter
 from config import settings
 
 
@@ -30,10 +27,3 @@ def get_jsonld_model_converter(
     return JsonLDModelConverter(
         context_resolver, document_loader, settings.jsonld_converter.dict()
     )
-
-
-def get_model_jsonld_converter(
-    document_loader: Callable = Depends(get_document_loader),
-    context_resolver: ContextResolver = Depends(get_context_resolver),
-) -> ModelJsonLDConverter:
-    return ModelJsonLDConverter(context_resolver, document_loader)
