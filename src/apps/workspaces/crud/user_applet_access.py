@@ -635,3 +635,28 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().first() or 0
+
+    async def clean_manager_accesses(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ):
+        query: Query = delete(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(
+            UserAppletAccessSchema.role.in_(
+                [Role.COORDINATOR, Role.EDITOR, Role.REVIEWER]
+            )
+        )
+        await self._execute(query)
+
+    async def has_role(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
+    ) -> bool:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.role == role)
+        query = query.exists()
+
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first()
