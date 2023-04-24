@@ -189,6 +189,10 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(
             InvitationSchema.status == InvitationStatus.PENDING
         )
+        if query_params.filters:
+            query = query.where(
+                *_InvitationFiltering().get_clauses(**query_params.filters)
+            )
         if query_params.search:
             query = query.where(
                 _InvitationSearching().get_clauses(query_params.search)
