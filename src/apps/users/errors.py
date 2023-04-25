@@ -30,3 +30,8 @@ class UserIsDeletedError(BadRequestError):
 class EmailAddressError(InternalServerError):
     def __init__(self, *_, message="Email address not found") -> None:
         super().__init__(message=message)
+
+
+class UserDeviceNotFound(NotFoundError):
+    def __init__(self, *_, message="User device is not found") -> None:
+        super().__init__(message)

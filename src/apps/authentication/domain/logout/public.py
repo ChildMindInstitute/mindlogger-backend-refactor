@@ -1,5 +1,5 @@
-from apps.shared.domain import PublicModel
+from apps.shared.domain import InternalModel
 
 
-class UserLogoutRequest(PublicModel):
-    device_id: str
+class UserLogoutRequest(InternalModel):
+    device_id: str | None = None

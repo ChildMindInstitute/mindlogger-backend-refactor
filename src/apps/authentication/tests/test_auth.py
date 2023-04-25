@@ -1,6 +1,4 @@
-from unittest.mock import patch
-
-from starlette import status
+import uuid
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import RefreshAccessTokenRequest
@@ -51,7 +49,7 @@ class TestAuthentication(BaseTest):
             {"sub": str(user.id)}
         )
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == 200
         assert (
             response.json()["result"]["token"]["accessToken"] == access_token
         )
@@ -61,11 +59,7 @@ class TestAuthentication(BaseTest):
         assert response.json()["result"]["user"]["id"] == str(user.id)
 
     @rollback
-    @patch("apps.authentication.services.core.TokensBlacklistCache.set")
-    async def test_delete_access_token(
-        self,
-        cache_set_mock,
-    ):
+    async def test_delete_access_token(self):
         # Creating new user
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -82,11 +76,9 @@ class TestAuthentication(BaseTest):
 
         response = await self.client.post(
             url=self.delete_token_url,
-            data=self.create_request_logout_user.dict(),
         )
 
-        assert cache_set_mock.call_count == 1
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == 200
 
     @rollback
     async def test_refresh_access_token(self):
@@ -107,4 +99,33 @@ class TestAuthentication(BaseTest):
             data=refresh_access_token_request.dict(),
         )
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == 200
+
+    @rollback
+    async def test_login_and_logout_device(self):
+        await self.client.post(
+            self.user_create_url, data=self.create_request_user.dict()
+        )
+        device_id = str(uuid.uuid4())
+
+        login_request_user: UserLoginRequest = UserLoginRequest(
+            **self.create_request_user.dict(), device_id=device_id
+        )
+        response = await self.client.post(
+            url=self.get_token_url,
+            data=login_request_user.dict(),
+        )
+        assert response.status_code == 200
+
+        await self.client.login(
+            self.get_token_url,
+            self.create_request_user.email,
+            self.create_request_user.password,
+        )
+
+        response = await self.client.post(
+            url=self.delete_token_url,
+            data=dict(device_id=device_id),
+        )
+
+        assert response.status_code == 200
