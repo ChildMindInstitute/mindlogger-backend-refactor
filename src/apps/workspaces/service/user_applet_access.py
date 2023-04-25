@@ -17,7 +17,9 @@ class UserAppletAccessService:
         self._applet_id = applet_id
         self.session = session
 
-    async def add_role(self, role: Role) -> UserAppletAccess:
+    async def add_role(
+        self, user_id: uuid.UUID, role: Role
+    ) -> UserAppletAccess:
         access_schema = await UserAppletAccessCRUD(
             self.session
         ).get_applet_role_by_user_id(self._applet_id, self._user_id, role)
@@ -26,7 +28,7 @@ class UserAppletAccessService:
 
         access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
-                user_id=self._user_id,
+                user_id=user_id,
                 applet_id=self._applet_id,
                 role=role,
                 owner_id=self._user_id,

@@ -65,7 +65,7 @@ class AppletService:
 
         await UserAppletAccessService(
             self.session, self.user_id, applet.id
-        ).add_role(Role.ADMIN)
+        ).add_role(self.user_id, Role.ADMIN)
         applet.activities = await ActivityService(
             self.session, self.user_id
         ).create(applet.id, create_data.activities)
@@ -137,9 +137,47 @@ class AppletService:
 
     async def duplicate(
         self, applet_exist: AppletDuplicate, new_name: str, password: str
+    ):
+        activity_key_id_map = dict()
+
+        await self._validate_applet_name(new_name)
+        applet_owner = await UserAppletAccessCRUD(
+            self.session
+        ).get_applet_owner(applet_exist.id)
+
+        create_data = self._prepare_duplicate(applet_exist, new_name, password)
+
+        applet = await self._create(create_data)
+
+        await UserAppletAccessService(
+            self.session, applet_owner.user_id, applet.id
+        ).add_role(applet_owner.user_id, Role.ADMIN)
+
+        if self.user_id != applet_owner.user_id:
+            await UserAppletAccessService(
+                self.session, applet_owner.user_id, applet.id
+            ).add_role(self.user_id, Role.MANAGER)
+
+        applet.activities = await ActivityService(
+            self.session, applet_owner.user_id
+        ).create(applet.id, create_data.activities)
+        for activity in applet.activities:
+            activity_key_id_map[activity.key] = activity.id
+        applet.activity_flows = await FlowService(self.session).create(
+            applet.id, create_data.activity_flows, activity_key_id_map
+        )
+
+        await AppletHistoryService(
+            self.session, applet.id, applet.version
+        ).add_history(self.user_id, applet)
+
+        return applet
+
+    @staticmethod
+    def _prepare_duplicate(
+        applet_exist: AppletDuplicate, new_name: str, password: str
     ) -> AppletCreate:
         activities = list()
-        await self._validate_applet_name(new_name)
         for activity in applet_exist.activities:
             activities.append(
                 ActivityCreate(
@@ -353,7 +391,7 @@ class AppletService:
         if not applet_exists:
             raise AppletNotFoundError(key="id", value=str(applet_id))
         schema = await AppletsCRUD(self.session).get_applet_by_roles(
-            self.user_id, applet_id, Role.as_list()
+            self.user_id, applet_id, [Role.ADMIN, Role.MANAGER]
         )
         theme = None
         if not schema:

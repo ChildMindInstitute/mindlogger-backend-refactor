@@ -161,11 +161,10 @@ async def applet_duplicate(
 ) -> Response[public_detail.Applet]:
     mail_service = MailingService()
     async with atomic(session):
-        applet_for_duplicate = await AppletService(
-            session, user.id
-        ).get_by_id_for_duplicate(applet_id)
+        service = AppletService(session, user.id)
+        applet_for_duplicate = await service.get_by_id_for_duplicate(applet_id)
 
-        applet_for_create = await AppletService(session, user.id).duplicate(
+        applet_for_create = await service.duplicate(
             applet_for_duplicate, schema.display_name, schema.password
         )
 
