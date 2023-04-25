@@ -52,7 +52,7 @@ from apps.schedule.domain.schedule.requests import EventRequest
 from apps.schedule.errors import EventAlwaysAvailableExistsError
 from apps.shared.errors import NotFoundError
 from apps.shared.query_params import QueryParams
-from apps.users.crud import UsersCRUD
+from apps.users.cruds.user import UsersCRUD
 from apps.users.errors import UserNotFound
 from apps.workspaces.domain.constants import Role
 

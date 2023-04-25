@@ -164,13 +164,10 @@ async def applet_duplicate(
         service = AppletService(session, user.id)
         applet_for_duplicate = await service.get_by_id_for_duplicate(applet_id)
 
-        applet_for_create = await service.duplicate(
+        applet = await service.duplicate(
             applet_for_duplicate, schema.display_name, schema.password
         )
 
-        applet = await AppletService(session, user.id).create(
-            applet_for_create
-        )
         await mail_service.send(
             MessageSchema(
                 recipients=[user.email],
