@@ -28,3 +28,8 @@ class ServiceSettings(BaseModel):
     name: str = "mindlogger-service"
     port: int = 8000
     urls: ServiceUrlsSettings = ServiceUrlsSettings()
+
+
+class JsonLdConverterSettings(BaseModel):
+    """Configure json-ld converter service settings."""
+    protocol_password: str = ""

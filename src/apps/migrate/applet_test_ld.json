@@ -1,0 +1,29 @@
+{
+   "@context": [
+      "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json",
+      {"reprolib": "https://raw.githubusercontent.com/ReproNim/reproschema/master/"}
+   ],
+   "@type": "reproschema:Protocol",
+   "@id": "DemoProtocol_schema",
+   "prefLabel": {
+      "en": "Protocol1",
+      "es": "Protocol1_es"
+   },
+   "description": "example Protocol",
+   "schemaVersion": "1.0.0-rc2",
+   "version": "0.0.1",
+   "landingPage": [
+      {
+         "@id": "README.md",
+         "inLanguage": "en"
+      }
+   ],
+      "_id":"5ef14aa5cf98a62237946010",
+   "name":"/mindlogger-demo_schema (373)",
+   "parentCollection":"collection",
+   "baseParentId":"5ea689a286d25a5dbb14e82c",
+   "baseParentType":"collection",
+   "parentId":"5ea689a286d25a5dbb14e82c",
+   "creatorId":"5ef14941cf98a6223794600e",
+   "appletName":"https://raw.githubusercontent.com/ReproNim/reproschema/master/protocols/mindlogger-demo/mindlogger-demo_schema/"
+}

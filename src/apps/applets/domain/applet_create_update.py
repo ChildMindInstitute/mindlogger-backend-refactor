@@ -1,3 +1,5 @@
+from pydantic import Field
+
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.activity_update import ActivityUpdate
 from apps.activity_flows.domain.flow_create import FlowCreate
@@ -10,6 +12,7 @@ class AppletCreate(AppletBase, InternalModel):
     password: str
     activities: list[ActivityCreate]
     activity_flows: list[FlowCreate]
+    extra_fields: dict = Field(default_factory=dict)
 
 
 class AppletUpdate(AppletBase, InternalModel):
