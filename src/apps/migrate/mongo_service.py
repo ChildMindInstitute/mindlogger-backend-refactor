@@ -1,7 +1,16 @@
-from datetime import datetime
+import asyncio
+from pprint import pprint as print
 
+import requests
+from bson.objectid import ObjectId
 from Cryptodome.Cipher import AES
 from pymongo import MongoClient
+
+from apps.jsonld_converter.dependencies import (
+    get_context_resolver,
+    get_document_loader,
+    get_jsonld_model_converter,
+)
 
 
 def decrypt(data):
@@ -81,23 +90,59 @@ class Mongo:
 
     def get_applets(self) -> list[dict]:
         collection = self.db["folder"]
+        data = collection.find(
+            {"baseParentId": ObjectId("5ea689a086d25a5dbb14e808")},
+        )
 
-        folders = collection.find()
-        for folder in folders:
-            if str(folder.get("_id")) == "5ef14aa5cf98a62237946010":
-                print(folder)
+        template = {
+            "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json",
+                {
+                    "reprolib": "https://raw.githubusercontent.com/ReproNim/reproschema/master/"
+                },
+            ],
+            "@type": "reproschema:Protocol",
+            "@id": "DemoProtocol_schema",
+            "appletName": "https://raw.githubusercontent.com/ReproNim/reproschema/master/protocols/mindlogger-demo/mindlogger-demo_schema/",
 
-        # folder = collection.find(
-        #     {'_id': '5ef14aa5cf98a62237946010'}
-        # )
+            "prefLabel": {"en": "Protocol1", "es": "Protocol1_es"},
+            "description": "example Protocol",
+            "schemaVersion": "1.0.0-rc2",
+            "version": "0.0.1",
+            "landingPage": [{"@id": "README.md", "inLanguage": "en"}],
+            "name": "/mindlogger-demo_schema (373)",
+            "parentCollection": "collection",
+            "baseParentId": "5ea689a286d25a5dbb14e82c",
+            "baseParentType": "collection",
+            "parentId": "5ea689a286d25a5dbb14e82c",
+            "creatorId": "5ef14941cf98a6223794600e",
+            "_id": "5ef14aa5cf98a62237946010",
+        }
 
-        # folder = collection.find(
-        #     {},
-        #     {
-        #         "_id": 1, "name": 1, "description": 1,
-        #         "parentCollection": 1, "baseParentId": 1
-        #     },
-        # )
+        # Temporary
+        element: dict = {}
+        for index, el in enumerate(data):
+            element = el
+            if index == 1:
+                break
+
+        response = requests.get(element["meta"]["protocol"]["url"])
+
+        if response.status_code == 404:
+            print("404!!!")
+            return
+
+        document_loader = get_document_loader()
+        context_resolver = get_context_resolver(document_loader)
+        converter = get_jsonld_model_converter(
+            document_loader, context_resolver
+        )
+
+        # protocol = asyncio.run(converter.convert(response.json()))
+        applet_create_schema = asyncio.run(converter.convert(template))
+
+        breakpoint()
+
         return []
 
     def get_activities(self) -> list[dict]:
