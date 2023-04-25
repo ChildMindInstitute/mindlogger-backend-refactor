@@ -24,7 +24,7 @@ async def upload(
 
     cdn_client.upload(key, file.file)
 
-    result = UploadedFile(key=key)
+    result = UploadedFile(key=key, url=settings.cdn.url.format(key=key))
     return Response(result=result)
 
 
