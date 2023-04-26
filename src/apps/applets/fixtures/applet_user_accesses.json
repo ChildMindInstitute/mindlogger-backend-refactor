@@ -146,7 +146,7 @@
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "respondent",
       "meta": {
-        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674788",
+        "nickname": "respondent Jane Doe",
         "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674788"
       }
     }
@@ -165,7 +165,7 @@
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "respondent",
       "meta": {
-        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674789",
+        "nickname": "respondent John Doe",
         "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674789"
       }
     }
