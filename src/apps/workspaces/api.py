@@ -182,7 +182,7 @@ async def workspace_users_pin(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
-        await UserAccessService(session, user.id).pin(data.access_id)
+        await UserAccessService(session, user.id).pin(data.access_id, owner_id)
 
 
 async def workspace_users_applet_access_list(
