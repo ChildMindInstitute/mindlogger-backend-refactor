@@ -216,15 +216,11 @@ class UserAccessService:
         if not has_access:
             raise WorkspaceDoesNotExistError
 
-    async def pin(
-        self, access_id: uuid.UUID, owner_id: uuid.UUID | None = None
-    ):
+    async def pin(self, access_id: uuid.UUID, owner_id: uuid.UUID):
         await self._validate_pin(access_id, owner_id)
         await UserAppletAccessCRUD(self.session).pin(access_id)
 
-    async def _validate_pin(
-        self, access_id: uuid.UUID, owner_id: uuid.UUID | None = None
-    ):
+    async def _validate_pin(self, access_id: uuid.UUID, owner_id: uuid.UUID):
         access = await UserAppletAccessCRUD(self.session).get_by_id(access_id)
         if owner_id and access.owner_id != owner_id:
             raise WorkspaceDoesNotExistError
