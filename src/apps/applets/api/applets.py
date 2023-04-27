@@ -136,7 +136,7 @@ async def applet_update(
     schema: AppletUpdate = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[public_detail.Applet]:
-    mail_service = MailingService()
+    # mail_service = MailingService()
     async with atomic(session):
         applet = await AppletService(session, user.id).update(id_, schema)
         # await mail_service.send(
