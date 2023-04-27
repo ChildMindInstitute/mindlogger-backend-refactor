@@ -258,7 +258,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.role.in_(roles))
 
         result = await self._execute(query)
-        return result.scalars().one_or_none()
+        return result.scalars().first() or None
 
     # Get by applet id and user id and role respondent
     async def get_by_applet_and_user_as_respondent(
