@@ -99,7 +99,7 @@ class ActivityAnswer(InternalModel):
 class ActivityItemAnswerPublic(PublicModel):
     type: ResponseType
     activity_item: PublicActivityItemFull
-    answer: AnswerTypes
+    answer: AnswerTypes | None
 
 
 class ActivityAnswerPublic(PublicModel):
