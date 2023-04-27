@@ -1,4 +1,9 @@
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import (
+    BaseModel,
+    Field,
+    root_validator,
+    validator,
+)
 
 from apps.activities.domain.response_type_config import (
     NoneResponseType,
@@ -13,10 +18,60 @@ from apps.shared.errors import ValidationError
 class BaseActivityItem(BaseModel):
     question: dict[str, str] = Field(default_factory=dict)
     response_type: ResponseType
-    response_values: ResponseValueConfig | None = Field(default=None)
-    config: ResponseTypeConfig
+    response_values: BaseModel | None = Field(
+        default_factory=ResponseValueConfig,
+    )  # ResponseValueConfig
+    config: BaseModel  # ResponseTypeConfig
     name: str
     is_hidden: bool | None = False
+
+    class Config:
+        schema_extra = {
+            "examples": {
+                "normal": {
+                    "summary": "Activity Item Text",
+                    "description": "Activity Item Text",
+                    "value": {
+                        "question": {"en": "foo"},
+                        "response_type": "text",
+                        "response_values": None,
+                        "config": {
+                            "remove_back_button": False,
+                            "skippable_item": False,
+                            "max_response_length": 300,
+                            "correct_answer_required": False,
+                            "correct_answer": None,
+                            "numerical_response_required": False,
+                            "response_data_identifier": False,
+                            "response_required": False,
+                        },
+                        "name": "foo_text",
+                        "is_hidden": False,
+                    },
+                },
+                "anormal": {
+                    "summary": "Activity Item Text",
+                    "description": "Activity Item Text",
+                    "value": {
+                        "question": {"en": "foo"},
+                        "response_type": "text",
+                        "response_values": None,
+                        "config": {
+                            "remove_back_button": False,
+                            "skippable_item": False,
+                            "max_response_length": 300,
+                            "correct_answer_required": False,
+                            "correct_answer": None,
+                            "numerical_response_required": False,
+                            "response_data_identifier": False,
+                            "response_required": False,
+                        },
+                        "name": "foo_text",
+                        "is_hidden": False,
+                    },
+                },
+            }
+        }
 
     @validator("name")
     def validate_name(cls, value):
@@ -30,38 +85,67 @@ class BaseActivityItem(BaseModel):
     @validator("config", pre=True)
     def validate_config(cls, value, values, **kwargs):
         response_type = values.get("response_type")
-        if not ResponseTypeValueConfig[response_type]["config"].parse_obj(
-            value
-        ):
+
+        # wrap value in class to validate and pass value
+        if response_type in ResponseTypeValueConfig:
+            if (
+                type(value)
+                is not ResponseTypeValueConfig[response_type]["config"]
+            ):
+                try:
+                    value = ResponseTypeValueConfig[response_type]["config"](
+                        **value
+                    )
+                except Exception:
+                    raise ValidationError(
+                        message=f"config must be of type {ResponseTypeValueConfig[response_type]['config']}"  # noqa: E501
+                    )
+        else:
             raise ValidationError(
-                message=f"config must be of type {ResponseTypeValueConfig[response_type]['config']}"  # noqa: E501
+                message=f"response_type must be of type {ResponseType}"  # noqa: E501
             )
+
         return value
 
-    @root_validator()
-    def validate_response_type(cls, values):
+    # @root_validator()
+    @validator("response_values", pre=True, check_fields=False)
+    def validate_response_type(cls, value, values):
         response_type = values.get("response_type")
-        response_values = values.get("response_values")
-
         if response_type in ResponseTypeValueConfig:
             if response_type not in list(NoneResponseType):
-                if not isinstance(
-                    response_values,
-                    ResponseTypeValueConfig[response_type]["value"],
+                if (
+                    type(value)
+                    is not ResponseTypeValueConfig[response_type]["value"]
+                ):
+                    try:
+                        value = ResponseTypeValueConfig[response_type][
+                            "value"
+                        ](**value)
+                    except Exception:
+                        raise ValidationError(
+                            message=f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
+                        )
+            else:
+                if (
+                    value is not None
+                    and type(value)
+                    is not ResponseTypeValueConfig[response_type]["value"]
                 ):
                     raise ValidationError(
                         message=f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
                     )
-            else:
-                if response_values is not None:
-                    raise ValidationError(
-                        message=f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
-                    )
+                elif (
+                    type(value)
+                    is ResponseTypeValueConfig[response_type]["value"]
+                ):
+                    value = None
+
         else:
             raise ValidationError(
                 message=f"response_type must be of type {ResponseType}"
             )
-        return values
+
+        return value
 
     @root_validator()
     def validate_score_required(cls, values):

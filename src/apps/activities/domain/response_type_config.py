@@ -206,19 +206,3 @@ for response_type in ResponseType:
         "value": zipped_type_value[index][0],
     }
     index += 1
-
-ResponseTypeValueConfig[ResponseType.MULTISELECT] = {
-    "config": SingleSelectionConfig,
-    "value": SingleSelectionValues,
-}
-
-ResponseTypeValueConfig[ResponseType.MULTISELECTROWS] = {
-    "config": SingleSelectionRowsConfig,
-    "value": SingleSelectionRowsValues,
-}
-
-ResponseTypeValueConfig[ResponseType.GEOLOCATION]["config"] = TimeRangeConfig
-ResponseTypeValueConfig[ResponseType.PHOTO]["config"] = TimeRangeConfig
-ResponseTypeValueConfig[ResponseType.VIDEO]["config"] = TimeRangeConfig
-ResponseTypeValueConfig[ResponseType.DATE]["config"] = TimeRangeConfig
-ResponseTypeValueConfig[ResponseType.AUDIO]["config"] = TimeRangeConfig
