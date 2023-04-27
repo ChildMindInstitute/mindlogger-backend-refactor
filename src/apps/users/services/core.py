@@ -74,7 +74,7 @@ class PasswordRecoveryService:
                 path="reset_password_en",
                 email=user.email,
                 expiration_minutes=exp,
-                link=(
+                url=(
                     f"https://{settings.service.urls.frontend.web_base}"
                     f"/{settings.service.urls.frontend.password_recovery_send}"
                     f"?key={password_recovery_info.key}&email={user.email}"
