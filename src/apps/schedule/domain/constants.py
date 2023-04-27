@@ -27,8 +27,8 @@ class TimerType(str, Enum):
 
 
 class DefaultEvent(BaseModel):
-    start_time: time = time.min.strftime("%H:%M:%S")
-    end_time: time = time.max.strftime("%H:%M:%S")
+    start_time: time = time(0, 0)
+    end_time: time = time(23, 59)
     access_before_schedule: bool = True
     one_time_completion: bool = False
     timer: timedelta = timedelta()

@@ -47,7 +47,6 @@ class TestDataService:
         ]
 
     async def create_applet(self, anchor_datetime: AnchorDateTime):
-
         applet_create = self._generate_applet()
         applet = await AppletService(self.session, self.user_id).create(
             applet_create
@@ -75,9 +74,6 @@ class TestDataService:
         letters = string.ascii_letters
         return "".join(random.choice(letters) for _ in range(length))
 
-    def random_image(self):
-        return f"{self.random_string()}.jpg"
-
     @staticmethod
     def random_boolean():
         return random.choice([True, False])
@@ -88,11 +84,15 @@ class TestDataService:
             activities
         )
         applet_create = AppletCreate(
-            display_name=f"{self.random_string()}-generated",  # noqa: E501
+            display_name=f"Applet-{self.random_string()}-generated",  # noqa: E501
             description=dict(
-                en=self.random_string(50), fr=self.random_string(50)
+                en=f"Applet description {self.random_string(50)}",
+                fr=f"Applet description {self.random_string(50)}",
             ),
-            about=dict(en=self.random_string(50), fr=self.random_string(50)),
+            about=dict(
+                en=f"Applet about {self.random_string(50)}",
+                fr=f"Applet about {self.random_string(50)}",
+            ),
             image=image_url,
             watermark=image_url,
             theme_id=None,
@@ -118,7 +118,8 @@ class TestDataService:
                     name=f"Activity {index+1}",
                     key=uuid.uuid4(),
                     description=dict(
-                        en=self.random_string(), fr=self.random_string()
+                        en=f"Activity {index+1} desc {self.random_string()}",
+                        fr=f"Activity {index+1} desc {self.random_string()}",
                     ),
                     splash_screen=image_url,
                     image=image_url,
@@ -143,7 +144,8 @@ class TestDataService:
                 FlowCreate(
                     name=f"Flow {index+1}",
                     description=dict(
-                        en=self.random_string(), fr=self.random_string()
+                        en=f"Flow {index+1} desc {self.random_string()}",
+                        fr=f"Flow {index+1} desc {self.random_string()}",
                     ),
                     is_single_report=self.random_boolean(),
                     hide_badge=self.random_boolean(),
@@ -164,9 +166,10 @@ class TestDataService:
 
             items.append(
                 ActivityItemCreate(
-                    name=self.random_string(),
+                    name=f"activity_item_{index+1}",
                     question=dict(
-                        en=self.random_string(), fr=self.random_string()
+                        en=f"Activity item question {self.random_string()}",
+                        fr=f"Activity item question {self.random_string()}",
                     ),
                     response_type=self.activity_item_options[
                         index % len(self.activity_item_options)
@@ -212,7 +215,7 @@ class TestDataService:
                 "options": [  # type: ignore  # noqa: E501
                     {
                         "id": str(uuid.uuid4()),
-                        "text": self.random_string(),
+                        "text": "option 1",
                         "image": None,
                         "score": None,
                         "tooltip": None,
@@ -221,7 +224,7 @@ class TestDataService:
                     },
                     {
                         "id": str(uuid.uuid4()),
-                        "text": self.random_string(),
+                        "text": "option 2",
                         "image": None,
                         "score": None,
                         "tooltip": None,
@@ -251,7 +254,7 @@ class TestDataService:
                 "options": [  # type: ignore  # noqa: E501
                     {
                         "id": str(uuid.uuid4()),
-                        "text": self.random_string(),
+                        "text": "option 1",
                         "image": None,
                         "score": None,
                         "tooltip": None,
@@ -260,7 +263,7 @@ class TestDataService:
                     },
                     {
                         "id": str(uuid.uuid4()),
-                        "text": self.random_string(),
+                        "text": "option 2",
                         "image": None,
                         "score": None,
                         "tooltip": None,
@@ -289,8 +292,8 @@ class TestDataService:
             result["response_values"] = {
                 "min_value": 0,
                 "max_value": 10,
-                "min_label": self.random_string(),
-                "max_label": self.random_string(),
+                "min_label": "min label",  # type: ignore  # noqa: E501
+                "max_label": "max label",  # type: ignore  # noqa: E501
                 "min_image": None,
                 "max_image": None,
                 "scores": None,
@@ -369,7 +372,6 @@ class TestDataService:
         is_activity: bool,
         entity_id: uuid.UUID,
     ):
-
         if is_activity:
             default_event = self._generate_event_request(
                 activity_id=entity_id,
@@ -386,7 +388,6 @@ class TestDataService:
         anchor_datetime: datetime,
         entity_ids: list[dict] | None = None,
     ):
-
         events = []
         if entity_ids:
             # remove first entity id to keep it for default event
@@ -525,6 +526,11 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.DAILY
 
+            default_event.periodicity.start_date = anchor_datetime.date()
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=30)
+            )
+
             default_event.notification.notifications[0].at_time = (
                 anchor_datetime + timedelta(minutes=90)
             ).strftime("%H:%M:%S")
@@ -567,6 +573,11 @@ class TestDataService:
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
+
+            default_event.periodicity.start_date = anchor_datetime.date()
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=30)
+            )
 
             default_event.notification.notifications[0].at_time = (
                 anchor_datetime + timedelta(minutes=90)
@@ -613,6 +624,11 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.DAILY
 
+            default_event.periodicity.start_date = anchor_datetime.date()
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=30)
+            )
+
             default_event.notification.notifications[0].at_time = (
                 anchor_datetime - timedelta(minutes=90)
             ).strftime("%H:%M:%S")
@@ -656,6 +672,11 @@ class TestDataService:
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
+
+            default_event.periodicity.start_date = anchor_datetime.date()
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=30)
+            )
 
             default_event.notification.notifications[0].at_time = (
                 anchor_datetime + timedelta(minutes=90)
@@ -799,6 +820,11 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.WEEKDAYS
 
+            default_event.periodicity.start_date = anchor_datetime.date()
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=30)
+            )
+
             default_event = self._set_timer(
                 default_event, current_entity_index
             )
@@ -864,4 +890,4 @@ class TestDataService:
                 if old_applet.display_name.endswith("-generated"):
                     await AppletService(
                         self.session, self.user_id
-                    ).delete_applet_by_id(old_applet.id)
+                    ).delete_applet_by_id(old_applet.id, "Test1234!")
