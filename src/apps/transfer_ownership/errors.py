@@ -1,4 +1,12 @@
-from apps.shared.errors import BaseError, NotFoundError, ValidationError
+from apps.shared.enums import Language
+from apps.shared.errors import BaseError, ValidationError
+from apps.shared.exception import NotFoundError
+
+
+class TransferNotFoundError(NotFoundError):
+    messages = {
+        Language.ENGLISH: "Transfer request not found"
+    }
 
 
 class TransferError(BaseError):
@@ -8,14 +16,9 @@ class TransferError(BaseError):
 
 class TransferAlreadyExist(ValidationError):
     def __init__(
-        self, message: str = "Transfer request already exists"
+            self, message: str = "Transfer request already exists"
     ) -> None:
         super().__init__(message=message)
-
-
-class TransferNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Transfer request not found") -> None:
-        super().__init__(*_, message=message)
 
 
 class TransferEmailError(ValidationError):

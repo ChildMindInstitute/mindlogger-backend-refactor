@@ -1,6 +1,8 @@
-from apps.shared.errors import NotFoundError
+from apps.shared.enums import Language
+from apps.shared.exception import NotFoundError
 
 
 class FileNotFoundError(NotFoundError):
-    def __init__(self, message: str = "File not found") -> None:
-        super().__init__(message=message)
+    messages = {
+        Language.ENGLISH: "File not found."
+    }

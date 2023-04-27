@@ -1,51 +1,56 @@
-from apps.shared.errors import (
-    AccessDeniedError,
-    BadRequestError,
-    ConflictError,
-    NotFoundError,
-)
+from apps.shared.enums import Language
+from apps.shared.exception import ValidationError, NotFoundError, \
+    AccessDeniedError
 
 
 class AlertConfigNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Alert config not found") -> None:
-        super().__init__(message=message)
+    messages = {
+        Language.ENGLISH: "Alert config not found."
+    }
 
 
 class ActivityItemHistoryNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Activity item history not found") -> None:
-        super().__init__(message=message)
+    messages = {
+        Language.ENGLISH: "Activity item history not found."
+    }
 
 
-class AlertConfigAlreadyExistError(ConflictError):
-    def __init__(self, *_, message="Alert config already exist") -> None:
-        super().__init__(message=message)
+class AlertConfigAlreadyExistError(ValidationError):
+    messages = {Language.ENGLISH: "Alert config already exist."}
 
 
 class AlertCreateAccessDenied(AccessDeniedError):
-    def __init__(self, *_, message="Access to create alerts denied") -> None:
-        super().__init__(message=message)
+    messages = {
+        Language.ENGLISH: "Access to create alerts denied"
+    }
 
 
 class AlertViewAccessDenied(AccessDeniedError):
-    def __init__(self, *_, message="Access to view alerts denied") -> None:
-        super().__init__(message=message)
+    messages = {
+        Language.ENGLISH: "Access to view alerts denied"
+    }
 
 
 class AlertUpdateAccessDenied(AccessDeniedError):
-    def __init__(self, *_, message="Access to update alerts denied") -> None:
-        super().__init__(message=message)
+    messages = {
+        Language.ENGLISH: "Access to update alerts denied"
+    }
 
 
 class AnswerNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Answer not found in answers") -> None:
-        super().__init__(message=message)
+    messages = {
+        Language.ENGLISH: "Answer not found in answers"
+    }
 
 
 class AlertNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Alert not found") -> None:
-        super().__init__(message=message)
+    messages = {
+        Language.ENGLISH: "Alert not found"
+    }
 
 
-class AlertIsDeletedError(BadRequestError):
-    def __init__(self, *_, message="Alert is deleted") -> None:
-        super().__init__(message=message)
+class AlertIsDeletedError(ValidationError):
+    messages = {
+        Language.ENGLISH: "This alert is deleted. "
+                          "The recovery logic is not implemented yet."
+    }

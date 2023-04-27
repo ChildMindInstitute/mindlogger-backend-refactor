@@ -1,6 +1,8 @@
-from apps.shared.errors import NotFoundError
+from apps.shared.enums import Language
+from apps.shared.exception import NotFoundError
 
 
 class CacheNotFound(NotFoundError):
-    def __init__(self, key: str) -> None:
-        super().__init__(message=f"Can not find item {key} in the cache")
+    messages = {
+        Language.ENGLISH: "Can not find item {key} in the cache"
+    }

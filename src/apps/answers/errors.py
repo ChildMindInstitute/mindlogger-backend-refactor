@@ -1,30 +1,38 @@
+from apps.shared.enums import Language
 from apps.shared.errors import (
-    AccessDeniedError,
-    BadRequestError,
-    InternalServerError,
-    NotFoundError,
     ValidationError,
 )
-
-
-class UserDoesNotHavePermissionError(BadRequestError):
-    def __init__(self, *_, message="User does not have permission") -> None:
-        super().__init__(message=message)
-
-
-class AnswerError(InternalServerError):
-    def __init__(self, *_, message="Answer error") -> None:
-        super().__init__(message=message)
+from apps.shared.exception import NotFoundError, AccessDeniedError
 
 
 class AnswerNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Answer not found.") -> None:
-        super().__init__(message=message)
+    messages = {
+        Language.ENGLISH: "Answer not found."
+    }
 
 
 class AnswerNoteNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Note not found.") -> None:
-        super().__init__(message=message)
+    messages = {
+        Language.ENGLISH: "Note not found."
+    }
+
+
+class AnswerAccessDeniedError(AccessDeniedError):
+    messages = {
+        Language.ENGLISH: "Access denied."
+    }
+
+
+class AnswerNoteAccessDeniedError(AccessDeniedError):
+    messages = {
+        Language.ENGLISH: "Note access denied."
+    }
+
+
+class UserDoesNotHavePermissionError(AccessDeniedError):
+    messages = {
+        Language.ENGLISH: "User does not have permission"
+    }
 
 
 class AnswerIsNotFull(ValidationError):
@@ -39,16 +47,6 @@ class WrongAnswerType(ValidationError):
 
 class FlowDoesNotHaveActivity(ValidationError):
     def __init__(
-        self, *_, message="Activity flow does not have such activity."
+            self, *_, message="Activity flow does not have such activity."
     ):
-        super().__init__(message=message)
-
-
-class AnswerAccessDeniedError(AccessDeniedError):
-    def __init__(self, *_, message="Access denied."):
-        super().__init__(message=message)
-
-
-class AnswerNoteAccessDeniedError(AccessDeniedError):
-    def __init__(self, *_, message="Note access denied."):
         super().__init__(message=message)

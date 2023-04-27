@@ -1,37 +1,45 @@
+from apps.shared.enums import Language
 from apps.shared.errors import (
-    BadRequestError,
     BaseError,
-    ConflictError,
-    InternalServerError,
-    NotFoundError,
 )
+from apps.shared.exception import ValidationError, NotFoundError
+
+
+class UserNotFound(NotFoundError):
+    messages = {
+        Language.ENGLISH: "User not found"
+    }
+
+
+class UserAlreadyExistError(ValidationError):
+    messages = {Language.ENGLISH: "User already exist."}
+
+
+class EmailAddressError(ValidationError):
+    messages = {
+        Language.ENGLISH: "Email address is not verified. The following "
+                          "identities failed the check: {email}"
+    }
+
+
+class PasswordRecoveryKeyNotFound(NotFoundError):
+    messages = {
+        Language.ENGLISH: "Password recovery key not found"
+    }
+
+
+class UserIsDeletedError(NotFoundError):
+    messages = {
+        Language.ENGLISH: "User is deleted"
+    }
+
+
+class UserDeviceNotFound(NotFoundError):
+    messages = {
+        Language.ENGLISH: "User device is not found"
+    }
 
 
 class UsersError(BaseError):
     def __init__(self, *_, message="Users error") -> None:
         super().__init__(message=message)
-
-
-class UserAlreadyExistError(ConflictError):
-    def __init__(self, *_, message="User already exist") -> None:
-        super().__init__(message=message)
-
-
-class UserNotFound(NotFoundError):
-    def __init__(self, *_, message="User not found") -> None:
-        super().__init__(message=message)
-
-
-class UserIsDeletedError(BadRequestError):
-    def __init__(self, *_, message="User is deleted") -> None:
-        super().__init__(message=message)
-
-
-class EmailAddressError(InternalServerError):
-    def __init__(self, *_, message="Email address not found") -> None:
-        super().__init__(message=message)
-
-
-class UserDeviceNotFound(NotFoundError):
-    def __init__(self, *_, message="User device is not found") -> None:
-        super().__init__(message)

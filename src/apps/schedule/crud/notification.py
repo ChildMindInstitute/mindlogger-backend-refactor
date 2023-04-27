@@ -13,6 +13,7 @@ from infrastructure.database import BaseCRUD
 
 __all__ = [
     "NotificationCRUD",
+    "ReminderCRUD",
 ]
 
 

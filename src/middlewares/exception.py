@@ -16,14 +16,14 @@ from apps.shared.domain.response.errors import (
     ErrorResponseMessage,
     ErrorResponseMulti,
 )
-from apps.shared.errors import BaseError
+from apps.shared.exception import BaseError
 
 logger = logging.getLogger("mindlogger_backend")
 
 
 class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
     async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
+            self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         try:
             return await call_next(request)
@@ -41,8 +41,9 @@ def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     response = ErrorResponseMulti(
         result=[
             ErrorResponse(
-                message=ErrorResponseMessage(en=error._message.capitalize()),
-                type_=error._type,
+                message=error.message.capitalize(),
+                type=error.type,
+                path=getattr(error, 'path', [])
             )
         ]
     )
@@ -51,7 +52,7 @@ def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
 
     return JSONResponse(
         response.dict(by_alias=True),
-        status_code=error._status_code,
+        status_code=error.status_code,
     )
 
 
@@ -75,14 +76,14 @@ def _python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
 
 
 def _pydantic_validation_errors_handler(
-    _: Request, error: ValidationError
+        _: Request, error: ValidationError
 ) -> JSONResponse:
     """This function is called if the Pydantic validation error was raised."""
 
     response = ErrorResponseMulti(
         result=[
             ErrorResponse(
-                message=ErrorResponseMessage(en=err["msg"]),
+                message=err["msg"],
                 path=list(err["loc"]),
             )
             for err in error.errors()
