@@ -87,7 +87,7 @@ class PublicAnswerDates(PublicModel):
 class ActivityItemAnswer(InternalModel):
     type: ResponseType
     activity_item: PublicActivityItemFull
-    answer: AnswerTypes
+    answer: AnswerTypes | None
 
 
 class ActivityAnswer(InternalModel):
