@@ -139,17 +139,17 @@ async def applet_update(
     mail_service = MailingService()
     async with atomic(session):
         applet = await AppletService(session, user.id).update(id_, schema)
-        await mail_service.send(
-            MessageSchema(
-                recipients=[user.email],
-                subject="Applet edit success!",
-                body=mail_service.get_template(
-                    path="applet_edit_success_en",
-                    first_name=user.first_name,
-                    applet_name=applet.display_name,
-                ),
-            )
-        )
+        # await mail_service.send(
+        #     MessageSchema(
+        #         recipients=[user.email],
+        #         subject="Applet edit success!",
+        #         body=mail_service.get_template(
+        #             path="applet_edit_success_en",
+        #             first_name=user.first_name,
+        #             applet_name=applet.display_name,
+        #         ),
+        #     )
+        # )
     return Response(result=public_detail.Applet(**applet.dict()))
 
 
