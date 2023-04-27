@@ -268,6 +268,16 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 404
 
+        # Pin access wrong access_id
+        response = await self.client.post(
+            self.workspace_respondents_pin.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=dict(access_id=str(uuid4())),
+        )
+
+        assert response.status_code == 404
+
         # Pin access
         response = await self.client.post(
             self.workspace_respondents_pin.format(

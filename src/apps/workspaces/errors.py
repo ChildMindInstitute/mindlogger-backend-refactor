@@ -1,6 +1,6 @@
 import uuid
 
-from apps.shared.errors import AccessDeniedError, BaseError, NotFoundError
+from apps.shared.errors import AccessDeniedError, NotFoundError
 
 __all__ = [
     "UserAppletAccessesNotFound",
@@ -10,7 +10,7 @@ __all__ = [
 ]
 
 
-class UserAppletAccessesNotFound(BaseError):
+class UserAppletAccessesNotFound(NotFoundError):
     def __init__(self, *_, id_: uuid.UUID) -> None:
         super().__init__(message=f"No such UserAppletAccess with id={id_}.")
 
