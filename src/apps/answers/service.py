@@ -340,7 +340,7 @@ class AnswerService:
                     activity_item=PublicActivityItemFull.from_orm(
                         activity_item
                     ),
-                    answer=item_answer_map[activity_item.id_version],
+                    answer=item_answer_map.get(activity_item.id_version),
                 )
             )
 

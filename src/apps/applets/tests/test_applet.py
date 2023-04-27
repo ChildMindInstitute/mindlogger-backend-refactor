@@ -1,8 +1,6 @@
 import asyncio
 import uuid
 
-import pytest
-
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -584,7 +582,6 @@ class TestApplet(BaseTest):
         # assert len(TestMail.mails) == 1
         # assert TestMail.mails[0].subject == "Applet edit success!"
 
-    @pytest.mark.main
     @rollback
     async def test_duplicate_applet(self):
         await self.client.login(
