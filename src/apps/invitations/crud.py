@@ -25,6 +25,7 @@ from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import ManagersRole
 from infrastructure.database import BaseCRUD
 
@@ -133,13 +134,29 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         for the user who is invitor.
         """
 
+        user_applet_ids: Query = select(UserAppletAccessSchema.applet_id)
+        user_applet_ids = user_applet_ids.where(
+            UserAppletAccessSchema.user_id == user_id
+        )
+        user_applet_ids = user_applet_ids.where(
+            UserAppletAccessSchema.role.in_(
+                [
+                    Role.ADMIN,
+                    Role.MANAGER,
+                    Role.EDITOR,
+                    Role.REVIEWER,
+                    Role.COORDINATOR,
+                ]
+            )
+        )
+
         query: Query = select(
             InvitationSchema, AppletSchema.display_name.label("applet_name")
         )
+        query = query.where(InvitationSchema.applet_id.in_(user_applet_ids))
         query = query.join(
             AppletSchema, AppletSchema.id == InvitationSchema.applet_id
         )
-        query = query.where(InvitationSchema.invitor_id == user_id)
         query = query.where(
             InvitationSchema.status == InvitationStatus.PENDING
         )
@@ -184,8 +201,24 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         """Return the cont of pending invitations
         for the user who is invitor.
         """
+        user_applet_ids: Query = select(UserAppletAccessSchema.applet_id)
+        user_applet_ids = user_applet_ids.where(
+            UserAppletAccessSchema.user_id == user_id
+        )
+        user_applet_ids = user_applet_ids.where(
+            UserAppletAccessSchema.role.in_(
+                [
+                    Role.ADMIN,
+                    Role.MANAGER,
+                    Role.EDITOR,
+                    Role.REVIEWER,
+                    Role.COORDINATOR,
+                ]
+            )
+        )
+
         query: Query = select(count(InvitationSchema.id))
-        query = query.where(InvitationSchema.invitor_id == user_id)
+        query = query.where(InvitationSchema.applet_id.in_(user_applet_ids))
         query = query.where(
             InvitationSchema.status == InvitationStatus.PENDING
         )
