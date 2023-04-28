@@ -280,6 +280,10 @@ class AnswerService:
             self.session
         ).get_by_answer_id(applet_id, answer_id)
 
+        flow_item_answers = await AnswerFlowItemsCRUD(
+            self.session
+        ).get_by_answer_id(applet_id, answer_id)
+
         schema = await AnswersCRUD(self.session).get_by_id(answer_id)
         activity_id, version = schema.activity_history_id.split("_")
         activity_items = await ActivityItemHistoryService(
@@ -291,6 +295,11 @@ class AnswerService:
             item_answer_map[item_answer.activity_item_history_id] = json.loads(
                 item_answer.answer
             )
+
+        for flow_item_answer in flow_item_answers:
+            item_answer_map[
+                flow_item_answer.activity_item_history_id
+            ] = json.loads(flow_item_answer.answer)
 
         answer = ActivityAnswer()
         for activity_item in activity_items:
