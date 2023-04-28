@@ -1,5 +1,8 @@
 import uuid
 
+from fastapi.exceptions import RequestValidationError
+from pydantic.error_wrappers import ErrorWrapper
+
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import ManagersRole, Role
@@ -90,7 +93,16 @@ class InvitationsService:
         await self._is_validated_role_for_invitation(
             applet_id, Role.RESPONDENT
         )
-        await self._is_secret_user_id_unique(applet_id, schema.secret_user_id)
+        try:
+            await self._is_secret_user_id_unique(
+                applet_id, schema.secret_user_id
+            )
+        except NonUniqueValue as e:
+            field_name = InvitationRespondentRequest.__fields__[
+                "secret_user_id"
+            ].alias
+            wrapper = ErrorWrapper(ValueError(e), ("body", field_name))
+            raise RequestValidationError([wrapper]) from e
 
         # Get all invitations and check if it is possible to create
         # the another invite or update existing or invitation
