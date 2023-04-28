@@ -214,7 +214,7 @@ class SingleSelectionRowsValues(PublicModel):
             for row in value:
                 if len(row.options) != len(values["options"]):
                     raise ValidationError(
-                        message="data_matrix must have the same length as options"
+                        message="data_matrix must have the same length as options"  # noqa: E501
                     )
         return value
 

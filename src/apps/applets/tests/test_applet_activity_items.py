@@ -1,5 +1,3 @@
-import asyncio
-import uuid
 import pytest
 
 from apps.shared.test import BaseTest
@@ -187,8 +185,8 @@ class TestAppletActivityItems(BaseTest):
                             question={"en": "What is your name?"},
                             response_type="drawing",
                             response_values=dict(
-                                drawing_background="https://www.w3schools.com/css/img_5terre_wide.jpg",
-                                drawing_example="https://www.w3schools.com/css/img_5terre_wide.jpg",
+                                drawing_background="https://www.w3schools.com/css/img_5terre_wide.jpg",  # noqa E501
+                                drawing_example="https://www.w3schools.com/css/img_5terre_wide.jpg",  # noqa E501
                             ),
                             config=dict(
                                 additional_response_option={
@@ -222,7 +220,7 @@ class TestAppletActivityItems(BaseTest):
                             question={"en": "What is your name?"},
                             response_type="audioPlayer",
                             response_values=dict(
-                                file="https://www.w3schools.com/html/horse.mp3",
+                                file="https://www.w3schools.com/html/horse.mp3",  # noqa E501
                             ),
                             config=dict(
                                 remove_back_button=False,
@@ -267,13 +265,13 @@ class TestAppletActivityItems(BaseTest):
                             response_values=dict(
                                 rows=[
                                     {
-                                        "id": "17e69155-22cd-4484-8a49-364779ea9df1",
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9df1",  # noqa E501
                                         "row_name": "row1",
                                         "row_image": None,
                                         "tooltip": None,
                                     },
                                     {
-                                        "id": "17e69155-22cd-4484-8a49-364779ea9df2",
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9df2",  # noqa E501
                                         "row_name": "row2",
                                         "row_image": None,
                                         "tooltip": None,
@@ -281,13 +279,13 @@ class TestAppletActivityItems(BaseTest):
                                 ],
                                 options=[
                                     {
-                                        "id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
                                         "text": "option1",
                                         "image": None,
                                         "tooltip": None,
                                     },
                                     {
-                                        "id": "17e69155-22cd-4484-8a49-364779ea9de2",
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9de2",  # noqa E501
                                         "text": "option2",
                                         "image": None,
                                         "tooltip": None,
@@ -295,30 +293,30 @@ class TestAppletActivityItems(BaseTest):
                                 ],
                                 data_matrix=[
                                     {
-                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df1",
+                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df1",  # noqa E501
                                         "options": [
                                             {
-                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
                                                 "score": 1,
                                                 "alert": None,
                                             },
                                             {
-                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",  # noqa E501
                                                 "score": 2,
                                                 "alert": None,
                                             },
                                         ],
                                     },
                                     {
-                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df2",
+                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df2",  # noqa E501
                                         "options": [
                                             {
-                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
                                                 "score": 3,
                                                 "alert": None,
                                             },
                                             {
-                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",  # noqa E501
                                                 "score": 4,
                                                 "alert": None,
                                             },
@@ -342,13 +340,13 @@ class TestAppletActivityItems(BaseTest):
                             response_values=dict(
                                 rows=[
                                     {
-                                        "id": "17e69155-22cd-4484-8a49-364779ea9df1",
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9df1",  # noqa E501
                                         "row_name": "row1",
                                         "row_image": None,
                                         "tooltip": None,
                                     },
                                     {
-                                        "id": "17e69155-22cd-4484-8a49-364779ea9df2",
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9df2",  # noqa E501
                                         "row_name": "row2",
                                         "row_image": None,
                                         "tooltip": None,
@@ -356,13 +354,13 @@ class TestAppletActivityItems(BaseTest):
                                 ],
                                 options=[
                                     {
-                                        "id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
                                         "text": "option1",
                                         "image": None,
                                         "tooltip": None,
                                     },
                                     {
-                                        "id": "17e69155-22cd-4484-8a49-364779ea9de2",
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9de2",  # noqa E501
                                         "text": "option2",
                                         "image": None,
                                         "tooltip": None,
@@ -370,30 +368,30 @@ class TestAppletActivityItems(BaseTest):
                                 ],
                                 data_matrix=[
                                     {
-                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df1",
+                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df1",  # noqa E501
                                         "options": [
                                             {
-                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
                                                 "score": 1,
                                                 "alert": None,
                                             },
                                             {
-                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",  # noqa E501
                                                 "score": 2,
                                                 "alert": None,
                                             },
                                         ],
                                     },
                                     {
-                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df2",
+                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df2",  # noqa E501
                                         "options": [
                                             {
-                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
                                                 "score": 3,
                                                 "alert": None,
                                             },
                                             {
-                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",  # noqa E501
                                                 "score": 4,
                                                 "alert": None,
                                             },

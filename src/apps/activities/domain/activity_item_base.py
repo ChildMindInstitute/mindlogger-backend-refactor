@@ -3,10 +3,8 @@ from pydantic import BaseModel, Field, root_validator, validator
 from apps.activities.domain.response_type_config import (
     NoneResponseType,
     ResponseType,
-    ResponseTypeConfig,
     ResponseTypeValueConfig,
 )
-from apps.activities.domain.response_values import ResponseValueConfig
 from apps.shared.errors import ValidationError
 
 

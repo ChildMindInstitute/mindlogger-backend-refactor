@@ -1,12 +1,8 @@
 from enum import Enum
 
-from pydantic import NonNegativeInt, PositiveInt, Field, validator
+from pydantic import Field, NonNegativeInt, PositiveInt, validator
 
-from apps.activities.domain.response_values import (
-    ResponseValueConfigOptions,
-    SingleSelectionRowsValues,
-    SingleSelectionValues,
-)
+from apps.activities.domain.response_values import ResponseValueConfigOptions
 from apps.shared.domain import PublicModel
 from apps.shared.errors import ValidationError
 
