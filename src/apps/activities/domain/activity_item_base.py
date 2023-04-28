@@ -18,26 +18,26 @@ class BaseActivityItem(BaseModel):
     name: str
     is_hidden: bool | None = False
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "question": {"en": "foo"},
-                "response_type": "text",
-                "response_values": None,
-                "config": {
-                    "remove_back_button": False,
-                    "skippable_item": False,
-                    "max_response_length": 300,
-                    "correct_answer_required": False,
-                    "correct_answer": None,
-                    "numerical_response_required": False,
-                    "response_data_identifier": False,
-                    "response_required": False,
-                },
-                "name": "foo_text",
-                "is_hidden": False,
-            },
-        }
+    # class Config:
+    #     schema_extra = {
+    #         "example": {
+    #             "question": {"en": "foo"},
+    #             "response_type": "text",
+    #             "response_values": None,
+    #             "config": {
+    #                 "remove_back_button": False,
+    #                 "skippable_item": False,
+    #                 "max_response_length": 300,
+    #                 "correct_answer_required": False,
+    #                 "correct_answer": None,
+    #                 "numerical_response_required": False,
+    #                 "response_data_identifier": False,
+    #                 "response_required": False,
+    #             },
+    #             "name": "foo_text",
+    #             "is_hidden": False,
+    #         },
+    #     }
 
     @validator("name")
     def validate_name(cls, value):
