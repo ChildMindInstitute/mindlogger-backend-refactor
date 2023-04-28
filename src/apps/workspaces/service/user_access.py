@@ -33,9 +33,9 @@ class UserAccessService:
         Workspaces in which the user is the owner or invited user
         """
 
-        accesses = await UserAppletAccessCRUD(self.session).get_by_user_id(
-            self._user_id
-        )
+        accesses = await UserAppletAccessCRUD(
+            self.session
+        ).get_by_user_id_for_managers(self._user_id)
 
         user_ids = [access.owner_id for access in accesses]
         user_ids.append(self._user_id)
