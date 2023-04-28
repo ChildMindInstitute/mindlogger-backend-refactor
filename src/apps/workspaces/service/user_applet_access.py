@@ -132,6 +132,7 @@ class UserAppletAccessService:
         - Invite new manager/coordinator/editor/reviewer
         - View all managers/coordinators/editors/reviewers
         - Change roles of managers(for admin)/coordinators/editors/reviewers
+        - Delete applet
         """
         access = await UserAppletAccessCRUD(self.session).get_by_roles(
             self._user_id, self._applet_id, [Role.ADMIN, Role.MANAGER]
