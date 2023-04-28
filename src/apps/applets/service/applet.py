@@ -447,7 +447,7 @@ class AppletService:
         await AppletsCRUD(self.session).get_by_id(applet_id)
         role = await UserAppletAccessService(
             self.session, user_id, applet_id
-        ).get_admins_role()
+        ).get_organizers_role()
         if not role:
             raise AppletAccessDenied()
 

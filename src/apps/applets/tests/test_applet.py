@@ -688,6 +688,30 @@ class TestApplet(BaseTest):
         assert response.status_code == 422, response.json()
 
     @rollback
+    async def test_applet_delete_by_manager(self):
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await self.client.delete(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            dict(password="Test1234!"),
+        )
+
+        assert response.status_code == 204
+
+    @rollback
+    async def test_applet_delete_by_coordinator(self):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        response = await self.client.delete(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            dict(password="Test1234!"),
+        )
+
+        assert response.status_code == 403
+
+    @rollback
     async def test_applet_list_with_invalid_token(self):
         from config import settings
 
