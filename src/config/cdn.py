@@ -6,7 +6,7 @@ class CDNSettings(BaseModel):
 
     region: str | None
     bucket: str | None
-    domain: str = ''
+    domain: str = ""
 
     @property
     def url(self):
