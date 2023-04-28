@@ -3,7 +3,6 @@ import json
 import uuid
 
 from apps.activities.domain.activity_full import PublicActivityItemFull
-from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
@@ -21,7 +20,6 @@ from apps.answers.db.schemas import (
     AnswerSchema,
 )
 from apps.answers.domain import (
-    ANSWER_TYPE_MAP,
     ActivityAnswer,
     ActivityItemAnswer,
     AnswerDate,
@@ -31,11 +29,9 @@ from apps.answers.domain import (
 )
 from apps.answers.errors import (
     AnswerAccessDeniedError,
-    AnswerIsNotFull,
     AnswerNoteAccessDeniedError,
     FlowDoesNotHaveActivity,
     UserDoesNotHavePermissionError,
-    WrongAnswerType,
 )
 from apps.applets.crud import AppletsCRUD
 from apps.applets.service import AppletHistoryService
@@ -95,38 +91,9 @@ class AnswerService:
             ).get_activity_ids_by_flow_id(activity_answer.flow_id)
             if activity_id_version not in flow_activity_ids:
                 raise FlowDoesNotHaveActivity()
-
-        activity_items = await ActivityItemHistoryService(
+        await ActivityHistoryService(
             self.session, activity_answer.applet_id, activity_answer.version
-        ).get_by_activity_id(activity_answer.activity_id)
-
-        answer_map = dict()
-
-        for answer in activity_answer.answers:
-            answer_map[answer.activity_item_id] = answer
-
-        for activity_item in activity_items:
-            if activity_item.response_type == ResponseType.TEXT:
-                required = False
-                required |= getattr(
-                    activity_item.config, "response_required", False
-                )
-            else:
-                required = False
-            required |= not getattr(
-                activity_item.config, "skippable_item", False
-            )
-            if required:
-                answer_class = ANSWER_TYPE_MAP.get(activity_item.response_type)
-
-                if activity_item.id not in answer_map:
-                    raise AnswerIsNotFull()
-
-                if (
-                    not type(answer_map[activity_item.id].answer)
-                    == answer_class
-                ):
-                    raise WrongAnswerType()
+        ).get_by_id(activity_answer.activity_id)
 
     async def _validate_applet_for_anonymous_response(
         self, applet_id: uuid.UUID, version: str
@@ -333,7 +300,7 @@ class AnswerService:
                     activity_item=PublicActivityItemFull.from_orm(
                         activity_item
                     ),
-                    answer=item_answer_map[activity_item.id_version],
+                    answer=item_answer_map.get(activity_item.id_version),
                 )
             )
 

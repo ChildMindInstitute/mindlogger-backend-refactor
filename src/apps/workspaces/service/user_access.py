@@ -106,12 +106,9 @@ class UserAccessService:
         )
 
         # remove manager access
-        for applet_id in schema.applet_ids:
-            await UserAppletAccessCRUD(
-                self.session
-            ).delete_all_by_user_and_applet(
-                user_id=schema.user_id, applet_id=applet_id
-            )
+        await UserAppletAccessCRUD(self.session).delete_all_by_user_and_applet(
+            schema.user_id, schema.applet_ids
+        )
 
     async def remove_respondent_access(self, schema: RemoveRespondentAccess):
         """Remove respondent access from a specific user."""
@@ -126,12 +123,9 @@ class UserAccessService:
         )
 
         # remove respondent access
-        for applet_id in schema.applet_ids:
-            await UserAppletAccessCRUD(
-                self.session
-            ).delete_all_by_user_and_applet(
-                user_id=schema.user_id, applet_id=applet_id
-            )
+        await UserAppletAccessCRUD(self.session).delete_all_by_user_and_applet(
+            schema.user_id, schema.applet_ids
+        )
 
         # delete all responses of respondent in applets
         if schema.delete_responses:
@@ -216,12 +210,15 @@ class UserAccessService:
         if not has_access:
             raise WorkspaceDoesNotExistError
 
-    async def pin(self, access_id: uuid.UUID):
-        await self._validate_pin(access_id)
+    async def pin(self, access_id: uuid.UUID, owner_id: uuid.UUID):
+        await self._validate_pin(access_id, owner_id)
         await UserAppletAccessCRUD(self.session).pin(access_id)
 
-    async def _validate_pin(self, access_id: uuid.UUID):
+    async def _validate_pin(self, access_id: uuid.UUID, owner_id: uuid.UUID):
         access = await UserAppletAccessCRUD(self.session).get_by_id(access_id)
+        if owner_id and access.owner_id != owner_id:
+            raise WorkspaceDoesNotExistError
+
         applet_manager_ids = await UserAppletAccessCRUD(
             self.session
         ).get_applet_users_by_roles(
@@ -254,3 +251,12 @@ class UserAccessService:
         ).get_respondent_accesses_by_owner_id_count(owner_id, respondent_id)
 
         return count
+
+    async def get_applets_roles_by_priority(
+        self, applet_ids: list[uuid.UUID]
+    ) -> dict:
+        applet_role_map = await UserAppletAccessCRUD(
+            self.session
+        ).get_applets_roles_by_priority(applet_ids, self._user_id)
+
+        return applet_role_map

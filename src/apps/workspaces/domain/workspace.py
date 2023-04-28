@@ -3,6 +3,10 @@ import uuid
 
 from pydantic import Field
 
+from apps.applets.domain.applet import (
+    AppletSingleLanguageInfo,
+    AppletSingleLanguageInfoPublic,
+)
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
@@ -93,3 +97,11 @@ class WorkspaceInfo(InternalModel):
 class PublicWorkspaceInfo(PublicModel):
     name: str
     has_managers: bool
+
+
+class WorkspaceApplet(AppletSingleLanguageInfo):
+    role: Role = Role.RESPONDENT
+
+
+class WorkspaceAppletPublic(AppletSingleLanguageInfoPublic):
+    role: Role

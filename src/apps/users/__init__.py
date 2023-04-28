@@ -1,1 +1,1 @@
-from apps.users.crud import *  # noqa: F401, F403
+from apps.users.cruds.user import *  # noqa: F401, F403

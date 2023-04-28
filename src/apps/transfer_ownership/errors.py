@@ -16,3 +16,8 @@ class TransferAlreadyExist(ValidationError):
 class TransferNotFoundError(NotFoundError):
     def __init__(self, *_, message="Transfer request not found") -> None:
         super().__init__(*_, message=message)
+
+
+class TransferEmailError(ValidationError):
+    def __init__(self, *_, message="Transfer email is incorrect") -> None:
+        super().__init__(*_, message=message)

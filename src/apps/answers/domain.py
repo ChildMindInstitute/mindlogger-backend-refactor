@@ -44,6 +44,11 @@ class ActivityItemAnswerCreate(InternalModel):
     answer: AnswerTypes
 
 
+class AnsweredActivityItem(InternalModel):
+    activity_item_history_id: str
+    answer: str
+
+
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
@@ -82,7 +87,7 @@ class PublicAnswerDates(PublicModel):
 class ActivityItemAnswer(InternalModel):
     type: ResponseType
     activity_item: PublicActivityItemFull
-    answer: AnswerTypes
+    answer: AnswerTypes | None
 
 
 class ActivityAnswer(InternalModel):
@@ -94,7 +99,7 @@ class ActivityAnswer(InternalModel):
 class ActivityItemAnswerPublic(PublicModel):
     type: ResponseType
     activity_item: PublicActivityItemFull
-    answer: AnswerTypes
+    answer: AnswerTypes | None
 
 
 class ActivityAnswerPublic(PublicModel):

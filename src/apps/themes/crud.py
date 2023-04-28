@@ -62,7 +62,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
         return theme
 
-    async def get_by_id(self, pk: int) -> Theme:
+    async def get_by_id(self, pk: uuid.UUID) -> Theme:
         return await self._fetch(key="id", value=pk)
 
     async def get_users_themes_by_ids(

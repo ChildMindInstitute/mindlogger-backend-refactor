@@ -66,6 +66,25 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 201, response.json()
 
     @rollback
+    async def test_answer_skippable_activity_items_create_for_respondent(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
+            version="2.0.1",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3612",
+            answers=[],
+        )
+
+        response = await self.client.post(
+            self.answer_activity_item_create_url, data=create_data
+        )
+
+        assert response.status_code == 201, response.json()
+
+    @rollback
     async def test_list_submit_dates(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -147,13 +166,14 @@ class TestAnswerActivityItems(BaseTest):
 
     @rollback
     async def test_answer_with_skipping_all(self):
+        # TODO: update test to skip when activity item is skippable
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
-            version="1.0.0",
+            version="2.0.1",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3612",
             created_at=1681216969,
             answers=[],
@@ -212,12 +232,20 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert len(response.json()["result"][0]["answerDates"]) == 1
 
+        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
         response = await self.client.get(
             self.answers_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
-                answer_id=response.json()["result"][0]["answerDates"][0][
-                    "answerId"
-                ],
+                answer_id=answer_id,
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+
+        response = await self.client.get(
+            self.answers_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
             )
         )
 

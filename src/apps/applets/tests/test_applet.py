@@ -1,6 +1,9 @@
 import asyncio
 import uuid
 
+import pytest
+
+from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -28,6 +31,8 @@ class TestApplet(BaseTest):
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
+
+    public_applet_detail_url = "/public/applets/{key}"
 
     @rollback
     async def test_creating_applet(self):
@@ -62,6 +67,7 @@ class TestApplet(BaseTest):
                             ),
                             response_type="text",
                             response_values=None,
+                            is_hidden=True,
                             config=dict(
                                 max_response_length=200,
                                 correct_answer_required=False,
@@ -250,6 +256,8 @@ class TestApplet(BaseTest):
             self.applet_detail_url.format(pk=response.json()["result"]["id"])
         )
         assert response.status_code == 200
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].subject == "Applet upload success!"
 
     @rollback
     async def test_create_duplicate_name_applet(self):
@@ -351,6 +359,7 @@ class TestApplet(BaseTest):
             response.json()["result"][0]["message"]["en"]
             == "Applet already exists."
         )
+        assert TestMail.mails[0].subject == "Applet upload failed!"
 
     @rollback
     async def test_create_duplicate_case_sensitive_name_applet(self):
@@ -574,6 +583,8 @@ class TestApplet(BaseTest):
             data=update_data,
         )
         assert response.status_code == 200, response.json()
+        # assert len(TestMail.mails) == 1
+        # assert TestMail.mails[0].subject == "Applet edit success!"
 
     @rollback
     async def test_duplicate_applet(self):
@@ -588,6 +599,9 @@ class TestApplet(BaseTest):
             data=dict(display_name="New name", password="Test1234567890"),
         )
         assert response.status_code == 201, response.json()
+
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].subject == "Applet duplicate success!"
 
         response = await self.client.get(self.applet_list_url)
         assert len(response.json()["result"]) == 4
@@ -723,6 +737,23 @@ class TestApplet(BaseTest):
         response = await self.client.get(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 200
+        result = response.json()["result"]
+        assert result["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        assert result["displayName"] == "Applet 1"
+        assert len(result["activities"]) == 1
+        assert len(result["activityFlows"]) == 2
+        assert len(result["activityFlows"][0]["activityIds"]) == 1
+        assert len(result["activityFlows"][1]["activityIds"]) == 1
+
+    @pytest.mark.main
+    @rollback
+    async def test_public_applet_detail(self):
+        response = await self.client.get(
+            self.public_applet_detail_url.format(
+                key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
             )
         )
         assert response.status_code == 200

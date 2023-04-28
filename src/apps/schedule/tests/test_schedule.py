@@ -1,3 +1,5 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -38,6 +40,8 @@ class TestSchedule(BaseTest):
     schedule_detail_url = f"{applet_detail_url}/events/{{event_id}}"
 
     count_url = "applets/{applet_id}/events/count"
+
+    public_events_url = "public/applets/{key}/events"
 
     @rollback
     async def test_schedule_create_with_activity(self):
@@ -203,6 +207,19 @@ class TestSchedule(BaseTest):
         assert response.status_code == 200, response.json()
         events = response.json()["result"]
         assert len(events) == events_count + 1
+
+    @pytest.mark.main
+    @rollback
+    async def test_public_schedule_get_all(self):
+        response = await self.client.get(
+            self.public_events_url.format(
+                key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+        events = response.json()["result"]
+        assert type(events) == list
 
     @rollback
     async def test_schedule_get_detail(self):

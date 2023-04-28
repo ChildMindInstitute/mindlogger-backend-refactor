@@ -74,6 +74,13 @@ class _AppletRespondentsOrdering(Ordering):
     created_at = UserAppletAccessSchema.created_at
 
 
+class _AppletRespondentSearch(Searching):
+    search_fields = [
+        UserAppletAccessSchema.meta["nickname"].astext,
+        UserAppletAccessSchema.meta["secretUserId"].astext,
+    ]
+
+
 class _AppletManagersOrdering(Ordering):
     email = UserSchema.email
     first_name = UserSchema.first_name
@@ -81,7 +88,11 @@ class _AppletManagersOrdering(Ordering):
 
 
 class _AppletUsersSearch(Searching):
-    search_fields = [UserSchema.first_name, UserSchema.last_name]
+    search_fields = [
+        UserSchema.first_name,
+        UserSchema.last_name,
+        UserSchema.email,
+    ]
 
 
 class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
@@ -352,7 +363,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             )
         if query_params.search:
             query = query.where(
-                _AppletUsersSearch().get_clauses(query_params.search)
+                _AppletRespondentSearch().get_clauses(query_params.search)
             )
         if query_params.ordering:
             query = query.order_by(
@@ -401,7 +412,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             )
         if query_params.search:
             query = query.where(
-                _AppletUsersSearch().get_clauses(query_params.search)
+                _AppletRespondentSearch().get_clauses(query_params.search)
             )
         db_result = await self._execute(query)
 
@@ -491,11 +502,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         ]
 
     async def delete_all_by_user_and_applet(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID
+        self, user_id: uuid.UUID, applet_ids: list[uuid.UUID]
     ):
         query: Query = delete(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.applet_id.in_(applet_ids))
         await self._execute(query)
 
     async def check_access_by_user_and_owner(
@@ -635,3 +646,57 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().first() or 0
+
+    async def clean_manager_accesses(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ):
+        query: Query = delete(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(
+            UserAppletAccessSchema.role.in_(
+                [Role.COORDINATOR, Role.EDITOR, Role.REVIEWER]
+            )
+        )
+        await self._execute(query)
+
+    async def has_role(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
+    ) -> bool:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.role == role)
+        query = query.exists()
+
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first()
+
+    async def get_applets_roles_by_priority(
+        self, applet_ids: list[uuid.UUID], user_id: uuid.UUID
+    ) -> dict[uuid.UUID, Role]:
+        from_query: Query = select(UserAppletAccessSchema)
+        from_query = from_query.where(
+            UserAppletAccessSchema.user_id == user_id
+        )
+        from_query = from_query.where(
+            UserAppletAccessSchema.applet_id.in_(applet_ids)
+        )
+        from_query = from_query.order_by(
+            case(
+                (UserAppletAccessSchema.role == Role.ADMIN, 1),
+                (UserAppletAccessSchema.role == Role.MANAGER, 2),
+                (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
+                (UserAppletAccessSchema.role == Role.EDITOR, 4),
+                (UserAppletAccessSchema.role == Role.REVIEWER, 5),
+                (UserAppletAccessSchema.role == Role.RESPONDENT, 6),
+                else_=10,
+            ).asc()
+        ).alias("prioritized_access")
+
+        query = select(from_query.c.applet_id, from_query.c.role)
+        query = query.distinct(from_query.c.applet_id)
+
+        db_result = await self._execute(query)
+
+        return dict(db_result.all())

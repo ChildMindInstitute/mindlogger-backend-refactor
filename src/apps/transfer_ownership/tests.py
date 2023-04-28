@@ -21,7 +21,7 @@ class TestTransfer(BaseTest):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
-        data = {"email": "aloevdamirkhon@gmail.com"}
+        data = {"email": "lucy@gmail.com"}
 
         response = await self.client.post(
             self.transfer_url.format(
@@ -33,7 +33,7 @@ class TestTransfer(BaseTest):
         assert response.status_code == 200
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [data["email"]]
-        TestMail.clear_mails()
+        assert TestMail.mails[0].subject == "Transfer ownership of an applet"
 
     @rollback
     async def test_initiate_transfer_fail(self):

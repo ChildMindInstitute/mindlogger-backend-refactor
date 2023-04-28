@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivityHistorySchema
+from apps.activities.errors import ActivityHistoryDoeNotExist
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
 
@@ -47,3 +48,11 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         )
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_by_id(
+        self, activity_id_version: str
+    ) -> ActivityHistorySchema:
+        schema = await self._get("id_version", activity_id_version)
+        if not schema:
+            raise ActivityHistoryDoeNotExist()
+        return schema

@@ -6,7 +6,7 @@ from apps.authentication.domain.token import (
     TokenPurpose,
 )
 from apps.authentication.services.cache import TokensBlacklistCache
-from apps.users.crud import UsersCRUD
+from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from infrastructure.cache.domain import CacheEntry
 

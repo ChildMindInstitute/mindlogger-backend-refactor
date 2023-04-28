@@ -13,7 +13,7 @@ class TestAppletLink(BaseTest):
     access_link_url = "applets/{applet_id}/access_link"
 
     @rollback
-    async def test_applet_access_link_create(self):
+    async def test_applet_access_link_create_by_admin(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -46,6 +46,50 @@ class TestAppletLink(BaseTest):
             data=data,
         )
         assert response.status_code == 422
+
+    @rollback
+    async def test_applet_access_link_create_by_manager(self):
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+
+        response = await self.client.delete(
+            self.access_link_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 204
+
+        data = {"require_login": True}
+        response = await self.client.post(
+            self.access_link_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=data,
+        )
+
+        assert response.status_code == 201
+        assert type(response.json()["result"]["link"]) == str
+
+    @rollback
+    async def test_applet_access_link_create_by_coordinator(self):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+
+        response = await self.client.delete(
+            self.access_link_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 204
+
+        data = {"require_login": True}
+        response = await self.client.post(
+            self.access_link_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=data,
+        )
+
+        assert response.status_code == 201
+        assert type(response.json()["result"]["link"]) == str
 
     @rollback
     async def test_applet_access_link_get(self):

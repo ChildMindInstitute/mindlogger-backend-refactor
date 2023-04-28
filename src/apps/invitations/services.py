@@ -150,38 +150,29 @@ class InvitationsService:
             invitation_internal.applet_id
         )
 
-        html_payload: dict = {
-            "coordinator_name": f"{self._user.first_name} "
-            f"{self._user.last_name}",
-            "first_name": schema.first_name,
-            "last_name": schema.last_name,
-            "applet_name": applet.display_name,
-            "language": schema.language,
-            "role": invitation_internal.role,
-            "key": invitation_internal.key,
-            "email": invitation_internal.email,
-            "link": self._get_invitation_url_by_role(invitation_internal.role),
-        }
-
         try:
             await UsersCRUD(self.session).get_by_email(schema.email)
         except UserNotFound:
-            if schema.language == "fr":
-                path = "invitation_new_user_fr"
-            else:
-                path = "invitation_new_user_en"
+            path = "invitation_new_user_en"
         else:
-            if schema.language == "fr":
-                path = "invitation_registered_user_fr"
-            else:
-                path = "invitation_registered_user_en"
+            path = "invitation_registered_user_en"
 
         # Send email to the user
-        service: MailingService = MailingService()
+        service = MailingService()
         message = MessageSchema(
             recipients=[schema.email],
             subject="Invitation to the FCM",
-            body=service.get_template(path=path, **html_payload),
+            body=service.get_template(
+                path=path,
+                first_name=schema.first_name,
+                applet_name=applet.display_name,
+                role=invitation_internal.role,
+                link=self._get_invitation_url_by_role(
+                    invitation_internal.role
+                ),
+                key=invitation_internal.key,
+                language=schema.language,
+            ),
         )
         await service.send(message)
 
@@ -266,38 +257,29 @@ class InvitationsService:
             invitation_internal.applet_id
         )
 
-        html_payload: dict = {
-            "coordinator_name": f"{self._user.first_name} "
-            f"{self._user.last_name}",
-            "first_name": schema.first_name,
-            "last_name": schema.last_name,
-            "applet_name": applet.display_name,
-            "language": schema.language,
-            "role": invitation_internal.role,
-            "key": invitation_internal.key,
-            "email": invitation_internal.email,
-            "link": self._get_invitation_url_by_role(invitation_internal.role),
-        }
-
         try:
             await UsersCRUD(self.session).get_by_email(schema.email)
         except UserNotFound:
-            if schema.language == "fr":
-                path = "invitation_new_user_fr"
-            else:
-                path = "invitation_new_user_en"
+            path = "invitation_new_user_en"
         else:
-            if schema.language == "fr":
-                path = "invitation_registered_user_fr"
-            else:
-                path = "invitation_registered_user_en"
+            path = "invitation_registered_user_en"
 
         # Send email to the user
-        service: MailingService = MailingService()
+        service = MailingService()
         message = MessageSchema(
             recipients=[schema.email],
             subject="Invitation to the FCM",
-            body=service.get_template(path=path, **html_payload),
+            body=service.get_template(
+                path=path,
+                first_name=schema.first_name,
+                applet_name=applet.display_name,
+                role=invitation_internal.role,
+                link=self._get_invitation_url_by_role(
+                    invitation_internal.role
+                ),
+                key=invitation_internal.key,
+                language=schema.language,
+            ),
         )
 
         await service.send(message)
@@ -376,38 +358,29 @@ class InvitationsService:
             invitation_internal.applet_id
         )
 
-        html_payload: dict = {
-            "coordinator_name": f"{self._user.first_name} "
-            f"{self._user.last_name}",
-            "first_name": schema.first_name,
-            "last_name": schema.last_name,
-            "applet_name": applet.display_name,
-            "language": schema.language,
-            "role": invitation_internal.role,
-            "key": invitation_internal.key,
-            "email": invitation_internal.email,
-            "link": self._get_invitation_url_by_role(invitation_internal.role),
-        }
-
         try:
             await UsersCRUD(self.session).get_by_email(schema.email)
         except UserNotFound:
-            if schema.language == "fr":
-                path = "invitation_new_user_fr"
-            else:
-                path = "invitation_new_user_en"
+            path = "invitation_new_user_en"
         else:
-            if schema.language == "fr":
-                path = "invitation_registered_user_fr"
-            else:
-                path = "invitation_registered_user_en"
+            path = "invitation_registered_user_en"
 
         # Send email to the user
-        service: MailingService = MailingService()
+        service = MailingService()
         message = MessageSchema(
             recipients=[schema.email],
             subject="Invitation to the FCM",
-            body=service.get_template(path=path, **html_payload),
+            body=service.get_template(
+                path=path,
+                first_name=schema.first_name,
+                applet_name=applet.display_name,
+                role=invitation_internal.role,
+                link=self._get_invitation_url_by_role(
+                    invitation_internal.role
+                ),
+                key=invitation_internal.key,
+                language=schema.language,
+            ),
         )
 
         await service.send(message)
@@ -581,6 +554,9 @@ class InvitationsService:
             raise InvitationAlreadyProcesses()
 
         await InvitationCRUD(self.session).decline_by_id(invitation.id)
+
+    async def clear_applets_invitations(self, applet_id: uuid.UUID):
+        await InvitationCRUD(self.session).delete_by_applet_id(applet_id)
 
 
 class PrivateInvitationService:

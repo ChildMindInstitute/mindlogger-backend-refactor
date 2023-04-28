@@ -9,6 +9,7 @@ import apps.alerts.router as alerts
 import apps.answers.router as answers
 import apps.applets.router as applets
 import apps.authentication.router as auth
+import apps.file.router as files
 import apps.folders.router as folders
 import apps.healthcheck.router as healthcheck
 import apps.invitations.router as invitations
@@ -26,13 +27,16 @@ from config import settings
 routers: Iterable[APIRouter] = (
     healthcheck.router,
     activities.router,
+    activities.public_router,
     auth.router,
     applets.router,
+    applets.public_router,
     users.router,
     themes.router,
     invitations.router,
     logs.router,
     schedule.router,
+    schedule.public_router,
     schedule.user_router,
     folders.router,
     answers.router,
@@ -41,6 +45,7 @@ routers: Iterable[APIRouter] = (
     transfer_ownership.router,
     alerts.router,
     test_data.router,
+    files.router,
 )
 
 # Declare your middlewares here

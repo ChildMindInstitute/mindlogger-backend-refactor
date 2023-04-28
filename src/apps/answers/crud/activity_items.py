@@ -7,7 +7,7 @@ from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.answers.db.schemas import AnswerActivityItemsSchema
-from apps.answers.domain import AppletAnswerCreate
+from apps.answers.domain import AnsweredActivityItem, AppletAnswerCreate
 from apps.applets.crud import AppletsCRUD
 from apps.shared.encryption import decrypt, encrypt, generate_iv
 from infrastructure.database.crud import BaseCRUD
@@ -105,7 +105,7 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
 
     async def get_by_answer_id(
         self, applet_id: uuid.UUID, answer_id: uuid.UUID
-    ) -> list[AnswerActivityItemsSchema]:
+    ) -> list[AnsweredActivityItem]:
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         system_encrypted_key = base64.b64decode(
             applet.system_encrypted_key.encode()
@@ -124,10 +124,16 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
 
         db_result = await self._execute(query)
         schemas = db_result.scalars().all()
+        answers = []
         for schema in schemas:  # type: AnswerActivityItemsSchema
             answer_value = self._decrypt(
                 schema.id, key, base64.b64decode(schema.answer.encode())
             ).decode()
-            schema.answer = answer_value
+            answers.append(
+                AnsweredActivityItem(
+                    activity_item_history_id=schema.activity_item_history_id,
+                    answer=answer_value,
+                )
+            )
 
-        return schemas
+        return answers
