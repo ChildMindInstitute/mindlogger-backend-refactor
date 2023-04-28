@@ -16,7 +16,9 @@ from apps.activities.domain.activity_update import (
     ActivityUpdate,
     PreparedActivityItemUpdate,
 )
+from apps.activities.errors import ActivityAccessDeniedError
 from apps.activities.services.activity_item import ActivityItemService
+from apps.applets.crud import AppletsCRUD
 from apps.schedule.crud.events import ActivityEventsCRUD
 from apps.schedule.service.schedule import ScheduleService
 
@@ -295,6 +297,36 @@ class ActivityService:
         schema = await ActivitiesCRUD(self.session).get_by_id(
             self.user_id, id_
         )
+        activity = ActivitySingleLanguageWithItemsDetail(
+            id=schema.id,
+            name=schema.name,
+            description=self._get_by_language(schema.description, language),
+            splash_screen=schema.splash_screen,
+            image=schema.image,
+            show_all_at_once=schema.show_all_at_once,
+            is_skippable=schema.is_skippable,
+            is_reviewable=schema.is_reviewable,
+            response_is_editable=schema.response_is_editable,
+            order=schema.order,
+            is_hidden=schema.is_hidden,
+        )
+        activity.items = await ActivityItemService(
+            self.session
+        ).get_single_language_by_activity_id(id_, language)
+        return activity
+
+    async def get_public_single_language_by_id(
+        self, id_: uuid.UUID, language: str
+    ) -> ActivitySingleLanguageWithItemsDetail:
+        schema = await ActivitiesCRUD(self.session).get_by_id(
+            self.user_id, id_
+        )
+        applet = await AppletsCRUD(self.session).get_by_id(schema.applet_id)
+        if not applet.link:
+            raise ActivityAccessDeniedError()
+        elif applet.require_login is True:
+            raise ActivityAccessDeniedError()
+
         activity = ActivitySingleLanguageWithItemsDetail(
             id=schema.id,
             name=schema.name,

@@ -12,6 +12,7 @@ from apps.applets.domain import (
 )
 from apps.applets.domain.applet import (
     AppletDataRetention,
+    AppletSingleLanguageDetailForPublic,
     AppletSingleLanguageDetailPublic,
     AppletSingleLanguageInfoPublic,
 )
@@ -53,6 +54,7 @@ __all__ = [
     "applet_set_data_retention",
     "applet_duplicate",
     "applet_check_password",
+    "applet_retrieve_by_key",
 ]
 
 from infrastructure.database import atomic, session_manager
@@ -92,6 +94,20 @@ async def applet_retrieve(
             session, user.id
         ).get_single_language_by_id(id_, language)
     return Response(result=AppletSingleLanguageDetailPublic.from_orm(applet))
+
+
+async def applet_retrieve_by_key(
+    key: uuid.UUID,
+    language: str = Depends(get_language),
+    session=Depends(session_manager.get_session),
+) -> Response[AppletSingleLanguageDetailForPublic]:
+    async with atomic(session):
+        applet = await AppletService(
+            session, uuid.UUID("00000000-0000-0000-0000-000000000000")
+        ).get_single_language_by_key(key, language)
+    return Response(
+        result=AppletSingleLanguageDetailForPublic.from_orm(applet)
+    )
 
 
 async def applet_create(

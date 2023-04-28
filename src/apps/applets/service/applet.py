@@ -351,9 +351,9 @@ class AppletService:
         if not schema:
             raise AppletAccessDenied()
         if schema.theme_id:
-            theme = await ThemeService(self.session, self.user_id).get_by_id(
-                schema.theme_id
-            )
+            theme = await ThemeService(
+                self.session, self.user_id
+            ).get_users_by_id(schema.theme_id)
         applet = AppletSingleLanguageDetail(
             id=schema.id,
             display_name=schema.display_name,
@@ -384,6 +384,47 @@ class AppletService:
         ).get_single_language_by_applet_id(applet_id, language)
         return applet
 
+    async def get_single_language_by_key(
+        self, key: uuid.UUID, language: str
+    ) -> AppletSingleLanguageDetail:
+        schema = await AppletsCRUD(self.session).get_by_key(key)
+        if not schema:
+            raise AppletNotFoundError(key="key", value=str(key))
+        theme = None
+        if schema.theme_id:
+            theme = await ThemeService(self.session, self.user_id).get_by_id(
+                schema.theme_id
+            )
+        applet = AppletSingleLanguageDetail(
+            id=schema.id,
+            display_name=schema.display_name,
+            version=schema.version,
+            description=self._get_by_language(schema.description, language),
+            about=self._get_by_language(schema.about, language),
+            image=schema.image,
+            theme=theme.dict() if theme else None,
+            watermark=schema.watermark,
+            theme_id=schema.theme_id,
+            report_server_ip=schema.report_server_ip,
+            report_public_key=schema.report_public_key,
+            report_recipients=schema.report_recipients,
+            report_include_user_id=schema.report_include_user_id,
+            report_include_case_id=schema.report_include_case_id,
+            report_email_body=schema.report_email_body,
+            created_at=schema.created_at,
+            updated_at=schema.updated_at,
+            retention_period=schema.retention_period,
+            retention_type=schema.retention_type,
+        )
+
+        applet.activities = await ActivityService(
+            self.session, self.user_id
+        ).get_single_language_by_applet_id(applet.id, language)
+        applet.activity_flows = await FlowService(
+            self.session
+        ).get_single_language_by_applet_id(applet.id, language)
+        return applet
+
     async def get_by_id_for_duplicate(
         self, applet_id: uuid.UUID
     ) -> AppletDuplicate:
@@ -397,9 +438,9 @@ class AppletService:
         if not schema:
             raise AppletAccessDenied()
         if schema.theme_id:
-            theme = await ThemeService(self.session, self.user_id).get_by_id(
-                schema.theme_id
-            )
+            theme = await ThemeService(
+                self.session, self.user_id
+            ).get_users_by_id(schema.theme_id)
         applet = AppletDuplicate(
             id=schema.id,
             display_name=schema.display_name,

@@ -1,7 +1,10 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.activities.api.activities import activity_retrieve
+from apps.activities.api.activities import (
+    activity_retrieve,
+    public_activity_retrieve,
+)
 from apps.activities.api.reusable_item_choices import (
     item_choice_create,
     item_choice_delete,
@@ -20,6 +23,7 @@ from apps.shared.domain.response import (
 )
 
 router = APIRouter(prefix="/activities", tags=["Activities"])
+public_router = APIRouter(prefix="/public/activities", tags=["Activities"])
 
 router.post(
     "/item_choices",
@@ -64,3 +68,16 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(activity_retrieve)
+
+public_router.get(
+    "/{id_}",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[ActivitySingleLanguageWithItemsDetailPublic],
+    responses={
+        status.HTTP_200_OK: {
+            "model": Response[ActivitySingleLanguageWithItemsDetailPublic]
+        },
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(public_activity_retrieve)

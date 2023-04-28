@@ -80,10 +80,30 @@ class EventCRUD(BaseCRUD[EventSchema]):
         event: Event = Event.from_orm(instance)
         return event
 
-    async def get_all_by_applet_id(self, applet_id: uuid.UUID) -> EventSchema:
+    async def get_all_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> list[EventSchema]:
         """Return event instance."""
         query: Query = select(EventSchema)
         query = query.where(EventSchema.applet_id == applet_id)
+        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+
+        result = await self._execute(query)
+        return result.scalars().all()
+
+    async def get_public_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> list[EventSchema]:
+        """Return event instance."""
+        query: Query = select(EventSchema)
+        query = query.join(
+            UserEventsSchema,
+            UserEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+        query = query.where(EventSchema.applet_id == applet_id)
+        query = query.distinct(EventSchema.id)
+        query = query.where(UserEventsSchema.user_id == None)  # noqa: E711
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
 
         result = await self._execute(query)

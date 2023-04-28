@@ -2,6 +2,7 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.schedule.api.schedule import (
+    public_schedule_get_all,
     schedule_count,
     schedule_create,
     schedule_delete_all,
@@ -28,6 +29,7 @@ from apps.shared.domain.response import (
 )
 
 router = APIRouter(prefix="/applets", tags=["Applets"])
+public_router = APIRouter(prefix="/public/applets", tags=["Applets"])
 
 # Create schedule
 router.post(
@@ -54,6 +56,18 @@ router.get(
         **NO_CONTENT_ERROR_RESPONSES,
     },
 )(schedule_get_all)
+
+public_router.get(
+    "/{key}/events",
+    response_model=ResponseMulti[PublicEvent],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicEvent]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+        **NO_CONTENT_ERROR_RESPONSES,
+    },
+)(public_schedule_get_all)
 
 # Get schedule count
 router.get(
