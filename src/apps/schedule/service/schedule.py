@@ -256,6 +256,44 @@ class ScheduleService:
 
         return events
 
+    async def get_public_all_schedules(
+        self, key: uuid.UUID
+    ) -> list[PublicEvent]:
+        # Check if applet exists
+        applet_id = await self._validate_public_applet(key)
+
+        event_schemas = await EventCRUD(self.session).get_public_by_applet_id(
+            applet_id
+        )
+        events: list[PublicEvent] = []
+
+        for event_schema in event_schemas:
+            event: Event = Event.from_orm(event_schema)
+
+            periodicity: Periodicity = await PeriodicityCRUD(
+                self.session
+            ).get_by_id(event.periodicity_id)
+            activity_id = await ActivityEventsCRUD(
+                self.session
+            ).get_by_event_id(event_id=event.id)
+            flow_id = await FlowEventsCRUD(self.session).get_by_event_id(
+                event_id=event.id
+            )
+            notification = await self._get_notifications_and_reminder(event.id)
+
+            events.append(
+                PublicEvent(
+                    **event.dict(),
+                    periodicity=PublicPeriodicity(**periodicity.dict()),
+                    respondent_id=None,
+                    activity_id=activity_id,
+                    flow_id=flow_id,
+                    notification=notification,
+                )
+            )
+
+        return events
+
     async def delete_all_schedules(self, applet_id: uuid.UUID):
         # Check if applet exists
         await self._validate_applet(applet_id=applet_id)
@@ -977,6 +1015,13 @@ class ScheduleService:
         )
         if not applet_exist:
             raise AppletNotFoundError(key="id", value=str(applet_id))
+
+    async def _validate_public_applet(self, key: uuid.UUID) -> uuid.UUID:
+        # Check if applet exists
+        applet = await AppletsCRUD(self.session).get_by_key(key)
+        if not applet:
+            raise AppletNotFoundError(key="key", value=str(key))
+        return applet.id
 
     async def _validate_user(self, user_id: uuid.UUID):
         # Check if user exists

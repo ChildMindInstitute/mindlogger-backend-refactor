@@ -1,4 +1,9 @@
-from apps.shared.errors import BadRequestError, NotFoundError, ValidationError
+from apps.shared.errors import (
+    AccessDeniedError,
+    BadRequestError,
+    NotFoundError,
+    ValidationError,
+)
 
 
 class ReusableItemChoiceAlreadyExist(BadRequestError):
@@ -23,3 +28,10 @@ class ActivityHistoryDoeNotExist(NotFoundError):
 class InvalidVersionError(ValidationError):
     def __init__(self, *_, message="Invalid version.") -> None:
         super().__init__(message=message)
+
+
+class ActivityAccessDeniedError(AccessDeniedError):
+    def __init__(self, *_, message="Activity access denied") -> None:
+        super().__init__(
+            message=message,
+        )

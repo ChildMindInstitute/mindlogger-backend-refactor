@@ -118,6 +118,18 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         return db_result.scalars().first() is not None
 
+    async def get_by_key(
+        self, key: uuid.UUID, require_login=False
+    ) -> AppletSchema:
+        query: Query = select(AppletSchema)
+        query = query.where(AppletSchema.link == key)
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
+        query = query.where(AppletSchema.require_login == require_login)
+
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first()
+
     async def get_applets_by_roles(
         self, user_id: uuid.UUID, roles: list[str], query_params: QueryParams
     ) -> list[AppletSchema]:

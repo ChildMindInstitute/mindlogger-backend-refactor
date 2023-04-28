@@ -1,6 +1,8 @@
 import asyncio
 import uuid
 
+import pytest
+
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -29,6 +31,8 @@ class TestApplet(BaseTest):
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
+
+    public_applet_detail_url = "/public/applets/{key}"
 
     @rollback
     async def test_creating_applet(self):
@@ -733,6 +737,23 @@ class TestApplet(BaseTest):
         response = await self.client.get(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 200
+        result = response.json()["result"]
+        assert result["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        assert result["displayName"] == "Applet 1"
+        assert len(result["activities"]) == 1
+        assert len(result["activityFlows"]) == 2
+        assert len(result["activityFlows"][0]["activityIds"]) == 1
+        assert len(result["activityFlows"][1]["activityIds"]) == 1
+
+    @pytest.mark.main
+    @rollback
+    async def test_public_applet_detail(self):
+        response = await self.client.get(
+            self.public_applet_detail_url.format(
+                key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
             )
         )
         assert response.status_code == 200

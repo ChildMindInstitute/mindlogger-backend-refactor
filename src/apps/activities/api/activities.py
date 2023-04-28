@@ -27,3 +27,18 @@ async def activity_retrieve(
     return Response(
         result=ActivitySingleLanguageWithItemsDetailPublic.from_orm(activity)
     )
+
+
+async def public_activity_retrieve(
+    id_: uuid.UUID,
+    language: str = Depends(get_language),
+    session=Depends(session_manager.get_session),
+) -> Response[ActivitySingleLanguageWithItemsDetailPublic]:
+    async with atomic(session):
+        activity = await ActivityService(
+            session, uuid.UUID("00000000-0000-0000-0000-000000000000")
+        ).get_public_single_language_by_id(id_, language)
+
+    return Response(
+        result=ActivitySingleLanguageWithItemsDetailPublic.from_orm(activity)
+    )

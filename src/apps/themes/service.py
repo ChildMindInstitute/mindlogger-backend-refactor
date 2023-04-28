@@ -22,10 +22,16 @@ class ThemeService:
         themes = await ThemesCRUD(self.session).get_by_ids(ids)
         return [Theme.from_orm(theme) for theme in themes]
 
-    async def get_by_id(self, theme_id: uuid.UUID) -> Theme:
+    async def get_users_by_id(self, theme_id: uuid.UUID) -> Theme:
         theme = await ThemesCRUD(self.session).get_users_theme_by_id(
             self.user_id, theme_id
         )
+        if not theme:
+            raise ThemeNotFoundError("id", str(theme_id))
+        return Theme.from_orm(theme)
+
+    async def get_by_id(self, theme_id: uuid.UUID) -> Theme:
+        theme = await ThemesCRUD(self.session).get_by_id(theme_id)
         if not theme:
             raise ThemeNotFoundError("id", str(theme_id))
         return Theme.from_orm(theme)

@@ -11,6 +11,7 @@ from apps.applets.api.applets import (
     applet_link_get,
     applet_list,
     applet_retrieve,
+    applet_retrieve_by_key,
     applet_set_data_retention,
     applet_set_folder,
     applet_unique_name_get,
@@ -25,6 +26,7 @@ from apps.applets.domain import (
     PublicHistory,
 )
 from apps.applets.domain.applet import (
+    AppletSingleLanguageDetailForPublic,
     AppletSingleLanguageDetailPublic,
     AppletSingleLanguageInfoPublic,
 )
@@ -38,6 +40,7 @@ from apps.shared.domain.response import (
 )
 
 router = APIRouter(prefix="/applets", tags=["Applets"])
+public_router = APIRouter(prefix="/public/applets", tags=["Applets"])
 
 router.get(
     "",
@@ -215,3 +218,16 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_set_data_retention)
+
+public_router.get(
+    "/{key}",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[AppletSingleLanguageDetailForPublic],
+    responses={
+        status.HTTP_200_OK: {
+            "model": Response[AppletSingleLanguageDetailForPublic]
+        },
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_retrieve_by_key)
