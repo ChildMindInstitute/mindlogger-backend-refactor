@@ -5,8 +5,9 @@ import uuid
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
 
+from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.answers.db.schemas import AnswerFlowItemsSchema
-from apps.answers.domain import AppletAnswerCreate
+from apps.answers.domain import AppletAnswerCreate, AnsweredActivityItem
 from apps.applets.crud import AppletsCRUD
 from apps.shared.encryption import decrypt, encrypt, generate_iv
 from infrastructure.database.crud import BaseCRUD
@@ -103,3 +104,38 @@ class AnswerFlowItemsCRUD(BaseCRUD[AnswerFlowItemsSchema]):
         result = await self._execute(query)
 
         return result.scalars().all()
+
+    async def get_by_answer_id(
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+    ) -> list[AnsweredActivityItem]:
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        system_encrypted_key = base64.b64decode(
+            applet.system_encrypted_key.encode()
+        )
+        iv = generate_iv(str(applet.id))
+        key = decrypt(system_encrypted_key, iv=iv)
+
+        query: Query = select(AnswerFlowItemsSchema)
+        query = query.join(
+            ActivityItemHistorySchema,
+            ActivityItemHistorySchema.id_version
+            == AnswerFlowItemsSchema.activity_item_history_id,
+        )
+        query = query.where(AnswerFlowItemsSchema.answer_id == answer_id)
+        query = query.order_by(ActivityItemHistorySchema.order.asc())
+
+        db_result = await self._execute(query)
+        schemas = db_result.scalars().all()
+        answers = []
+        for schema in schemas:  # type: AnswerFlowItemsSchema
+            answer_value = self._decrypt(
+                schema.id, key, base64.b64decode(schema.answer.encode())
+            ).decode()
+            answers.append(
+                AnsweredActivityItem(
+                    activity_item_history_id=schema.activity_item_history_id,
+                    answer=answer_value,
+                )
+            )
+
+        return answers
