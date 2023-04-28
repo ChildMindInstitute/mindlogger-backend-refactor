@@ -205,7 +205,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return user_applet_access
 
-    async def get_by_user_id(
+    async def get_by_user_id_for_managers(
         self, user_id_: uuid.UUID
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).where(
@@ -214,6 +214,17 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 AppletSchema.id == self.schema_class.applet_id,
                 AppletSchema.soft_exists(),
             ),
+        )
+        query = query.where(
+            self.schema_class.role.in_(
+                [
+                    Role.ADMIN,
+                    Role.MANAGER,
+                    Role.COORDINATOR,
+                    Role.EDITOR,
+                    Role.REVIEWER,
+                ]
+            )
         )
         result: Result = await self._execute(query)
         results: list[UserAppletAccessSchema] = result.scalars().all()
