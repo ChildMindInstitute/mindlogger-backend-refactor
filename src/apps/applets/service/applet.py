@@ -432,7 +432,7 @@ class AppletService:
         if not applet_exists:
             raise AppletNotFoundError(key="id", value=str(applet_id))
         schema = await AppletsCRUD(self.session).get_applet_by_roles(
-            self.user_id, applet_id, [Role.ADMIN, Role.MANAGER]
+            self.user_id, applet_id, [Role.ADMIN, Role.MANAGER, Role.EDITOR]
         )
         theme = None
         if not schema:
