@@ -1,5 +1,3 @@
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -22,7 +20,6 @@ class TestAppletActivityItems(BaseTest):
     applet_list_url = "applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
 
-    @pytest.mark.run
     @rollback
     async def test_creating_applet_with_activity_items(self):
         await self.client.login(
