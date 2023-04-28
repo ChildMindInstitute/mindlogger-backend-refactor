@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import NonNegativeInt, PositiveInt
+from pydantic import NonNegativeInt, PositiveInt, Field, validator
 
 from apps.activities.domain.response_values import (
     ResponseValueConfigOptions,
@@ -8,6 +8,7 @@ from apps.activities.domain.response_values import (
     SingleSelectionValues,
 )
 from apps.shared.domain import PublicModel
+from apps.shared.errors import ValidationError
 
 
 class AdditionalResponseOption(PublicModel):
@@ -23,10 +24,23 @@ class _ScreenConfig(PublicModel):
 class TextConfig(_ScreenConfig, PublicModel):
     max_response_length: PositiveInt = 300
     correct_answer_required: bool
-    correct_answer: str | None = None
+    correct_answer: str | None = Field(
+        default=None,
+        max_length=300,
+        description="Required if correct_answer_required is True",
+    )
     numerical_response_required: bool
     response_data_identifier: bool
     response_required: bool
+
+    @validator("correct_answer")
+    def validate_correct_answer(cls, value, values):
+        # correct_answer must be set if correct_answer_required is True
+        if values.get("correct_answer_required") and not value:
+            raise ValidationError(
+                message="correct_answer must be set if correct_answer_required is True"  # noqa: E501
+            )
+        return value
 
 
 class SingleSelectionConfig(_ScreenConfig, PublicModel):
@@ -68,6 +82,10 @@ class DefaultConfig(_ScreenConfig, PublicModel):
 
 
 class TimeRangeConfig(DefaultConfig, PublicModel):
+    pass
+
+
+class TimeConfig(DefaultConfig, PublicModel):
     pass
 
 
@@ -128,6 +146,7 @@ class NoneResponseType(str, Enum):
     PHOTO = "photo"
     VIDEO = "video"
     DATE = "date"
+    TIME = "time"
 
 
 class ResponseType(str, Enum):
@@ -148,6 +167,7 @@ class ResponseType(str, Enum):
     AUDIO = "audio"
     AUDIOPLAYER = "audioPlayer"
     MESSAGE = "message"
+    TIME = "time"
     # FLANKER = "flanker"
     # ABTEST = "abTest"
 
@@ -170,6 +190,7 @@ ResponseTypeConfigOptions = [
     AudioConfig,
     AudioPlayerConfig,
     MessageConfig,
+    TimeConfig,
 ]
 
 
@@ -191,6 +212,7 @@ ResponseTypeConfig = (
     | AudioConfig
     | AudioPlayerConfig
     | MessageConfig
+    | TimeConfig
 )
 
 ResponseTypeValueConfig = {}

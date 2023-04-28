@@ -1,9 +1,4 @@
-from pydantic import (
-    BaseModel,
-    Field,
-    root_validator,
-    validator,
-)
+from pydantic import BaseModel, Field, root_validator, validator
 
 from apps.activities.domain.response_type_config import (
     NoneResponseType,
@@ -16,61 +11,34 @@ from apps.shared.errors import ValidationError
 
 
 class BaseActivityItem(BaseModel):
+    """Please check contracts for exact types of config and response_values fields: <a href="https://mindlogger.atlassian.net/wiki/spaces/MINDLOGGER1/pages/182583316/Activity+item+contracts"> here</a>"""  # noqa: E501
+
     question: dict[str, str] = Field(default_factory=dict)
     response_type: ResponseType
-    response_values: BaseModel | None = Field(
-        default_factory=ResponseValueConfig,
-    )  # ResponseValueConfig
+    response_values: BaseModel | None  # ResponseValueConfig
     config: BaseModel  # ResponseTypeConfig
     name: str
     is_hidden: bool | None = False
 
     class Config:
         schema_extra = {
-            "examples": {
-                "normal": {
-                    "summary": "Activity Item Text",
-                    "description": "Activity Item Text",
-                    "value": {
-                        "question": {"en": "foo"},
-                        "response_type": "text",
-                        "response_values": None,
-                        "config": {
-                            "remove_back_button": False,
-                            "skippable_item": False,
-                            "max_response_length": 300,
-                            "correct_answer_required": False,
-                            "correct_answer": None,
-                            "numerical_response_required": False,
-                            "response_data_identifier": False,
-                            "response_required": False,
-                        },
-                        "name": "foo_text",
-                        "is_hidden": False,
-                    },
+            "example": {
+                "question": {"en": "foo"},
+                "response_type": "text",
+                "response_values": None,
+                "config": {
+                    "remove_back_button": False,
+                    "skippable_item": False,
+                    "max_response_length": 300,
+                    "correct_answer_required": False,
+                    "correct_answer": None,
+                    "numerical_response_required": False,
+                    "response_data_identifier": False,
+                    "response_required": False,
                 },
-                "anormal": {
-                    "summary": "Activity Item Text",
-                    "description": "Activity Item Text",
-                    "value": {
-                        "question": {"en": "foo"},
-                        "response_type": "text",
-                        "response_values": None,
-                        "config": {
-                            "remove_back_button": False,
-                            "skippable_item": False,
-                            "max_response_length": 300,
-                            "correct_answer_required": False,
-                            "correct_answer": None,
-                            "numerical_response_required": False,
-                            "response_data_identifier": False,
-                            "response_required": False,
-                        },
-                        "name": "foo_text",
-                        "is_hidden": False,
-                    },
-                },
-            }
+                "name": "foo_text",
+                "is_hidden": False,
+            },
         }
 
     @validator("name")
@@ -83,7 +51,7 @@ class BaseActivityItem(BaseModel):
         return value
 
     @validator("config", pre=True)
-    def validate_config(cls, value, values, **kwargs):
+    def validate_config(cls, value, values):
         response_type = values.get("response_type")
 
         # wrap value in class to validate and pass value
@@ -107,8 +75,7 @@ class BaseActivityItem(BaseModel):
 
         return value
 
-    # @root_validator()
-    @validator("response_values", pre=True, check_fields=False)
+    @validator("response_values", pre=True)
     def validate_response_type(cls, value, values):
         response_type = values.get("response_type")
         if response_type in ResponseTypeValueConfig:
@@ -121,6 +88,7 @@ class BaseActivityItem(BaseModel):
                         value = ResponseTypeValueConfig[response_type][
                             "value"
                         ](**value)
+
                     except Exception:
                         raise ValidationError(
                             message=f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
@@ -200,11 +168,9 @@ class BaseActivityItem(BaseModel):
         ]:
             # if add_scores is True in config, then score must be provided in each option of each row of response_values  # noqa: E501
             if config.add_scores:
-                for row in response_values.rows:
-                    scores = [option.score for option in row.options]
-                    if None in scores:
-                        raise ValidationError(
-                            message="score must be provided in each option of response_values"  # noqa: E501
-                        )
+                if response_values.data_matrix is None:
+                    raise ValidationError(
+                        message="data_matrix must be provided"  # noqa: E501
+                    )
 
         return values

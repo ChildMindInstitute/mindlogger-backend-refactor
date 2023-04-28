@@ -112,6 +112,21 @@ class TestAppletActivityItems(BaseTest):
                             ),
                         ),
                         dict(
+                            name="activity_item_time_range",
+                            question={"en": "What is your name?"},
+                            response_type="time",
+                            response_values=None,
+                            config=dict(
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                                remove_back_button=False,
+                                skippable_item=False,
+                                timer=1,
+                            ),
+                        ),
+                        dict(
                             name="activity_item_geolocation",
                             question={"en": "What is your name?"},
                             response_type="geolocation",
@@ -266,17 +281,50 @@ class TestAppletActivityItems(BaseTest):
                                 ],
                                 options=[
                                     {
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9de1",
                                         "text": "option1",
                                         "image": None,
                                         "tooltip": None,
                                     },
                                     {
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9de2",
                                         "text": "option2",
                                         "image": None,
                                         "tooltip": None,
                                     },
                                 ],
-                                data_matrix=None,
+                                data_matrix=[
+                                    {
+                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df1",
+                                        "options": [
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                                                "score": 1,
+                                                "alert": None,
+                                            },
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",
+                                                "score": 2,
+                                                "alert": None,
+                                            },
+                                        ],
+                                    },
+                                    {
+                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df2",
+                                        "options": [
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                                                "score": 3,
+                                                "alert": None,
+                                            },
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",
+                                                "score": 4,
+                                                "alert": None,
+                                            },
+                                        ],
+                                    },
+                                ],
                             ),
                             config=dict(
                                 remove_back_button=False,
@@ -308,17 +356,50 @@ class TestAppletActivityItems(BaseTest):
                                 ],
                                 options=[
                                     {
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9de1",
                                         "text": "option1",
                                         "image": None,
                                         "tooltip": None,
                                     },
                                     {
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9de2",
                                         "text": "option2",
                                         "image": None,
                                         "tooltip": None,
                                     },
                                 ],
-                                data_matrix=None,
+                                data_matrix=[
+                                    {
+                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df1",
+                                        "options": [
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                                                "score": 1,
+                                                "alert": None,
+                                            },
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",
+                                                "score": 2,
+                                                "alert": None,
+                                            },
+                                        ],
+                                    },
+                                    {
+                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df2",
+                                        "options": [
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                                                "score": 3,
+                                                "alert": None,
+                                            },
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",
+                                                "score": 4,
+                                                "alert": None,
+                                            },
+                                        ],
+                                    },
+                                ],
                             ),
                             config=dict(
                                 remove_back_button=False,

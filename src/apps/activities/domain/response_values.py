@@ -24,6 +24,10 @@ class TimeRangeValues(PublicModel):
     pass
 
 
+class TimeValues(PublicModel):
+    pass
+
+
 class GeolocationValues(PublicModel):
     pass
 
@@ -185,13 +189,13 @@ class _SingleSelectionRow(PublicModel):
 
 
 class _SingleSelectionDataOption(PublicModel):
-    option_id: uuid.UUID
+    option_id: str
     score: int | None
     alert: str | None
 
 
 class _SingleSelectionDataRow(PublicModel):
-    row_id: uuid.UUID
+    row_id: str
     options: list[_SingleSelectionDataOption]
 
 
@@ -199,6 +203,20 @@ class SingleSelectionRowsValues(PublicModel):
     rows: list[_SingleSelectionRow]
     options: list[_SingleSelectionOption]
     data_matrix: list[_SingleSelectionDataRow] | None
+
+    @validator("data_matrix")
+    def validate_data_matrix(cls, value, values):
+        if value is not None:
+            if len(value) != len(values["rows"]):
+                raise ValidationError(
+                    message="data_matrix must have the same length as rows"
+                )
+            for row in value:
+                if len(row.options) != len(values["options"]):
+                    raise ValidationError(
+                        message="data_matrix must have the same length as options"
+                    )
+        return value
 
 
 class MultiSelectionRowsValues(SingleSelectionRowsValues, PublicModel):
@@ -235,6 +253,7 @@ ResponseValueConfigOptions = [
     AudioValues,
     AudioPlayerValues,
     MessageValues,
+    TimeValues,
 ]
 
 
@@ -249,6 +268,7 @@ ResponseValueConfig = (
     | MultiSelectionRowsValues
     | AudioValues
     | AudioPlayerValues
+    | TimeValues
 )
 
 
