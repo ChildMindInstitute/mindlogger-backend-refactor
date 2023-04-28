@@ -20,8 +20,6 @@ class CDNClient:
             self.client = boto3.client(
                 "s3",
                 region_name=config.region,
-                aws_access_key_id=config.access_key,
-                aws_secret_access_key=config.secret_key,
             )
             self.bucket = config.bucket
         except KeyError:
