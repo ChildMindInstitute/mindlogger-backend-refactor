@@ -3,6 +3,7 @@ from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, MetaData
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.ext.hybrid import hybrid_method
 from sqlalchemy.orm import declarative_base
 
 from infrastructure.database.core import engine
@@ -38,6 +39,18 @@ class _Base:
             for key, val in self.__dict__.items()
             if not key.startswith("_")
         )
+
+    @hybrid_method
+    def soft_exists(self, exists=True):
+        if exists:
+            return self.is_deleted is not True
+        return self.is_deleted is True
+
+    @soft_exists.expression  # type: ignore[no-redef]
+    def soft_exists(cls, exists=True):
+        if exists:
+            return cls.is_deleted.isnot(True)
+        return cls.is_deleted.is_(True)
 
 
 Base = declarative_base(cls=_Base, bind=engine.sync_engine, metadata=meta)

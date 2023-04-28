@@ -209,7 +209,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, user_id_: uuid.UUID
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).where(
-            self.schema_class.user_id == user_id_
+            self.schema_class.user_id == user_id_,
+            exists().where(
+                AppletSchema.id == self.schema_class.applet_id,
+                AppletSchema.soft_exists(),
+            ),
         )
         result: Result = await self._execute(query)
         results: list[UserAppletAccessSchema] = result.scalars().all()
