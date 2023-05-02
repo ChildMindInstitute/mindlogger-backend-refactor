@@ -11,15 +11,6 @@ from apps.shared.domain import (
 )
 from apps.shared.errors import ValidationError
 
-# class CustomModel(PublicModel):
-#     class Config:
-#         extra = Extra.allow
-#         orm_mode = True
-#         use_enum_values = True
-#         allow_population_by_field_name = True
-#         validate_assignment = True
-#         alias_generator = to_camelcase
-
 
 class TextValues(PublicModel):
     pass
@@ -30,6 +21,10 @@ class MessageValues(PublicModel):
 
 
 class TimeRangeValues(PublicModel):
+    pass
+
+
+class TimeValues(PublicModel):
     pass
 
 
@@ -55,7 +50,7 @@ class _SingleSelectionValue(PublicModel):
     image: str | None
     score: int | None
     tooltip: str | None
-    is_hidden: bool
+    is_hidden: bool = Field(default=False)
     color: Color | None
 
     @validator("image")
@@ -159,11 +154,10 @@ class SliderRowsValues(PublicModel):
     rows: list[SliderRowsValue]
 
 
-class _SingleSelectionRowValue(PublicModel):
+class _SingleSelectionOption(PublicModel):
     id: str | None = None
     text: str = Field(..., max_length=11)
     image: str | None
-    score: int | None
     tooltip: str | None
 
     @validator("image")
@@ -177,12 +171,11 @@ class _SingleSelectionRowValue(PublicModel):
         return validate_uuid(value)
 
 
-class _SingleSelectionRowsValue(PublicModel):
+class _SingleSelectionRow(PublicModel):
     id: str | None = None
     row_name: str = Field(..., max_length=11)
     row_image: str | None
     tooltip: str | None
-    options: list[_SingleSelectionRowValue]
 
     @validator("row_image")
     def validate_image(cls, value):
@@ -195,8 +188,35 @@ class _SingleSelectionRowsValue(PublicModel):
         return validate_uuid(value)
 
 
+class _SingleSelectionDataOption(PublicModel):
+    option_id: str
+    score: int | None
+    alert: str | None
+
+
+class _SingleSelectionDataRow(PublicModel):
+    row_id: str
+    options: list[_SingleSelectionDataOption]
+
+
 class SingleSelectionRowsValues(PublicModel):
-    rows: list[_SingleSelectionRowsValue]
+    rows: list[_SingleSelectionRow]
+    options: list[_SingleSelectionOption]
+    data_matrix: list[_SingleSelectionDataRow] | None
+
+    @validator("data_matrix")
+    def validate_data_matrix(cls, value, values):
+        if value is not None:
+            if len(value) != len(values["rows"]):
+                raise ValidationError(
+                    message="data_matrix must have the same length as rows"
+                )
+            for row in value:
+                if len(row.options) != len(values["options"]):
+                    raise ValidationError(
+                        message="data_matrix must have the same length as options"  # noqa: E501
+                    )
+        return value
 
 
 class MultiSelectionRowsValues(SingleSelectionRowsValues, PublicModel):
@@ -233,6 +253,7 @@ ResponseValueConfigOptions = [
     AudioValues,
     AudioPlayerValues,
     MessageValues,
+    TimeValues,
 ]
 
 
@@ -247,6 +268,7 @@ ResponseValueConfig = (
     | MultiSelectionRowsValues
     | AudioValues
     | AudioPlayerValues
+    | TimeValues
 )
 
 

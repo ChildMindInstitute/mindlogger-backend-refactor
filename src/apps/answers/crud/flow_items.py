@@ -7,7 +7,7 @@ from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.answers.db.schemas import AnswerFlowItemsSchema
-from apps.answers.domain import AppletAnswerCreate, AnsweredActivityItem
+from apps.answers.domain import AnsweredActivityItem, AppletAnswerCreate
 from apps.applets.crud import AppletsCRUD
 from apps.shared.encryption import decrypt, encrypt, generate_iv
 from infrastructure.database.crud import BaseCRUD
@@ -80,7 +80,6 @@ class AnswerFlowItemsCRUD(BaseCRUD[AnswerFlowItemsSchema]):
         activity_item_id_version,
         flow_id_version: str,
     ) -> list[AnswerFlowItemsSchema]:
-
         answers = list()
         for activity_item_answer in applet_answer.answers:
             answers.append(json.dumps(activity_item_answer.answer.dict()))
