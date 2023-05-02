@@ -41,7 +41,7 @@ class BaseActivityItem(BaseModel):
     #     }
 
     @validator("name")
-    def validate_name(cls, value, values):
+    def validate_name(cls, value):
         # name must contain only alphanumeric symbols or underscore
         if not value.replace("_", "").isalnum():
             raise ValidationError(
