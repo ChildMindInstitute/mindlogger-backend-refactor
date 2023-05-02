@@ -1,52 +1,36 @@
-from apps.shared.enums import Language
-from apps.shared.errors import (
-    ValidationError,
-)
-from apps.shared.exception import NotFoundError, AccessDeniedError
+from gettext import gettext as _
+
+from apps.shared.exception import AccessDeniedError, NotFoundError, \
+    ValidationError
 
 
 class AnswerNotFoundError(NotFoundError):
-    messages = {
-        Language.ENGLISH: "Answer not found."
-    }
+    message = _("Answer not found.")
 
 
 class AnswerNoteNotFoundError(NotFoundError):
-    messages = {
-        Language.ENGLISH: "Note not found."
-    }
+    message = _("Note not found.")
 
 
 class AnswerAccessDeniedError(AccessDeniedError):
-    messages = {
-        Language.ENGLISH: "Access denied."
-    }
+    message = _("Access denied.")
 
 
 class AnswerNoteAccessDeniedError(AccessDeniedError):
-    messages = {
-        Language.ENGLISH: "Note access denied."
-    }
+    message = _("Note access denied.")
 
 
 class UserDoesNotHavePermissionError(AccessDeniedError):
-    messages = {
-        Language.ENGLISH: "User does not have permission"
-    }
+    message = _("User does not have permission")
 
 
 class AnswerIsNotFull(ValidationError):
-    def __init__(self, *_, message="Answer is not full."):
-        super().__init__(message=message)
+    message = _("Answer is not full.")
 
 
 class WrongAnswerType(ValidationError):
-    def __init__(self, *_, message="Answer contract is wrong."):
-        super().__init__(message=message)
+    message = _("Answer contract is wrong.")
 
 
 class FlowDoesNotHaveActivity(ValidationError):
-    def __init__(
-            self, *_, message="Activity flow does not have such activity."
-    ):
-        super().__init__(message=message)
+    message = _("Activity flow does not have such activity.")

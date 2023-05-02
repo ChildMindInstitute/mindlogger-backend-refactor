@@ -2,8 +2,11 @@ from datetime import date, time, timedelta
 
 from pydantic import BaseModel, Field, NonNegativeInt, root_validator
 
-from apps.activities.errors import TimerRequiredError, \
-    AtTimeFieldRequiredError, FromTimeToTimeRequiredError
+from apps.activities.errors import (
+    AtTimeFieldRequiredError,
+    FromTimeToTimeRequiredError,
+    TimerRequiredError,
+)
 from apps.schedule.domain.constants import (
     NotificationTriggerType,
     PeriodicityType,

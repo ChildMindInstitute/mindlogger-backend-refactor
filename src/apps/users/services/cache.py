@@ -45,7 +45,7 @@ class PasswordRecoveryCache(BaseCacheService[PasswordRecoveryInfo]):
 
         # Fetch keys for retrieving
         if not (keys := await self.redis_client.keys(self._build_key(key))):
-            raise CacheNotFound(f"There is no password recovery for {email}")
+            raise CacheNotFound()
 
         results: list[bytes] = await self.redis_client.mget(keys)
 

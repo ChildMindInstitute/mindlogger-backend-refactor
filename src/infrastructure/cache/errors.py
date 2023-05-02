@@ -1,8 +1,6 @@
-from apps.shared.enums import Language
 from apps.shared.exception import NotFoundError
+from gettext import gettext as _
 
 
 class CacheNotFound(NotFoundError):
-    messages = {
-        Language.ENGLISH: "Can not find item {key} in the cache"
-    }
+    message = _("Can not find item in the cache.")

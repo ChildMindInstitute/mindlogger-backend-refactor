@@ -1,8 +1,7 @@
-import uuid
+from gettext import gettext as _
 
-from apps.shared.enums import Language
-from apps.shared.errors import BaseError
-from apps.shared.exception import NotFoundError, AccessDeniedError
+from apps.shared.exception import AccessDeniedError, NotFoundError, \
+    InternalServerError
 
 __all__ = [
     "UserAppletAccessesNotFound",
@@ -13,29 +12,20 @@ __all__ = [
 
 
 class WorkspaceDoesNotExistError(NotFoundError):
-    messages = {
-        Language.ENGLISH: "Workspace does not exist."
-    }
+    message = _("Workspace does not exist.")
 
 
 class UserAppletAccessesDenied(AccessDeniedError):
-    messages = {
-        Language.ENGLISH: "Access denied."
-    }
+    message = _("Access denied.")
 
 
 class AppletAccessDenied(AccessDeniedError):
-    messages = {
-        Language.ENGLISH: "Access denied to applet."
-    }
+    message = _("Access denied to applet.")
 
 
 class WorkspaceAccessDenied(AccessDeniedError):
-    messages = {
-        Language.ENGLISH: "Access denied to workspace."
-    }
+    message = _("Access denied to workspace.")
 
 
-class UserAppletAccessesNotFound(BaseError):
-    def __init__(self, *_, id_: uuid.UUID) -> None:
-        super().__init__(message=f"No such UserAppletAccess with id={id_}.")
+class UserAppletAccessesNotFound(InternalServerError):
+    message = _("No such UserAppletAccess with id={id_}.")

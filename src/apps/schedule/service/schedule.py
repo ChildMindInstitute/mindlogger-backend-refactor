@@ -49,9 +49,13 @@ from apps.schedule.domain.schedule.public import (
     TimerDto,
 )
 from apps.schedule.domain.schedule.requests import EventRequest
-from apps.schedule.errors import EventAlwaysAvailableExistsError, \
-    AppletScheduleNotFoundError, AccessDeniedToApplet, \
-    ActivityOrFlowNotFoundError, ScheduleNotFoundError
+from apps.schedule.errors import (
+    AccessDeniedToApplet,
+    ActivityOrFlowNotFoundError,
+    AppletScheduleNotFoundError,
+    EventAlwaysAvailableExistsError,
+    ScheduleNotFoundError,
+)
 from apps.shared.query_params import QueryParams
 from apps.users.cruds.user import UsersCRUD
 from apps.users.errors import UserNotFound
@@ -65,7 +69,7 @@ class ScheduleService:
         self.session = session
 
     async def create_schedule(
-            self, schedule: EventRequest, applet_id: uuid.UUID
+        self, schedule: EventRequest, applet_id: uuid.UUID
     ) -> PublicEvent:
         # Validate schedule data before saving
         await self._validate_schedule(applet_id=applet_id, schedule=schedule)
@@ -91,7 +95,7 @@ class ScheduleService:
             flow_id=schedule.flow_id,
             respondent_id=schedule.respondent_id,
             only_always_available=(
-                    schedule.periodicity.type != PeriodicityType.ALWAYS
+                schedule.periodicity.type != PeriodicityType.ALWAYS
             ),
         )
 
@@ -155,10 +159,8 @@ class ScheduleService:
                 reminder = await ReminderCRUD(self.session).create(
                     ReminderSettingCreate(
                         event_id=event.id,
-                        activity_incomplete=schedule.notification.reminder.activity_incomplete,
-                        # noqa: E501
-                        reminder_time=schedule.notification.reminder.reminder_time,
-                        # noqa: E501
+                        activity_incomplete=schedule.notification.reminder.activity_incomplete,  # noqa: E501
+                        reminder_time=schedule.notification.reminder.reminder_time,  # noqa: E501
                     )
                 )
             notification_public = PublicNotification(
@@ -189,7 +191,7 @@ class ScheduleService:
         )
 
     async def get_schedule_by_id(
-            self, schedule_id: uuid.UUID, applet_id: uuid.UUID
+        self, schedule_id: uuid.UUID, applet_id: uuid.UUID
     ) -> PublicEvent:
         # Check if applet exists
         await self._validate_applet(applet_id=applet_id)
@@ -219,7 +221,7 @@ class ScheduleService:
         )
 
     async def get_all_schedules(
-            self, applet_id: uuid.UUID
+        self, applet_id: uuid.UUID
     ) -> list[PublicEvent]:
         # Check if applet exists
         await self._validate_applet(applet_id=applet_id)
@@ -341,7 +343,7 @@ class ScheduleService:
             )
 
     async def delete_schedule_by_id(
-            self, schedule_id: uuid.UUID, applet_id: uuid.UUID
+        self, schedule_id: uuid.UUID, applet_id: uuid.UUID
     ):
         # Check if applet exists
         await self._validate_applet(applet_id=applet_id)
@@ -396,10 +398,10 @@ class ScheduleService:
                 )
 
     async def update_schedule(
-            self,
-            applet_id: uuid.UUID,
-            schedule_id: uuid.UUID,
-            schedule: EventRequest,
+        self,
+        applet_id: uuid.UUID,
+        schedule_id: uuid.UUID,
+        schedule: EventRequest,
     ) -> PublicEvent:
         # Validate schedule
         await self._validate_schedule(applet_id=applet_id, schedule=schedule)
@@ -412,8 +414,8 @@ class ScheduleService:
         # Delete all events of this activity or flow
         # if new periodicity type is "always" and old periodicity type is not "always" # noqa: E501
         if (
-                schedule.periodicity.type == PeriodicityType.ALWAYS
-                and periodicity.type != PeriodicityType.ALWAYS
+            schedule.periodicity.type == PeriodicityType.ALWAYS
+            and periodicity.type != PeriodicityType.ALWAYS
         ):  # noqa: E501
             await self._delete_by_activity_or_flow(
                 applet_id=applet_id,
@@ -504,10 +506,8 @@ class ScheduleService:
                 reminder = await ReminderCRUD(self.session).create(
                     reminder=ReminderSettingCreate(
                         event_id=event.id,
-                        activity_incomplete=schedule.notification.reminder.activity_incomplete,
-                        # noqa: E501
-                        reminder_time=schedule.notification.reminder.reminder_time,
-                        # noqa: E501
+                        activity_incomplete=schedule.notification.reminder.activity_incomplete,  # noqa: E501
+                        reminder_time=schedule.notification.reminder.reminder_time,  # noqa: E501
                     )
                 )
             notification_public = PublicNotification(
@@ -536,7 +536,7 @@ class ScheduleService:
         )
 
     async def _validate_schedule(
-            self, applet_id: uuid.UUID, schedule: EventRequest
+        self, applet_id: uuid.UUID, schedule: EventRequest
     ) -> None:
         """Validate schedule before saving it to the database."""
         # Check if applet exists
@@ -648,11 +648,11 @@ class ScheduleService:
         )
 
     async def _create_default_event(
-            self,
-            applet_id: uuid.UUID,
-            activity_id: uuid.UUID,
-            is_activity: bool,
-            respondent_id: uuid.UUID | None = None,
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        is_activity: bool,
+        respondent_id: uuid.UUID | None = None,
     ) -> None:
         """Create default schedules for applet."""
         default_event = DefaultEvent()
@@ -669,13 +669,13 @@ class ScheduleService:
         )
 
     async def _delete_by_activity_or_flow(
-            self,
-            applet_id: uuid.UUID,
-            activity_id: uuid.UUID | None,
-            flow_id: uuid.UUID | None,
-            respondent_id: uuid.UUID | None = None,
-            only_always_available: bool = False,
-            except_event_id: uuid.UUID | None = None,
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID | None,
+        flow_id: uuid.UUID | None,
+        respondent_id: uuid.UUID | None = None,
+        only_always_available: bool = False,
+        except_event_id: uuid.UUID | None = None,
     ) -> None:
         """Delete schedules by activity or flow id."""
         event_schemas = []
@@ -726,7 +726,7 @@ class ScheduleService:
             await PeriodicityCRUD(self.session).delete_by_ids(periodicity_ids)
 
     async def delete_by_activity_ids(
-            self, applet_id: uuid.UUID, activity_ids: list[uuid.UUID]
+        self, applet_id: uuid.UUID, activity_ids: list[uuid.UUID]
     ) -> None:
         """Delete schedules by activity id."""
         for activity_id in activity_ids:
@@ -735,7 +735,7 @@ class ScheduleService:
             )
 
     async def delete_by_flow_ids(
-            self, applet_id: uuid.UUID, flow_ids: list[uuid.UUID]
+        self, applet_id: uuid.UUID, flow_ids: list[uuid.UUID]
     ) -> None:
         """Delete schedules by flow id."""
         for flow_id in flow_ids:
@@ -744,11 +744,11 @@ class ScheduleService:
             )
 
     async def create_default_schedules(
-            self,
-            applet_id: uuid.UUID,
-            activity_ids: list[uuid.UUID],
-            is_activity: bool,
-            respondent_id: uuid.UUID | None = None,
+        self,
+        applet_id: uuid.UUID,
+        activity_ids: list[uuid.UUID],
+        is_activity: bool,
+        respondent_id: uuid.UUID | None = None,
     ) -> None:
         """Create default schedules for applet."""
         for activity_id in activity_ids:
@@ -760,7 +760,7 @@ class ScheduleService:
             )
 
     async def get_events_by_user(
-            self, user_id: uuid.UUID
+        self, user_id: uuid.UUID
     ) -> list[PublicEventByUser]:
         """Get all events for user in applets that user is respondent."""
         applets = await AppletsCRUD(self.session).get_applets_by_roles(
@@ -803,10 +803,10 @@ class ScheduleService:
         return events
 
     def _convert_to_dto(
-            self,
-            event: EventFull,
-            notifications: list[NotificationSetting] | None = None,
-            reminder: ReminderSetting | None = None,
+        self,
+        event: EventFull,
+        notifications: list[NotificationSetting] | None = None,
+        reminder: ReminderSetting | None = None,
     ) -> ScheduleEventDto:
         """Convert event to dto."""
         timers = TimerDto(
@@ -898,7 +898,7 @@ class ScheduleService:
         )
 
     async def get_events_by_user_and_applet(
-            self, user_id: uuid.UUID, applet_id: uuid.UUID
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
     ) -> PublicEventByUser:
         """Get all events for user in applet."""
 
@@ -906,11 +906,11 @@ class ScheduleService:
         await self._validate_applet(applet_id=applet_id)
 
         if not (
-                await AppletsCRUD(self.session).get_applet_by_roles(
-                    user_id=user_id,
-                    applet_id=applet_id,
-                    roles=Role.as_list(),
-                )
+            await AppletsCRUD(self.session).get_applet_by_roles(
+                user_id=user_id,
+                applet_id=applet_id,
+                roles=Role.as_list(),
+            )
         ):
             raise AccessDeniedToApplet()
 
@@ -969,7 +969,7 @@ class ScheduleService:
         return count
 
     async def _get_notifications_and_reminder(
-            self, event_id: uuid.UUID
+        self, event_id: uuid.UUID
     ) -> (PublicNotification | None):
         """Get notifications and reminder for event."""
         notifications = await NotificationCRUD(
@@ -1020,11 +1020,11 @@ class ScheduleService:
             raise UserNotFound(message=f"No such user with id={user_id}.")
 
     async def _validate_existing_alwaysavailable(
-            self,
-            applet_id: uuid.UUID,
-            activity_id: uuid.UUID | None,
-            flow_id: uuid.UUID | None,
-            respondent_id: uuid.UUID | None,
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID | None,
+        flow_id: uuid.UUID | None,
+        respondent_id: uuid.UUID | None,
     ):
         event_schemas = []
 
@@ -1050,7 +1050,7 @@ class ScheduleService:
             raise EventAlwaysAvailableExistsError
 
     async def remove_individual_calendar(
-            self, user_id: uuid.UUID, applet_id: uuid.UUID
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
     ) -> None:
         """Remove individual calendar for user in applet."""
         # Check if applet exists

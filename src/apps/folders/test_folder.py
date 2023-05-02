@@ -54,9 +54,9 @@ class TestFolder(BaseTest):
 
         response = await self.client.post(self.list_url, data)
 
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]["en"]
+            response.json()["result"][0]["message"]
             == "Folder already exists."
         )
 
@@ -102,9 +102,9 @@ class TestFolder(BaseTest):
             data,
         )
 
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]["en"]
+            response.json()["result"][0]["message"]
             == "Folder already exists."
         )
 
@@ -131,7 +131,7 @@ class TestFolder(BaseTest):
 
         assert response.status_code == 403, response.json()
         assert (
-            response.json()["result"][0]["message"]["en"] == "Access denied."
+            response.json()["result"][0]["message"] == "Access denied."
         )
 
     @rollback
@@ -143,9 +143,9 @@ class TestFolder(BaseTest):
         response = await self.client.delete(
             self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307732")
         )
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]["en"]
+            response.json()["result"][0]["message"]
             == "Folder has applets, move applets from folder to delete it."
         )
 

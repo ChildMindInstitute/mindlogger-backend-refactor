@@ -1,19 +1,16 @@
-from apps.shared.enums import Language
-from apps.shared.errors import BaseError, ValidationError
-from apps.shared.exception import NotFoundError
+from gettext import gettext as _
+
+from apps.shared.exception import NotFoundError, ValidationError, \
+    InternalServerError
 
 
 class ThemeNotFoundError(NotFoundError):
-    messages = {
-        Language.ENGLISH: "No such theme with {key}={value}."
-    }
+    message = _("No such theme with {key}={value}.")
 
 
-class ThemesError(BaseError):
-    def __init__(self, message: str = "Themes service error") -> None:
-        super().__init__(message=message)
+class ThemesError(InternalServerError):
+    message = _("Themes service error")
 
 
 class ThemeAlreadyExist(ValidationError):
-    def __init__(self, message: str = "Theme already exist") -> None:
-        super().__init__(message=message)
+    message = _("Theme already exist")

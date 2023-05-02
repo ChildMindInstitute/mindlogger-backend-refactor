@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from fastapi import Response
 from fastapi.encoders import jsonable_encoder
@@ -23,15 +24,18 @@ logger = logging.getLogger("mindlogger_backend")
 
 class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
     async def dispatch(
-            self, request: Request, call_next: RequestResponseEndpoint
+        self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         try:
             return await call_next(request)
         except BaseError as e:
+            traceback.print_tb(e.__traceback__)
             return _custom_base_errors_handler(request, e)
         except ValidationError as e:
+            traceback.print_tb(e.__traceback__)
             return _pydantic_validation_errors_handler(request, e)
         except Exception as e:
+            traceback.print_tb(e.__traceback__)
             return _python_base_error_handler(request, e)
 
 
@@ -43,7 +47,7 @@ def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
             ErrorResponse(
                 message=error.message.capitalize(),
                 type=error.type,
-                path=getattr(error, 'path', [])
+                path=getattr(error, "path", []),
             )
         ]
     )
@@ -62,7 +66,7 @@ def _python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     response = ErrorResponseMulti(
         result=[
             ErrorResponse(
-                message=ErrorResponseMessage(en=f"Unhandled error: {error}")
+                message=f"Unhandled error: {error}"
             )
         ]
     )
@@ -76,7 +80,7 @@ def _python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
 
 
 def _pydantic_validation_errors_handler(
-        _: Request, error: ValidationError
+    _: Request, error: ValidationError
 ) -> JSONResponse:
     """This function is called if the Pydantic validation error was raised."""
 

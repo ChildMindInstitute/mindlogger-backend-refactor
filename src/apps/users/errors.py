@@ -1,45 +1,34 @@
-from apps.shared.enums import Language
-from apps.shared.errors import (
-    BaseError,
-)
-from apps.shared.exception import ValidationError, NotFoundError
+from gettext import gettext as _
+
+from apps.shared.exception import NotFoundError, ValidationError
 
 
 class UserNotFound(NotFoundError):
-    messages = {
-        Language.ENGLISH: "User not found"
-    }
+    message = _("User not found")
 
 
 class UserAlreadyExistError(ValidationError):
-    messages = {Language.ENGLISH: "User already exist."}
+    message = _("User already exist.")
 
 
 class EmailAddressError(ValidationError):
-    messages = {
-        Language.ENGLISH: "Email address is not verified. The following "
-                          "identities failed the check: {email}"
-    }
+    message = _(
+        "Email address is not verified. The following "
+        "identities failed the check: {email}"
+    )
 
 
 class PasswordRecoveryKeyNotFound(NotFoundError):
-    messages = {
-        Language.ENGLISH: "Password recovery key not found"
-    }
+    message = _("Password recovery key not found")
 
 
 class UserIsDeletedError(NotFoundError):
-    messages = {
-        Language.ENGLISH: "User is deleted"
-    }
+    message = _("User is deleted.")
 
 
 class UserDeviceNotFound(NotFoundError):
-    messages = {
-        Language.ENGLISH: "User device is not found"
-    }
+    message = _("User device is not found")
 
 
-class UsersError(BaseError):
-    def __init__(self, *_, message="Users error") -> None:
-        super().__init__(message=message)
+class UsersError(ValidationError):
+    message = _("Can not make the looking up by {key} {value}")

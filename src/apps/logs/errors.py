@@ -1,8 +1,6 @@
-from apps.shared.errors import BaseError
+from apps.shared.exception import InternalServerError
+from gettext import gettext as _
 
 
-class NotificationLogError(BaseError):
-    def __init__(
-        self, message: str = "Unexpected NotificationLog error"
-    ) -> None:
-        super().__init__(message=message)
+class NotificationLogError(InternalServerError):
+    message = _("Unexpected NotificationLog error")

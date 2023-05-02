@@ -1,29 +1,22 @@
+from gettext import gettext as _
+
 from starlette import status
 
-from apps.shared.enums import Language
-from apps.shared.exception import ValidationError, AccessDeniedError, BaseError
+from apps.shared.exception import AccessDeniedError, BaseError, ValidationError
 
 
 class BadCredentials(ValidationError):
-    messages = {
-        Language.ENGLISH: "Bad credentials"
-    }
+    message = _("Bad credentials")
 
 
 class WeakPassword(ValidationError):
-    messages = {
-        Language.ENGLISH: "Weak password."
-    }
+    message = _("Weak password.")
 
 
 class AuthenticationError(BaseError):
-    messages = {
-        Language.ENGLISH: "Could not validate credentials"
-    }
+    message = _("Could not validate credentials")
     status_code = status.HTTP_401_UNAUTHORIZED
 
 
 class PermissionsError(AccessDeniedError):
-    messages = {
-        Language.ENGLISH: "Not enough permissions"
-    }
+    message = _("Not enough permissions")

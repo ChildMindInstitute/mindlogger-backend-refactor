@@ -18,6 +18,7 @@ class TestActivities(BaseTest):
     activity_detail = "/activities/{pk}"
     public_activity_detail = "public/activities/{pk}"
 
+    @pytest.mark.main
     @rollback
     async def test_activity_detail(self):
         await self.client.login(

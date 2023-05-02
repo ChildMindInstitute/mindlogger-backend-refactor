@@ -1,38 +1,27 @@
-from apps.shared.enums import Language
-from apps.shared.errors import ValidationError
-from apps.shared.exception import NotFoundError
+from gettext import gettext as _
+
+from apps.shared.exception import NotFoundError, ValidationError
 
 
 class InvitationDoesNotExist(NotFoundError):
-    messages = {
-        Language.ENGLISH: "Invitation does not exist."
-    }
+    message = _("Invitation does not exist.")
 
 
 class AppletDoesNotExist(ValidationError):
-    def __init__(self, *_, message="Applet does not exist.") -> None:
-        super().__init__(message=message)
+    message = _("Applet does not exist.")
 
 
 class DoesNotHaveAccess(ValidationError):
-    def __init__(self, *_, message="Access denied.") -> None:
-        super().__init__(message=message)
+    message = _("Access denied.")
 
 
 class InvitationAlreadyProcesses(ValidationError):
-    def __init__(
-            self, *_, message="Invitation has been already processed."
-    ) -> None:
-        super().__init__(message=message)
+    message = _("Invitation has been already processed.")
 
 
 class NonUniqueValue(ValidationError):
-    def __init__(self, *_, message="Non-unique value.") -> None:
-        super().__init__(message=message)
+    message = _("Non-unique value.")
 
 
 class RespondentDoesNotExist(ValidationError):
-    def __init__(
-            self, *_, message="Respondent does not exist in applet."
-    ) -> None:
-        super().__init__(message=message)
+    message = _("Respondent does not exist in applet.")

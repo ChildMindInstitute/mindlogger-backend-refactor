@@ -41,9 +41,7 @@ class ThemeService:
         if await ThemesCRUD(self.session).get_by_name_and_creator_id(
             theme_request.name, self.user_id
         ):
-            raise ThemeAlreadyExist(
-                f"Theme with name {theme_request.name} already exists"
-            )
+            raise ThemeAlreadyExist()
 
         theme: Theme = await ThemesCRUD(self.session).save(
             ThemeSchema(

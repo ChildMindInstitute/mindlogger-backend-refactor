@@ -1,6 +1,3 @@
-from apps.shared.enums import Language
-from apps.shared.errors import ValidationError
-
 __all__ = [
     "FolderAlreadyExist",
     "FolderDoesNotExist",
@@ -9,34 +6,26 @@ __all__ = [
     "AppletNotInFolder",
 ]
 
-from apps.shared.exception import AccessDeniedError
+from gettext import gettext as _
+
+from apps.shared.exception import AccessDeniedError, ValidationError
 
 
 class FolderAccessDenied(AccessDeniedError):
-    messages = {
-        Language.ENGLISH: "Access denied."
-    }
+    message = _("Access denied.")
 
 
 class FolderAlreadyExist(ValidationError):
-    def __init__(self, *_, message="Folder already exists.") -> None:
-        super().__init__(message=message)
+    message = _("Folder already exists.")
 
 
 class FolderDoesNotExist(ValidationError):
-    def __init__(self, *_, message="Folder does not exist.") -> None:
-        super().__init__(message=message)
+    message = _("Folder does not exist.")
 
 
 class FolderIsNotEmpty(ValidationError):
-    def __init__(
-            self,
-            *_,
-            message="Folder has applets, move applets from folder to delete it.",
-    ) -> None:
-        super().__init__(message=message)
+    message = _("Folder has applets, move applets from folder to delete it.")
 
 
 class AppletNotInFolder(ValidationError):
-    def __init__(self, *_, message="Applet not in folder.") -> None:
-        super().__init__(message=message)
+    message = _("Applet not in folder.")
