@@ -205,11 +205,26 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return user_applet_access
 
-    async def get_by_user_id(
+    async def get_by_user_id_for_managers(
         self, user_id_: uuid.UUID
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).where(
-            self.schema_class.user_id == user_id_
+            self.schema_class.user_id == user_id_,
+            exists().where(
+                AppletSchema.id == self.schema_class.applet_id,
+                AppletSchema.soft_exists(),
+            ),
+        )
+        query = query.where(
+            self.schema_class.role.in_(
+                [
+                    Role.ADMIN,
+                    Role.MANAGER,
+                    Role.COORDINATOR,
+                    Role.EDITOR,
+                    Role.REVIEWER,
+                ]
+            )
         )
         result: Result = await self._execute(query)
         results: list[UserAppletAccessSchema] = result.scalars().all()
@@ -258,7 +273,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.role.in_(roles))
 
         result = await self._execute(query)
-        return result.scalars().one_or_none()
+        return result.scalars().first() or None
 
     # Get by applet id and user id and role respondent
     async def get_by_applet_and_user_as_respondent(
@@ -624,8 +639,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     applet_id=applet_id,
                     applet_name=display_name,
                     applet_image=image,
-                    secret_user_id=meta.get("nickname"),
-                    nickname=meta.get("secretUserId"),
+                    secret_user_id=meta.get("nickname", ""),
+                    nickname=meta.get("secretUserId", ""),
                     has_individual_schedule=has_individual,
                 )
             )

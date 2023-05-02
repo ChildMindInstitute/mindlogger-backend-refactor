@@ -1,6 +1,7 @@
 import uuid
 
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import ManagersRole, Role
 from apps.applets.service import AppletService, UserAppletAccessService
 from apps.applets.service.applet import PublicAppletService
@@ -77,6 +78,9 @@ class InvitationsService:
         return await self.invitations_crud.get_by_email_and_key(
             self._user.email, key
         )
+
+    def _get_invitation_subject(self, applet: AppletSchema):
+        return f"{applet.display_name} invitation"
 
     async def send_respondent_invitation(
         self, applet_id: uuid.UUID, schema: InvitationRespondentRequest
@@ -161,7 +165,7 @@ class InvitationsService:
         service = MailingService()
         message = MessageSchema(
             recipients=[schema.email],
-            subject="Invitation to the FCM",
+            subject=self._get_invitation_subject(applet),
             body=service.get_template(
                 path=path,
                 first_name=schema.first_name,
@@ -268,7 +272,7 @@ class InvitationsService:
         service = MailingService()
         message = MessageSchema(
             recipients=[schema.email],
-            subject="Invitation to the FCM",
+            subject=self._get_invitation_subject(applet),
             body=service.get_template(
                 path=path,
                 first_name=schema.first_name,
@@ -369,7 +373,7 @@ class InvitationsService:
         service = MailingService()
         message = MessageSchema(
             recipients=[schema.email],
-            subject="Invitation to the FCM",
+            subject=self._get_invitation_subject(applet),
             body=service.get_template(
                 path=path,
                 first_name=schema.first_name,
