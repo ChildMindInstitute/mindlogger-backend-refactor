@@ -527,6 +527,22 @@ class TestApplet(BaseTest):
                                 skippable_item=True,
                             ),
                         ),
+                        dict(
+                            id="a18d3409-2c96-4a5e-a1f3-1c1c14be0012",
+                            name="activity_item_time_range",
+                            question={"en": "What is your name?"},
+                            response_type="timeRange",
+                            response_values=None,
+                            config=dict(
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                                remove_back_button=False,
+                                skippable_item=False,
+                                timer=1,
+                            ),
+                        ),
                     ],
                 ),
                 dict(

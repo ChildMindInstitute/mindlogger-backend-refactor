@@ -5,6 +5,7 @@ from apps.activities.domain.response_type_config import (
     ResponseType,
     ResponseTypeValueConfig,
 )
+from apps.shared.domain import PublicModel
 from apps.shared.errors import ValidationError
 
 
@@ -13,8 +14,8 @@ class BaseActivityItem(BaseModel):
 
     question: dict[str, str] = Field(default_factory=dict)
     response_type: ResponseType
-    response_values: BaseModel | None  # ResponseValueConfig
-    config: BaseModel  # ResponseTypeConfig
+    response_values: PublicModel | None  # ResponseValueConfig
+    config: PublicModel  # ResponseTypeConfig
     name: str
     is_hidden: bool | None = False
 
@@ -40,7 +41,7 @@ class BaseActivityItem(BaseModel):
     #     }
 
     @validator("name")
-    def validate_name(cls, value):
+    def validate_name(cls, value, values):
         # name must contain only alphanumeric symbols or underscore
         if not value.replace("_", "").isalnum():
             raise ValidationError(
@@ -51,7 +52,6 @@ class BaseActivityItem(BaseModel):
     @validator("config", pre=True)
     def validate_config(cls, value, values):
         response_type = values.get("response_type")
-
         # wrap value in class to validate and pass value
         if response_type in ResponseTypeValueConfig:
             if (
@@ -110,7 +110,6 @@ class BaseActivityItem(BaseModel):
             raise ValidationError(
                 message=f"response_type must be of type {ResponseType}"
             )
-
         return value
 
     @root_validator()

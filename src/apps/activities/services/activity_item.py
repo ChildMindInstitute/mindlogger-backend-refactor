@@ -71,8 +71,8 @@ class ActivityItemService:
                     question=self._get_by_language(schema.question, language),
                     response_type=schema.response_type,
                     # TODO: get answers by language
-                    response_values=schema.response_values,
                     config=schema.config,
+                    response_values=schema.response_values,
                     order=schema.order,
                     name=schema.name,
                 )
