@@ -58,6 +58,7 @@ router.get(
 
 router.get(
     "/applet/{applet_id}/answers/{answer_id}",
+    status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": Response[ActivityAnswerPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
