@@ -3,7 +3,7 @@ import uuid
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.domain import InvitationDetailGeneric
-from apps.users import UsersCRUD
+from apps.users import User, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
@@ -93,6 +93,7 @@ class UserAppletAccessService:
         owner_access = await UserAppletAccessCRUD(
             self.session
         ).get_applet_owner(self._applet_id)
+        user: User = await UsersCRUD(self.session).get_by_id(self._user_id)
         access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
                 user_id=self._user_id,
@@ -100,7 +101,10 @@ class UserAppletAccessService:
                 role=role,
                 owner_id=owner_access.user_id,
                 invitor_id=owner_access.user_id,
-                meta={},
+                meta=dict(
+                    secretUserId=str(uuid.uuid4()),
+                    nickname=f"{user.first_name} {user.last_name}",
+                ),
             )
         )
         return UserAppletAccess.from_orm(access_schema)
