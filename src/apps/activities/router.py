@@ -59,7 +59,6 @@ router.delete(
 router.get(
     "/{id_}",
     status_code=status.HTTP_200_OK,
-    response_model=Response[ActivitySingleLanguageWithItemsDetailPublic],
     responses={
         status.HTTP_200_OK: {
             "model": Response[ActivitySingleLanguageWithItemsDetailPublic]
@@ -72,7 +71,6 @@ router.get(
 public_router.get(
     "/{id_}",
     status_code=status.HTTP_200_OK,
-    response_model=Response[ActivitySingleLanguageWithItemsDetailPublic],
     responses={
         status.HTTP_200_OK: {
             "model": Response[ActivitySingleLanguageWithItemsDetailPublic]

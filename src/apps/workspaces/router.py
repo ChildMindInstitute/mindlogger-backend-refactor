@@ -69,7 +69,6 @@ router.get(
 
 router.get(
     "/{owner_id}/applets/{id_}",
-    response_model=Response[PublicAppletFull],
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": Response[PublicAppletFull]},
