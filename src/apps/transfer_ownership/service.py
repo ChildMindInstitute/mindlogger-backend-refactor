@@ -71,6 +71,7 @@ class TransferService:
                 title="Transfer ownership of an Applet",
                 link=url,
                 current_year=datetime.date.today().year,
+                url=self._generate_create_account_url(),
             ),
         )
 
@@ -120,6 +121,11 @@ class TransferService:
     def _generate_transfer_url(self) -> str:
         domain = settings.service.urls.frontend.web_base
         url_path = settings.service.urls.frontend.transfer_link
+        return f"https://{domain}/{url_path}"
+
+    def _generate_create_account_url(self) -> str:
+        domain = settings.service.urls.frontend.admin_base
+        url_path = settings.service.urls.frontend.create_account
         return f"https://{domain}/{url_path}"
 
     async def decline_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):
