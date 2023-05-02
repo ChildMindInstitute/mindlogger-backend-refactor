@@ -37,6 +37,7 @@ from apps.applets.crud import AppletsCRUD
 from apps.applets.service import AppletHistoryService
 from apps.shared.query_params import QueryParams
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.errors import UserAppletAccessesDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
@@ -269,6 +270,9 @@ class AnswerService:
             access = await UserAppletAccessService(
                 self.session, self.user_id, applet_id
             ).get_access(Role.REVIEWER)
+            if not access:
+                raise UserAppletAccessesDenied()
+
             if str(respondent_id) not in access.meta.get("respondents", []):
                 raise AnswerAccessDeniedError()
 

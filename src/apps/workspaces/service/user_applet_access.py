@@ -8,8 +8,6 @@ from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
 
-from apps.workspaces.errors import UserAppletAccessesDenied
-
 
 class UserAppletAccessService:
     def __init__(self, session, user_id: uuid.UUID, applet_id: uuid.UUID):
@@ -44,7 +42,16 @@ class UserAppletAccessService:
         assert (
             invitation.role != Role.ADMIN
         ), "Admin role can not be added by invitation"
-        user = await UsersCRUD(self.session).get_by_id(self._user_id)
+
+        manager_included_roles = [Role.EDITOR, Role.COORDINATOR, Role.REVIEWER]
+        if invitation.role in manager_included_roles:
+            if access := await self.get_access(Role.MANAGER):
+                # user already has role upper requested one
+                return access
+
+        if access := await self.get_access(invitation.role):
+            # user already has role
+            return access
 
         owner_access = await UserAppletAccessCRUD(
             self.session
@@ -55,8 +62,8 @@ class UserAppletAccessService:
             meta = invitation.meta.dict(by_alias=True)  # type: ignore
 
         if invitation.role == Role.MANAGER:
-            await UserAppletAccessCRUD(self.session).clean_manager_accesses(
-                invitation.applet_id, self._user_id
+            await UserAppletAccessCRUD(self.session).delete_user_roles(
+                invitation.applet_id, self._user_id, manager_included_roles
             )
 
         access_schema = await UserAppletAccessCRUD(self.session).save(
@@ -70,23 +77,26 @@ class UserAppletAccessService:
             )
         )
 
-        has_respondent = await UserAppletAccessCRUD(self.session).has_role(
-            invitation.applet_id, self._user_id, Role.RESPONDENT
-        )
-        if not has_respondent:
-            await UserAppletAccessCRUD(self.session).save(
-                UserAppletAccessSchema(
-                    user_id=self._user_id,
-                    applet_id=invitation.applet_id,
-                    role=Role.RESPONDENT,
-                    owner_id=owner_access.user_id,
-                    invitor_id=invitation.invitor_id,
-                    meta=dict(
-                        secretUserId=str(uuid.uuid4()),
-                        nickname=f"{user.first_name} {user.last_name}",
-                    ),
-                )
+        if invitation.role != Role.RESPONDENT:
+            has_respondent = await UserAppletAccessCRUD(self.session).has_role(
+                invitation.applet_id, self._user_id, Role.RESPONDENT
             )
+            if not has_respondent:
+                user = await UsersCRUD(self.session).get_by_id(self._user_id)
+                await UserAppletAccessCRUD(self.session).save(
+                    UserAppletAccessSchema(
+                        user_id=self._user_id,
+                        applet_id=invitation.applet_id,
+                        role=Role.RESPONDENT,
+                        owner_id=owner_access.user_id,
+                        invitor_id=invitation.invitor_id,
+                        meta=dict(
+                            secretUserId=str(uuid.uuid4()),
+                            nickname=f"{user.first_name} {user.last_name}",
+                        ),
+                    )
+                )
+
         return UserAppletAccess.from_orm(access_schema)
 
     async def add_role_by_private_invitation(self, role: Role):
@@ -224,11 +234,11 @@ class UserAppletAccessService:
         )
         return getattr(access, "role", None)
 
-    async def get_access(self, role: Role) -> UserAppletAccess:
+    async def get_access(self, role: Role) -> UserAppletAccess | None:
         schema = await UserAppletAccessCRUD(self.session).get(
             self._user_id, self._applet_id, role
         )
         if not schema:
-            raise UserAppletAccessesDenied()
+            return None
 
         return UserAppletAccess.from_orm(schema)
