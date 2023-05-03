@@ -24,8 +24,11 @@ import apps.workspaces.router as workspaces
 import middlewares as middlewares_
 from apps.shared.exception import BaseError
 from config import settings
-from middlewares.exception import _pydantic_validation_errors_handler, \
-    _custom_base_errors_handler, _python_base_error_handler
+from middlewares.exception import (
+    _custom_base_errors_handler,
+    _pydantic_validation_errors_handler,
+    _python_base_error_handler,
+)
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -75,7 +78,9 @@ def create_app():
     for middleware, options in middlewares:
         app.add_middleware(middleware, **options)
 
-    app.add_exception_handler(RequestValidationError, _pydantic_validation_errors_handler)
+    app.add_exception_handler(
+        RequestValidationError, _pydantic_validation_errors_handler
+    )
     app.add_exception_handler(BaseError, _custom_base_errors_handler)
     app.add_exception_handler(Exception, _python_base_error_handler)
 

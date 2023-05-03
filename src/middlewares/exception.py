@@ -21,7 +21,7 @@ gettext.bindtextdomain(gettext.textdomain(), settings.locale_dir)
 
 def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     """This function is called if the BaseError was raised."""
-    print(''.join(traceback.format_tb(error.__traceback__)))
+    print("".join(traceback.format_tb(error.__traceback__)))
     response = ErrorResponseMulti(
         result=[
             ErrorResponse(
@@ -49,7 +49,7 @@ def _python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     )
 
     logger.error(response)
-    print(''.join(traceback.format_tb(error.__traceback__)))
+    print("".join(traceback.format_tb(error.__traceback__)))
 
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),
@@ -58,7 +58,7 @@ def _python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
 
 
 def _pydantic_validation_errors_handler(
-        _: Request, error: RequestValidationError
+    _: Request, error: RequestValidationError
 ) -> JSONResponse:
     """This function is called if the Pydantic validation error was raised."""
 
@@ -73,7 +73,7 @@ def _pydantic_validation_errors_handler(
     )
 
     logger.error(response)
-    print(''.join(traceback.format_tb(error.__traceback__)))
+    print("".join(traceback.format_tb(error.__traceback__)))
 
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),
