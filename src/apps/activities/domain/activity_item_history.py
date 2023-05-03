@@ -1,9 +1,6 @@
 import uuid
 
-from apps.activities.domain.response_type_config import (
-    ResponseType,
-    ResponseTypeConfig,
-)
+from apps.activities.domain.response_type_config import ResponseType
 from apps.shared.domain import InternalModel
 
 
@@ -15,5 +12,5 @@ class ActivityItemHistory(InternalModel):
     question: dict[str, str]
     response_type: ResponseType
     response_values: dict | list | None
-    config: ResponseTypeConfig
+    config: dict
     order: int
