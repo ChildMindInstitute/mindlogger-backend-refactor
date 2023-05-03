@@ -28,3 +28,7 @@ class WorkspaceAccessDenied(AccessDeniedError):
 
 class UserAppletAccessesNotFound(NotFoundError):
     message = _("No such UserAppletAccess with id={id_}.")
+
+
+class RemoveOwnPermissionAccessDenied(AccessDeniedError):
+    message = _("Access denied to remove own permission.")
