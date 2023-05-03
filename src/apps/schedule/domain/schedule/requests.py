@@ -12,8 +12,13 @@ from apps.schedule.domain.schedule.base import (
     BasePeriodicity,
     BaseReminderSetting,
 )
+from apps.schedule.errors import (
+    ActivityOrFlowRequiredError,
+    OneTimeCompletionCaseError,
+    StartEndTimeAccessBeforeScheduleCaseError,
+    UnavailableActivityOrFlowError,
+)
 from apps.shared.domain import PublicModel
-from apps.shared.errors import ValidationError
 
 __all__ = [
     "EventRequest",
@@ -56,18 +61,14 @@ class EventRequest(BaseEvent, PublicModel):
     @root_validator
     def validate_optional_fields(cls, values):
         if not (bool(values.get("activity_id")) ^ bool(values.get("flow_id"))):
-            raise ValidationError(
-                message="Either activity_id or flow_id must be provided"
-            )
+            raise ActivityOrFlowRequiredError()
 
         # if periodicity is Always, one_time_completion must be set.
         if (
             values.get("periodicity").type == PeriodicityType.ALWAYS
             and not type(values.get("one_time_completion")) == bool
         ):
-            raise ValidationError(
-                message="one_time_completion must be set if periodicity is ALWAYS"  # noqa: E501
-            )
+            raise OneTimeCompletionCaseError()
 
         # if periodicity is not Always, start_time and end_time, access_before_schedule must be set. # noqa: E501
         if values.get("periodicity").type != PeriodicityType.ALWAYS:
@@ -76,9 +77,7 @@ class EventRequest(BaseEvent, PublicModel):
                 or not bool(values.get("end_time"))
                 or not type(values.get("access_before_schedule")) == bool
             ):
-                raise ValidationError(
-                    message="start_time, end_time, access_before_schedule must be set if periodicity is not ALWAYS"  # noqa: E501
-                )
+                raise StartEndTimeAccessBeforeScheduleCaseError()
 
             # validate notification time
             if values.get("notification"):
@@ -95,9 +94,7 @@ class EventRequest(BaseEvent, PublicModel):
                                 < values.get("end_time")  # noqa: E501
                             )
                         ):
-                            raise ValidationError(
-                                message="Activity/flow is unavailable at this time"  # noqa: E501
-                            )
+                            raise UnavailableActivityOrFlowError()
 
                         if (
                             notification.trigger_type
@@ -109,16 +106,12 @@ class EventRequest(BaseEvent, PublicModel):
                                 < values.get("end_time")  # noqa: E501
                             )
                         ):
-                            raise ValidationError(
-                                message="Activity/flow is unavailable at this time"  # noqa: E501
-                            )
+                            raise UnavailableActivityOrFlowError()
                 if values.get("notification").reminder:
                     if not (
                         values.get("start_time")
                         < values.get("notification").reminder.reminder_time
                         < values.get("end_time")
                     ):
-                        raise ValidationError(
-                            message="Activity/flow is unavailable at this time"
-                        )
+                        raise UnavailableActivityOrFlowError()
         return values

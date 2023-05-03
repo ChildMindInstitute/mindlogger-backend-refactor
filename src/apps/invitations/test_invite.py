@@ -379,11 +379,8 @@ class TestInvite(BaseTest):
             request_data,
         )
 
-        assert response.status_code == 422
-        assert (
-            response.json()["result"][0]["message"]["en"]
-            == "You do not have access to send invitation."
-        )
+        assert response.status_code == 400
+        assert response.json()["result"][0]["message"] == "Access denied."
 
     @rollback
     async def test_editor_invite_respondent_fail(self):
@@ -404,11 +401,8 @@ class TestInvite(BaseTest):
             ),
             request_data,
         )
-        assert response.status_code == 422
-        assert (
-            response.json()["result"][0]["message"]["en"]
-            == "You do not have access to send invitation."
-        )
+        assert response.status_code == 400
+        assert response.json()["result"][0]["message"] == "Access denied."
 
     @rollback
     async def test_invitation_accept_and_absorb_roles(self):

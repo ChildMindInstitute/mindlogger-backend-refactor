@@ -1,8 +1,6 @@
 import asyncio
 import uuid
 
-import pytest
-
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -354,10 +352,9 @@ class TestApplet(BaseTest):
         response = await self.client.post(
             self.applet_list_url, data=create_data
         )
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]["en"]
-            == "Applet already exists."
+            response.json()["result"][0]["message"] == "Applet already exists."
         )
         assert TestMail.mails[0].subject == "Applet upload failed!"
 
@@ -456,10 +453,9 @@ class TestApplet(BaseTest):
         response = await self.client.post(
             self.applet_list_url, data=create_data
         )
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]["en"]
-            == "Applet already exists."
+            response.json()["result"][0]["message"] == "Applet already exists."
         )
 
     @rollback
@@ -629,7 +625,7 @@ class TestApplet(BaseTest):
             ),
             data=dict(display_name="New name", password="Test1234567890123"),
         )
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
 
     @rollback
     async def test_check_applet_password(self):
@@ -651,7 +647,7 @@ class TestApplet(BaseTest):
             ),
             data=dict(password="Test1234"),
         )
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
 
     @rollback
     async def test_applet_list(self):
@@ -705,7 +701,7 @@ class TestApplet(BaseTest):
             dict(password="Test1234"),
         )
 
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
 
     @rollback
     async def test_applet_delete_by_manager(self):
@@ -788,7 +784,6 @@ class TestApplet(BaseTest):
         assert len(result["activityFlows"][0]["activityIds"]) == 1
         assert len(result["activityFlows"][1]["activityIds"]) == 1
 
-    @pytest.mark.main
     @rollback
     async def test_public_applet_detail(self):
         response = await self.client.get(

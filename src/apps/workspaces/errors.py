@@ -1,6 +1,6 @@
-import uuid
+from gettext import gettext as _
 
-from apps.shared.errors import AccessDeniedError, NotFoundError
+from apps.shared.exception import AccessDeniedError, NotFoundError
 
 __all__ = [
     "UserAppletAccessesNotFound",
@@ -10,26 +10,21 @@ __all__ = [
 ]
 
 
-class UserAppletAccessesNotFound(NotFoundError):
-    def __init__(self, *_, id_: uuid.UUID) -> None:
-        super().__init__(message=f"No such UserAppletAccess with id={id_}.")
+class WorkspaceDoesNotExistError(NotFoundError):
+    message = _("Workspace does not exist.")
 
 
 class UserAppletAccessesDenied(AccessDeniedError):
-    def __init__(self, *_, message="Access denied.") -> None:
-        super().__init__(message=message)
+    message = _("Access denied.")
 
 
 class AppletAccessDenied(AccessDeniedError):
-    def __init__(self, *_, message="Access denied to applet.") -> None:
-        super().__init__(message=message)
-
-
-class WorkspaceDoesNotExistError(NotFoundError):
-    def __init__(self, *_, message="Workspace does not exist.") -> None:
-        super().__init__(message=message)
+    message = _("Access denied to applet.")
 
 
 class WorkspaceAccessDenied(AccessDeniedError):
-    def __init__(self, *_, message="Access denied to workspace.") -> None:
-        super().__init__(message=message)
+    message = _("Access denied to workspace.")
+
+
+class UserAppletAccessesNotFound(NotFoundError):
+    message = _("No such UserAppletAccess with id={id_}.")

@@ -5,8 +5,16 @@ from apps.activities.domain.response_type_config import (
     ResponseType,
     ResponseTypeValueConfig,
 )
+from apps.activities.errors import (
+    DataMatrixRequiredError,
+    IncorrectConfigError,
+    IncorrectNameCharactersError,
+    IncorrectResponseValueError,
+    NullScoreError,
+    ScoreRequiredForResponseValueError,
+    ScoreRequiredForValueError,
+)
 from apps.shared.domain import PublicModel
-from apps.shared.errors import ValidationError
 
 
 class BaseActivityItem(BaseModel):
@@ -44,9 +52,7 @@ class BaseActivityItem(BaseModel):
     def validate_name(cls, value):
         # name must contain only alphanumeric symbols or underscore
         if not value.replace("_", "").isalnum():
-            raise ValidationError(
-                message="Name must contain only alphanumeric symbols or underscore"  # noqa: E501
-            )
+            raise IncorrectNameCharactersError()
         return value
 
     @validator("config", pre=True)
@@ -63,13 +69,11 @@ class BaseActivityItem(BaseModel):
                         **value
                     )
                 except Exception:
-                    raise ValidationError(
-                        message=f"config must be of type {ResponseTypeValueConfig[response_type]['config']}"  # noqa: E501
+                    raise IncorrectConfigError(
+                        type=ResponseTypeValueConfig[response_type]["config"]
                     )
         else:
-            raise ValidationError(
-                message=f"response_type must be of type {ResponseType}"  # noqa: E501
-            )
+            raise IncorrectResponseValueError(type=ResponseType)
 
         return value
 
@@ -88,8 +92,10 @@ class BaseActivityItem(BaseModel):
                         ](**value)
 
                     except Exception:
-                        raise ValidationError(
-                            message=f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
+                        raise IncorrectResponseValueError(
+                            type=ResponseTypeValueConfig[response_type][
+                                "value"
+                            ]
                         )
             else:
                 if (
@@ -97,8 +103,8 @@ class BaseActivityItem(BaseModel):
                     and type(value)
                     is not ResponseTypeValueConfig[response_type]["value"]
                 ):
-                    raise ValidationError(
-                        message=f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
+                    raise IncorrectResponseValueError(
+                        type=ResponseTypeValueConfig[response_type]["value"]
                     )
                 elif (
                     type(value)
@@ -107,9 +113,7 @@ class BaseActivityItem(BaseModel):
                     value = None
 
         else:
-            raise ValidationError(
-                message=f"response_type must be of type {ResponseType}"
-            )
+            raise IncorrectResponseValueError(type=ResponseType)
         return value
 
     @root_validator()
@@ -128,9 +132,7 @@ class BaseActivityItem(BaseModel):
             if config.add_scores:
                 scores = [option.score for option in response_values.options]
                 if None in scores:
-                    raise ValidationError(
-                        message="score must be provided in each option of response_values"  # noqa: E501
-                    )
+                    raise ScoreRequiredForResponseValueError()
 
         if response_type is ResponseType.SLIDER:
             # if add_scores is True in config, then length of scores must be equal to max_value - min_value + 1 and must not include None  # noqa: E501
@@ -138,26 +140,18 @@ class BaseActivityItem(BaseModel):
                 if len(response_values.scores) != (
                     response_values.max_value - response_values.min_value + 1
                 ):
-                    raise ValidationError(
-                        message="scores must be provided for each value"  # noqa: E501
-                    )
+                    raise ScoreRequiredForValueError()
                 if None in response_values.scores:
-                    raise ValidationError(
-                        message="scores must not include None values"  # noqa: E501
-                    )
+                    raise NullScoreError()
 
         if response_type is ResponseType.SLIDERROWS:
             # if add_scores is True in config, then length of scores in each row must be equal to max_value - min_value + 1 of each row and must not include None  # noqa: E501
             if config.add_scores:
                 for row in response_values.rows:
                     if len(row.scores) != (row.max_value - row.min_value + 1):
-                        raise ValidationError(
-                            message="scores must be provided for each value"  # noqa: E501
-                        )
+                        raise ScoreRequiredForValueError()
                     if None in row.scores:
-                        raise ValidationError(
-                            message="scores must not include None values"  # noqa: E501
-                        )
+                        raise NullScoreError()
 
         if response_type in [
             ResponseType.SINGLESELECTROWS,
@@ -166,8 +160,6 @@ class BaseActivityItem(BaseModel):
             # if add_scores is True in config, then score must be provided in each option of each row of response_values  # noqa: E501
             if config.add_scores:
                 if response_values.data_matrix is None:
-                    raise ValidationError(
-                        message="data_matrix must be provided"  # noqa: E501
-                    )
+                    raise DataMatrixRequiredError()
 
         return values

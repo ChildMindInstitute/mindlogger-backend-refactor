@@ -3,13 +3,19 @@ import uuid
 from pydantic import Field, NonNegativeInt, root_validator, validator
 from pydantic.color import Color
 
+from apps.activities.errors import (
+    InvalidDataMatrixByOptionError,
+    InvalidDataMatrixError,
+    InvalidScoreLengthError,
+    InvalidUUIDError,
+    MinValueError,
+)
 from apps.shared.domain import (
     PublicModel,
     validate_audio,
     validate_color,
     validate_image,
 )
-from apps.shared.errors import ValidationError
 
 
 class TextValues(PublicModel):
@@ -99,9 +105,7 @@ class SliderValues(PublicModel):
     @root_validator
     def validate_min_max(cls, values):
         if values.get("min_value") >= values.get("max_value"):
-            raise ValidationError(
-                message="min_value must be less than max_value"
-            )
+            raise MinValueError()
         return values
 
     @root_validator
@@ -111,9 +115,7 @@ class SliderValues(PublicModel):
                 len(values.get("scores"))
                 != values.get("max_value") - values.get("min_value") + 1
             ):
-                raise ValidationError(
-                    message="scores must have the same length as the range of min_value and max_value"  # noqa: E501
-                )
+                raise InvalidScoreLengthError()
         return values
 
 
@@ -124,9 +126,7 @@ class NumberSelectionValues(PublicModel):
     @root_validator
     def validate_min_max(cls, values):
         if values.get("min_value") >= values.get("max_value"):
-            raise ValidationError(
-                message="min_value must be less than max_value"
-            )
+            raise MinValueError()
         return values
 
 
@@ -208,14 +208,12 @@ class SingleSelectionRowsValues(PublicModel):
     def validate_data_matrix(cls, value, values):
         if value is not None:
             if len(value) != len(values["rows"]):
-                raise ValidationError(
+                raise InvalidDataMatrixError(
                     message="data_matrix must have the same length as rows"
                 )
             for row in value:
                 if len(row.options) != len(values["options"]):
-                    raise ValidationError(
-                        message="data_matrix must have the same length as options"  # noqa: E501
-                    )
+                    raise InvalidDataMatrixByOptionError()
         return value
 
 
@@ -277,5 +275,5 @@ def validate_uuid(value):
     if value is None:
         return str(uuid.uuid4())
     if not isinstance(value, str) or not uuid.UUID(value):
-        raise ValidationError(message="id must be a valid uuid")
+        raise InvalidUUIDError()
     return value

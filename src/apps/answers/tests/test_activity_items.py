@@ -533,4 +533,4 @@ class TestAnswerActivityItems(BaseTest):
             self.answer_activity_item_create_url, data=create_data
         )
 
-        assert response.status_code == 400, response.json()
+        assert response.status_code == 403, response.json()

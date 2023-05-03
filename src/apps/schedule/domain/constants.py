@@ -8,6 +8,7 @@ __all__ = [
     "PeriodicityType",
     "TimerType",
     "DefaultEvent",
+    "AvailabilityType",
 ]
 
 

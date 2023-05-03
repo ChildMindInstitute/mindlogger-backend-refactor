@@ -1,51 +1,45 @@
-from apps.shared.errors import (
+from gettext import gettext as _
+
+from apps.shared.exception import (
     AccessDeniedError,
-    BadRequestError,
-    ConflictError,
     NotFoundError,
+    ValidationError,
 )
 
 
 class AlertConfigNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Alert config not found") -> None:
-        super().__init__(message=message)
+    message = _("Alert config not found.")
 
 
 class ActivityItemHistoryNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Activity item history not found") -> None:
-        super().__init__(message=message)
+    message = _("Activity item history not found.")
 
 
-class AlertConfigAlreadyExistError(ConflictError):
-    def __init__(self, *_, message="Alert config already exist") -> None:
-        super().__init__(message=message)
+class AlertConfigAlreadyExistError(ValidationError):
+    message = _("Alert config already exist.")
 
 
 class AlertCreateAccessDenied(AccessDeniedError):
-    def __init__(self, *_, message="Access to create alerts denied") -> None:
-        super().__init__(message=message)
+    message = _("Access to create alerts denied.")
 
 
 class AlertViewAccessDenied(AccessDeniedError):
-    def __init__(self, *_, message="Access to view alerts denied") -> None:
-        super().__init__(message=message)
+    message = _("Access to view alerts denied.")
 
 
 class AlertUpdateAccessDenied(AccessDeniedError):
-    def __init__(self, *_, message="Access to update alerts denied") -> None:
-        super().__init__(message=message)
+    message = _("Access to update alerts denied.")
 
 
 class AnswerNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Answer not found in answers") -> None:
-        super().__init__(message=message)
+    message = _("Answer not found in answers.")
 
 
 class AlertNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Alert not found") -> None:
-        super().__init__(message=message)
+    message = _("Alert not found.")
 
 
-class AlertIsDeletedError(BadRequestError):
-    def __init__(self, *_, message="Alert is deleted") -> None:
-        super().__init__(message=message)
+class AlertIsDeletedError(ValidationError):
+    message = _(
+        "This alert is deleted. " "The recovery logic is not implemented yet."
+    )

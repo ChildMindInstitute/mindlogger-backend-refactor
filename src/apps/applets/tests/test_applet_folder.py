@@ -60,7 +60,7 @@ class TestAppletFolder(BaseTest):
         response = await self.client.post(self.set_folder_url, data)
         assert response.status_code == 403
         assert (
-            response.json()["result"][0]["message"]["en"]
+            response.json()["result"][0]["message"]
             == "Access denied to folder."
         )
 
@@ -77,7 +77,7 @@ class TestAppletFolder(BaseTest):
         response = await self.client.post(self.set_folder_url, data)
         assert response.status_code == 403
         assert (
-            response.json()["result"][0]["message"]["en"]
+            response.json()["result"][0]["message"]
             == "Access denied to applet."
         )
 

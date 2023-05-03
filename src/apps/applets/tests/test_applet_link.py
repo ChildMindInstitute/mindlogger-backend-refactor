@@ -45,7 +45,7 @@ class TestAppletLink(BaseTest):
             ),
             data=data,
         )
-        assert response.status_code == 422
+        assert response.status_code == 400
 
     @rollback
     async def test_applet_access_link_create_by_manager(self):

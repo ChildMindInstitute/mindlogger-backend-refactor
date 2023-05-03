@@ -1,9 +1,4 @@
-from apps.shared.errors import (
-    AccessDeniedError,
-    BaseError,
-    NotFoundError,
-    ValidationError,
-)
+from gettext import gettext as _
 
 __all__ = [
     "AppletsError",
@@ -16,57 +11,52 @@ __all__ = [
     "AppletPasswordValidationError",
 ]
 
-
-class AppletsError(BaseError):
-    def __init__(self, *_, message="Applets service error.") -> None:
-        super().__init__(message=message)
-
-
-class AppletAlreadyExist(ValidationError):
-    def __init__(self, *_, message="Applet already exists.") -> None:
-        super().__init__(message=message)
+from apps.shared.exception import (
+    AccessDeniedError,
+    NotFoundError,
+    ValidationError,
+)
 
 
 class AppletNotFoundError(NotFoundError):
-    def __init__(self, *_, key: str, value: str) -> None:
-        super().__init__(message=f"No such applets with {key}={value}.")
+    message = _("No such applets with {key}={value}.")
 
 
 class AppletVersionNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Applet version not found") -> None:
-        super().__init__(message=message)
+    message = _("Applet version not found.")
 
 
 class NotValidAppletHistory(NotFoundError):
-    def __init__(self, *_, message="Not valid applet version.") -> None:
-        super().__init__(message=message)
-
-
-class AppletsFolderAccessDenied(AccessDeniedError):
-    def __init__(self, *_, message="Access denied to folder.") -> None:
-        super().__init__(message=message)
+    message = _("Not valid applet version.")
 
 
 class AppletLinkNotFoundError(NotFoundError):
-    def __init__(self, *_, applet_id: str) -> None:
-        super().__init__(message=f"No such applet link for id={applet_id}.")
-
-
-class AppletLinkAlreadyExist(ValidationError):
-    def __init__(self, *_, message="Applet link already exists.") -> None:
-        super().__init__(message=message)
-
-
-class AppletPasswordValidationError(ValidationError):
-    def __init__(self, *_, message="Applet password does not match.") -> None:
-        super().__init__(message=message)
+    message = _("No such applet link for id={applet_id}.")
 
 
 class AccessLinkDoesNotExistError(NotFoundError):
-    def __init__(self, *_, message="Access link does not exist."):
-        super().__init__(message=message)
+    message = _("Access link does not exist.")
+
+
+class AppletsFolderAccessDenied(AccessDeniedError):
+    message = _("Access denied to folder.")
+
+
+class AppletsError(ValidationError):
+    message = _("Can not make the looking up applets by {key} {value}.")
+
+
+class AppletAlreadyExist(ValidationError):
+    message = _("Applet already exists.")
+
+
+class AppletLinkAlreadyExist(ValidationError):
+    message = _("Applet link already exists.")
+
+
+class AppletPasswordValidationError(ValidationError):
+    message = _("Applet password does not match.")
 
 
 class InvalidVersionError(ValidationError):
-    def __init__(self, *_, message="Invalid version.") -> None:
-        super().__init__(message=message)
+    message = _("Invalid version.")

@@ -49,7 +49,7 @@ class TokensBlacklistCache(BaseCacheService[TokenInfo]):
 
         # Fetch keys for retrieving
         if not (keys := await self.redis_client.keys(self._build_key(key))):
-            raise CacheNotFound(f"There is no Tokens for {email}")
+            raise CacheNotFound()
 
         results: list[bytes] = await self.redis_client.mget(keys)
 

@@ -1,23 +1,19 @@
-from apps.shared.errors import BaseError, NotFoundError, ValidationError
+from gettext import gettext as _
 
-
-class TransferError(BaseError):
-    def __init__(self, message: str = "Transfer service error") -> None:
-        super().__init__(message=message)
-
-
-class TransferAlreadyExist(ValidationError):
-    def __init__(
-        self, message: str = "Transfer request already exists"
-    ) -> None:
-        super().__init__(message=message)
+from apps.shared.exception import (
+    InternalServerError,
+    NotFoundError,
+    ValidationError,
+)
 
 
 class TransferNotFoundError(NotFoundError):
-    def __init__(self, *_, message="Transfer request not found") -> None:
-        super().__init__(*_, message=message)
+    message = _("Transfer request not found.")
+
+
+class TransferError(InternalServerError):
+    message = _("Transfer service error.")
 
 
 class TransferEmailError(ValidationError):
-    def __init__(self, *_, message="Transfer email is incorrect") -> None:
-        super().__init__(*_, message=message)
+    message = _("Transfer email is incorrect.")

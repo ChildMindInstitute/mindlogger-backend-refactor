@@ -3,8 +3,8 @@ from enum import Enum
 from pydantic import Field, NonNegativeInt, PositiveInt, validator
 
 from apps.activities.domain.response_values import ResponseValueConfigOptions
+from apps.activities.errors import CorrectAnswerRequiredError
 from apps.shared.domain import PublicModel
-from apps.shared.errors import ValidationError
 
 
 class AdditionalResponseOption(PublicModel):
@@ -33,9 +33,7 @@ class TextConfig(_ScreenConfig, PublicModel):
     def validate_correct_answer(cls, value, values):
         # correct_answer must be set if correct_answer_required is True
         if values.get("correct_answer_required") and not value:
-            raise ValidationError(
-                message="correct_answer must be set if correct_answer_required is True"  # noqa: E501
-            )
+            raise CorrectAnswerRequiredError()
         return value
 
 
@@ -188,7 +186,6 @@ ResponseTypeConfigOptions = [
     MessageConfig,
     TimeConfig,
 ]
-
 
 ResponseTypeConfig = (
     TextConfig

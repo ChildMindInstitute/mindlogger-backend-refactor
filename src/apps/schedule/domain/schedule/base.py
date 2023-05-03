@@ -2,12 +2,17 @@ from datetime import date, time, timedelta
 
 from pydantic import BaseModel, Field, NonNegativeInt, root_validator
 
+from apps.activities.errors import (
+    AtTimeFieldRequiredError,
+    FromTimeToTimeRequiredError,
+    TimerRequiredError,
+)
 from apps.schedule.domain.constants import (
     NotificationTriggerType,
     PeriodicityType,
     TimerType,
 )
-from apps.shared.errors import ValidationError
+from apps.schedule.errors import SelectedDateRequiredError
 
 
 class BasePeriodicity(BaseModel):
@@ -18,7 +23,8 @@ class BasePeriodicity(BaseModel):
     end_date: date | None
     selected_date: date | None = Field(
         None,
-        description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",  # noqa: E501
+        description="If type is WEEKLY, MONTHLY or ONCE,"
+        " selectedDate must be set.",
     )
 
     @root_validator
@@ -28,9 +34,7 @@ class BasePeriodicity(BaseModel):
             PeriodicityType.WEEKLY,
             PeriodicityType.MONTHLY,
         ] and not values.get("selected_date"):
-            raise ValidationError(
-                message="selectedDate is required for this periodicity type."
-            )
+            raise SelectedDateRequiredError()
         return values
 
 
@@ -66,9 +70,7 @@ class BaseEvent(BaseModel):
             TimerType.TIMER,
             TimerType.IDLE,
         ] and not values.get("timer"):
-            raise ValidationError(
-                message="Timer is required for this timer type."
-            )
+            raise TimerRequiredError()
 
         return values
 
@@ -94,14 +96,10 @@ class BaseNotificationSetting(BaseModel):
     def validate_notification(cls, values):
         if values.get("trigger_type") == NotificationTriggerType.FIXED:
             if not values.get("at_time"):
-                raise ValidationError(
-                    message="at_time is required for this trigger type."
-                )
+                raise AtTimeFieldRequiredError()
         elif values.get("trigger_type") == NotificationTriggerType.RANDOM:
             if not values.get("from_time") or not values.get("to_time"):
-                raise ValidationError(
-                    message="from_time and to_time are required for this trigger type."  # noqa: E501
-                )
+                raise FromTimeToTimeRequiredError()
         return values
 
 

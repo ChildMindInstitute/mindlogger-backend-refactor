@@ -418,9 +418,7 @@ class InvitationsService:
             self.session, self._user.id
         ).exist_by_id(invitation_request.applet_id)
         if not is_exist:
-            raise AppletDoesNotExist(
-                f"Applet by id {invitation_request.applet_id} does not exist."
-            )
+            raise AppletDoesNotExist()
 
         access_service = UserAppletAccessService(
             self.session, self._user.id, invitation_request.applet_id
@@ -459,9 +457,7 @@ class InvitationsService:
                 applet_id
             )
         ):
-            raise AppletDoesNotExist(
-                f"Applet by id {applet_id} does not exist."
-            )
+            raise AppletDoesNotExist()
 
     async def _is_validated_role_for_invitation(
         self, applet_id: uuid.UUID, request_role: Role | ManagersRole

@@ -95,9 +95,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         """Fetch applets by id or display_name from the database."""
 
         if key not in {"id", "display_name"}:
-            raise errors.AppletsError(
-                f"Can not make the looking up applets by {key} {value}"
-            )
+            raise errors.AppletsError(key=key, value=value)
 
         # Get applets from the database
         if not (instance := await self._get(key, value)):

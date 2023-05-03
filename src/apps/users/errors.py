@@ -1,37 +1,34 @@
-from apps.shared.errors import (
-    BadRequestError,
-    BaseError,
-    ConflictError,
-    InternalServerError,
-    NotFoundError,
-)
+from gettext import gettext as _
 
-
-class UsersError(BaseError):
-    def __init__(self, *_, message="Users error") -> None:
-        super().__init__(message=message)
-
-
-class UserAlreadyExistError(ConflictError):
-    def __init__(self, *_, message="User already exist") -> None:
-        super().__init__(message=message)
+from apps.shared.exception import NotFoundError, ValidationError
 
 
 class UserNotFound(NotFoundError):
-    def __init__(self, *_, message="User not found") -> None:
-        super().__init__(message=message)
+    message = _("User not found.")
 
 
-class UserIsDeletedError(BadRequestError):
-    def __init__(self, *_, message="User is deleted") -> None:
-        super().__init__(message=message)
+class UserAlreadyExistError(ValidationError):
+    message = _("User already exist.")
 
 
-class EmailAddressError(InternalServerError):
-    def __init__(self, *_, message="Email address not found") -> None:
-        super().__init__(message=message)
+class EmailAddressError(ValidationError):
+    message = _(
+        "Email address is not verified. The following "
+        "identities failed the check: {email}."
+    )
+
+
+class PasswordRecoveryKeyNotFound(NotFoundError):
+    message = _("Password recovery key not found.")
+
+
+class UserIsDeletedError(NotFoundError):
+    message = _("User is deleted.")
 
 
 class UserDeviceNotFound(NotFoundError):
-    def __init__(self, *_, message="User device is not found") -> None:
-        super().__init__(message)
+    message = _("User device is not found.")
+
+
+class UsersError(ValidationError):
+    message = _("Can not make the looking up by {key} {value}.")

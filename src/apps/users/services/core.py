@@ -3,7 +3,6 @@ import uuid
 from apps.authentication.services import AuthenticationService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
-from apps.shared.errors import NotFoundError
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     PasswordRecoveryApproveRequest,
@@ -13,6 +12,7 @@ from apps.users.domain import (
     User,
     UserChangePassword,
 )
+from apps.users.errors import PasswordRecoveryKeyNotFound
 from apps.users.services import PasswordRecoveryCache
 from config import settings
 from infrastructure.cache import CacheNotFound
@@ -90,14 +90,13 @@ class PasswordRecoveryService:
     async def approve(
         self, schema: PasswordRecoveryApproveRequest
     ) -> PublicUser:
-        error: Exception = NotFoundError("Password recovery key not found")
 
         try:
             cache_entry: CacheEntry[
                 PasswordRecoveryInfo
             ] = await self._cache.get(schema.email, schema.key)
         except CacheNotFound:
-            raise error
+            raise PasswordRecoveryKeyNotFound()
 
         # Get user from the database
         user: User = await UsersCRUD(self.session).get_by_email(

@@ -49,8 +49,13 @@ from apps.schedule.domain.schedule.public import (
     TimerDto,
 )
 from apps.schedule.domain.schedule.requests import EventRequest
-from apps.schedule.errors import EventAlwaysAvailableExistsError
-from apps.shared.errors import NotFoundError
+from apps.schedule.errors import (
+    AccessDeniedToApplet,
+    ActivityOrFlowNotFoundError,
+    AppletScheduleNotFoundError,
+    EventAlwaysAvailableExistsError,
+    ScheduleNotFoundError,
+)
 from apps.shared.query_params import QueryParams
 from apps.users.cruds.user import UsersCRUD
 from apps.users.errors import UserNotFound
@@ -306,9 +311,7 @@ class ScheduleService:
             event_schema.periodicity_id for event_schema in event_schemas
         ]
         if not event_ids:
-            raise NotFoundError(
-                message=f"No schedules found for applet {applet_id}"
-            )
+            raise AppletScheduleNotFoundError(applet_id=applet_id)
 
         # Get all activity_ids and flow_ids
         activity_ids = await ActivityEventsCRUD(self.session).get_by_event_ids(
@@ -547,10 +550,7 @@ class ScheduleService:
                 applet_id=applet_id, user_id=schedule.respondent_id
             )  # noqa: E501
             if not user_applet_access:
-                raise NotFoundError(
-                    message=f"User {schedule.respondent_id} "
-                    f"does not have access to applet {applet_id}"
-                )  # noqa: E501
+                raise AccessDeniedToApplet()
 
         # Check if activity or flow exists inside applet
         activity_or_flow = None
@@ -567,11 +567,7 @@ class ScheduleService:
                 applet_id=applet_id, flow_id=schedule.flow_id
             )
         if not activity_or_flow:
-            raise NotFoundError(
-                message=f"Activity or flow with id "
-                f"{schedule.activity_id or schedule.flow_id}"
-                f" not found inside applet {applet_id}"
-            )  # noqa: E501
+            raise ActivityOrFlowNotFoundError()
 
     async def count_schedules(self, applet_id: uuid.UUID) -> PublicEventCount:
         # Check if applet exists
@@ -623,10 +619,7 @@ class ScheduleService:
             event_schema.periodicity.id for event_schema in event_schemas
         ]
         if not event_ids:
-            raise NotFoundError(
-                message=f"No schedules found in applet "
-                f"{applet_id} for user {user_id}"
-            )  # noqa: E501
+            raise ScheduleNotFoundError()
 
         await UserEventsCRUD(self.session).delete_all_by_events_and_user(
             event_ids, user_id
@@ -919,10 +912,7 @@ class ScheduleService:
                 roles=Role.as_list(),
             )
         ):
-            raise NotFoundError(
-                message=f"User {user_id} "
-                f"does not have access to applet {applet_id}"
-            )
+            raise AccessDeniedToApplet()
 
         user_events = await EventCRUD(self.session).get_all_by_applet_and_user(
             applet_id=applet_id,
@@ -1078,10 +1068,7 @@ class ScheduleService:
             event_schema.periodicity.id for event_schema in event_schemas
         ]
         if not event_ids:
-            raise NotFoundError(
-                message=f"No schedules found in applet "
-                f"{applet_id} for user {user_id}"
-            )  # noqa: E501
+            raise ScheduleNotFoundError()
 
         await UserEventsCRUD(self.session).delete_all_by_events_and_user(
             event_ids, user_id

@@ -87,8 +87,8 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
                     scheduled_notifications_updated=sched_notif_upd,
                 )
             )
-        except Exception as error:
-            raise NotificationLogError(str(error))
+        except Exception:
+            raise NotificationLogError()
 
         # Create internal data model
         notification_log: PublicNotificationLog = (

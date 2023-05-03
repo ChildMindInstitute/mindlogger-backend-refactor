@@ -28,17 +28,14 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         """Fetch user by id or email from the database."""
 
         if key not in {"id", "email"}:
-            raise UsersError(f"Can not make the looking up by {key} {value}")
+            raise UsersError(key=key, value=value)
 
         # Get user from the database
         if not (instance := await self._get(key, value)):
             raise UserNotFound
         # TODO: Align with client about the business logic
         if instance.is_deleted:
-            raise UserIsDeletedError(
-                "This user is deleted. "
-                "The recovery logic is not implemented yet."
-            )
+            raise UserIsDeletedError()
 
         # Get internal model
         user = User.from_orm(instance)
@@ -58,7 +55,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
                 self.schema_class(**schema.dict())
             )
         except IntegrityError:
-            raise UserAlreadyExistError
+            raise UserAlreadyExistError()
 
         # Create internal data model
         user = User.from_orm(instance)

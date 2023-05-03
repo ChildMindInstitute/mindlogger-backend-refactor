@@ -67,7 +67,7 @@ class BaseCacheService(ABC, Generic[_InputObject]):
         if result := await self.redis_client.get(self._build_key(key)):
             return json.loads(result)
 
-        raise CacheNotFound(key)
+        raise CacheNotFound()
 
     @abstractmethod
     async def get(self, *args, **kwargs) -> CacheEntry[_InputObject]:

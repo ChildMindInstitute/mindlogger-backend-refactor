@@ -1,27 +1,22 @@
+from gettext import gettext as _
+
 from starlette import status
 
-from apps.shared.errors import BadRequestError, BaseError, ValidationError
+from apps.shared.exception import AccessDeniedError, BaseError, ValidationError
 
 
-class AuthenticationError(BaseError):
-    def __init__(self, message="Could not validate credentials") -> None:
-        super().__init__(
-            message=message, status_code=status.HTTP_401_UNAUTHORIZED
-        )
-
-
-class PermissionsError(BaseError):
-    def __init__(self, message="Not enough permissions") -> None:
-        super().__init__(
-            message=message, status_code=status.HTTP_403_FORBIDDEN
-        )
-
-
-class BadCredentials(BadRequestError):
-    def __init__(self, message="Bad credentials") -> None:
-        super().__init__(message=message)
+class BadCredentials(ValidationError):
+    message = _("Bad credentials.")
 
 
 class WeakPassword(ValidationError):
-    def __init__(self, message="Weak password.") -> None:
-        super().__init__(message=message)
+    message = _("Weak password.")
+
+
+class AuthenticationError(BaseError):
+    message = _("Could not validate credentials.")
+    status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class PermissionsError(AccessDeniedError):
+    message = _("Not enough permissions.")

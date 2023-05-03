@@ -1,4 +1,7 @@
+import gettext
 import logging
+import os
+import traceback
 
 from fastapi import Response
 from fastapi.encoders import jsonable_encoder
@@ -13,18 +16,23 @@ from starlette.requests import Request
 
 from apps.shared.domain.response.errors import (
     ErrorResponse,
-    ErrorResponseMessage,
     ErrorResponseMulti,
 )
-from apps.shared.errors import BaseError
+from apps.shared.exception import BaseError
+from config import settings
+from infrastructure.http import get_language
 
 logger = logging.getLogger("mindlogger_backend")
+gettext.bindtextdomain(gettext.textdomain(), settings.locale_dir)
 
 
 class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
     async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
+        self,
+        request: Request,
+        call_next: RequestResponseEndpoint,
     ) -> Response:
+        os.environ["LANG"] = get_language(request)
         try:
             return await call_next(request)
         except BaseError as e:
@@ -37,12 +45,12 @@ class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
 
 def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     """This function is called if the BaseError was raised."""
-
     response = ErrorResponseMulti(
         result=[
             ErrorResponse(
-                message=ErrorResponseMessage(en=error._message.capitalize()),
-                type_=error._type,
+                message=error.error,
+                type=error.type,
+                path=getattr(error, "path", []),
             )
         ]
     )
@@ -51,19 +59,16 @@ def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
 
     return JSONResponse(
         response.dict(by_alias=True),
-        status_code=error._status_code,
+        status_code=error.status_code,
     )
 
 
 def _python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     """This function is called if the Exception was raised."""
 
+    error_message = "".join(traceback.format_tb(error.__traceback__))
     response = ErrorResponseMulti(
-        result=[
-            ErrorResponse(
-                message=ErrorResponseMessage(en=f"Unhandled error: {error}")
-            )
-        ]
+        result=[ErrorResponse(message=f"Unhandled error: {error_message}")]
     )
 
     logger.error(response)
@@ -82,7 +87,7 @@ def _pydantic_validation_errors_handler(
     response = ErrorResponseMulti(
         result=[
             ErrorResponse(
-                message=ErrorResponseMessage(en=err["msg"]),
+                message=err["msg"],
                 path=list(err["loc"]),
             )
             for err in error.errors()
