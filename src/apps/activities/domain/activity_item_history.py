@@ -15,5 +15,5 @@ class ActivityItemHistory(InternalModel):
     question: dict[str, str]
     response_type: ResponseType
     response_values: dict | list | None
-    config: ResponseTypeConfig
+    config: dict
     order: int
