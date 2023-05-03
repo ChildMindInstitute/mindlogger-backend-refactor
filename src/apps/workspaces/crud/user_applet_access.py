@@ -516,6 +516,23 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             for user_applet_access in results
         ]
 
+    async def get_user_applet_accesses_by_roles(
+        self,
+        user_id: uuid.UUID,
+        applet_ids: list[uuid.UUID],
+        roles: list[Role],
+        invitor_id: uuid.UUID | None = None,
+    ) -> list[UserAppletAccessSchema]:
+        query: Query = select(self.schema_class)
+        query = query.where(self.schema_class.user_id == user_id)
+        query = query.where(self.schema_class.applet_id.in_(applet_ids))
+        query = query.where(self.schema_class.role.in_(roles))
+        if invitor_id:
+            query = query.where(self.schema_class.invitor_id == invitor_id)
+
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
     async def remove_access_by_user_and_applet_to_role(
         self,
         user_id: uuid.UUID,
