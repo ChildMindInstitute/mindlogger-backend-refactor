@@ -1,9 +1,6 @@
 import uuid
 
-from apps.activities.domain.response_type_config import (
-    ResponseType,
-    ResponseTypeConfig,
-)
+from apps.activities.domain.response_type_config import ResponseType
 from apps.shared.domain import InternalModel
 
 
