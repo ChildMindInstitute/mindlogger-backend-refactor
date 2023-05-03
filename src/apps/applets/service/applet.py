@@ -66,6 +66,11 @@ class AppletService:
         await UserAppletAccessService(
             self.session, self.user_id, applet.id
         ).add_role(self.user_id, Role.ADMIN)
+
+        await UserAppletAccessService(
+            self.session, self.user_id, applet.id
+        ).add_role(self.user_id, Role.RESPONDENT)
+
         applet.activities = await ActivityService(
             self.session, self.user_id
         ).create(applet.id, create_data.activities)

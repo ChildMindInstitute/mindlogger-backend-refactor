@@ -106,17 +106,26 @@ class TransferService:
             applet_id=transfer.applet_id
         )
 
-        # add new owner to applet
-        await UserAppletAccessCRUD(self.session).save(
-            UserAppletAccessSchema(
-                user_id=self._user.id,
-                applet_id=transfer.applet_id,
-                role=Role.ADMIN,
-                owner_id=self._user.id,
-                invitor_id=self._user.id,
-                meta={},
-            )
+        # add new owner and respondent to applet
+        roles_data = dict(
+            user_id=self._user.id,
+            applet_id=transfer.applet_id,
+            owner_id=self._user.id,
+            invitor_id=self._user.id,
         )
+
+        roles_to_add = [
+            UserAppletAccessSchema(role=Role.ADMIN, meta={}, **roles_data),
+            UserAppletAccessSchema(
+                role=Role.RESPONDENT,
+                meta=dict(
+                    secretUserId=str(uuid.uuid4()),
+                    nickname=f"{self._user.first_name} {self._user.last_name}",
+                ),
+                **roles_data,
+            ),
+        ]
+        await UserAppletAccessCRUD(self.session).create_many(roles_to_add)
 
     def _generate_transfer_url(self) -> str:
         domain = settings.service.urls.frontend.web_base

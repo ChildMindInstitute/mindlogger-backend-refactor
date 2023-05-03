@@ -253,6 +253,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         """Return UserAppletAccess instance and the created information."""
         return await self._create(schema)
 
+    async def create_many(
+        self, schemas: list[UserAppletAccessSchema]
+    ) -> list[UserAppletAccessSchema]:
+        return await self._create_many(schemas)
+
     async def get(
         self, user_id: uuid.UUID, applet_id: uuid.UUID, role: str
     ) -> UserAppletAccessSchema | None:
