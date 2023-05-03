@@ -97,17 +97,14 @@ class UserAccessService:
         await self._validate_access(
             user_id=schema.user_id,
             removing_applets=schema.applet_ids,
-            roles=[
-                Role.MANAGER,
-                Role.COORDINATOR,
-                Role.EDITOR,
-                Role.REVIEWER,
-            ],
+            roles=[schema.role],
         )
 
         # remove manager access
-        await UserAppletAccessCRUD(self.session).delete_all_by_user_and_applet(
-            schema.user_id, schema.applet_ids
+        await UserAppletAccessCRUD(
+            self.session
+        ).remove_access_by_user_and_applet_to_role(
+            schema.user_id, schema.applet_ids, [schema.role]
         )
 
     async def remove_respondent_access(self, schema: RemoveRespondentAccess):
@@ -123,8 +120,10 @@ class UserAccessService:
         )
 
         # remove respondent access
-        await UserAppletAccessCRUD(self.session).delete_all_by_user_and_applet(
-            schema.user_id, schema.applet_ids
+        await UserAppletAccessCRUD(
+            self.session
+        ).remove_access_by_user_and_applet_to_role(
+            schema.user_id, schema.applet_ids, [Role.RESPONDENT]
         )
 
         # delete all responses of respondent in applets
