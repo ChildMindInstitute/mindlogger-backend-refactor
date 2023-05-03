@@ -516,11 +516,15 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             for user_applet_access in results
         ]
 
-    async def delete_all_by_user_and_applet(
-        self, user_id: uuid.UUID, applet_ids: list[uuid.UUID]
+    async def remove_access_by_user_and_applet_to_role(
+        self,
+        user_id: uuid.UUID,
+        applet_ids: list[uuid.UUID],
+        roles: list[Role],
     ):
         query: Query = delete(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.role.in_(roles))
         query = query.where(UserAppletAccessSchema.applet_id.in_(applet_ids))
         await self._execute(query)
 
