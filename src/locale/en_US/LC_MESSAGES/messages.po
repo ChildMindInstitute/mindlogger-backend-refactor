@@ -1,0 +1,454 @@
+# English (United States) translations for PROJECT.
+# Copyright (C) 2023 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2023-05-03 11:48+0500\n"
+"PO-Revision-Date: 2023-05-03 11:50+0500\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en_US\n"
+"Language-Team: en_US <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.12.1\n"
+
+#: apps/activities/errors.py:12
+msgid "Reusable item choice already exist."
+msgstr ""
+
+#: apps/activities/errors.py:16
+msgid "Reusable item choice does not exist."
+msgstr ""
+
+#: apps/activities/errors.py:20
+msgid "Activity history does not exist."
+msgstr ""
+
+#: apps/activities/errors.py:24 apps/applets/errors.py:62
+msgid "Invalid version."
+msgstr ""
+
+#: apps/activities/errors.py:28
+msgid "config must be of type {type}."
+msgstr ""
+
+#: apps/activities/errors.py:32
+msgid "response_values must be of type {type}."
+msgstr ""
+
+#: apps/activities/errors.py:36
+msgid "Name must contain only alphanumeric symbols or underscore."
+msgstr ""
+
+#: apps/activities/errors.py:40
+msgid "Score must be provided in each option of response_values."
+msgstr ""
+
+#: apps/activities/errors.py:44
+msgid "scores must be provided for each value."
+msgstr ""
+
+#: apps/activities/errors.py:48
+msgid "Score can not be null."
+msgstr ""
+
+#: apps/activities/errors.py:52
+msgid "data_matrix must be provided."
+msgstr ""
+
+#: apps/activities/errors.py:56
+msgid "correct_answer must be set if correct_answer_required is True."
+msgstr ""
+
+#: apps/activities/errors.py:62
+msgid "Value must be less than max value."
+msgstr ""
+
+#: apps/activities/errors.py:66
+msgid "data_matrix must have the same length as rows"
+msgstr ""
+
+#: apps/activities/errors.py:70
+msgid "data_matrix must have the same length as options"
+msgstr ""
+
+#: apps/activities/errors.py:74
+msgid "Scores must have the same length as the range of min_value and max_value"
+msgstr ""
+
+#: apps/activities/errors.py:82
+msgid "Invalid uuid value."
+msgstr ""
+
+#: apps/activities/errors.py:87
+msgid "Timer is required for this timer type."
+msgstr ""
+
+#: apps/activities/errors.py:92
+msgid "at_time is required for this trigger type."
+msgstr ""
+
+#: apps/activities/errors.py:97
+msgid "from_time and to_time are required for this trigger type."
+msgstr ""
+
+#: apps/activities/errors.py:101
+msgid "Activity access denied"
+msgstr ""
+
+#: apps/activities/errors.py:105
+msgid "Activity ids are duplicated."
+msgstr ""
+
+#: apps/activities/errors.py:109
+msgid "Activity flow ids are duplicated."
+msgstr ""
+
+#: apps/alerts/errors.py:11
+msgid "Alert config not found."
+msgstr ""
+
+#: apps/alerts/errors.py:15
+msgid "Activity item history not found."
+msgstr ""
+
+#: apps/alerts/errors.py:19
+msgid "Alert config already exist."
+msgstr ""
+
+#: apps/alerts/errors.py:23
+msgid "Access to create alerts denied."
+msgstr ""
+
+#: apps/alerts/errors.py:27
+msgid "Access to view alerts denied."
+msgstr ""
+
+#: apps/alerts/errors.py:31
+msgid "Access to update alerts denied."
+msgstr ""
+
+#: apps/alerts/errors.py:35
+msgid "Answer not found in answers."
+msgstr ""
+
+#: apps/alerts/errors.py:39
+msgid "Alert not found."
+msgstr ""
+
+#: apps/alerts/errors.py:43
+msgid "This alert is deleted. The recovery logic is not implemented yet."
+msgstr ""
+
+#: apps/answers/errors.py:11
+msgid "Answer not found."
+msgstr ""
+
+#: apps/answers/errors.py:15
+msgid "Note not found."
+msgstr ""
+
+#: apps/answers/errors.py:19 apps/folders/errors.py:15
+#: apps/invitations/errors.py:15 apps/shared/exception.py:51
+#: apps/workspaces/errors.py:18
+msgid "Access denied."
+msgstr ""
+
+#: apps/answers/errors.py:23
+msgid "Note access denied."
+msgstr ""
+
+#: apps/answers/errors.py:27
+msgid "User does not have permission."
+msgstr ""
+
+#: apps/answers/errors.py:31
+msgid "Answer is not full."
+msgstr ""
+
+#: apps/answers/errors.py:35
+msgid "Answer contract is wrong."
+msgstr ""
+
+#: apps/answers/errors.py:39
+msgid "Activity flow does not have such activity."
+msgstr ""
+
+#: apps/applets/errors.py:22
+msgid "No such applets with {key}={value}."
+msgstr ""
+
+#: apps/applets/errors.py:26
+msgid "Applet version not found."
+msgstr ""
+
+#: apps/applets/errors.py:30
+msgid "Not valid applet version."
+msgstr ""
+
+#: apps/applets/errors.py:34
+msgid "No such applet link for id={applet_id}."
+msgstr ""
+
+#: apps/applets/errors.py:38
+msgid "Access link does not exist."
+msgstr ""
+
+#: apps/applets/errors.py:42
+msgid "Access denied to folder."
+msgstr ""
+
+#: apps/applets/errors.py:46
+msgid "Can not make the looking up applets by {key} {value}."
+msgstr ""
+
+#: apps/applets/errors.py:50
+msgid "Applet already exists."
+msgstr ""
+
+#: apps/applets/errors.py:54
+msgid "Applet link already exists."
+msgstr ""
+
+#: apps/applets/errors.py:58
+msgid "Applet password does not match."
+msgstr ""
+
+#: apps/authentication/errors.py:9
+msgid "Bad credentials."
+msgstr ""
+
+#: apps/authentication/errors.py:13
+msgid "Weak password."
+msgstr ""
+
+#: apps/authentication/errors.py:17
+msgid "Could not validate credentials."
+msgstr ""
+
+#: apps/authentication/errors.py:22
+msgid "Not enough permissions."
+msgstr ""
+
+#: apps/file/errors.py:7
+msgid "File not found."
+msgstr ""
+
+#: apps/folders/errors.py:19
+msgid "Folder already exists."
+msgstr ""
+
+#: apps/folders/errors.py:23
+msgid "Folder does not exist."
+msgstr ""
+
+#: apps/folders/errors.py:27
+msgid "Folder has applets, move applets from folder to delete it."
+msgstr ""
+
+#: apps/folders/errors.py:31
+msgid "Applet not in folder."
+msgstr ""
+
+#: apps/invitations/errors.py:7
+msgid "Invitation does not exist."
+msgstr ""
+
+#: apps/invitations/errors.py:11
+msgid "Applet does not exist."
+msgstr ""
+
+#: apps/invitations/errors.py:19
+msgid "Invitation has been already processed."
+msgstr ""
+
+#: apps/invitations/errors.py:23
+msgid "Non-unique value."
+msgstr ""
+
+#: apps/invitations/errors.py:27
+msgid "Respondent does not exist in applet."
+msgstr ""
+
+#: apps/logs/errors.py:7
+msgid "Unexpected NotificationLog error."
+msgstr ""
+
+#: apps/schedule/errors.py:13
+msgid "No such event with {key}={value}."
+msgstr ""
+
+#: apps/schedule/errors.py:17
+msgid "No such periodicity with {key}={value}."
+msgstr ""
+
+#: apps/schedule/errors.py:21
+msgid "No schedules found for applet {applet_id}"
+msgstr ""
+
+#: apps/schedule/errors.py:25 apps/workspaces/errors.py:22
+msgid "Access denied to applet."
+msgstr ""
+
+#: apps/schedule/errors.py:29
+msgid "Activity/Flow not found."
+msgstr ""
+
+#: apps/schedule/errors.py:33
+msgid "Schedule not found."
+msgstr ""
+
+#: apps/schedule/errors.py:37
+msgid "'AlwaysAvailable' event already exists."
+msgstr ""
+
+#: apps/schedule/errors.py:41
+msgid "Event service error."
+msgstr ""
+
+#: apps/schedule/errors.py:45
+msgid "The event {event_id} for user {user_id} already exists."
+msgstr ""
+
+#: apps/schedule/errors.py:49
+msgid "The event {event_id} for activity {activity_id} already exists."
+msgstr ""
+
+#: apps/schedule/errors.py:55
+msgid "The event {event_id} for flow {flow_id} already exists."
+msgstr ""
+
+#: apps/schedule/errors.py:59
+msgid "selectedDate is required for this periodicity type."
+msgstr ""
+
+#: apps/schedule/errors.py:63
+msgid "Hours must be between 0 and 23."
+msgstr ""
+
+#: apps/schedule/errors.py:67
+msgid "Minutes must be between 0 and 59."
+msgstr ""
+
+#: apps/schedule/errors.py:71
+msgid "Either activity_id or flow_id must be provided."
+msgstr ""
+
+#: apps/schedule/errors.py:75
+msgid "one_time_completion must be set if periodicity is ALWAYS."
+msgstr ""
+
+#: apps/schedule/errors.py:79
+msgid ""
+"start_time, end_time, access_before_schedule must be set if periodicity "
+"is not ALWAYS."
+msgstr ""
+
+#: apps/schedule/errors.py:86
+msgid "Activity/flow is unavailable at this time."
+msgstr ""
+
+#: apps/shared/exception.py:18
+msgid "Oops, something went wrong."
+msgstr ""
+
+#: apps/shared/exception.py:30
+msgid "Bad request."
+msgstr ""
+
+#: apps/shared/exception.py:36
+msgid "Invalid value."
+msgstr ""
+
+#: apps/shared/exception.py:57
+msgid "Not found."
+msgstr ""
+
+#: apps/shared/domain/custom_validations.py:16
+msgid "Invalid image."
+msgstr ""
+
+#: apps/shared/domain/custom_validations.py:20
+msgid "Invalid color."
+msgstr ""
+
+#: apps/shared/domain/custom_validations.py:24
+msgid "Invalid audio file."
+msgstr ""
+
+#: apps/themes/errors.py:11
+msgid "No such theme with {key}={value}."
+msgstr ""
+
+#: apps/themes/errors.py:15
+msgid "Themes service error."
+msgstr ""
+
+#: apps/themes/errors.py:19
+msgid "Theme already exist."
+msgstr ""
+
+#: apps/transfer_ownership/errors.py:11
+msgid "Transfer request not found."
+msgstr ""
+
+#: apps/transfer_ownership/errors.py:15
+msgid "Transfer service error."
+msgstr ""
+
+#: apps/transfer_ownership/errors.py:19
+msgid "Transfer email is incorrect."
+msgstr ""
+
+#: apps/users/errors.py:7
+msgid "User not found."
+msgstr ""
+
+#: apps/users/errors.py:11
+msgid "User already exist."
+msgstr ""
+
+#: apps/users/errors.py:15
+msgid ""
+"Email address is not verified. The following identities failed the check:"
+" {email}."
+msgstr ""
+
+#: apps/users/errors.py:22
+msgid "Password recovery key not found."
+msgstr ""
+
+#: apps/users/errors.py:26
+msgid "User is deleted."
+msgstr ""
+
+#: apps/users/errors.py:30
+msgid "User device is not found."
+msgstr ""
+
+#: apps/users/errors.py:34
+msgid "Can not make the looking up by {key} {value}."
+msgstr ""
+
+#: apps/workspaces/errors.py:14
+msgid "Workspace does not exist."
+msgstr ""
+
+#: apps/workspaces/errors.py:26
+msgid "Access denied to workspace."
+msgstr ""
+
+#: apps/workspaces/errors.py:30
+msgid "No such UserAppletAccess with id={id_}."
+msgstr ""
+
+#: infrastructure/cache/errors.py:7
+msgid "Can not find item in the cache."
+msgstr ""
+

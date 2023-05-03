@@ -65,8 +65,8 @@ class TestInvite(BaseTest):
         assert response.status_code == 200
 
         assert (
-                response.json()["result"]["appletId"]
-                == "92917a56-d586-4613-b7aa-991f2c4b15b1"
+            response.json()["result"]["appletId"]
+            == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
         assert response.json()["result"]["role"] == Role.MANAGER
 
@@ -82,8 +82,8 @@ class TestInvite(BaseTest):
         assert response.status_code == 200
 
         assert (
-                response.json()["result"]["appletId"]
-                == "92917a56-d586-4613-b7aa-991f2c4b15b3"
+            response.json()["result"]["appletId"]
+            == "92917a56-d586-4613-b7aa-991f2c4b15b3"
         )
         assert response.json()["result"]["role"] == Role.RESPONDENT
 

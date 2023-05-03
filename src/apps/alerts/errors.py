@@ -20,23 +20,23 @@ class AlertConfigAlreadyExistError(ValidationError):
 
 
 class AlertCreateAccessDenied(AccessDeniedError):
-    message = _("Access to create alerts denied")
+    message = _("Access to create alerts denied.")
 
 
 class AlertViewAccessDenied(AccessDeniedError):
-    message = _("Access to view alerts denied")
+    message = _("Access to view alerts denied.")
 
 
 class AlertUpdateAccessDenied(AccessDeniedError):
-    message = _("Access to update alerts denied")
+    message = _("Access to update alerts denied.")
 
 
 class AnswerNotFoundError(NotFoundError):
-    message = _("Answer not found in answers")
+    message = _("Answer not found in answers.")
 
 
 class AlertNotFoundError(NotFoundError):
-    message = _("Alert not found")
+    message = _("Alert not found.")
 
 
 class AlertIsDeletedError(ValidationError):

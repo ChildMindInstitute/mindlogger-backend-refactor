@@ -502,11 +502,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         try:
             result: uuid.UUID = db_result.scalars().one_or_none()
         except MultipleResultsFound:
-            raise EventError(
-                f"Multiple user events found for event_id: {event_id}".format(
-                    event_id=event_id
-                )
-            )
+            raise EventError()
 
         return result
 
@@ -556,11 +552,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         try:
             activity_id = result.scalars().one_or_none()
         except MultipleResultsFound:
-            raise EventError(
-                f"Multiple activity found for event_id: {event_id}".format(
-                    event_id=event_id
-                )
-            )
+            raise EventError()
         return activity_id
 
     async def delete_all_by_event_ids(self, event_ids: list[uuid.UUID]):

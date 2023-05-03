@@ -1,6 +1,11 @@
 from gettext import gettext as _
 
-from apps.shared.exception import FieldError, NotFoundError, ValidationError
+from apps.shared.exception import (
+    AccessDeniedError,
+    FieldError,
+    NotFoundError,
+    ValidationError,
+)
 
 
 class ReusableItemChoiceAlreadyExist(ValidationError):
@@ -20,27 +25,49 @@ class InvalidVersionError(ValidationError):
 
 
 class IncorrectConfigError(FieldError):
-    message = _("config must be of type {type}")
+    message = _("config must be of type {type}.")
 
 
 class IncorrectResponseValueError(FieldError):
-    message = _("response_values must be of type {type}")
+    message = _("response_values must be of type {type}.")
 
 
 class IncorrectNameCharactersError(FieldError):
-    message = _("Name must contain only alphanumeric symbols or underscore")
+    message = _("Name must contain only alphanumeric symbols or underscore.")
 
 
-class ScoreRequiredError(FieldError):
-    message = _("Score must be provided in each option of response_values")
+class ScoreRequiredForResponseValueError(FieldError):
+    message = _("Score must be provided in each option of response_values.")
+
+
+class ScoreRequiredForValueError(FieldError):
+    message = _("scores must be provided for each value.")
 
 
 class NullScoreError(FieldError):
     message = _("Score can not be null.")
 
 
+class DataMatrixRequiredError(FieldError):
+    message = _("data_matrix must be provided.")
+
+
+class CorrectAnswerRequiredError(FieldError):
+    message = _(
+        "correct_answer must be set if correct_answer_required is True."
+    )
+
+
 class MinValueError(FieldError):
     message = _("Value must be less than max value.")
+
+
+class InvalidDataMatrixError(FieldError):
+    message = _("data_matrix must have the same length as rows")
+
+
+class InvalidDataMatrixByOptionError(FieldError):
+    message = _("data_matrix must have the same length as options")
 
 
 class InvalidScoreLengthError(FieldError):
@@ -71,7 +98,12 @@ class FromTimeToTimeRequiredError(FieldError):
 
 
 class ActivityAccessDeniedError(AccessDeniedError):
-    def __init__(self, *_, message="Activity access denied") -> None:
-        super().__init__(
-            message=message,
-        )
+    message = _("Activity access denied")
+
+
+class DuplicatedActivitiesError(FieldError):
+    message = _("Activity ids are duplicated.")
+
+
+class DuplicatedActivityFlowsError(FieldError):
+    message = _("Activity flow ids are duplicated.")

@@ -2,11 +2,14 @@ from pydantic import root_validator
 
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.activity_update import ActivityUpdate
+from apps.activities.errors import (
+    DuplicatedActivitiesError,
+    DuplicatedActivityFlowsError,
+)
 from apps.activity_flows.domain.flow_create import FlowCreate
 from apps.activity_flows.domain.flow_update import FlowUpdate
 from apps.applets.domain.base import AppletBase
 from apps.shared.domain import InternalModel
-from apps.shared.errors import ValidationError
 
 
 class AppletCreate(AppletBase, InternalModel):
@@ -29,14 +32,12 @@ class AppletUpdate(AppletBase, InternalModel):
         flow_ids = set()
         for activity in activities:  # type:ActivityUpdate
             if activity.id and activity.id in activity_ids:
-                raise ValidationError(message="Activity ids are duplicated.")
+                raise DuplicatedActivitiesError()
             activity_ids.add(activity.id)
 
         for flow in flows:  # type:FlowUpdate
             if flow.id and flow.id in flow_ids:
-                raise ValidationError(
-                    message="Activity flow ids are duplicated."
-                )
+                raise DuplicatedActivityFlowsError()
             flow_ids.add(flow.id)
         return values
 

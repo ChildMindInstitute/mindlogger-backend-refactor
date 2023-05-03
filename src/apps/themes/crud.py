@@ -49,13 +49,11 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
         ALLOWED_FIELDS = {"id"}
         if key not in ALLOWED_FIELDS:
-            raise ThemesError(
-                f"Can not make the looking up theme by {key} {value}"
-            )
+            raise ThemesError()
 
         # Get theme from the database
         if not (instance := await self._get(key, value)):
-            raise ThemeNotFoundError(key, value)
+            raise ThemeNotFoundError(key=key, value=value)
 
         # Get internal model
         theme: Theme = Theme.from_orm(instance)
@@ -131,9 +129,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
         instance: Theme = await self._fetch(key="id", value=pk)
 
         if instance.creator_id != creator_id:
-            raise PermissionsError(
-                "You do not have permissions to delete this theme."
-            )
+            raise PermissionsError()
         await self._delete(key="id", value=pk)
 
     async def update(
@@ -144,9 +140,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
         instance: Theme = await self._fetch(key="id", value=pk)
 
         if instance.creator_id != creator_id:
-            raise PermissionsError(
-                "You do not have permissions to update this theme."
-            )
+            raise PermissionsError()
         try:
             instance = await self._update_one(
                 lookup="id", value=pk, schema=update_schema

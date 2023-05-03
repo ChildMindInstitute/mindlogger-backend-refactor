@@ -22,8 +22,12 @@ class BaseError(Exception):
     type = ExceptionTypes.UNDEFINED
 
     def __init__(self, **kwargs):
-        self.message = self.message.format(**kwargs)
-        super().__init__(self.message)
+        self.kwargs = kwargs
+        super().__init__(self.message.format(**kwargs))
+
+    @property
+    def error(self):
+        return _(self.message).format(**self.kwargs)
 
 
 class ValidationError(BaseError):
@@ -36,7 +40,7 @@ class FieldError(BaseError):
     message = _("Invalid value.")
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
     type = ExceptionTypes.INVALID_VALUE
-    zero_path = "body"
+    zero_path: str | None = "body"
 
     def __init__(self, path=None, **kwargs):
         if path is None:

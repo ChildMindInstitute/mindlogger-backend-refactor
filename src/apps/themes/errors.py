@@ -1,7 +1,10 @@
 from gettext import gettext as _
 
-from apps.shared.exception import NotFoundError, ValidationError, \
-    InternalServerError
+from apps.shared.exception import (
+    InternalServerError,
+    NotFoundError,
+    ValidationError,
+)
 
 
 class ThemeNotFoundError(NotFoundError):
@@ -9,8 +12,8 @@ class ThemeNotFoundError(NotFoundError):
 
 
 class ThemesError(InternalServerError):
-    message = _("Themes service error")
+    message = _("Themes service error.")
 
 
 class ThemeAlreadyExist(ValidationError):
-    message = _("Theme already exist")
+    message = _("Theme already exist.")

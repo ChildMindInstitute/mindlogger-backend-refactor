@@ -1,4 +1,6 @@
+import gettext
 import logging
+import os
 import traceback
 
 from fastapi import Response
@@ -14,38 +16,39 @@ from starlette.requests import Request
 
 from apps.shared.domain.response.errors import (
     ErrorResponse,
-    ErrorResponseMessage,
     ErrorResponseMulti,
 )
 from apps.shared.exception import BaseError
+from config import settings
+from infrastructure.http import get_language
 
 logger = logging.getLogger("mindlogger_backend")
+gettext.bindtextdomain(gettext.textdomain(), settings.locale_dir)
 
 
 class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
     async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
+        self,
+        request: Request,
+        call_next: RequestResponseEndpoint,
     ) -> Response:
+        os.environ["LANG"] = get_language(request)
         try:
             return await call_next(request)
         except BaseError as e:
-            traceback.print_tb(e.__traceback__)
             return _custom_base_errors_handler(request, e)
         except ValidationError as e:
-            traceback.print_tb(e.__traceback__)
             return _pydantic_validation_errors_handler(request, e)
         except Exception as e:
-            traceback.print_tb(e.__traceback__)
             return _python_base_error_handler(request, e)
 
 
 def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     """This function is called if the BaseError was raised."""
-
     response = ErrorResponseMulti(
         result=[
             ErrorResponse(
-                message=error.message.capitalize(),
+                message=error.error,
                 type=error.type,
                 path=getattr(error, "path", []),
             )
@@ -63,12 +66,9 @@ def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
 def _python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     """This function is called if the Exception was raised."""
 
+    error_message = "".join(traceback.format_tb(error.__traceback__))
     response = ErrorResponseMulti(
-        result=[
-            ErrorResponse(
-                message=f"Unhandled error: {error}"
-            )
-        ]
+        result=[ErrorResponse(message=f"Unhandled error: {error_message}")]
     )
 
     logger.error(response)

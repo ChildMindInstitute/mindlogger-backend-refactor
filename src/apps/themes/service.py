@@ -27,13 +27,13 @@ class ThemeService:
             self.user_id, theme_id
         )
         if not theme:
-            raise ThemeNotFoundError("id", str(theme_id))
+            raise ThemeNotFoundError(key="id", id=theme_id)
         return Theme.from_orm(theme)
 
     async def get_by_id(self, theme_id: uuid.UUID) -> Theme:
         theme = await ThemesCRUD(self.session).get_by_id(theme_id)
         if not theme:
-            raise ThemeNotFoundError("id", str(theme_id))
+            raise ThemeNotFoundError(key="id", id=theme_id)
         return Theme.from_orm(theme)
 
     async def create(self, theme_request: ThemeRequest) -> PublicTheme:

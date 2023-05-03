@@ -56,8 +56,7 @@ class TestFolder(BaseTest):
 
         assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]
-            == "Folder already exists."
+            response.json()["result"][0]["message"] == "Folder already exists."
         )
 
     @rollback
@@ -104,8 +103,7 @@ class TestFolder(BaseTest):
 
         assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]
-            == "Folder already exists."
+            response.json()["result"][0]["message"] == "Folder already exists."
         )
 
     @rollback
@@ -130,9 +128,7 @@ class TestFolder(BaseTest):
         )
 
         assert response.status_code == 403, response.json()
-        assert (
-            response.json()["result"][0]["message"] == "Access denied."
-        )
+        assert response.json()["result"][0]["message"] == "Access denied."
 
     @rollback
     async def test_delete_not_empty_folder(self):

@@ -1,5 +1,6 @@
-from apps.shared.exception import NotFoundError
 from gettext import gettext as _
+
+from apps.shared.exception import NotFoundError
 
 
 class CacheNotFound(NotFoundError):

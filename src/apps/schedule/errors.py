@@ -1,7 +1,12 @@
 from gettext import gettext as _
 
-from apps.shared.exception import AccessDeniedError, NotFoundError, \
-    ValidationError, InternalServerError
+from apps.shared.exception import (
+    AccessDeniedError,
+    FieldError,
+    InternalServerError,
+    NotFoundError,
+    ValidationError,
+)
 
 
 class EventNotFoundError(NotFoundError):
@@ -33,7 +38,7 @@ class EventAlwaysAvailableExistsError(ValidationError):
 
 
 class EventError(InternalServerError):
-    message = _("Event service error")
+    message = _("Event service error.")
 
 
 class UserEventAlreadyExists(ValidationError):
@@ -42,8 +47,40 @@ class UserEventAlreadyExists(ValidationError):
 
 class ActivityEventAlreadyExists(ValidationError):
     message = _(
-        "The event {event_id} for activity {activity_id} already exists.")
+        "The event {event_id} for activity {activity_id} already exists."
+    )
 
 
 class FlowEventAlreadyExists(ValidationError):
     message = _("The event {event_id} for flow {flow_id} already exists.")
+
+
+class SelectedDateRequiredError(FieldError):
+    message = _("selectedDate is required for this periodicity type.")
+
+
+class HourRangeError(FieldError):
+    message = _("Hours must be between 0 and 23.")
+
+
+class MinuteRangeError(FieldError):
+    message = _("Minutes must be between 0 and 59.")
+
+
+class ActivityOrFlowRequiredError(FieldError):
+    message = _("Either activity_id or flow_id must be provided.")
+
+
+class OneTimeCompletionCaseError(FieldError):
+    message = _("one_time_completion must be set if periodicity is ALWAYS.")
+
+
+class StartEndTimeAccessBeforeScheduleCaseError(FieldError):
+    message = _(
+        "start_time, end_time, access_before_schedule "
+        "must be set if periodicity is not ALWAYS."
+    )
+
+
+class UnavailableActivityOrFlowError(FieldError):
+    message = _("Activity/flow is unavailable at this time.")

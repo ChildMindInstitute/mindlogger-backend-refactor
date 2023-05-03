@@ -1,7 +1,6 @@
 from gettext import gettext as _
 
-from apps.shared.exception import AccessDeniedError, NotFoundError, \
-    InternalServerError
+from apps.shared.exception import AccessDeniedError, NotFoundError
 
 __all__ = [
     "UserAppletAccessesNotFound",
@@ -27,5 +26,5 @@ class WorkspaceAccessDenied(AccessDeniedError):
     message = _("Access denied to workspace.")
 
 
-class UserAppletAccessesNotFound(InternalServerError):
+class UserAppletAccessesNotFound(NotFoundError):
     message = _("No such UserAppletAccess with id={id_}.")

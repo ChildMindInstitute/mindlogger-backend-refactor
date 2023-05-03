@@ -11,8 +11,11 @@ __all__ = [
     "AppletPasswordValidationError",
 ]
 
-from apps.shared.exception import AccessDeniedError, NotFoundError, \
-    ValidationError
+from apps.shared.exception import (
+    AccessDeniedError,
+    NotFoundError,
+    ValidationError,
+)
 
 
 class AppletNotFoundError(NotFoundError):
@@ -40,7 +43,7 @@ class AppletsFolderAccessDenied(AccessDeniedError):
 
 
 class AppletsError(ValidationError):
-    message = _("Can not make the looking up applets by {key} {value}")
+    message = _("Can not make the looking up applets by {key} {value}.")
 
 
 class AppletAlreadyExist(ValidationError):

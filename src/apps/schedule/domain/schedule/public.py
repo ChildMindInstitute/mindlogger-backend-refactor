@@ -14,8 +14,8 @@ from apps.schedule.domain.schedule import (
     BasePeriodicity,
     BaseReminderSetting,
 )
+from apps.schedule.errors import HourRangeError, MinuteRangeError
 from apps.shared.domain import PublicModel
-from apps.shared.errors import ValidationError
 
 __all__ = [
     "PublicPeriodicity",
@@ -81,13 +81,13 @@ class HourMinute(PublicModel):
     @validator("hours")
     def validate_hour(cls, value):
         if value > 23:
-            raise ValidationError(message="Hours must be between 0 and 23")
+            raise HourRangeError()
         return value
 
     @validator("minutes")
     def validate_minute(cls, value):
         if value > 59:
-            raise ValidationError(message="Minutes must be between 0 and 59")
+            raise MinuteRangeError()
         return value
 
 

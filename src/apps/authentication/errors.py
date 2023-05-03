@@ -6,7 +6,7 @@ from apps.shared.exception import AccessDeniedError, BaseError, ValidationError
 
 
 class BadCredentials(ValidationError):
-    message = _("Bad credentials")
+    message = _("Bad credentials.")
 
 
 class WeakPassword(ValidationError):
@@ -14,9 +14,9 @@ class WeakPassword(ValidationError):
 
 
 class AuthenticationError(BaseError):
-    message = _("Could not validate credentials")
+    message = _("Could not validate credentials.")
     status_code = status.HTTP_401_UNAUTHORIZED
 
 
 class PermissionsError(AccessDeniedError):
-    message = _("Not enough permissions")
+    message = _("Not enough permissions.")

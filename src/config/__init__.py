@@ -19,6 +19,7 @@ from config.service import ServiceSettings
 class Settings(BaseSettings):
     root_dir: Path
     apps_dir: Path
+    locale_dir: Path
 
     debug: bool = True
     commit_id: str = "Not assigned"
@@ -70,6 +71,7 @@ settings = Settings(
     #       to avoid overridding via environment variables
     root_dir=Path(__file__).parent.parent,
     apps_dir=Path(__file__).parent.parent / "apps",
+    locale_dir=Path(__file__).parent.parent / "locale",
     migrations_apps=[
         "users",
         "applets",

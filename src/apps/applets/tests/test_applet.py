@@ -354,8 +354,7 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]
-            == "Applet already exists."
+            response.json()["result"][0]["message"] == "Applet already exists."
         )
         assert TestMail.mails[0].subject == "Applet upload failed!"
 
@@ -456,8 +455,7 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]
-            == "Applet already exists."
+            response.json()["result"][0]["message"] == "Applet already exists."
         )
 
     @rollback
@@ -786,7 +784,6 @@ class TestApplet(BaseTest):
         assert len(result["activityFlows"][0]["activityIds"]) == 1
         assert len(result["activityFlows"][1]["activityIds"]) == 1
 
-    @pytest.mark.main
     @rollback
     async def test_public_applet_detail(self):
         response = await self.client.get(
