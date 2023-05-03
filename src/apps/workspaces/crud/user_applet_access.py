@@ -265,12 +265,22 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return result.scalars().one_or_none()
 
     async def get_by_roles(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
+        self,
+        user_id: uuid.UUID,
+        applet_id: uuid.UUID,
+        ordered_roles: list[str],
     ) -> UserAppletAccessSchema | None:
+        """
+        Get first role by order
+        """
+
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
-        query = query.where(UserAppletAccessSchema.role.in_(roles))
+        query = query.where(UserAppletAccessSchema.role.in_(ordered_roles))
+        query = query.order_by(
+            func.array_position(ordered_roles, UserAppletAccessSchema.role)
+        )
 
         result = await self._execute(query)
         return result.scalars().first() or None
