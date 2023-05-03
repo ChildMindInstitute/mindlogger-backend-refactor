@@ -1,6 +1,8 @@
 import asyncio
 import uuid
 
+import pytest
+
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -32,6 +34,7 @@ class TestApplet(BaseTest):
 
     public_applet_detail_url = "/public/applets/{key}"
 
+    @pytest.mark.main
     @rollback
     async def test_creating_applet(self):
         await self.client.login(

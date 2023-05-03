@@ -1,5 +1,7 @@
 import uuid
 
+import pytest
+
 from apps.applets.crud import AppletsCRUD
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -16,6 +18,7 @@ class TestAppletFolder(BaseTest):
     set_folder_url = "applets/set_folder"
     folders_applet_url = "applets/folders/{id}"
 
+    @pytest.mark.main
     @rollback
     async def test_move_to_folder(self):
         await self.client.login(
