@@ -15,6 +15,19 @@ class UserAppletAccessService:
         self._applet_id = applet_id
         self.session = session
 
+    async def _get_default_role_meta(
+        self, role: Role, user_id: uuid.UUID
+    ) -> dict:
+        meta: dict = {}
+        if role == Role.RESPONDENT:
+            user = await UsersCRUD(self.session).get_by_id(user_id)
+            meta.update(
+                secretUserId=str(uuid.uuid4()),
+                nickname=f"{user.first_name} {user.last_name}",
+            )
+
+        return meta
+
     async def add_role(
         self, user_id: uuid.UUID, role: Role
     ) -> UserAppletAccess:
@@ -24,6 +37,8 @@ class UserAppletAccessService:
         if access_schema:
             return UserAppletAccess.from_orm(access_schema)
 
+        meta = await self._get_default_role_meta(role, user_id)
+
         access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
                 user_id=user_id,
@@ -31,7 +46,7 @@ class UserAppletAccessService:
                 role=role,
                 owner_id=self._user_id,
                 invitor_id=self._user_id,
-                meta=dict(),
+                meta=meta,
             )
         )
         return UserAppletAccess.from_orm(access_schema)
@@ -82,7 +97,9 @@ class UserAppletAccessService:
                 invitation.applet_id, self._user_id, Role.RESPONDENT
             )
             if not has_respondent:
-                user = await UsersCRUD(self.session).get_by_id(self._user_id)
+                meta = await self._get_default_role_meta(
+                    Role.RESPONDENT, self._user_id
+                )
                 await UserAppletAccessCRUD(self.session).save(
                     UserAppletAccessSchema(
                         user_id=self._user_id,
@@ -90,10 +107,7 @@ class UserAppletAccessService:
                         role=Role.RESPONDENT,
                         owner_id=owner_access.user_id,
                         invitor_id=invitation.invitor_id,
-                        meta=dict(
-                            secretUserId=str(uuid.uuid4()),
-                            nickname=f"{user.first_name} {user.last_name}",
-                        ),
+                        meta=meta,
                     )
                 )
 
