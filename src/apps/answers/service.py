@@ -190,6 +190,16 @@ class AnswerService:
                         activity_item_history_id=activity_item_id_version,
                     )
                 )
+
+        if not answer_groups:
+            answer_groups[uuid.uuid4().hex] = AnswerSchema(
+                id=uuid.uuid4(),
+                created_at=created_at,
+                applet_id=applet_answer.applet_id,
+                flow_history_id=applet_answer.flow_id,
+                activity_history_id=activity_id_version,
+                respondent_id=self.user_id,
+            )
         await AnswersCRUD(self.session).create_many(
             list(answer_groups.values())
         )

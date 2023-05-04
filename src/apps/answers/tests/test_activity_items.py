@@ -84,6 +84,19 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
+        response = await self.client.get(
+            self.applet_submit_dates_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b2"
+            ),
+            dict(
+                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                fromDate=datetime.date.today() - datetime.timedelta(days=10),
+                toDate=datetime.date.today() + datetime.timedelta(days=10),
+            ),
+        )
+        assert response.status_code == 200
+        assert len(response.json()["result"]["dates"]) == 1
+
     @rollback
     async def test_list_submit_dates(self):
         await self.client.login(
