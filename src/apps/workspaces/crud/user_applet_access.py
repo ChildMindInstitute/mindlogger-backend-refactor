@@ -561,11 +561,16 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         await self._execute(query)
 
     async def check_access_by_user_and_owner(
-        self, user_id: uuid.UUID, owner_id: uuid.UUID
+        self,
+        user_id: uuid.UUID,
+        owner_id: uuid.UUID,
+        roles: list[Role] | None = None,
     ) -> bool:
         query: Query = select(self.schema_class.id)
         query = query.where(self.schema_class.user_id == user_id)
         query = query.where(self.schema_class.owner_id == owner_id)
+        if roles:
+            query = query.where(self.schema_class.role.in_(roles))
         query = query.limit(1)
 
         db_result = await self._execute(query)

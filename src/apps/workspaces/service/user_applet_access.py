@@ -33,7 +33,7 @@ class UserAppletAccessService:
     ) -> UserAppletAccess:
         access_schema = await UserAppletAccessCRUD(
             self.session
-        ).get_applet_role_by_user_id(self._applet_id, self._user_id, role)
+        ).get_applet_role_by_user_id(self._applet_id, user_id, role)
         if access_schema:
             return UserAppletAccess.from_orm(access_schema)
 

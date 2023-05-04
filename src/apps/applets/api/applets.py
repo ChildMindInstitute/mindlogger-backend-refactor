@@ -36,6 +36,10 @@ from apps.mailing.services import MailingService
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.service.user_access import UserAccessService
+from infrastructure.database import atomic, session_manager
+from infrastructure.http import get_language
 
 __all__ = [
     "applet_create",
@@ -56,9 +60,6 @@ __all__ = [
     "applet_check_password",
     "applet_retrieve_by_key",
 ]
-
-from infrastructure.database import atomic, session_manager
-from infrastructure.http import get_language
 
 
 async def applet_list(
@@ -111,14 +112,22 @@ async def applet_retrieve_by_key(
 
 
 async def applet_create(
+    owner_id: uuid.UUID,
     user: User = Depends(get_current_user),
     schema: AppletCreate = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[public_detail.Applet]:
     async with atomic(session):
+        roles = None
+        if user.id != owner_id:
+            roles = [Role.ADMIN, Role.MANAGER, Role.EDITOR]
+        await UserAccessService(session, user.id).check_access(owner_id, roles)
+
         mail_service = MailingService()
         try:
-            applet = await AppletService(session, user.id).create(schema)
+            applet = await AppletService(session, owner_id).create(
+                schema, user.id
+            )
         except Exception:
             await mail_service.send(
                 MessageSchema(

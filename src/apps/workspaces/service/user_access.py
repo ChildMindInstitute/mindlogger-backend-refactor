@@ -195,10 +195,15 @@ class UserAccessService:
                 return val
             return ""
 
-    async def check_access(self, owner_id: uuid.UUID):
+    async def check_access(
+        self, owner_id: uuid.UUID, roles: list[Role] | None = None
+    ):
+        if owner_id == self._user_id:
+            return
+
         has_access = await UserAppletAccessCRUD(
             self.session
-        ).check_access_by_user_and_owner(self._user_id, owner_id)
+        ).check_access_by_user_and_owner(self._user_id, owner_id, roles)
         if not has_access:
             raise WorkspaceDoesNotExistError
 
