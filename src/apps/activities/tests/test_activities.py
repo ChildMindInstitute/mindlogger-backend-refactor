@@ -1,5 +1,3 @@
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -18,7 +16,6 @@ class TestActivities(BaseTest):
     activity_detail = "/activities/{pk}"
     public_activity_detail = "public/activities/{pk}"
 
-    @pytest.mark.main
     @rollback
     async def test_activity_detail(self):
         await self.client.login(
@@ -45,7 +42,6 @@ class TestActivities(BaseTest):
             == "Feeling down, depressed, or hopeless?"
         )
 
-    @pytest.mark.main
     @rollback
     async def test_public_activity_detail(self):
         response = await self.client.get(

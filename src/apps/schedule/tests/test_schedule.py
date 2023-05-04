@@ -1,5 +1,3 @@
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -208,7 +206,6 @@ class TestSchedule(BaseTest):
         events = response.json()["result"]
         assert len(events) == events_count + 1
 
-    @pytest.mark.main
     @rollback
     async def test_public_schedule_get_all(self):
         response = await self.client.get(
