@@ -79,9 +79,16 @@ class InvitationsService:
         )
 
     async def get(self, key: uuid.UUID) -> InvitationDetailGeneric | None:
-        return await self.invitations_crud.get_by_email_and_key(
+        invitation = await self.invitations_crud.get_by_email_and_key(
             self._user.email, key
         )
+        if not invitation:
+            raise InvitationDoesNotExist(
+                message=f"No such invitation with key={key}."
+            )
+        elif invitation.status != InvitationStatus.PENDING:
+            raise InvitationAlreadyProcesses()
+        return invitation
 
     def _get_invitation_subject(self, applet: AppletSchema):
         return f"{applet.display_name} invitation"
