@@ -26,7 +26,7 @@ class AnswerNoteSchema(Base):
     __tablename__ = "answer_notes"
 
     answer_id = Column(
-        ForeignKey("answers.id", ondelete="RESTRICT"),
+        ForeignKey("answers.id", ondelete="CASCADE"),
     )
     note = Column(Text())
     user_id = Column(
@@ -41,7 +41,7 @@ class AnswerActivityItemsSchema(Base):
     __tablename__ = "answers_activity_items"
 
     answer_id = Column(
-        ForeignKey("answers.id", ondelete="RESTRICT"),
+        ForeignKey("answers.id", ondelete="CASCADE"),
     )
     respondent_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"),
@@ -69,7 +69,7 @@ class AnswerFlowItemsSchema(Base):
     __tablename__ = "answers_flow_items"
 
     answer_id = Column(
-        ForeignKey("answers.id", ondelete="RESTRICT"),
+        ForeignKey("answers.id", ondelete="CASCADE"),
     )
     respondent_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"),

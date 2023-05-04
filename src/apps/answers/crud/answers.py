@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Query
 
 from apps.alerts.errors import AnswerNotFoundError
@@ -24,7 +24,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         applet_id: uuid.UUID,
         created_date: datetime.date,
     ) -> list[AnswerSchema]:
-
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.respondent_id == respondent_id)
@@ -57,3 +56,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         if not schema:
             raise AnswerNotFoundError()
         return schema
+
+    async def delete_all_by_applet_id(self, applet_id: uuid.UUID):
+        query: Query = delete(AnswerSchema)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        await self._execute(query)

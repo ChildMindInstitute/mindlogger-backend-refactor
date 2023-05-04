@@ -10,6 +10,7 @@ from apps.activities.domain.activity_create import (
 from apps.activities.services.activity import ActivityService
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.service.flow import FlowService
+from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import (
@@ -487,6 +488,11 @@ class AppletService:
     async def delete_applet_by_id(self, applet_id: uuid.UUID, password: str):
         await self._validate_applet_password(password, applet_id)
         await self._validate_delete_applet(self.user_id, applet_id)
+
+        await AnswersCRUD(self.session).delete_all_by_applet_id(applet_id)
+        await UserAppletAccessCRUD(self.session).delete_all_by_applet_id(
+            applet_id
+        )
         await AppletsCRUD(self.session).delete_by_id(applet_id)
 
     async def _validate_delete_applet(self, user_id, applet_id):
