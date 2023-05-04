@@ -16,7 +16,10 @@ from apps.activities.domain.activity_update import (
     ActivityUpdate,
     PreparedActivityItemUpdate,
 )
-from apps.activities.errors import ActivityAccessDeniedError
+from apps.activities.errors import (
+    ActivityAccessDeniedError,
+    ActivityDoeNotExist,
+)
 from apps.activities.services.activity_item import ActivityItemService
 from apps.applets.crud import AppletsCRUD
 from apps.schedule.crud.events import ActivityEventsCRUD
@@ -321,6 +324,8 @@ class ActivityService:
         schema = await ActivitiesCRUD(self.session).get_by_id(
             self.user_id, id_
         )
+        if not schema:
+            raise ActivityDoeNotExist()
         applet = await AppletsCRUD(self.session).get_by_id(schema.applet_id)
         if not applet.link:
             raise ActivityAccessDeniedError()
