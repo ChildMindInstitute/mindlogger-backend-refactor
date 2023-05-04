@@ -1,7 +1,10 @@
 import uuid
 
+from pydantic import root_validator
+
 from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_item_base import BaseActivityItem
+from apps.activities.errors import DuplicateActivityItemNameNameError
 from apps.shared.domain import InternalModel
 
 
@@ -16,3 +19,14 @@ class PreparedActivityItemCreate(BaseActivityItem, InternalModel):
 class ActivityCreate(ActivityBase, InternalModel):
     key: uuid.UUID
     items: list[ActivityItemCreate]
+
+    @root_validator()
+    def validate_existing_ids_for_duplicate(cls, values):
+        items = values.get("items", [])
+
+        item_names = set()
+        for item in items:  # type:ActivityItemCreate
+            if item.name in item_names:
+                raise DuplicateActivityItemNameNameError()
+            item_names.add(item.name)
+        return values

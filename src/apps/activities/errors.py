@@ -109,5 +109,17 @@ class DuplicatedActivitiesError(FieldError):
     message = _("Activity ids are duplicated.")
 
 
+class DuplicateActivityNameError(FieldError):
+    message = _("Activity names are duplicated.")
+
+
+class DuplicateActivityItemNameNameError(FieldError):
+    message = _("Activity item names are duplicated.")
+
+
+class DuplicateActivityFlowNameError(FieldError):
+    message = _("Activity flow names are duplicated.")
+
+
 class DuplicatedActivityFlowsError(FieldError):
     message = _("Activity flow ids are duplicated.")
