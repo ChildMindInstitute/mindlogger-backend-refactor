@@ -107,7 +107,7 @@ class TestAppletActivityItems(BaseTest):
                             ),
                         ),
                         dict(
-                            name="activity_item_time_range",
+                            name="activity_item_time_range_2",
                             question={"en": "What is your name?"},
                             response_type="time",
                             response_values=None,

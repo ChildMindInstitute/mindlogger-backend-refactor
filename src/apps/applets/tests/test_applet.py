@@ -164,7 +164,7 @@ class TestApplet(BaseTest):
                             ),
                         ),
                         dict(
-                            name="evening_activity_item",
+                            name="evening_activity_item_2",
                             question=dict(
                                 en="How had you slept?",
                                 fr="How had you slept?",
@@ -256,6 +256,296 @@ class TestApplet(BaseTest):
         assert response.status_code == 200
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].subject == "Applet upload success!"
+
+    @rollback
+    async def test_creating_applet_failed_by_duplicate_activity_name(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            password="Test1234!",
+            display_name="User daily behave",
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    name="AAA",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="morning_activity_item",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="text",
+                            response_values=None,
+                            is_hidden=True,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                        ),
+                        dict(
+                            name="morning_activity_item_2",
+                            question=dict(
+                                en="How had you woke?",
+                                fr="How had you woke?",
+                            ),
+                            response_type="slider",
+                            response_values=dict(
+                                min_label="Not at all",
+                                max_label="Very much",
+                                min_value=1,
+                                max_value=5,
+                                min_image=None,
+                                max_image=None,
+                                scores=None,
+                            ),
+                            config=dict(
+                                add_scores=False,
+                                set_alerts=False,
+                                show_tick_marks=False,
+                                show_tick_labels=False,
+                                continuous_slider=False,
+                                timer=None,
+                                remove_back_button=False,
+                                skippable_item=True,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+                dict(
+                    name="AAA",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    description=dict(
+                        en="Understand evening feelings.",
+                        fr="Understand evening feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="evening_activity_item",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="singleSelect",
+                            response_values=dict(
+                                paletteName="default",
+                                options=[
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
+                                        text="Very well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
+                                        text="Well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=True,
+                                randomize_options=False,
+                                timer=None,
+                                add_scores=False,
+                                set_alerts=False,
+                                add_tooltip=False,
+                                set_palette=False,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
+                        dict(
+                            name="evening_activity_item",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="multiSelect",
+                            response_values=dict(
+                                paletteName=None,
+                                options=[
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
+                                        text="Very well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
+                                        text="Well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=True,
+                                randomize_options=False,
+                                timer=None,
+                                add_scores=False,
+                                set_alerts=False,
+                                add_tooltip=False,
+                                set_palette=False,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
+                        dict(
+                            name="evening_activity_item33",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="photo",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=True,
+                                timer=None,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+        )
+        response = await self.client.post(
+            self.applet_list_url, data=create_data
+        )
+        assert response.status_code == 422, response.json()
+
+    @rollback
+    async def test_creating_applet_failed_by_duplicate_activity_item_name(
+        self,
+    ):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            password="Test1234!",
+            display_name="User daily behave",
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    name="AAA",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="aaa",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="text",
+                            response_values=None,
+                            is_hidden=True,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                        ),
+                        dict(
+                            name="aaa",
+                            question=dict(
+                                en="How had you woke?",
+                                fr="How had you woke?",
+                            ),
+                            response_type="slider",
+                            response_values=dict(
+                                min_label="Not at all",
+                                max_label="Very much",
+                                min_value=1,
+                                max_value=5,
+                                min_image=None,
+                                max_image=None,
+                                scores=None,
+                            ),
+                            config=dict(
+                                add_scores=False,
+                                set_alerts=False,
+                                show_tick_marks=False,
+                                show_tick_labels=False,
+                                continuous_slider=False,
+                                timer=None,
+                                remove_back_button=False,
+                                skippable_item=True,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_list_url, data=create_data
+        )
+        assert response.status_code == 422, response.json()
 
     @rollback
     async def test_create_duplicate_name_applet(self):
