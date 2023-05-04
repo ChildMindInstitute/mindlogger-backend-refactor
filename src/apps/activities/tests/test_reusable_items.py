@@ -1,7 +1,5 @@
 import uuid
 
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 

@@ -485,7 +485,9 @@ class AppletService:
         await self._validate_delete_applet(self.user_id, applet_id)
 
         await AnswersCRUD(self.session).delete_all_by_applet_id(applet_id)
-        await UserAppletAccessCRUD(self.session).delete_all_by_applet_id(applet_id)
+        await UserAppletAccessCRUD(self.session).delete_all_by_applet_id(
+            applet_id
+        )
         await AppletsCRUD(self.session).delete_by_id(applet_id)
 
     async def _validate_delete_applet(self, user_id, applet_id):
