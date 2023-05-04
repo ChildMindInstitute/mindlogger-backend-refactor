@@ -94,6 +94,13 @@ class UserAppletAccessService:
             self.session
         ).get_applet_owner(self._applet_id)
         user: User = await UsersCRUD(self.session).get_by_id(self._user_id)
+        if role == Role.RESPONDENT:
+            meta = dict(
+                secretUserId=str(uuid.uuid4()),
+                nickname=f"{user.first_name} {user.last_name}",
+            )
+        else:
+            meta = dict()
         access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
                 user_id=self._user_id,
@@ -101,10 +108,7 @@ class UserAppletAccessService:
                 role=role,
                 owner_id=owner_access.user_id,
                 invitor_id=owner_access.user_id,
-                meta=dict(
-                    secretUserId=str(uuid.uuid4()),
-                    nickname=f"{user.first_name} {user.last_name}",
-                ),
+                meta=meta,
             )
         )
         return UserAppletAccess.from_orm(access_schema)
