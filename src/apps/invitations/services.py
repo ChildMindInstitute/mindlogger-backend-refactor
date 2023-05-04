@@ -24,6 +24,7 @@ from apps.invitations.domain import (
     PrivateInvitationDetail,
     RespondentMeta,
     ReviewerMeta,
+    _InvitationRequest,
 )
 from apps.invitations.errors import (
     AppletDoesNotExist,
@@ -88,7 +89,7 @@ class InvitationsService:
 
         await self._is_applet_exist(applet_id)
         await self._is_validated_role_for_invitation(
-            applet_id, Role.RESPONDENT
+            applet_id, Role.RESPONDENT, schema
         )
         await self._is_secret_user_id_unique(applet_id, schema.secret_user_id)
 
@@ -196,7 +197,9 @@ class InvitationsService:
     ) -> InvitationDetailForReviewer:
 
         await self._is_applet_exist(applet_id)
-        await self._is_validated_role_for_invitation(applet_id, Role.REVIEWER)
+        await self._is_validated_role_for_invitation(
+            applet_id, Role.REVIEWER, schema
+        )
         await self._is_respondents_exist(applet_id, schema.respondents)
 
         # Get all invitations and check if it is possible to create
@@ -308,7 +311,9 @@ class InvitationsService:
     ) -> InvitationDetailForManagers:
 
         await self._is_applet_exist(applet_id)
-        await self._is_validated_role_for_invitation(applet_id, schema.role)
+        await self._is_validated_role_for_invitation(
+            applet_id, schema.role, schema
+        )
 
         # Get all invitations and check if it is possible to create
         # the another invite or update existing or invitation
@@ -460,7 +465,10 @@ class InvitationsService:
             raise AppletDoesNotExist()
 
     async def _is_validated_role_for_invitation(
-        self, applet_id: uuid.UUID, request_role: Role | ManagersRole
+        self,
+        applet_id: uuid.UUID,
+        request_role: Role | ManagersRole,
+        schema: _InvitationRequest,
     ):
         access_service = UserAppletAccessService(
             self.session, self._user.id, applet_id
@@ -475,6 +483,11 @@ class InvitationsService:
             role = await access_service.get_organizers_role()
         elif request_role == Role.REVIEWER:
             role = await access_service.get_respondent_managers_role()
+            if (
+                role == Role.COORDINATOR
+                and self._user.email.lower() == schema.email.lower()
+            ):
+                role = None
         else:
             # Wrong role to invite
             raise DoesNotHaveAccess(
