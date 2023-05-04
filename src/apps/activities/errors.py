@@ -20,6 +20,10 @@ class ActivityHistoryDoeNotExist(NotFoundError):
     message = _("Activity history does not exist.")
 
 
+class ActivityDoeNotExist(NotFoundError):
+    message = _("Activity does not exist.")
+
+
 class InvalidVersionError(ValidationError):
     message = _("Invalid version.")
 
