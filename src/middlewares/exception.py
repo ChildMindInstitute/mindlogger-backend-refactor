@@ -89,6 +89,7 @@ def _pydantic_validation_errors_handler(
             ErrorResponse(
                 message=err["msg"],
                 path=list(err["loc"]),
+                type=err["type"],
             )
             for err in error.errors()
         ]
