@@ -15,7 +15,6 @@ from apps.invitations.domain import (
     InvitationReviewerResponse,
     PrivateInvitationResponse,
 )
-from apps.invitations.errors import InvitationDoesNotExist
 from apps.invitations.filters import InvitationQueryParams
 from apps.invitations.services import (
     InvitationsService,
@@ -90,10 +89,6 @@ async def invitation_retrieve(
     """
     async with atomic(session):
         invitation = await InvitationsService(session, user).get(key)
-        if not invitation:
-            raise InvitationDoesNotExist(
-                message=f"No such invitation with key={key}."
-            )
     return Response(result=InvitationResponse.from_orm(invitation))
 
 

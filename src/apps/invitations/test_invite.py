@@ -442,7 +442,7 @@ class TestInvite(BaseTest):
         access = await UserAppletAccessCRUD().get_by_roles(
             user_id=uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             applet_id=uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b3"),
-            roles=[Role.RESPONDENT],
+            ordered_roles=[Role.RESPONDENT],
         )
         assert access.role == Role.RESPONDENT
 
