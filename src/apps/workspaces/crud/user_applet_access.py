@@ -660,8 +660,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     applet_id=applet_id,
                     applet_name=display_name,
                     applet_image=image,
-                    secret_user_id=meta.get("nickname", ""),
-                    nickname=meta.get("secretUserId", ""),
+                    secret_user_id=meta.get("secretUserId", ""),
+                    nickname=meta.get("nickname", ""),
                     has_individual_schedule=has_individual,
                 )
             )
