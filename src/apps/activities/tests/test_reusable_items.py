@@ -30,7 +30,6 @@ class TestReusableItem(BaseTest):
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-    @pytest.mark.main
     @rollback
     async def test_recreate_item_choice(self):
         await self.client.login(
