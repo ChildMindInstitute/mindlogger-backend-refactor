@@ -3,7 +3,6 @@ from starlette import status
 
 from apps.applets.api.applets import (
     applet_check_password,
-    applet_create,
     applet_delete,
     applet_duplicate,
     applet_link_create,
@@ -102,17 +101,6 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_version_changes_retrieve)
-
-router.post(
-    "",
-    response_model=Response[public_detail.Applet],
-    status_code=status.HTTP_201_CREATED,
-    responses={
-        status.HTTP_201_CREATED: {"model": Response[public_detail.Applet]},
-        **DEFAULT_OPENAPI_RESPONSE,
-        **AUTHENTICATION_ERROR_RESPONSES,
-    },
-)(applet_create)
 
 router.post(
     "/{applet_id}/duplicate",
