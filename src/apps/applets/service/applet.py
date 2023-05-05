@@ -174,11 +174,17 @@ class AppletService:
         await UserAppletAccessService(
             self.session, applet_owner.user_id, applet.id
         ).add_role(applet_owner.user_id, Role.OWNER)
+        await UserAppletAccessService(
+            self.session, applet_owner.user_id, applet.id
+        ).add_role(applet_owner.user_id, Role.RESPONDENT)
 
         if self.user_id != applet_owner.user_id:
             await UserAppletAccessService(
                 self.session, applet_owner.user_id, applet.id
             ).add_role(self.user_id, Role.MANAGER)
+            await UserAppletAccessService(
+                self.session, applet_owner.user_id, applet.id
+            ).add_role(self.user_id, Role.RESPONDENT)
 
         applet.activities = await ActivityService(
             self.session, applet_owner.user_id
