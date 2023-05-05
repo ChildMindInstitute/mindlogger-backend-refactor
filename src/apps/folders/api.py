@@ -25,7 +25,10 @@ async def folder_list(
 ) -> ResponseMulti[FolderPublic]:
     async with atomic(session):
         folders = await FolderService(session, user.id).list()
-    return ResponseMulti(result=[FolderPublic.from_orm(f) for f in folders])
+        folder_count = await FolderService(session, user.id).count()
+    return ResponseMulti(
+        result=[FolderPublic.from_orm(f) for f in folders], count=folder_count
+    )
 
 
 async def folder_create(

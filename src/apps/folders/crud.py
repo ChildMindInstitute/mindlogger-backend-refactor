@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
+from sqlalchemy.sql.functions import count
 
 from apps.folders.db.schemas import FolderSchema
 from apps.folders.errors import FolderDoesNotExist
@@ -21,6 +22,12 @@ class FolderCRUD(BaseCRUD):
         query = query.order_by(FolderSchema.id.desc())
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_creators_folders_count(self, creator_id: uuid.UUID) -> int:
+        query: Query = select(count(FolderSchema.id))
+        query = query.where(FolderSchema.creator_id == creator_id)
+        db_result = await self._execute(query)
+        return db_result.scalars().first() or 0
 
     async def save(self, schema: FolderSchema) -> FolderSchema:
         return await self._create(schema)

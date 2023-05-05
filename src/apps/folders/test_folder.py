@@ -23,6 +23,7 @@ class TestFolder(BaseTest):
 
         assert response.status_code == 200, response.json()
         assert len(response.json()["result"]) == 2
+        assert response.json()["count"] == 2
         assert (
             response.json()["result"][0]["id"]
             == "ecf66358-a717-41a7-8027-807374307732"
