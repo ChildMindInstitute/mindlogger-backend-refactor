@@ -1,5 +1,7 @@
 from uuid import uuid4
 
+import pytest
+
 from apps.shared.test import BaseTest
 from apps.workspaces.domain.constants import Role
 from infrastructure.database import rollback
@@ -27,6 +29,7 @@ class TestWorkspaces(BaseTest):
     login_url = "/auth/login"
     user_workspace_list = "/workspaces"
     user_workspace_detail = "/workspaces/{owner_id}"
+    user_workspace_priority_role = "/workspaces/{owner_id}/priority_role"
     workspace_applets_list = "/workspaces/{owner_id}/applets"
     workspace_applets_detail = "/workspaces/{owner_id}/applets/{id_}"
     workspace_respondents_list = "/workspaces/{owner_id}/respondents"
@@ -62,6 +65,19 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["name"] == "Lucy Gabel Test"
         assert response.json()["result"]["hasManagers"] is False
+
+    @pytest.mark.main
+    @rollback
+    async def test_get_users_priority_role_in_workspace(self):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+
+        response = await self.client.get(
+            self.user_workspace_priority_role.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            )
+        )
+        assert response.status_code == 200, response.json()
+        assert response.json()["result"]["role"] == Role.COORDINATOR
 
     @rollback
     async def test_user_workspace_retrieve_with_managers(self):
