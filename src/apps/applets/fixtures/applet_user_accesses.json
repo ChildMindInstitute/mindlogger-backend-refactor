@@ -11,7 +11,7 @@
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
       "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "role": "admin",
+      "role": "owner",
       "meta": {
         "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674781",
         "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674781"
@@ -30,7 +30,7 @@
       "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b2",
-      "role": "admin",
+      "role": "owner",
       "meta": {
         "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674782",
         "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674782"
@@ -49,7 +49,7 @@
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b3",
       "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "role": "admin",
+      "role": "owner",
       "meta": {
         "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674783",
         "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674783"
@@ -68,7 +68,7 @@
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b4",
       "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa3",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "role": "admin",
+      "role": "owner",
       "meta": {
         "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674784",
         "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674784"

@@ -141,7 +141,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         user_applet_ids = user_applet_ids.where(
             UserAppletAccessSchema.role.in_(
                 [
-                    Role.ADMIN,
+                    Role.OWNER,
                     Role.MANAGER,
                     Role.EDITOR,
                     Role.REVIEWER,
@@ -208,7 +208,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         user_applet_ids = user_applet_ids.where(
             UserAppletAccessSchema.role.in_(
                 [
-                    Role.ADMIN,
+                    Role.OWNER,
                     Role.MANAGER,
                     Role.EDITOR,
                     Role.REVIEWER,

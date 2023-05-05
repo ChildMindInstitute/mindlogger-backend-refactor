@@ -25,6 +25,7 @@ from apps.schedule.domain.schedule import (
 from apps.schedule.service import ScheduleService
 from apps.shared.query_params import QueryParams
 from apps.test_data.domain import AnchorDateTime, image_url
+from apps.workspaces.domain.constants import Role
 
 
 class TestDataService:
@@ -882,7 +883,8 @@ class TestDataService:
         old_applets = await AppletService(
             self.session, self.user_id
         ).get_list_by_single_language(
-            language="en", query_params=QueryParams(filters={"roles": "admin"})
+            language="en",
+            query_params=QueryParams(filters={"roles": Role.OWNER}),
         )
 
         if old_applets:

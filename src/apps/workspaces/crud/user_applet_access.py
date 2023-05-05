@@ -174,7 +174,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(
             UserAppletAccessSchema.role.in_(
-                [Role.ADMIN, Role.MANAGER, Role.EDITOR]
+                [Role.OWNER, Role.MANAGER, Role.EDITOR]
             )
         )
         return query
@@ -184,7 +184,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     ) -> UserAppletAccessSchema:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
-        query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
+        query = query.where(UserAppletAccessSchema.role == Role.OWNER)
         db_result = await self._execute(query)
         try:
             return db_result.scalars().one()
@@ -218,7 +218,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(
             self.schema_class.role.in_(
                 [
-                    Role.ADMIN,
+                    Role.OWNER,
                     Role.MANAGER,
                     Role.COORDINATOR,
                     Role.EDITOR,
@@ -731,7 +731,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         )
         from_query = from_query.order_by(
             case(
-                (UserAppletAccessSchema.role == Role.ADMIN, 1),
+                (UserAppletAccessSchema.role == Role.OWNER, 1),
                 (UserAppletAccessSchema.role == Role.MANAGER, 2),
                 (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
                 (UserAppletAccessSchema.role == Role.EDITOR, 4),
@@ -767,7 +767,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             )
         from_query = from_query.order_by(
             case(
-                (UserAppletAccessSchema.role == Role.ADMIN, 1),
+                (UserAppletAccessSchema.role == Role.OWNER, 1),
                 (UserAppletAccessSchema.role == Role.MANAGER, 2),
                 (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
                 (UserAppletAccessSchema.role == Role.EDITOR, 4),

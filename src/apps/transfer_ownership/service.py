@@ -115,7 +115,7 @@ class TransferService:
         )
 
         roles_to_add = [
-            UserAppletAccessSchema(role=Role.ADMIN, meta={}, **roles_data),
+            UserAppletAccessSchema(role=Role.OWNER, meta={}, **roles_data),
             UserAppletAccessSchema(
                 role=Role.RESPONDENT,
                 meta=dict(

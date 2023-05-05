@@ -66,7 +66,7 @@ class AppletService:
 
         await UserAppletAccessService(
             self.session, self.user_id, applet.id
-        ).add_role(self.user_id, Role.ADMIN)
+        ).add_role(self.user_id, Role.OWNER)
 
         await UserAppletAccessService(
             self.session, self.user_id, applet.id
@@ -157,7 +157,7 @@ class AppletService:
 
         await UserAppletAccessService(
             self.session, applet_owner.user_id, applet.id
-        ).add_role(applet_owner.user_id, Role.ADMIN)
+        ).add_role(applet_owner.user_id, Role.OWNER)
 
         if self.user_id != applet_owner.user_id:
             await UserAppletAccessService(
@@ -438,7 +438,7 @@ class AppletService:
         if not applet_exists:
             raise AppletNotFoundError(key="id", value=str(applet_id))
         schema = await AppletsCRUD(self.session).get_applet_by_roles(
-            self.user_id, applet_id, [Role.ADMIN, Role.MANAGER, Role.EDITOR]
+            self.user_id, applet_id, [Role.OWNER, Role.MANAGER, Role.EDITOR]
         )
         theme = None
         if not schema:
@@ -653,7 +653,7 @@ class AppletService:
         roles = await UserAppletAccessCRUD(
             self.session
         ).get_user_roles_to_applet(self.user_id, applet_id)
-        if Role.ADMIN not in roles:
+        if Role.OWNER not in roles:
             raise AppletAccessDenied()
         return Applet.from_orm(applet)
 
@@ -664,7 +664,7 @@ class AppletService:
         roles = await UserAppletAccessCRUD(
             self.session
         ).get_user_roles_to_applet(self.user_id, applet_id)
-        if not {Role.ADMIN, Role.COORDINATOR, Role.MANAGER}.intersection(
+        if not {Role.OWNER, Role.COORDINATOR, Role.MANAGER}.intersection(
             roles
         ):
             raise AppletAccessDenied()

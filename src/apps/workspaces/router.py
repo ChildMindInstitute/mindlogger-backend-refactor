@@ -20,7 +20,6 @@ from apps.workspaces.api import (
     workspace_users_applet_access_list,
     workspace_users_pin,
 )
-from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
     PublicRespondentAppletAccess,
 )
@@ -29,7 +28,8 @@ from apps.workspaces.domain.workspace import (
     PublicWorkspaceInfo,
     PublicWorkspaceManager,
     PublicWorkspaceRespondent,
-    WorkspaceAppletPublic, WorkspacePrioritizedRole,
+    WorkspaceAppletPublic,
+    WorkspacePrioritizedRole,
 )
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])

@@ -53,7 +53,7 @@ async def alert_get_all_by_applet_id(
         roles = await UserAppletAccessCRUD(session).get_roles_in_roles(
             user.id,
             applet_id,
-            [Role.ADMIN],
+            [Role.OWNER],
         )
         if not roles:
             raise AlertViewAccessDenied
@@ -89,7 +89,7 @@ async def alert_update_status_by_id(
         roles = await UserAppletAccessCRUD(session).get_roles_in_roles(
             user.id,
             alert_schema.applet_id,
-            [Role.ADMIN],
+            [Role.OWNER],
         )
         if not roles:
             raise AlertUpdateAccessDenied

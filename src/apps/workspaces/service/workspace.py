@@ -38,7 +38,7 @@ class WorkspaceService:
             user_id,
             self._user_id,
             [
-                Role.ADMIN,
+                Role.OWNER,
                 Role.MANAGER,
                 Role.COORDINATOR,
                 Role.EDITOR,
