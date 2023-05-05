@@ -14,6 +14,7 @@ from apps.shared.query_params import (
     parse_query_params,
 )
 from apps.users.domain import User
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.user_applet_access import (
     PinUser,
     PublicRespondentAppletAccess,
@@ -26,6 +27,7 @@ from apps.workspaces.domain.workspace import (
     PublicWorkspaceManager,
     PublicWorkspaceRespondent,
     WorkspaceAppletPublic,
+    WorkspacePrioritizedRole,
 )
 from apps.workspaces.filters import WorkspaceUsersQueryParams
 from apps.workspaces.service.user_access import UserAccessService
@@ -70,6 +72,25 @@ async def workspace_retrieve(
         )
 
     return Response(result=PublicWorkspaceInfo.from_orm(workspace))
+
+
+async def managers_priority_role_retrieve(
+    owner_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    appletIDs: str = "",
+    session=Depends(session_manager.get_session),
+) -> Response[WorkspacePrioritizedRole]:
+    """Fetch all workspaces for the specific user."""
+
+    async with atomic(session):
+        applet_ids = list(map(uuid.UUID, filter(None, appletIDs.split(","))))
+        role = await UserAppletAccessCRUD(
+            session
+        ).get_applets_roles_by_priority_for_workspace(
+            owner_id, user.id, applet_ids
+        )
+
+    return Response(result=WorkspacePrioritizedRole(role=role))
 
 
 async def workspace_applets(

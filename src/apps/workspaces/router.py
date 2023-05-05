@@ -9,6 +9,7 @@ from apps.shared.domain.response import (
 )
 from apps.workspaces.api import (
     applet_remove_respondent_access,
+    managers_priority_role_retrieve,
     user_workspaces,
     workspace_applet_detail,
     workspace_applets,
@@ -19,6 +20,7 @@ from apps.workspaces.api import (
     workspace_users_applet_access_list,
     workspace_users_pin,
 )
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
     PublicRespondentAppletAccess,
 )
@@ -27,7 +29,7 @@ from apps.workspaces.domain.workspace import (
     PublicWorkspaceInfo,
     PublicWorkspaceManager,
     PublicWorkspaceRespondent,
-    WorkspaceAppletPublic,
+    WorkspaceAppletPublic, WorkspacePrioritizedRole,
 )
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
@@ -54,6 +56,16 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_retrieve)
+
+router.get(
+    "/{owner_id}/priority_role",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[WorkspacePrioritizedRole]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(managers_priority_role_retrieve)
 
 # Applets in a specific workspace where owner_id is applet owner
 router.get(

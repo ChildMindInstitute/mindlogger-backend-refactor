@@ -105,3 +105,7 @@ class WorkspaceApplet(AppletSingleLanguageInfo):
 
 class WorkspaceAppletPublic(AppletSingleLanguageInfoPublic):
     role: Role
+
+
+class WorkspacePrioritizedRole(PublicModel):
+    role: Role
