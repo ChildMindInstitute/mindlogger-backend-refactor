@@ -55,7 +55,7 @@ class UserAppletAccessService:
         self, invitation: InvitationDetailGeneric
     ):
         assert (
-            invitation.role != Role.ADMIN
+            invitation.role != Role.OWNER
         ), "Admin role can not be added by invitation"
 
         manager_included_roles = [Role.EDITOR, Role.COORDINATOR, Role.REVIEWER]
@@ -152,7 +152,7 @@ class UserAppletAccessService:
         - All permission
         """
         access = await UserAppletAccessCRUD(self.session).get(
-            self._user_id, self._applet_id, Role.ADMIN
+            self._user_id, self._applet_id, Role.OWNER
         )
         return getattr(access, "role", None)
 
@@ -167,7 +167,7 @@ class UserAppletAccessService:
         - Delete applet
         """
         access = await UserAppletAccessCRUD(self.session).get_by_roles(
-            self._user_id, self._applet_id, [Role.ADMIN, Role.MANAGER]
+            self._user_id, self._applet_id, [Role.OWNER, Role.MANAGER]
         )
         return getattr(access, "role", None)
 
@@ -185,7 +185,7 @@ class UserAppletAccessService:
         access = await UserAppletAccessCRUD(self.session).get_by_roles(
             self._user_id,
             self._applet_id,
-            [Role.ADMIN, Role.MANAGER, Role.COORDINATOR],
+            [Role.OWNER, Role.MANAGER, Role.COORDINATOR],
         )
         return getattr(access, "role", None)
 
@@ -202,7 +202,7 @@ class UserAppletAccessService:
         access = await UserAppletAccessCRUD(self.session).get_by_roles(
             self._user_id,
             self._applet_id,
-            [Role.ADMIN, Role.MANAGER, Role.EDITOR],
+            [Role.OWNER, Role.MANAGER, Role.EDITOR],
         )
         return getattr(access, "role", None)
 
@@ -215,7 +215,7 @@ class UserAppletAccessService:
         - Delete specific respondents' data
         """
         access = await UserAppletAccessCRUD(self.session).get_by_roles(
-            self._user_id, self._applet_id, [Role.ADMIN, Role.MANAGER]
+            self._user_id, self._applet_id, [Role.OWNER, Role.MANAGER]
         )
         return getattr(access, "role", None)
 
@@ -231,7 +231,7 @@ class UserAppletAccessService:
         access = await UserAppletAccessCRUD(self.session).get_by_roles(
             self._user_id,
             self._applet_id,
-            [Role.ADMIN, Role.MANAGER, Role.REVIEWER],
+            [Role.OWNER, Role.MANAGER, Role.REVIEWER],
         )
         return getattr(access, "role", None)
 
@@ -246,7 +246,7 @@ class UserAppletAccessService:
             self._user_id,
             self._applet_id,
             [
-                Role.ADMIN,
+                Role.OWNER,
                 Role.MANAGER,
                 Role.COORDINATOR,
                 Role.EDITOR,

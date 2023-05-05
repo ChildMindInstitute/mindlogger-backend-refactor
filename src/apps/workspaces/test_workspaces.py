@@ -1,7 +1,5 @@
 from uuid import uuid4
 
-import pytest
-
 from apps.shared.test import BaseTest
 from apps.workspaces.domain.constants import Role
 from infrastructure.database import rollback
@@ -66,7 +64,6 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"]["name"] == "Lucy Gabel Test"
         assert response.json()["result"]["hasManagers"] is False
 
-    @pytest.mark.main
     @rollback
     async def test_get_users_priority_role_in_workspace(self):
         await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
@@ -118,7 +115,7 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == 200
         assert response.json()["count"] == 1
-        assert response.json()["result"][0]["role"] == Role.ADMIN
+        assert response.json()["result"][0]["role"] == Role.OWNER
 
     @rollback
     async def test_workspace_applets_detail(self):

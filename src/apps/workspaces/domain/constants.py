@@ -3,7 +3,8 @@ from functools import lru_cache
 
 
 class Role(str, Enum):
-    ADMIN = "admin"
+    SUPER_ADMIN = "super_admin"
+    OWNER = "owner"
     MANAGER = "manager"
     COORDINATOR = "coordinator"
     EDITOR = "editor"

@@ -30,7 +30,7 @@ class _AppletFiltering(Filtering):
     def filter_by_owner(self, field, value: uuid.UUID):
         query: Query = select(UserAppletAccessSchema.applet_id)
         query = query.where(UserAppletAccessSchema.user_id == value)
-        query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
+        query = query.where(UserAppletAccessSchema.role == Role.OWNER)
         return field.in_(query)
 
 

@@ -146,7 +146,7 @@ class UserAccessService:
         accesses = await UserAppletAccessCRUD(
             self.session
         ).get_user_applet_accesses_by_roles(
-            self._user_id, applet_ids, [Role.ADMIN, Role.MANAGER]
+            self._user_id, applet_ids, [Role.OWNER, Role.MANAGER]
         )
         owners_applet_ids = [access.applet_id for access in accesses]
         no_access_applets = set(applet_ids) - set(owners_applet_ids)
@@ -214,7 +214,7 @@ class UserAccessService:
         applet_manager_ids = await UserAppletAccessCRUD(
             self.session
         ).get_applet_users_by_roles(
-            access.applet_id, [Role.MANAGER, Role.COORDINATOR, Role.ADMIN]
+            access.applet_id, [Role.MANAGER, Role.COORDINATOR, Role.OWNER]
         )
         if self._user_id not in applet_manager_ids:
             raise UserAppletAccessesDenied
