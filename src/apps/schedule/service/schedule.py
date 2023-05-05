@@ -221,14 +221,21 @@ class ScheduleService:
         )
 
     async def get_all_schedules(
-        self, applet_id: uuid.UUID
+        self, applet_id: uuid.UUID, query: QueryParams
     ) -> list[PublicEvent]:
+        # validate respondent_id if present
+        if "respondent_id" in query.filters:
+            respondent_id = query.filters["respondent_id"]
+            await self._validate_user(respondent_id)
+        else:
+            respondent_id = None
+
         # Check if applet exists
         await self._validate_applet(applet_id=applet_id)
 
         event_schemas: list[EventSchema] = await EventCRUD(
             self.session
-        ).get_all_by_applet_id(applet_id)
+        ).get_all_by_applet_id_with_filter(applet_id, respondent_id)
         events: list[PublicEvent] = []
 
         for event_schema in event_schemas:

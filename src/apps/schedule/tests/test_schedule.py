@@ -204,7 +204,18 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 200, response.json()
         events = response.json()["result"]
-        assert len(events) == events_count + 1
+        assert len(events) == events_count
+
+        response = await self.client.get(
+            self.schedule_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+            + "?respondentId=7484f34a-3acc-4ee6-8a94-fd7299502fa2"
+        )
+
+        assert response.status_code == 200, response.json()
+        events = response.json()["result"]
+        assert len(events) == 1
 
     @rollback
     async def test_public_schedule_get_all(self):

@@ -1,8 +1,10 @@
 import uuid
+from copy import deepcopy
 
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
+from apps.schedule.domain.schedule.filters import EventQueryParams
 from apps.schedule.domain.schedule.public import (
     PublicEvent,
     PublicEventByUser,
@@ -11,6 +13,7 @@ from apps.schedule.domain.schedule.public import (
 from apps.schedule.domain.schedule.requests import EventRequest
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from infrastructure.database import atomic, session_manager
 
@@ -52,11 +55,14 @@ async def schedule_get_by_id(
 async def schedule_get_all(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(parse_query_params(EventQueryParams)),
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicEvent]:
     """Get all schedules for an applet."""
     async with atomic(session):
-        schedules = await ScheduleService(session).get_all_schedules(applet_id)
+        schedules = await ScheduleService(session).get_all_schedules(
+            applet_id, deepcopy(query_params)
+        )
 
     return ResponseMulti(result=schedules, count=len(schedules))
 
