@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select, text, update
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
@@ -343,3 +343,20 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query: Query = delete(InvitationSchema)
         query = query.where(InvitationSchema.applet_id == applet_id)
         await self._execute(query)
+
+    async def get_for_respondent(
+        self,
+        applet_id: uuid.UUID,
+        secret_user_id: str,
+        status: InvitationStatus,
+    ) -> InvitationSchema | None:
+        schema = self.schema_class
+        query: Query = select(schema).where(
+            schema.applet_id == applet_id,
+            schema.role == Role.RESPONDENT,
+            schema.status == status,
+            schema.meta[text("'secret_user_id'")].astext == secret_user_id,
+        )
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first()

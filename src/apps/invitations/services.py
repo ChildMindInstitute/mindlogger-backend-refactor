@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from fastapi.exceptions import RequestValidationError
@@ -531,10 +532,14 @@ class InvitationsService:
         applet_id: uuid.UUID,
         secret_user_id: str,
     ):
-        access = await UserAppletAccessCRUD(
+        access_coro = UserAppletAccessCRUD(
             self.session
         ).get_by_secret_user_id_for_applet(applet_id, secret_user_id)
-        if access:
+        invitation_coro = InvitationCRUD(self.session).get_for_respondent(
+            applet_id, secret_user_id, InvitationStatus.PENDING
+        )
+        access, invitation = await asyncio.gather(access_coro, invitation_coro)
+        if access or invitation:
             raise NonUniqueValue(
                 message=f"In applet with id {applet_id} "
                 f"secret User Id is non-unique."

@@ -209,6 +209,37 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].subject == "Applet 1 invitation"
 
     @rollback
+    async def test_admin_invite_respondent_duplicate_pending_secret_id(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        request_data = dict(
+            email="patric@gmail.com",
+            first_name="Patric",
+            last_name="Daniel",
+            role=Role.RESPONDENT,
+            language="en",
+            secret_user_id=str(uuid.uuid4()),
+            nickname=str(uuid.uuid4()),
+        )
+        response = await self.client.post(
+            self.invite_respondent_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
+        assert response.status_code == 200
+
+        request_data["email"] = "patric1@gmail.com"
+        response = await self.client.post(
+            self.invite_respondent_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
+        assert response.status_code == 422
+
+    @rollback
     async def test_manager_invite_manager_success(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
