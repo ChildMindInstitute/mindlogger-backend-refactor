@@ -422,6 +422,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     last_seen=user_schema.last_seen_at
                     or user_schema.created_at,
                     has_individual_schedule=has_individual_schedule,
+                    is_pinned=access.is_pinned,
                 )
             )
         return users
