@@ -19,6 +19,7 @@ from apps.schedule.domain.constants import (
     PeriodicityType,
     TimerType,
 )
+from apps.schedule.domain.schedule import BaseEvent
 from apps.schedule.domain.schedule.internal import (
     ActivityEventCreate,
     Event,
@@ -270,18 +271,17 @@ class ScheduleService:
 
     async def get_public_all_schedules(
         self, key: uuid.UUID
-    ) -> list[PublicEvent]:
-        # Check if applet exists
+    ) -> PublicEventByUser:
+        # Check if applet exists by link key
         applet_id = await self._validate_public_applet(key)
 
-        event_schemas = await EventCRUD(self.session).get_public_by_applet_id(
-            applet_id
-        )
-        events: list[PublicEvent] = []
+        event_schemas: list[EventSchema] = await EventCRUD(
+            self.session
+        ).get_public_by_applet_id(applet_id)
 
+        full_events: list[EventFull] = []
         for event_schema in event_schemas:
             event: Event = Event.from_orm(event_schema)
-
             periodicity: Periodicity = await PeriodicityCRUD(
                 self.session
             ).get_by_id(event.periodicity_id)
@@ -291,18 +291,33 @@ class ScheduleService:
             flow_id = await FlowEventsCRUD(self.session).get_by_event_id(
                 event_id=event.id
             )
-            notification = await self._get_notifications_and_reminder(event.id)
+            base_event = BaseEvent(**event.dict())
 
-            events.append(
-                PublicEvent(
-                    **event.dict(),
-                    periodicity=PublicPeriodicity(**periodicity.dict()),
-                    respondent_id=None,
+            full_events.append(
+                EventFull(
+                    id=event.id,
+                    **base_event.dict(),
+                    periodicity=periodicity,
                     activity_id=activity_id,
                     flow_id=flow_id,
-                    notification=notification,
                 )
             )
+
+        events = PublicEventByUser(
+            applet_id=applet_id,
+            events=[
+                self._convert_to_dto(
+                    event=full_event,
+                    notifications=await NotificationCRUD(
+                        self.session
+                    ).get_all_by_event_id(full_event.id),
+                    reminder=await ReminderCRUD(self.session).get_by_event_id(
+                        full_event.id
+                    ),
+                )
+                for full_event in full_events
+            ],
+        )
 
         return events
 
