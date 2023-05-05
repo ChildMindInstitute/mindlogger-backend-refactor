@@ -30,7 +30,7 @@ class TimerType(str, Enum):
 class DefaultEvent(BaseModel):
     start_time: time = time(0, 0)
     end_time: time = time(23, 59)
-    access_before_schedule: bool = True
+    access_before_schedule: bool = False
     one_time_completion: bool = False
     timer: timedelta = timedelta()
     timer_type: TimerType = TimerType.NOT_SET
