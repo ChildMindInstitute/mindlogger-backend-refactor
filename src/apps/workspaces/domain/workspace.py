@@ -59,6 +59,7 @@ class WorkspaceRespondent(InternalModel):
     secret_id: str | None
     last_seen: datetime.datetime
     has_individual_schedule: bool
+    is_pinned: bool = False
 
 
 class WorkspaceManager(InternalModel):
@@ -78,6 +79,7 @@ class PublicWorkspaceRespondent(PublicModel):
     secret_id: str | None
     last_seen: datetime.datetime
     has_individual_schedule: bool
+    is_pinned: bool = False
 
 
 class PublicWorkspaceManager(PublicModel):

@@ -308,6 +308,8 @@ class TestWorkspaces(BaseTest):
             dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
         assert response.json()["result"][0]["accessId"] == access_id
+        assert response.json()["result"][0]["isPinned"] is True
+        assert response.json()["result"][1]["isPinned"] is False
 
         # Unpin access
         response = await self.client.post(
