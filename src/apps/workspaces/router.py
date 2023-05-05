@@ -1,7 +1,9 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
+from apps.applets.api import applet_create
 from apps.applets.domain.applet_full import PublicAppletFull
+from apps.applets.domain.applets import public_detail
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -88,6 +90,17 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_applet_detail)
+
+router.post(
+    "/{owner_id}/applets",
+    response_model=Response[public_detail.Applet],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"model": Response[public_detail.Applet]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_create)
 
 router.get(
     "/{owner_id}/respondents",

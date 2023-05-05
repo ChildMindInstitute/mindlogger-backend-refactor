@@ -61,16 +61,32 @@ class AppletService:
         self.user_id = user_id
         self.session = session
 
-    async def create(self, create_data: AppletCreate) -> AppletFull:
-        applet = await self._create(create_data)
-
+    async def _create_applet_accesses(
+        self, applet_id: uuid.UUID, manager_id: uuid.UUID | None
+    ):
         await UserAppletAccessService(
-            self.session, self.user_id, applet.id
+            self.session, self.user_id, applet_id
         ).add_role(self.user_id, Role.OWNER)
 
         await UserAppletAccessService(
-            self.session, self.user_id, applet.id
+            self.session, self.user_id, applet_id
         ).add_role(self.user_id, Role.RESPONDENT)
+
+        if manager_id and manager_id != self.user_id:
+            await UserAppletAccessService(
+                self.session, self.user_id, applet_id
+            ).add_role(manager_id, Role.MANAGER)
+
+            await UserAppletAccessService(
+                self.session, self.user_id, applet_id
+            ).add_role(manager_id, Role.RESPONDENT)
+
+    async def create(
+        self, create_data: AppletCreate, manager_id: uuid.UUID | None = None
+    ) -> AppletFull:
+        applet = await self._create(create_data)
+
+        await self._create_applet_accesses(applet.id, manager_id)
 
         applet.activities = await ActivityService(
             self.session, self.user_id
@@ -84,7 +100,7 @@ class AppletService:
 
         await AppletHistoryService(
             self.session, applet.id, applet.version
-        ).add_history(self.user_id, applet)
+        ).add_history(manager_id or self.user_id, applet)
 
         return applet
 

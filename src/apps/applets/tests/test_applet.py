@@ -22,6 +22,7 @@ class TestApplet(BaseTest):
 
     login_url = "/auth/login"
     applet_list_url = "applets"
+    applet_create_url = "workspaces/{owner_id}/applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
     applet_duplicate_url = f"{applet_detail_url}/duplicate"
     applet_password_check_url = f"{applet_detail_url}/password/check"
@@ -246,7 +247,10 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
         assert response.status_code == 201, response.json()
 
@@ -456,7 +460,10 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
         assert response.status_code == 422, response.json()
 
@@ -543,7 +550,10 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
         assert response.status_code == 422, response.json()
 
@@ -640,7 +650,10 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
         assert response.status_code == 400, response.json()
         assert (
@@ -741,7 +754,10 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
         assert response.status_code == 400, response.json()
         assert (
@@ -1183,7 +1199,10 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
         assert response.status_code == 201, response.json()
 
@@ -1461,7 +1480,10 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
 
         update_data = dict(
