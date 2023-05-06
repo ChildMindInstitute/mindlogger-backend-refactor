@@ -5,6 +5,8 @@ from apps.activities.domain.response_type_config import (
     ResponseType,
     ResponseTypeValueConfig,
 )
+
+from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.errors import (
     DataMatrixRequiredError,
     IncorrectConfigError,
@@ -26,6 +28,7 @@ class BaseActivityItem(BaseModel):
     config: PublicModel  # ResponseTypeConfig
     name: str
     is_hidden: bool | None = False
+    conditional_logic: ConditionalLogic | None = None
 
     # class Config:
     #     schema_extra = {

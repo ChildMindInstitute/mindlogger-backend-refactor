@@ -2,6 +2,7 @@ from enum import Enum
 from pydantic import BaseModel, Field, root_validator, validator
 
 from apps.shared.domain import PublicModel
+from apps.activities.domain.conditions import Condition, ConditionType
 
 
 class Match(str, Enum):
@@ -11,4 +12,4 @@ class Match(str, Enum):
 
 class ConditionalLogic(PublicModel):
     match: Match = Field(default=Match.ALL)
-    conditions: list[dict[str, str]] = Field(default_factory=list)
+    conditions: list[Condition]

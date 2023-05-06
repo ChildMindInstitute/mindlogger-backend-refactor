@@ -123,3 +123,11 @@ class DuplicateActivityFlowNameError(FieldError):
 
 class DuplicatedActivityFlowsError(FieldError):
     message = _("Activity flow ids are duplicated.")
+
+
+class IncorrectConditionItemError(FieldError):
+    message = _("Condition item does not exist.")
+
+
+class IncorrectConditionOptionError(FieldError):
+    message = _("Condition option does not exist.")
