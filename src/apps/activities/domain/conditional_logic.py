@@ -1,8 +1,9 @@
 from enum import Enum
-from pydantic import BaseModel, Field, root_validator, validator
 
+from pydantic import Field
+
+from apps.activities.domain.conditions import Condition
 from apps.shared.domain import PublicModel
-from apps.activities.domain.conditions import Condition, ConditionType
 
 
 class Match(str, Enum):

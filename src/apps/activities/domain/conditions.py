@@ -1,6 +1,7 @@
 from enum import Enum
 from uuid import UUID
-from pydantic import BaseModel, Field, root_validator, validator
+
+from pydantic import Field
 
 from apps.shared.domain import PublicModel
 

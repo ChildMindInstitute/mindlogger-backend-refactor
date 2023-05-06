@@ -7,7 +7,6 @@ from apps.activities.domain.activity_item_base import BaseActivityItem
 from apps.activities.errors import (
     DuplicateActivityItemNameNameError,
     IncorrectConditionItemError,
-    IncorrectConditionOptionError,
 )
 from apps.shared.domain import InternalModel
 
