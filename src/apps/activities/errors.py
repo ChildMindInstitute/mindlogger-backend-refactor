@@ -123,3 +123,25 @@ class DuplicateActivityFlowNameError(FieldError):
 
 class DuplicatedActivityFlowsError(FieldError):
     message = _("Activity flow ids are duplicated.")
+
+
+class IncorrectConditionItemError(FieldError):
+    message = _("Condition item does not exist.")
+
+
+class IncorrectConditionItemIndexError(ValidationError):
+    message = _(
+        " Selected position of the Item in the list contradicts the Item Flow."  # noqa: E501
+    )
+
+
+class IncorrectConditionOptionError(FieldError):
+    message = _("Condition option does not exist.")
+
+
+class IncorrectConditionLogicItemTypeError(ValidationError):
+    message = _("Item type is not supported for conditional logic.")
+
+
+class HiddenWhenConditionalLogicSetError(ValidationError):
+    message = _("Item type cannot be hidden if conditional logic is set.")

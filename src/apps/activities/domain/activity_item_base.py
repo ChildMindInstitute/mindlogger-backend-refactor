@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, root_validator, validator
 
+from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.domain.response_type_config import (
     NoneResponseType,
     ResponseType,
@@ -7,6 +8,8 @@ from apps.activities.domain.response_type_config import (
 )
 from apps.activities.errors import (
     DataMatrixRequiredError,
+    HiddenWhenConditionalLogicSetError,
+    IncorrectConditionLogicItemTypeError,
     IncorrectConfigError,
     IncorrectNameCharactersError,
     IncorrectResponseValueError,
@@ -26,6 +29,7 @@ class BaseActivityItem(BaseModel):
     config: PublicModel  # ResponseTypeConfig
     name: str
     is_hidden: bool | None = False
+    conditional_logic: ConditionalLogic | None = None
 
     # class Config:
     #     schema_extra = {
@@ -162,4 +166,28 @@ class BaseActivityItem(BaseModel):
                 if response_values.data_matrix is None:
                     raise DataMatrixRequiredError()
 
+        return values
+
+    @validator("conditional_logic")
+    def validate_conditional_logic(cls, value, values):
+        response_type = values.get("response_type")
+        if value is not None:
+            # check if response type is correct
+            if response_type not in [
+                ResponseType.SINGLESELECT,
+                ResponseType.MULTISELECT,
+                ResponseType.SLIDER,
+                ResponseType.TEXT,
+                ResponseType.TIME,
+            ]:
+                raise IncorrectConditionLogicItemTypeError()
+
+        return value
+
+    @root_validator()
+    def validate_is_hidden(cls, values):
+        # cannot hide if conditional logic is set
+        value = values.get("is_hidden")
+        if value and values.get("conditional_logic"):
+            raise HiddenWhenConditionalLogicSetError()
         return values
