@@ -63,9 +63,9 @@ class PublicNotificationLog(_NotificationLogBase, PublicModel):
     """Public NotificationLog model."""
 
     id: uuid.UUID
-    notification_descriptions: dict | None
-    notification_in_queue: dict | None
-    scheduled_notifications: dict | None
+    notification_descriptions: list
+    notification_in_queue: list
+    scheduled_notifications: list
 
     @validator(
         "notification_descriptions",
