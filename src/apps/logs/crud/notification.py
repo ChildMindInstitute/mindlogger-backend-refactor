@@ -86,12 +86,9 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
                     scheduled_notifications_updated=sched_notif_upd,
                 )
             )
+            notification_log = PublicNotificationLog.from_orm(instance)
+
+            return notification_log
         except Exception:
             raise NotificationLogError()
 
-        # Create internal data model
-        notification_log: PublicNotificationLog = (
-            PublicNotificationLog.from_orm(instance)
-        )
-
-        return notification_log

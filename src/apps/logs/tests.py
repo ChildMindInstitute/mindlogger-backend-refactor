@@ -11,9 +11,9 @@ class TestNotificationLogs(BaseTest):
             user_id="test@test.com",
             device_id="test_device_id",
             action_type="test",
-            notification_descriptions='{"sample":"json"}',
-            notification_in_queue='{"sample":"json"}',
-            scheduled_notifications='{"sample":"json"}',
+            notification_descriptions='[{"sample":"json"}]',
+            notification_in_queue='[{"sample":"json"}]',
+            scheduled_notifications='[{"sample":"json"}]',
         )
 
         response = await self.client.post(self.logs_url, data=create_data)
@@ -33,9 +33,9 @@ class TestNotificationLogs(BaseTest):
             user_id="test@test.com",
             device_id="test_device_id",
             action_type="test",
-            notification_descriptions='{"sample":"json"}',
-            notification_in_queue='{"sample":"json"}',
-            scheduled_notifications='{"sample":"json"}',
+            notification_descriptions='[{"sample":"json"}]',
+            notification_in_queue='[{"sample":"json"}]',
+            scheduled_notifications='[{"sample":"json"}]',
         )
 
         response = await self.client.post(self.logs_url, data=create_data)
