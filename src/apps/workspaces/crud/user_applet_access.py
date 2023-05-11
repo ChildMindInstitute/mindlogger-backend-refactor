@@ -111,6 +111,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.group_by(
             AppletSchema.id, AppletSchema.display_name, AppletSchema.created_at
         )
+        # db_result = await self._execute(query)
+        #
+        # applets = []
+        # for applet_schema in db_result.scalars().all():
+        #     applets.append(applet_schema.id)
+        # print("applets_id =", applets)
 
         if query_params.filters:
             query = query.where(
@@ -135,25 +141,33 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     async def get_accessible_applets_count(
         self, user_id: uuid.UUID, query_params: QueryParams
     ) -> int:
-        query: Query = select(count(AppletSchema.id))
-        query = query.join(
+        applet_ids: Query = select(AppletSchema.id)
+        applet_ids = applet_ids.join(
             UserAppletAccessSchema,
             UserAppletAccessSchema.applet_id == AppletSchema.id,
         )
-        query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
-        query = query.group_by(
+        applet_ids = applet_ids.where(
+            UserAppletAccessSchema.user_id == user_id
+        )
+        applet_ids = applet_ids.where(
+            AppletSchema.is_deleted == False  # noqa: E712
+        )
+        applet_ids = applet_ids.group_by(
             AppletSchema.id, AppletSchema.display_name, AppletSchema.created_at
         )
 
         if query_params.filters:
-            query = query.where(
+            applet_ids = applet_ids.where(
                 *_UserAppletFilter().get_clauses(**query_params.filters)
             )
         if query_params.search:
-            query = query.where(
+            applet_ids = applet_ids.where(
                 _UserAppletSearch().get_clauses(query_params.search)
             )
+
+        query: Query = select(count(AppletSchema.id))
+        query = query.where(AppletSchema.id.in_(applet_ids))
+
         db_result = await self._execute(query)
 
         return db_result.scalars().first() or 0
