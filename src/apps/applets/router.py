@@ -2,9 +2,9 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.applets.api.applets import (
-    applet_check_password,
     applet_delete,
     applet_duplicate,
+    applet_encryption_update,
     applet_link_create,
     applet_link_delete,
     applet_link_get,
@@ -116,17 +116,6 @@ router.post(
 )(applet_duplicate)
 
 router.post(
-    "/{applet_id}/password/check",
-    description="""To check password""",
-    response_model_by_alias=True,
-    status_code=status.HTTP_200_OK,
-    responses={
-        **DEFAULT_OPENAPI_RESPONSE,
-        **AUTHENTICATION_ERROR_RESPONSES,
-    },
-)(applet_check_password)
-
-router.post(
     "/set_folder",
     status_code=status.HTTP_200_OK,
     responses={
@@ -155,6 +144,16 @@ router.put(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_update)
+
+router.post(
+    "/{id_}/encryption",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[public_detail.Encryption]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_encryption_update)
 
 router.delete(
     "/{id_}",

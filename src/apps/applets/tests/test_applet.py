@@ -25,7 +25,7 @@ class TestApplet(BaseTest):
     applet_create_url = "workspaces/{owner_id}/applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
     applet_duplicate_url = f"{applet_detail_url}/duplicate"
-    applet_password_check_url = f"{applet_detail_url}/password/check"
+    applet_set_encryption_url = f"{applet_detail_url}/encryption"
     applet_unique_name_url = f"{applet_list_url}/unique_name"
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
@@ -39,8 +39,12 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="User daily behave",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -267,7 +271,6 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="User daily behave",
             description=dict(
                 en="Understand users behave",
@@ -475,7 +478,6 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="User daily behave",
             description=dict(
                 en="Understand users behave",
@@ -563,8 +565,12 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="Applet 1",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -667,8 +673,12 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="AppleT 1",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -770,8 +780,12 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         update_data = dict(
-            password="Test1234!",
             display_name="Applet 1",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -914,7 +928,14 @@ class TestApplet(BaseTest):
             self.applet_duplicate_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            data=dict(display_name="New name", password="Test1234567890"),
+            data=dict(
+                display_name="New name",
+                encryption=dict(
+                    public_key=uuid.uuid4().hex,
+                    prime=uuid.uuid4().hex,
+                    base=uuid.uuid4().hex,
+                ),
+            ),
         )
         assert response.status_code == 201, response.json()
 
@@ -929,31 +950,44 @@ class TestApplet(BaseTest):
             self.applet_duplicate_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            data=dict(display_name="New name", password="Test1234567890123"),
+            data=dict(
+                display_name="New name",
+                encryption=dict(
+                    public_key=uuid.uuid4().hex,
+                    prime=uuid.uuid4().hex,
+                    base=uuid.uuid4().hex,
+                ),
+            ),
         )
         assert response.status_code == 400, response.json()
 
     @rollback
-    async def test_check_applet_password(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_set_encryption(self):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
 
         response = await self.client.post(
-            self.applet_password_check_url.format(
-                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            self.applet_set_encryption_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b4"
             ),
-            data=dict(password="Test1234!"),
+            data=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
         )
         assert response.status_code == 200, response.json()
 
         response = await self.client.post(
-            self.applet_password_check_url.format(
-                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            self.applet_set_encryption_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b4"
             ),
-            data=dict(password="Test1234"),
+            data=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
         )
-        assert response.status_code == 400, response.json()
+        assert response.status_code == 403, response.json()
 
     @rollback
     async def test_applet_list(self):
@@ -986,7 +1020,6 @@ class TestApplet(BaseTest):
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            dict(password="Test1234!"),
         )
 
         assert response.status_code == 204, response.json()
@@ -995,19 +1028,9 @@ class TestApplet(BaseTest):
             self.applet_detail_url.format(
                 pk="00000000-0000-0000-0000-000000000000"
             ),
-            dict(password="Test1234!"),
         )
 
         assert response.status_code == 404, response.json()
-
-        response = await self.client.delete(
-            self.applet_detail_url.format(
-                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
-            dict(password="Test1234"),
-        )
-
-        assert response.status_code == 400, response.json()
 
     @rollback
     async def test_applet_delete_by_manager(self):
@@ -1016,7 +1039,6 @@ class TestApplet(BaseTest):
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            dict(password="Test1234!"),
         )
 
         assert response.status_code == 204
@@ -1028,7 +1050,6 @@ class TestApplet(BaseTest):
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            dict(password="Test1234!"),
         )
 
         assert response.status_code == 403
@@ -1112,8 +1133,12 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="User daily behave",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -1235,8 +1260,12 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         update_data = dict(
-            password="Test1234!",
             display_name="Applet 1",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -1393,8 +1422,12 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="User daily behave",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -1487,8 +1520,12 @@ class TestApplet(BaseTest):
         )
 
         update_data = dict(
-            password="Test1234!",
             display_name="User daily behave updated",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",

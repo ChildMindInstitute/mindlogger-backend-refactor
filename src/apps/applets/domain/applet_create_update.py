@@ -10,12 +10,11 @@ from apps.activities.errors import (
 )
 from apps.activity_flows.domain.flow_create import FlowCreate
 from apps.activity_flows.domain.flow_update import FlowUpdate
-from apps.applets.domain.base import AppletBase
+from apps.applets.domain.base import AppletBase, Encryption
 from apps.shared.domain import InternalModel
 
 
 class AppletCreate(AppletBase, InternalModel):
-    password: str
     activities: list[ActivityCreate]
     activity_flows: list[FlowCreate]
 
@@ -39,7 +38,6 @@ class AppletCreate(AppletBase, InternalModel):
 
 
 class AppletUpdate(AppletBase, InternalModel):
-    password: str
     activities: list[ActivityUpdate]
     activity_flows: list[FlowUpdate]
 
@@ -72,8 +70,4 @@ class AppletUpdate(AppletBase, InternalModel):
 
 class AppletDuplicateRequest(InternalModel):
     display_name: str
-    password: str
-
-
-class AppletPassword(InternalModel):
-    password: str
+    encryption: Encryption

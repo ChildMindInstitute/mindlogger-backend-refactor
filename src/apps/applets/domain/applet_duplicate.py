@@ -14,3 +14,4 @@ class AppletDuplicate(AppletFetchBase):
     activities: list[ActivityDuplicate] = Field(default_factory=list)
     activity_flows: list[FlowDuplicate] = Field(default_factory=list)
     theme: Theme | None = None
+    encryption: None

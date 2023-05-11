@@ -156,7 +156,7 @@ class AnswerService:
                         answer_id=answer_group.id,
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
-                        answer=json.dumps(answer.answer.dict(), default=str),
+                        answer=answer.answer,
                         applet_history_id=applet_id_version,
                         flow_history_id=flow_id_version,
                         activity_history_id=activity_id_version,
@@ -184,7 +184,7 @@ class AnswerService:
                         answer_id=answer_group.id,
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
-                        answer=json.dumps(answer.answer.dict(), default=str),
+                        answer=answer.answer,
                         applet_history_id=applet_id_version,
                         activity_history_id=activity_id_version,
                         activity_item_history_id=activity_item_id_version,
@@ -292,11 +292,11 @@ class AnswerService:
         await self._validate_answer_access(applet_id, answer_id)
         item_answers = await AnswerActivityItemsCRUD(
             self.session
-        ).get_by_answer_id(applet_id, answer_id)
+        ).get_by_answer_id(answer_id)
 
         flow_item_answers = await AnswerFlowItemsCRUD(
             self.session
-        ).get_by_answer_id(applet_id, answer_id)
+        ).get_by_answer_id(answer_id)
 
         schema = await AnswersCRUD(self.session).get_by_id(answer_id)
         activity_id, version = schema.activity_history_id.split("_")

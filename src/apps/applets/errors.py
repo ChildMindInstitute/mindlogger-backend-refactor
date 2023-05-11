@@ -8,7 +8,6 @@ __all__ = [
     "AppletLinkNotFoundError",
     "AppletLinkAlreadyExist",
     "InvalidVersionError",
-    "AppletPasswordValidationError",
 ]
 
 from apps.shared.exception import (
@@ -52,10 +51,6 @@ class AppletAlreadyExist(ValidationError):
 
 class AppletLinkAlreadyExist(ValidationError):
     message = _("Applet link already exists.")
-
-
-class AppletPasswordValidationError(ValidationError):
-    message = _("Applet password does not match.")
 
 
 class InvalidVersionError(ValidationError):

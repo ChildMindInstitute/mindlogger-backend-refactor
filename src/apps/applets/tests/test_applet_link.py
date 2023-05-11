@@ -2,7 +2,7 @@ from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
 
-class TestAppletLink(BaseTest):
+class TestLink(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
         "folders/fixtures/folders.json",

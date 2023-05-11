@@ -227,7 +227,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 200, response.json()
         events = response.json()["result"]
-        assert type(events) == list
+        assert type(events) == dict
 
     @rollback
     async def test_schedule_get_detail(self):

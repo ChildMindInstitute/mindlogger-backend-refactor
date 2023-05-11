@@ -19,11 +19,11 @@ from apps.applets.domain.applet import (
 from apps.applets.domain.applet_create_update import (
     AppletCreate,
     AppletDuplicateRequest,
-    AppletPassword,
     AppletUpdate,
 )
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applets import public_detail, public_history_detail
+from apps.applets.domain.base import Encryption
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.applets.service.applet_history import (
@@ -57,7 +57,6 @@ __all__ = [
     "applet_link_delete",
     "applet_set_data_retention",
     "applet_duplicate",
-    "applet_check_password",
     "applet_retrieve_by_key",
 ]
 
@@ -178,6 +177,17 @@ async def applet_update(
     return Response(result=public_detail.Applet(**applet.dict()))
 
 
+async def applet_encryption_update(
+    id_: uuid.UUID,
+    user: User = Depends(get_current_user),
+    schema: Encryption = Body(...),
+    session=Depends(session_manager.get_session),
+) -> Response[public_detail.Encryption]:
+    async with atomic(session):
+        await AppletService(session, user.id).update_encryption(id_, schema)
+    return Response(result=public_detail.Encryption.from_orm(schema))
+
+
 async def applet_duplicate(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
@@ -190,7 +200,7 @@ async def applet_duplicate(
         applet_for_duplicate = await service.get_by_id_for_duplicate(applet_id)
 
         applet = await service.duplicate(
-            applet_for_duplicate, schema.display_name, schema.password
+            applet_for_duplicate, schema.display_name, schema.encryption
         )
 
         await mail_service.send(
@@ -205,18 +215,6 @@ async def applet_duplicate(
             )
         )
     return Response(result=public_detail.Applet(**applet.dict()))
-
-
-async def applet_check_password(
-    applet_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    password: AppletPassword = Body(...),
-    session=Depends(session_manager.get_session),
-):
-    async with atomic(session):
-        await AppletService(session, user.id).check_applet_password(
-            applet_id, password.password
-        )
 
 
 async def applet_versions_retrieve(
@@ -260,14 +258,11 @@ async def applet_version_changes_retrieve(
 
 async def applet_delete(
     id_: uuid.UUID,
-    password: AppletPassword = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
-        await AppletService(session, user.id).delete_applet_by_id(
-            id_, password.password
-        )
+        await AppletService(session, user.id).delete_applet_by_id(id_)
 
 
 async def applet_set_folder(

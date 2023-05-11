@@ -1,8 +1,10 @@
+import uuid
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
 
-class TestAppletActivityItems(BaseTest):
+class TestActivityItems(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
         "themes/fixtures/themes.json",
@@ -27,8 +29,12 @@ class TestAppletActivityItems(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="User daily behave",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -524,8 +530,12 @@ class TestAppletActivityItems(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="User daily behave",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
