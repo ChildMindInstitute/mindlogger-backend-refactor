@@ -193,3 +193,22 @@ async def schedule_remove_individual_calendar(
         await ScheduleService(session).remove_individual_calendar(
             applet_id=applet_id, user_id=respondent_id
         )
+
+
+# TODO: Add logic to allow to create events by permissions
+# TODO: Restrict by admin
+async def schedule_import(
+    applet_id: uuid.UUID,
+    schemas: list[EventRequest] = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+) -> ResponseMulti[PublicEvent]:
+    """Create a new event for an applet."""
+    async with atomic(session):
+        schedules = await ScheduleService(session).import_schedule(
+            schemas, applet_id
+        )
+    return ResponseMulti(
+        result=schedules,
+        count=len(schedules),
+    )
