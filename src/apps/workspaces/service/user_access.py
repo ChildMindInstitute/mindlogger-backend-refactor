@@ -11,6 +11,7 @@ from apps.workspaces.domain.user_applet_access import (
     RemoveManagerAccess,
     RemoveRespondentAccess,
     RespondentAppletAccess,
+    PublicRespondentAppletAccess,
 )
 from apps.workspaces.domain.workspace import UserWorkspace
 from apps.workspaces.errors import (
@@ -229,14 +230,17 @@ class UserAccessService:
         owner_id: uuid.UUID,
         respondent_id: uuid.UUID,
         query_params: QueryParams,
-    ) -> list[RespondentAppletAccess]:
+    ) -> list[PublicRespondentAppletAccess]:
         accesses = await UserAppletAccessCRUD(
             self.session
         ).get_respondent_accesses_by_owner_id(
             owner_id, respondent_id, query_params.page, query_params.limit
         )
 
-        return accesses
+        return [
+            PublicRespondentAppletAccess.from_orm(access)
+            for access in accesses
+        ]
 
     async def get_respondent_accesses_by_workspace_count(
         self,

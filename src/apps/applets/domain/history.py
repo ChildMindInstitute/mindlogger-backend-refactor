@@ -4,13 +4,13 @@ from apps.activities.domain import (
     ActivityHistoryChange,
     PublicActivityHistoryChange,
 )
-from apps.applets.domain.base import AppletBase
+from apps.applets.domain.base import AppletBaseInfo
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = ["AppletHistory", "AppletHistoryChange", "PublicAppletHistoryChange"]
 
 
-class AppletHistory(AppletBase, InternalModel):
+class AppletHistory(AppletBaseInfo, InternalModel):
     pass
 
 

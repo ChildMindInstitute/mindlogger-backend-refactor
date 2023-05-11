@@ -11,7 +11,11 @@ from apps.activity_flows.domain.flow import (
     FlowSingleLanguageDetail,
     FlowSingleLanguageDetailPublic,
 )
-from apps.applets.domain.base import AppletBaseInfo, AppletFetchBase
+from apps.applets.domain.base import (
+    AppletBaseInfo,
+    AppletFetchBase,
+    Encryption,
+)
 from apps.shared.domain import InternalModel, PublicModel
 from apps.themes.domain import PublicTheme, Theme
 from apps.workspaces.domain.constants import DataRetention
@@ -72,6 +76,7 @@ class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
         default_factory=list
     )
     theme: PublicTheme | None = None
+    encryption: Encryption | None
 
 
 class AppletSingleLanguageInfo(AppletFetchBase, InternalModel):

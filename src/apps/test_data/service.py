@@ -10,6 +10,7 @@ from apps.activities.domain.activity_create import (
 from apps.activities.domain.response_type_config import ResponseType
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.applets.domain.applet_create_update import AppletCreate
+from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletService
 from apps.schedule.domain.constants import (
     NotificationTriggerType,
@@ -24,7 +25,7 @@ from apps.schedule.domain.schedule import (
 )
 from apps.schedule.service import ScheduleService
 from apps.shared.query_params import QueryParams
-from apps.test_data.domain import AnchorDateTime, image_url
+from apps.test_data.domain import AppletGeneration, image_url
 from apps.workspaces.domain.constants import Role
 
 
@@ -47,8 +48,8 @@ class TestDataService:
             ResponseType.SLIDER,
         ]
 
-    async def create_applet(self, anchor_datetime: AnchorDateTime):
-        applet_create = self._generate_applet()
+    async def create_applet(self, applet_generation: AppletGeneration):
+        applet_create = self._generate_applet(applet_generation.encryption)
         applet = await AppletService(self.session, self.user_id).create(
             applet_create
         )
@@ -66,7 +67,7 @@ class TestDataService:
         await self._create_all_events(
             applet_id=applet.id,
             entity_ids=entity_ids,
-            anchor_datetime=anchor_datetime.anchor_date_time,
+            anchor_datetime=applet_generation.anchor_date_time,
         )
         return applet
 
@@ -79,13 +80,14 @@ class TestDataService:
     def random_boolean():
         return random.choice([True, False])
 
-    def _generate_applet(self) -> AppletCreate:
+    def _generate_applet(self, encryption: Encryption) -> AppletCreate:
         activities = self._generate_activities()
         activity_flows = self._generate_activity_flows_from_activities(
             activities
         )
         applet_create = AppletCreate(
-            display_name=f"Applet-{self.random_string()}-generated",  # noqa: E501
+            display_name=f"Applet-{self.random_string()}-generated",
+            # noqa: E501
             description=dict(
                 en=f"Applet description {self.random_string(50)}",
                 fr=f"Applet description {self.random_string(50)}",
@@ -94,6 +96,7 @@ class TestDataService:
                 en=f"Applet about {self.random_string(50)}",
                 fr=f"Applet about {self.random_string(50)}",
             ),
+            encryption=encryption.dict(),
             image=image_url,
             watermark=image_url,
             theme_id=None,
@@ -105,7 +108,6 @@ class TestDataService:
             report_email_body="",
             activities=activities,
             activity_flows=activity_flows,
-            password="Test1234!",
         )
 
         return applet_create
@@ -116,11 +118,11 @@ class TestDataService:
             items = self._generate_activity_items()
             activities.append(
                 ActivityCreate(
-                    name=f"Activity {index+1}",
+                    name=f"Activity {index + 1}",
                     key=uuid.uuid4(),
                     description=dict(
-                        en=f"Activity {index+1} desc {self.random_string()}",
-                        fr=f"Activity {index+1} desc {self.random_string()}",
+                        en=f"Activity {index + 1} desc {self.random_string()}",
+                        fr=f"Activity {index + 1} desc {self.random_string()}",
                     ),
                     splash_screen=image_url,
                     image=image_url,
@@ -143,10 +145,10 @@ class TestDataService:
             flow_items = self._generate_flow_items(activities)
             flows.append(
                 FlowCreate(
-                    name=f"Flow {index+1}",
+                    name=f"Flow {index + 1}",
                     description=dict(
-                        en=f"Flow {index+1} desc {self.random_string()}",
-                        fr=f"Flow {index+1} desc {self.random_string()}",
+                        en=f"Flow {index + 1} desc {self.random_string()}",
+                        fr=f"Flow {index + 1} desc {self.random_string()}",
                     ),
                     is_single_report=self.random_boolean(),
                     hide_badge=self.random_boolean(),
@@ -167,7 +169,7 @@ class TestDataService:
 
             items.append(
                 ActivityItemCreate(
-                    name=f"activity_item_{index+1}",
+                    name=f"activity_item_{index + 1}",
                     question=dict(
                         en=f"Activity item question {self.random_string()}",
                         fr=f"Activity item question {self.random_string()}",

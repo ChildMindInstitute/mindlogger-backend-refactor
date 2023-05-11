@@ -32,3 +32,7 @@ class UserAppletAccessesNotFound(NotFoundError):
 
 class RemoveOwnPermissionAccessDenied(AccessDeniedError):
     message = _("Access denied to remove own permission.")
+
+
+class AppletEncryptionUpdateDenied(AccessDeniedError):
+    message = _("Access denied to update encryption.")

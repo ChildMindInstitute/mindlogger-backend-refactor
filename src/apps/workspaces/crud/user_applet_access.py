@@ -662,6 +662,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             AppletSchema.display_name,
             AppletSchema.image,
             exists(individual_event_query),
+            AppletSchema.encryption,
         )
         query = query.join(
             AppletSchema, AppletSchema.id == UserAppletAccessSchema.applet_id
@@ -675,7 +676,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         accesses = []
         results = db_result.all()
-        for meta, applet_id, display_name, image, has_individual in results:
+        for (
+            meta,
+            applet_id,
+            display_name,
+            image,
+            has_individual,
+            encryption,
+        ) in results:
             accesses.append(
                 RespondentAppletAccess(
                     applet_id=applet_id,
@@ -684,6 +692,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     secret_user_id=meta.get("secretUserId", ""),
                     nickname=meta.get("nickname", ""),
                     has_individual_schedule=has_individual,
+                    encryption=encryption,
                 )
             )
 

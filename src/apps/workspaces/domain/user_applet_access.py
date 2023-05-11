@@ -2,6 +2,10 @@ import uuid
 
 from pydantic import Field
 
+from apps.applets.domain.applets import public_detail
+from apps.applets.domain.base import Encryption
+
+# from apps.applets.domain.base import Encryption
 from apps.shared.domain import InternalModel, PublicModel
 from apps.workspaces.domain.constants import Role
 
@@ -98,6 +102,7 @@ class RespondentAppletAccess(InternalModel):
     secret_user_id: str
     nickname: str
     has_individual_schedule: bool
+    encryption: Encryption
 
 
 class PublicRespondentAppletAccess(PublicModel):
@@ -107,3 +112,4 @@ class PublicRespondentAppletAccess(PublicModel):
     secret_user_id: str
     nickname: str
     has_individual_schedule: bool
+    encryption: public_detail.Encryption

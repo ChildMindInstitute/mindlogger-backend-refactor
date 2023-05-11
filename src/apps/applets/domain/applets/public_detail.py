@@ -49,6 +49,12 @@ class ActivityFlow(PublicModel):
     items: list[ActivityFlowItem] = Field(default_factory=list)
 
 
+class Encryption(PublicModel):
+    public_key: str
+    prime: str
+    base: str
+
+
 class Applet(PublicModel):
     id: uuid.UUID
     display_name: str
@@ -66,3 +72,4 @@ class Applet(PublicModel):
     report_email_body: str = ""
     activities: list[Activity] = Field(default_factory=list)
     activity_flows: list[ActivityFlow] = Field(default_factory=list)
+    encryption: Encryption | None

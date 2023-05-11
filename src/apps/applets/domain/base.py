@@ -3,6 +3,7 @@ import uuid
 
 from pydantic import BaseModel, Field
 
+from apps.shared.domain import InternalModel
 from apps.shared.enums import Language
 
 
@@ -13,6 +14,12 @@ class AppletReport(BaseModel):
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
+
+
+class Encryption(InternalModel):
+    public_key: str
+    prime: str
+    base: str
 
 
 class AppletBaseInfo(BaseModel):
@@ -30,10 +37,11 @@ class AppletBaseInfo(BaseModel):
 
 
 class AppletBase(AppletReport, AppletBaseInfo):
-    pass
+    encryption: Encryption
 
 
-class AppletFetchBase(AppletBase):
+class AppletFetchBase(AppletReport, AppletBaseInfo):
+    encryption: Encryption | None
     id: uuid.UUID
     version: str
     created_at: datetime.datetime | None
