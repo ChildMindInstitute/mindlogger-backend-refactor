@@ -8,10 +8,9 @@ from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
+    PublicRespondentAppletAccess,
     RemoveManagerAccess,
     RemoveRespondentAccess,
-    RespondentAppletAccess,
-    PublicRespondentAppletAccess,
 )
 from apps.workspaces.domain.workspace import UserWorkspace
 from apps.workspaces.errors import (

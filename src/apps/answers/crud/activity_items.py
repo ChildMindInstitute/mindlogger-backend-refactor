@@ -1,4 +1,3 @@
-import json
 import uuid
 
 from sqlalchemy import delete, select
