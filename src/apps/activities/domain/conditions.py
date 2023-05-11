@@ -1,5 +1,4 @@
 from enum import Enum
-from uuid import UUID
 
 from pydantic import Field
 
@@ -39,11 +38,11 @@ class SliderConditionType(str, Enum):
 
 
 class OptionPayload(PublicModel):
-    option_id: UUID
+    option_id: str
 
 
 class ValuePayload(PublicModel):
-    value: str
+    value: int
 
 
 class MinMaxPayload(PublicModel):

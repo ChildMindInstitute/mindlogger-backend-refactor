@@ -172,6 +172,7 @@ class BaseActivityItem(BaseModel):
     def validate_conditional_logic(cls, value, values):
         response_type = values.get("response_type")
         if value is not None:
+            # check if response type is correct
             if response_type not in [
                 ResponseType.SINGLESELECT,
                 ResponseType.MULTISELECT,
@@ -183,8 +184,10 @@ class BaseActivityItem(BaseModel):
 
         return value
 
-    @validator("is_hidden")
-    def validate_is_hidden(cls, value, values):
+    @root_validator()
+    def validate_is_hidden(cls, values):
         # cannot hide if conditional logic is set
+        value = values.get("is_hidden")
         if value and values.get("conditional_logic"):
             raise HiddenWhenConditionalLogicSetError()
+        return values

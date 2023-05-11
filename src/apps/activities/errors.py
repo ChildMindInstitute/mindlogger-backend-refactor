@@ -129,8 +129,10 @@ class IncorrectConditionItemError(FieldError):
     message = _("Condition item does not exist.")
 
 
-class IncorrectConditionItemIndexError(FieldError):
-    message = _("Condition item does not exist.")
+class IncorrectConditionItemIndexError(ValidationError):
+    message = _(
+        " Selected position of the Item in the list contradicts the Item Flow."  # noqa: E501
+    )
 
 
 class IncorrectConditionOptionError(FieldError):

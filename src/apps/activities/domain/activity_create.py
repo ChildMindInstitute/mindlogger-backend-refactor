@@ -72,7 +72,7 @@ class ActivityCreate(ActivityBase, InternalModel):
                         # check if condition option ids are correct
                         if condition.type in list(
                             SingleSelectConditionType
-                        ) or list(MultiSelectConditionType):
+                        ) or condition.type in list(MultiSelectConditionType):
                             option_ids = [
                                 option.id
                                 for option in items[
