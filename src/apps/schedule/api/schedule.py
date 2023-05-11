@@ -70,14 +70,14 @@ async def schedule_get_all(
 async def public_schedule_get_all(
     key: uuid.UUID,
     session=Depends(session_manager.get_session),
-) -> ResponseMulti[PublicEvent]:
+) -> Response[PublicEventByUser]:
     """Get all schedules for an applet."""
     async with atomic(session):
         schedules = await ScheduleService(session).get_public_all_schedules(
             key
         )
 
-    return ResponseMulti(result=schedules, count=len(schedules))
+    return Response(result=schedules)
 
 
 # TODO: Add logic to allow to create events by permissions

@@ -59,10 +59,10 @@ router.get(
 
 public_router.get(
     "/{key}/events",
-    response_model=ResponseMulti[PublicEvent],
+    response_model=Response[PublicEventByUser],
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[PublicEvent]},
+        status.HTTP_200_OK: {"model": Response[PublicEventByUser]},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
         **NO_CONTENT_ERROR_RESPONSES,
