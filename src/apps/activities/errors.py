@@ -129,5 +129,17 @@ class IncorrectConditionItemError(FieldError):
     message = _("Condition item does not exist.")
 
 
+class IncorrectConditionItemIndexError(FieldError):
+    message = _("Condition item does not exist.")
+
+
 class IncorrectConditionOptionError(FieldError):
     message = _("Condition option does not exist.")
+
+
+class IncorrectConditionLogicItemTypeError(ValidationError):
+    message = _("Item type is not supported for conditional logic.")
+
+
+class HiddenWhenConditionalLogicSetError(ValidationError):
+    message = _("Item type cannot be hidden if conditional logic is set.")

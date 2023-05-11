@@ -8,6 +8,8 @@ from apps.activities.domain.response_type_config import (
 )
 from apps.activities.errors import (
     DataMatrixRequiredError,
+    HiddenWhenConditionalLogicSetError,
+    IncorrectConditionLogicItemTypeError,
     IncorrectConfigError,
     IncorrectNameCharactersError,
     IncorrectResponseValueError,
@@ -165,3 +167,24 @@ class BaseActivityItem(BaseModel):
                     raise DataMatrixRequiredError()
 
         return values
+
+    @validator("conditional_logic")
+    def validate_conditional_logic(cls, value, values):
+        response_type = values.get("response_type")
+        if value is not None:
+            if response_type not in [
+                ResponseType.SINGLESELECT,
+                ResponseType.MULTISELECT,
+                ResponseType.SLIDER,
+                ResponseType.TEXT,
+                ResponseType.TIME,
+            ]:
+                raise IncorrectConditionLogicItemTypeError()
+
+        return value
+
+    @validator("is_hidden")
+    def validate_is_hidden(cls, value, values):
+        # cannot hide if conditional logic is set
+        if value and values.get("conditional_logic"):
+            raise HiddenWhenConditionalLogicSetError()
