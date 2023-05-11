@@ -49,4 +49,5 @@ def downgrade() -> None:
         ),
     )
     op.drop_column("applets", "encryption")
+    op.execute("""delete from answers;""")
     # ### end Alembic commands ###
