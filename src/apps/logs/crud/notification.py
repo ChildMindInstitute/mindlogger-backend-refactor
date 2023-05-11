@@ -91,4 +91,3 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
             return notification_log
         except Exception:
             raise NotificationLogError()
-
