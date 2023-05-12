@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from sqlalchemy import delete, select
@@ -15,6 +16,8 @@ class AnswerFlowItemsCRUD(BaseCRUD[AnswerFlowItemsSchema]):
     async def create_many(
         self, schemas: list[AnswerFlowItemsSchema]
     ) -> list[AnswerFlowItemsSchema]:
+        for schema in schemas:
+            schema.answer = json.dumps(schema.answer, default=str)
         schemas = await self._create_many(schemas)
         return schemas
 
@@ -77,7 +80,7 @@ class AnswerFlowItemsCRUD(BaseCRUD[AnswerFlowItemsSchema]):
             answers.append(
                 AnsweredActivityItem(
                     activity_item_history_id=schema.activity_item_history_id,
-                    answer=schema.answer,
+                    answer=json.load(schema.answer),
                 )
             )
 

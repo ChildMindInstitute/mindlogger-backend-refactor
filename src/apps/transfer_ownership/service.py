@@ -80,6 +80,7 @@ class TransferService:
     async def accept_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):
         """Respond to a transfer of ownership of an applet."""
         await AppletsCRUD(self.session).get_by_id(applet_id)
+        await AppletsCRUD(self.session).clear_encryption(applet_id)
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
         if (

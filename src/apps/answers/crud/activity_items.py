@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from sqlalchemy import delete, select
@@ -6,7 +7,6 @@ from sqlalchemy.orm import Query
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.answers.db.schemas import AnswerActivityItemsSchema
 from apps.answers.domain import AnsweredActivityItem, AppletAnswerCreate
-from apps.shared.encryption import decrypt, generate_iv
 from infrastructure.database.crud import BaseCRUD
 
 
@@ -16,19 +16,10 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
     async def create_many(
         self, schemas: list[AnswerActivityItemsSchema]
     ) -> list[AnswerActivityItemsSchema]:
+        for schema in schemas:
+            schema.answer = json.dumps(schema.answer, default=str)
         schemas = await self._create_many(schemas)
         return schemas
-
-    def _decrypt(
-        self,
-        unique_identifier: uuid.UUID,
-        system_encrypted_key: bytes,
-        encrypted_value: bytes,
-    ) -> bytes:
-        iv = generate_iv(str(unique_identifier))
-        key = decrypt(system_encrypted_key)
-        answer = decrypt(encrypted_value, key, iv)
-        return answer
 
     async def delete_by_applet_user(
         self, applet_id: uuid.UUID, user_id: uuid.UUID | None = None
@@ -88,7 +79,7 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
             answers.append(
                 AnsweredActivityItem(
                     activity_item_history_id=schema.activity_item_history_id,
-                    answer=schema.answer,
+                    answer=json.loads(schema.answer),
                 )
             )
 
