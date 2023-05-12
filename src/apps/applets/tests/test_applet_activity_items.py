@@ -34,6 +34,7 @@ class TestActivityItems(BaseTest):
                 public_key=uuid.uuid4().hex,
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
             ),
             description=dict(
                 en="Understand users behave",
@@ -535,6 +536,7 @@ class TestActivityItems(BaseTest):
                 public_key=uuid.uuid4().hex,
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
             ),
             description=dict(
                 en="Understand users behave",
