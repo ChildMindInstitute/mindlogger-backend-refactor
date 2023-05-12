@@ -1,4 +1,5 @@
 import uuid
+from typing import Tuple
 
 from apps.shared.query_params import QueryParams
 from apps.users import User, UsersCRUD
@@ -89,11 +90,12 @@ class WorkspaceService:
 
     async def get_workspace_respondents(
         self, owner_id: uuid.UUID, query_params: QueryParams
-    ) -> list[WorkspaceRespondent]:
-        users = await UserAppletAccessCRUD(
+    ) -> Tuple[list[WorkspaceRespondent], int]:
+        users, total = await UserAppletAccessCRUD(
             self.session
-        ).get_workspace_respondents(owner_id, query_params)
-        return users
+        ).get_workspace_respondents(self._user_id, owner_id, query_params)
+
+        return users, total
 
     async def get_workspace_managers(
         self, owner_id: uuid.UUID, query_params: QueryParams
@@ -102,13 +104,6 @@ class WorkspaceService:
             self.session
         ).get_workspace_managers(owner_id, query_params)
         return users
-
-    async def get_workspace_respondents_count(
-        self, owner_id: uuid.UUID, query_params: QueryParams
-    ):
-        return await UserAppletAccessCRUD(
-            self.session
-        ).get_workspace_respondents_count(owner_id, query_params)
 
     async def get_workspace_managers_count(
         self, owner_id: uuid.UUID, query_params: QueryParams

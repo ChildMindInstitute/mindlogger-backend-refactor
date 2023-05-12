@@ -14,6 +14,9 @@ class UserSchema(Base):
     hashed_password = Column(String(length=100))
     last_seen_at = Column(DateTime(), default=datetime.now)
 
+    def __repr__(self):
+        return f"UserSchema(id='{self.id}', email='{self.email}')"
+
 
 class UserDeviceSchema(Base):
     __tablename__ = "user_devices"

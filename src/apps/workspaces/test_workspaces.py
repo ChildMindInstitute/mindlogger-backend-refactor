@@ -228,10 +228,10 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 2
-        assert len(response.json()["result"][0]["nickname"]) > 1
-        assert response.json()["result"][0]["role"] == Role.RESPONDENT
-        assert response.json()["result"][1]["role"] == Role.RESPONDENT
+        data = response.json()
+        assert data["count"] == 2
+        assert data["result"][0]["nicknames"]
+        assert data["result"][0]["secretUserIds"]
 
         # test search
         search_params = {
@@ -261,7 +261,7 @@ class TestWorkspaces(BaseTest):
                 assert data["count"] == 1
                 result = data["result"]
                 assert len(result) == 1
-                assert result[0]["accessId"] == access_id
+                assert result[0]["details"][0]["accessId"] == access_id
 
     @rollback
     async def test_get_workspace_respondent_accesses(self):

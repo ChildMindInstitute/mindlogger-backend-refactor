@@ -199,18 +199,18 @@ async def workspace_respondents_list(
     ),
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicWorkspaceRespondent]:
-    async with atomic(session):
-        service = WorkspaceService(session, user.id)
-        await service.exists_by_owner_id(owner_id)
-        users = await service.get_workspace_respondents(
-            owner_id, deepcopy(query_params)
+    service = WorkspaceService(session, user.id)
+    await service.exists_by_owner_id(owner_id)
+
+    data, total = await WorkspaceService(
+        session, user.id
+    ).get_workspace_respondents(owner_id, deepcopy(query_params))
+
+    return ResponseMulti.parse_obj(
+        dict(
+            result=data,
+            count=total,
         )
-        count = await WorkspaceService(
-            session, user.id
-        ).get_workspace_respondents_count(owner_id, deepcopy(query_params))
-    return ResponseMulti(
-        count=count,
-        result=[PublicWorkspaceRespondent.from_orm(user) for user in users],
     )
 
 

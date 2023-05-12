@@ -18,6 +18,14 @@ class Ordering:
         select * from schema order by id desc, first_name asc
     """
 
+    class Clause:
+        """
+        Wrapper for complex ordering
+        """
+
+        def __init__(self, clause):
+            self.clause = clause
+
     actions = {
         "+": asc,
         "-": desc,
@@ -26,8 +34,13 @@ class Ordering:
     def __init__(self):
         self.fields = dict()
         for key, val in self.__class__.__dict__.items():
+            _val = None
             if isinstance(val, InstrumentedAttribute):
-                self.fields[key] = val
+                _val = val
+            elif isinstance(val, Ordering.Clause):
+                _val = val.clause
+            if _val is not None:
+                self.fields[key] = _val
 
     def get_clauses(self, *args):
         sorting_fields = []
