@@ -107,6 +107,13 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         instance = await self._fetch(key="id", value=id_)
         return instance
 
+    async def clear_encryption(self, applet_id: uuid.UUID):
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.values(encryption=None)
+
+        await self._execute(query)
+
     async def exist_by_id(self, id_: uuid.UUID) -> bool:
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.id == id_)

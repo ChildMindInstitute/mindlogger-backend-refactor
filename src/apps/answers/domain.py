@@ -41,12 +41,12 @@ ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
 
 class ActivityItemAnswerCreate(InternalModel):
     activity_item_id: uuid.UUID
-    answer: str
+    answer: AnswerTypes
 
 
 class AnsweredActivityItem(InternalModel):
     activity_item_history_id: str
-    answer: str
+    answer: AnswerTypes
 
 
 class AppletAnswerCreate(InternalModel):

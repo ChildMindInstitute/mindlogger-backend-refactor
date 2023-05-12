@@ -1,5 +1,4 @@
 import datetime
-import json
 import uuid
 
 from apps.activities.domain.activity_full import PublicActivityItemFull
@@ -156,7 +155,7 @@ class AnswerService:
                         answer_id=answer_group.id,
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
-                        answer=answer.answer,
+                        answer=answer.answer.dict(),
                         applet_history_id=applet_id_version,
                         flow_history_id=flow_id_version,
                         activity_history_id=activity_id_version,
@@ -184,7 +183,7 @@ class AnswerService:
                         answer_id=answer_group.id,
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
-                        answer=answer.answer,
+                        answer=answer.answer.dict(),
                         applet_history_id=applet_id_version,
                         activity_history_id=activity_id_version,
                         activity_item_history_id=activity_item_id_version,
@@ -306,14 +305,14 @@ class AnswerService:
 
         item_answer_map = dict()
         for item_answer in item_answers:
-            item_answer_map[item_answer.activity_item_history_id] = json.loads(
-                item_answer.answer
-            )
+            item_answer_map[
+                item_answer.activity_item_history_id
+            ] = item_answer.answer
 
         for flow_item_answer in flow_item_answers:
             item_answer_map[
                 flow_item_answer.activity_item_history_id
-            ] = json.loads(flow_item_answer.answer)
+            ] = flow_item_answer.answer
 
         answer = ActivityAnswer()
         for activity_item in activity_items:
