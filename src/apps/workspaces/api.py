@@ -26,6 +26,7 @@ from apps.workspaces.domain.user_applet_access import (
     RespondentInfo,
 )
 from apps.workspaces.domain.workspace import (
+    PublicAppletRespondent,
     PublicWorkspace,
     PublicWorkspaceInfo,
     PublicWorkspaceManager,
@@ -205,6 +206,29 @@ async def workspace_respondents_list(
     data, total = await WorkspaceService(
         session, user.id
     ).get_workspace_respondents(owner_id, deepcopy(query_params))
+
+    return ResponseMulti.parse_obj(
+        dict(
+            result=data,
+            count=total,
+        )
+    )
+
+
+async def workspace_applet_respondents_list(
+    owner_id: uuid.UUID,
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(
+        parse_query_params(WorkspaceUsersQueryParams)
+    ),
+    session=Depends(session_manager.get_session),
+) -> ResponseMulti[PublicAppletRespondent]:
+    data, total = await WorkspaceService(
+        session, user.id
+    ).get_workspace_applet_respondents(
+        owner_id, applet_id, deepcopy(query_params)
+    )
 
     return ResponseMulti.parse_obj(
         dict(

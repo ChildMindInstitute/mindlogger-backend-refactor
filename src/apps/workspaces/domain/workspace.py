@@ -57,16 +57,24 @@ class WorkspaceRespondentDetails(InternalModel):
     access_id: uuid.UUID
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
-    has_individual_schedule: bool | None = None
 
 
 class WorkspaceRespondent(InternalModel):
     id: uuid.UUID
-    nicknames: list[str] | None
-    secret_user_ids: list[str] | None
+    nicknames: list[str] | None = None
+    secret_ids: list[str] | None = None
     last_seen: datetime.datetime
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None
+
+
+class AppletRespondent(InternalModel):
+    id: uuid.UUID
+    nickname: str | None = None
+    secret_id: str | None = None
+    last_seen: datetime.datetime
+    is_pinned: bool = False
+    has_individual_schedule: bool
 
 
 class WorkspaceManager(InternalModel):
@@ -81,10 +89,19 @@ class WorkspaceManager(InternalModel):
 class PublicWorkspaceRespondent(PublicModel):
     id: uuid.UUID
     nicknames: list[str] | None
-    secret_user_ids: list[str] | None
+    secret_ids: list[str] | None
     last_seen: datetime.datetime
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None
+
+
+class PublicAppletRespondent(PublicModel):
+    id: uuid.UUID
+    nickname: str | None = None
+    secret_id: str | None = None
+    last_seen: datetime.datetime
+    is_pinned: bool = False
+    has_individual_schedule: bool
 
 
 class PublicWorkspaceManager(PublicModel):

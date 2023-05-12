@@ -231,7 +231,7 @@ class TestWorkspaces(BaseTest):
         data = response.json()
         assert data["count"] == 2
         assert data["result"][0]["nicknames"]
-        assert data["result"][0]["secretUserIds"]
+        assert data["result"][0]["secretIds"]
 
         # test search
         search_params = {
