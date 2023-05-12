@@ -109,14 +109,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
         query = query.group_by(
-            AppletSchema.id, AppletSchema.display_name, AppletSchema.created_at
+            AppletSchema.id,
+            AppletSchema.display_name,
+            AppletSchema.created_at,
+            AppletSchema.folder_id,
         )
-        # db_result = await self._execute(query)
-        #
-        # applets = []
-        # for applet_schema in db_result.scalars().all():
-        #     applets.append(applet_schema.id)
-        # print("applets_id =", applets)
 
         if query_params.filters:
             query = query.where(
@@ -153,7 +150,10 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             AppletSchema.is_deleted == False  # noqa: E712
         )
         applet_ids = applet_ids.group_by(
-            AppletSchema.id, AppletSchema.display_name, AppletSchema.created_at
+            AppletSchema.id,
+            AppletSchema.display_name,
+            AppletSchema.created_at,
+            AppletSchema.folder_id,
         )
 
         if query_params.filters:
