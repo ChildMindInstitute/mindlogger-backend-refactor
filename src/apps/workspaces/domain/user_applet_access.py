@@ -102,7 +102,7 @@ class RespondentAppletAccess(InternalModel):
     secret_user_id: str
     nickname: str
     has_individual_schedule: bool
-    encryption: Encryption
+    encryption: Encryption | None
 
 
 class PublicRespondentAppletAccess(PublicModel):
@@ -112,4 +112,4 @@ class PublicRespondentAppletAccess(PublicModel):
     secret_user_id: str
     nickname: str
     has_individual_schedule: bool
-    encryption: public_detail.Encryption
+    encryption: public_detail.Encryption | None

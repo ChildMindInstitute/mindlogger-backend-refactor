@@ -72,6 +72,7 @@ class UserAccessService:
                     description=self._get_by_language(
                         schema.description, language
                     ),
+                    encryption=schema.encryption,
                     theme=theme.dict() if theme else None,
                     about=self._get_by_language(schema.about, language),
                     image=schema.image,
