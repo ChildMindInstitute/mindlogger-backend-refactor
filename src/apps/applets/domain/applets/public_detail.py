@@ -53,6 +53,7 @@ class Encryption(PublicModel):
     public_key: str
     prime: str
     base: str
+    account_id: str
 
 
 class Applet(PublicModel):

@@ -42,6 +42,7 @@ class TestApplet(BaseTest):
             display_name="User daily behave",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
             ),
@@ -568,6 +569,7 @@ class TestApplet(BaseTest):
             display_name="Applet 1",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
             ),
@@ -676,6 +678,7 @@ class TestApplet(BaseTest):
             display_name="AppleT 1",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
             ),
@@ -783,6 +786,7 @@ class TestApplet(BaseTest):
             display_name="Applet 1",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
             ),
@@ -932,6 +936,7 @@ class TestApplet(BaseTest):
                 display_name="New name",
                 encryption=dict(
                     public_key=uuid.uuid4().hex,
+                    account_id=str(uuid.uuid4()),
                     prime=uuid.uuid4().hex,
                     base=uuid.uuid4().hex,
                 ),
@@ -954,6 +959,7 @@ class TestApplet(BaseTest):
                 display_name="New name",
                 encryption=dict(
                     public_key=uuid.uuid4().hex,
+                    account_id=str(uuid.uuid4()),
                     prime=uuid.uuid4().hex,
                     base=uuid.uuid4().hex,
                 ),
@@ -973,6 +979,7 @@ class TestApplet(BaseTest):
                 public_key=uuid.uuid4().hex,
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
             ),
         )
         assert response.status_code == 200, response.json()
@@ -985,6 +992,7 @@ class TestApplet(BaseTest):
                 public_key=uuid.uuid4().hex,
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
             ),
         )
         assert response.status_code == 403, response.json()
@@ -1136,6 +1144,7 @@ class TestApplet(BaseTest):
             display_name="User daily behave",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
             ),
@@ -1263,6 +1272,7 @@ class TestApplet(BaseTest):
             display_name="Applet 1",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
             ),
@@ -1425,6 +1435,7 @@ class TestApplet(BaseTest):
             display_name="User daily behave",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
             ),
@@ -1523,6 +1534,7 @@ class TestApplet(BaseTest):
             display_name="User daily behave updated",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
             ),

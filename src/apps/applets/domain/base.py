@@ -20,6 +20,7 @@ class Encryption(InternalModel):
     public_key: str
     prime: str
     base: str
+    account_id: str
 
 
 class AppletBaseInfo(BaseModel):
