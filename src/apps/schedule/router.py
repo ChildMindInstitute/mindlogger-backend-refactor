@@ -12,6 +12,7 @@ from apps.schedule.api.schedule import (
     schedule_get_all_by_user,
     schedule_get_by_id,
     schedule_get_by_user,
+    schedule_import,
     schedule_remove_individual_calendar,
     schedule_update,
 )
@@ -30,6 +31,20 @@ from apps.shared.domain.response import (
 
 router = APIRouter(prefix="/applets", tags=["Applets"])
 public_router = APIRouter(prefix="/public/applets", tags=["Applets"])
+
+
+# Import events
+router.post(
+    "/{applet_id}/events/import",
+    response_model=ResponseMulti[PublicEvent],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"model": ResponseMulti[PublicEvent]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+        **NO_CONTENT_ERROR_RESPONSES,
+    },
+)(schedule_import)
 
 # Create schedule
 router.post(

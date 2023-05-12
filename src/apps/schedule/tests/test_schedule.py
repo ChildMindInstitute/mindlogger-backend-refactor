@@ -28,6 +28,7 @@ class TestSchedule(BaseTest):
     schedule_detail_user_url = f"{schedule_user_url}/{{applet_id}}"
 
     schedule_url = f"{applet_detail_url}/events"
+    schedule_import_url = f"{applet_detail_url}/events/import"
     delete_user_url = (
         f"{applet_detail_url}/events/delete_individual/{{respondent_id}}"
     )
@@ -662,3 +663,57 @@ class TestSchedule(BaseTest):
             )
         )
         assert response.status_code == 404
+
+    @rollback
+    async def test_schedule_import(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = [
+            {
+                "start_time": "08:00:00",
+                "end_time": "09:00:00",
+                "access_before_schedule": True,
+                "one_time_completion": True,
+                "timer": "00:00:00",
+                "timer_type": "NOT_SET",
+                "periodicity": {
+                    "type": "WEEKLY",
+                    "start_date": "2021-09-01",
+                    "end_date": "2023-09-01",
+                    "selected_date": "2023-01-01",
+                },
+                "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+                "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                "flow_id": None,
+            },
+            {
+                "start_time": "08:00:00",
+                "end_time": "09:00:00",
+                "access_before_schedule": True,
+                "one_time_completion": True,
+                "timer": "00:00:00",
+                "timer_type": "NOT_SET",
+                "periodicity": {
+                    "type": "DAILY",
+                    "start_date": "2021-09-01",
+                    "end_date": "2023-09-01",
+                    "selected_date": "2023-01-01",
+                },
+                "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+                "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                "flow_id": None,
+            },
+        ]
+
+        response = await self.client.post(
+            self.schedule_import_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=create_data,
+        )
+
+        assert response.status_code == 201, response.json()
+        events = response.json()["result"]
+        assert len(events) == 2
+        assert events[0]["respondentId"] == create_data[0]["respondent_id"]

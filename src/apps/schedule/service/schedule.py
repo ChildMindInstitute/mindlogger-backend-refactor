@@ -1103,3 +1103,16 @@ class ScheduleService:
         await ReminderCRUD(self.session).delete_by_event_ids(event_ids)
         await EventCRUD(self.session).delete_by_ids(event_ids)
         await PeriodicityCRUD(self.session).delete_by_ids(periodicity_ids)
+
+    async def import_schedule(
+        self, schedules: list[EventRequest], applet_id: uuid.UUID
+    ) -> list[PublicEvent]:
+        """Import schedule."""
+        events = []
+        for schedule in schedules:
+            event = await self.create_schedule(
+                applet_id=applet_id, schedule=schedule
+            )
+            events.append(event)
+
+        return events
