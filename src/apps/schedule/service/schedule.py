@@ -723,15 +723,12 @@ class ScheduleService:
                 only_always_available,
             )
 
-        event_ids = [event_schema.id for event_schema in event_schemas]
-
-        # keep exception event id
-        if except_event_id and except_event_id in event_ids:
-            event_ids.remove(except_event_id)
-
-        periodicity_ids = [
-            event_schema.periodicity_id for event_schema in event_schemas
+        clean_events = [
+            event for event in event_schemas if event.id != except_event_id
         ]
+        event_ids = [event.id for event in clean_events]
+        periodicity_ids = [event.periodicity_id for event in clean_events]
+
         if event_ids:
             await UserEventsCRUD(self.session).delete_all_by_event_ids(
                 event_ids
