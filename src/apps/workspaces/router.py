@@ -9,6 +9,7 @@ from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
 )
+from apps.shared.response import EmptyResponse
 from apps.workspaces.api import (
     applet_remove_respondent_access,
     managers_priority_role_retrieve,
@@ -17,14 +18,15 @@ from apps.workspaces.api import (
     workspace_applet_respondents_list,
     workspace_applet_respondent_update,
     workspace_applets,
+    workspace_manager_pin,
     workspace_managers_applet_access_list,
     workspace_managers_applet_access_set,
     workspace_managers_list,
     workspace_remove_manager_access,
+    workspace_respondent_pin,
     workspace_respondents_list,
     workspace_retrieve,
     workspace_users_applet_access_list,
-    workspace_users_pin,
 )
 from apps.workspaces.domain.user_applet_access import (
     PublicManagerAppletAccess,
@@ -155,13 +157,26 @@ router.get(
 )(workspace_managers_list)
 
 router.post(
-    "/{owner_id}/respondents/pin",
-    status_code=status.HTTP_200_OK,
+    "/{owner_id}/respondents/{user_id}/pin",
+    status_code=status.HTTP_204_NO_CONTENT,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(workspace_users_pin)
+    response_class=EmptyResponse,
+)(workspace_respondent_pin)
+
+
+router.post(
+    "/{owner_id}/managers/{user_id}/pin",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+    response_class=EmptyResponse,
+)(workspace_manager_pin)
+
 
 router.get(
     "/{owner_id}/respondents/{respondent_id}/accesses",

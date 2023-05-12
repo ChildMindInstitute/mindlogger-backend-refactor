@@ -749,20 +749,30 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return db_result.scalars().first() is not None
 
-    async def pin(self, id_: uuid.UUID):
-        query: Query = update(UserAppletAccessSchema)
-        query = query.where(UserAppletAccessSchema.id == id_)
-        query = query.values(
-            is_pinned=case(
-                (
-                    UserAppletAccessSchema.is_pinned == False,  # noqa: E712
-                    True,
-                ),
-                else_=False,
-            )
+    async def pin(
+        self,
+        user_id: uuid.UUID,
+        owner_id: uuid.UUID,
+        pinned_user_id: uuid.UUID,
+        pin_role: UserPinRole,
+    ):
+        query = select(UserPinSchema).where(
+            UserPinSchema.user_id == user_id,
+            UserPinSchema.owner_id == owner_id,
+            UserPinSchema.pinned_user_id == pinned_user_id,
+            UserPinSchema.role == pin_role,
         )
-
-        await self._execute(query)
+        res = await self._execute(query)
+        if user_pin := res.scalar():
+            await self.session.delete(user_pin)
+        else:
+            user_pin = UserPinSchema(
+                user_id=user_id,
+                owner_id=owner_id,
+                pinned_user_id=pinned_user_id,
+                role=pin_role,
+            )
+            await self._create(user_pin)
 
     async def unpin(self, id_: uuid.UUID):
         query: Query = update(UserAppletAccessSchema)

@@ -36,6 +36,9 @@ class TestWorkspaces(BaseTest):
         f"{workspace_applets_detail_url}/respondents/{{respondent_id}}"
     )
     workspace_respondents_url = f"{workspaces_detail_url}/respondents"
+    workspace_applet_respondents_list = (
+        "/workspaces/{owner_id}/applets/{applet_id}/respondents"
+    )
     workspace_respondent_applet_accesses = (
         f"{workspace_respondents_url}/{{respondent_id}}/accesses"
     )
@@ -45,7 +48,9 @@ class TestWorkspaces(BaseTest):
     )
     remove_manager_access = f"{workspaces_list_url}/removeAccess"
     remove_respondent_access = "/applets/removeAccess"
-    workspace_respondents_pin = f"{workspace_respondents_url}/pin"
+    workspace_respondents_pin = (
+        "/workspaces/{owner_id}/respondents/{user_id}/pin"
+    )
 
     @rollback
     async def test_user_workspace_list(self):
@@ -224,7 +229,6 @@ class TestWorkspaces(BaseTest):
             self.workspace_respondents_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
-            dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
 
         assert response.status_code == 200, response.json()
@@ -250,10 +254,7 @@ class TestWorkspaces(BaseTest):
                     self.workspace_respondents_url.format(
                         owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
                     ),
-                    dict(
-                        appletId="92917a56-d586-4613-b7aa-991f2c4b15b1",
-                        search=val,
-                    ),
+                    dict(search=val),
                 )
                 assert response.status_code == 200
                 data = response.json()
@@ -262,6 +263,52 @@ class TestWorkspaces(BaseTest):
                 result = data["result"]
                 assert len(result) == 1
                 assert result[0]["details"][0]["accessId"] == access_id
+
+    @rollback
+    async def test_get_workspace_applet_respondents(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.get(
+            self.workspace_applet_respondents_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        assert data["count"] == 2
+        assert data["result"][0]["nickname"]
+        assert data["result"][0]["secretId"]
+
+        # test search
+        search_params = {
+            "f0dd4996-e0eb-461f-b2f8-ba873a674788": [
+                "jane",
+                "b2f8-ba873a674788",
+            ],
+            "f0dd4996-e0eb-461f-b2f8-ba873a674789": [
+                "john",
+                "f0dd4996-e0eb-461f-b2f8-ba873a674789",
+            ],
+        }
+        for access_id, params in search_params.items():
+            for val in params:
+                response = await self.client.get(
+                    self.workspace_applet_respondents_list.format(
+                        owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                        applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                    ),
+                    dict(search=val),
+                )
+                assert response.status_code == 200
+                data = response.json()
+                assert set(data.keys()) == {"count", "result"}
+                assert data["count"] == 1
+                result = data["result"]
+                assert len(result) == 1
+                assert result[0]["accessId"] == access_id
 
     @rollback
     async def test_get_workspace_respondent_accesses(self):
@@ -390,25 +437,26 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"][1]["roles"][0] == "manager"
 
     @rollback
-    async def test_pin_workspace_users(self):
+    async def test_pin_workspace_respondents(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         response = await self.client.get(
-            self.workspace_respondents_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            self.workspace_applet_respondents_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             ),
-            dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
 
         assert response.status_code == 200, response.json()
 
-        access_id = response.json()["result"][-1]["accessId"]
+        user_id = response.json()["result"][-1]["id"]
 
         # Pin access wrong owner
         response = await self.client.post(
-            self.workspace_respondents_pin.format(owner_id=uuid4()),
-            data=dict(access_id=access_id),
+            self.workspace_respondents_pin.format(
+                owner_id=uuid4(), user_id=user_id
+            ),
         )
 
         assert response.status_code == 404
@@ -416,50 +464,50 @@ class TestWorkspaces(BaseTest):
         # Pin access wrong access_id
         response = await self.client.post(
             self.workspace_respondents_pin.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                user_id=uuid4(),
             ),
-            data=dict(access_id=str(uuid4())),
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 403
 
         # Pin access
         response = await self.client.post(
             self.workspace_respondents_pin.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                user_id=user_id,
             ),
-            data=dict(access_id=access_id),
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 204
 
         response = await self.client.get(
-            self.workspace_respondents_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            self.workspace_applet_respondents_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             ),
-            dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
-        assert response.json()["result"][0]["accessId"] == access_id
+        assert response.json()["result"][0]["id"] == user_id
         assert response.json()["result"][0]["isPinned"] is True
         assert response.json()["result"][1]["isPinned"] is False
 
         # Unpin access
         response = await self.client.post(
             self.workspace_respondents_pin.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                user_id=user_id,
             ),
-            data=dict(access_id=access_id),
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 204
 
         response = await self.client.get(
-            self.workspace_respondents_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            self.workspace_applet_respondents_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             ),
-            dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
-        assert response.json()["result"][-1]["accessId"] == access_id
+        assert response.json()["result"][-1]["id"] == user_id
 
     @rollback
     async def test_workspace_remove_manager_access(self):

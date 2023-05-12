@@ -14,7 +14,6 @@ __all__ = [
     "UserAppletAccess",
     "PublicUserAppletAccess",
     "UserAppletAccessItem",
-    "PinUser",
     "RemoveRespondentAccess",
     "RemoveManagerAccess",
 ]
@@ -89,10 +88,6 @@ class PublicAppletUser(PublicModel):
     first_name: str
     last_name: str
     roles: list[str]
-
-
-class PinUser(InternalModel):
-    access_id: uuid.UUID
 
 
 class RespondentAppletAccess(InternalModel):

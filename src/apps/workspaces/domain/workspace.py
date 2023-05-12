@@ -70,6 +70,7 @@ class WorkspaceRespondent(InternalModel):
 
 class AppletRespondent(InternalModel):
     id: uuid.UUID
+    access_id: uuid.UUID
     nickname: str | None = None
     secret_id: str | None = None
     last_seen: datetime.datetime
@@ -97,6 +98,7 @@ class PublicWorkspaceRespondent(PublicModel):
 
 class PublicAppletRespondent(PublicModel):
     id: uuid.UUID
+    access_id: uuid.UUID
     nickname: str | None = None
     secret_id: str | None = None
     last_seen: datetime.datetime
