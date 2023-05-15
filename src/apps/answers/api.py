@@ -20,6 +20,7 @@ from apps.shared.query_params import (
     parse_query_params,
 )
 from apps.users.domain import User
+from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic, session_manager
 
 
@@ -29,6 +30,9 @@ async def create_answer(
     session=Depends(session_manager.get_session),
 ) -> None:
     async with atomic(session):
+        await CheckAccessService(session, user.id).check_answer_create_access(
+            schema.applet_id
+        )
         await AnswerService(session, user.id).create_answer(schema)
     return
 
@@ -42,6 +46,9 @@ async def applet_activities_list(
     ),
 ) -> ResponseMulti[PublicAnsweredAppletActivity]:
     async with atomic(session):
+        await CheckAccessService(session, user.id).check_answer_review_access(
+            applet_id
+        )
         activities = await AnswerService(session, user.id).applet_activities(
             applet_id, **query_params.filters
         )
@@ -63,6 +70,9 @@ async def applet_submit_date_list(
     ),
 ) -> Response[PublicAnswerDates]:
     async with atomic(session):
+        await CheckAccessService(session, user.id).check_answer_review_access(
+            applet_id
+        )
         dates = await AnswerService(session, user.id).get_applet_submit_dates(
             applet_id, **query_params.filters
         )
@@ -76,6 +86,9 @@ async def applet_answer_retrieve(
     session=Depends(session_manager.get_session),
 ) -> Response[ActivityAnswerPublic]:
     async with atomic(session):
+        await CheckAccessService(session, user.id).check_answer_review_access(
+            applet_id
+        )
         answer = await AnswerService(session, user.id).get_by_id(
             applet_id, answer_id
         )
@@ -92,6 +105,9 @@ async def note_add(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
+        await CheckAccessService(session, user.id).check_note_crud_access(
+            applet_id
+        )
         await AnswerService(session, user.id).add_note(
             applet_id, answer_id, schema.note
         )
@@ -106,6 +122,9 @@ async def note_list(
     query_params: QueryParams = Depends(parse_query_params(BaseQueryParams)),
 ) -> ResponseMulti[AnswerNoteDetailPublic]:
     async with atomic(session):
+        await CheckAccessService(session, user.id).check_note_crud_access(
+            applet_id
+        )
         notes = await AnswerService(session, user.id).get_note_list(
             applet_id, answer_id, query_params
         )
@@ -127,6 +146,9 @@ async def note_edit(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
+        await CheckAccessService(session, user.id).check_note_crud_access(
+            applet_id
+        )
         await AnswerService(session, user.id).edit_note(
             applet_id, answer_id, note_id, schema.note
         )
@@ -141,6 +163,9 @@ async def note_delete(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
+        await CheckAccessService(session, user.id).check_note_crud_access(
+            applet_id
+        )
         await AnswerService(session, user.id).delete_note(
             applet_id, answer_id, note_id
         )

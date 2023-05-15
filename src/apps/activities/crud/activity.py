@@ -28,20 +28,15 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
     async def get_by_applet_id(
         self, applet_id: uuid.UUID
     ) -> list[ActivitySchema]:
-        # TODO: get by users permission
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.applet_id == applet_id)
         query = query.order_by(ActivitySchema.order.asc())
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def get_by_id(
-        self, user_id: uuid.UUID, id_: uuid.UUID
-    ) -> ActivitySchema:
-        # TODO: get by users permission
+    async def get_by_id(self, activity_id: uuid.UUID) -> ActivitySchema:
         query: Query = select(ActivitySchema)
-        query = query.where(ActivitySchema.id == id_)
-        query = query.order_by(ActivitySchema.order.asc())
+        query = query.where(ActivitySchema.id == activity_id)
         result = await self._execute(query)
         try:
             return result.scalars().one_or_none()
