@@ -5,6 +5,6 @@ from apps.workspaces.domain.constants import Role
 
 
 class WorkspaceUsersQueryParams(BaseQueryParams):
-    role: Role | None = None
-    applet_id: uuid.UUID | None = None
+    role: Role | None
+    applet_id: uuid.UUID | None
     ordering = "-pinned,-createdAt"
