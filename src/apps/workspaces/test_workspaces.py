@@ -198,19 +198,19 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
 
         response = await self.client.get(
-            self.workspace_respondents_url.format(
+            self.workspace_applet_respondents_list.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             ),
             dict(
-                appletId="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 role="respondent",
             ),
         )
         assert response.json()["count"] == 2
-        assert response.json()["result"][0]["nickname"] == "New respondent"
+        assert "New respondent" in response.json()["result"][0]["nicknames"]
         assert (
-            response.json()["result"][0]["secretId"]
-            == "f0dd4996-e0eb-461f-b2f8-ba873a674710"
+            "f0dd4996-e0eb-461f-b2f8-ba873a674710"
+            in response.json()["result"][0]["secretIds"]
         )
 
     @rollback
@@ -266,7 +266,10 @@ class TestWorkspaces(BaseTest):
                 assert data["count"] == 1
                 result = data["result"]
                 assert len(result) == 1
-                assert result[0]["details"][0]["accessId"] == access_id
+                access_ids = {
+                    detail["accessId"] for detail in result[0]["details"]
+                }
+                assert access_id in access_ids
 
     @rollback
     async def test_get_workspace_applet_respondents(self):
@@ -283,8 +286,8 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         data = response.json()
         assert data["count"] == 2
-        assert data["result"][0]["nickname"]
-        assert data["result"][0]["secretId"]
+        assert data["result"][0]["nicknames"]
+        assert data["result"][0]["secretIds"]
 
         # test search
         search_params = {
@@ -312,7 +315,10 @@ class TestWorkspaces(BaseTest):
                 assert data["count"] == 1
                 result = data["result"]
                 assert len(result) == 1
-                assert result[0]["accessId"] == access_id
+                access_ids = {
+                    detail["accessId"] for detail in result[0]["details"]
+                }
+                assert access_id in access_ids
 
     @rollback
     async def test_get_workspace_respondent_accesses(self):
@@ -383,7 +389,7 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 4
+        assert response.json()["count"] == 5
 
         # test search
         search_params = {

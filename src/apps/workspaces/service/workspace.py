@@ -8,7 +8,6 @@ from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import (
-    AppletRespondent,
     WorkspaceApplet,
     WorkspaceInfo,
     WorkspaceManager,
@@ -90,23 +89,14 @@ class WorkspaceService:
             )
 
     async def get_workspace_respondents(
-        self, owner_id: uuid.UUID, query_params: QueryParams
+        self,
+        owner_id: uuid.UUID,
+        applet_id: uuid.UUID | None,
+        query_params: QueryParams,
     ) -> Tuple[list[WorkspaceRespondent], int]:
         users, total = await UserAppletAccessCRUD(
             self.session
-        ).get_workspace_respondents(self._user_id, owner_id, query_params)
-
-        return users, total
-
-    async def get_workspace_applet_respondents(
-        self,
-        owner_id: uuid.UUID,
-        applet_id: uuid.UUID,
-        query_params: QueryParams,
-    ) -> Tuple[list[AppletRespondent], int]:
-        users, total = await UserAppletAccessCRUD(
-            self.session
-        ).get_workspace_applet_respondents(
+        ).get_workspace_respondents(
             self._user_id, owner_id, applet_id, query_params
         )
 

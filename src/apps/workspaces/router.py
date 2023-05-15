@@ -16,8 +16,8 @@ from apps.workspaces.api import (
     user_workspaces,
     workspace_applet_detail,
     workspace_applet_managers_list,
-    workspace_applet_respondents_list,
     workspace_applet_respondent_update,
+    workspace_applet_respondents_list,
     workspace_applets,
     workspace_manager_pin,
     workspace_managers_applet_access_list,
@@ -34,7 +34,6 @@ from apps.workspaces.domain.user_applet_access import (
     PublicRespondentAppletAccess,
 )
 from apps.workspaces.domain.workspace import (
-    PublicAppletRespondent,
     PublicWorkspace,
     PublicWorkspaceInfo,
     PublicWorkspaceManager,
@@ -137,9 +136,11 @@ router.get(
 router.get(
     "/{owner_id}/applets/{applet_id}/respondents",
     status_code=status.HTTP_200_OK,
-    response_model=ResponseMulti[PublicAppletRespondent],
+    response_model=ResponseMulti[PublicWorkspaceRespondent],
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[PublicAppletRespondent]},
+        status.HTTP_200_OK: {
+            "model": ResponseMulti[PublicWorkspaceRespondent]
+        },
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

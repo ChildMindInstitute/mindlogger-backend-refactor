@@ -18,8 +18,6 @@ __all__ = [
     "PublicWorkspaceManager",
     "WorkspaceInfo",
     "PublicWorkspaceInfo",
-    "AppletRespondent",
-    "PublicAppletRespondent",
 ]
 
 from apps.workspaces.domain.constants import Role
@@ -59,6 +57,7 @@ class WorkspaceRespondentDetails(InternalModel):
     access_id: uuid.UUID
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
+    has_individual_schedule: bool = False
 
 
 class WorkspaceRespondent(InternalModel):
@@ -68,16 +67,6 @@ class WorkspaceRespondent(InternalModel):
     last_seen: datetime.datetime
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None
-
-
-class AppletRespondent(InternalModel):
-    id: uuid.UUID
-    access_id: uuid.UUID
-    nickname: str | None = None
-    secret_id: str | None = None
-    last_seen: datetime.datetime
-    is_pinned: bool = False
-    has_individual_schedule: bool
 
 
 class WorkspaceManagerDetails(InternalModel):
@@ -105,16 +94,6 @@ class PublicWorkspaceRespondent(PublicModel):
     last_seen: datetime.datetime
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None
-
-
-class PublicAppletRespondent(PublicModel):
-    id: uuid.UUID
-    access_id: uuid.UUID
-    nickname: str | None = None
-    secret_id: str | None = None
-    last_seen: datetime.datetime
-    is_pinned: bool = False
-    has_individual_schedule: bool
 
 
 class PublicWorkspaceManager(PublicModel):

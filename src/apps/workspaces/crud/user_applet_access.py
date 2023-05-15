@@ -37,7 +37,6 @@ from apps.workspaces.domain.user_applet_access import (
     UserAppletAccess,
 )
 from apps.workspaces.domain.workspace import (
-    AppletRespondent,
     WorkspaceManager,
     WorkspaceRespondent,
 )
@@ -417,8 +416,20 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self,
         user_id: uuid.UUID,
         owner_id: uuid.UUID,
+        applet_id: uuid.UUID | None,
         query_params: QueryParams,
     ) -> Tuple[list[WorkspaceRespondent], int]:
+        schedule_exists = (
+            select(UserEventsSchema)
+            .join(EventSchema, EventSchema.id == UserEventsSchema.event_id)
+            .where(
+                UserEventsSchema.user_id == UserAppletAccessSchema.user_id,
+                EventSchema.applet_id == UserAppletAccessSchema.applet_id,
+            )
+            .exists()
+            .correlate(UserAppletAccessSchema)
+        )
+
         is_pinned = (
             exists()
             .where(
@@ -468,6 +479,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                         text("'access_id'"), UserAppletAccessSchema.id,
                         text("'respondent_nickname'"), field_nickname,
                         text("'respondent_secret_id'"), field_secret_user_id,
+                        text("'has_individual_schedule'"), schedule_exists,
                     )
                 ).label("details"),
                 # fmt: on
@@ -487,6 +499,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .where(
                 UserAppletAccessSchema.owner_id == owner_id,
                 UserAppletAccessSchema.role == Role.RESPONDENT,
+                UserAppletAccessSchema.applet_id == applet_id
+                if applet_id
+                else True,
             )
             .group_by(UserSchema.id)
         )
@@ -517,111 +532,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         res_data, res_total = await asyncio.gather(coro_data, coro_total)
 
         data = parse_obj_as(list[WorkspaceRespondent], res_data.all())
-        total = res_total.scalar()
-
-        return data, total
-
-    async def get_workspace_applet_respondents(
-        self,
-        user_id: uuid.UUID,
-        owner_id: uuid.UUID,
-        applet_id: uuid.UUID,
-        query_params: QueryParams,
-    ) -> Tuple[list[AppletRespondent], int]:
-        schedule_exists = (
-            select(UserEventsSchema)
-            .join(EventSchema, EventSchema.id == UserEventsSchema.event_id)
-            .where(
-                UserEventsSchema.user_id == UserAppletAccessSchema.user_id,
-                EventSchema.applet_id == UserAppletAccessSchema.applet_id,
-            )
-            .exists()
-            .correlate(UserAppletAccessSchema)
-        )
-
-        is_pinned = (
-            exists()
-            .where(
-                UserPinSchema.user_id == user_id,
-                UserPinSchema.pinned_user_id == UserSchema.id,
-                UserPinSchema.owner_id == owner_id,
-                UserPinSchema.role == UserPinRole.respondent,
-            )
-            .correlate(UserSchema)
-        )
-
-        field_nickname = UserAppletAccessSchema.meta[text("'nickname'")].astext
-        field_secret_user_id = UserAppletAccessSchema.meta[
-            text("'secretUserId'")
-        ].astext
-
-        query: Query = (
-            select(
-                # fmt: off
-                UserSchema.id,
-                UserSchema.first_name,
-                UserSchema.last_name,
-
-                func.coalesce(
-                    UserSchema.last_seen_at, UserSchema.created_at
-                ).label("last_seen"),
-
-                field_nickname.label("nickname"),
-                field_secret_user_id.label("secret_id"),
-                is_pinned.label("is_pinned"),
-                schedule_exists.label("has_individual_schedule"),
-                AppletSchema.id.label("applet_id"),
-                AppletSchema.display_name.label("applet_display_name"),
-                UserAppletAccessSchema.id.label("access_id"),
-                field_nickname.label("nickname"),
-                field_secret_user_id.label("secret_user_id"),
-                # fmt: on
-            )
-            .select_from(UserAppletAccessSchema)
-            .join(
-                AppletSchema,
-                and_(
-                    AppletSchema.id == UserAppletAccessSchema.applet_id,
-                    AppletSchema.soft_exists(),
-                ),
-            )
-            .join(
-                UserSchema,
-                UserSchema.id == UserAppletAccessSchema.user_id,
-            )
-            .where(
-                UserAppletAccessSchema.owner_id == owner_id,
-                UserAppletAccessSchema.applet_id == applet_id,
-                UserAppletAccessSchema.role == Role.RESPONDENT,
-            )
-        )
-
-        if query_params.filters:
-            query = query.where(
-                *_AppletUsersFilter().get_clauses(**query_params.filters)
-            )
-        if query_params.search:
-            query = query.where(
-                _AppletRespondentSearch().get_clauses(query_params.search)
-            )
-
-        coro_total = self._execute(
-            select(count()).select_from(query.with_only_columns(UserSchema.id))
-        )
-
-        if query_params.ordering:
-            query = query.order_by(
-                *_AppletRespondentOrdering().get_clauses(
-                    *query_params.ordering
-                )
-            )
-        query = paging(query, query_params.page, query_params.limit)
-
-        coro_data = self._execute(query)
-
-        res_data, res_total = await asyncio.gather(coro_data, coro_total)
-
-        data = parse_obj_as(list[AppletRespondent], res_data.all())
         total = res_total.scalar()
 
         return data, total
