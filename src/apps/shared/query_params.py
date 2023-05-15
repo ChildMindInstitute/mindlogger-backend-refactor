@@ -39,7 +39,7 @@ def parse_query_params(query_param_class):
         params: QueryParams = query_params
         grouped_query_params = QueryParams()
         for key, val in params.dict().items():
-            if not val:
+            if not val and key in ["search", "page", "limit", "ordering"]:
                 continue
             if key == "search":
                 grouped_query_params.search = val
