@@ -235,19 +235,29 @@ async def workspace_managers_list(
     ),
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicWorkspaceManager]:
-    async with atomic(session):
-        service = WorkspaceService(session, user.id)
-        await service.exists_by_owner_id(owner_id)
-        users = await service.get_workspace_managers(
-            owner_id, deepcopy(query_params)
-        )
-        count = await WorkspaceService(
-            session, user.id
-        ).get_workspace_managers_count(owner_id, deepcopy(query_params))
-    return ResponseMulti(
-        count=count,
-        result=[PublicWorkspaceManager.from_orm(user) for user in users],
-    )
+    service = WorkspaceService(session, user.id)
+    await service.exists_by_owner_id(owner_id)
+
+    data, total = await service.get_workspace_managers(owner_id, None, deepcopy(query_params))
+
+    return ResponseMulti(result=data, count=total)
+
+
+async def workspace_applet_managers_list(
+    owner_id: uuid.UUID,
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(
+        parse_query_params(WorkspaceUsersQueryParams)
+    ),
+    session=Depends(session_manager.get_session),
+) -> ResponseMulti[PublicWorkspaceManager]:
+    service = WorkspaceService(session, user.id)
+    await service.exists_by_owner_id(owner_id)
+
+    data, total = await service.get_workspace_managers(owner_id, applet_id, deepcopy(query_params))
+
+    return ResponseMulti(result=data, count=total)
 
 
 async def workspace_respondent_pin(

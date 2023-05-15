@@ -15,6 +15,7 @@ from apps.workspaces.api import (
     managers_priority_role_retrieve,
     user_workspaces,
     workspace_applet_detail,
+    workspace_applet_managers_list,
     workspace_applet_respondents_list,
     workspace_applet_respondent_update,
     workspace_applets,
@@ -155,6 +156,17 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_managers_list)
+
+router.get(
+    "/{owner_id}/applets/{applet_id}/managers",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[PublicWorkspaceManager],
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicWorkspaceManager]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_applet_managers_list)
 
 router.post(
     "/{owner_id}/respondents/{user_id}/pin",

@@ -113,19 +113,18 @@ class WorkspaceService:
         return users, total
 
     async def get_workspace_managers(
-        self, owner_id: uuid.UUID, query_params: QueryParams
-    ) -> list[WorkspaceManager]:
-        users = await UserAppletAccessCRUD(
+        self,
+        owner_id: uuid.UUID,
+        applet_id: uuid.UUID | None,
+        query_params: QueryParams,
+    ) -> Tuple[list[WorkspaceManager], int]:
+        users, total = await UserAppletAccessCRUD(
             self.session
-        ).get_workspace_managers(owner_id, query_params)
-        return users
+        ).get_workspace_managers(
+            self._user_id, owner_id, applet_id, query_params
+        )
 
-    async def get_workspace_managers_count(
-        self, owner_id: uuid.UUID, query_params: QueryParams
-    ):
-        return await UserAppletAccessCRUD(
-            self.session
-        ).get_workspace_managers_count(owner_id, query_params)
+        return users, total
 
     async def get_workspace_applets(
         self, language: str, query_params: QueryParams

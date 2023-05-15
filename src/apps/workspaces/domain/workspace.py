@@ -18,6 +18,8 @@ __all__ = [
     "PublicWorkspaceManager",
     "WorkspaceInfo",
     "PublicWorkspaceInfo",
+    "AppletRespondent",
+    "PublicAppletRespondent",
 ]
 
 from apps.workspaces.domain.constants import Role
@@ -78,6 +80,13 @@ class AppletRespondent(InternalModel):
     has_individual_schedule: bool
 
 
+class WorkspaceManagerDetails(InternalModel):
+    applet_id: uuid.UUID
+    applet_display_name: str
+    access_id: uuid.UUID
+    role: Role
+
+
 class WorkspaceManager(InternalModel):
     id: uuid.UUID
     first_name: str
@@ -85,6 +94,8 @@ class WorkspaceManager(InternalModel):
     email: str
     roles: list[Role]
     last_seen: datetime.datetime
+    is_pinned: bool = False
+    details: list[WorkspaceManagerDetails] | None = None
 
 
 class PublicWorkspaceRespondent(PublicModel):
@@ -113,6 +124,8 @@ class PublicWorkspaceManager(PublicModel):
     email: str
     roles: list[Role]
     last_seen: datetime.datetime
+    is_pinned: bool = False
+    details: list[WorkspaceManagerDetails] | None = None
 
 
 class WorkspaceInfo(InternalModel):
