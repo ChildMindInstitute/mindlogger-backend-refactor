@@ -18,7 +18,7 @@ from apps.shared.domain.custom_validations import (
     validate_color,
     validate_image,
 )
-from apps.shared.query_params import BaseQueryParams
+from apps.shared.query_params import BaseQueryParams, FilterNone
 
 
 class ThemeBase(BaseModel):
@@ -84,6 +84,6 @@ class ThemeRequest(ThemeBase, PublicModel):
 
 
 class ThemeQueryParams(BaseQueryParams):
-    public: bool | None = None
-    allow_rename: bool | None = None
-    creator_id: uuid.UUID | None = None
+    public: bool | FilterNone = FilterNone()
+    allow_rename: bool | FilterNone = FilterNone()
+    creator_id: uuid.UUID | FilterNone = FilterNone()

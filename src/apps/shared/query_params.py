@@ -7,15 +7,19 @@ from pydantic import Field
 from apps.shared.domain import InternalModel
 
 
+class FilterNone(list):
+    pass
+
+
 class BaseQueryParams(InternalModel):
     """
     Class to declare query parameters
     """
 
-    search: str | None = None
+    search: str | FilterNone = FilterNone()
     page: int = Field(gt=0, default=1)
     limit: int = Field(gt=0, default=10)
-    ordering: str | None = None
+    ordering: str | FilterNone = FilterNone()
 
 
 class QueryParams(InternalModel):
@@ -24,7 +28,7 @@ class QueryParams(InternalModel):
     """
 
     filters: dict[str, Any] = Field(default_factory=dict)
-    search: str | None = None
+    search: str | FilterNone = FilterNone()
     page: int = Field(gt=0, default=1)
     limit: int = Field(gt=0, default=10)
     ordering: list[str] = Field(default_factory=list)
@@ -39,7 +43,7 @@ def parse_query_params(query_param_class):
         params: QueryParams = query_params
         grouped_query_params = QueryParams()
         for key, val in params.dict().items():
-            if not val and key in ["search", "page", "limit", "ordering"]:
+            if isinstance(val, FilterNone):
                 continue
             if key == "search":
                 grouped_query_params.search = val
