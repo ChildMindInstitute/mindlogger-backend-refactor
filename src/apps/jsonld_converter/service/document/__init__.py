@@ -1,20 +1,26 @@
+from apps.jsonld_converter.service.document.activity import (  # noqa: F401, F403, E501
+    ReproActivity,
+)
+from apps.jsonld_converter.service.document.activity_flow import (  # noqa: F401, F403, E501
+    ReproActivityFlow,
+)
 from apps.jsonld_converter.service.document.field import (  # noqa: F401, F403
-    ReproFieldText,
+    ReproFieldAge,
+    ReproFieldAudio,
+    ReproFieldAudioStimulus,
+    ReproFieldDate,
+    ReproFieldDrawing,
+    ReproFieldGeolocation,
+    ReproFieldMessage,
+    ReproFieldPhoto,
     ReproFieldRadio,
+    ReproFieldRadioStacked,
     ReproFieldSlider,
     ReproFieldSliderStacked,
-    ReproFieldPhoto,
-    ReproFieldVideo,
-    ReproFieldAudio,
-    ReproFieldDrawing,
-    ReproFieldMessage,
+    ReproFieldText,
     ReproFieldTimeRange,
-    ReproFieldDate,
-    ReproFieldGeolocation,
-    ReproFieldAge,
-    ReproFieldRadioStacked,
-    ReproFieldAudioStimulus,
+    ReproFieldVideo,
 )
-from apps.jsonld_converter.service.document.activity import ReproActivity  # noqa: F401, F403
-from apps.jsonld_converter.service.document.activity_flow import ReproActivityFlow  # noqa: F401, F403
-from apps.jsonld_converter.service.document.protocol import ReproProtocol  # noqa: F401, F403
+from apps.jsonld_converter.service.document.protocol import (  # noqa: F401, F403, E501
+    ReproProtocol,
+)

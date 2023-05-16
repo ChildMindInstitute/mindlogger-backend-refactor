@@ -1,34 +1,22 @@
 import asyncio
 import enum
-from abc import (
-    ABC,
-    abstractmethod,
-)
-from typing import (
-    Callable,
-    Type,
-    Tuple,
-    Optional,
-    Any,
-)
+from abc import ABC, abstractmethod
+from typing import Any, Callable, Optional, Tuple, Type
 
-from pyld import (
-    ContextResolver,
-    jsonld,
-)
+from pyld import ContextResolver, jsonld  # type: ignore[import]
 
 from apps.jsonld_converter.errors import (
-    JsonLDNotSupportedError,
     JsonLDLoaderError,
-    JsonLDStructureError,
+    JsonLDNotSupportedError,
     JsonLDProcessingError,
+    JsonLDStructureError,
 )
 from apps.shared.domain import InternalModel
 
 
 class LdKeyword(str, enum.Enum):
-    context = '@context'
-    type = '@type'
+    context = "@context"
+    type = "@type"
     id = "@id"
     value = "@value"
     graph = "@graph"
@@ -42,14 +30,14 @@ class LdAttributeProcessor:
     """
 
     TERMS = {
-        'reproschema': [
+        "reproschema": [
             "http://schema.repronim.org/",
             "https://schema.repronim.org/",
-            "https://raw.githubusercontent.com/ReproNim/reproschema/master/terms/",
-            "https://raw.githubusercontent.com/ReproNim/reproschema/master/schemas/",
+            "https://raw.githubusercontent.com/ReproNim/reproschema/master/terms/",  # noqa: E501
+            "https://raw.githubusercontent.com/ReproNim/reproschema/master/schemas/",  # noqa: E501
         ],
-        'schema': ["http://schema.org/"],
-        'skos': ["http://www.w3.org/2004/02/skos/core#"],
+        "schema": ["http://schema.org/"],
+        "skos": ["http://www.w3.org/2004/02/skos/core#"],
         "xsd": ["http://www.w3.org/2001/XMLSchema#"],
     }
 
@@ -62,7 +50,7 @@ class LdAttributeProcessor:
 
     @classmethod
     def resolve_key(cls, attr: str) -> list[str]:
-        term, attr = attr.split(':', 1)
+        term, attr = attr.split(":", 1)
         base_urls = cls.TERMS[term]
         keys = [url + attr for url in base_urls]
 
@@ -90,7 +78,14 @@ class LdAttributeProcessor:
             return doc[key]
 
     @classmethod
-    def get_attr_single(cls, doc: dict, attr: str, *, drop: bool = False, ld_key: LdKeyword | None = None):
+    def get_attr_single(
+        cls,
+        doc: dict,
+        attr: str,
+        *,
+        drop: bool = False,
+        ld_key: LdKeyword | None = None,
+    ):
         key = cls.get_key(doc, attr)
         if key:
             res = doc[key]
@@ -104,10 +99,16 @@ class LdAttributeProcessor:
             return res
 
     @classmethod
-    def get_attr_list(cls, doc: dict, attr: str, *, drop: bool = False) -> list | None:
+    def get_attr_list(
+        cls, doc: dict, attr: str, *, drop: bool = False
+    ) -> list | None:
         key = cls.get_key(doc, attr)
         if key and isinstance(obj_list := doc[key], list):
-            if len(obj_list) == 1 and isinstance(obj_list[0], dict) and LdKeyword.list in obj_list[0]:
+            if (
+                len(obj_list) == 1
+                and isinstance(obj_list[0], dict)
+                and LdKeyword.list in obj_list[0]
+            ):
                 obj_list = obj_list[0][LdKeyword.list]
             if drop:
                 del doc[key]
@@ -116,10 +117,14 @@ class LdAttributeProcessor:
 
     @classmethod
     def get_attr_value(cls, doc: dict, attr: str, *, drop: bool = False):
-        return cls.get_attr_single(doc, attr, drop=drop, ld_key=LdKeyword.value)
+        return cls.get_attr_single(
+            doc, attr, drop=drop, ld_key=LdKeyword.value
+        )
 
     @classmethod
-    def get_translations(cls, doc: dict, term_attr: str, *, drop=False) -> dict[str, str] | None:
+    def get_translations(
+        cls, doc: dict, term_attr: str, *, drop=False
+    ) -> dict[str, str] | None:
         key = cls.get_key(doc, term_attr)
         if key:
             res = cls._get_lang_formatted(doc[key])
@@ -130,7 +135,9 @@ class LdAttributeProcessor:
         return None
 
     @classmethod
-    def get_translation(cls, doc: dict, term_attr: str, lang: str, *, drop=False):
+    def get_translation(
+        cls, doc: dict, term_attr: str, lang: str, *, drop=False
+    ):
         items = cls.get_translations(doc, term_attr, drop=drop)
         if items:
             if val := items.get(lang):
@@ -174,7 +181,9 @@ class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
                 return candidate
         return None
 
-    async def load_supported_document(self, doc: str | dict, base_url, settings: dict | None = None) -> "LdDocumentBase":
+    async def load_supported_document(
+        self, doc: str | dict, base_url, settings: dict | None = None
+    ) -> "LdDocumentBase":
         assert self.document_loader is not None
         assert self.context_resolver is not None
 
@@ -189,7 +198,9 @@ class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
         if type_ is None:
             raise JsonLDNotSupportedError(new_doc)
 
-        obj = type_(self.context_resolver, self.document_loader, settings=settings)
+        obj = type_(
+            self.context_resolver, self.document_loader, settings=settings
+        )
         await obj.load(new_doc, base_url)
 
         return obj
@@ -198,72 +209,108 @@ class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
         try:
             doc_id = doc[LdKeyword.id]
         except KeyError as e:
-            raise JsonLDStructureError(f'{LdKeyword.id} missed in doc', doc) from e
+            raise JsonLDStructureError(
+                f"{LdKeyword.id} missed in doc", doc
+            ) from e
         doc, base_url = await self._load_by_url(doc_id)
         return doc, base_url
 
     async def _load_by_url(self, remote_doc: str) -> Tuple[dict, str]:
         loaded = await self.load_remote_doc(remote_doc)
-        return loaded['document'], loaded['documentUrl'] or remote_doc
+        return loaded["document"], loaded["documentUrl"] or remote_doc
 
 
 class CommonFieldsMixin:
     attr_processor: LdAttributeProcessor
 
-    lang = 'en'
+    lang = "en"
 
     def _get_ld_description(self, doc: dict, drop=False):
-        return self.attr_processor.get_translations(doc, 'schema:description', drop=drop)
+        return self.attr_processor.get_translations(
+            doc, "schema:description", drop=drop
+        )
 
     def _get_ld_about(self, doc: dict, drop=False):
-        return self.attr_processor.get_translations(doc, 'schema:about', drop=drop)
+        return self.attr_processor.get_translations(
+            doc, "schema:about", drop=drop
+        )
 
     def _get_ld_pref_label(self, doc: dict, drop=False):
-        return self.attr_processor.get_translation(doc, 'skos:prefLabel', self.lang, drop=drop)
+        return self.attr_processor.get_translation(
+            doc, "skos:prefLabel", self.lang, drop=drop
+        )
 
     def _get_ld_alt_label(self, doc: dict, drop=False):
-        return self.attr_processor.get_translation(doc, 'skos:altLabel', self.lang, drop=drop)
+        return self.attr_processor.get_translation(
+            doc, "skos:altLabel", self.lang, drop=drop
+        )
 
     def _get_ld_version(self, doc: dict, drop=False):
-        return self.attr_processor.get_attr_value(doc, 'schema:version', drop=drop)
+        return self.attr_processor.get_attr_value(
+            doc, "schema:version", drop=drop
+        )
 
     def _get_ld_schema_version(self, doc: dict, drop=False):
-        return self.attr_processor.get_attr_value(doc, 'schema:schemaVersion', drop=drop)
+        return self.attr_processor.get_attr_value(
+            doc, "schema:schemaVersion", drop=drop
+        )
 
     def _get_ld_image(self, doc: dict, drop=False):
         for keyword in [LdKeyword.id, LdKeyword.value]:
-            if img := self.attr_processor.get_attr_single(doc, 'schema:image', drop=drop, ld_key=keyword):
+            if img := self.attr_processor.get_attr_single(
+                doc, "schema:image", drop=drop, ld_key=keyword
+            ):
                 break
         if not img:
-            img_obj = self.attr_processor.get_attr_single(doc, 'schema:image', drop=drop)
+            img_obj = self.attr_processor.get_attr_single(
+                doc, "schema:image", drop=drop
+            )
             if isinstance(img_obj, dict):
-                img = self.attr_processor.get_attr_single(img_obj, 'schema:contentUrl', ld_key=LdKeyword.id)
+                img = self.attr_processor.get_attr_single(
+                    img_obj, "schema:contentUrl", ld_key=LdKeyword.id
+                )
 
         return img
 
-    def _get_ld_properties_formatted(self, doc: dict, drop=False, key='reproschema:addProperties') -> dict:
+    def _get_ld_properties_formatted(
+        self, doc: dict, drop=False, key="reproschema:addProperties"
+    ) -> dict:
         items = self.attr_processor.get_attr_list(doc, key, drop=drop)
 
         properties_by_id = {}
         if items:
             for item in items:
-                _id = self.attr_processor.get_attr_single(item, 'reproschema:isAbout', ld_key=LdKeyword.id)
-                _var = self.attr_processor.get_translation(item, 'reproschema:variableName', self.lang)
+                _id = self.attr_processor.get_attr_single(
+                    item, "reproschema:isAbout", ld_key=LdKeyword.id
+                )
+                _var = self.attr_processor.get_translation(
+                    item, "reproschema:variableName", self.lang
+                )
                 _is_visible = self._is_visible(item)
                 _pref_label = self._get_ld_pref_label(item)
-                _is_required = self.attr_processor.get_attr_value(item, 'reproschema:requiredValue')
+                _is_required = self.attr_processor.get_attr_value(
+                    item, "reproschema:requiredValue"
+                )
                 properties_by_id[_id] = {
-                    'ld_variable_name': _var,
-                    'ld_is_vis': _is_visible,
-                    'ld_pref_label': _pref_label,
-                    'ld_required_value': _is_required
+                    "ld_variable_name": _var,
+                    "ld_is_vis": _is_visible,
+                    "ld_pref_label": _pref_label,
+                    "ld_required_value": _is_required,
                 }
 
         return properties_by_id
 
     def _get_allow_list(self, doc: dict, drop=False) -> list[str]:
-        rules = self.attr_processor.get_attr_list(doc, 'reproschema:allow', drop=drop) or []
-        return [rule.get(LdKeyword.id) if isinstance(rule, dict) else rule for rule in rules]
+        rules = (
+            self.attr_processor.get_attr_list(
+                doc, "reproschema:allow", drop=drop
+            )
+            or []
+        )
+        return [
+            rule.get(LdKeyword.id) if isinstance(rule, dict) else rule
+            for rule in rules
+        ]
 
     def _is_allowed(self, allow_list: list[str], keys: list[str]) -> bool:
         for key in keys:
@@ -273,15 +320,22 @@ class CommonFieldsMixin:
         return False
 
     def _is_skippable(self, allow_list: list[str]) -> bool:
-        keys = ['reproschema:DontKnow', 'reproschema:dont_know_answer', 'reproschema:Skipped', 'reproschema:refused_to_answer']
+        keys = [
+            "reproschema:DontKnow",
+            "reproschema:dont_know_answer",
+            "reproschema:Skipped",
+            "reproschema:refused_to_answer",
+        ]
         return self._is_allowed(allow_list, keys)
 
     def _is_back_disabled(self, allow_list: list[str]) -> bool:
-        keys = ['reproschema:DisableBack', 'reproschema:disable_back']
+        keys = ["reproschema:DisableBack", "reproschema:disable_back"]
         return self._is_allowed(allow_list, keys)
 
     def _is_visible(self, doc: dict, drop=False) -> bool | str | None:
-        return self.attr_processor.get_attr_value(doc, 'reproschema:isVis', drop=drop)
+        return self.attr_processor.get_attr_value(
+            doc, "reproschema:isVis", drop=drop
+        )
 
     def _get_timer(self, doc: dict, drop=False) -> int | None:
         val = self.attr_processor.get_attr_value(
@@ -292,7 +346,7 @@ class CommonFieldsMixin:
         return None
 
     @classmethod
-    def _wrap_wysiwyg_img(cls, url, placeholder='image'):
+    def _wrap_wysiwyg_img(cls, url, placeholder="image"):
         return f"![{placeholder}]({url})"
 
 
@@ -303,12 +357,17 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
     ld_ctx: list | dict | str | None = None
     doc: dict | None = None
     doc_expanded: dict
-    lang: str = 'en'
+    lang: str = "en"
 
     ld_id: str | None = None
     ld_variable_name: str | None = None
 
-    def __init__(self, context_resolver: ContextResolver, document_loader: Callable, settings: dict | None = None):
+    def __init__(
+        self,
+        context_resolver: ContextResolver,
+        document_loader: Callable,
+        settings: dict | None = None,
+    ):
         self.context_resolver: ContextResolver = context_resolver
         self.document_loader = document_loader
         self.settings: dict = settings or {}
@@ -328,7 +387,9 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
         self.ld_ctx = doc.get(LdKeyword.context)
         expanded: list[dict] = await self._expand(doc, base_url)
         self.doc_expanded = expanded[0]
-        self.ld_id = self.attr_processor.first(self.doc_expanded.get(LdKeyword.id))
+        self.ld_id = self.attr_processor.first(
+            self.doc_expanded.get(LdKeyword.id)
+        )
 
     async def _expand(self, doc: dict | str, base_url: str | None = None):
         options = dict(

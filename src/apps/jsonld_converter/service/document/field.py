@@ -1,62 +1,57 @@
 import dataclasses
-from abc import (
-    abstractmethod,
-    ABC,
-)
-from copy import (
-    deepcopy,
-    copy,
-)
-from typing import (
-    Type,
-)
+import uuid
+from abc import ABC, abstractmethod
+from copy import copy, deepcopy
+from typing import Type
 
 from pydantic.color import Color
 
 from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.response_type_config import (
-    ResponseType,
-    TextConfig,
-    SingleSelectionConfig,
     AdditionalResponseOption,
-    SliderConfig,
-    MultiSelectionConfig,
-    SliderRowsConfig,
-    PhotoConfig,
-    ResponseTypeConfig,
-    VideoConfig,
     AudioConfig,
-    DrawingConfig,
-    MessageConfig,
-    TimeRangeConfig,
-    DateConfig,
-    GeolocationConfig,
-    NumberSelectionConfig,
-    MultiSelectionRowsConfig,
-    SingleSelectionRowsConfig,
     AudioPlayerConfig,
+    DateConfig,
+    DrawingConfig,
+    GeolocationConfig,
+    MessageConfig,
+    MultiSelectionConfig,
+    MultiSelectionRowsConfig,
+    NumberSelectionConfig,
+    PhotoConfig,
+    ResponseType,
+    ResponseTypeConfig,
+    SingleSelectionConfig,
+    SingleSelectionRowsConfig,
+    SliderConfig,
+    SliderRowsConfig,
+    TextConfig,
+    TimeRangeConfig,
+    VideoConfig,
 )
 from apps.activities.domain.response_values import (
-    SingleSelectionValues,
-    _SingleSelectionValue,
-    SliderValues,
-    SliderRowsValue,
-    SliderRowsValues,
-    ResponseValueConfig,
-    MultiSelectionValues,
+    AudioPlayerValues,
     AudioValues,
     DrawingValues,
-    NumberSelectionValues,
     MultiSelectionRowsValues,
+    MultiSelectionValues,
+    NumberSelectionValues,
+    ResponseValueConfig,
     SingleSelectionRowsValues,
-    _SingleSelectionRowsValue,
-    _SingleSelectionRowValue,
-    AudioPlayerValues,
+    SingleSelectionValues,
+    SliderRowsValue,
+    SliderRowsValues,
+    SliderValues,
+    _SingleSelectionDataOption,
+    _SingleSelectionDataRow,
+    _SingleSelectionOption,
+    _SingleSelectionRow,
+    _SingleSelectionValue,
 )
 from apps.jsonld_converter.errors import JsonLDStructureError
 from apps.jsonld_converter.service.document.base import (
-    LdDocumentBase,
     CommonFieldsMixin,
+    LdDocumentBase,
     LdKeyword,
 )
 
@@ -170,11 +165,17 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
         term_attr = term_attr or "reproschema:responseOptions"
         key = self.attr_processor.get_key(doc, term_attr)
         options_doc = self.attr_processor.get_attr_single(doc, term_attr)
-        if options_doc and len(options_doc) == 1 and LdKeyword.id in options_doc:
+        if (
+            options_doc
+            and len(options_doc) == 1
+            and LdKeyword.id in options_doc
+        ):
             try:
                 options_id = options_doc[LdKeyword.id]
             except KeyError as e:
-                raise JsonLDStructureError(f'{LdKeyword.id} missed in doc', doc) from e
+                raise JsonLDStructureError(
+                    f"{LdKeyword.id} missed in doc", doc
+                ) from e
 
             options_doc = await self._expand(options_id, self.base_url)
             if isinstance(options_doc, list):
@@ -232,7 +233,8 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
         for k, v in doc.items():
             self.extra[k] = v
 
-    def _build_config(self, _cls: Type, **attrs):
+    def _build_config(self, _cls: Type | None, **attrs):
+        assert _cls is not None
         if self.ld_is_optional_text:
             additional_response_option = AdditionalResponseOption(
                 text_input_option=True,
@@ -317,7 +319,7 @@ class ReproFieldText(ReproFieldBase):
 
         self.choices = self._get_ld_choices_formatted(options_doc)
 
-    def _build_config(self, _cls: Type, **attrs):
+    def _build_config(self, _cls: Type | None, **attrs):
         numerical_response_required = False
         if self.ld_value_type and self.attr_processor.is_equal_term_val(
             self.ld_value_type, "xsd:integer"
@@ -374,9 +376,11 @@ class ReproFieldRadio(ReproFieldBase):
 
         self.choices = self._get_ld_choices_formatted(options_doc)
 
-    def _build_config(self, _cls: Type, **attrs):
+    def _build_config(self, _cls: Type | None, **attrs):
         args = dict(
-            randomize_options=bool(self.ld_randomize_options),  # TODO use allow?
+            randomize_options=bool(
+                self.ld_randomize_options
+            ),  # TODO use allow?
             add_scores=bool(self.ld_scoring),
             set_alerts=bool(self.ld_response_alert),
             add_tooltip=False,  # TODO
@@ -390,7 +394,7 @@ class ReproFieldRadio(ReproFieldBase):
 
     def _build_response_values(self) -> ResponseValueConfig | None:
         values = []
-        for choice in self.choices:
+        for choice in self.choices or []:
             color = None
             if color_val := choice.get("color"):
                 color = Color(color_val)  # TODO process error
@@ -410,6 +414,7 @@ class ReproFieldRadio(ReproFieldBase):
         _cls: Type[MultiSelectionValues | SingleSelectionValues] = (
             MultiSelectionValues if self.is_multiple else SingleSelectionValues
         )
+        # TODO palette name
         response_values = _cls(options=values)
 
         return response_values
@@ -460,7 +465,7 @@ class ReproFieldRadioStacked(ReproFieldBase):
             options_doc, keys=["reproschema:itemOptions"]
         )
 
-    def _build_config(self, _cls: Type, **attrs):
+    def _build_config(self, _cls: Type | None, **attrs):
         cfg_cls = (
             MultiSelectionRowsConfig
             if self.is_multiple
@@ -469,7 +474,7 @@ class ReproFieldRadioStacked(ReproFieldBase):
 
         add_tooltip = any(
             bool(opt.get("tooltip"))
-            for opt in [*self.ld_options, *self.ld_item_list]
+            for opt in [*(self.ld_options or []), *(self.ld_item_list or [])]
         )
 
         config = cfg_cls(
@@ -484,42 +489,71 @@ class ReproFieldRadioStacked(ReproFieldBase):
         return config
 
     def _build_response_values(self) -> ResponseValueConfig | None:
-        rows = []
-        chunk_size = len(self.ld_options)
+        items = self.ld_item_list or []
+        choices = self.ld_options or []
+        item_options = self.ld_item_options or []
+
+        if len(item_options) != len(items) * len(choices):
+            raise Exception(
+                "Item options doesn't match items and options data"
+            )
+
+        chunk_size = len(choices)
         vals = [
-            self.ld_item_options[i: i + chunk_size]
-            for i in range(0, len(self.ld_item_options), chunk_size)
+            # fmt: off
+            item_options[i: i + chunk_size]
+            for i in range(0, len(item_options), chunk_size)
+            # fmt: on
         ]
 
-        for i, item in enumerate(self.ld_item_list or []):
-            options = []
-            for j, choice in enumerate(self.ld_options or []):
-                val = vals[i][j]  # TODO key error
-                options.append(
-                    _SingleSelectionRowValue(
-                        text=choice.get("name"),
-                        image=choice.get("image") or None,
-                        score=val.get("score")
-                        if bool(self.ld_scoring)
-                        else None,
-                        tooltip=choice.get("tooltip") or None,
-                    )
-                )
-
-            row = _SingleSelectionRowsValue(
+        rows = []
+        for item in items:
+            row = _SingleSelectionRow(
+                id=str(uuid.uuid4()),
                 row_name=item.get("name"),
                 row_image=item.get("image") or None,
                 tooltip=item.get("tooltip") or None,
-                options=options,
             )
             rows.append(row)
+
+        options = []
+        for choice in choices:
+            option = _SingleSelectionOption(
+                id=str(uuid.uuid4()),
+                text=choice.get("name"),
+                image=choice.get("image") or None,
+                tooltip=choice.get("tooltip") or None,
+            )
+            options.append(option)
+
+        data_matrix = []
+        for i, row_vals in enumerate(vals):
+            _options = []
+            for j, val in enumerate(row_vals):
+                # fmt: off
+                _score = val.get("score") if bool(self.ld_scoring) else None  # noqa: E501
+                _alert = val.get("alert") if bool(self.ld_response_alert) else None  # noqa: E501
+                _option = _SingleSelectionDataOption(
+                    # TODO tooltip, value missed
+                    option_id=options[j].id,
+                    score=_score,
+                    alert=_alert,
+                )
+                # fmt: on
+                _options.append(_option)
+
+            data_matrix.append(
+                _SingleSelectionDataRow(row_id=rows[i].id, options=_options)
+            )
 
         _cls = (
             MultiSelectionRowsValues
             if self.is_multiple
             else SingleSelectionRowsValues
         )
-        response_values = _cls(rows=rows)
+        response_values = _cls(
+            rows=rows, options=options, data_matrix=data_matrix
+        )
 
         return response_values
 
@@ -557,12 +591,14 @@ class ReproFieldSliderBase(ReproFieldBase, ABC):
             ld_max_value=self.attr_processor.get_attr_value(
                 doc, "schema:maxValue"
             ),
+            # fmt: off
             ld_min_value_img=self.attr_processor.get_attr_value(
                 doc, "schema:minValueImg"
-            ),
+            ) or None,
             ld_max_value_img=self.attr_processor.get_attr_value(
                 doc, "schema:maxValueImg"
-            ),
+            ) or None,
+            # fmt: on
             choices=self._get_ld_choices_formatted(doc),
         )
         return option
@@ -620,7 +656,7 @@ class ReproFieldSlider(ReproFieldSliderBase):
             options_doc, "reproschema:continousSlider"
         )
 
-    def _build_config(self, _cls: Type, **attrs):
+    def _build_config(self, _cls: Type | None, **attrs):
         attrs = dict(
             add_scores=bool(self.ld_scoring),
             set_alerts=bool(self.ld_response_alert),
@@ -631,6 +667,8 @@ class ReproFieldSlider(ReproFieldSliderBase):
         return super()._build_config(_cls, **attrs)
 
     def _build_response_values(self) -> ResponseValueConfig | None:
+        assert self.slider_option is not None
+
         first_choice: dict = {}
         last_choice: dict = {}
         scores: list | None = None
@@ -641,23 +679,17 @@ class ReproFieldSlider(ReproFieldSliderBase):
             if scores and scores[0] is None:
                 scores = None
 
+        # fmt: off
         response_values = SliderValues(
             min_value=first_choice.get("value"),
             max_value=last_choice.get("value"),
-            min_label=first_choice.get("name")
-            or self.slider_option.ld_min_value,
-
-            max_label=last_choice.get("name")
-            or self.slider_option.ld_max_value,
-
-            min_image=first_choice.get("image")
-            or self.slider_option.ld_min_value_img,
-
-            max_image=last_choice.get("image")
-            or self.slider_option.ld_max_value_img,
-
+            min_label=first_choice.get("name") or self.slider_option.ld_min_value,  # noqa: E501
+            max_label=last_choice.get("name") or self.slider_option.ld_max_value,  # noqa: E501
+            min_image=first_choice.get("image") or self.slider_option.ld_min_value_img,  # noqa: E501
+            max_image=last_choice.get("image") or self.slider_option.ld_max_value_img,  # noqa: E501
             scores=scores,
         )
+        # fmt: on
 
         return response_values
 
@@ -688,7 +720,7 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
             self._get_slider_option(opt) for opt in ld_slider_options
         ]
 
-    def _build_config(self, _cls: Type, **attrs):
+    def _build_config(self, _cls: Type | None, **attrs):
         config = SliderRowsConfig(
             remove_back_button=bool(self.ld_remove_back_option),
             skippable_item=self.is_skippable,
@@ -700,13 +732,13 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
 
     def _build_response_values(self) -> SliderRowsValues | None:
         rows = []
-        for option in self.slider_options:
+        for option in self.slider_options or []:
             first_choice: dict = {}
             last_choice: dict = {}
             if option.choices:
                 first_choice = option.choices[0]
                 last_choice = option.choices[-1]
-            scores = [x.get("score") for x in option.choices]
+            scores = [x.get("score") for x in option.choices or []]
             if scores and scores[0] is None:
                 scores = []
             response_value = SliderRowsValue(
@@ -822,7 +854,7 @@ class ReproFieldDrawing(ReproFieldBase):
         )
         self.options_image = self._get_ld_image(options_doc)
 
-    def _build_config(self, _cls: Type, **attrs):
+    def _build_config(self, _cls: Type | None, **attrs):
         attrs = dict(
             remove_undo_button=bool(self.ld_remove_undo_option),
             navigation_to_top=bool(self.ld_top_navigation_option),
@@ -844,7 +876,7 @@ class ReproFieldMessage(ReproFieldBase):
     def _get_supported_input_types(cls) -> list[str]:
         return [cls.INPUT_TYPE]
 
-    def _build_config(self, _cls: Type, **attrs):
+    def _build_config(self, _cls: Type | None, **attrs):
         config = MessageConfig(
             remove_back_button=bool(self.ld_remove_back_option),
             timer=int(self.ld_timer / 1000) if self.ld_timer else None,
@@ -894,8 +926,10 @@ class ReproFieldGeolocation(ReproFieldBase):
     def export(self) -> ActivityItemCreate:
         if self.ld_geolocation_image and self.ld_question:
             question = {}
-            for lang, val in copy(self.ld_question.items()):
-                question[lang] = "\r\n\r\n".join([val, self._wrap_wysiwyg_img(self.ld_geolocation_image)])
+            for lang, val in copy(list(self.ld_question.items())):
+                question[lang] = "\r\n\r\n".join(
+                    [val, self._wrap_wysiwyg_img(self.ld_geolocation_image)]
+                )
             self.ld_question = question
 
         return super().export()
@@ -921,7 +955,8 @@ class ReproFieldAge(ReproFieldBase):
             options_doc, "schema:maxAge"
         )
 
-    def _build_config(self, _cls: Type, **attrs):
+    def _build_config(self, _cls: Type | None, **attrs):
+        assert _cls is not None
         if self.ld_is_optional_text:
             additional_response_option = AdditionalResponseOption(
                 text_input_option=True,
@@ -979,7 +1014,7 @@ class ReproFieldAudioStimulus(ReproFieldBase):
                 elif name == self.LD_OPT_ALLOW_REPLAY:
                     self.allow_replay = val
 
-    def _build_config(self, _cls: Type, **attrs):
+    def _build_config(self, _cls: Type | None, **attrs):
         if self.ld_is_optional_text:
             additional_response_option = AdditionalResponseOption(
                 text_input_option=True,
