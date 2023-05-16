@@ -625,12 +625,12 @@ class ScheduleService:
         activities = await ActivityEventsCRUD(
             self.session
         ).get_by_applet_and_user_id(applet_id, user_id)
-        activity_ids = set([activity.activity_id for activity in activities])
+        activity_ids = {activity.activity_id for activity in activities}
 
         flows = await FlowEventsCRUD(self.session).get_by_applet_and_user_id(
             applet_id, user_id
         )
-        flow_ids = set([flow.flow_id for flow in flows])
+        flow_ids = {flow.flow_id for flow in flows}
 
         # Get list of event_ids for user and delete them all
         event_schemas = await EventCRUD(
