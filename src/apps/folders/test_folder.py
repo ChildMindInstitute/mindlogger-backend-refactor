@@ -6,11 +6,13 @@ class TestFolder(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
         "folders/fixtures/folders.json",
+        "applets/fixtures/applets.json",
         "folders/fixtures/folders_applet.json",
+        "applets/fixtures/applet_user_accesses.json",
     ]
     login_url = "/auth/login"
-    list_url = "/folders"
-    detail_url = "/folders/{id}"
+    list_url = "/workspaces/7484f34a-3acc-4ee6-8a94-fd7299502fa1/folders"
+    detail_url = f"{list_url}/{{id}}"
     pin_url = f"{detail_url}/pin/{{applet_id}}"
 
     @rollback

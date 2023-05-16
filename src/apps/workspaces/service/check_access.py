@@ -15,6 +15,7 @@ from apps.workspaces.errors import (
     AppletSetScheduleAccessDenied,
     TransferOwnershipAccessDenied,
     WorkspaceAccessDenied,
+    WorkspaceFolderManipulationAccessDenied,
 )
 
 
@@ -31,13 +32,21 @@ class CheckAccessService:
         if not has_access:
             raise AppletAccessDenied()
 
-    async def check_workspace_access(self, applet_id: uuid.UUID):
+    async def check_workspace_access(self, owner_id: uuid.UUID):
         has_access = await AppletAccessCRUD(
             self.session
-        ).has_any_roles_for_workspace(applet_id, self.user_id)
+        ).has_any_roles_for_workspace(owner_id, self.user_id)
 
         if not has_access:
             raise WorkspaceAccessDenied()
+
+    async def check_workspace_folder_access(self, owner_id: uuid.UUID):
+        has_access = await AppletAccessCRUD(
+            self.session
+        ).has_any_roles_for_workspace(owner_id, self.user_id, [Role.OWNER])
+
+        if not has_access:
+            raise WorkspaceFolderManipulationAccessDenied()
 
     async def check_applet_create_access(self, owner_id: uuid.UUID):
         if owner_id == self.user_id:
@@ -50,6 +59,14 @@ class CheckAccessService:
 
     async def check_applet_edit_access(self, applet_id: uuid.UUID):
         has_access = await AppletAccessCRUD(self.session).can_edit_applet(
+            applet_id, self.user_id
+        )
+
+        if not has_access:
+            raise AppletEditionAccessDenied()
+
+    async def check_applet_retention_access(self, applet_id: uuid.UUID):
+        has_access = await AppletAccessCRUD(self.session).can_set_retention(
             applet_id, self.user_id
         )
 

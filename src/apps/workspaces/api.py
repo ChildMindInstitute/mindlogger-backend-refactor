@@ -113,6 +113,9 @@ async def workspace_applets(
             owner_id
         )
         await UserAccessService(session, user.id).check_access(owner_id)
+        query_params.filters["folder_id"] = query_params.filters.pop(
+            "folder_id", None
+        )
         applets = await service.get_workspace_applets(
             language, deepcopy(query_params)
         )

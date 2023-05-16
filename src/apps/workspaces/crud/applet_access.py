@@ -135,6 +135,23 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(select(query))
         return db_result.scalars().first()
 
+    async def can_set_retention(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ):
+        """
+        1. Set retention of an applet
+        """
+        query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(
+            UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER])
+        )
+        query = query.exists()
+
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first()
+
     async def can_invite_anyone(
         self, applet_id: uuid.UUID, user_id: uuid.UUID
     ):
