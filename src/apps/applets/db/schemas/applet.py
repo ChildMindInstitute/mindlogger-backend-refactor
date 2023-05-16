@@ -37,13 +37,12 @@ class AppletSchema(_BaseAppletSchema, Base):
     __tablename__ = "applets"
 
     folder_id = Column(ForeignKey("folders.id", ondelete="RESTRICT"))
+    encryption = Column(JSONB())
     link = Column(UUID(as_uuid=True), unique=True)
     require_login = Column(Boolean(), default=True)
     pinned_at = Column(DateTime(), nullable=True)
     retention_period = Column(Integer(), nullable=True)
     retention_type = Column(String(20), nullable=True)
-    hashed_password = Column(Text())
-    system_encrypted_key = Column(Text())
     extra_fields = Column(
         JSONB(), default=dict, server_default=text("'{}'::jsonb")
     )

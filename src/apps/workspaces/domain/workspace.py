@@ -3,6 +3,10 @@ import uuid
 
 from pydantic import Field
 
+from apps.applets.domain.applet import (
+    AppletSingleLanguageInfo,
+    AppletSingleLanguageInfoPublic,
+)
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
@@ -54,6 +58,8 @@ class WorkspaceRespondent(InternalModel):
     role: Role
     secret_id: str | None
     last_seen: datetime.datetime
+    has_individual_schedule: bool
+    is_pinned: bool = False
 
 
 class WorkspaceManager(InternalModel):
@@ -72,6 +78,8 @@ class PublicWorkspaceRespondent(PublicModel):
     role: Role
     secret_id: str | None
     last_seen: datetime.datetime
+    has_individual_schedule: bool
+    is_pinned: bool = False
 
 
 class PublicWorkspaceManager(PublicModel):
@@ -91,3 +99,15 @@ class WorkspaceInfo(InternalModel):
 class PublicWorkspaceInfo(PublicModel):
     name: str
     has_managers: bool
+
+
+class WorkspaceApplet(AppletSingleLanguageInfo):
+    role: Role = Role.RESPONDENT
+
+
+class WorkspaceAppletPublic(AppletSingleLanguageInfoPublic):
+    role: Role
+
+
+class WorkspacePrioritizedRole(PublicModel):
+    role: Role

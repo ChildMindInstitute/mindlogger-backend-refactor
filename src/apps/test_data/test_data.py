@@ -1,3 +1,5 @@
+import uuid
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -19,7 +21,17 @@ class TestData(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
-        response = await self.client.post(self.generate_applet_url)
+        response = await self.client.post(
+            self.generate_applet_url,
+            data=dict(
+                encryption=dict(
+                    public_key=uuid.uuid4().hex,
+                    prime=uuid.uuid4().hex,
+                    base=uuid.uuid4().hex,
+                    account_id=str(uuid.uuid4()),
+                ),
+            ),
+        )
 
         assert response.status_code == 201, response.json()
         response = await self.client.get(self.applet_list_url)

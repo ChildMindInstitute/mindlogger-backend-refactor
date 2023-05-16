@@ -6,11 +6,13 @@ class TestFolder(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
         "folders/fixtures/folders.json",
+        "applets/fixtures/applets.json",
         "folders/fixtures/folders_applet.json",
+        "applets/fixtures/applet_user_accesses.json",
     ]
     login_url = "/auth/login"
-    list_url = "/folders"
-    detail_url = "/folders/{id}"
+    list_url = "/workspaces/7484f34a-3acc-4ee6-8a94-fd7299502fa1/folders"
+    detail_url = f"{list_url}/{{id}}"
     pin_url = f"{detail_url}/pin/{{applet_id}}"
 
     @rollback
@@ -23,6 +25,7 @@ class TestFolder(BaseTest):
 
         assert response.status_code == 200, response.json()
         assert len(response.json()["result"]) == 2
+        assert response.json()["count"] == 2
         assert (
             response.json()["result"][0]["id"]
             == "ecf66358-a717-41a7-8027-807374307732"
@@ -54,10 +57,9 @@ class TestFolder(BaseTest):
 
         response = await self.client.post(self.list_url, data)
 
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]["en"]
-            == "Folder already exists."
+            response.json()["result"][0]["message"] == "Folder already exists."
         )
 
     @rollback
@@ -102,10 +104,9 @@ class TestFolder(BaseTest):
             data,
         )
 
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]["en"]
-            == "Folder already exists."
+            response.json()["result"][0]["message"] == "Folder already exists."
         )
 
     @rollback
@@ -130,9 +131,7 @@ class TestFolder(BaseTest):
         )
 
         assert response.status_code == 403, response.json()
-        assert (
-            response.json()["result"][0]["message"]["en"] == "Access denied."
-        )
+        assert response.json()["result"][0]["message"] == "Access denied."
 
     @rollback
     async def test_delete_not_empty_folder(self):
@@ -143,9 +142,9 @@ class TestFolder(BaseTest):
         response = await self.client.delete(
             self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307732")
         )
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]["en"]
+            response.json()["result"][0]["message"]
             == "Folder has applets, move applets from folder to delete it."
         )
 

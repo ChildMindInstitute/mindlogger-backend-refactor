@@ -3,7 +3,7 @@ from fastapi import Body, Depends
 from apps.authentication.deps import get_current_user
 from apps.authentication.services import AuthenticationService
 from apps.shared.domain.response import Response
-from apps.users.crud import UsersCRUD
+from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     PublicUser,
     User,

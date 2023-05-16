@@ -3,6 +3,7 @@ from copy import deepcopy
 
 from fastapi import Body, Depends
 
+from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.invitations.domain import (
     InvitationDetailForReviewer,
@@ -15,7 +16,6 @@ from apps.invitations.domain import (
     InvitationReviewerResponse,
     PrivateInvitationResponse,
 )
-from apps.invitations.errors import InvitationDoesNotExist
 from apps.invitations.filters import InvitationQueryParams
 from apps.invitations.services import (
     InvitationsService,
@@ -24,6 +24,7 @@ from apps.invitations.services import (
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
+from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic, session_manager
 
 
@@ -38,6 +39,10 @@ async def invitation_list(
     for the specific user who is invitor.
     """
     async with atomic(session):
+        if query_params.filters.get("applet_id"):
+            await CheckAccessService(
+                session, user.id
+            ).check_applet_invite_access(query_params.filters["applet_id"])
         invitations = await InvitationsService(session, user).fetch_all(
             deepcopy(query_params)
         )
@@ -63,6 +68,10 @@ async def invitation_list_for_invited(
 ) -> ResponseMulti[InvitationResponse]:
     """Fetch all invitations for the specific user who is invited."""
     async with atomic(session):
+        if query_params.filters.get("applet_id"):
+            await CheckAccessService(
+                session, user.id
+            ).check_applet_invite_access(query_params.filters["applet_id"])
         invitations = await InvitationsService(
             session, user
         ).fetch_all_for_invited(deepcopy(query_params))
@@ -90,10 +99,10 @@ async def invitation_retrieve(
     """
     async with atomic(session):
         invitation = await InvitationsService(session, user).get(key)
-        if not invitation:
-            raise InvitationDoesNotExist(
-                message=f"No such invitation with key={key}."
-            )
+        if invitation:
+            await CheckAccessService(
+                session, user.id
+            ).check_applet_invite_access(invitation.applet_id)
     return Response(result=InvitationResponse.from_orm(invitation))
 
 
@@ -114,11 +123,16 @@ async def invitation_respondent_send(
     invitation_schema: InvitationRespondentRequest = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[InvitationRespondentResponse]:
-    """General endpoint for sending invitations to the concrete applet
+    """
+    General endpoint for sending invitations to the concrete applet
     for the concrete user giving him a roles "respondent".
     """
-    # Send the invitation using the internal Invitation service
+
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_invite_access(
+            applet_id
+        )
         invitation = await InvitationsService(
             session, user
         ).send_respondent_invitation(applet_id, invitation_schema)
@@ -134,12 +148,16 @@ async def invitation_reviewer_send(
     invitation_schema: InvitationReviewerRequest = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[InvitationReviewerResponse]:
-    """General endpoint for sending invitations to the concrete applet
+    """
+    General endpoint for sending invitations to the concrete applet
     for the concrete user giving him role "reviewer" for specific respondents.
     """
 
-    # Send the invitation using the internal Invitation service
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_invite_access(
+            applet_id
+        )
         invitation: InvitationDetailForReviewer = await InvitationsService(
             session, user
         ).send_reviewer_invitation(applet_id, invitation_schema)
@@ -155,13 +173,17 @@ async def invitation_managers_send(
     invitation_schema: InvitationManagersRequest = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[InvitationManagersResponse]:
-    """General endpoint for sending invitations to the concrete applet
+    """
+    General endpoint for sending invitations to the concrete applet
     for the concrete user giving him a one of roles:
     "manager", "coordinator", "editor".
     """
 
-    # Send the invitation using the internal Invitation service
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_invite_access(
+            applet_id
+        )
         invitation = await InvitationsService(
             session, user
         ).send_managers_invitation(applet_id, invitation_schema)

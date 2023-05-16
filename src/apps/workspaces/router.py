@@ -1,8 +1,9 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.applets.domain.applet import AppletSingleLanguageInfoPublic
+from apps.applets.api import applet_create
 from apps.applets.domain.applet_full import PublicAppletFull
+from apps.applets.domain.applets import public_detail
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -10,6 +11,7 @@ from apps.shared.domain.response import (
 )
 from apps.workspaces.api import (
     applet_remove_respondent_access,
+    managers_priority_role_retrieve,
     user_workspaces,
     workspace_applet_detail,
     workspace_applets,
@@ -17,13 +19,19 @@ from apps.workspaces.api import (
     workspace_remove_manager_access,
     workspace_respondents_list,
     workspace_retrieve,
+    workspace_users_applet_access_list,
     workspace_users_pin,
+)
+from apps.workspaces.domain.user_applet_access import (
+    PublicRespondentAppletAccess,
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
     PublicWorkspaceInfo,
     PublicWorkspaceManager,
     PublicWorkspaceRespondent,
+    WorkspaceAppletPublic,
+    WorkspacePrioritizedRole,
 )
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
@@ -51,23 +59,30 @@ router.get(
     },
 )(workspace_retrieve)
 
+router.get(
+    "/{owner_id}/priority_role",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[WorkspacePrioritizedRole]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(managers_priority_role_retrieve)
+
 # Applets in a specific workspace where owner_id is applet owner
 router.get(
     "/{owner_id}/applets",
-    response_model=ResponseMulti[AppletSingleLanguageInfoPublic],
+    response_model=ResponseMulti[WorkspaceAppletPublic],
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {
-            "model": ResponseMulti[AppletSingleLanguageInfoPublic]
-        },
+        status.HTTP_200_OK: {"model": ResponseMulti[WorkspaceAppletPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_applets)
 
 router.get(
-    "/{owner_id}/applets/{id_}",
-    response_model=Response[PublicAppletFull],
+    "/{owner_id}/applets/{applet_id}",
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": Response[PublicAppletFull]},
@@ -75,6 +90,17 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_applet_detail)
+
+router.post(
+    "/{owner_id}/applets",
+    response_model=Response[public_detail.Applet],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"model": Response[public_detail.Applet]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_create)
 
 router.get(
     "/{owner_id}/respondents",
@@ -109,6 +135,19 @@ router.post(
     },
 )(workspace_users_pin)
 
+router.get(
+    "/{owner_id}/respondents/{respondent_id}/accesses",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[PublicRespondentAppletAccess],
+    responses={
+        status.HTTP_200_OK: {
+            "model": ResponseMulti[PublicRespondentAppletAccess]
+        },
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_users_applet_access_list)
+
 # Remove manager access from a specific user
 router.post(
     "/removeAccess",
@@ -118,7 +157,6 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(workspace_remove_manager_access)
-
 
 applet_router = APIRouter(prefix="/applets", tags=["Applets"])
 

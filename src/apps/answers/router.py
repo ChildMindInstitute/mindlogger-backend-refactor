@@ -4,6 +4,7 @@ from starlette import status
 from apps.answers.api import (
     applet_activities_list,
     applet_answer_retrieve,
+    applet_submit_date_list,
     create_answer,
     note_add,
     note_delete,
@@ -13,6 +14,7 @@ from apps.answers.api import (
 from apps.answers.domain import (
     ActivityAnswerPublic,
     AnswerNoteDetailPublic,
+    PublicAnswerDates,
     PublicAnsweredAppletActivity,
 )
 from apps.shared.domain import (
@@ -35,7 +37,7 @@ router.post(
 )(create_answer)
 
 router.get(
-    "/applet/{id_}/activities",
+    "/applet/{applet_id}/activities",
     status_code=status.HTTP_200_OK,
     response_model=ResponseMulti[PublicAnsweredAppletActivity],
     responses={
@@ -45,10 +47,20 @@ router.get(
 )(applet_activities_list)
 
 router.get(
+    "/applet/{applet_id}/dates",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[PublicAnswerDates],
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_submit_date_list)
+
+router.get(
     "/applet/{applet_id}/answers/{answer_id}",
     status_code=status.HTTP_200_OK,
-    response_model=Response[ActivityAnswerPublic],
     responses={
+        status.HTTP_200_OK: {"model": Response[ActivityAnswerPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

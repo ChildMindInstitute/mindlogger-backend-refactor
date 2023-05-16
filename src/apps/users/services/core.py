@@ -3,8 +3,7 @@ import uuid
 from apps.authentication.services import AuthenticationService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
-from apps.shared.errors import NotFoundError
-from apps.users.crud import UsersCRUD
+from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     PasswordRecoveryApproveRequest,
     PasswordRecoveryInfo,
@@ -13,6 +12,7 @@ from apps.users.domain import (
     User,
     UserChangePassword,
 )
+from apps.users.errors import PasswordRecoveryKeyNotFound
 from apps.users.services import PasswordRecoveryCache
 from config import settings
 from infrastructure.cache import CacheNotFound
@@ -62,25 +62,23 @@ class PasswordRecoveryService:
         )
 
         # Send email to the user
-        service: MailingService = MailingService()
+        service = MailingService()
 
         exp = settings.authentication.password_recover.expiration // 60
 
-        html_payload: dict = {
-            "email": user.email,
-            "expiration_minutes": exp,
-            "link": (
-                f"https://{settings.service.urls.frontend.web_base}"
-                f"/{settings.service.urls.frontend.password_recovery_send}"
-                f"?key={password_recovery_info.key}&email={user.email}"
-            ),
-        }
         message = MessageSchema(
             recipients=[user.email],
-            subject="Girder for Mindlogger (development instance): "
+            subject="Girder for MindLogger (development instance): "
             "Temporary access",
             body=service.get_template(
-                path="password_recovery", **html_payload
+                path="reset_password_en",
+                email=user.email,
+                expiration_minutes=exp,
+                url=(
+                    f"https://{settings.service.urls.frontend.web_base}"
+                    f"/{settings.service.urls.frontend.password_recovery_send}"
+                    f"?key={password_recovery_info.key}&email={user.email}"
+                ),
             ),
         )
         await service.send(message)
@@ -92,14 +90,13 @@ class PasswordRecoveryService:
     async def approve(
         self, schema: PasswordRecoveryApproveRequest
     ) -> PublicUser:
-        error: Exception = NotFoundError("Password recovery key not found")
 
         try:
             cache_entry: CacheEntry[
                 PasswordRecoveryInfo
             ] = await self._cache.get(schema.email, schema.key)
         except CacheNotFound:
-            raise error
+            raise PasswordRecoveryKeyNotFound()
 
         # Get user from the database
         user: User = await UsersCRUD(self.session).get_by_email(

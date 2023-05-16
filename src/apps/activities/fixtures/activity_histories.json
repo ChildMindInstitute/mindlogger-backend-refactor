@@ -38,11 +38,11 @@
       "splash_screen": "",
       "image": "",
       "show_all_at_once": false,
-      "is_skippable": false,
+      "is_skippable": true,
       "is_reviewable": false,
       "response_is_editable": false,
       "order": 2,
-      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3612_1.0.0"
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3612_2.0.1"
     }
   },
   {

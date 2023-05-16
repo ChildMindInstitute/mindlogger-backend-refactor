@@ -10,7 +10,7 @@ from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import InternalToken, TokenPayload
 from apps.authentication.errors import AuthenticationError
 from apps.authentication.services import AuthenticationService
-from apps.users.crud import UsersCRUD
+from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from config import settings
 from infrastructure.cache import CacheNotFound

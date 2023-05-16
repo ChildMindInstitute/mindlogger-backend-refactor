@@ -1,12 +1,9 @@
 from enum import Enum
 
-from pydantic import NonNegativeInt, PositiveInt
+from pydantic import Field, NonNegativeInt, PositiveInt, validator
 
-from apps.activities.domain.response_values import (
-    ResponseValueConfigOptions,
-    SingleSelectionRowsValues,
-    SingleSelectionValues,
-)
+from apps.activities.domain.response_values import ResponseValueConfigOptions
+from apps.activities.errors import CorrectAnswerRequiredError
 from apps.shared.domain import PublicModel
 
 
@@ -23,10 +20,21 @@ class _ScreenConfig(PublicModel):
 class TextConfig(_ScreenConfig, PublicModel):
     max_response_length: PositiveInt = 300
     correct_answer_required: bool
-    correct_answer: str | None = None
+    correct_answer: str | None = Field(
+        default=None,
+        max_length=300,
+        description="Required if correct_answer_required is True",
+    )
     numerical_response_required: bool
     response_data_identifier: bool
     response_required: bool
+
+    @validator("correct_answer")
+    def validate_correct_answer(cls, value, values):
+        # correct_answer must be set if correct_answer_required is True
+        if values.get("correct_answer_required") and not value:
+            raise CorrectAnswerRequiredError()
+        return value
 
 
 class SingleSelectionConfig(_ScreenConfig, PublicModel):
@@ -68,6 +76,10 @@ class DefaultConfig(_ScreenConfig, PublicModel):
 
 
 class TimeRangeConfig(DefaultConfig, PublicModel):
+    pass
+
+
+class TimeConfig(DefaultConfig, PublicModel):
     pass
 
 
@@ -128,6 +140,7 @@ class NoneResponseType(str, Enum):
     PHOTO = "photo"
     VIDEO = "video"
     DATE = "date"
+    TIME = "time"
 
 
 class ResponseType(str, Enum):
@@ -148,6 +161,7 @@ class ResponseType(str, Enum):
     AUDIO = "audio"
     AUDIOPLAYER = "audioPlayer"
     MESSAGE = "message"
+    TIME = "time"
     # FLANKER = "flanker"
     # ABTEST = "abTest"
 
@@ -170,8 +184,8 @@ ResponseTypeConfigOptions = [
     AudioConfig,
     AudioPlayerConfig,
     MessageConfig,
+    TimeConfig,
 ]
-
 
 ResponseTypeConfig = (
     TextConfig
@@ -191,6 +205,7 @@ ResponseTypeConfig = (
     | AudioConfig
     | AudioPlayerConfig
     | MessageConfig
+    | TimeConfig
 )
 
 ResponseTypeValueConfig = {}
@@ -206,19 +221,3 @@ for response_type in ResponseType:
         "value": zipped_type_value[index][0],
     }
     index += 1
-
-ResponseTypeValueConfig[ResponseType.MULTISELECT] = {
-    "config": SingleSelectionConfig,
-    "value": SingleSelectionValues,
-}
-
-ResponseTypeValueConfig[ResponseType.MULTISELECTROWS] = {
-    "config": SingleSelectionRowsConfig,
-    "value": SingleSelectionRowsValues,
-}
-
-ResponseTypeValueConfig[ResponseType.GEOLOCATION]["config"] = TimeRangeConfig
-ResponseTypeValueConfig[ResponseType.PHOTO]["config"] = TimeRangeConfig
-ResponseTypeValueConfig[ResponseType.VIDEO]["config"] = TimeRangeConfig
-ResponseTypeValueConfig[ResponseType.DATE]["config"] = TimeRangeConfig
-ResponseTypeValueConfig[ResponseType.AUDIO]["config"] = TimeRangeConfig

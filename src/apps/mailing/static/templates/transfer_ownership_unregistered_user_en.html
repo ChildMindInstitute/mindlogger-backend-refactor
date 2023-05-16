@@ -1,0 +1,42 @@
+<html style="max-width: 700px" lang="en">
+<body>
+{% include 'header.html' %}
+<table style="padding: 0">
+    <tr>
+        <td style="padding-bottom: 1%">
+            Hello!
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            {{applet_owner}} sent you an invitation to transfer ownership of
+            "{{applet_name}}" applet on MindLogger.
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Please visit <a href="{{url}}">here</a> to create a new account and accept it.
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            If you have had any issues joining an applet or creating an account, please
+            <a href="https://gitreports.com/issue/ChildMindInstitute/MindLogger-bug-reports">write
+                us</a> and we can help you.
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Thanks,
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            The MindLogger team
+        </td>
+    </tr>
+</table>
+{% include 'footers/footer_contact_us_en.html' %}
+</body>
+
+</html>

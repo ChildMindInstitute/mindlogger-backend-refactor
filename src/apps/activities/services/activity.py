@@ -16,7 +16,13 @@ from apps.activities.domain.activity_update import (
     ActivityUpdate,
     PreparedActivityItemUpdate,
 )
+from apps.activities.errors import (
+    ActivityAccessDeniedError,
+    ActivityDoeNotExist,
+)
 from apps.activities.services.activity_item import ActivityItemService
+from apps.applets.crud import AppletsCRUD
+from apps.schedule.crud.events import ActivityEventsCRUD
 from apps.schedule.service.schedule import ScheduleService
 
 
@@ -107,12 +113,14 @@ class ActivityService:
         activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
         prepared_activity_items = list()
 
-        all_activities = [
-            activity.id
-            for activity in await ActivitiesCRUD(
-                self.session
-            ).get_by_applet_id(applet_id)
+        all_activities = await ActivityEventsCRUD(
+            self.session
+        ).get_by_applet_id(applet_id)
+
+        all_activity_ids = [
+            activity.activity_id for activity in all_activities
         ]
+
         # Save new activity ids
         new_activities = []
         existing_activities = []
@@ -180,7 +188,7 @@ class ActivityService:
             )
 
         # Remove events for deleted activities
-        deleted_activity_ids = set(all_activities) - set(existing_activities)
+        deleted_activity_ids = set(all_activity_ids) - set(existing_activities)
 
         if deleted_activity_ids:
             await ScheduleService(self.session).delete_by_activity_ids(
@@ -287,11 +295,9 @@ class ActivityService:
         return activities
 
     async def get_single_language_by_id(
-        self, id_: uuid.UUID, language: str
+        self, activity_id: uuid.UUID, language: str
     ) -> ActivitySingleLanguageWithItemsDetail:
-        schema = await ActivitiesCRUD(self.session).get_by_id(
-            self.user_id, id_
-        )
+        schema = await ActivitiesCRUD(self.session).get_by_id(activity_id)
         activity = ActivitySingleLanguageWithItemsDetail(
             id=schema.id,
             name=schema.name,
@@ -307,7 +313,37 @@ class ActivityService:
         )
         activity.items = await ActivityItemService(
             self.session
-        ).get_single_language_by_activity_id(id_, language)
+        ).get_single_language_by_activity_id(activity_id, language)
+        return activity
+
+    async def get_public_single_language_by_id(
+        self, activity_id: uuid.UUID, language: str
+    ) -> ActivitySingleLanguageWithItemsDetail:
+        schema = await ActivitiesCRUD(self.session).get_by_id(activity_id)
+        if not schema:
+            raise ActivityDoeNotExist()
+        applet = await AppletsCRUD(self.session).get_by_id(schema.applet_id)
+        if not applet.link:
+            raise ActivityAccessDeniedError()
+        elif applet.require_login is True:
+            raise ActivityAccessDeniedError()
+
+        activity = ActivitySingleLanguageWithItemsDetail(
+            id=schema.id,
+            name=schema.name,
+            description=self._get_by_language(schema.description, language),
+            splash_screen=schema.splash_screen,
+            image=schema.image,
+            show_all_at_once=schema.show_all_at_once,
+            is_skippable=schema.is_skippable,
+            is_reviewable=schema.is_reviewable,
+            response_is_editable=schema.response_is_editable,
+            order=schema.order,
+            is_hidden=schema.is_hidden,
+        )
+        activity.items = await ActivityItemService(
+            self.session
+        ).get_single_language_by_activity_id(activity_id, language)
         return activity
 
     @staticmethod

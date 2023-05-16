@@ -23,6 +23,12 @@ class FolderService:
         )
         return [Folder.from_orm(schema) for schema in schemas]
 
+    async def count(self) -> int:
+        count = await FolderCRUD(self.session).get_creators_folders_count(
+            self._creator_id
+        )
+        return count
+
     async def create(self, data: FolderCreate) -> Folder:
         await self._validate_create(data.name)
         schema = await FolderCRUD(self.session).save(

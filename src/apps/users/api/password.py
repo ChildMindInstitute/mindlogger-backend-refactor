@@ -3,7 +3,7 @@ from fastapi import Body, Depends
 from apps.authentication.deps import get_current_user
 from apps.authentication.services import AuthenticationService
 from apps.shared.domain.response import Response
-from apps.users.crud import UsersCRUD
+from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     ChangePasswordRequest,
     PasswordRecoveryApproveRequest,
@@ -58,10 +58,7 @@ async def password_recovery(
                 session
             ).send_password_recovery(schema)
         except UserNotFound:
-            raise EmailAddressError(
-                message=f"Email address is not verified. The following "
-                f"identities failed the check: {schema.email}"
-            )
+            raise EmailAddressError(email=schema.email)
 
     return Response[PublicUser](result=public_user)
 

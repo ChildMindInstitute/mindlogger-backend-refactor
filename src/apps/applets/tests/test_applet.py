@@ -1,12 +1,12 @@
 import asyncio
 import uuid
 
+from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
 
 class TestApplet(BaseTest):
-    # TODO: fix text
     fixtures = [
         "users/fixtures/users.json",
         "themes/fixtures/themes.json",
@@ -22,12 +22,16 @@ class TestApplet(BaseTest):
 
     login_url = "/auth/login"
     applet_list_url = "applets"
+    applet_create_url = "workspaces/{owner_id}/applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
     applet_duplicate_url = f"{applet_detail_url}/duplicate"
+    applet_set_encryption_url = f"{applet_detail_url}/encryption"
     applet_unique_name_url = f"{applet_list_url}/unique_name"
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
+
+    public_applet_detail_url = "/public/applets/{key}"
 
     @rollback
     async def test_creating_applet(self):
@@ -35,8 +39,13 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="User daily behave",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -62,6 +71,7 @@ class TestApplet(BaseTest):
                             ),
                             response_type="text",
                             response_values=None,
+                            is_hidden=True,
                             config=dict(
                                 max_response_length=200,
                                 correct_answer_required=False,
@@ -108,6 +118,233 @@ class TestApplet(BaseTest):
                 ),
                 dict(
                     name="Evening activity",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
+                    description=dict(
+                        en="Understand evening feelings.",
+                        fr="Understand evening feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="evening_activity_item",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="singleSelect",
+                            response_values=dict(
+                                paletteName="default",
+                                options=[
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
+                                        text="Very well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
+                                        text="Well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=True,
+                                randomize_options=False,
+                                timer=None,
+                                add_scores=False,
+                                set_alerts=False,
+                                add_tooltip=False,
+                                set_palette=False,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
+                        dict(
+                            name="evening_activity_item_2",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="multiSelect",
+                            response_values=dict(
+                                paletteName=None,
+                                options=[
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
+                                        text="Very well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                    dict(
+                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
+                                        text="Well",
+                                        image=None,
+                                        score=None,
+                                        tooltip=None,
+                                        is_hidden=False,
+                                        color=None,
+                                    ),
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=True,
+                                randomize_options=False,
+                                timer=None,
+                                add_scores=False,
+                                set_alerts=False,
+                                add_tooltip=False,
+                                set_palette=False,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
+                        dict(
+                            name="evening_activity_item33",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="photo",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=True,
+                                timer=None,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="Morning questionnaire",
+                    description=dict(
+                        en="Understand how was the morning",
+                        fr="Understand how was the morning",
+                    ),
+                    items=[
+                        dict(
+                            activity_key="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
+        )
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"])
+        )
+        assert response.status_code == 200
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].subject == "Applet upload success!"
+
+    @rollback
+    async def test_creating_applet_failed_by_duplicate_activity_name(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            display_name="User daily behave",
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    name="AAA",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="morning_activity_item",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="text",
+                            response_values=None,
+                            is_hidden=True,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                        ),
+                        dict(
+                            name="morning_activity_item_2",
+                            question=dict(
+                                en="How had you woke?",
+                                fr="How had you woke?",
+                            ),
+                            response_type="slider",
+                            response_values=dict(
+                                min_label="Not at all",
+                                max_label="Very much",
+                                min_value=1,
+                                max_value=5,
+                                min_image=None,
+                                max_image=None,
+                                scores=None,
+                            ),
+                            config=dict(
+                                add_scores=False,
+                                set_alerts=False,
+                                show_tick_marks=False,
+                                show_tick_labels=False,
+                                continuous_slider=False,
+                                timer=None,
+                                remove_back_button=False,
+                                skippable_item=True,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+                dict(
+                    name="AAA",
                     key="577dbbda-3afc-4962-842b-8d8d11588bff",
                     description=dict(
                         en="Understand evening feelings.",
@@ -225,31 +462,103 @@ class TestApplet(BaseTest):
                     ],
                 ),
             ],
-            activity_flows=[
+        )
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
+        )
+        assert response.status_code == 422, response.json()
+
+    @rollback
+    async def test_creating_applet_failed_by_duplicate_activity_item_name(
+        self,
+    ):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            display_name="User daily behave",
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
                 dict(
-                    name="Morning questionnaire",
+                    name="AAA",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
                     description=dict(
-                        en="Understand how was the morning",
-                        fr="Understand how was the morning",
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
                     ),
                     items=[
                         dict(
-                            activity_key="577dbbda-3afc-"
-                            "4962-842b-8d8d11588bfe"
-                        )
+                            name="aaa",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="text",
+                            response_values=None,
+                            is_hidden=True,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                        ),
+                        dict(
+                            name="aaa",
+                            question=dict(
+                                en="How had you woke?",
+                                fr="How had you woke?",
+                            ),
+                            response_type="slider",
+                            response_values=dict(
+                                min_label="Not at all",
+                                max_label="Very much",
+                                min_value=1,
+                                max_value=5,
+                                min_image=None,
+                                max_image=None,
+                                scores=None,
+                            ),
+                            config=dict(
+                                add_scores=False,
+                                set_alerts=False,
+                                show_tick_marks=False,
+                                show_tick_labels=False,
+                                continuous_slider=False,
+                                timer=None,
+                                remove_back_button=False,
+                                skippable_item=True,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
                     ],
                 )
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
-        assert response.status_code == 201, response.json()
-
-        response = await self.client.get(
-            self.applet_detail_url.format(pk=response.json()["result"]["id"])
-        )
-        assert response.status_code == 200
+        assert response.status_code == 422, response.json()
 
     @rollback
     async def test_create_duplicate_name_applet(self):
@@ -257,8 +566,13 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="Applet 1",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -344,13 +658,16 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]["en"]
-            == "Applet already exists."
+            response.json()["result"][0]["message"] == "Applet already exists."
         )
+        assert TestMail.mails[0].subject == "Applet upload failed!"
 
     @rollback
     async def test_create_duplicate_case_sensitive_name_applet(self):
@@ -358,8 +675,13 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="AppleT 1",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -445,12 +767,14 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
-        assert response.status_code == 422, response.json()
+        assert response.status_code == 400, response.json()
         assert (
-            response.json()["result"][0]["message"]["en"]
-            == "Applet already exists."
+            response.json()["result"][0]["message"] == "Applet already exists."
         )
 
     @rollback
@@ -459,8 +783,13 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         update_data = dict(
-            password="Test1234!",
             display_name="Applet 1",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -516,6 +845,22 @@ class TestApplet(BaseTest):
                                 response_required=False,
                                 remove_back_button=False,
                                 skippable_item=True,
+                            ),
+                        ),
+                        dict(
+                            id="a18d3409-2c96-4a5e-a1f3-1c1c14be0012",
+                            name="activity_item_time_range",
+                            question={"en": "What is your name?"},
+                            response_type="timeRange",
+                            response_values=None,
+                            config=dict(
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                                remove_back_button=False,
+                                skippable_item=False,
+                                timer=1,
                             ),
                         ),
                     ],
@@ -574,6 +919,8 @@ class TestApplet(BaseTest):
             data=update_data,
         )
         assert response.status_code == 200, response.json()
+        # assert len(TestMail.mails) == 1
+        # assert TestMail.mails[0].subject == "Applet edit success!"
 
     @rollback
     async def test_duplicate_applet(self):
@@ -585,27 +932,70 @@ class TestApplet(BaseTest):
             self.applet_duplicate_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            data=dict(password="Test1234567890"),
+            data=dict(
+                display_name="New name",
+                encryption=dict(
+                    public_key=uuid.uuid4().hex,
+                    account_id=str(uuid.uuid4()),
+                    prime=uuid.uuid4().hex,
+                    base=uuid.uuid4().hex,
+                ),
+            ),
         )
         assert response.status_code == 201, response.json()
 
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].subject == "Applet duplicate success!"
+
         response = await self.client.get(self.applet_list_url)
         assert len(response.json()["result"]) == 4
-        assert response.json()["result"][0]["displayName"] == "Applet 1 Copy"
+        assert response.json()["result"][0]["displayName"] == "New name"
 
         response = await self.client.post(
             self.applet_duplicate_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            data=dict(password="Test1234567890123"),
+            data=dict(
+                display_name="New name",
+                encryption=dict(
+                    public_key=uuid.uuid4().hex,
+                    account_id=str(uuid.uuid4()),
+                    prime=uuid.uuid4().hex,
+                    base=uuid.uuid4().hex,
+                ),
+            ),
         )
-        assert response.status_code == 201, response.json()
+        assert response.status_code == 400, response.json()
 
-        response = await self.client.get(self.applet_list_url)
-        assert len(response.json()["result"]) == 5
-        assert (
-            response.json()["result"][0]["displayName"] == "Applet 1 Copy (1)"
+    @rollback
+    async def test_set_encryption(self):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+
+        response = await self.client.post(
+            self.applet_set_encryption_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b4"
+            ),
+            data=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+            ),
         )
+        assert response.status_code == 200, response.json()
+
+        response = await self.client.post(
+            self.applet_set_encryption_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b4"
+            ),
+            data=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+            ),
+        )
+        assert response.status_code == 403, response.json()
 
     @rollback
     async def test_applet_list(self):
@@ -637,7 +1027,7 @@ class TestApplet(BaseTest):
         response = await self.client.delete(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            )
+            ),
         )
 
         assert response.status_code == 204, response.json()
@@ -645,10 +1035,32 @@ class TestApplet(BaseTest):
         response = await self.client.delete(
             self.applet_detail_url.format(
                 pk="00000000-0000-0000-0000-000000000000"
-            )
+            ),
         )
 
         assert response.status_code == 404, response.json()
+
+    @rollback
+    async def test_applet_delete_by_manager(self):
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await self.client.delete(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+        )
+
+        assert response.status_code == 204
+
+    @rollback
+    async def test_applet_delete_by_coordinator(self):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        response = await self.client.delete(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+        )
+
+        assert response.status_code == 403
 
     @rollback
     async def test_applet_list_with_invalid_token(self):
@@ -708,13 +1120,34 @@ class TestApplet(BaseTest):
         assert len(result["activityFlows"][1]["activityIds"]) == 1
 
     @rollback
+    async def test_public_applet_detail(self):
+        response = await self.client.get(
+            self.public_applet_detail_url.format(
+                key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
+            )
+        )
+        assert response.status_code == 200
+        result = response.json()["result"]
+        assert result["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        assert result["displayName"] == "Applet 1"
+        assert len(result["activities"]) == 1
+        assert len(result["activityFlows"]) == 2
+        assert len(result["activityFlows"][0]["activityIds"]) == 1
+        assert len(result["activityFlows"][1]["activityIds"]) == 1
+
+    @rollback
     async def test_creating_applet_history(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="User daily behave",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -800,7 +1233,10 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
         assert response.status_code == 201, response.json()
 
@@ -833,8 +1269,13 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         update_data = dict(
-            password="Test1234!",
             display_name="Applet 1",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -991,8 +1432,13 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = dict(
-            password="Test1234!",
             display_name="User daily behave",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",
@@ -1078,12 +1524,20 @@ class TestApplet(BaseTest):
             ],
         )
         response = await self.client.post(
-            self.applet_list_url, data=create_data
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
         )
 
         update_data = dict(
-            password="Test1234!",
             display_name="User daily behave updated",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+            ),
             description=dict(
                 en="Understand users behave",
                 fr="Comprendre le comportement des utilisateurs",

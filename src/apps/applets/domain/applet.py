@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from pydantic import Field, PositiveInt
@@ -10,7 +11,11 @@ from apps.activity_flows.domain.flow import (
     FlowSingleLanguageDetail,
     FlowSingleLanguageDetailPublic,
 )
-from apps.applets.domain.base import AppletFetchBase
+from apps.applets.domain.base import (
+    AppletBaseInfo,
+    AppletFetchBase,
+    Encryption,
+)
 from apps.shared.domain import InternalModel, PublicModel
 from apps.themes.domain import PublicTheme, Theme
 from apps.workspaces.domain.constants import DataRetention
@@ -52,6 +57,26 @@ class AppletSingleLanguageDetailPublic(AppletFetchBase, PublicModel):
         default_factory=list
     )
     theme: PublicTheme | None = None
+
+
+class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
+    id: uuid.UUID
+    version: str
+    created_at: datetime.datetime | None
+    updated_at: datetime.datetime | None
+    description: str  # type: ignore[assignment]
+    about: str  # type: ignore[assignment]
+    retention_period: PositiveInt | None = None
+    retention_type: DataRetention | None = None
+
+    activities: list[ActivitySingleLanguageDetailPublic] = Field(
+        default_factory=list
+    )
+    activity_flows: list[FlowSingleLanguageDetailPublic] = Field(
+        default_factory=list
+    )
+    theme: PublicTheme | None = None
+    encryption: Encryption | None
 
 
 class AppletSingleLanguageInfo(AppletFetchBase, InternalModel):

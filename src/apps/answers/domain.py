@@ -44,6 +44,11 @@ class ActivityItemAnswerCreate(InternalModel):
     answer: AnswerTypes
 
 
+class AnsweredActivityItem(InternalModel):
+    activity_item_history_id: str
+    answer: AnswerTypes
+
+
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
@@ -75,10 +80,14 @@ class PublicAnsweredAppletActivity(PublicModel):
     answer_dates: list[PublicAnswerDate] = Field(default_factory=list)
 
 
+class PublicAnswerDates(PublicModel):
+    dates: list[datetime.date]
+
+
 class ActivityItemAnswer(InternalModel):
     type: ResponseType
     activity_item: PublicActivityItemFull
-    answer: AnswerTypes
+    answer: AnswerTypes | None
 
 
 class ActivityAnswer(InternalModel):
@@ -90,7 +99,7 @@ class ActivityAnswer(InternalModel):
 class ActivityItemAnswerPublic(PublicModel):
     type: ResponseType
     activity_item: PublicActivityItemFull
-    answer: AnswerTypes
+    answer: AnswerTypes | None
 
 
 class ActivityAnswerPublic(PublicModel):

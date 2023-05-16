@@ -4,6 +4,7 @@ import os
 import pytest
 from sqlalchemy import text
 
+from apps.mailing.services import TestMail
 from apps.shared.test.client import TestClient
 from apps.shared.test.utils import truncate_tables, update_sequence
 from config import settings
@@ -22,6 +23,10 @@ class BaseTest:
     @pytest.fixture(autouse=True)
     async def update_sequence(self):
         await update_sequence()
+
+    @pytest.fixture(autouse=True)
+    async def clear_mails(self):
+        TestMail.clear_mails()
 
     async def populate_db(self):
         for fixture in self.fixtures:

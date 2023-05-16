@@ -2,6 +2,10 @@ import uuid
 
 from pydantic import Field
 
+from apps.applets.domain.applets import public_detail
+from apps.applets.domain.base import Encryption
+
+# from apps.applets.domain.base import Encryption
 from apps.shared.domain import InternalModel, PublicModel
 from apps.workspaces.domain.constants import Role
 
@@ -56,11 +60,18 @@ class RemoveManagerAccess(InternalModel):
     applet_ids: list[uuid.UUID] = Field(
         description="This field represents the applet ids",
     )
+    role: Role
 
 
-class RemoveRespondentAccess(RemoveManagerAccess):
+class RemoveRespondentAccess(InternalModel):
     """Respondent access removal model."""
 
+    user_id: uuid.UUID = Field(
+        description="This field represents the user id",
+    )
+    applet_ids: list[uuid.UUID] = Field(
+        description="This field represents the applet ids",
+    )
     delete_responses: bool = Field(
         description="This field represents the flag for deleting responses",
     )
@@ -82,3 +93,23 @@ class PublicAppletUser(PublicModel):
 
 class PinUser(InternalModel):
     access_id: uuid.UUID
+
+
+class RespondentAppletAccess(InternalModel):
+    applet_id: uuid.UUID
+    applet_name: str
+    applet_image: str
+    secret_user_id: str
+    nickname: str
+    has_individual_schedule: bool
+    encryption: Encryption | None
+
+
+class PublicRespondentAppletAccess(PublicModel):
+    applet_id: uuid.UUID
+    applet_name: str
+    applet_image: str
+    secret_user_id: str
+    nickname: str
+    has_individual_schedule: bool
+    encryption: public_detail.Encryption | None

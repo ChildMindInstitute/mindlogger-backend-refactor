@@ -2,7 +2,7 @@ from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
 
-class TestAppletSettings(BaseTest):
+class TestSettings(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
         "themes/fixtures/themes.json",

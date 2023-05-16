@@ -16,6 +16,7 @@ from apps.activity_flows.domain.flow_update import (
     PreparedFlowItemUpdate,
 )
 from apps.activity_flows.service.flow_item import FlowItemService
+from apps.schedule.crud.events import FlowEventsCRUD
 from apps.schedule.service.schedule import ScheduleService
 
 
@@ -89,11 +90,12 @@ class FlowService:
         prepared_flow_items = list()
 
         all_flows = [
-            flow.id
-            for flow in await FlowsCRUD(self.session).get_by_applet_id(
+            flow.flow_id
+            for flow in await FlowEventsCRUD(self.session).get_by_applet_id(
                 applet_id
             )
         ]
+
         # Save new flow ids
         new_flows = []
         existing_flows = []
@@ -146,7 +148,6 @@ class FlowService:
 
         # Remove events for deleted flows
         deleted_flow_ids = set(all_flows) - set(existing_flows)
-
         if deleted_flow_ids:
             await ScheduleService(self.session).delete_by_flow_ids(
                 applet_id=applet_id, flow_ids=list(deleted_flow_ids)

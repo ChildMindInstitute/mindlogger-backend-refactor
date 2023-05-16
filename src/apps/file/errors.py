@@ -1,6 +1,7 @@
-from apps.shared.errors import NotFoundError
+from gettext import gettext as _
+
+from apps.shared.exception import NotFoundError
 
 
 class FileNotFoundError(NotFoundError):
-    def __init__(self, message: str = "File not found") -> None:
-        super().__init__(message=message)
+    message = _("File not found.")

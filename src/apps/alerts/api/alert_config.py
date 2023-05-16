@@ -40,7 +40,7 @@ async def alert_config_create(
         roles = await UserAppletAccessCRUD(session).get_roles_in_roles(
             user.id,
             schema.applet_id,
-            [Role.ADMIN, Role.MANAGER, Role.EDITOR],
+            [Role.OWNER, Role.MANAGER, Role.EDITOR],
         )
         if not roles:
             raise AlertCreateAccessDenied
@@ -74,7 +74,7 @@ async def alert_config_update(
         roles = await UserAppletAccessCRUD(session).get_roles_in_roles(
             user.id,
             schema.applet_id,
-            [Role.ADMIN, Role.MANAGER, Role.EDITOR],
+            [Role.OWNER, Role.MANAGER, Role.EDITOR],
         )
         if not roles:
             raise AlertCreateAccessDenied
@@ -110,7 +110,7 @@ async def alert_config_get_by_id(
         roles = await UserAppletAccessCRUD(session).get_roles_in_roles(
             user.id,
             instance.applet_id,
-            [Role.ADMIN, Role.MANAGER, Role.EDITOR],
+            [Role.OWNER, Role.MANAGER, Role.EDITOR],
         )
         if not roles:
             raise AlertCreateAccessDenied
@@ -134,7 +134,7 @@ async def alert_config_get_all_by_applet_id(
         roles = await UserAppletAccessCRUD(session).get_roles_in_roles(
             user.id,
             applet_id,
-            [Role.ADMIN, Role.MANAGER, Role.EDITOR],
+            [Role.OWNER, Role.MANAGER, Role.EDITOR],
         )
         if not roles:
             raise AlertCreateAccessDenied

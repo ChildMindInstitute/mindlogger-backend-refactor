@@ -14,16 +14,18 @@ __all__ = [
 
 
 class _NotificationLogBase(BaseModel):
+    action_type: str
     user_id: str
     device_id: str
 
 
-class NotificationLogQuery(_NotificationLogBase):
+class NotificationLogQuery(BaseModel):
+    user_id: str
+    device_id: str
     limit: PositiveInt = 1
 
 
-class _NotificationLogInit(_NotificationLogBase):
-    action_type: str
+class NotificationLogCreate(_NotificationLogBase, InternalModel):
     notification_descriptions: str | None
     notification_in_queue: str | None
     scheduled_notifications: str | None
@@ -35,8 +37,8 @@ class _NotificationLogInit(_NotificationLogBase):
     )
     def validate_json(cls, v):
         try:
-            return json.dumps(json.loads(v))
-        except Exception:
+            return json.loads(v)
+        except json.JSONDecodeError:
             raise ValueError("Invalid JSON")
 
     @root_validator
@@ -57,11 +59,24 @@ class _NotificationLogInit(_NotificationLogBase):
         return values
 
 
-class NotificationLogCreate(_NotificationLogInit, InternalModel):
-    pass
-
-
-class PublicNotificationLog(_NotificationLogInit, PublicModel):
+class PublicNotificationLog(_NotificationLogBase, PublicModel):
     """Public NotificationLog model."""
 
     id: uuid.UUID
+    notification_descriptions: list
+    notification_in_queue: list
+    scheduled_notifications: list
+
+    @validator(
+        "notification_descriptions",
+        "notification_in_queue",
+        "scheduled_notifications",
+        pre=True,
+    )
+    def validate_json(cls, v):
+        try:
+            if isinstance(v, str):
+                return json.loads(v)
+            return v
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON")

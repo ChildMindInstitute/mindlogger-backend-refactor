@@ -17,7 +17,9 @@ from apps.shared.domain.response import (
     NO_CONTENT_ERROR_RESPONSES,
 )
 
-router = APIRouter(prefix="/folders", tags=["Folders"])
+router = APIRouter(
+    prefix="/workspaces/{owner_id}/folders", tags=["Workspace folders"]
+)
 
 router.get(
     "",
@@ -42,7 +44,7 @@ router.post(
 )(folder_create)
 
 router.put(
-    "/{id_}",
+    "/{folder_id}",
     status_code=status.HTTP_200_OK,
     response_model=Response[FolderPublic],
     responses={
@@ -53,7 +55,7 @@ router.put(
 )(folder_update_name)
 
 router.delete(
-    "/{id_}",
+    "/{folder_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     response_model=None,
     responses={
@@ -64,7 +66,7 @@ router.delete(
 
 
 router.post(
-    "/{id_}/pin/{applet_id}",
+    "/{folder_id}/pin/{applet_id}",
     status_code=status.HTTP_200_OK,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
@@ -73,7 +75,7 @@ router.post(
 )(folder_pin)
 
 router.delete(
-    "/{id_}/pin/{applet_id}",
+    "/{folder_id}/pin/{applet_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,

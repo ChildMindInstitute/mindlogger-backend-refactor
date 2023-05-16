@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, String
+from sqlalchemy import Column, DateTime, ForeignKey, String
 
 from infrastructure.database.base import Base
 
@@ -13,3 +13,10 @@ class UserSchema(Base):
     last_name = Column(String(length=50))
     hashed_password = Column(String(length=100))
     last_seen_at = Column(DateTime(), default=datetime.now)
+
+
+class UserDeviceSchema(Base):
+    __tablename__ = "user_devices"
+
+    user_id = Column(ForeignKey("users.id"))
+    device_id = Column(String(255))

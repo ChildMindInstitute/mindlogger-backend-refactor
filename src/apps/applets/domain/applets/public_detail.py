@@ -2,6 +2,7 @@ import uuid
 
 from pydantic import Field
 
+from apps.activities.domain.response_type_config import ResponseTypeConfig
 from apps.shared.domain import PublicModel
 
 
@@ -11,8 +12,9 @@ class ActivityItem(PublicModel):
     question: dict[str, str]
     response_type: str
     response_values: list | dict | None
-    config: dict = dict()
+    config: ResponseTypeConfig
     order: int
+    is_hidden: bool | None
 
 
 class Activity(PublicModel):
@@ -47,6 +49,13 @@ class ActivityFlow(PublicModel):
     items: list[ActivityFlowItem] = Field(default_factory=list)
 
 
+class Encryption(PublicModel):
+    public_key: str
+    prime: str
+    base: str
+    account_id: str
+
+
 class Applet(PublicModel):
     id: uuid.UUID
     display_name: str
@@ -64,3 +73,4 @@ class Applet(PublicModel):
     report_email_body: str = ""
     activities: list[Activity] = Field(default_factory=list)
     activity_flows: list[ActivityFlow] = Field(default_factory=list)
+    encryption: Encryption | None

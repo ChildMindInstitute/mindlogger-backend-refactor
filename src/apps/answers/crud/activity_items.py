@@ -1,4 +1,3 @@
-import base64
 import json
 import uuid
 
@@ -7,13 +6,7 @@ from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.answers.db.schemas import AnswerActivityItemsSchema
-from apps.answers.domain import (
-    ActivityAnswer,
-    ActivityItemAnswer,
-    AppletAnswerCreate,
-)
-from apps.applets.crud import AppletsCRUD
-from apps.shared.encryption import decrypt, encrypt, generate_iv
+from apps.answers.domain import AnsweredActivityItem, AppletAnswerCreate
 from infrastructure.database.crud import BaseCRUD
 
 
@@ -23,50 +16,10 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
     async def create_many(
         self, schemas: list[AnswerActivityItemsSchema]
     ) -> list[AnswerActivityItemsSchema]:
-        applet = await AppletsCRUD(self.session).get_by_id(
-            schemas[0].applet_id
-        )
-        system_encrypted_key = base64.b64decode(
-            applet.system_encrypted_key.encode()
-        )
-        iv = generate_iv(str(applet.id))
-        key = decrypt(system_encrypted_key, iv=iv)
         for schema in schemas:
-            encrypted_answer = self._encrypt(
-                schema.id, key, schema.answer.encode()
-            )
-            schema.answer = base64.b64encode(encrypted_answer).decode()
-
+            schema.answer = json.dumps(schema.answer, default=str)
         schemas = await self._create_many(schemas)
-
-        for schema in schemas:
-            schema.answer = self._decrypt(
-                schema.id, key, base64.b64decode(schema.answer.encode())
-            ).decode()
-
         return schemas
-
-    def _encrypt(
-        self,
-        unique_identifier: uuid.UUID,
-        system_encrypted_key: bytes,
-        value: bytes,
-    ) -> bytes:
-        iv = generate_iv(str(unique_identifier))
-        key = decrypt(system_encrypted_key)
-        encrypted_value = encrypt(value, key, iv)
-        return encrypted_value
-
-    def _decrypt(
-        self,
-        unique_identifier: uuid.UUID,
-        system_encrypted_key: bytes,
-        encrypted_value: bytes,
-    ) -> bytes:
-        iv = generate_iv(str(unique_identifier))
-        key = decrypt(system_encrypted_key)
-        answer = decrypt(encrypted_value, key, iv)
-        return answer
 
     async def delete_by_applet_user(
         self, applet_id: uuid.UUID, user_id: uuid.UUID | None = None
@@ -88,7 +41,7 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
 
         answers = list()
         for activity_item_answer in applet_answer.answers:
-            answers.append(json.dumps(activity_item_answer.answer.dict()))
+            answers.append(activity_item_answer.answer)
 
         query: Query = select(AnswerActivityItemsSchema)
         query = query.where(
@@ -108,18 +61,9 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         return result.scalars().all()
 
     async def get_by_answer_id(
-        self, applet_id: uuid.UUID, answer_id: uuid.UUID
-    ) -> ActivityAnswer:
-        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
-        system_encrypted_key = base64.b64decode(
-            applet.system_encrypted_key.encode()
-        )
-        iv = generate_iv(str(applet.id))
-        key = decrypt(system_encrypted_key, iv=iv)
-
-        query: Query = select(
-            AnswerActivityItemsSchema, ActivityItemHistorySchema
-        )
+        self, answer_id: uuid.UUID
+    ) -> list[AnsweredActivityItem]:
+        query: Query = select(AnswerActivityItemsSchema)
         query = query.join(
             ActivityItemHistorySchema,
             ActivityItemHistorySchema.id_version
@@ -129,22 +73,14 @@ class AnswerActivityItemsCRUD(BaseCRUD[AnswerActivityItemsSchema]):
         query = query.order_by(ActivityItemHistorySchema.order.asc())
 
         db_result = await self._execute(query)
-        answer = ActivityAnswer()
-        for (
-            schema,
-            item_schema,
-        ) in (
-            db_result.all()
-        ):  # type: AnswerActivityItemsSchema, ActivityItemHistorySchema
-            answer_value = self._decrypt(
-                schema.id, key, base64.b64decode(schema.answer.encode())
-            ).decode()
-            answer.activity_item_answers.append(
-                ActivityItemAnswer(
-                    type=item_schema.response_type,
-                    activity_item=item_schema,
-                    answer=json.loads(answer_value),
+        schemas = db_result.scalars().all()
+        answers = []
+        for schema in schemas:  # type: AnswerActivityItemsSchema
+            answers.append(
+                AnsweredActivityItem(
+                    activity_item_history_id=schema.activity_item_history_id,
+                    answer=json.loads(schema.answer),
                 )
             )
 
-        return answer
+        return answers

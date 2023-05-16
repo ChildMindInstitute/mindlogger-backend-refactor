@@ -112,6 +112,10 @@ class TestPassword(BaseTest):
         assert (
             TestMail.mails[0].recipients[0] == password_recovery_request.email
         )
+        assert (
+            TestMail.mails[0].subject
+            == "Girder for MindLogger (development instance): Temporary access"
+        )
 
         response = await self.client.post(
             url=self.password_recovery_url,

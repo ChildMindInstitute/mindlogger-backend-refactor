@@ -13,6 +13,7 @@ def to_camelcase(string: str) -> str:
 
 class InternalModel(BaseModel):
     class Config:
+        arbitrary_types_allowed = True
         extra = Extra.forbid
         orm_mode = True
         use_enum_values = True
@@ -23,6 +24,7 @@ class InternalModel(BaseModel):
 
 class PublicModel(BaseModel):
     class Config:
+        arbitrary_types_allowed = True
         extra = Extra.ignore
         orm_mode = True
         use_enum_values = True

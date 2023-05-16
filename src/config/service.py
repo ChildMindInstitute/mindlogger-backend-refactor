@@ -11,6 +11,7 @@ class FrontendUrlsSettings(BaseModel):
     public_link: str = "public"
     private_link: str = "join"
     transfer_link: str = "transferOwnership"
+    create_account: str = "auth/signup"
 
 
 class ServiceUrlsSettings(BaseModel):

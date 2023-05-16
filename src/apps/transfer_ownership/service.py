@@ -1,16 +1,18 @@
+import datetime
 import uuid
 
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
+from apps.invitations.services import InvitationsService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.domain import InitiateTransfer, Transfer
-from apps.users.crud import UsersCRUD
+from apps.transfer_ownership.errors import TransferEmailError
+from apps.users import UserNotFound, UsersCRUD
 from apps.users.domain import User
-from apps.users.errors import UserNotFound
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from config import settings
 
@@ -39,36 +41,38 @@ class TransferService:
             key=uuid.uuid4(),
         )
         await TransferCRUD(self.session).create(transfer)
+        try:
+            receiver = await UsersCRUD(self.session).get_by_email(
+                transfer.email
+            )
+            if receiver.id == self._user.id:
+                raise TransferEmailError()
+            receiver_name = f"{receiver.first_name} {receiver.last_name}"
+        except UserNotFound:
+            path = "transfer_ownership_unregistered_user_en"
+            receiver_name = transfer.email
+        else:
+            path = "transfer_ownership_registered_user_en"
 
-        # TODO: send email with URL for accepting(or declining)
         url = self._generate_transfer_url()
 
-        # Send email to the user
-        service: MailingService = MailingService()
-
-        html_payload: dict = {
-            "coordinator_name": f"{self._user.first_name} "
-            "{self._user.last_name}",
-            "user_name": transfer_request.email,
-            "applet": applet.display_name,
-            "role": "owner",
-            "key": transfer.key,
-            "email": transfer_request.email,
-            "title": "Transfer ownership of an Applet",
-            "body": None,
-            "link": url,
-        }
-        try:
-            await UsersCRUD(self.session).get_by_email(transfer_request.email)
-        except UserNotFound:
-            path = "invitation_new_user_en"
-        else:
-            path = "invitation_registered_user_en"
+        service = MailingService()
 
         message = MessageSchema(
             recipients=[transfer_request.email],
-            subject="Transfer ownership of an Applet",
-            body=service.get_template(path=path, **html_payload),
+            subject="Transfer ownership of an applet",
+            body=service.get_template(
+                path=path,
+                applet_owner=f"{self._user.first_name} {self._user.last_name}",
+                receiver_name=receiver_name,
+                applet_name=applet.display_name,
+                applet_id=applet.id,
+                key=transfer.key,
+                title="Transfer ownership of an Applet",
+                link=url,
+                current_year=datetime.date.today().year,
+                url=self._generate_create_account_url(),
+            ),
         )
 
         await service.send(message)
@@ -76,6 +80,7 @@ class TransferService:
     async def accept_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):
         """Respond to a transfer of ownership of an applet."""
         await AppletsCRUD(self.session).get_by_id(applet_id)
+        await AppletsCRUD(self.session).clear_encryption(applet_id)
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
         if (
@@ -84,24 +89,13 @@ class TransferService:
         ):
             raise PermissionsError()
 
-        # delete all users from applet
         await UserAppletAccessCRUD(self.session).delete_all_by_applet_id(
             applet_id=transfer.applet_id
         )
+        await InvitationsService(
+            self.session, self._user
+        ).clear_applets_invitations(applet_id)
 
-        # add new owner to applet
-        await UserAppletAccessCRUD(self.session).save(
-            UserAppletAccessSchema(
-                user_id=self._user.id,
-                applet_id=transfer.applet_id,
-                role=Role.ADMIN,
-                owner_id=self._user.id,
-                invitor_id=self._user.id,
-                meta={},
-            )
-        )
-
-        # delete responses from applet?
         await AnswerActivityItemsCRUD(self.session).delete_by_applet_user(
             applet_id=transfer.applet_id
         )
@@ -109,16 +103,39 @@ class TransferService:
             applet_id=transfer.applet_id
         )
 
-        # TODO: remove password from applet
-
-        # delete all other transfers for this applet
         await TransferCRUD(self.session).delete_all_by_applet_id(
             applet_id=transfer.applet_id
         )
 
+        # add new owner and respondent to applet
+        roles_data = dict(
+            user_id=self._user.id,
+            applet_id=transfer.applet_id,
+            owner_id=self._user.id,
+            invitor_id=self._user.id,
+        )
+
+        roles_to_add = [
+            UserAppletAccessSchema(role=Role.OWNER, meta={}, **roles_data),
+            UserAppletAccessSchema(
+                role=Role.RESPONDENT,
+                meta=dict(
+                    secretUserId=str(uuid.uuid4()),
+                    nickname=f"{self._user.first_name} {self._user.last_name}",
+                ),
+                **roles_data,
+            ),
+        ]
+        await UserAppletAccessCRUD(self.session).create_many(roles_to_add)
+
     def _generate_transfer_url(self) -> str:
         domain = settings.service.urls.frontend.web_base
         url_path = settings.service.urls.frontend.transfer_link
+        return f"https://{domain}/{url_path}"
+
+    def _generate_create_account_url(self) -> str:
+        domain = settings.service.urls.frontend.admin_base
+        url_path = settings.service.urls.frontend.create_account
         return f"https://{domain}/{url_path}"
 
     async def decline_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):

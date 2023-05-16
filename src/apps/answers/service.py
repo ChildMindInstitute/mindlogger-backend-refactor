@@ -1,8 +1,8 @@
 import datetime
-import json
 import uuid
 
-from apps.activities.domain.response_type_config import ResponseType
+from apps.activities.domain.activity_full import PublicActivityItemFull
+from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
@@ -19,23 +19,23 @@ from apps.answers.db.schemas import (
     AnswerSchema,
 )
 from apps.answers.domain import (
-    ANSWER_TYPE_MAP,
     ActivityAnswer,
+    ActivityItemAnswer,
+    AnswerDate,
     AnsweredAppletActivity,
     AnswerNoteDetail,
     AppletAnswerCreate,
 )
 from apps.answers.errors import (
     AnswerAccessDeniedError,
-    AnswerIsNotFull,
     AnswerNoteAccessDeniedError,
     FlowDoesNotHaveActivity,
     UserDoesNotHavePermissionError,
-    WrongAnswerType,
 )
 from apps.applets.crud import AppletsCRUD
 from apps.applets.service import AppletHistoryService
 from apps.shared.query_params import QueryParams
+from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
@@ -91,38 +91,9 @@ class AnswerService:
             ).get_activity_ids_by_flow_id(activity_answer.flow_id)
             if activity_id_version not in flow_activity_ids:
                 raise FlowDoesNotHaveActivity()
-
-        activity_items = await ActivityItemHistoryService(
+        await ActivityHistoryService(
             self.session, activity_answer.applet_id, activity_answer.version
-        ).get_by_activity_id(activity_answer.activity_id)
-
-        answer_map = dict()
-
-        for answer in activity_answer.answers:
-            answer_map[answer.activity_item_id] = answer
-
-        for activity_item in activity_items:
-            if activity_item.response_type == ResponseType.TEXT:
-                required = False
-                required |= getattr(
-                    activity_item.config, "response_required", False
-                )
-            else:
-                required = False
-            required |= not getattr(
-                activity_item.config, "skippable_item", False
-            )
-            if required:
-                answer_class = ANSWER_TYPE_MAP.get(activity_item.response_type)
-
-                if activity_item.id not in answer_map:
-                    raise AnswerIsNotFull()
-
-                if (
-                    not type(answer_map[activity_item.id].answer)
-                    == answer_class
-                ):
-                    raise WrongAnswerType()
+        ).get_by_id(activity_answer.activity_id)
 
     async def _validate_applet_for_anonymous_response(
         self, applet_id: uuid.UUID, version: str
@@ -184,7 +155,7 @@ class AnswerService:
                         answer_id=answer_group.id,
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
-                        answer=json.dumps(answer.answer.dict(), default=str),
+                        answer=answer.answer.dict(),
                         applet_history_id=applet_id_version,
                         flow_history_id=flow_id_version,
                         activity_history_id=activity_id_version,
@@ -212,12 +183,22 @@ class AnswerService:
                         answer_id=answer_group.id,
                         respondent_id=self.user_id,
                         applet_id=applet_answer.applet_id,
-                        answer=json.dumps(answer.answer.dict(), default=str),
+                        answer=answer.answer.dict(),
                         applet_history_id=applet_id_version,
                         activity_history_id=activity_id_version,
                         activity_item_history_id=activity_item_id_version,
                     )
                 )
+
+        if not answer_groups:
+            answer_groups[uuid.uuid4().hex] = AnswerSchema(
+                id=uuid.uuid4(),
+                created_at=created_at,
+                applet_id=applet_answer.applet_id,
+                flow_history_id=applet_answer.flow_id,
+                activity_history_id=activity_id_version,
+                respondent_id=self.user_id,
+            )
         await AnswersCRUD(self.session).create_many(
             list(answer_groups.values())
         )
@@ -238,27 +219,65 @@ class AnswerService:
         created_date: datetime.date,
     ) -> list[AnsweredAppletActivity]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
-        return await AnswersCRUD(
+        answers = await AnswersCRUD(
             self.session
-        ).get_users_answered_activities_by_applet_id(
+        ).get_respondents_answered_activities_by_applet_id(
             respondent_id, applet_id, created_date
+        )
+        activity_map: dict[str, AnsweredAppletActivity] = dict()
+        if not answers:
+            applet = await AppletsCRUD().get_by_id(applet_id)
+            activities = await ActivityHistoryService(
+                self.session, applet_id, applet.version
+            ).list()
+            for activity in activities:
+                activity_map[str(activity.id)] = AnsweredAppletActivity(
+                    id=activity.id, name=activity.name
+                )
+        else:
+            for answer in answers:
+                _, version = answer.activity_history_id.split("_")
+
+                activities = await ActivityHistoryService(
+                    self.session, applet_id, version
+                ).list()
+                for activity in activities:
+                    activity_map[str(activity.id)] = AnsweredAppletActivity(
+                        id=activity.id, name=activity.name
+                    )
+        for answer in answers:
+            activity_id, version = answer.activity_history_id.split("_")
+            activity_map[activity_id].answer_dates.append(
+                AnswerDate(created_at=answer.created_at, answer_id=answer.id)
+            )
+        return list(activity_map.values())
+
+    async def get_applet_submit_dates(
+        self,
+        applet_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+        from_date: datetime.date,
+        to_date: datetime.date,
+    ) -> list[datetime.date]:
+        await self._validate_applet_activity_access(applet_id, respondent_id)
+        return await AnswersCRUD(self.session).get_respondents_submit_dates(
+            respondent_id, applet_id, from_date, to_date
         )
 
     async def _validate_applet_activity_access(
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID
     ):
         assert self.user_id, "User id is required"
-
         await AppletsCRUD(self.session).get_by_id(applet_id)
-        role = await UserAppletAccessService(
-            self.session, self.user_id, applet_id
-        ).get_reviewer_for_respondent_role()
-        if not role:
-            raise AnswerAccessDeniedError()
+        role = await AppletAccessCRUD(self.session).get_applets_priority_role(
+            applet_id, self.user_id
+        )
         if role == Role.REVIEWER:
             access = await UserAppletAccessService(
                 self.session, self.user_id, applet_id
             ).get_access(Role.REVIEWER)
+            assert access is not None
+
             if str(respondent_id) not in access.meta.get("respondents", []):
                 raise AnswerAccessDeniedError()
 
@@ -266,9 +285,43 @@ class AnswerService:
         self, applet_id: uuid.UUID, answer_id: uuid.UUID
     ) -> ActivityAnswer:
         await self._validate_answer_access(applet_id, answer_id)
-        answer = await AnswerActivityItemsCRUD(self.session).get_by_answer_id(
-            applet_id, answer_id
-        )
+        item_answers = await AnswerActivityItemsCRUD(
+            self.session
+        ).get_by_answer_id(answer_id)
+
+        flow_item_answers = await AnswerFlowItemsCRUD(
+            self.session
+        ).get_by_answer_id(answer_id)
+
+        schema = await AnswersCRUD(self.session).get_by_id(answer_id)
+        activity_id, version = schema.activity_history_id.split("_")
+        activity_items = await ActivityItemHistoryService(
+            self.session, applet_id, version
+        ).get_by_activity_id(activity_id)
+
+        item_answer_map = dict()
+        for item_answer in item_answers:
+            item_answer_map[
+                item_answer.activity_item_history_id
+            ] = item_answer.answer
+
+        for flow_item_answer in flow_item_answers:
+            item_answer_map[
+                flow_item_answer.activity_item_history_id
+            ] = flow_item_answer.answer
+
+        answer = ActivityAnswer()
+        for activity_item in activity_items:
+            answer.activity_item_answers.append(
+                ActivityItemAnswer(
+                    type=activity_item.response_type,
+                    activity_item=PublicActivityItemFull.from_orm(
+                        activity_item
+                    ),
+                    answer=item_answer_map.get(activity_item.id_version),
+                )
+            )
+
         return answer
 
     async def _validate_answer_access(

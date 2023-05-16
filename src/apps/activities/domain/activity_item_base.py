@@ -1,64 +1,124 @@
 from pydantic import BaseModel, Field, root_validator, validator
 
+from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.domain.response_type_config import (
     NoneResponseType,
     ResponseType,
-    ResponseTypeConfig,
     ResponseTypeValueConfig,
 )
-from apps.activities.domain.response_values import ResponseValueConfig
+from apps.activities.errors import (
+    DataMatrixRequiredError,
+    HiddenWhenConditionalLogicSetError,
+    IncorrectConditionLogicItemTypeError,
+    IncorrectConfigError,
+    IncorrectNameCharactersError,
+    IncorrectResponseValueError,
+    NullScoreError,
+    ScoreRequiredForResponseValueError,
+    ScoreRequiredForValueError,
+)
+from apps.shared.domain import PublicModel
 
 
 class BaseActivityItem(BaseModel):
+    """Please check contracts for exact types of config and response_values fields: <a href="https://mindlogger.atlassian.net/wiki/spaces/MINDLOGGER1/pages/182583316/Activity+item+contracts"> here</a>"""  # noqa: E501
+
     question: dict[str, str] = Field(default_factory=dict)
     response_type: ResponseType
-    response_values: ResponseValueConfig | None = Field(default=None)
-    config: ResponseTypeConfig
+    response_values: PublicModel | None  # ResponseValueConfig
+    config: PublicModel  # ResponseTypeConfig
     name: str
     is_hidden: bool | None = False
+    conditional_logic: ConditionalLogic | None = None
+
+    # class Config:
+    #     schema_extra = {
+    #         "example": {
+    #             "question": {"en": "foo"},
+    #             "response_type": "text",
+    #             "response_values": None,
+    #             "config": {
+    #                 "remove_back_button": False,
+    #                 "skippable_item": False,
+    #                 "max_response_length": 300,
+    #                 "correct_answer_required": False,
+    #                 "correct_answer": None,
+    #                 "numerical_response_required": False,
+    #                 "response_data_identifier": False,
+    #                 "response_required": False,
+    #             },
+    #             "name": "foo_text",
+    #             "is_hidden": False,
+    #         },
+    #     }
 
     @validator("name")
     def validate_name(cls, value):
         # name must contain only alphanumeric symbols or underscore
         if not value.replace("_", "").isalnum():
-            raise ValueError(
-                "Name must contain only alphanumeric symbols or underscore"
-            )
+            raise IncorrectNameCharactersError()
         return value
 
     @validator("config", pre=True)
-    def validate_config(cls, value, values, **kwargs):
+    def validate_config(cls, value, values):
         response_type = values.get("response_type")
-        if not ResponseTypeValueConfig[response_type]["config"].parse_obj(
-            value
-        ):
-            raise ValueError(
-                f"config must be of type {ResponseTypeValueConfig[response_type]['config']}"  # noqa: E501
-            )
-        return value
-
-    @root_validator()
-    def validate_response_type(cls, values):
-        response_type = values.get("response_type")
-        response_values = values.get("response_values")
-
+        # wrap value in class to validate and pass value
         if response_type in ResponseTypeValueConfig:
-            if response_type not in list(NoneResponseType):
-                if not isinstance(
-                    response_values,
-                    ResponseTypeValueConfig[response_type]["value"],
-                ):
-                    raise ValueError(
-                        f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
+            if (
+                type(value)
+                is not ResponseTypeValueConfig[response_type]["config"]
+            ):
+                try:
+                    value = ResponseTypeValueConfig[response_type]["config"](
+                        **value
                     )
-            else:
-                if response_values is not None:
-                    raise ValueError(
-                        f"response_values must be of type {ResponseTypeValueConfig[response_type]['value']}"  # noqa: E501
+                except Exception:
+                    raise IncorrectConfigError(
+                        type=ResponseTypeValueConfig[response_type]["config"]
                     )
         else:
-            raise ValueError(f"response_type must be of type {ResponseType}")
-        return values
+            raise IncorrectResponseValueError(type=ResponseType)
+
+        return value
+
+    @validator("response_values", pre=True)
+    def validate_response_type(cls, value, values):
+        response_type = values.get("response_type")
+        if response_type in ResponseTypeValueConfig:
+            if response_type not in list(NoneResponseType):
+                if (
+                    type(value)
+                    is not ResponseTypeValueConfig[response_type]["value"]
+                ):
+                    try:
+                        value = ResponseTypeValueConfig[response_type][
+                            "value"
+                        ](**value)
+
+                    except Exception:
+                        raise IncorrectResponseValueError(
+                            type=ResponseTypeValueConfig[response_type][
+                                "value"
+                            ]
+                        )
+            else:
+                if (
+                    value is not None
+                    and type(value)
+                    is not ResponseTypeValueConfig[response_type]["value"]
+                ):
+                    raise IncorrectResponseValueError(
+                        type=ResponseTypeValueConfig[response_type]["value"]
+                    )
+                elif (
+                    type(value)
+                    is ResponseTypeValueConfig[response_type]["value"]
+                ):
+                    value = None
+
+        else:
+            raise IncorrectResponseValueError(type=ResponseType)
+        return value
 
     @root_validator()
     def validate_score_required(cls, values):
@@ -76,9 +136,7 @@ class BaseActivityItem(BaseModel):
             if config.add_scores:
                 scores = [option.score for option in response_values.options]
                 if None in scores:
-                    raise ValueError(
-                        "score must be provided in each option of response_values"  # noqa: E501
-                    )
+                    raise ScoreRequiredForResponseValueError()
 
         if response_type is ResponseType.SLIDER:
             # if add_scores is True in config, then length of scores must be equal to max_value - min_value + 1 and must not include None  # noqa: E501
@@ -86,26 +144,18 @@ class BaseActivityItem(BaseModel):
                 if len(response_values.scores) != (
                     response_values.max_value - response_values.min_value + 1
                 ):
-                    raise ValueError(
-                        "scores must be provided for each value"  # noqa: E501
-                    )
+                    raise ScoreRequiredForValueError()
                 if None in response_values.scores:
-                    raise ValueError(
-                        "scores must not include None values"  # noqa: E501
-                    )
+                    raise NullScoreError()
 
         if response_type is ResponseType.SLIDERROWS:
             # if add_scores is True in config, then length of scores in each row must be equal to max_value - min_value + 1 of each row and must not include None  # noqa: E501
             if config.add_scores:
                 for row in response_values.rows:
                     if len(row.scores) != (row.max_value - row.min_value + 1):
-                        raise ValueError(
-                            "scores must be provided for each value"  # noqa: E501
-                        )
+                        raise ScoreRequiredForValueError()
                     if None in row.scores:
-                        raise ValueError(
-                            "scores must not include None values"  # noqa: E501
-                        )
+                        raise NullScoreError()
 
         if response_type in [
             ResponseType.SINGLESELECTROWS,
@@ -113,11 +163,31 @@ class BaseActivityItem(BaseModel):
         ]:
             # if add_scores is True in config, then score must be provided in each option of each row of response_values  # noqa: E501
             if config.add_scores:
-                for row in response_values.rows:
-                    scores = [option.score for option in row.options]
-                    if None in scores:
-                        raise ValueError(
-                            "score must be provided in each option of response_values"  # noqa: E501
-                        )
+                if response_values.data_matrix is None:
+                    raise DataMatrixRequiredError()
 
+        return values
+
+    @validator("conditional_logic")
+    def validate_conditional_logic(cls, value, values):
+        response_type = values.get("response_type")
+        if value is not None:
+            # check if response type is correct
+            if response_type not in [
+                ResponseType.SINGLESELECT,
+                ResponseType.MULTISELECT,
+                ResponseType.SLIDER,
+                ResponseType.TEXT,
+                ResponseType.TIME,
+            ]:
+                raise IncorrectConditionLogicItemTypeError()
+
+        return value
+
+    @root_validator()
+    def validate_is_hidden(cls, values):
+        # cannot hide if conditional logic is set
+        value = values.get("is_hidden")
+        if value and values.get("conditional_logic"):
+            raise HiddenWhenConditionalLogicSetError()
         return values

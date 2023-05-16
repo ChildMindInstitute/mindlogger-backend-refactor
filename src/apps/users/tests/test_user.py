@@ -43,7 +43,7 @@ class TestUser(BaseTest):
         response = await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
-        assert response.status_code == status.HTTP_409_CONFLICT
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @rollback
     async def test_user_retrieve(self):

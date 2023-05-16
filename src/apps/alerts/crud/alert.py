@@ -56,10 +56,7 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
             raise AlertNotFoundError
 
         if instance.is_deleted:
-            raise AlertIsDeletedError(
-                message="This alert is deleted. "
-                "The recovery logic is not implemented yet."
-            )
+            raise AlertIsDeletedError()
 
         # Get internal model
         alert: Alert = Alert.from_orm(instance)
@@ -168,10 +165,7 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
             raise AlertNotFoundError
 
         if instance.is_deleted:
-            raise AlertIsDeletedError(
-                message="This alert is deleted. "
-                "The recovery logic is not implemented yet."
-            )
+            raise AlertIsDeletedError()
 
         return instance
 

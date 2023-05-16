@@ -1,7 +1,6 @@
 import json
 
 from sqlalchemy import select
-from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
 from apps.logs.db.schemas import NotificationLogSchema
@@ -33,10 +32,10 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
             .limit(query_set.limit)
         )
 
-        result: Result = await self._execute(query)
-        results: list[PublicNotificationLog] = result.scalars().all()
+        result = await self._execute(query)
+        logs = result.scalars().all()
 
-        return [PublicNotificationLog.from_orm(log) for log in results]
+        return [PublicNotificationLog.from_orm(log) for log in logs]
 
     async def save(
         self, schema: NotificationLogCreate
@@ -87,12 +86,8 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
                     scheduled_notifications_updated=sched_notif_upd,
                 )
             )
-        except Exception as error:
-            raise NotificationLogError(str(error))
+            notification_log = PublicNotificationLog.from_orm(instance)
 
-        # Create internal data model
-        notification_log: PublicNotificationLog = (
-            PublicNotificationLog.from_orm(instance)
-        )
-
-        return notification_log
+            return notification_log
+        except Exception:
+            raise NotificationLogError()

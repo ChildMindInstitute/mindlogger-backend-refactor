@@ -14,6 +14,7 @@ class TestActivities(BaseTest):
 
     login_url = "/auth/login"
     activity_detail = "/activities/{pk}"
+    public_activity_detail = "public/activities/{pk}"
 
     @rollback
     async def test_activity_detail(self):
@@ -22,6 +23,29 @@ class TestActivities(BaseTest):
         )
         response = await self.client.get(
             self.activity_detail.format(
+                pk="09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+        result = response.json()["result"]
+        assert result["id"] == "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
+        assert result["name"] == "PHQ2"
+        assert result["description"] == "PHQ2 en"
+        assert len(result["items"]) == 2
+        assert (
+            result["items"][0]["question"]
+            == "Little interest or pleasure in doing things?"
+        )
+        assert (
+            result["items"][1]["question"]
+            == "Feeling down, depressed, or hopeless?"
+        )
+
+    @rollback
+    async def test_public_activity_detail(self):
+        response = await self.client.get(
+            self.public_activity_detail.format(
                 pk="09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
             )
         )

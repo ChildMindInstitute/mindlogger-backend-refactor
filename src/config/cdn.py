@@ -4,7 +4,10 @@ from pydantic import BaseModel
 class CDNSettings(BaseModel):
     """Configure cdn settings"""
 
-    secret_key: str = ""
-    access_key: str = ""
-    region: str = ""
-    bucket: str = ""
+    region: str | None
+    bucket: str | None
+    domain: str = ""
+
+    @property
+    def url(self):
+        return f"https://{self.domain}/{{key}}"

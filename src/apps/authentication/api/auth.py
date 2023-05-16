@@ -14,6 +14,7 @@ from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.users.domain import PublicUser, User
 from apps.users.errors import UserNotFound
+from apps.users.services.user_device import UserDeviceService
 from config import settings
 from infrastructure.database import atomic, session_manager
 
@@ -28,6 +29,10 @@ async def get_token(
             user: User = await AuthenticationService(
                 session
             ).authenticate_user(user_login_schema)
+            if user_login_schema.device_id:
+                await UserDeviceService(session, user.id).add_device(
+                    user_login_schema.device_id
+                )
         except UserNotFound:
             raise UserNotFound(
                 message=(
@@ -88,9 +93,9 @@ async def refresh_access_token(
 
 
 async def delete_access_token(
+    schema: UserLogoutRequest | None = Body(default=None),
     token: InternalToken = Depends(get_current_token),
-    _: User = Depends(get_current_user),
-    schema: UserLogoutRequest = Body(...),
+    user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
     """Add token to the blacklist."""
@@ -98,4 +103,8 @@ async def delete_access_token(
         await AuthenticationService(session).add_access_token_to_blacklist(
             token
         )
+        if schema and schema.device_id:
+            await UserDeviceService(session, user.id).remove_device(
+                schema.device_id
+            )
     return ""

@@ -1,5 +1,3 @@
-import base64
-import os
 import re
 import uuid
 
@@ -10,6 +8,7 @@ from apps.activities.domain.activity_create import (
 from apps.activities.services.activity import ActivityService
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.service.flow import FlowService
+from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import (
@@ -20,28 +19,25 @@ from apps.applets.domain import (
     Role,
 )
 from apps.applets.domain.applet import Applet, AppletDataRetention
-from apps.applets.domain.applet_create_update import (
-    AppletCreate,
-    AppletDuplicatePassword,
-    AppletUpdate,
-)
+from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
 from apps.applets.domain.applet_duplicate import AppletDuplicate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
+from apps.applets.domain.base import Encryption
 from apps.applets.errors import (
     AccessLinkDoesNotExistError,
     AppletAlreadyExist,
     AppletLinkAlreadyExist,
     AppletNotFoundError,
-    AppletPasswordValidationError,
     AppletsFolderAccessDenied,
 )
 from apps.applets.service.applet_history_service import AppletHistoryService
-from apps.authentication.services import AuthenticationService
 from apps.folders.crud import FolderCRUD
-from apps.shared.encryption import encrypt, generate_iv
 from apps.themes.service import ThemeService
-from apps.workspaces.errors import AppletAccessDenied
+from apps.workspaces.errors import (
+    AppletAccessDenied,
+    AppletEncryptionUpdateDenied,
+)
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from config import settings
 
@@ -64,12 +60,39 @@ class AppletService:
         self.user_id = user_id
         self.session = session
 
-    async def create(self, create_data: AppletCreate) -> AppletFull:
-        applet = await self._create(create_data)
+    async def exist_by_id(self, applet_id: uuid.UUID):
+        exists = await AppletsCRUD(self.session).exist_by_key("id", applet_id)
+        if not exists:
+            raise AppletNotFoundError(key="id", value=str(applet_id))
+
+    async def _create_applet_accesses(
+        self, applet_id: uuid.UUID, manager_id: uuid.UUID | None
+    ):
+        # TODO: move to api level
+        await UserAppletAccessService(
+            self.session, self.user_id, applet_id
+        ).add_role(self.user_id, Role.OWNER)
 
         await UserAppletAccessService(
-            self.session, self.user_id, applet.id
-        ).add_role(Role.ADMIN)
+            self.session, self.user_id, applet_id
+        ).add_role(self.user_id, Role.RESPONDENT)
+
+        if manager_id and manager_id != self.user_id:
+            await UserAppletAccessService(
+                self.session, self.user_id, applet_id
+            ).add_role(manager_id, Role.MANAGER)
+
+            await UserAppletAccessService(
+                self.session, self.user_id, applet_id
+            ).add_role(manager_id, Role.RESPONDENT)
+
+    async def create(
+        self, create_data: AppletCreate, manager_id: uuid.UUID | None = None
+    ) -> AppletFull:
+        applet = await self._create(create_data)
+
+        await self._create_applet_accesses(applet.id, manager_id)
+
         applet.activities = await ActivityService(
             self.session, self.user_id
         ).create(applet.id, create_data.activities)
@@ -82,14 +105,13 @@ class AppletService:
 
         await AppletHistoryService(
             self.session, applet.id, applet.version
-        ).add_history(self.user_id, applet)
+        ).add_history(manager_id or self.user_id, applet)
 
         return applet
 
     async def _create(self, create_data: AppletCreate) -> AppletFull:
         applet_id = uuid.uuid4()
         await self._validate_applet_name(create_data.display_name)
-        system_encrypted_key = self.create_keys(applet_id)
         schema = await AppletsCRUD(self.session).save(
             AppletSchema(
                 id=applet_id,
@@ -106,10 +128,9 @@ class AppletService:
                 report_include_user_id=create_data.report_include_user_id,
                 report_include_case_id=create_data.report_include_case_id,
                 report_email_body=create_data.report_email_body,
-                hashed_password=AuthenticationService.get_password_hash(
-                    create_data.password
-                ),
-                system_encrypted_key=system_encrypted_key,
+                encryption=create_data.encryption.dict()
+                if create_data.encryption
+                else None,
             )
         )
         return AppletFull.from_orm(schema)
@@ -139,13 +160,70 @@ class AppletService:
 
         return applet
 
+    async def update_encryption(
+        self, applet_id: uuid.UUID, encryption: Encryption
+    ):
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        if applet.encryption is not None:
+            raise AppletEncryptionUpdateDenied()
+
+        applet.encryption = encryption.dict()
+        await AppletsCRUD(self.session).save(applet)
+
     async def duplicate(
-        self, applet_exist: AppletDuplicate, password: AppletDuplicatePassword
+        self,
+        applet_exist: AppletDuplicate,
+        new_name: str,
+        encryption: Encryption,
+    ):
+        activity_key_id_map = dict()
+
+        await self._validate_applet_name(new_name)
+        applet_owner = await UserAppletAccessCRUD(
+            self.session
+        ).get_applet_owner(applet_exist.id)
+
+        create_data = self._prepare_duplicate(
+            applet_exist, new_name, encryption
+        )
+
+        applet = await self._create(create_data)
+        # TODO: move to api level
+        await UserAppletAccessService(
+            self.session, applet_owner.user_id, applet.id
+        ).add_role(applet_owner.user_id, Role.OWNER)
+        await UserAppletAccessService(
+            self.session, applet_owner.user_id, applet.id
+        ).add_role(applet_owner.user_id, Role.RESPONDENT)
+
+        if self.user_id != applet_owner.user_id:
+            await UserAppletAccessService(
+                self.session, applet_owner.user_id, applet.id
+            ).add_role(self.user_id, Role.MANAGER)
+            await UserAppletAccessService(
+                self.session, applet_owner.user_id, applet.id
+            ).add_role(self.user_id, Role.RESPONDENT)
+
+        applet.activities = await ActivityService(
+            self.session, applet_owner.user_id
+        ).create(applet.id, create_data.activities)
+        for activity in applet.activities:
+            activity_key_id_map[activity.key] = activity.id
+        applet.activity_flows = await FlowService(self.session).create(
+            applet.id, create_data.activity_flows, activity_key_id_map
+        )
+
+        await AppletHistoryService(
+            self.session, applet.id, applet.version
+        ).add_history(self.user_id, applet)
+
+        return applet
+
+    @staticmethod
+    def _prepare_duplicate(
+        applet_exist: AppletDuplicate, new_name: str, encryption: Encryption
     ) -> AppletCreate:
         activities = list()
-        applet_name = await self.get_unique_name_for_duplicate(
-            f"{applet_exist.display_name} Copy"
-        )
         for activity in applet_exist.activities:
             activities.append(
                 ActivityCreate(
@@ -183,21 +261,15 @@ class AppletService:
             )
 
         return AppletCreate(
-            display_name=applet_name,
+            display_name=new_name,
             description=applet_exist.description,
             about=applet_exist.about,
             image=applet_exist.image,
             watermark=applet_exist.watermark,
             theme_id=applet_exist.theme_id,
-            report_server_ip=applet_exist.report_server_ip,
-            report_public_key=applet_exist.report_public_key,
-            report_recipients=applet_exist.report_recipients,
-            report_include_user_id=applet_exist.report_include_user_id,
-            report_include_case_id=applet_exist.report_include_case_id,
-            report_email_body=applet_exist.report_email_body,
-            password=password.password,
             activities=activities,
             activity_flows=activity_flows,
+            encryption=encryption,
         )
 
     async def _validate_applet_name(
@@ -212,21 +284,10 @@ class AppletService:
         if existed_applet:
             raise AppletAlreadyExist()
 
-    async def _validate_applet_password(
-        self, password: str, applet_id: uuid.UUID
-    ):
-        applet_schema = await AppletsCRUD(self.session).get_by_id(applet_id)
-        is_verified = AuthenticationService.verify_password_and_hash(
-            password, applet_schema.hashed_password
-        )
-        if not is_verified:
-            raise AppletPasswordValidationError()
-
     async def _update(
         self, applet_id: uuid.UUID, update_data: AppletUpdate
     ) -> AppletFull:
         await self._validate_applet_name(update_data.display_name, applet_id)
-        await self._validate_applet_password(update_data.password, applet_id)
         applet_schema = await AppletsCRUD(self.session).get_by_id(applet_id)
 
         schema = await AppletsCRUD(self.session).update_by_id(
@@ -234,6 +295,9 @@ class AppletService:
             AppletSchema(
                 display_name=update_data.display_name,
                 description=update_data.description,
+                encryption=update_data.encryption.dict()
+                if update_data.encryption
+                else None,
                 about=update_data.about,
                 image=update_data.image,
                 watermark=update_data.watermark,
@@ -262,7 +326,7 @@ class AppletService:
         roles: str = query_params.filters.pop("roles")
 
         schemas = await AppletsCRUD(self.session).get_applets_by_roles(
-            self.user_id, roles.split(","), query_params
+            self.user_id, list(map(Role, roles.split(","))), query_params
         )
         theme_ids = [schema.theme_id for schema in schemas if schema.theme_id]
         themes = []
@@ -278,6 +342,7 @@ class AppletService:
             applets.append(
                 AppletSingleLanguageInfo(
                     id=schema.id,
+                    encryption=schema.encryption,
                     display_name=schema.display_name,
                     version=schema.version,
                     description=self._get_by_language(
@@ -312,21 +377,15 @@ class AppletService:
     async def get_single_language_by_id(
         self, applet_id: uuid.UUID, language: str
     ) -> AppletSingleLanguageDetail:
-        applet_exists = await AppletsCRUD(self.session).exist_by_id(applet_id)
-        if not applet_exists:
-            raise AppletNotFoundError(key="id", value=str(applet_id))
-        schema = await AppletsCRUD(self.session).get_applet_by_roles(
-            self.user_id, applet_id, Role.as_list()
-        )
+        schema = await AppletsCRUD(self.session).get_by_id(applet_id)
         theme = None
-        if not schema:
-            raise AppletAccessDenied()
         if schema.theme_id:
-            theme = await ThemeService(self.session, self.user_id).get_by_id(
-                schema.theme_id
-            )
+            theme = await ThemeService(
+                self.session, self.user_id
+            ).get_users_by_id(schema.theme_id)
         applet = AppletSingleLanguageDetail(
             id=schema.id,
+            encryption=schema.encryption,
             display_name=schema.display_name,
             version=schema.version,
             description=self._get_by_language(schema.description, language),
@@ -355,24 +414,60 @@ class AppletService:
         ).get_single_language_by_applet_id(applet_id, language)
         return applet
 
-    async def get_by_id_for_duplicate(
-        self, applet_id: uuid.UUID
-    ) -> AppletDuplicate:
-        applet_exists = await AppletsCRUD(self.session).exist_by_id(applet_id)
-        if not applet_exists:
-            raise AppletNotFoundError(key="id", value=str(applet_id))
-        schema = await AppletsCRUD(self.session).get_applet_by_roles(
-            self.user_id, applet_id, Role.as_list()
-        )
-        theme = None
+    async def get_single_language_by_key(
+        self, key: uuid.UUID, language: str
+    ) -> AppletSingleLanguageDetail:
+        schema = await AppletsCRUD(self.session).get_by_key(key)
         if not schema:
-            raise AppletAccessDenied()
+            raise AppletNotFoundError(key="key", value=str(key))
+        theme = None
         if schema.theme_id:
             theme = await ThemeService(self.session, self.user_id).get_by_id(
                 schema.theme_id
             )
+        applet = AppletSingleLanguageDetail(
+            id=schema.id,
+            display_name=schema.display_name,
+            version=schema.version,
+            encryption=schema.encryption,
+            description=self._get_by_language(schema.description, language),
+            about=self._get_by_language(schema.about, language),
+            image=schema.image,
+            theme=theme.dict() if theme else None,
+            watermark=schema.watermark,
+            theme_id=schema.theme_id,
+            report_server_ip=schema.report_server_ip,
+            report_public_key=schema.report_public_key,
+            report_recipients=schema.report_recipients,
+            report_include_user_id=schema.report_include_user_id,
+            report_include_case_id=schema.report_include_case_id,
+            report_email_body=schema.report_email_body,
+            created_at=schema.created_at,
+            updated_at=schema.updated_at,
+            retention_period=schema.retention_period,
+            retention_type=schema.retention_type,
+        )
+
+        applet.activities = await ActivityService(
+            self.session, self.user_id
+        ).get_single_language_by_applet_id(applet.id, language)
+        applet.activity_flows = await FlowService(
+            self.session
+        ).get_single_language_by_applet_id(applet.id, language)
+        return applet
+
+    async def get_by_id_for_duplicate(
+        self, applet_id: uuid.UUID
+    ) -> AppletDuplicate:
+        schema = await AppletsCRUD(self.session).get_by_id(applet_id)
+        theme = None
+        if schema.theme_id:
+            theme = await ThemeService(
+                self.session, self.user_id
+            ).get_users_by_id(schema.theme_id)
         applet = AppletDuplicate(
             id=schema.id,
+            encryption=None,
             display_name=schema.display_name,
             version=schema.version,
             description=schema.description,
@@ -406,20 +501,14 @@ class AppletService:
             return self.INITIAL_VERSION
         return ".".join(list(str(int_version - self.VERSION_DIFFERENCE)))
 
-    async def exist_by_id(self, applet_id: uuid.UUID) -> bool:
-        return await AppletsCRUD(self.session).exist_by_id(applet_id)
-
     async def delete_applet_by_id(self, applet_id: uuid.UUID):
-        await self._validate_delete_applet(self.user_id, applet_id)
-        await AppletsCRUD(self.session).delete_by_id(applet_id)
-
-    async def _validate_delete_applet(self, user_id, applet_id):
         await AppletsCRUD(self.session).get_by_id(applet_id)
-        role = await UserAppletAccessService(
-            self.session, user_id, applet_id
-        ).get_admins_role()
-        if not role:
-            raise AppletAccessDenied()
+
+        await AnswersCRUD(self.session).delete_all_by_applet_id(applet_id)
+        await UserAppletAccessCRUD(self.session).delete_all_by_applet_id(
+            applet_id
+        )
+        await AppletsCRUD(self.session).delete_by_id(applet_id)
 
     async def set_applet_folder(self, schema: AppletFolder):
         if schema.folder_id:
@@ -430,23 +519,15 @@ class AppletService:
     async def _move_to_folder(
         self, applet_id: uuid.UUID, folder_id: uuid.UUID
     ):
-        await self._validate_applet(applet_id)
+        await AppletsCRUD(self.session).get_by_id(applet_id)
         await self._validate_folder(folder_id)
         await AppletsCRUD(self.session).set_applets_folder(
             applet_id, folder_id
         )
 
     async def _remove_from_folder(self, applet_id: uuid.UUID):
-        await self._validate_applet(applet_id)
-        await AppletsCRUD(self.session).set_applets_folder(applet_id, None)
-
-    async def _validate_applet(self, applet_id: uuid.UUID):
         await AppletsCRUD(self.session).get_by_id(applet_id)
-        access = await UserAppletAccessCRUD(self.session).get_applet_owner(
-            applet_id
-        )
-        if access.user_id != self.user_id:
-            raise AppletAccessDenied()
+        await AppletsCRUD(self.session).set_applets_folder(applet_id, None)
 
     async def _validate_folder(self, folder_id: uuid.UUID):
         folder = await FolderCRUD(self.session).get_by_id(folder_id)
@@ -497,8 +578,8 @@ class AppletService:
     async def create_access_link(
         self, applet_id: uuid.UUID, create_request: CreateAccessLink
     ) -> AppletLink:
-        applet_instance = await self._validate_applet_access(applet_id)
-        if applet_instance.link:
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        if applet.link:
             raise AppletLinkAlreadyExist()
 
         applet_link = await AppletsCRUD(self.session).create_access_link(
@@ -507,23 +588,23 @@ class AppletService:
         link = self._generate_link_url(
             create_request.require_login, applet_link
         )
-        return AppletLink(link=link)
+        return AppletLink(
+            link=link, require_login=create_request.require_login
+        )
 
     async def get_access_link(self, applet_id: uuid.UUID) -> AppletLink:
-        applet_instance = await self._validate_applet_access(applet_id)
-        if applet_instance.link:
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        if applet.link:
             link = self._generate_link_url(
-                bool(applet_instance.require_login), str(applet_instance.link)
+                bool(applet.require_login), str(applet.link)
             )
         else:
             raise AccessLinkDoesNotExistError
 
-        return AppletLink(
-            link=link, require_login=applet_instance.require_login
-        )
+        return AppletLink(link=link, require_login=applet.require_login)
 
     async def delete_access_link(self, applet_id: uuid.UUID):
-        applet = await self._validate_applet_access(applet_id)
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         if not applet.link:
             raise AccessLinkDoesNotExistError
 
@@ -558,26 +639,9 @@ class AppletService:
     async def set_data_retention(
         self, applet_id: uuid.UUID, data_retention: AppletDataRetention
     ):
-        await self._validate_applet_access(applet_id)
-
         await AppletsCRUD(self.session).set_data_retention(
             applet_id, data_retention
         )
-
-    async def _validate_applet_access(self, applet_id: uuid.UUID) -> Applet:
-        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
-        roles = await UserAppletAccessCRUD(
-            self.session
-        ).get_user_roles_to_applet(self.user_id, applet_id)
-        if Role.ADMIN not in roles:
-            raise AppletAccessDenied()
-        return Applet.from_orm(applet)
-
-    def create_keys(self, applet_id: uuid.UUID) -> str:
-        key = os.urandom(settings.secrets.key_length)
-        iv = generate_iv(str(applet_id))
-        system_encrypted_key = encrypt(key, iv=iv)
-        return base64.b64encode(system_encrypted_key).decode()
 
     async def get_full_applet(self, applet_id: uuid.UUID) -> AppletFull:
         applet = await self._validate_get_full_applet(applet_id)
@@ -592,6 +656,7 @@ class AppletService:
     async def _validate_get_full_applet(
         self, applet_id: uuid.UUID
     ) -> AppletFull:
+        # TODO: remove
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         role = await UserAppletAccessService(
             self.session, self.user_id, applet_id

@@ -5,7 +5,7 @@ from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
 
-class TestAppletFolder(BaseTest):
+class TestAppletMoveToFolder(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
         "folders/fixtures/folders.json",
@@ -60,7 +60,7 @@ class TestAppletFolder(BaseTest):
         response = await self.client.post(self.set_folder_url, data)
         assert response.status_code == 403
         assert (
-            response.json()["result"][0]["message"]["en"]
+            response.json()["result"][0]["message"]
             == "Access denied to folder."
         )
 
@@ -77,8 +77,8 @@ class TestAppletFolder(BaseTest):
         response = await self.client.post(self.set_folder_url, data)
         assert response.status_code == 403
         assert (
-            response.json()["result"][0]["message"]["en"]
-            == "Access denied to applet."
+            response.json()["result"][0]["message"]
+            == "Access denied to edit applet in current workspace."
         )
 
     @rollback

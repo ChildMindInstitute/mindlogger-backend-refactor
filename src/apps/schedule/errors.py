@@ -1,50 +1,86 @@
-import uuid
+from gettext import gettext as _
 
-from apps.shared.errors import (
-    BadRequestError,
-    BaseError,
+from apps.shared.exception import (
+    AccessDeniedError,
+    FieldError,
+    InternalServerError,
     NotFoundError,
     ValidationError,
 )
 
 
-class EventError(BaseError):
-    def __init__(self, message: str = "Event service error") -> None:
-        super().__init__(message=message)
-
-
-class UserEventAlreadyExists(ValidationError):
-    def __init__(self, user_id: uuid.UUID, event_id: uuid.UUID) -> None:
-        super().__init__(
-            message=f"The event {event_id} for user {user_id} already exists."
-        )
-
-
-class ActivityEventAlreadyExists(ValidationError):
-    def __init__(self, activity_id: uuid.UUID, event_id: uuid.UUID) -> None:
-        msg = (
-            f"The event {event_id} for activity {activity_id} already exists."
-        )
-        super().__init__(message=msg)
-
-
-class FlowEventAlreadyExists(ValidationError):
-    def __init__(self, flow_id: uuid.UUID, event_id: uuid.UUID) -> None:
-        super().__init__(
-            message=f"The event {event_id} for flow {flow_id} already exists."
-        )
-
-
 class EventNotFoundError(NotFoundError):
-    def __init__(self, key: str, value: str) -> None:
-        super().__init__(message=f"No such event with {key}={value}.")
+    message = _("No such event with {key}={value}.")
 
 
 class PeriodicityNotFoundError(NotFoundError):
-    def __init__(self, key: str, value: str) -> None:
-        super().__init__(message=f"No such periodicity with {key}={value}.")
+    message = _("No such periodicity with {key}={value}.")
 
 
-class EventAlwaysAvailableExistsError(BadRequestError):
-    def __init__(self) -> None:
-        super().__init__(message="'AlwaysAvailable' event already exists.")
+class AppletScheduleNotFoundError(NotFoundError):
+    message = _("No schedules found for applet {applet_id}")
+
+
+class AccessDeniedToApplet(AccessDeniedError):
+    message = _("Access denied to applet.")
+
+
+class ActivityOrFlowNotFoundError(NotFoundError):
+    message = _("Activity/Flow not found.")
+
+
+class ScheduleNotFoundError(NotFoundError):
+    message = _("Schedule not found.")
+
+
+class EventAlwaysAvailableExistsError(ValidationError):
+    message = _("'AlwaysAvailable' event already exists.")
+
+
+class EventError(InternalServerError):
+    message = _("Event service error.")
+
+
+class UserEventAlreadyExists(ValidationError):
+    message = _("The event {event_id} for user {user_id} already exists.")
+
+
+class ActivityEventAlreadyExists(ValidationError):
+    message = _(
+        "The event {event_id} for activity {activity_id} already exists."
+    )
+
+
+class FlowEventAlreadyExists(ValidationError):
+    message = _("The event {event_id} for flow {flow_id} already exists.")
+
+
+class SelectedDateRequiredError(FieldError):
+    message = _("selectedDate is required for this periodicity type.")
+
+
+class HourRangeError(FieldError):
+    message = _("Hours must be between 0 and 23.")
+
+
+class MinuteRangeError(FieldError):
+    message = _("Minutes must be between 0 and 59.")
+
+
+class ActivityOrFlowRequiredError(FieldError):
+    message = _("Either activity_id or flow_id must be provided.")
+
+
+class OneTimeCompletionCaseError(FieldError):
+    message = _("one_time_completion must be set if periodicity is ALWAYS.")
+
+
+class StartEndTimeAccessBeforeScheduleCaseError(FieldError):
+    message = _(
+        "start_time, end_time, access_before_schedule "
+        "must be set if periodicity is not ALWAYS."
+    )
+
+
+class UnavailableActivityOrFlowError(FieldError):
+    message = _("Activity/flow is unavailable at this time.")

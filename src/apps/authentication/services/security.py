@@ -7,7 +7,7 @@ from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import InternalToken
 from apps.authentication.errors import BadCredentials
 from apps.authentication.services.core import TokensService
-from apps.users.crud import UsersCRUD
+from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from config import settings
 

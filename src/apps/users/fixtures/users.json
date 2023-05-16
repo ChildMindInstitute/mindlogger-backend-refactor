@@ -73,5 +73,20 @@
       "last_seen_at": "2023-01-05T15:49:51.752113"
     },
     "note": "Password is Test1234"
+  },
+  {
+    "table": "users",
+    "fields": {
+      "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa6",
+      "email": "mike2@gmail.com",
+      "first_name": "Patric",
+      "last_name": "Davidson",
+      "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
+      "is_deleted": false,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "last_seen_at": "2023-01-05T15:49:51.752113"
+    },
+    "note": "Password is Test1234"
   }
 ]

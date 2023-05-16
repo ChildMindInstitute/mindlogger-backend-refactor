@@ -8,6 +8,7 @@ __all__ = [
     "PeriodicityType",
     "TimerType",
     "DefaultEvent",
+    "AvailabilityType",
 ]
 
 
@@ -27,9 +28,9 @@ class TimerType(str, Enum):
 
 
 class DefaultEvent(BaseModel):
-    start_time: time = time.min
-    end_time: time = time.max
-    access_before_schedule: bool = True
+    start_time: time = time(0, 0)
+    end_time: time = time(23, 59)
+    access_before_schedule: bool = False
     one_time_completion: bool = False
     timer: timedelta = timedelta()
     timer_type: TimerType = TimerType.NOT_SET
@@ -39,7 +40,7 @@ class DefaultEvent(BaseModel):
         "end_date": None,
         "selectedDate": date.today(),
     }
-    user_id: uuid.UUID | None = None
+    respondent_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None
     flow_id: uuid.UUID | None
 

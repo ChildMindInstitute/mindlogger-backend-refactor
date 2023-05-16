@@ -1,0 +1,41 @@
+<html style="max-width: 700px" lang="en">
+<body>
+{% include 'header.html' %}
+<table style="padding: 0">
+    <tr>
+        <td style="padding-bottom: 1%">
+            Hi {{first_name}}!
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Your applet {{applet_name}} is ready to be used in the builder!
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Please use this <a href="{{url}}">link</a> to edit your applet.
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            If you have had any issues joining an applet or creating an account, please
+            <a href="https://gitreports.com/issue/ChildMindInstitute/MindLogger-bug-reports">write
+                us</a> and we can help you.
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Thanks,
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            The MindLogger team
+        </td>
+    </tr>
+</table>
+{% include 'footers/footer_contact_us_en.html' %}
+</body>
+
+</html>

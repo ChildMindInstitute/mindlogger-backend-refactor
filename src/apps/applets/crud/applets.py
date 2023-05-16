@@ -30,7 +30,7 @@ class _AppletFiltering(Filtering):
     def filter_by_owner(self, field, value: uuid.UUID):
         query: Query = select(UserAppletAccessSchema.applet_id)
         query = query.where(UserAppletAccessSchema.user_id == value)
-        query = query.where(UserAppletAccessSchema.role == Role.ADMIN)
+        query = query.where(UserAppletAccessSchema.role == Role.OWNER)
         return field.in_(query)
 
 
@@ -95,9 +95,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         """Fetch applets by id or display_name from the database."""
 
         if key not in {"id", "display_name"}:
-            raise errors.AppletsError(
-                f"Can not make the looking up applets by {key} {value}"
-            )
+            raise errors.AppletsError(key=key, value=value)
 
         # Get applets from the database
         if not (instance := await self._get(key, value)):
@@ -109,6 +107,13 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         instance = await self._fetch(key="id", value=id_)
         return instance
 
+    async def clear_encryption(self, applet_id: uuid.UUID):
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.values(encryption=None)
+
+        await self._execute(query)
+
     async def exist_by_id(self, id_: uuid.UUID) -> bool:
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.id == id_)
@@ -118,8 +123,20 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         return db_result.scalars().first() is not None
 
+    async def get_by_key(
+        self, key: uuid.UUID, require_login=False
+    ) -> AppletSchema:
+        query: Query = select(AppletSchema)
+        query = query.where(AppletSchema.link == key)
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
+        query = query.where(AppletSchema.require_login == require_login)
+
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first()
+
     async def get_applets_by_roles(
-        self, user_id: uuid.UUID, roles: list[str], query_params: QueryParams
+        self, user_id: uuid.UUID, roles: list[Role], query_params: QueryParams
     ) -> list[AppletSchema]:
         accessible_applets_query = select(UserAppletAccessSchema.applet_id)
         accessible_applets_query = accessible_applets_query.where(
@@ -174,7 +191,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return result.scalars().first() or 0
 
     async def get_applet_by_roles(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
+        self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[Role]
     ) -> AppletSchema | None:
         query = select(AppletSchema)
         query = query.join_from(UserAppletAccessSchema, AppletSchema)

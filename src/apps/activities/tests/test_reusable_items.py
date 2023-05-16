@@ -50,13 +50,16 @@ class TestReusableItem(BaseTest):
             input_type="radiobutton",
         )
 
-        response = await self.client.post(self.create_url, data=create_data)
+        response = await self.client.post(
+            self.create_url,
+            data=create_data,
+        )
 
         res_data = response.json()
         assert response.status_code == 400, res_data
         assert (
-            res_data["result"][0]["message"]["en"]
-            == "Reusable item choice already exist"
+            res_data["result"][0]["message"]
+            == "Reusable item choice already exist."
         )
 
     @rollback

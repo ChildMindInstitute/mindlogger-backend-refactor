@@ -10,6 +10,7 @@ from apps.activities.domain.activity_create import (
 from apps.activities.domain.response_type_config import ResponseType
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.applets.domain.applet_create_update import AppletCreate
+from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletService
 from apps.schedule.domain.constants import (
     NotificationTriggerType,
@@ -24,7 +25,8 @@ from apps.schedule.domain.schedule import (
 )
 from apps.schedule.service import ScheduleService
 from apps.shared.query_params import QueryParams
-from apps.test_data.domain import AnchorDateTime, image_url
+from apps.test_data.domain import AppletGeneration, image_url
+from apps.workspaces.domain.constants import Role
 
 
 class TestDataService:
@@ -46,9 +48,8 @@ class TestDataService:
             ResponseType.SLIDER,
         ]
 
-    async def create_applet(self, anchor_datetime: AnchorDateTime):
-
-        applet_create = self._generate_applet()
+    async def create_applet(self, applet_generation: AppletGeneration):
+        applet_create = self._generate_applet(applet_generation.encryption)
         applet = await AppletService(self.session, self.user_id).create(
             applet_create
         )
@@ -66,7 +67,7 @@ class TestDataService:
         await self._create_all_events(
             applet_id=applet.id,
             entity_ids=entity_ids,
-            anchor_datetime=anchor_datetime.anchor_date_time,
+            anchor_datetime=applet_generation.anchor_date_time,
         )
         return applet
 
@@ -75,24 +76,27 @@ class TestDataService:
         letters = string.ascii_letters
         return "".join(random.choice(letters) for _ in range(length))
 
-    def random_image(self):
-        return f"{self.random_string()}.jpg"
-
     @staticmethod
     def random_boolean():
         return random.choice([True, False])
 
-    def _generate_applet(self) -> AppletCreate:
+    def _generate_applet(self, encryption: Encryption) -> AppletCreate:
         activities = self._generate_activities()
         activity_flows = self._generate_activity_flows_from_activities(
             activities
         )
         applet_create = AppletCreate(
-            display_name=f"{self.random_string()}-generated",  # noqa: E501
+            display_name=f"Applet-{self.random_string()}-generated",
+            # noqa: E501
             description=dict(
-                en=self.random_string(50), fr=self.random_string(50)
+                en=f"Applet description {self.random_string(50)}",
+                fr=f"Applet description {self.random_string(50)}",
             ),
-            about=dict(en=self.random_string(50), fr=self.random_string(50)),
+            about=dict(
+                en=f"Applet about {self.random_string(50)}",
+                fr=f"Applet about {self.random_string(50)}",
+            ),
+            encryption=encryption.dict(),
             image=image_url,
             watermark=image_url,
             theme_id=None,
@@ -104,7 +108,6 @@ class TestDataService:
             report_email_body="",
             activities=activities,
             activity_flows=activity_flows,
-            password="Test1234!",
         )
 
         return applet_create
@@ -115,10 +118,11 @@ class TestDataService:
             items = self._generate_activity_items()
             activities.append(
                 ActivityCreate(
-                    name=f"Activity {index+1}",
+                    name=f"Activity {index + 1}",
                     key=uuid.uuid4(),
                     description=dict(
-                        en=self.random_string(), fr=self.random_string()
+                        en=f"Activity {index + 1} desc {self.random_string()}",
+                        fr=f"Activity {index + 1} desc {self.random_string()}",
                     ),
                     splash_screen=image_url,
                     image=image_url,
@@ -141,9 +145,10 @@ class TestDataService:
             flow_items = self._generate_flow_items(activities)
             flows.append(
                 FlowCreate(
-                    name=f"Flow {index+1}",
+                    name=f"Flow {index + 1}",
                     description=dict(
-                        en=self.random_string(), fr=self.random_string()
+                        en=f"Flow {index + 1} desc {self.random_string()}",
+                        fr=f"Flow {index + 1} desc {self.random_string()}",
                     ),
                     is_single_report=self.random_boolean(),
                     hide_badge=self.random_boolean(),
@@ -164,9 +169,10 @@ class TestDataService:
 
             items.append(
                 ActivityItemCreate(
-                    name=self.random_string(),
+                    name=f"activity_item_{index + 1}",
                     question=dict(
-                        en=self.random_string(), fr=self.random_string()
+                        en=f"Activity item question {self.random_string()}",
+                        fr=f"Activity item question {self.random_string()}",
                     ),
                     response_type=self.activity_item_options[
                         index % len(self.activity_item_options)
@@ -212,7 +218,7 @@ class TestDataService:
                 "options": [  # type: ignore  # noqa: E501
                     {
                         "id": str(uuid.uuid4()),
-                        "text": self.random_string(),
+                        "text": "option 1",
                         "image": None,
                         "score": None,
                         "tooltip": None,
@@ -221,7 +227,7 @@ class TestDataService:
                     },
                     {
                         "id": str(uuid.uuid4()),
-                        "text": self.random_string(),
+                        "text": "option 2",
                         "image": None,
                         "score": None,
                         "tooltip": None,
@@ -251,7 +257,7 @@ class TestDataService:
                 "options": [  # type: ignore  # noqa: E501
                     {
                         "id": str(uuid.uuid4()),
-                        "text": self.random_string(),
+                        "text": "option 1",
                         "image": None,
                         "score": None,
                         "tooltip": None,
@@ -260,7 +266,7 @@ class TestDataService:
                     },
                     {
                         "id": str(uuid.uuid4()),
-                        "text": self.random_string(),
+                        "text": "option 2",
                         "image": None,
                         "score": None,
                         "tooltip": None,
@@ -289,8 +295,8 @@ class TestDataService:
             result["response_values"] = {
                 "min_value": 0,
                 "max_value": 10,
-                "min_label": self.random_string(),
-                "max_label": self.random_string(),
+                "min_label": "min label",  # type: ignore  # noqa: E501
+                "max_label": "max label",  # type: ignore  # noqa: E501
                 "min_image": None,
                 "max_image": None,
                 "scores": None,
@@ -369,7 +375,6 @@ class TestDataService:
         is_activity: bool,
         entity_id: uuid.UUID,
     ):
-
         if is_activity:
             default_event = self._generate_event_request(
                 activity_id=entity_id,
@@ -386,7 +391,6 @@ class TestDataService:
         anchor_datetime: datetime,
         entity_ids: list[dict] | None = None,
     ):
-
         events = []
         if entity_ids:
             # remove first entity id to keep it for default event
@@ -525,6 +529,11 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.DAILY
 
+            default_event.periodicity.start_date = anchor_datetime.date()
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=30)
+            )
+
             default_event.notification.notifications[0].at_time = (
                 anchor_datetime + timedelta(minutes=90)
             ).strftime("%H:%M:%S")
@@ -567,6 +576,11 @@ class TestDataService:
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
+
+            default_event.periodicity.start_date = anchor_datetime.date()
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=30)
+            )
 
             default_event.notification.notifications[0].at_time = (
                 anchor_datetime + timedelta(minutes=90)
@@ -613,6 +627,11 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.DAILY
 
+            default_event.periodicity.start_date = anchor_datetime.date()
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=30)
+            )
+
             default_event.notification.notifications[0].at_time = (
                 anchor_datetime - timedelta(minutes=90)
             ).strftime("%H:%M:%S")
@@ -656,6 +675,11 @@ class TestDataService:
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
+
+            default_event.periodicity.start_date = anchor_datetime.date()
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=30)
+            )
 
             default_event.notification.notifications[0].at_time = (
                 anchor_datetime + timedelta(minutes=90)
@@ -799,6 +823,11 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.WEEKDAYS
 
+            default_event.periodicity.start_date = anchor_datetime.date()
+            default_event.periodicity.end_date = (
+                anchor_datetime.date() + timedelta(days=30)
+            )
+
             default_event = self._set_timer(
                 default_event, current_entity_index
             )
@@ -856,7 +885,8 @@ class TestDataService:
         old_applets = await AppletService(
             self.session, self.user_id
         ).get_list_by_single_language(
-            language="en", query_params=QueryParams(filters={"roles": "admin"})
+            language="en",
+            query_params=QueryParams(filters={"roles": Role.OWNER}),
         )
 
         if old_applets:

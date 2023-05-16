@@ -79,7 +79,7 @@
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3612_1.0.0",
+      "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3612_2.0.1",
       "question": {
         "en": "Little interest or pleasure in doing things?",
         "fr": "Peu dintérêt ou de plaisir à faire les choses ?"
@@ -133,7 +133,7 @@
         "add_tooltip": false,
         "set_palette": false,
         "remove_back_button": false,
-        "skippable_item": true,
+        "skippable_item": false,
         "additional_response_option": {
           "text_input_option": false,
           "text_input_required": false
