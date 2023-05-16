@@ -7,13 +7,18 @@ from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     ChangePasswordRequest,
     PasswordRecoveryApproveRequest,
+    PasswordRecoveryHealthCheckRequest,
     PasswordRecoveryRequest,
     PublicUser,
     User,
     UserChangePassword,
 )
 from apps.users.errors import EmailAddressError, UserNotFound
-from apps.users.services import PasswordRecoveryService
+from apps.users.services import PasswordRecoveryCache, PasswordRecoveryService
+from infrastructure.cache import (
+    CacheNotFound,
+    PasswordRecoveryHealthCheckNotValid,
+)
 from infrastructure.database import atomic, session_manager
 
 
@@ -77,3 +82,14 @@ async def password_recovery_approve(
         ).approve(schema)
 
     return Response[PublicUser](result=public_user)
+
+
+async def password_recovery_healthcheck(
+    schema: PasswordRecoveryHealthCheckRequest = Body(...),
+):
+    """General endpoint to get the password recovery healthcheck."""
+
+    try:
+        await PasswordRecoveryCache().get(schema.email, schema.key)
+    except CacheNotFound:
+        raise PasswordRecoveryHealthCheckNotValid()

@@ -16,6 +16,7 @@ __all__ = [
     "PasswordRecoveryRequest",
     "PasswordRecoveryInfo",
     "PasswordRecoveryApproveRequest",
+    "PasswordRecoveryHealthCheckRequest",
 ]
 
 
@@ -89,13 +90,22 @@ class PasswordRecoveryRequest(InternalModel):
     email: EmailStr
 
 
+class PasswordRecoveryHealthCheckRequest(InternalModel):
+    """This model represents HealthCheck request
+    for password recover link.
+    """
+
+    email: EmailStr
+    key: uuid.UUID
+
+
 class PasswordRecoveryInfo(InternalModel):
     """This is a password recovery representation
     for internal needs.
     """
 
     email: EmailStr
-    user_id: int
+    user_id: uuid.UUID
     key: uuid.UUID
 
 
