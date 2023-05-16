@@ -33,4 +33,5 @@ class ServiceSettings(BaseModel):
 
 class JsonLdConverterSettings(BaseModel):
     """Configure json-ld converter service settings."""
+
     protocol_password: str = ""

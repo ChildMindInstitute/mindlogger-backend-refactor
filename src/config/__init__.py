@@ -13,10 +13,7 @@ from config.notification import NotificationSettings
 from config.redis import RedisSettings
 from config.secret import SecretSettings
 from config.sentry import SentrySettings
-from config.service import (
-    ServiceSettings,
-    JsonLdConverterSettings,
-)
+from config.service import JsonLdConverterSettings, ServiceSettings
 from config.superuser import SuperAdmin
 
 

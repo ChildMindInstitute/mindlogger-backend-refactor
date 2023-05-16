@@ -1,4 +1,4 @@
-from pydantic import root_validator
+from pydantic import Field, root_validator
 
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.activity_update import ActivityUpdate
@@ -22,6 +22,7 @@ from apps.shared.domain import InternalModel
 class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
     activities: list[ActivityCreate]
     activity_flows: list[FlowCreate]
+    extra_fields: dict = Field(default_factory=dict)
 
     @root_validator()
     def validate_existing_ids_for_duplicate(cls, values):
