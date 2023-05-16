@@ -894,4 +894,4 @@ class TestDataService:
                 if old_applet.display_name.endswith("-generated"):
                     await AppletService(
                         self.session, self.user_id
-                    ).delete_applet_by_id(old_applet.id, "Test1234!")
+                    ).delete_applet_by_id(old_applet.id)
