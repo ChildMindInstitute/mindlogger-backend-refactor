@@ -415,7 +415,7 @@ class TestInvite(BaseTest):
 
     @rollback
     async def test_editor_invite_respondent_fail(self):
-        await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
+        await self.client.login(self.login_url, "mike2@gmail.com", "Test1234")
         request_data = dict(
             email="patric@gmail.com",
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
@@ -432,8 +432,11 @@ class TestInvite(BaseTest):
             ),
             request_data,
         )
-        assert response.status_code == 400
-        assert response.json()["result"][0]["message"] == "Access denied."
+        assert response.status_code == 403
+        assert (
+            response.json()["result"][0]["message"]
+            == "Access denied to manipulate with invites of the applet."
+        )
 
     @rollback
     async def test_invitation_accept_and_absorb_roles(self):
@@ -443,8 +446,9 @@ class TestInvite(BaseTest):
             uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa4"),
             uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
-        assert len(roles) == 1
-        assert roles[0] == Role.EDITOR
+        assert len(roles) == 2
+        assert roles[0] == Role.COORDINATOR
+        assert roles[1] == Role.EDITOR
 
         response = await self.client.post(
             self.accept_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6")

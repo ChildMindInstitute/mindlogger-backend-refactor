@@ -1,3 +1,4 @@
+import typing
 from copy import deepcopy
 from typing import Any, Generic, Type, TypeVar
 
@@ -128,3 +129,14 @@ class BaseCRUD(Generic[ConcreteSchema]):
         await self._execute(query)
 
         return None
+
+    async def exist_by_key(self, key: str, val: typing.Any) -> bool:
+        field = getattr(self.schema_class, key)
+        query: Query = select(field)
+        query = query.where(field == val)
+        query = query.where(
+            self.schema_class.is_deleted == False  # noqa: E712
+        )
+        query = query.exists()
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first() or False

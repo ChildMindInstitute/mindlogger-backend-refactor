@@ -13,8 +13,8 @@ class Role(str, Enum):
 
     @classmethod
     @lru_cache
-    def as_list(cls) -> tuple["Role"]:
-        return tuple(cls(role) for role in cls)
+    def as_list(cls) -> list["Role"]:
+        return [cls(role) for role in cls]
 
     def __lt__(self, other):
         roles = self.as_list()
@@ -31,6 +31,20 @@ class Role(str, Enum):
     @classmethod
     def inviters(cls) -> list["Role"]:
         return [cls.OWNER, cls.MANAGER, cls.COORDINATOR]
+
+    @classmethod
+    def schedulers(cls) -> list["Role"]:
+        return [cls.OWNER, cls.MANAGER, cls.COORDINATOR]
+
+    @classmethod
+    def managers(cls) -> list["Role"]:
+        return [
+            cls.OWNER,
+            cls.MANAGER,
+            cls.COORDINATOR,
+            cls.EDITOR,
+            cls.REVIEWER,
+        ]
 
     @classmethod
     def super_reviewers(cls) -> list["Role"]:

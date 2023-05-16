@@ -60,6 +60,11 @@ class AppletService:
         self.user_id = user_id
         self.session = session
 
+    async def exist_by_id(self, applet_id: uuid.UUID):
+        exists = await AppletsCRUD(self.session).exist_by_key("id", applet_id)
+        if not exists:
+            raise AppletNotFoundError(key="id", value=str(applet_id))
+
     async def _create_applet_accesses(
         self, applet_id: uuid.UUID, manager_id: uuid.UUID | None
     ):
@@ -321,7 +326,7 @@ class AppletService:
         roles: str = query_params.filters.pop("roles")
 
         schemas = await AppletsCRUD(self.session).get_applets_by_roles(
-            self.user_id, roles.split(","), query_params
+            self.user_id, list(map(Role, roles.split(","))), query_params
         )
         theme_ids = [schema.theme_id for schema in schemas if schema.theme_id]
         themes = []
@@ -495,9 +500,6 @@ class AppletService:
         if int_version < int(self.INITIAL_VERSION.replace(".", "")):
             return self.INITIAL_VERSION
         return ".".join(list(str(int_version - self.VERSION_DIFFERENCE)))
-
-    async def exist_by_id(self, applet_id: uuid.UUID) -> bool:
-        return await AppletsCRUD(self.session).exist_by_id(applet_id)
 
     async def delete_applet_by_id(self, applet_id: uuid.UUID):
         await AppletsCRUD(self.session).get_by_id(applet_id)

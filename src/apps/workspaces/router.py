@@ -82,7 +82,7 @@ router.get(
 )(workspace_applets)
 
 router.get(
-    "/{owner_id}/applets/{id_}",
+    "/{owner_id}/applets/{applet_id}",
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": Response[PublicAppletFull]},

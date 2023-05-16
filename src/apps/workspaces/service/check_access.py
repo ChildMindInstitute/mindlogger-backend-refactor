@@ -12,6 +12,9 @@ from apps.workspaces.errors import (
     AppletDuplicateAccessDenied,
     AppletEditionAccessDenied,
     AppletInviteAccessDenied,
+    AppletSetScheduleAccessDenied,
+    TransferOwnershipAccessDenied,
+    WorkspaceAccessDenied,
 )
 
 
@@ -21,12 +24,20 @@ class CheckAccessService:
         self.user_id = user_id
 
     async def check_applet_detail_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).has_any_roles(
-            applet_id, self.user_id
-        )
+        has_access = await AppletAccessCRUD(
+            self.session
+        ).has_any_roles_for_applet(applet_id, self.user_id)
 
         if not has_access:
             raise AppletAccessDenied()
+
+    async def check_workspace_access(self, applet_id: uuid.UUID):
+        has_access = await AppletAccessCRUD(
+            self.session
+        ).has_any_roles_for_workspace(applet_id, self.user_id)
+
+        if not has_access:
+            raise WorkspaceAccessDenied()
 
     async def check_applet_create_access(self, owner_id: uuid.UUID):
         if owner_id == self.user_id:
@@ -40,6 +51,18 @@ class CheckAccessService:
     async def check_applet_edit_access(self, applet_id: uuid.UUID):
         has_access = await AppletAccessCRUD(self.session).can_edit_applet(
             applet_id, self.user_id
+        )
+
+        if not has_access:
+            raise AppletEditionAccessDenied()
+
+    async def check_link_edit_access(self, applet_id: uuid.UUID):
+        has_access = await AppletAccessCRUD(
+            self.session
+        ).has_any_roles_for_applet(
+            applet_id,
+            self.user_id,
+            [Role.OWNER, Role.MANAGER, Role.COORDINATOR],
         )
 
         if not has_access:
@@ -90,3 +113,21 @@ class CheckAccessService:
 
         if not has_access:
             raise AppletInviteAccessDenied()
+
+    async def check_applet_schedule_create_access(self, applet_id: uuid.UUID):
+        has_access = await AppletAccessCRUD(
+            self.session
+        ).can_set_schedule_and_notifications(applet_id, self.user_id)
+
+        if not has_access:
+            raise AppletSetScheduleAccessDenied()
+
+    async def check_create_transfer_ownership_access(
+        self, applet_id: uuid.UUID
+    ):
+        has_access = await AppletAccessCRUD(self.session).has_role(
+            applet_id, self.user_id, Role.OWNER
+        )
+
+        if not has_access:
+            raise TransferOwnershipAccessDenied()

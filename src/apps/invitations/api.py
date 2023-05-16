@@ -3,6 +3,7 @@ from copy import deepcopy
 
 from fastapi import Body, Depends
 
+from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.invitations.domain import (
     InvitationDetailForReviewer,
@@ -98,9 +99,10 @@ async def invitation_retrieve(
     """
     async with atomic(session):
         invitation = await InvitationsService(session, user).get(key)
-        await CheckAccessService(session, user.id).check_applet_invite_access(
-            invitation.applet_id
-        )
+        if invitation:
+            await CheckAccessService(
+                session, user.id
+            ).check_applet_invite_access(invitation.applet_id)
     return Response(result=InvitationResponse.from_orm(invitation))
 
 
@@ -127,6 +129,7 @@ async def invitation_respondent_send(
     """
 
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_invite_access(
             applet_id
         )
@@ -151,6 +154,7 @@ async def invitation_reviewer_send(
     """
 
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_invite_access(
             applet_id
         )
@@ -176,6 +180,7 @@ async def invitation_managers_send(
     """
 
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_invite_access(
             applet_id
         )

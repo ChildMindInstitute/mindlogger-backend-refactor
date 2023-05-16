@@ -23,14 +23,33 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(select(query))
         return db_result.scalars().first()
 
-    async def has_any_roles(
+    async def has_any_roles_for_applet(
         self,
         applet_id: uuid.UUID,
         user_id: uuid.UUID,
-        roles: tuple[Role] = Role.as_list(),
+        roles=None,
     ) -> bool:
+        if roles is None:
+            roles = Role.as_list()
         query: Query = select(UserAppletAccessSchema.id)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.role.in_(roles))
+        query = query.exists()
+
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first()
+
+    async def has_any_roles_for_workspace(
+        self,
+        owner_id: uuid.UUID,
+        user_id: uuid.UUID,
+        roles=None,
+    ) -> bool:
+        if roles is None:
+            roles = Role.managers()
+        query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(roles))
         query = query.exists()
@@ -159,7 +178,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query: Query = select(UserAppletAccessSchema.id)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(UserAppletAccessSchema.role.in_(Role.inviters()))
+        query = query.where(UserAppletAccessSchema.role.in_(Role.schedulers()))
         query = query.exists()
 
         db_result = await self._execute(select(query))

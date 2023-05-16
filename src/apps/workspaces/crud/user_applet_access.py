@@ -28,7 +28,6 @@ from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
     RespondentAppletAccess,
     UserAppletAccess,
-    UserAppletAccessItem,
 )
 from apps.workspaces.domain.workspace import (
     WorkspaceManager,

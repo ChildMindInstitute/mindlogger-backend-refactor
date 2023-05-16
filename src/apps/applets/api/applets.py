@@ -237,6 +237,7 @@ async def applet_versions_retrieve(
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicHistory]:
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(
             applet_id
         )
@@ -285,10 +286,12 @@ async def applet_delete(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_delete_access(
             applet_id
         )
-        await AppletService(session, user.id).delete_applet_by_id(applet_id)
+        await service.delete_applet_by_id(applet_id)
 
 
 async def applet_set_folder(
@@ -297,10 +300,12 @@ async def applet_set_folder(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_folder.applet_id)
         await CheckAccessService(session, user.id).check_applet_edit_access(
             applet_folder.applet_id
         )
-        await AppletService(session, user.id).set_applet_folder(applet_folder)
+        await service.set_applet_folder(applet_folder)
 
 
 async def applet_unique_name_get(
@@ -322,10 +327,12 @@ async def applet_link_create(
     session=Depends(session_manager.get_session),
 ) -> Response[AppletLink]:
     async with atomic(session):
-        await CheckAccessService(session, user.id).check_applet_edit_access(
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_link_edit_access(
             applet_id
         )
-        access_link = await AppletService(session, user.id).create_access_link(
+        access_link = await service.create_access_link(
             applet_id=applet_id, create_request=schema
         )
     return Response(result=access_link)
@@ -337,12 +344,9 @@ async def applet_link_get(
     session=Depends(session_manager.get_session),
 ) -> Response[AppletLink]:
     async with atomic(session):
-        await CheckAccessService(session, user.id).check_applet_edit_access(
-            applet_id
-        )
-        access_link = await AppletService(session, user.id).get_access_link(
-            applet_id=applet_id
-        )
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
+        access_link = await service.get_access_link(applet_id=applet_id)
     return Response(result=access_link)
 
 
@@ -352,12 +356,12 @@ async def applet_link_delete(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
-        await CheckAccessService(session, user.id).check_applet_edit_access(
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_link_edit_access(
             applet_id
         )
-        await AppletService(session, user.id).delete_access_link(
-            applet_id=applet_id
-        )
+        await service.delete_access_link(applet_id=applet_id)
 
 
 async def applet_set_data_retention(
