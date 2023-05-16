@@ -140,6 +140,9 @@ class ScheduleService:
 
         # Create notification and reminder
         if schedule.notification:
+            notifications = None
+            reminder = None
+
             if schedule.notification.notifications:
                 notification_create = []
                 for notification in schedule.notification.notifications:
@@ -499,6 +502,7 @@ class ScheduleService:
 
         # Update notification
         await NotificationCRUD(self.session).delete_by_event_ids([schedule_id])
+        await ReminderCRUD(self.session).delete_by_event_ids([schedule_id])
 
         notification_public = None
         if schedule.notification:
@@ -521,10 +525,6 @@ class ScheduleService:
                 ).create_many(notifications_create)
 
             if schedule.notification.reminder:
-                await ReminderCRUD(self.session).delete_by_event_ids(
-                    [schedule_id]
-                )
-
                 reminder = await ReminderCRUD(self.session).create(
                     reminder=ReminderSettingCreate(
                         event_id=event.id,

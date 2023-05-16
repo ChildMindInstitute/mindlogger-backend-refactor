@@ -90,8 +90,8 @@ class EventRequest(BaseEvent, PublicModel):
                             == NotificationTriggerType.FIXED
                             and not (
                                 values.get("start_time")
-                                < notification.at_time
-                                < values.get("end_time")  # noqa: E501
+                                <= notification.at_time
+                                <= values.get("end_time")  # noqa: E501
                             )
                         ):
                             raise UnavailableActivityOrFlowError()
@@ -101,17 +101,17 @@ class EventRequest(BaseEvent, PublicModel):
                             == NotificationTriggerType.RANDOM
                             and not (
                                 values.get("start_time")
-                                < notification.from_time
-                                < notification.to_time
-                                < values.get("end_time")  # noqa: E501
+                                <= notification.from_time
+                                <= notification.to_time
+                                <= values.get("end_time")  # noqa: E501
                             )
                         ):
                             raise UnavailableActivityOrFlowError()
                 if values.get("notification").reminder:
                     if not (
                         values.get("start_time")
-                        < values.get("notification").reminder.reminder_time
-                        < values.get("end_time")
+                        <= values.get("notification").reminder.reminder_time
+                        <= values.get("end_time")
                     ):
                         raise UnavailableActivityOrFlowError()
         return values
