@@ -140,6 +140,9 @@ class ScheduleService:
 
         # Create notification and reminder
         if schedule.notification:
+            notifications = None
+            reminder = None
+
             if schedule.notification.notifications:
                 notification_create = []
                 for notification in schedule.notification.notifications:
@@ -499,6 +502,7 @@ class ScheduleService:
 
         # Update notification
         await NotificationCRUD(self.session).delete_by_event_ids([schedule_id])
+        await ReminderCRUD(self.session).delete_by_event_ids([schedule_id])
 
         notification_public = None
         if schedule.notification:
@@ -521,10 +525,6 @@ class ScheduleService:
                 ).create_many(notifications_create)
 
             if schedule.notification.reminder:
-                await ReminderCRUD(self.session).delete_by_event_ids(
-                    [schedule_id]
-                )
-
                 reminder = await ReminderCRUD(self.session).create(
                     reminder=ReminderSettingCreate(
                         event_id=event.id,
@@ -625,12 +625,12 @@ class ScheduleService:
         activities = await ActivityEventsCRUD(
             self.session
         ).get_by_applet_and_user_id(applet_id, user_id)
-        activity_ids = [activity.activity_id for activity in activities]
+        activity_ids = {activity.activity_id for activity in activities}
 
         flows = await FlowEventsCRUD(self.session).get_by_applet_and_user_id(
             applet_id, user_id
         )
-        flow_ids = [flow.flow_id for flow in flows]
+        flow_ids = {flow.flow_id for flow in flows}
 
         # Get list of event_ids for user and delete them all
         event_schemas = await EventCRUD(
@@ -658,13 +658,13 @@ class ScheduleService:
         # Create AA events for all activities and flows
         await self.create_default_schedules(
             applet_id=applet_id,
-            activity_ids=activity_ids,
+            activity_ids=list(activity_ids),
             is_activity=True,
             respondent_id=user_id,
         )
         await self.create_default_schedules(
             applet_id=applet_id,
-            activity_ids=flow_ids,
+            activity_ids=list(flow_ids),
             is_activity=False,
             respondent_id=user_id,
         )
@@ -723,15 +723,12 @@ class ScheduleService:
                 only_always_available,
             )
 
-        event_ids = [event_schema.id for event_schema in event_schemas]
-
-        # keep exception event id
-        if except_event_id and except_event_id in event_ids:
-            event_ids.remove(except_event_id)
-
-        periodicity_ids = [
-            event_schema.periodicity_id for event_schema in event_schemas
+        clean_events = [
+            event for event in event_schemas if event.id != except_event_id
         ]
+        event_ids = [event.id for event in clean_events]
+        periodicity_ids = [event.periodicity_id for event in clean_events]
+
         if event_ids:
             await UserEventsCRUD(self.session).delete_all_by_event_ids(
                 event_ids

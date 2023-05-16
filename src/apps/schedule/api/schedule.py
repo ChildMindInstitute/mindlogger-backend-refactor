@@ -58,7 +58,9 @@ async def schedule_get_all(
     query_params: QueryParams = Depends(parse_query_params(EventQueryParams)),
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicEvent]:
-    """Get all schedules for an applet."""
+    """Get schedules for an applet. If respondentId is provided,it
+    will return only individual events for that respondent. If respondentId
+    is not provided, it will return only general events for the applet."""
     async with atomic(session):
         schedules = await ScheduleService(session).get_all_schedules(
             applet_id, deepcopy(query_params)
