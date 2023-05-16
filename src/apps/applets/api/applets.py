@@ -371,9 +371,9 @@ async def applet_set_data_retention(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
-        await CheckAccessService(session, user.id).check_applet_edit_access(
-            applet_id
-        )
+        await CheckAccessService(
+            session, user.id
+        ).check_applet_retention_access(applet_id)
         await AppletService(session, user.id).set_data_retention(
             applet_id=applet_id, data_retention=schema
         )

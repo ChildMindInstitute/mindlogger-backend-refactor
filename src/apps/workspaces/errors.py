@@ -26,6 +26,10 @@ class WorkspaceAccessDenied(AccessDeniedError):
     message = _("Access denied to workspace.")
 
 
+class WorkspaceFolderManipulationAccessDenied(AccessDeniedError):
+    message = _("Access denied to manipulate workspace folders.")
+
+
 class UserAppletAccessesNotFound(NotFoundError):
     message = _("No such UserAppletAccess with id={id_}.")
 

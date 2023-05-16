@@ -5,7 +5,7 @@ from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
 
-class TestFolder(BaseTest):
+class TestAppletMoveToFolder(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
         "folders/fixtures/folders.json",
