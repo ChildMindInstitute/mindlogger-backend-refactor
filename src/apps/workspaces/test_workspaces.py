@@ -147,9 +147,7 @@ class TestWorkspaces(BaseTest):
                 owner_id="00000000-0000-0000-0000-000000000000"
             )
         )
-        # todo: uncomment when it will be needed
-        # assert response.status_code == 404
-        assert response.status_code == 200
+        assert response.status_code == 404
 
     @rollback
     async def test_get_workspace_respondents(self):
@@ -227,7 +225,7 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 4
+        assert response.json()["count"] == 5
 
         # test search
         search_params = {

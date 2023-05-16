@@ -98,7 +98,6 @@ class InvitationsService:
         self, applet_id: uuid.UUID, schema: InvitationRespondentRequest
     ) -> InvitationDetailForRespondent:
 
-        await self._is_applet_exist(applet_id)
         await self._is_validated_role_for_invitation(
             applet_id, Role.RESPONDENT, schema
         )
@@ -216,7 +215,6 @@ class InvitationsService:
         self, applet_id: uuid.UUID, schema: InvitationReviewerRequest
     ) -> InvitationDetailForReviewer:
 
-        await self._is_applet_exist(applet_id)
         await self._is_validated_role_for_invitation(
             applet_id, Role.REVIEWER, schema
         )
@@ -330,7 +328,6 @@ class InvitationsService:
         self, applet_id: uuid.UUID, schema: InvitationManagersRequest
     ) -> InvitationDetailForManagers:
 
-        await self._is_applet_exist(applet_id)
         await self._is_validated_role_for_invitation(
             applet_id, schema.role, schema
         )
@@ -475,14 +472,6 @@ class InvitationsService:
             raise DoesNotHaveAccess(
                 message="You do not have access to send invitation."
             )
-
-    async def _is_applet_exist(self, applet_id: uuid.UUID):
-        if not (
-            await AppletService(self.session, self._user.id).exist_by_id(
-                applet_id
-            )
-        ):
-            raise AppletDoesNotExist()
 
     async def _is_validated_role_for_invitation(
         self,

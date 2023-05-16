@@ -1,7 +1,7 @@
 import uuid
 
 from apps.shared.query_params import QueryParams
-from apps.users import User
+from apps.users import User, UsersCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
@@ -12,7 +12,10 @@ from apps.workspaces.domain.workspace import (
     WorkspaceManager,
     WorkspaceRespondent,
 )
-from apps.workspaces.errors import WorkspaceAccessDenied
+from apps.workspaces.errors import (
+    WorkspaceAccessDenied,
+    WorkspaceDoesNotExistError,
+)
 from apps.workspaces.service.user_access import UserAccessService
 
 
@@ -137,3 +140,8 @@ class WorkspaceService:
         for applet_id, role in applet_role_map.items():
             workspace_applet_map[applet_id].role = role
         return workspace_applets
+
+    async def exists_by_owner_id(self, owner_id: uuid.UUID):
+        exists = await UsersCRUD(self.session).exist_by_key("id", owner_id)
+        if not exists:
+            raise WorkspaceDoesNotExistError()

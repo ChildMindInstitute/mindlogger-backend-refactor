@@ -78,7 +78,7 @@ class TestFolder(BaseTest):
         assert response.status_code == 403
         assert (
             response.json()["result"][0]["message"]
-            == "Access denied to applet."
+            == "Access denied to edit applet in current workspace."
         )
 
     @rollback

@@ -57,7 +57,7 @@ router.delete(
 )(item_choice_delete)
 
 router.get(
-    "/{id_}",
+    "/{activity_id}",
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {

@@ -35,8 +35,8 @@ from apps.answers.errors import (
 from apps.applets.crud import AppletsCRUD
 from apps.applets.service import AppletHistoryService
 from apps.shared.query_params import QueryParams
+from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.errors import UserAppletAccessesDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
@@ -268,19 +268,15 @@ class AnswerService:
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID
     ):
         assert self.user_id, "User id is required"
-
         await AppletsCRUD(self.session).get_by_id(applet_id)
-        role = await UserAppletAccessService(
-            self.session, self.user_id, applet_id
-        ).get_reviewer_for_respondent_role()
-        if not role:
-            raise AnswerAccessDeniedError()
+        role = await AppletAccessCRUD(self.session).get_applets_priority_role(
+            applet_id, self.user_id
+        )
         if role == Role.REVIEWER:
             access = await UserAppletAccessService(
                 self.session, self.user_id, applet_id
             ).get_access(Role.REVIEWER)
-            if not access:
-                raise UserAppletAccessesDenied()
+            assert access is not None
 
             if str(respondent_id) not in access.meta.get("respondents", []):
                 raise AnswerAccessDeniedError()

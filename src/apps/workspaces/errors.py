@@ -36,3 +36,48 @@ class RemoveOwnPermissionAccessDenied(AccessDeniedError):
 
 class AppletEncryptionUpdateDenied(AccessDeniedError):
     message = _("Access denied to update encryption.")
+
+
+class AppletCreationAccessDenied(AccessDeniedError):
+    message = _("Access denied to create applet in current workspace.")
+
+
+class AppletEditionAccessDenied(AccessDeniedError):
+    message = _("Access denied to edit applet in current workspace.")
+
+
+class AppletDuplicateAccessDenied(AccessDeniedError):
+    message = _("Access denied to duplicate applet in current workspace.")
+
+
+class AppletDeleteAccessDenied(AccessDeniedError):
+    message = _("Access denied to delete applet in current workspace.")
+
+
+class AnswerCreateAccessDenied(AccessDeniedError):
+    message = _("Access denied to submit answer to applet.")
+
+
+class AnswerViewAccessDenied(AccessDeniedError):
+    message = _("Access denied to view applet answers.")
+
+
+class AnswerNoteCRUDAccessDenied(AccessDeniedError):
+    message = _("Access denied to manipulate with notes of answers.")
+
+
+class AppletInviteAccessDenied(AccessDeniedError):
+    message = _("Access denied to manipulate with invites of the applet.")
+
+
+class AppletSetScheduleAccessDenied(AccessDeniedError):
+    message = _(
+        "Access denied to manipulate with "
+        "schedules and notifications of the applet."
+    )
+
+
+class TransferOwnershipAccessDenied(AccessDeniedError):
+    message = _(
+        "Access denied to create transfer ownership request for the applet."
+    )

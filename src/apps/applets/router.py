@@ -55,7 +55,7 @@ router.get(
 )(applet_list)
 
 router.get(
-    "/{id_}",
+    "/{applet_id}",
     status_code=status.HTTP_200_OK,
     response_model=Response[AppletSingleLanguageDetailPublic],
     responses={
@@ -68,7 +68,7 @@ router.get(
 )(applet_retrieve)
 
 router.get(
-    "/{id_}/versions",
+    "/{applet_id}/versions",
     status_code=status.HTTP_200_OK,
     response_model=ResponseMulti[PublicHistory],
     responses={
@@ -79,7 +79,7 @@ router.get(
 )(applet_versions_retrieve)
 
 router.get(
-    "/{id_}/versions/{version}",
+    "/{applet_id}/versions/{version}",
     status_code=status.HTTP_200_OK,
     response_model=Response[public_history_detail.AppletDetailHistory],
     responses={
@@ -92,7 +92,7 @@ router.get(
 )(applet_version_retrieve)
 
 router.get(
-    "/{id_}/versions/{version}/changes",
+    "/{applet_id}/versions/{version}/changes",
     status_code=status.HTTP_200_OK,
     response_model=Response[PublicAppletHistoryChange],
     responses={
@@ -135,7 +135,7 @@ router.post(
 )(applet_unique_name_get)
 
 router.put(
-    "/{id_}",
+    "/{applet_id}",
     status_code=status.HTTP_200_OK,
     response_model=Response[public_detail.Applet],
     responses={
@@ -146,7 +146,7 @@ router.put(
 )(applet_update)
 
 router.post(
-    "/{id_}/encryption",
+    "/{applet_id}/encryption",
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": Response[public_detail.Encryption]},
@@ -156,7 +156,7 @@ router.post(
 )(applet_encryption_update)
 
 router.delete(
-    "/{id_}",
+    "/{applet_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     response_model=None,
     responses={
@@ -166,7 +166,7 @@ router.delete(
 )(applet_delete)
 
 router.post(
-    "/{id_}/access_link",
+    "/{applet_id}/access_link",
     status_code=status.HTTP_201_CREATED,
     response_model=Response[AppletLink],
     responses={
@@ -177,7 +177,7 @@ router.post(
 )(applet_link_create)
 
 router.get(
-    "/{id_}/access_link",
+    "/{applet_id}/access_link",
     status_code=status.HTTP_200_OK,
     response_model=Response[AppletLink],
     responses={
@@ -188,7 +188,7 @@ router.get(
 )(applet_link_get)
 
 router.delete(
-    "/{id_}/access_link",
+    "/{applet_id}/access_link",
     status_code=status.HTTP_204_NO_CONTENT,
     response_model=None,
     responses={
@@ -198,7 +198,7 @@ router.delete(
 )(applet_link_delete)
 
 router.post(
-    "/{id_}/retentions",
+    "/{applet_id}/retentions",
     status_code=status.HTTP_200_OK,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,

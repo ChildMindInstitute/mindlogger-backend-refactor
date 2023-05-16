@@ -136,7 +136,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return db_result.scalars().first()
 
     async def get_applets_by_roles(
-        self, user_id: uuid.UUID, roles: list[str], query_params: QueryParams
+        self, user_id: uuid.UUID, roles: list[Role], query_params: QueryParams
     ) -> list[AppletSchema]:
         accessible_applets_query = select(UserAppletAccessSchema.applet_id)
         accessible_applets_query = accessible_applets_query.where(
@@ -191,7 +191,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return result.scalars().first() or 0
 
     async def get_applet_by_roles(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
+        self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[Role]
     ) -> AppletSchema | None:
         query = select(AppletSchema)
         query = query.join_from(UserAppletAccessSchema, AppletSchema)

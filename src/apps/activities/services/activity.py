@@ -295,11 +295,9 @@ class ActivityService:
         return activities
 
     async def get_single_language_by_id(
-        self, id_: uuid.UUID, language: str
+        self, activity_id: uuid.UUID, language: str
     ) -> ActivitySingleLanguageWithItemsDetail:
-        schema = await ActivitiesCRUD(self.session).get_by_id(
-            self.user_id, id_
-        )
+        schema = await ActivitiesCRUD(self.session).get_by_id(activity_id)
         activity = ActivitySingleLanguageWithItemsDetail(
             id=schema.id,
             name=schema.name,
@@ -315,15 +313,13 @@ class ActivityService:
         )
         activity.items = await ActivityItemService(
             self.session
-        ).get_single_language_by_activity_id(id_, language)
+        ).get_single_language_by_activity_id(activity_id, language)
         return activity
 
     async def get_public_single_language_by_id(
-        self, id_: uuid.UUID, language: str
+        self, activity_id: uuid.UUID, language: str
     ) -> ActivitySingleLanguageWithItemsDetail:
-        schema = await ActivitiesCRUD(self.session).get_by_id(
-            self.user_id, id_
-        )
+        schema = await ActivitiesCRUD(self.session).get_by_id(activity_id)
         if not schema:
             raise ActivityDoeNotExist()
         applet = await AppletsCRUD(self.session).get_by_id(schema.applet_id)
@@ -347,7 +343,7 @@ class ActivityService:
         )
         activity.items = await ActivityItemService(
             self.session
-        ).get_single_language_by_activity_id(id_, language)
+        ).get_single_language_by_activity_id(activity_id, language)
         return activity
 
     @staticmethod

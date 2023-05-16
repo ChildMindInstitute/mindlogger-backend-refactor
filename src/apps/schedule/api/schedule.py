@@ -15,6 +15,7 @@ from apps.schedule.service.schedule import ScheduleService
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
+from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic, session_manager
 
 
@@ -28,14 +29,15 @@ async def schedule_create(
 ) -> Response[PublicEvent]:
     """Create a new event for an applet."""
     async with atomic(session):
+        await CheckAccessService(
+            session, user.id
+        ).check_applet_schedule_create_access(applet_id)
         schedule = await ScheduleService(session).create_schedule(
             schema, applet_id
         )
     return Response(result=PublicEvent(**schedule.dict()))
 
 
-# TODO: Add logic to allow to create events by permissions
-# TODO: Restrict by admin
 async def schedule_get_by_id(
     applet_id: uuid.UUID,
     schedule_id: uuid.UUID,
@@ -50,8 +52,6 @@ async def schedule_get_by_id(
     return Response(result=PublicEvent(**schedule.dict()))
 
 
-# TODO: Add logic to allow to create events by permissions
-# TODO: Restrict by admin
 async def schedule_get_all(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
@@ -80,8 +80,6 @@ async def public_schedule_get_all(
     return Response(result=schedules)
 
 
-# TODO: Add logic to allow to create events by permissions
-# TODO: Restrict by admin
 async def schedule_delete_all(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
@@ -89,11 +87,12 @@ async def schedule_delete_all(
 ):
     """Delete all schedules for an applet."""
     async with atomic(session):
+        await CheckAccessService(
+            session, user.id
+        ).check_applet_schedule_create_access(applet_id)
         await ScheduleService(session).delete_all_schedules(applet_id)
 
 
-# TODO: Add logic to allow to create events by permissions
-# TODO: Restrict by admin
 async def schedule_delete_by_id(
     applet_id: uuid.UUID,
     schedule_id: uuid.UUID,
@@ -102,13 +101,14 @@ async def schedule_delete_by_id(
 ):
     """Delete a schedule by id."""
     async with atomic(session):
+        await CheckAccessService(
+            session, user.id
+        ).check_applet_schedule_create_access(applet_id)
         await ScheduleService(session).delete_schedule_by_id(
             schedule_id, applet_id
         )
 
 
-# TODO: Add logic to allow to create events by permissions
-# TODO: Restrict by admin
 async def schedule_update(
     applet_id: uuid.UUID,
     schedule_id: uuid.UUID,
@@ -118,14 +118,15 @@ async def schedule_update(
 ) -> Response[PublicEvent]:
     """Update a schedule by id."""
     async with atomic(session):
+        await CheckAccessService(
+            session, user.id
+        ).check_applet_schedule_create_access(applet_id)
         schedule = await ScheduleService(session).update_schedule(
             applet_id, schedule_id, schema
         )
     return Response(result=PublicEvent(**schedule.dict()))
 
 
-# TODO: Add logic to allow to create events by permissions
-# TODO: Restrict by admin
 async def schedule_count(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
@@ -139,8 +140,6 @@ async def schedule_count(
     return Response(result=count)
 
 
-# TODO: Add logic to allow to create events by permissions
-# TODO: Restrict by admin
 async def schedule_delete_by_user(
     applet_id: uuid.UUID,
     respondent_id: uuid.UUID,
@@ -149,6 +148,9 @@ async def schedule_delete_by_user(
 ):
     """Delete all schedules for a respondent and create default ones."""
     async with atomic(session):
+        await CheckAccessService(
+            session, user.id
+        ).check_applet_schedule_create_access(applet_id)
         await ScheduleService(session).delete_by_user_id(
             applet_id=applet_id, user_id=respondent_id
         )
@@ -190,6 +192,9 @@ async def schedule_remove_individual_calendar(
 ):
     """Remove individual calendar for a respondent."""
     async with atomic(session):
+        await CheckAccessService(
+            session, user.id
+        ).check_applet_schedule_create_access(applet_id)
         await ScheduleService(session).remove_individual_calendar(
             applet_id=applet_id, user_id=respondent_id
         )

@@ -179,7 +179,6 @@ class TestAnswerActivityItems(BaseTest):
 
     @rollback
     async def test_answer_with_skipping_all(self):
-        # TODO: update test to skip when activity item is skippable
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )

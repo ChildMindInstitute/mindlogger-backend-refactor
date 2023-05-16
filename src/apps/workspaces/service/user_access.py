@@ -199,6 +199,7 @@ class UserAccessService:
     async def check_access(
         self, owner_id: uuid.UUID, roles: list[Role] | None = None
     ):
+        # TODO: remove
         if owner_id == self._user_id:
             return
 
