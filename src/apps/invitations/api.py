@@ -99,10 +99,6 @@ async def invitation_retrieve(
     """
     async with atomic(session):
         invitation = await InvitationsService(session, user).get(key)
-        if invitation:
-            await CheckAccessService(
-                session, user.id
-            ).check_applet_invite_access(invitation.applet_id)
     return Response(result=InvitationResponse.from_orm(invitation))
 
 
