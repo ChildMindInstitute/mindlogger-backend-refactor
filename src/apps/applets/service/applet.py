@@ -35,7 +35,6 @@ from apps.applets.service.applet_history_service import AppletHistoryService
 from apps.folders.crud import FolderCRUD
 from apps.themes.service import ThemeService
 from apps.workspaces.errors import (
-    AppletAccessDenied,
     AppletEncryptionUpdateDenied,
 )
 from apps.workspaces.service.user_applet_access import UserAppletAccessService

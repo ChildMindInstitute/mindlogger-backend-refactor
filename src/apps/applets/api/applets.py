@@ -94,9 +94,7 @@ async def applet_retrieve(
         await CheckAccessService(session, user.id).check_applet_detail_access(
             applet_id
         )
-        applet = await service.get_single_language_by_id(
-            applet_id, language
-        )
+        applet = await service.get_single_language_by_id(applet_id, language)
     return Response(result=AppletSingleLanguageDetailPublic.from_orm(applet))
 
 
