@@ -10,6 +10,7 @@ from apps.shared.domain.response import (
 from apps.users.api import (
     password_recovery,
     password_recovery_approve,
+    password_recovery_healthcheck,
     password_update,
     user_create,
     user_delete,
@@ -95,3 +96,8 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(password_recovery_approve)
+
+# Password recovery healthcheck
+router.get(
+    "/me/password/recover/healthcheck",
+)(password_recovery_healthcheck)
