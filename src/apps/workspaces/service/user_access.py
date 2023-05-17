@@ -1,13 +1,15 @@
 import uuid
+from collections import defaultdict
 
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
-from apps.applets.crud import UserAppletAccessCRUD
+from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain.applet import AppletSingleLanguageInfo
 from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
+    ManagerAppletAccess,
     PublicRespondentAppletAccess,
     RemoveManagerAccess,
     RemoveRespondentAccess,
@@ -262,3 +264,34 @@ class UserAccessService:
         ).get_applets_roles_by_priority(applet_ids, self._user_id)
 
         return applet_role_map
+
+    async def get_manager_accesses(
+        self, owner_id: uuid.UUID, user_id: uuid.UUID
+    ) -> list[ManagerAppletAccess]:
+        accesses = await UserAppletAccessCRUD(
+            self.session
+        ).get_accesses_by_user_id_in_workspace(
+            user_id, owner_id, Role.managers()
+        )
+
+        applet_ids = set()
+        applet_id_role_map = defaultdict(list)
+
+        for access in accesses:
+            applet_ids.add(access.applet_id)
+            applet_id_role_map[access.applet_id].append(access.role)
+
+        applets = await AppletsCRUD(self.session).get_by_ids(applet_ids)
+        applet_accesses = []
+
+        for applet in applets:
+            applet_accesses.append(
+                ManagerAppletAccess(
+                    applet_id=applet.id,
+                    applet_name=applet.display_name,
+                    applet_image=applet.image,
+                    roles=applet_id_role_map[applet.id],
+                )
+            )
+
+        return applet_accesses
