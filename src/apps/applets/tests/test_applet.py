@@ -1,6 +1,8 @@
 import asyncio
 import uuid
 
+import pytest
+
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -25,6 +27,7 @@ class TestApplet(BaseTest):
     applet_create_url = "workspaces/{owner_id}/applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
     applet_duplicate_url = f"{applet_detail_url}/duplicate"
+    applet_report_config_url = f"{applet_detail_url}/report_configuration"
     applet_publish_url = f"{applet_detail_url}/publish"
     applet_conceal_url = f"{applet_detail_url}/conceal"
     applet_set_encryption_url = f"{applet_detail_url}/encryption"
@@ -969,6 +972,61 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == 400, response.json()
 
+    @rollback
+    async def test_set_applet_report_configuration(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        report_configuration = dict(
+            report_server_ip="ipaddress",
+            report_public_key="public key",
+            report_recipients=["recipient1", "recipient1"],
+            report_include_user_id=True,
+            report_include_case_id=True,
+            report_email_body="email body",
+        )
+
+        response = await self.client.post(
+            self.applet_report_config_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            ),
+            report_configuration,
+        )
+        assert response.status_code == 200, response.json()
+
+        response = await self.client.get(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 200
+        assert (
+            response.json()["result"]["reportServerIp"]
+            == report_configuration["report_server_ip"]
+        )
+        assert (
+            response.json()["result"]["reportPublicKey"]
+            == report_configuration["report_public_key"]
+        )
+        assert (
+            response.json()["result"]["reportRecipients"]
+            == report_configuration["report_recipients"]
+        )
+        assert (
+            response.json()["result"]["reportIncludeUserId"]
+            == report_configuration["report_include_user_id"]
+        )
+        assert (
+            response.json()["result"]["reportIncludeCaseId"]
+            == report_configuration["report_include_case_id"]
+        )
+        assert (
+            response.json()["result"]["reportEmailBody"]
+            == report_configuration["report_email_body"]
+        )
+
+    @pytest.mark.main
     @rollback
     async def test_publish_conceal_applet(self):
         await self.client.login(

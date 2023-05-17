@@ -15,6 +15,7 @@ from apps.applets.api.applets import (
     applet_retrieve_by_key,
     applet_set_data_retention,
     applet_set_folder,
+    applet_set_report_configuration,
     applet_unique_name_get,
     applet_update,
     applet_version_changes_retrieve,
@@ -115,6 +116,16 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_duplicate)
+
+router.post(
+    "/{applet_id}/report_configuration",
+    description="""This endpoint to set report configuration""",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_set_report_configuration)
 
 router.post(
     "/{applet_id}/publish",

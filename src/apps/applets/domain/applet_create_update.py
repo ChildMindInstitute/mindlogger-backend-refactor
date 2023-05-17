@@ -10,11 +10,15 @@ from apps.activities.errors import (
 )
 from apps.activity_flows.domain.flow_create import FlowCreate
 from apps.activity_flows.domain.flow_update import FlowUpdate
-from apps.applets.domain.base import AppletBase, Encryption
+from apps.applets.domain.base import (
+    AppletBase,
+    AppletReportConfigurationBase,
+    Encryption,
+)
 from apps.shared.domain import InternalModel
 
 
-class AppletCreate(AppletBase, InternalModel):
+class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
     activities: list[ActivityCreate]
     activity_flows: list[FlowCreate]
 
@@ -66,6 +70,10 @@ class AppletUpdate(AppletBase, InternalModel):
             flow_ids.add(flow.id)
             flow_names.add(flow.name)
         return values
+
+
+class AppletReportConfiguration(AppletReportConfigurationBase, InternalModel):
+    pass
 
 
 class AppletDuplicateRequest(InternalModel):

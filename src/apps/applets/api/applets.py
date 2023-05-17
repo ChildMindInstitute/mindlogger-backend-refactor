@@ -19,6 +19,7 @@ from apps.applets.domain.applet import (
 from apps.applets.domain.applet_create_update import (
     AppletCreate,
     AppletDuplicateRequest,
+    AppletReportConfiguration,
     AppletUpdate,
 )
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
@@ -232,6 +233,21 @@ async def applet_duplicate(
             )
         )
     return Response(result=public_detail.Applet(**applet.dict()))
+
+
+async def applet_set_report_configuration(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    schema: AppletReportConfiguration = Body(...),
+    session=Depends(session_manager.get_session),
+):
+    async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_edit_access(
+            applet_id
+        )
+        await service.set_report_configuration(applet_id, schema)
 
 
 async def applet_publish(
