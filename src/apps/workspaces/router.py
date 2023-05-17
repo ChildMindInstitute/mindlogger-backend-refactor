@@ -16,12 +16,13 @@ from apps.workspaces.api import (
     workspace_applet_detail,
     workspace_applets,
     workspace_managers_applet_access_list,
+    workspace_managers_applet_access_set,
     workspace_managers_list,
     workspace_remove_manager_access,
     workspace_respondents_list,
     workspace_retrieve,
     workspace_users_applet_access_list,
-    workspace_users_pin, workspace_managers_applet_access_set,
+    workspace_users_pin,
 )
 from apps.workspaces.domain.user_applet_access import (
     PublicManagerAppletAccess,

@@ -16,12 +16,12 @@ from apps.shared.query_params import (
 from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.user_applet_access import (
+    ManagerAccesses,
     PinUser,
     PublicManagerAppletAccess,
     PublicRespondentAppletAccess,
     RemoveManagerAccess,
     RemoveRespondentAccess,
-    ManagerAccesses,
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
@@ -291,6 +291,6 @@ async def workspace_managers_applet_access_set(
             session, user.id
         ).check_workspace_manager_accesses_access(owner_id)
 
-        await UserAccessService(
-            session, user.id
-        ).set(owner_id, manager_id, accesses)
+        await UserAccessService(session, user.id).set(
+            owner_id, manager_id, accesses
+        )

@@ -90,5 +90,6 @@ class TransferOwnershipAccessDenied(AccessDeniedError):
 class PublishConcealAccessDenied(AccessDeniedError):
     message = _("Access denied to publish/conceal the applet.")
 
+
 class AccessDeniedToUpdateOwnAccesses(AccessDeniedError):
-    message = _('Access denied to update own accesses in current workspace.')
+    message = _("Access denied to update own accesses in current workspace.")

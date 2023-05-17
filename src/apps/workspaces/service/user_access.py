@@ -10,18 +10,19 @@ from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
+    ManagerAccesses,
     ManagerAppletAccess,
     PublicRespondentAppletAccess,
     RemoveManagerAccess,
     RemoveRespondentAccess,
-    ManagerAccesses,
 )
 from apps.workspaces.domain.workspace import UserWorkspace
 from apps.workspaces.errors import (
+    AccessDeniedToUpdateOwnAccesses,
     AppletAccessDenied,
     RemoveOwnPermissionAccessDenied,
     UserAppletAccessesDenied,
-    WorkspaceDoesNotExistError, AccessDeniedToUpdateOwnAccesses,
+    WorkspaceDoesNotExistError,
 )
 
 __all__ = ["UserAccessService"]
