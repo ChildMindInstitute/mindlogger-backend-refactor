@@ -28,6 +28,7 @@ from apps.activities.domain.response_type_config import (
     TextConfig,
     TimeRangeConfig,
     VideoConfig,
+    TimeConfig,
 )
 from apps.activities.domain.response_values import (
     AudioPlayerValues,
@@ -899,6 +900,16 @@ class ReproFieldDate(ReproFieldBase):
     INPUT_TYPE = "date"
     RESPONSE_TYPE = ResponseType.DATE
     CFG_TYPE = DateConfig
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+
+class ReproFieldTime(ReproFieldBase):
+    INPUT_TYPE = "time"
+    RESPONSE_TYPE = ResponseType.TIME
+    CFG_TYPE = TimeConfig
 
     @classmethod
     def _get_supported_input_types(cls) -> list[str]:

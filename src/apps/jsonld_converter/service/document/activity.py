@@ -28,6 +28,7 @@ from apps.jsonld_converter.service.document.field import (
     ReproFieldText,
     ReproFieldTimeRange,
     ReproFieldVideo,
+    ReproFieldTime,
 )
 
 
@@ -73,6 +74,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             ReproFieldMessage,
             ReproFieldTimeRange,
             ReproFieldDate,
+            ReproFieldTime,
             ReproFieldGeolocation,
             ReproFieldAge,
             ReproFieldRadioStacked,

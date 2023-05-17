@@ -20,6 +20,7 @@ from apps.jsonld_converter.service.document.field import (  # noqa: F401, F403
     ReproFieldText,
     ReproFieldTimeRange,
     ReproFieldVideo,
+    ReproFieldTime,
 )
 from apps.jsonld_converter.service.document.protocol import (  # noqa: F401, F403, E501
     ReproProtocol,

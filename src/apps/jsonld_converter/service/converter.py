@@ -20,6 +20,7 @@ from apps.jsonld_converter.service.document import (
     ReproFieldTimeRange,
     ReproFieldVideo,
     ReproProtocol,
+    ReproFieldTime,
 )
 from apps.jsonld_converter.service.document.base import (
     ContainsNestedMixin,
@@ -72,6 +73,7 @@ class JsonLDModelConverter(ContainsNestedMixin):
             ReproFieldMessage,
             ReproFieldTimeRange,
             ReproFieldDate,
+            ReproFieldTime,
             ReproFieldGeolocation,
             ReproFieldAge,
             ReproFieldRadioStacked,
