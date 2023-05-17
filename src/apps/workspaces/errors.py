@@ -85,3 +85,7 @@ class TransferOwnershipAccessDenied(AccessDeniedError):
     message = _(
         "Access denied to create transfer ownership request for the applet."
     )
+
+
+class PublishConcealAccessDenied(AccessDeniedError):
+    message = _("Access denied to publish/conceal the applet.")

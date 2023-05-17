@@ -47,3 +47,4 @@ class AppletFetchBase(AppletReport, AppletBaseInfo):
     version: str
     created_at: datetime.datetime | None
     updated_at: datetime.datetime | None
+    is_published: bool = False

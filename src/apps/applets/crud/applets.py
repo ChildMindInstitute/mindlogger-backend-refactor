@@ -301,3 +301,17 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             retention_type=data_retention.retention,
         )
         await self._execute(query)
+
+    async def publish_by_id(self, applet_id: uuid.UUID):
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.values(is_published=True)
+
+        await self._execute(query)
+
+    async def conceal_by_id(self, applet_id: uuid.UUID):
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.values(is_published=False)
+
+        await self._execute(query)

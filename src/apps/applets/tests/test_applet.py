@@ -25,6 +25,8 @@ class TestApplet(BaseTest):
     applet_create_url = "workspaces/{owner_id}/applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
     applet_duplicate_url = f"{applet_detail_url}/duplicate"
+    applet_publish_url = f"{applet_detail_url}/publish"
+    applet_conceal_url = f"{applet_detail_url}/conceal"
     applet_set_encryption_url = f"{applet_detail_url}/encryption"
     applet_unique_name_url = f"{applet_list_url}/unique_name"
     histories_url = f"{applet_detail_url}/versions"
@@ -966,6 +968,42 @@ class TestApplet(BaseTest):
             ),
         )
         assert response.status_code == 400, response.json()
+
+    @rollback
+    async def test_publish_conceal_applet(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.applet_publish_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 200, response.json()
+
+        response = await self.client.get(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 200
+        assert response.json()["result"]["isPublished"] is True
+
+        response = await self.client.post(
+            self.applet_conceal_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 200, response.json()
+
+        response = await self.client.get(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 200
+        assert response.json()["result"]["isPublished"] is False
 
     @rollback
     async def test_set_encryption(self):

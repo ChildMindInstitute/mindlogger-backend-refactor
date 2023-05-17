@@ -234,6 +234,34 @@ async def applet_duplicate(
     return Response(result=public_detail.Applet(**applet.dict()))
 
 
+async def applet_publish(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+):
+    async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
+        await CheckAccessService(
+            session, user.id
+        ).check_publish_conceal_access(applet_id)
+        await service.publish(applet_id)
+
+
+async def applet_conceal(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+):
+    async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
+        await CheckAccessService(
+            session, user.id
+        ).check_publish_conceal_access(applet_id)
+        await service.conceal(applet_id)
+
+
 async def applet_versions_retrieve(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),

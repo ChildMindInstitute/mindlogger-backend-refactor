@@ -2,6 +2,7 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.applets.api.applets import (
+    applet_conceal,
     applet_delete,
     applet_duplicate,
     applet_encryption_update,
@@ -9,6 +10,7 @@ from apps.applets.api.applets import (
     applet_link_delete,
     applet_link_get,
     applet_list,
+    applet_publish,
     applet_retrieve,
     applet_retrieve_by_key,
     applet_set_data_retention,
@@ -57,7 +59,6 @@ router.get(
 router.get(
     "/{applet_id}",
     status_code=status.HTTP_200_OK,
-    response_model=Response[AppletSingleLanguageDetailPublic],
     responses={
         status.HTTP_200_OK: {
             "model": Response[AppletSingleLanguageDetailPublic]
@@ -114,6 +115,26 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_duplicate)
+
+router.post(
+    "/{applet_id}/publish",
+    response_model_by_alias=True,
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_publish)
+
+router.post(
+    "/{applet_id}/conceal",
+    response_model_by_alias=True,
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_conceal)
 
 router.post(
     "/set_folder",
