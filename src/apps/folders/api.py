@@ -86,10 +86,10 @@ async def folder_pin(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
+        await AppletService(session, owner_id).exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_workspace_folder_access(owner_id)
-        await AppletService(session, owner_id).exist_by_id(applet_id)
         await FolderService(session, owner_id).pin_applet(
             id_=folder_id, applet_id=applet_id
         )
@@ -103,10 +103,10 @@ async def folder_unpin(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
+        await AppletService(session, owner_id).exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_workspace_folder_access(owner_id)
-        await AppletService(session, owner_id).exist_by_id(applet_id)
         await FolderService(session, owner_id).unpin_applet(
             id_=folder_id, applet_id=applet_id
         )

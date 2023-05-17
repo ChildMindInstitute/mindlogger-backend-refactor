@@ -12,6 +12,7 @@ from apps.answers.domain import (
 )
 from apps.answers.filters import AppletActivityFilter, AppletSubmitDateFilter
 from apps.answers.service import AnswerService
+from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import (
@@ -46,6 +47,7 @@ async def applet_activities_list(
     ),
 ) -> ResponseMulti[PublicAnsweredAppletActivity]:
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
@@ -70,6 +72,7 @@ async def applet_submit_date_list(
     ),
 ) -> Response[PublicAnswerDates]:
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
@@ -86,6 +89,7 @@ async def applet_answer_retrieve(
     session=Depends(session_manager.get_session),
 ) -> Response[ActivityAnswerPublic]:
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
@@ -105,6 +109,7 @@ async def note_add(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(
             applet_id
         )
@@ -122,6 +127,7 @@ async def note_list(
     query_params: QueryParams = Depends(parse_query_params(BaseQueryParams)),
 ) -> ResponseMulti[AnswerNoteDetailPublic]:
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(
             applet_id
         )
@@ -146,6 +152,7 @@ async def note_edit(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(
             applet_id
         )
@@ -163,6 +170,7 @@ async def note_delete(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(
             applet_id
         )
