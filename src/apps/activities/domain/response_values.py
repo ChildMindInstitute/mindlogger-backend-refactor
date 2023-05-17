@@ -79,7 +79,7 @@ class _SingleSelectionValue(PublicModel):
     is_hidden: bool = Field(default=False)
     color: Color | None
     alert: str | None
-    token_value: int | None
+    value: int | None
 
     @validator("image")
     def validate_image(cls, value):
@@ -111,6 +111,8 @@ class MultiSelectionValues(PublicModel):
 
 class SliderValueAlert(PublicModel):
     value: int
+    min_value: int
+    max_value: int
     alert: str
 
 
@@ -220,7 +222,7 @@ class _SingleSelectionDataOption(PublicModel):
     option_id: str
     score: int | None
     alert: str | None
-    token_value: int | None
+    value: int | None
 
 
 class _SingleSelectionDataRow(PublicModel):
