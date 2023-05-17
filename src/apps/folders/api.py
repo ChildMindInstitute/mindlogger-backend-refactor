@@ -21,23 +21,22 @@ __all__ = [
 
 
 async def folder_list(
-    owner_id: uuid.UUID,
+    workspace_id: uuid.UUID,
     user=Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[FolderPublic]:
     async with atomic(session):
         await CheckAccessService(
             session, user.id
-        ).check_workspace_folder_access(owner_id)
-        folders = await FolderService(session, owner_id).list()
-        folder_count = await FolderService(session, owner_id).count()
+        ).check_workspace_folder_access(workspace_id)
+        folders = await FolderService(session, workspace_id, user.id).list()
     return ResponseMulti(
-        result=[FolderPublic.from_orm(f) for f in folders], count=folder_count
+        result=[FolderPublic.from_orm(f) for f in folders], count=len(folders)
     )
 
 
 async def folder_create(
-    owner_id: uuid.UUID,
+    workspace_id: uuid.UUID,
     data: FolderCreate,
     user=Depends(get_current_user),
     session=Depends(session_manager.get_session),
@@ -45,13 +44,15 @@ async def folder_create(
     async with atomic(session):
         await CheckAccessService(
             session, user.id
-        ).check_workspace_folder_access(owner_id)
-        folder = await FolderService(session, owner_id).create(data)
+        ).check_workspace_folder_access(workspace_id)
+        folder = await FolderService(session, workspace_id, user.id).create(
+            data
+        )
     return Response(result=FolderPublic.from_orm(folder))
 
 
 async def folder_update_name(
-    owner_id: uuid.UUID,
+    workspace_id: uuid.UUID,
     folder_id: uuid.UUID,
     data: FolderUpdate,
     user=Depends(get_current_user),
@@ -60,13 +61,15 @@ async def folder_update_name(
     async with atomic(session):
         await CheckAccessService(
             session, user.id
-        ).check_workspace_folder_access(owner_id)
-        folder = await FolderService(session, user.id).update(folder_id, data)
+        ).check_workspace_folder_access(workspace_id)
+        folder = await FolderService(session, workspace_id, user.id).update(
+            folder_id, data
+        )
     return Response(result=FolderPublic.from_orm(folder))
 
 
 async def folder_delete(
-    owner_id: uuid.UUID,
+    workspace_id: uuid.UUID,
     folder_id: uuid.UUID,
     user=Depends(get_current_user),
     session=Depends(session_manager.get_session),
@@ -74,39 +77,41 @@ async def folder_delete(
     async with atomic(session):
         await CheckAccessService(
             session, user.id
-        ).check_workspace_folder_access(owner_id)
-        await FolderService(session, owner_id).delete_by_id(folder_id)
+        ).check_workspace_folder_access(workspace_id)
+        await FolderService(session, workspace_id, user.id).delete_by_id(
+            folder_id
+        )
 
 
 async def folder_pin(
-    owner_id: uuid.UUID,
+    workspace_id: uuid.UUID,
     folder_id: uuid.UUID,
     applet_id: uuid.UUID,
     user=Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
-        await AppletService(session, owner_id).exist_by_id(applet_id)
+        await AppletService(session, workspace_id).exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
-        ).check_workspace_folder_access(owner_id)
-        await FolderService(session, owner_id).pin_applet(
-            id_=folder_id, applet_id=applet_id
+        ).check_workspace_folder_access(workspace_id)
+        await FolderService(session, workspace_id, user.id).pin_applet(
+            folder_id, applet_id
         )
 
 
 async def folder_unpin(
-    owner_id: uuid.UUID,
+    workspace_id: uuid.UUID,
     folder_id: uuid.UUID,
     applet_id: uuid.UUID,
     user=Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
-        await AppletService(session, owner_id).exist_by_id(applet_id)
+        await AppletService(session, workspace_id).exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
-        ).check_workspace_folder_access(owner_id)
-        await FolderService(session, owner_id).unpin_applet(
-            id_=folder_id, applet_id=applet_id
+        ).check_workspace_folder_access(workspace_id)
+        await FolderService(session, workspace_id, user.id).unpin_applet(
+            folder_id, applet_id
         )

@@ -1,6 +1,6 @@
 import uuid
 
-from apps.applets.crud import AppletsCRUD
+from apps.folders.crud import FolderCRUD
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -29,10 +29,11 @@ class TestAppletMoveToFolder(BaseTest):
         response = await self.client.post(self.set_folder_url, data)
         assert response.status_code == 200
 
-        applet = await AppletsCRUD().get_by_id(
-            uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1")
+        folder_id = await FolderCRUD().get_applets_folder_id_in_workspace(
+            uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
-        assert str(applet.folder_id) == "ecf66358-a717-41a7-8027-807374307731"
+        assert str(folder_id) == "ecf66358-a717-41a7-8027-807374307731"
 
     @rollback
     async def test_invalid_applet_move_to_folder(self):
@@ -93,7 +94,8 @@ class TestAppletMoveToFolder(BaseTest):
         response = await self.client.post(self.set_folder_url, data)
         assert response.status_code == 200
 
-        applet = await AppletsCRUD().get_by_id(
-            uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1")
+        folder_id = await FolderCRUD().get_applets_folder_id_in_workspace(
+            uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
-        assert applet.folder_id is None
+        assert folder_id is None

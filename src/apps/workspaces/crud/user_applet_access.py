@@ -44,7 +44,6 @@ __all__ = ["UserAppletAccessCRUD"]
 
 class _UserAppletFilter(Filtering):
     owner_id = FilterField(UserAppletAccessSchema.owner_id)
-    folder_id = FilterField(AppletSchema.folder_id)
     roles = FilterField(UserAppletAccessSchema.role, lookup="in")
 
     def prepare_roles(self, value: str):
@@ -111,7 +110,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return db_result.scalars().all()
 
     async def get_accessible_applets(
-        self, user_id: uuid.UUID, query_params: QueryParams
+        self,
+        user_id: uuid.UUID,
+        query_params: QueryParams,
+        folder_applet_query: Query,
+        folder_id: uuid.UUID | None,
     ) -> list[AppletSchema]:
         query: Query = select(AppletSchema)
         query = query.join(
@@ -120,11 +123,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         )
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
+        if folder_id:
+            query = query.where(AppletSchema.id.in_(folder_applet_query))
+        else:
+            query = query.where(AppletSchema.id.notin_(folder_applet_query))
         query = query.group_by(
             AppletSchema.id,
             AppletSchema.display_name,
             AppletSchema.created_at,
-            AppletSchema.folder_id,
         )
 
         if query_params.filters:
@@ -148,7 +154,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return applets
 
     async def get_accessible_applets_count(
-        self, user_id: uuid.UUID, query_params: QueryParams
+        self,
+        user_id: uuid.UUID,
+        query_params: QueryParams,
+        folder_applet_query: Query,
+        folder_id: uuid.UUID | None,
     ) -> int:
         applet_ids: Query = select(AppletSchema.id)
         applet_ids = applet_ids.join(
@@ -161,11 +171,18 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         applet_ids = applet_ids.where(
             AppletSchema.is_deleted == False  # noqa: E712
         )
+        if folder_id:
+            applet_ids = applet_ids.where(
+                AppletSchema.id.in_(folder_applet_query)
+            )
+        else:
+            applet_ids = applet_ids.where(
+                AppletSchema.id.notin_(folder_applet_query)
+            )
         applet_ids = applet_ids.group_by(
             AppletSchema.id,
             AppletSchema.display_name,
             AppletSchema.created_at,
-            AppletSchema.folder_id,
         )
 
         if query_params.filters:

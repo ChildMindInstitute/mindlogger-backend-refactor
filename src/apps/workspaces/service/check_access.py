@@ -56,7 +56,7 @@ class CheckAccessService:
     async def check_workspace_folder_access(self, owner_id: uuid.UUID):
         has_access = await AppletAccessCRUD(
             self.session
-        ).has_any_roles_for_workspace(owner_id, self.user_id, [Role.OWNER])
+        ).has_any_roles_for_workspace(owner_id, self.user_id, Role.managers())
 
         if not has_access:
             raise WorkspaceFolderManipulationAccessDenied()

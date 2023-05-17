@@ -524,18 +524,29 @@ class AppletService:
     ):
         await AppletsCRUD(self.session).get_by_id(applet_id)
         await self._validate_folder(folder_id)
-        await AppletsCRUD(self.session).set_applets_folder(
-            applet_id, folder_id
+        access = await UserAppletAccessCRUD(self.session).get_applet_owner(
+            applet_id
+        )
+
+        await FolderCRUD(self.session).set_applet_folder(
+            access.user_id, self.user_id, applet_id, folder_id
         )
 
     async def _remove_from_folder(self, applet_id: uuid.UUID):
         await AppletsCRUD(self.session).get_by_id(applet_id)
-        await AppletsCRUD(self.session).set_applets_folder(applet_id, None)
+        access = await UserAppletAccessCRUD(self.session).get_applet_owner(
+            applet_id
+        )
+        await FolderCRUD(self.session).set_applet_folder(
+            access.user_id, self.user_id, applet_id, None
+        )
 
     async def _validate_folder(self, folder_id: uuid.UUID):
         folder = await FolderCRUD(self.session).get_by_id(folder_id)
 
         if folder.creator_id != self.user_id:
+            raise AppletsFolderAccessDenied()
+        if folder.workspace_id != self.user_id:
             raise AppletsFolderAccessDenied()
 
     async def get_unique_name(self, applet_name: AppletName) -> str:

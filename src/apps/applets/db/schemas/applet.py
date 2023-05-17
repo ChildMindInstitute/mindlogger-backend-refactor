@@ -35,7 +35,6 @@ class _BaseAppletSchema:
 class AppletSchema(_BaseAppletSchema, Base):
     __tablename__ = "applets"
 
-    folder_id = Column(ForeignKey("folders.id", ondelete="RESTRICT"))
     encryption = Column(JSONB())
     link = Column(UUID(as_uuid=True), unique=True)
     require_login = Column(Boolean(), default=True)

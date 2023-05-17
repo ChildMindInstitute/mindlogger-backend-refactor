@@ -4,6 +4,7 @@ from collections import defaultdict
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain.applet import AppletSingleLanguageInfo
+from apps.folders.crud import FolderCRUD
 from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
@@ -53,10 +54,16 @@ class UserAccessService:
         self, language: str, query_params: QueryParams
     ) -> list[AppletSingleLanguageInfo]:
         """Returns the user their chosen workspace applets."""
+        folder_id = query_params.filters.pop("folder_id", None)
+        folder_applet_query = FolderCRUD(self.session).get_folder_applets(
+            folder_id
+        )
 
         schemas = await UserAppletAccessCRUD(
             self.session
-        ).get_accessible_applets(self._user_id, query_params)
+        ).get_accessible_applets(
+            self._user_id, query_params, folder_applet_query, folder_id
+        )
 
         theme_ids = [schema.theme_id for schema in schemas if schema.theme_id]
         themes = []
@@ -182,9 +189,16 @@ class UserAccessService:
     async def get_workspace_applets_count(
         self, query_params: QueryParams
     ) -> int:
+        folder_id = query_params.filters.pop("folder_id", None)
+        folder_applet_query = FolderCRUD(self.session).get_folder_applets(
+            folder_id
+        )
+
         count = await UserAppletAccessCRUD(
             self.session
-        ).get_accessible_applets_count(self._user_id, query_params)
+        ).get_accessible_applets_count(
+            self._user_id, query_params, folder_applet_query, folder_id
+        )
         return count
 
     @staticmethod
