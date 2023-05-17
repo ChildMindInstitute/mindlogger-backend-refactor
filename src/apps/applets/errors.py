@@ -8,6 +8,7 @@ __all__ = [
     "AppletLinkNotFoundError",
     "AppletLinkAlreadyExist",
     "InvalidVersionError",
+    "NotValidAppletHistory",
 ]
 
 from apps.shared.exception import (
