@@ -19,7 +19,11 @@ from apps.applets.domain import (
     Role,
 )
 from apps.applets.domain.applet import Applet, AppletDataRetention
-from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
+from apps.applets.domain.applet_create_update import (
+    AppletCreate,
+    AppletReportConfiguration,
+    AppletUpdate,
+)
 from apps.applets.domain.applet_duplicate import AppletDuplicate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
@@ -307,12 +311,6 @@ class AppletService:
                 watermark=update_data.watermark,
                 theme_id=update_data.theme_id,
                 version=self.get_next_version(applet_schema.version),
-                report_server_ip=update_data.report_server_ip,
-                report_public_key=update_data.report_public_key,
-                report_recipients=update_data.report_recipients,
-                report_include_user_id=update_data.report_include_user_id,
-                report_include_case_id=update_data.report_include_case_id,
-                report_email_body=update_data.report_email_body,
             ),
         )
         return AppletFull.from_orm(schema)
@@ -664,6 +662,13 @@ class AppletService:
 
     async def conceal(self, applet_id: uuid.UUID):
         await AppletsCRUD(self.session).conceal_by_id(applet_id)
+
+    async def set_report_configuration(
+        self, applet_id: uuid.UUID, schema: AppletReportConfiguration
+    ):
+        await AppletsCRUD(self.session).set_report_configuration(
+            applet_id, schema
+        )
 
 
 class PublicAppletService:

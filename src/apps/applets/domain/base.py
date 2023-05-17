@@ -7,7 +7,7 @@ from apps.shared.domain import InternalModel
 from apps.shared.enums import Language
 
 
-class AppletReport(BaseModel):
+class AppletReportConfigurationBase(BaseModel):
     report_server_ip: str = ""
     report_public_key: str = ""
     report_recipients: list[str] = Field(default_factory=list)
@@ -37,11 +37,11 @@ class AppletBaseInfo(BaseModel):
     retention_type: str | None
 
 
-class AppletBase(AppletReport, AppletBaseInfo):
+class AppletBase(AppletBaseInfo):
     encryption: Encryption
 
 
-class AppletFetchBase(AppletReport, AppletBaseInfo):
+class AppletFetchBase(AppletReportConfigurationBase, AppletBaseInfo):
     encryption: Encryption | None
     id: uuid.UUID
     version: str

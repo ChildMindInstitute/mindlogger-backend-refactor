@@ -12,6 +12,7 @@ from apps.applets import errors
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import Role
 from apps.applets.domain.applet import AppletDataRetention
+from apps.applets.domain.applet_create_update import AppletReportConfiguration
 from apps.applets.errors import AppletNotFoundError
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
@@ -313,5 +314,21 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
         query = query.values(is_published=False)
+
+        await self._execute(query)
+
+    async def set_report_configuration(
+        self, applet_id: uuid.UUID, schema: AppletReportConfiguration
+    ):
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.values(
+            report_server_ip=schema.report_server_ip,
+            report_public_key=schema.report_public_key,
+            report_recipients=schema.report_recipients,
+            report_include_user_id=schema.report_include_user_id,
+            report_include_case_id=schema.report_include_case_id,
+            report_email_body=schema.report_email_body,
+        )
 
         await self._execute(query)
