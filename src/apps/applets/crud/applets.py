@@ -1,3 +1,4 @@
+import typing
 import uuid
 from datetime import datetime
 from typing import Any
@@ -107,6 +108,16 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     async def get_by_id(self, id_: uuid.UUID) -> AppletSchema:
         instance = await self._fetch(key="id", value=id_)
         return instance
+
+    async def get_by_ids(
+        self, ids: typing.Iterable[uuid.UUID]
+    ) -> list[AppletSchema]:
+        query: Query = select(AppletSchema)
+        query = query.where(AppletSchema.id.in_(ids))
+
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
 
     async def clear_encryption(self, applet_id: uuid.UUID):
         query: Query = update(AppletSchema)

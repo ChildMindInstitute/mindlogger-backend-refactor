@@ -97,6 +97,19 @@ class _AppletUsersSearch(Searching):
 class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     schema_class = UserAppletAccessSchema
 
+    async def get_accesses_by_user_id_in_workspace(
+        self, user_id: uuid.UUID, owner_id: uuid.UUID, roles=None
+    ) -> list[UserAppletAccess]:
+        if roles is None:
+            roles = Role.as_list()
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        query = query.where(UserAppletAccessSchema.role.in_(roles))
+
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
     async def get_accessible_applets(
         self, user_id: uuid.UUID, query_params: QueryParams
     ) -> list[AppletSchema]:
@@ -800,3 +813,17 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().first()
+
+    async def remove_manager_accesses_by_user_id_in_workspace(
+        self, owner_id: uuid.UUID, user_id: uuid.UUID
+    ):
+        query: Query = delete(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(
+            UserAppletAccessSchema.role.in_(
+                [Role.MANAGER, Role.COORDINATOR, Role.EDITOR, Role.REVIEWER]
+            )
+        )
+
+        await self._execute(query)

@@ -1,19 +1,24 @@
 import uuid
+from collections import defaultdict
 
 from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
-from apps.applets.crud import UserAppletAccessCRUD
+from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain.applet import AppletSingleLanguageInfo
 from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
+    ManagerAccesses,
+    ManagerAppletAccess,
     PublicRespondentAppletAccess,
     RemoveManagerAccess,
     RemoveRespondentAccess,
 )
 from apps.workspaces.domain.workspace import UserWorkspace
 from apps.workspaces.errors import (
+    AccessDeniedToUpdateOwnAccesses,
     AppletAccessDenied,
     RemoveOwnPermissionAccessDenied,
     UserAppletAccessesDenied,
@@ -262,3 +267,80 @@ class UserAccessService:
         ).get_applets_roles_by_priority(applet_ids, self._user_id)
 
         return applet_role_map
+
+    async def get_manager_accesses(
+        self, owner_id: uuid.UUID, user_id: uuid.UUID
+    ) -> list[ManagerAppletAccess]:
+        accesses = await UserAppletAccessCRUD(
+            self.session
+        ).get_accesses_by_user_id_in_workspace(
+            user_id, owner_id, Role.managers()
+        )
+
+        applet_ids = set()
+        applet_id_role_map = defaultdict(list)
+
+        for access in accesses:
+            applet_ids.add(access.applet_id)
+            applet_id_role_map[access.applet_id].append(access.role)
+
+        applets = await AppletsCRUD(self.session).get_by_ids(applet_ids)
+        applet_accesses = []
+
+        for applet in applets:
+            applet_accesses.append(
+                ManagerAppletAccess(
+                    applet_id=applet.id,
+                    applet_name=applet.display_name,
+                    applet_image=applet.image,
+                    roles=applet_id_role_map[applet.id],
+                )
+            )
+
+        return applet_accesses
+
+    async def set(
+        self,
+        owner_id: uuid.UUID,
+        manager_id: uuid.UUID,
+        access_data: ManagerAccesses,
+    ):
+        if manager_id == self._user_id:
+            raise AccessDeniedToUpdateOwnAccesses()
+        schemas = []
+        for access in access_data.accesses:
+            try:
+                access.roles.remove(Role.OWNER)
+            except ValueError:
+                pass
+            try:
+                access.roles.remove(Role.RESPONDENT)
+            except ValueError:
+                pass
+            if Role.MANAGER in access.roles:
+                schemas.append(
+                    UserAppletAccessSchema(
+                        user_id=manager_id,
+                        role=Role.MANAGER,
+                        applet_id=access.applet_id,
+                        owner_id=owner_id,
+                        invitor_id=self._user_id,
+                    )
+                )
+            else:
+                for role in access.roles:
+                    schemas.append(
+                        UserAppletAccessSchema(
+                            user_id=manager_id,
+                            role=role,
+                            applet_id=access.applet_id,
+                            owner_id=owner_id,
+                            invitor_id=self._user_id,
+                        )
+                    )
+
+        await UserAppletAccessCRUD(
+            self.session
+        ).remove_manager_accesses_by_user_id_in_workspace(owner_id, manager_id)
+
+        await UserAppletAccessCRUD(self.session).create_many(schemas)
