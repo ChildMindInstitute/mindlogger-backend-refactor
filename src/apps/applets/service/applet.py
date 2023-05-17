@@ -34,9 +34,7 @@ from apps.applets.errors import (
 from apps.applets.service.applet_history_service import AppletHistoryService
 from apps.folders.crud import FolderCRUD
 from apps.themes.service import ThemeService
-from apps.workspaces.errors import (
-    AppletEncryptionUpdateDenied,
-)
+from apps.workspaces.errors import AppletEncryptionUpdateDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from config import settings
 
@@ -410,6 +408,7 @@ class AppletService:
             updated_at=schema.updated_at,
             retention_period=schema.retention_period,
             retention_type=schema.retention_type,
+            is_published=schema.is_published,
         )
 
         applet.activities = await ActivityService(
@@ -659,6 +658,12 @@ class AppletService:
             applet_id
         )
         return applet
+
+    async def publish(self, applet_id: uuid.UUID):
+        await AppletsCRUD(self.session).publish_by_id(applet_id)
+
+    async def conceal(self, applet_id: uuid.UUID):
+        await AppletsCRUD(self.session).conceal_by_id(applet_id)
 
 
 class PublicAppletService:

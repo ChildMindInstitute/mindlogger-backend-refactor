@@ -13,6 +13,7 @@ from apps.workspaces.errors import (
     AppletEditionAccessDenied,
     AppletInviteAccessDenied,
     AppletSetScheduleAccessDenied,
+    PublishConcealAccessDenied,
     TransferOwnershipAccessDenied,
     WorkspaceAccessDenied,
     WorkspaceFolderManipulationAccessDenied,
@@ -148,3 +149,11 @@ class CheckAccessService:
 
         if not has_access:
             raise TransferOwnershipAccessDenied()
+
+    async def check_publish_conceal_access(self, applet_id: uuid.UUID):
+        has_access = await AppletAccessCRUD(self.session).has_role(
+            applet_id, self.user_id, Role.OWNER
+        )
+
+        if not has_access:
+            raise PublishConcealAccessDenied()

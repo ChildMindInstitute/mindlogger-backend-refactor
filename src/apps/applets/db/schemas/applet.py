@@ -42,6 +42,7 @@ class AppletSchema(_BaseAppletSchema, Base):
     pinned_at = Column(DateTime(), nullable=True)
     retention_period = Column(Integer(), nullable=True)
     retention_type = Column(String(20), nullable=True)
+    is_published = Column(Boolean(), default=False)
 
 
 class AppletHistorySchema(_BaseAppletSchema, Base):
