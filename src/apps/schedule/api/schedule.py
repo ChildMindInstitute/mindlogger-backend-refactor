@@ -3,6 +3,7 @@ from copy import deepcopy
 
 from fastapi import Body, Depends
 
+from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.schedule.domain.schedule.filters import EventQueryParams
 from apps.schedule.domain.schedule.public import (
@@ -29,6 +30,7 @@ async def schedule_create(
 ) -> Response[PublicEvent]:
     """Create a new event for an applet."""
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -46,6 +48,7 @@ async def schedule_get_by_id(
 ) -> Response[PublicEvent]:
     """Get a schedule by id."""
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         schedule = await ScheduleService(session).get_schedule_by_id(
             applet_id=applet_id, schedule_id=schedule_id
         )
@@ -62,6 +65,7 @@ async def schedule_get_all(
     will return only individual events for that respondent. If respondentId
     is not provided, it will return only general events for the applet."""
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         schedules = await ScheduleService(session).get_all_schedules(
             applet_id, deepcopy(query_params)
         )
@@ -89,6 +93,7 @@ async def schedule_delete_all(
 ):
     """Delete all schedules for an applet."""
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -103,6 +108,7 @@ async def schedule_delete_by_id(
 ):
     """Delete a schedule by id."""
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -120,6 +126,7 @@ async def schedule_update(
 ) -> Response[PublicEvent]:
     """Update a schedule by id."""
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -136,6 +143,7 @@ async def schedule_count(
 ) -> Response[PublicEventCount]:
     """Get the count of schedules for an applet."""
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         count: PublicEventCount = await ScheduleService(
             session
         ).count_schedules(applet_id)
@@ -150,6 +158,7 @@ async def schedule_delete_by_user(
 ):
     """Delete all schedules for a respondent and create default ones."""
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -180,6 +189,7 @@ async def schedule_get_by_user(
 ) -> Response[PublicEventByUser]:
     """Get all schedules for a respondent per applet id."""
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         schedules = await ScheduleService(
             session
         ).get_events_by_user_and_applet(user_id=user.id, applet_id=applet_id)
@@ -194,6 +204,7 @@ async def schedule_remove_individual_calendar(
 ):
     """Remove individual calendar for a respondent."""
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -212,6 +223,7 @@ async def schedule_import(
 ) -> ResponseMulti[PublicEvent]:
     """Create a new event for an applet."""
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         schedules = await ScheduleService(session).import_schedule(
             schemas, applet_id
         )

@@ -52,19 +52,19 @@ class AnswerService:
             await self._create_anonymous_answer(activity_answer)
 
     async def _create_respondent_answer(
-        self, activity_answer: AppletAnswerCreate
+            self, activity_answer: AppletAnswerCreate
     ):
         await self._validate_respondent_answer(activity_answer)
         await self._create_answer(activity_answer)
 
     async def _create_anonymous_answer(
-        self, activity_answer: AppletAnswerCreate
+            self, activity_answer: AppletAnswerCreate
     ):
         await self._validate_anonymous_answer(activity_answer)
         await self._create_answer(activity_answer)
 
     async def _validate_respondent_answer(
-        self, activity_answer: AppletAnswerCreate
+            self, activity_answer: AppletAnswerCreate
     ):
         await self._validate_answer(activity_answer)
         await self._validate_applet_for_user_response(
@@ -72,7 +72,7 @@ class AnswerService:
         )
 
     async def _validate_anonymous_answer(
-        self, activity_answer: AppletAnswerCreate
+            self, activity_answer: AppletAnswerCreate
     ):
         await self._validate_applet_for_anonymous_response(
             activity_answer.applet_id, activity_answer.version
@@ -96,7 +96,7 @@ class AnswerService:
         ).get_by_id(activity_answer.activity_id)
 
     async def _validate_applet_for_anonymous_response(
-        self, applet_id: uuid.UUID, version: str
+            self, applet_id: uuid.UUID, version: str
     ):
         await AppletHistoryService(self.session, applet_id, version).get()
         # TODO: validate applet for anonymous answer
@@ -213,10 +213,10 @@ class AnswerService:
             )
 
     async def applet_activities(
-        self,
-        applet_id: uuid.UUID,
-        respondent_id: uuid.UUID,
-        created_date: datetime.date,
+            self,
+            applet_id: uuid.UUID,
+            respondent_id: uuid.UUID,
+            created_date: datetime.date,
     ) -> list[AnsweredAppletActivity]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
         answers = await AnswersCRUD(
@@ -253,11 +253,11 @@ class AnswerService:
         return list(activity_map.values())
 
     async def get_applet_submit_dates(
-        self,
-        applet_id: uuid.UUID,
-        respondent_id: uuid.UUID,
-        from_date: datetime.date,
-        to_date: datetime.date,
+            self,
+            applet_id: uuid.UUID,
+            respondent_id: uuid.UUID,
+            from_date: datetime.date,
+            to_date: datetime.date,
     ) -> list[datetime.date]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
         return await AnswersCRUD(self.session).get_respondents_submit_dates(
@@ -265,7 +265,7 @@ class AnswerService:
         )
 
     async def _validate_applet_activity_access(
-        self, applet_id: uuid.UUID, respondent_id: uuid.UUID
+            self, applet_id: uuid.UUID, respondent_id: uuid.UUID
     ):
         assert self.user_id, "User id is required"
         await AppletsCRUD(self.session).get_by_id(applet_id)
@@ -282,7 +282,7 @@ class AnswerService:
                 raise AnswerAccessDeniedError()
 
     async def get_by_id(
-        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+            self, applet_id: uuid.UUID, answer_id: uuid.UUID
     ) -> ActivityAnswer:
         await self._validate_answer_access(applet_id, answer_id)
         item_answers = await AnswerActivityItemsCRUD(
@@ -325,7 +325,7 @@ class AnswerService:
         return answer
 
     async def _validate_answer_access(
-        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+            self, applet_id: uuid.UUID, answer_id: uuid.UUID
     ):
         answer_schema = await AnswersCRUD(self.session).get_by_id(answer_id)
         await self._validate_applet_activity_access(
@@ -333,7 +333,7 @@ class AnswerService:
         )
 
     async def add_note(
-        self, applet_id: uuid.UUID, answer_id: uuid.UUID, note: str
+            self, applet_id: uuid.UUID, answer_id: uuid.UUID, note: str
     ):
         await self._validate_answer_access(applet_id, answer_id)
         schema = AnswerNoteSchema(
@@ -342,10 +342,10 @@ class AnswerService:
         await AnswerNotesCRUD(self.session).save(schema)
 
     async def get_note_list(
-        self,
-        applet_id: uuid.UUID,
-        answer_id: uuid.UUID,
-        query_params: QueryParams,
+            self,
+            applet_id: uuid.UUID,
+            answer_id: uuid.UUID,
+            query_params: QueryParams,
     ) -> list[AnswerNoteDetail]:
         await self._validate_answer_access(applet_id, answer_id)
         notes = await AnswerNotesCRUD(self.session).get_by_answer_id(
@@ -354,26 +354,27 @@ class AnswerService:
         return notes
 
     async def get_notes_count(
-        self,
-        answer_id: uuid.UUID,
+            self,
+            answer_id: uuid.UUID,
     ) -> int:
         return await AnswerNotesCRUD(self.session).get_count_by_answer_id(
             answer_id
         )
 
     async def edit_note(
-        self,
-        applet_id: uuid.UUID,
-        answer_id: uuid.UUID,
-        note_id: uuid.UUID,
-        note: str,
+            self,
+            applet_id: uuid.UUID,
+            answer_id: uuid.UUID,
+            note_id: uuid.UUID,
+            note: str,
     ):
         await self._validate_answer_access(applet_id, answer_id)
         await self._validate_note_access(note_id)
         await AnswerNotesCRUD(self.session).update_note_by_id(note_id, note)
 
     async def delete_note(
-        self, applet_id: uuid.UUID, answer_id: uuid.UUID, note_id: uuid.UUID
+            self, applet_id: uuid.UUID, answer_id: uuid.UUID,
+            note_id: uuid.UUID
     ):
         await self._validate_answer_access(applet_id, answer_id)
         await self._validate_note_access(note_id)

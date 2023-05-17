@@ -89,12 +89,14 @@ async def applet_retrieve(
     session=Depends(session_manager.get_session),
 ) -> Response[AppletSingleLanguageDetailPublic]:
     async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(
             applet_id
         )
-        applet = await AppletService(
-            session, user.id
-        ).get_single_language_by_id(applet_id, language)
+        applet = await service.get_single_language_by_id(
+            applet_id, language
+        )
     return Response(result=AppletSingleLanguageDetailPublic.from_orm(applet))
 
 
@@ -104,9 +106,11 @@ async def applet_retrieve_by_key(
     session=Depends(session_manager.get_session),
 ) -> Response[AppletSingleLanguageDetailForPublic]:
     async with atomic(session):
-        applet = await AppletService(
+        service = AppletService(
             session, uuid.UUID("00000000-0000-0000-0000-000000000000")
-        ).get_single_language_by_key(key, language)
+        )
+        await service.exist_by_key(key)
+        applet = await service.get_single_language_by_key(key, language)
     return Response(
         result=AppletSingleLanguageDetailForPublic.from_orm(applet)
     )
@@ -163,12 +167,12 @@ async def applet_update(
 ) -> Response[public_detail.Applet]:
     # mail_service = MailingService()
     async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_edit_access(
             applet_id
         )
-        applet = await AppletService(session, user.id).update(
-            applet_id, schema
-        )
+        applet = await service.update(applet_id, schema)
         # await mail_service.send(
         #     MessageSchema(
         #         recipients=[user.email],
@@ -190,12 +194,12 @@ async def applet_encryption_update(
     session=Depends(session_manager.get_session),
 ) -> Response[public_detail.Encryption]:
     async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_edit_access(
             applet_id
         )
-        await AppletService(session, user.id).update_encryption(
-            applet_id, schema
-        )
+        await service.update_encryption(applet_id, schema)
     return Response(result=public_detail.Encryption.from_orm(schema))
 
 
@@ -207,10 +211,11 @@ async def applet_duplicate(
 ) -> Response[public_detail.Applet]:
     mail_service = MailingService()
     async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_duplicate_access(applet_id)
-        service = AppletService(session, user.id)
         applet_for_duplicate = await service.get_by_id_for_duplicate(applet_id)
 
         applet = await service.duplicate(
@@ -255,6 +260,7 @@ async def applet_version_retrieve(
     session=Depends(session_manager.get_session),
 ) -> Response[public_history_detail.AppletDetailHistory]:
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(
             applet_id
         )
@@ -271,6 +277,7 @@ async def applet_version_changes_retrieve(
     session=Depends(session_manager.get_session),
 ) -> Response[PublicAppletHistoryChange]:
     async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(
             applet_id
         )
@@ -371,9 +378,9 @@ async def applet_set_data_retention(
     session=Depends(session_manager.get_session),
 ):
     async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_retention_access(applet_id)
-        await AppletService(session, user.id).set_data_retention(
-            applet_id=applet_id, data_retention=schema
-        )
+        await service.set_data_retention(applet_id, schema)

@@ -65,6 +65,13 @@ class AppletService:
         if not exists:
             raise AppletNotFoundError(key="id", value=str(applet_id))
 
+    async def exist_by_key(self, applet_id: uuid.UUID):
+        exists = await AppletsCRUD(self.session).exist_by_key(
+            "link", applet_id
+        )
+        if not exists:
+            raise AppletNotFoundError(key="link", value=str(applet_id))
+
     async def _create_applet_accesses(
         self, applet_id: uuid.UUID, manager_id: uuid.UUID | None
     ):
@@ -644,7 +651,8 @@ class AppletService:
         )
 
     async def get_full_applet(self, applet_id: uuid.UUID) -> AppletFull:
-        applet = await self._validate_get_full_applet(applet_id)
+        schema = await AppletsCRUD(self.session).get_by_id(applet_id)
+        applet = AppletFull.from_orm(schema)
         applet.activities = await ActivityService(
             self.session, self.user_id
         ).get_full_activities(applet_id)
@@ -652,18 +660,6 @@ class AppletService:
             applet_id
         )
         return applet
-
-    async def _validate_get_full_applet(
-        self, applet_id: uuid.UUID
-    ) -> AppletFull:
-        # TODO: remove
-        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
-        role = await UserAppletAccessService(
-            self.session, self.user_id, applet_id
-        ).get_editors_role()
-        if not role:
-            raise AppletAccessDenied()
-        return AppletFull.from_orm(applet)
 
 
 class PublicAppletService:
