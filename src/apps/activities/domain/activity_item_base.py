@@ -163,7 +163,7 @@ class BaseActivityItem(BaseModel):
             ResponseType.MULTISELECTROWS,
         ]:
             # if add_scores is True in config, then score must be provided in each option of each row of response_values  # noqa: E501
-            if config.add_scores:
+            if config.add_scores or config.add_tokens:
                 if response_values.data_matrix is None:
                     raise DataMatrixRequiredError()
 

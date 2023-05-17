@@ -44,6 +44,7 @@ class SingleSelectionConfig(_ScreenConfig, PublicModel):
     set_alerts: bool
     add_tooltip: bool
     set_palette: bool
+    add_tokens: bool | None
     additional_response_option: AdditionalResponseOption
 
 
@@ -117,6 +118,7 @@ class SingleSelectionRowsConfig(_ScreenConfig, PublicModel):
     add_scores: bool
     set_alerts: bool
     add_tooltip: bool
+    add_tokens: bool | None
 
 
 class MultiSelectionRowsConfig(SingleSelectionRowsConfig, PublicModel):

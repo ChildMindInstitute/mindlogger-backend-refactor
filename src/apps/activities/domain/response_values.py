@@ -78,6 +78,8 @@ class _SingleSelectionValue(PublicModel):
     tooltip: str | None
     is_hidden: bool = Field(default=False)
     color: Color | None
+    alert: str | None
+    token_value: int | None
 
     @validator("image")
     def validate_image(cls, value):
@@ -107,6 +109,11 @@ class MultiSelectionValues(PublicModel):
     options: list[_SingleSelectionValue]
 
 
+class SliderValueAlert(PublicModel):
+    value: int
+    alert: str
+
+
 class SliderValues(PublicModel):
     min_label: str | None = Field(..., max_length=20)
     max_label: str | None = Field(..., max_length=20)
@@ -115,6 +122,7 @@ class SliderValues(PublicModel):
     min_image: str | None
     max_image: str | None
     scores: list[int] | None
+    alerts: list[SliderValueAlert] | None
 
     @validator("min_image", "max_image")
     def validate_image(cls, value):
@@ -212,6 +220,7 @@ class _SingleSelectionDataOption(PublicModel):
     option_id: str
     score: int | None
     alert: str | None
+    token_value: int | None
 
 
 class _SingleSelectionDataRow(PublicModel):
