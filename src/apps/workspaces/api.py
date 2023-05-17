@@ -21,6 +21,7 @@ from apps.workspaces.domain.user_applet_access import (
     PublicRespondentAppletAccess,
     RemoveManagerAccess,
     RemoveRespondentAccess,
+    ManagerAccesses,
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
@@ -262,6 +263,10 @@ async def workspace_managers_applet_access_list(
 ) -> ResponseMulti[PublicManagerAppletAccess]:
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+        await CheckAccessService(
+            session, user.id
+        ).check_workspace_manager_accesses_access(owner_id)
+
         service = UserAccessService(session, user.id)
         accesses = await service.get_manager_accesses(owner_id, manager_id)
 
@@ -271,3 +276,21 @@ async def workspace_managers_applet_access_list(
         ],
         count=len(accesses),
     )
+
+
+async def workspace_managers_applet_access_set(
+    owner_id: uuid.UUID,
+    manager_id: uuid.UUID,
+    accesses: ManagerAccesses = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+):
+    async with atomic(session):
+        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+        await CheckAccessService(
+            session, user.id
+        ).check_workspace_manager_accesses_access(owner_id)
+
+        await UserAccessService(
+            session, user.id
+        ).set(owner_id, manager_id, accesses)

@@ -7,19 +7,21 @@ from apps.applets.domain.applet import AppletSingleLanguageInfo
 from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
     ManagerAppletAccess,
     PublicRespondentAppletAccess,
     RemoveManagerAccess,
     RemoveRespondentAccess,
+    ManagerAccesses,
 )
 from apps.workspaces.domain.workspace import UserWorkspace
 from apps.workspaces.errors import (
     AppletAccessDenied,
     RemoveOwnPermissionAccessDenied,
     UserAppletAccessesDenied,
-    WorkspaceDoesNotExistError,
+    WorkspaceDoesNotExistError, AccessDeniedToUpdateOwnAccesses,
 )
 
 __all__ = ["UserAccessService"]
@@ -295,3 +297,49 @@ class UserAccessService:
             )
 
         return applet_accesses
+
+    async def set(
+        self,
+        owner_id: uuid.UUID,
+        manager_id: uuid.UUID,
+        access_data: ManagerAccesses,
+    ):
+        if manager_id == self._user_id:
+            raise AccessDeniedToUpdateOwnAccesses()
+        schemas = []
+        for access in access_data.accesses:
+            try:
+                access.roles.remove(Role.OWNER)
+            except ValueError:
+                pass
+            try:
+                access.roles.remove(Role.RESPONDENT)
+            except ValueError:
+                pass
+            if Role.MANAGER in access.roles:
+                schemas.append(
+                    UserAppletAccessSchema(
+                        user_id=manager_id,
+                        role=Role.MANAGER,
+                        applet_id=access.applet_id,
+                        owner_id=owner_id,
+                        invitor_id=self._user_id,
+                    )
+                )
+            else:
+                for role in access.roles:
+                    schemas.append(
+                        UserAppletAccessSchema(
+                            user_id=manager_id,
+                            role=role,
+                            applet_id=access.applet_id,
+                            owner_id=owner_id,
+                            invitor_id=self._user_id,
+                        )
+                    )
+
+        await UserAppletAccessCRUD(
+            self.session
+        ).remove_manager_accesses_by_user_id_in_workspace(owner_id, manager_id)
+
+        await UserAppletAccessCRUD(self.session).create_many(schemas)

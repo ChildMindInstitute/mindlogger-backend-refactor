@@ -127,3 +127,12 @@ class PublicManagerAppletAccess(PublicModel):
     applet_name: str
     applet_image: str
     roles: list[Role]
+
+
+class ManagerAccess(InternalModel):
+    applet_id: uuid.UUID
+    roles: list[Role]
+
+
+class ManagerAccesses(InternalModel):
+    accesses: list[ManagerAccess]

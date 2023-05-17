@@ -21,7 +21,7 @@ from apps.workspaces.api import (
     workspace_respondents_list,
     workspace_retrieve,
     workspace_users_applet_access_list,
-    workspace_users_pin,
+    workspace_users_pin, workspace_managers_applet_access_set,
 )
 from apps.workspaces.domain.user_applet_access import (
     PublicManagerAppletAccess,
@@ -161,6 +161,15 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_managers_applet_access_list)
+
+router.post(
+    "/{owner_id}/managers/{manager_id}/accesses",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_managers_applet_access_set)
 
 # Remove manager access from a specific user
 router.post(

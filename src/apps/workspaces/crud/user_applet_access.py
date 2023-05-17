@@ -813,3 +813,17 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().first()
+
+    async def remove_manager_accesses_by_user_id_in_workspace(
+        self, owner_id: uuid.UUID, user_id: uuid.UUID
+    ):
+        query: Query = delete(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(
+            UserAppletAccessSchema.role.in_(
+                [Role.MANAGER, Role.COORDINATOR, Role.EDITOR, Role.REVIEWER]
+            )
+        )
+
+        await self._execute(query)
