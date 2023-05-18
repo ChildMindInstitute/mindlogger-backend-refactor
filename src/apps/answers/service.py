@@ -30,6 +30,7 @@ from apps.answers.errors import (
     AnswerAccessDeniedError,
     AnswerNoteAccessDeniedError,
     FlowDoesNotHaveActivity,
+    NonPublicAppletError,
     UserDoesNotHavePermissionError,
 )
 from apps.applets.crud import AppletsCRUD
@@ -41,7 +42,7 @@ from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
 class AnswerService:
-    def __init__(self, session, user_id: uuid.UUID | None):
+    def __init__(self, session, user_id: uuid.UUID | None = None):
         self.user_id = user_id
         self.session = session
 
@@ -99,7 +100,10 @@ class AnswerService:
         self, applet_id: uuid.UUID, version: str
     ):
         await AppletHistoryService(self.session, applet_id, version).get()
-        # TODO: validate applet for anonymous answer
+        # Validate applet for anonymous answer
+        schema = await AppletsCRUD(self.session).get_by_id(applet_id)
+        if not schema.link:
+            raise NonPublicAppletError()
 
     async def _validate_applet_for_user_response(self, applet_id: uuid.UUID):
         assert self.user_id

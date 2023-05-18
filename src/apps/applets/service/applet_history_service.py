@@ -100,7 +100,7 @@ class AppletHistoryService:
         return changes
 
     async def get(self) -> AppletHistory:
-        schema = await AppletHistoriesCRUD(self.session).get_by_id(
+        schema = await AppletHistoriesCRUD(self.session).get_by_id_version(
             self._id_version
         )
         if not schema:

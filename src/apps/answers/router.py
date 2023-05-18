@@ -5,6 +5,7 @@ from apps.answers.api import (
     applet_activities_list,
     applet_answer_retrieve,
     applet_submit_date_list,
+    create_anonymous_answer,
     create_answer,
     note_add,
     note_delete,
@@ -25,6 +26,7 @@ from apps.shared.domain import (
 from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE
 
 router = APIRouter(prefix="/answers", tags=["Answers"])
+public_router = APIRouter(prefix="/public/answers", tags=["Answers"])
 
 # Answers for activity item create
 router.post(
@@ -35,6 +37,16 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(create_answer)
+
+# Anonymous Answers for activity item create
+public_router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(create_anonymous_answer)
 
 router.get(
     "/applet/{applet_id}/activities",

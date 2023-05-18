@@ -38,6 +38,15 @@ async def create_answer(
     return
 
 
+async def create_anonymous_answer(
+    schema: AppletAnswerCreate = Body(...),
+    session=Depends(session_manager.get_session),
+) -> None:
+    async with atomic(session):
+        await AnswerService(session).create_answer(schema)
+    return
+
+
 async def applet_activities_list(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),

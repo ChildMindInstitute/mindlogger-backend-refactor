@@ -10,7 +10,7 @@ class CORSMiddleware(_CORSMiddleware):
 
 
 cors_options: dict = {
-    "allow_origins": settings.cors.allow_origins,
+    "allow_origins": ["*"],
     "allow_credentials": settings.cors.allow_credentials,
     "allow_methods": settings.cors.allow_methods,
     "allow_headers": settings.cors.allow_headers,

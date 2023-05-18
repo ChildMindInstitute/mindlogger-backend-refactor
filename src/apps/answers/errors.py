@@ -27,6 +27,10 @@ class UserDoesNotHavePermissionError(AccessDeniedError):
     message = _("User does not have permission.")
 
 
+class NonPublicAppletError(AccessDeniedError):
+    message = _("Access denied. Applet is not public")
+
+
 class AnswerIsNotFull(ValidationError):
     message = _("Answer is not full.")
 
