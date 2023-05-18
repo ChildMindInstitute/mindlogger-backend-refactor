@@ -1,6 +1,5 @@
 import typing
 import uuid
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy import distinct, or_, select, update
@@ -222,28 +221,6 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.values(is_deleted=True)
         await self._execute(query)
 
-    async def check_folder(self, folder_id: uuid.UUID) -> bool:
-        """
-        Checks whether folder has applets
-        """
-        query: Query = select(AppletSchema.id)
-        query = query.where(AppletSchema.folder_id == folder_id)
-        query = query.limit(1)
-        query = query.exists()
-        db_result = await self._execute(select(query))
-        return db_result.scalars().first()
-
-    async def set_applets_folder(
-        self, applet_id: uuid.UUID, folder_id: uuid.UUID | None
-    ) -> AppletSchema:
-        query = update(AppletSchema)
-        query = query.values(folder_id=folder_id)
-        query = query.where(AppletSchema.id == applet_id)
-        query = query.returning(self.schema_class)
-        db_result = await self._execute(query)
-
-        return db_result.scalars().one_or_none()
-
     async def get_name_duplicates(
         self,
         user_id: uuid.UUID,
@@ -287,20 +264,6 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
         query = query.values(link=None, require_login=None)
-        await self._execute(query)
-
-    async def pin(self, applet_id: uuid.UUID, folder_id: uuid.UUID):
-        query: Query = update(AppletSchema)
-        query = query.where(AppletSchema.id == applet_id)
-        query = query.where(AppletSchema.folder_id == folder_id)
-        query = query.values(pinned_at=datetime.now())
-        await self._execute(query)
-
-    async def unpin(self, applet_id: uuid.UUID, folder_id: uuid.UUID):
-        query: Query = update(AppletSchema)
-        query = query.where(AppletSchema.id == applet_id)
-        query = query.where(AppletSchema.folder_id == folder_id)
-        query = query.values(pinned_at=None)
         await self._execute(query)
 
     async def set_data_retention(

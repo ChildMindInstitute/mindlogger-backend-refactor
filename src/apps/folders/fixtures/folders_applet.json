@@ -1,29 +1,14 @@
 [
   {
-    "table": "applets",
+    "table": "folder_applets",
     "fields": {
       "id": "190eb023-a610-403b-8d8e-b02c158c6f51",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "display_name": "Applet 1",
-      "description": {
-        "en": "Patient Health Questionnaire"
-      },
-      "about": {
-        "en": "Patient Health Questionnaire"
-      },
-      "image": "",
-      "watermark": "",
-      "theme_id": null,
-      "version": "1.0.0",
       "folder_id": "ecf66358-a717-41a7-8027-807374307732",
-      "report_server_ip": "",
-      "report_public_key": "",
-      "report_recipients": [],
-      "report_include_user_id": false,
-      "report_include_case_id": false,
-      "report_email_body": ""
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
+      "pinned_at": null
     }
   }
 ]

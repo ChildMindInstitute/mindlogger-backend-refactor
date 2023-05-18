@@ -157,7 +157,7 @@ class TestFolder(BaseTest):
         response = await self.client.post(
             self.pin_url.format(
                 id="ecf66358-a717-41a7-8027-807374307732",
-                applet_id="190eb023-a610-403b-8d8e-b02c158c6f51",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             )
         )
 
@@ -172,7 +172,7 @@ class TestFolder(BaseTest):
         response = await self.client.delete(
             self.pin_url.format(
                 id="ecf66358-a717-41a7-8027-807374307732",
-                applet_id="190eb023-a610-403b-8d8e-b02c158c6f51",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             )
         )
 

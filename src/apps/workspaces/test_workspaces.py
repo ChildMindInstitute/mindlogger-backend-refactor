@@ -1,3 +1,4 @@
+import uuid
 from uuid import uuid4
 
 from apps.shared.test import BaseTest
@@ -22,6 +23,7 @@ class TestWorkspaces(BaseTest):
         "schedule/fixtures/activity_events.json",
         "schedule/fixtures/flow_events.json",
         "schedule/fixtures/user_events.json",
+        "folders/fixtures/folders_applet.json",
     ]
 
     login_url = "/auth/login"
@@ -119,6 +121,29 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["role"] == Role.OWNER
+
+    @rollback
+    async def test_workspace_applets_list_by_folder_id_filter(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.workspace_applets_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+        )
+        assert response.status_code == 200
+        assert response.json()["count"] == 2
+
+        response = await self.client.get(
+            self.workspace_applets_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            dict(folderId=uuid.uuid4()),
+        )
+        assert response.status_code == 200
+        assert response.json()["count"] == 0
 
     @rollback
     async def test_workspace_applets_detail(self):

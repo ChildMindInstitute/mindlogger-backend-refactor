@@ -18,7 +18,7 @@ from apps.shared.domain.response import (
 )
 
 router = APIRouter(
-    prefix="/workspaces/{owner_id}/folders", tags=["Workspace folders"]
+    prefix="/workspaces/{workspace_id}/folders", tags=["Workspace folders"]
 )
 
 router.get(
