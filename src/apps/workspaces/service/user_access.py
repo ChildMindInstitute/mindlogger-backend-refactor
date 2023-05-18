@@ -56,7 +56,7 @@ class UserAccessService:
         """Returns the user their chosen workspace applets."""
         folder_id = query_params.filters.pop("folder_id", None)
         folder_applet_query = FolderCRUD(self.session).get_folder_applets(
-            folder_id
+            folder_id, self._user_id
         )
 
         schemas = await UserAppletAccessCRUD(
@@ -191,7 +191,7 @@ class UserAccessService:
     ) -> int:
         folder_id = query_params.filters.pop("folder_id", None)
         folder_applet_query = FolderCRUD(self.session).get_folder_applets(
-            folder_id
+            folder_id, self._user_id
         )
 
         count = await UserAppletAccessCRUD(

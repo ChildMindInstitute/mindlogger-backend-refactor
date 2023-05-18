@@ -133,8 +133,14 @@ class FolderCRUD(BaseCRUD):
             FolderAppletSchema(folder_id=folder_id, applet_id=applet_id)
         )
 
-    def get_folder_applets(self, folder_id: uuid.UUID | None) -> Query:
+    def get_folder_applets(
+        self, folder_id: uuid.UUID | None, creator_id: uuid.UUID
+    ) -> Query:
         query: Query = select(FolderAppletSchema.applet_id)
+        query = query.join(
+            FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
+        )
+        query = query.where(FolderSchema.creator_id == creator_id)
         if folder_id is None:
             return query
         query = query.where(FolderAppletSchema.folder_id == folder_id)
