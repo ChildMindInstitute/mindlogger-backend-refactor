@@ -1,3 +1,4 @@
+import re
 from abc import (
     ABC,
     abstractmethod,
@@ -40,5 +41,18 @@ class BaseModelExport(ABC, ContextResolverAwareMixin):
         ...
 
     @abstractmethod
-    async def export(self, model: InternalModel) -> dict:
+    async def export(self, model: InternalModel, expand: bool = False) -> dict:
         ...
+
+    async def _post_process(self, doc: dict, expand: bool):
+        if expand:
+            expanded = await self._expand(doc)
+            return expanded[0]
+        return doc
+
+    @classmethod
+    def str_to_id(cls, name: str) -> str:
+        name = re.sub(r"[^0-9a-zA-Z\s_-]+", "", name)
+        name = re.sub(r"[\s_-]+", "_", name)
+
+        return name

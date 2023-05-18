@@ -11,10 +11,10 @@ class ActivityFlowExport(BaseModelExport):
     def supports(cls, model: InternalModel) -> bool:
         return isinstance(model, FlowFull)
 
-    async def export(self, model: FlowFull) -> dict:
+    async def export(self, model: FlowFull, expand: bool = False) -> dict:
         doc = {
             LdKeyword.context: self.context,
-            LdKeyword.id: f"_:{model.id}",
+            LdKeyword.id: f"_:{self.str_to_id(model.name)}",
             LdKeyword.type: "reproschema:ActivityFlow",
             "skos:prefLabel": model.name,
             "skos:altLabel": model.name,
@@ -25,12 +25,10 @@ class ActivityFlowExport(BaseModelExport):
             "ui": self._build_ui_prop(model),
         }
 
-        expanded = await self._expand(doc)
-
-        return expanded[0]
+        return await self._post_process(doc, expand)
 
     def _build_ui_prop(self, model: FlowFull) -> dict:
-        order = [f"_:{item.activity_id}" for item in model.items]
+        order = [f"_:{item.activity_id}" for item in model.items]  # TODO load activity with ld_id
         return {
             "order": order,
         }

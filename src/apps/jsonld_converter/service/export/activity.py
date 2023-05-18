@@ -11,6 +11,7 @@ from apps.jsonld_converter.service.export import (
     ActivityItemMessageExport,
     ActivityItemNumberExport,
     ActivityItemDateExport,
+    ActivityItemTimeExport,
     ActivityItemTimeRangeExport,
     ActivityItemGeolocationExport,
     ActivityItemAudioExport,
@@ -43,6 +44,7 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             ActivityItemMessageExport,
             ActivityItemNumberExport,
             ActivityItemDateExport,
+            ActivityItemTimeExport,
             ActivityItemTimeRangeExport,
             ActivityItemGeolocationExport,
             ActivityItemAudioExport,
@@ -52,11 +54,11 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             ActivityItemAudioPlayerExport,
         ]
 
-    async def export(self, model: ActivityFull) -> dict:
+    async def export(self, model: ActivityFull, expand: bool = False) -> dict:
         ui = await self._build_ui_prop(model)
         doc = {
             LdKeyword.context: self.context,
-            LdKeyword.id: f"_:{model.id}",
+            LdKeyword.id: f"_:{self.str_to_id(model.name)}",  # TODO ensure uniques
             LdKeyword.type: "reproschema:Activity",
             "skos:prefLabel": model.name,
             "skos:altLabel": model.name,
@@ -68,9 +70,7 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             "ui": ui,
         }
 
-        expanded = await self._expand(doc)
-
-        return expanded[0]
+        return await self._post_process(doc, expand)
 
     async def _build_ui_prop(self, model: ActivityFull) -> dict:
         order = []
@@ -78,7 +78,7 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
         if model.items:
             order_cors = []
             for i, item in enumerate(model.items):
-                _id = f"_:{item.id}"
+                _id = f"_:{self.str_to_id(item.name)}"  # TODO ensure uniques
                 _var = f"item_{i}"  # TODO load from extra if exists
 
                 processor = self.get_supported_processor(item)

@@ -23,14 +23,14 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
         return [ActivityExport, ActivityFlowExport]
 
-    async def export(self, model: AppletFull) -> dict:
+    async def export(self, model: AppletFull, expand: bool = False) -> dict:
         ui, activity_flows = await asyncio.gather(
             self._build_ui_prop(model),
             self._build_activity_flows_prop(model)
         )
         doc = {
             LdKeyword.context: self.context,
-            LdKeyword.id: f"_:{model.id}",
+            LdKeyword.id: f"_:{self.str_to_id(model.display_name)}",
             LdKeyword.type: "reproschema:Protocol",
             "skos:prefLabel": model.display_name,
             "skos:altLabel": model.display_name,
@@ -45,9 +45,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
             "activityFlows": activity_flows,
         }
 
-        expanded = await self._expand(doc)
-
-        return expanded[0]
+        return await self._post_process(doc, expand)
 
     def _build_about(self, model: AppletFull):
         if model.about:
@@ -66,7 +64,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
         if model.activities:
             order_cors = []
             for i, activity in enumerate(model.activities):
-                _id = f"_:{activity.id}"
+                _id = f"_:{self.str_to_id(activity.name)}"  # TODO ensure uniques
                 _var = f"activity_{i}"  # TODO load from extra if exists
 
                 processor = self.get_supported_processor(activity)
@@ -92,7 +90,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
         if model.activity_flows:
             order_cors = []
             for i, flow in enumerate(model.activity_flows):
-                _id = f"_:{flow.id}"
+                _id = f"_:{self.str_to_id(flow.name)}"  # TODO ensure unique
                 _var = f"flow_{i}"  # TODO load from extra if exists
 
                 processor = self.get_supported_processor(flow)

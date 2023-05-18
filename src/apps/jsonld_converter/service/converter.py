@@ -2,7 +2,6 @@ from typing import Callable, Type
 
 from pyld import ContextResolver  # type: ignore[import]
 
-from apps.jsonld_converter.service.base import ContextResolverAwareMixin
 from apps.jsonld_converter.service.document import (
     ReproActivity,
     ReproFieldAge,
@@ -100,13 +99,13 @@ class ModelJsonLDConverter(ContainsNestedModelMixin):
 
     CONTEXT_TO_COMPACT = "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
 
-    @classmethod
-    def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
-        return [AppletExport]
-
     def __init__(self, context_resolver: ContextResolver, document_loader: Callable):
         self.context_resolver: ContextResolver = context_resolver
         self.document_loader: Callable = document_loader
+
+    @classmethod
+    def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
+        return [AppletExport]
 
     async def convert(self, model, compact=False) -> dict:
         exporter = self.get_supported_processor(model)

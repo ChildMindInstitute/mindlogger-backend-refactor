@@ -25,7 +25,6 @@ from apps.activities.domain.response_values import (
     DrawingValues,
     AudioPlayerValues,
     SliderRowsValues,
-    SliderRowsValue,
 )
 from apps.jsonld_converter.service.base import LdKeyword
 from apps.jsonld_converter.service.export.base import (
@@ -53,7 +52,7 @@ class ActivityItemBaseExport(BaseModelExport):
     def _build_doc(self, model: ActivityItemFull) -> dict:
         doc = {
             LdKeyword.context: self.context,
-            LdKeyword.id: f"_:{model.id}",
+            LdKeyword.id: f"_:{self.str_to_id(model.name)}",
             LdKeyword.type: "reproschema:Field",
             "name": model.name,
             "skos:prefLabel": model.name,
@@ -68,11 +67,10 @@ class ActivityItemBaseExport(BaseModelExport):
 
         return doc
 
-    async def export(self, model: ActivityItemFull) -> dict:
+    async def export(self, model: ActivityItemFull, expand: bool = False) -> dict:
         doc = self._build_doc(model)
-        expanded = await self._expand(doc)
 
-        return expanded[0]
+        return await self._post_process(doc, expand)
 
     def _build_ui_prop(self, model: ActivityItemFull) -> dict:
         return {
@@ -82,8 +80,11 @@ class ActivityItemBaseExport(BaseModelExport):
 
     def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
         allow = []
-        if model.config.remove_back_button:
+        if getattr(model.config, "remove_back_button", False):
             allow.append("disableBack")
+        if getattr(model.config, "skippable_item", False):
+            allow.append("dontKnow")
+
         return allow
 
     def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
@@ -100,15 +101,13 @@ class ActivityItemTextExport(ActivityItemBaseExport):
 
     def _build_doc(self, model: ActivityItemFull) -> dict:
         doc = super()._build_doc(model)
-        if model.config.correct_answer_required and (correct_answer := model.config.correct_answer):
+        if getattr(model.config, "correct_answer_required", False) and (correct_answer := getattr(model.config, "correct_answer", None)):
             doc["correctAnswer"] = correct_answer
 
         return doc
 
     def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
         allow = super()._build_allow_prop(model)
-        if model.config.skippable_item:
-            allow.append("dontKnow")
         return allow
 
     def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
@@ -137,22 +136,17 @@ class ActivityItemSingleSelectExport(ActivityItemBaseExport):
 
     def _build_doc(self, model: ActivityItemFull) -> dict:
         doc = super()._build_doc(model)
-        additional_option = model.config.additional_response_option
+        config: SingleSelectionConfig = model.config
+        additional_option = config.additional_response_option
         if additional_option:
             doc["isOptionalText"] = additional_option.text_input_option
 
-        if model.config.timer:
+        if config.timer:
             doc.update({
-                "timer": model.config.timer * 1000  # set in milliseconds
+                "timer": config.timer * 1000  # set in milliseconds
             })
 
         return doc
-
-    def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
-        allow = super()._build_allow_prop(model)
-        if model.config.skippable_item:
-            allow.append("dontKnow")
-        return allow
 
     def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
         config: SingleSelectionConfig = model.config
@@ -201,6 +195,7 @@ class ActivityItemMultipleSelectExport(ActivityItemSingleSelectExport):
     def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
         options = super()._build_response_options_prop(model)
         options["multipleChoice"] = True
+
         return options
 
 
@@ -242,22 +237,17 @@ class ActivityItemSliderExport(ActivityItemBaseExport, SliderValuesMixin):
 
     def _build_doc(self, model: ActivityItemFull) -> dict:
         doc = super()._build_doc(model)
-        additional_option = model.config.additional_response_option
+        config = model.config
+        additional_option = config.additional_response_option
         if additional_option:
             doc["isOptionalText"] = additional_option.text_input_option
 
-        if model.config.timer:
+        if config.timer:
             doc.update({
                 "timer": model.config.timer * 1000  # set in milliseconds
             })
 
         return doc
-
-    def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
-        allow = super()._build_allow_prop(model)
-        if model.config.skippable_item:
-            allow.append("dontKnow")
-        return allow
 
     def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
         config: SliderConfig = model.config
@@ -304,15 +294,6 @@ class ActivityItemSliderRowsExport(ActivityItemBaseExport, SliderValuesMixin):
             })
 
         return doc
-
-    def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
-        allow = super()._build_allow_prop(model)
-
-        config: SliderRowsConfig = model.config
-        if config.skippable_item:
-            allow.append("dontKnow")
-
-        return allow
 
     def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
         config: SliderRowsConfig = model.config
@@ -376,12 +357,6 @@ class ActivityItemNumberExport(ActivityItemBaseExport):
 
         return doc
 
-    def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
-        allow = super()._build_allow_prop(model)
-        if model.config.skippable_item:
-            allow.append("dontKnow")
-        return allow
-
     def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
         config: NumberSelectionConfig = model.config
         values: NumberSelectionValues = model.response_values
@@ -416,12 +391,6 @@ class ActivityItemDefaultConfigExport(ActivityItemBaseExport, ABC):
 
         return doc
 
-    def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
-        allow = super()._build_allow_prop(model)
-        if model.config.skippable_item:
-            allow.append("dontKnow")
-        return allow
-
     def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
         config: DefaultConfig = model.config
         options = {
@@ -451,6 +420,15 @@ class ActivityItemDateExport(ActivityItemDefaultConfigExport):
         })
 
         return options
+
+
+class ActivityItemTimeExport(ActivityItemDefaultConfigExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.TIME
+
+    def _get_input_type(self):
+        return 'time'
 
 
 class ActivityItemTimeRangeExport(ActivityItemDefaultConfigExport):
