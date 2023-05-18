@@ -546,8 +546,6 @@ class AppletService:
 
         if folder.creator_id != self.user_id:
             raise AppletsFolderAccessDenied()
-        if folder.workspace_id != self.user_id:
-            raise AppletsFolderAccessDenied()
 
     async def get_unique_name(self, applet_name: AppletName) -> str:
         duplicate_names = await AppletsCRUD(self.session).get_name_duplicates(
