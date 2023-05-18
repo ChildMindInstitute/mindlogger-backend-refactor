@@ -13,6 +13,7 @@ class Folder(InternalModel):
     id: uuid.UUID
     creator_id: uuid.UUID
     name: str
+    applet_count: int = 0
 
 
 class FolderUpdate(InternalModel):
@@ -22,3 +23,4 @@ class FolderUpdate(InternalModel):
 class FolderPublic(PublicModel):
     id: uuid.UUID
     name: str
+    applet_count: int = 0
