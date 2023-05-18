@@ -15,6 +15,7 @@ from apps.shared.query_params import (
 )
 from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
     ManagerAccesses,
     PinUser,
@@ -22,6 +23,7 @@ from apps.workspaces.domain.user_applet_access import (
     PublicRespondentAppletAccess,
     RemoveManagerAccess,
     RemoveRespondentAccess,
+    RespondentInfo,
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
@@ -34,6 +36,7 @@ from apps.workspaces.domain.workspace import (
 from apps.workspaces.filters import WorkspaceUsersQueryParams
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.user_access import UserAccessService
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 from infrastructure.http import get_language
@@ -146,6 +149,25 @@ async def workspace_applet_detail(
         )
 
     return Response(result=PublicAppletFull.from_orm(applet))
+
+
+async def workspace_applet_respondent_update(
+    owner_id: uuid.UUID,
+    applet_id: uuid.UUID,
+    respondent_id: uuid.UUID,
+    schema: RespondentInfo = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+        await CheckAccessService(session, user.id).check_applet_detail_access(
+            applet_id
+        )
+        await UserAppletAccessService(session, user.id, applet_id).update_meta(
+            respondent_id, Role.RESPONDENT, **schema.dict(by_alias=True)
+        )
 
 
 async def workspace_remove_manager_access(

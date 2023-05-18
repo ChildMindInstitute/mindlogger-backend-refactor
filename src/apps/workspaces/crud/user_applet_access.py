@@ -844,3 +844,10 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         )
 
         await self._execute(query)
+
+    async def update_meta_by_access_id(self, access_id: uuid.UUID, meta: dict):
+        query: Query = update(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.id == access_id)
+        query = query.values(meta=meta)
+
+        await self._execute(query)
