@@ -1,4 +1,8 @@
-from fastapi import Body, Depends
+import uuid
+from typing import Annotated
+
+from fastapi import Body, Depends, Query
+from pydantic import Required
 
 from apps.authentication.deps import get_current_user
 from apps.authentication.services import AuthenticationService
@@ -7,7 +11,6 @@ from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     ChangePasswordRequest,
     PasswordRecoveryApproveRequest,
-    PasswordRecoveryHealthCheckRequest,
     PasswordRecoveryRequest,
     PublicUser,
     User,
@@ -85,11 +88,12 @@ async def password_recovery_approve(
 
 
 async def password_recovery_healthcheck(
-    schema: PasswordRecoveryHealthCheckRequest = Body(...),
+    email: Annotated[str, Query(max_length=100)] = Required,
+    key: Annotated[uuid.UUID | str, Query(max_length=36)] = Required,
 ):
     """General endpoint to get the password recovery healthcheck."""
 
     try:
-        await PasswordRecoveryCache().get(schema.email, schema.key)
+        await PasswordRecoveryCache().get(email, key)
     except CacheNotFound:
         raise PasswordRecoveryHealthCheckNotValid()
