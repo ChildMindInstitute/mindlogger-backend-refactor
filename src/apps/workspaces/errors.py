@@ -34,6 +34,10 @@ class UserAppletAccessesNotFound(NotFoundError):
     message = _("No such UserAppletAccess with id={id_}.")
 
 
+class UserAppletAccessNotFound(NotFoundError):
+    message = _("Not access related to user and applet found.")
+
+
 class RemoveOwnPermissionAccessDenied(AccessDeniedError):
     message = _("Access denied to remove own permission.")
 

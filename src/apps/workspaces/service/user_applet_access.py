@@ -8,6 +8,8 @@ from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
 
+from apps.workspaces.errors import UserAppletAccessNotFound
+
 
 class UserAppletAccessService:
     def __init__(self, session, user_id: uuid.UUID, applet_id: uuid.UUID):
@@ -142,6 +144,17 @@ class UserAppletAccessService:
             self.session
         ).get_user_roles_to_applet(self._user_id, self._applet_id)
         return roles
+
+    async def update_meta(
+        self, respondent_id: uuid.UUID, role: Role, **kwargs
+    ):
+        crud = UserAppletAccessCRUD(self.session)
+        access = await crud.get(respondent_id, self._applet_id, role)
+        if not access:
+            raise UserAppletAccessNotFound()
+        for key, val in kwargs.items():
+            access.meta[key] = val
+        await crud.update_meta_by_access_id(access.id, access.meta)
 
     async def get_admins_role(self) -> Role | None:
         """

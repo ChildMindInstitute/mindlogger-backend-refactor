@@ -31,7 +31,10 @@ class TestWorkspaces(BaseTest):
     workspaces_detail_url = f"{workspaces_list_url}/{{owner_id}}"
     workspaces_priority_role_url = f"{workspaces_detail_url}/priority_role"
     workspace_applets_url = f"{workspaces_detail_url}/applets"
-    workspace_applets_detail_url = f"{workspace_applets_url}/{{id_}}"
+    workspace_applets_detail_url = f"{workspace_applets_url}/{{applet_id}}"
+    applet_respondent_url = (
+        f"{workspace_applets_detail_url}/respondents/{{respondent_id}}"
+    )
     workspace_respondents_url = f"{workspaces_detail_url}/respondents"
     workspace_respondent_applet_accesses = (
         f"{workspace_respondents_url}/{{respondent_id}}/accesses"
@@ -153,7 +156,7 @@ class TestWorkspaces(BaseTest):
         response = await self.client.get(
             self.workspace_applets_detail_url.format(
                 owner_id=uuid4(),
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             )
         )
         assert response.status_code == 404
@@ -161,10 +164,45 @@ class TestWorkspaces(BaseTest):
         response = await self.client.get(
             self.workspace_applets_detail_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2",
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             )
         )
         assert response.status_code == 200
+
+    @rollback
+    async def test_workspace_applets_respondent_update(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.applet_respondent_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            ),
+            dict(
+                nickname="New respondent",
+                secret_user_id="f0dd4996-e0eb-461f-b2f8-ba873a674710",
+            ),
+        )
+        assert response.status_code == 200
+
+        response = await self.client.get(
+            self.workspace_respondents_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            ),
+            dict(
+                appletId="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                role="respondent",
+            ),
+        )
+        assert response.json()["count"] == 2
+        assert response.json()["result"][0]["nickname"] == "New respondent"
+        assert (
+            response.json()["result"][0]["secretId"]
+            == "f0dd4996-e0eb-461f-b2f8-ba873a674710"
+        )
 
     @rollback
     async def test_wrong_workspace_applets_list(self):

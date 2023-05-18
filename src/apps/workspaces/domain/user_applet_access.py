@@ -136,3 +136,8 @@ class ManagerAccess(InternalModel):
 
 class ManagerAccesses(InternalModel):
     accesses: list[ManagerAccess]
+
+
+class RespondentInfo(InternalModel):
+    nickname: str
+    secret_user_id: str
