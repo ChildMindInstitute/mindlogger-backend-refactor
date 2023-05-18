@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Query
 
 from apps.folders.db.schemas import FolderAppletSchema, FolderSchema
@@ -17,14 +17,45 @@ class FolderCRUD(BaseCRUD):
     async def get_users_folder_in_workspace(
         self, workspace_id: uuid.UUID, user_id: uuid.UUID
     ) -> list[FolderSchema]:
-        query: Query = select(FolderSchema)
+        workspace_applets_query: Query = select(
+            func.count(FolderAppletSchema.id).label("applet_count"),
+            FolderAppletSchema.folder_id,
+        )
+        workspace_applets_query = workspace_applets_query.join(
+            FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
+        )
+        workspace_applets_query = workspace_applets_query.where(
+            FolderSchema.workspace_id == workspace_id
+        )
+        workspace_applets_query = workspace_applets_query.group_by(
+            FolderAppletSchema.folder_id
+        )
+        workspace_applets_query = workspace_applets_query.alias(
+            "workspace_applets"
+        )
+
+        query: Query = select(
+            FolderSchema,
+            func.coalesce(workspace_applets_query.c.applet_count, 0),
+        )
+        query = query.join(
+            workspace_applets_query,
+            workspace_applets_query.c.folder_id == FolderSchema.id,
+            isouter=True,
+        )
         query = query.where(FolderSchema.workspace_id == workspace_id)
         query = query.order_by(FolderSchema.id.desc())
         query = query.where(FolderSchema.creator_id == user_id)
 
         db_result = await self._execute(query)
 
-        return db_result.scalars().all()
+        schemas = []
+
+        for schema, applet_count in db_result.all():
+            schema.applet_count = applet_count
+            schemas.append(schema)
+
+        return schemas
 
     async def save(self, schema: FolderSchema) -> FolderSchema:
         return await self._create(schema)
