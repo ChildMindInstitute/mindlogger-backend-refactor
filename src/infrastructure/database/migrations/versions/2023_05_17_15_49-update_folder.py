@@ -48,6 +48,11 @@ def upgrade() -> None:
         "fk_applets_folder_id_folders", "applets", type_="foreignkey"
     )
     op.drop_column("applets", "folder_id")
+
+    op.execute("""
+        delete from folders;
+    """)
+
     op.add_column(
         "folders",
         sa.Column(
