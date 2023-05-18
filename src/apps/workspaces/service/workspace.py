@@ -81,7 +81,7 @@ class WorkspaceService:
         )
         if not user_workspace:
             user_workspace = await self.create_workspace_from_user(user)
-        if not user_workspace.is_modified:
+        if not user_workspace.is_modified and workspace_prefix:
             await UserWorkspaceCRUD(self.session).update(
                 user,
                 workspace_prefix,

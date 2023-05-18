@@ -36,19 +36,14 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         """Return UserWorkspace instance."""
         return await self._create(schema)
 
-    async def update(
-        self, user: User, workspace_prefix: str | None = None
-    ) -> UserWorkspace:
+    async def update(self, user: User, workspace_prefix: str) -> UserWorkspace:
         # Update UserWorkspace in database
         instance = await self._update_one(
             lookup="user_id",
             value=user.id,
             schema=UserWorkspaceSchema(
                 user_id=user.id,
-                workspace_name=f"{user.first_name} {user.last_name} "
-                f"{workspace_prefix}"
-                if workspace_prefix
-                else f"{user.first_name} {user.last_name}",
+                workspace_name=workspace_prefix,
                 is_modified=True,
             ),
         )
