@@ -107,8 +107,6 @@ router.post(
 router.post(
     "/{owner_id}/applets",
     description="""This endpoint is used to create a new applet""",
-    response_model_by_alias=True,
-    response_model=Response[public_detail.Applet],
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {"model": Response[public_detail.Applet]},

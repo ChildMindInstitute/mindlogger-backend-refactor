@@ -41,219 +41,206 @@ class TestApplet(BaseTest):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
-        create_data = dict(
-            display_name="User daily behave",
-            encryption=dict(
-                public_key=uuid.uuid4().hex,
-                account_id=str(uuid.uuid4()),
-                prime=uuid.uuid4().hex,
-                base=uuid.uuid4().hex,
-            ),
-            description=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            about=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            activities=[
-                dict(
-                    name="Morning activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                    description=dict(
-                        en="Understand morning feelings.",
-                        fr="Understand morning feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="morning_activity_item",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            is_hidden=True,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                        dict(
-                            name="morning_activity_item_2",
-                            question=dict(
-                                en="How had you woke?",
-                                fr="How had you woke?",
-                            ),
-                            response_type="slider",
-                            response_values=dict(
-                                min_label="Not at all",
-                                max_label="Very much",
-                                min_value=1,
-                                max_value=5,
-                                min_image=None,
-                                max_image=None,
-                                scores=None,
-                            ),
-                            config=dict(
-                                add_scores=False,
-                                set_alerts=False,
-                                show_tick_marks=False,
-                                show_tick_labels=False,
-                                continuous_slider=False,
-                                timer=None,
-                                remove_back_button=False,
-                                skippable_item=True,
-                                additional_response_option=dict(
-                                    text_input_option=False,
-                                    text_input_required=False,
-                                ),
-                            ),
-                        ),
-                    ],
-                ),
-                dict(
-                    name="Evening activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
-                    description=dict(
-                        en="Understand evening feelings.",
-                        fr="Understand evening feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="evening_activity_item",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="singleSelect",
-                            response_values=dict(
-                                paletteName="default",
-                                options=[
-                                    dict(
-                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
-                                        text="Very well",
-                                        image=None,
-                                        score=None,
-                                        tooltip=None,
-                                        is_hidden=False,
-                                        color=None,
-                                    ),
-                                    dict(
-                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
-                                        text="Well",
-                                        image=None,
-                                        score=None,
-                                        tooltip=None,
-                                        is_hidden=False,
-                                        color=None,
-                                    ),
+        create_data = {
+            "displayName": "7ee3617f-fe7f-49bc-8e0c-da6730a2d1cd",
+            "encryption": {
+                "publicKey": "publicKey",
+                "prime": "privateKey",
+                "base": "[2]",
+                "accountId": "07216053-3974-4d60-ab8c-457793246a68",
+            },
+            "description": {"en": "Central granddaughter unfortunate"},
+            "about": {"en": "channels indexing noisily"},
+            "activities": [
+                {
+                    "items": [
+                        {
+                            "name": "AT_single_select",
+                            "question": {"en": "How do you feel today?"},
+                            "config": {
+                                "removeBackButton": True,
+                                "skippableItem": True,
+                                "randomizeOptions": True,
+                                "addScores": True,
+                                "setAlerts": True,
+                                "addTooltip": True,
+                                "setPalette": True,
+                                "additionalResponseOption": {
+                                    "textInputOption": True,
+                                    "textInputRequired": True,
+                                },
+                            },
+                            "responseValues": {
+                                "options": [
+                                    {
+                                        "text": "very bad",
+                                        "isHidden": False,
+                                        "score": 1,
+                                        "image": "image.jpg",
+                                        "tooltip": "backing",
+                                        "color": "#123",
+                                    },
+                                    {
+                                        "text": "bad",
+                                        "isHidden": False,
+                                        "score": 20,
+                                        "image": "image.jpg",
+                                        "tooltip": "Generic",
+                                        "color": "#456",
+                                    },
+                                    {
+                                        "text": "normally",
+                                        "isHidden": False,
+                                        "score": 30,
+                                        "image": "image.jpg",
+                                        "tooltip": "Gasoline",
+                                        "color": "#789",
+                                    },
+                                    {
+                                        "text": "perfect",
+                                        "isHidden": False,
+                                        "score": 100,
+                                        "image": "image.jpg",
+                                        "tooltip": "payment",
+                                        "color": "#234",
+                                    },
+                                ]
+                            },
+                            "responseType": "singleSelect",
+                        },
+                        {
+                            "name": "AT_multi_select",
+                            "question": {"en": "How do you feel today?"},
+                            "config": {
+                                "removeBackButton": True,
+                                "skippableItem": True,
+                                "randomizeOptions": True,
+                                "addScores": True,
+                                "setAlerts": True,
+                                "addTooltip": True,
+                                "setPalette": True,
+                                "additionalResponseOption": {
+                                    "textInputOption": True,
+                                    "textInputRequired": True,
+                                },
+                            },
+                            "responseValues": {
+                                "options": [
+                                    {
+                                        "text": "very bad",
+                                        "isHidden": False,
+                                        "score": 30,
+                                        "image": "image.jpg",
+                                        "tooltip": "Music",
+                                        "color": "#567",
+                                    },
+                                    {
+                                        "text": "bad",
+                                        "isHidden": False,
+                                        "score": 1,
+                                        "image": "image.jpg",
+                                        "tooltip": "East",
+                                        "color": "#876",
+                                    },
+                                    {
+                                        "text": "normally",
+                                        "isHidden": False,
+                                        "score": 20,
+                                        "image": "image.jpg",
+                                        "tooltip": "Sodium",
+                                        "color": "#923",
+                                    },
+                                    {
+                                        "text": "perfect",
+                                        "isHidden": False,
+                                        "score": 100,
+                                        "image": "image.jpg",
+                                        "tooltip": "Electronics",
+                                        "color": "#567",
+                                    },
+                                ]
+                            },
+                            "responseType": "multiSelect",
+                        },
+                        {
+                            "name": "AT_slider",
+                            "question": {"en": "How do you feel today?"},
+                            "responseType": "slider",
+                            "config": {
+                                "removeBackButton": True,
+                                "skippableItem": True,
+                                "addScores": True,
+                                "setAlerts": True,
+                                "showTickMarks": True,
+                                "showTickLabels": True,
+                                "continuousSlider": True,
+                                "additionalResponseOption": {
+                                    "textInputOption": True,
+                                    "textInputRequired": True,
+                                },
+                            },
+                            "responseValues": {
+                                "minLabel": "very bad",
+                                "maxLabel": "extremely good",
+                                "minValue": 0,
+                                "maxValue": 10,
+                                "minImage": "image.jpg",
+                                "maxImage": "image.jpg",
+                                "scores": [
+                                    0,
+                                    10,
+                                    20,
+                                    30,
+                                    40,
+                                    50,
+                                    60,
+                                    70,
+                                    80,
+                                    90,
+                                    100,
                                 ],
-                            ),
-                            config=dict(
-                                remove_back_button=False,
-                                skippable_item=True,
-                                randomize_options=False,
-                                timer=None,
-                                add_scores=False,
-                                set_alerts=False,
-                                add_tooltip=False,
-                                set_palette=False,
-                                additional_response_option=dict(
-                                    text_input_option=False,
-                                    text_input_required=False,
-                                ),
-                            ),
-                        ),
-                        dict(
-                            name="evening_activity_item_2",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="multiSelect",
-                            response_values=dict(
-                                paletteName=None,
-                                options=[
-                                    dict(
-                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
-                                        text="Very well",
-                                        image=None,
-                                        score=None,
-                                        tooltip=None,
-                                        is_hidden=False,
-                                        color=None,
-                                    ),
-                                    dict(
-                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
-                                        text="Well",
-                                        image=None,
-                                        score=None,
-                                        tooltip=None,
-                                        is_hidden=False,
-                                        color=None,
-                                    ),
-                                ],
-                            ),
-                            config=dict(
-                                remove_back_button=False,
-                                skippable_item=True,
-                                randomize_options=False,
-                                timer=None,
-                                add_scores=False,
-                                set_alerts=False,
-                                add_tooltip=False,
-                                set_palette=False,
-                                additional_response_option=dict(
-                                    text_input_option=False,
-                                    text_input_required=False,
-                                ),
-                            ),
-                        ),
-                        dict(
-                            name="evening_activity_item33",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="photo",
-                            response_values=None,
-                            config=dict(
-                                remove_back_button=False,
-                                skippable_item=True,
-                                timer=None,
-                                additional_response_option=dict(
-                                    text_input_option=False,
-                                    text_input_required=False,
-                                ),
-                            ),
-                        ),
+                            },
+                        },
+                        {
+                            "name": "AT_text",
+                            "question": {"en": "How do you feel today?"},
+                            "config": {
+                                "removeBackButton": True,
+                                "skippableItem": True,
+                                "maxResponseLength": 50,
+                                "correctAnswerRequired": True,
+                                "correctAnswer": "perfect",
+                                "numericalResponseRequired": True,
+                                "responseDataIdentifier": True,
+                                "responseRequired": True,
+                            },
+                            "responseValues": None,
+                            "responseType": "text",
+                        },
                     ],
-                ),
+                    "name": "white",
+                    "key": "19a78ace-5fe5-4a98-8c66-454f973f7f9a",
+                    "isHidden": False,
+                    "description": {"en": "Recumbent hacking Steel"},
+                    "showAllAtOnce": True,
+                    "isSkippable": True,
+                    "responseIsEditable": True,
+                    "isReviewable": True,
+                    "image": "image.jpg",
+                    "splashScreen": "image.jpg",
+                }
             ],
-            activity_flows=[
-                dict(
-                    name="Morning questionnaire",
-                    description=dict(
-                        en="Understand how was the morning",
-                        fr="Understand how was the morning",
-                    ),
-                    items=[
-                        dict(
-                            activity_key="577dbbda-3afc-"
-                            "4962-842b-8d8d11588bfe"
-                        )
+            "activityFlows": [
+                {
+                    "name": "Metal",
+                    "description": {"en": "East Coupe Northeast"},
+                    "items": [
+                        {"activityKey": "19a78ace-5fe5-4a98-8c66-454f973f7f9a"}
                     ],
-                )
+                    "isHidden": False,
+                }
             ],
-        )
+        }
         response = await self.client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
