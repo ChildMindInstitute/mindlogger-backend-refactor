@@ -11,9 +11,11 @@ from apps.jsonld_converter.service.export import (
     ActivityItemGeolocationExport,
     ActivityItemMessageExport,
     ActivityItemMultipleSelectExport,
+    ActivityItemMultiSelectionRowsExport,
     ActivityItemNumberExport,
     ActivityItemPhotoExport,
     ActivityItemSingleSelectExport,
+    ActivityItemSingleSelectionRowsExport,
     ActivityItemSliderExport,
     ActivityItemSliderRowsExport,
     ActivityItemTextExport,
@@ -52,6 +54,8 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             ActivityItemVideoExport,
             ActivityItemDrawingExport,
             ActivityItemAudioPlayerExport,
+            ActivityItemSingleSelectionRowsExport,
+            ActivityItemMultiSelectionRowsExport,
         ]
 
     async def export(self, model: ActivityFull, expand: bool = False) -> dict:  # type: ignore  # noqa: E501

@@ -6,6 +6,7 @@ from apps.activities.domain.response_type_config import (
     DrawingConfig,
     ResponseType,
     SingleSelectionConfig,
+    SingleSelectionRowsConfig,
     SliderConfig,
     SliderRowsConfig,
     TextConfig,
@@ -15,6 +16,7 @@ from apps.activities.domain.response_values import (
     AudioValues,
     DrawingValues,
     NumberSelectionValues,
+    SingleSelectionRowsValues,
     SingleSelectionValues,
     SliderRowsValues,
     SliderValues,
@@ -492,3 +494,87 @@ class ActivityItemAudioPlayerExport(ActivityItemBaseExport):
         ]
 
         return doc
+
+
+class ActivityItemSingleSelectionRowsExport(ActivityItemBaseExport):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.SINGLESELECTROWS
+
+    def _get_input_type(self):
+        return "stackedRadio"
+
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
+        options = super()._build_response_options_prop(model)
+        config: SingleSelectionRowsConfig = model.config  # type: ignore[assignment]  # noqa: E501
+        options.update(
+            {
+                "valueType": "xsd:anyURI",  # todo tokens
+                "scoring": config.add_scores,
+                "responseAlert": config.set_alerts,
+                "multipleChoice": False,
+                "options": self._build_options(model),
+                "itemList": self._build_items(model),
+                "itemOptions": self._build_item_options(model),
+            }
+        )
+
+        return options
+
+    def _build_options(self, model: ActivityItemFull) -> list[dict]:
+        values: SingleSelectionRowsValues = model.response_values  # type: ignore[assignment]  # noqa: E501
+
+        options = []
+        for opt in values.options:
+            option = {
+                "schema:description": opt.tooltip,
+                "schema:image": opt.image,
+                "schema:name": opt.text,
+            }
+            options.append(option)
+
+        return options
+
+    def _build_items(self, model: ActivityItemFull) -> list[dict]:
+        values: SingleSelectionRowsValues = model.response_values  # type: ignore[assignment]  # noqa: E501
+
+        items = []
+        for itm in values.rows:
+            item = {
+                "schema:name": itm.row_name,
+                "schema:image": itm.row_image,
+                "schema:description": itm.tooltip,
+            }
+            items.append(item)
+
+        return items
+
+    def _build_item_options(self, model: ActivityItemFull):
+        values: SingleSelectionRowsValues = model.response_values  # type: ignore[assignment]  # noqa: E501
+        item_options = []
+        if values.data_matrix:
+            for itm in values.data_matrix:
+                row = []
+                for opt in itm.options:
+                    col = {
+                        "schema:score": opt.score,
+                        "schema:alert": opt.alert,
+                    }
+                    row.append(col)
+                item_options.append(row)
+
+        return item_options
+
+
+class ActivityItemMultiSelectionRowsExport(
+    ActivityItemSingleSelectionRowsExport
+):
+    @classmethod
+    def _get_supported_response_type(cls) -> ResponseType:
+        return ResponseType.MULTISELECTROWS
+
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
+        options = super()._build_response_options_prop(model)
+        options["multipleChoice"] = True
+
+        return options

@@ -16,6 +16,8 @@ from apps.jsonld_converter.service.export.activity_item import (  # noqa: F401, 
     ActivityItemTimeExport,
     ActivityItemTimeRangeExport,
     ActivityItemVideoExport,
+    ActivityItemSingleSelectionRowsExport,
+    ActivityItemMultiSelectionRowsExport,
 )
 from apps.jsonld_converter.service.export.activity import (  # noqa: F401, F403, E501
     ActivityExport,
