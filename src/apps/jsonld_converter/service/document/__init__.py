@@ -1,3 +1,4 @@
+# isort: skip_file
 from apps.jsonld_converter.service.document.activity import (  # noqa: F401, F403, E501
     ReproActivity,
 )
@@ -18,9 +19,9 @@ from apps.jsonld_converter.service.document.field import (  # noqa: F401, F403
     ReproFieldSlider,
     ReproFieldSliderStacked,
     ReproFieldText,
+    ReproFieldTime,
     ReproFieldTimeRange,
     ReproFieldVideo,
-    ReproFieldTime,
 )
 from apps.jsonld_converter.service.document.protocol import (  # noqa: F401, F403, E501
     ReproProtocol,

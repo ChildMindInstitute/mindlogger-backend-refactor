@@ -1,14 +1,8 @@
 import re
-from abc import (
-    ABC,
-    abstractmethod,
-)
-from typing import (
-    Type,
-    Callable,
-)
+from abc import ABC, abstractmethod
+from typing import Callable, Type
 
-from pyld import ContextResolver
+from pyld import ContextResolver  # type: ignore[import]
 
 from apps.jsonld_converter.service.base import ContextResolverAwareMixin
 from apps.shared.domain import InternalModel
@@ -20,18 +14,22 @@ class ContainsNestedModelMixin(ABC, ContextResolverAwareMixin):
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
         ...
 
-    def get_supported_processor(self, model: InternalModel) -> "BaseModelExport":
+    def get_supported_processor(
+        self, model: InternalModel
+    ) -> "BaseModelExport":
         for candidate in self.get_supported_types():
             if candidate.supports(model):
-                return candidate(self.context_resolver, self.document_loader)
+                return candidate(self.context_resolver, self.document_loader)  # type: ignore[arg-type]  # noqa: E501
         raise Exception("Model not supported")  # TODO raise specific error
 
 
 class BaseModelExport(ABC, ContextResolverAwareMixin):
-    context: str = "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+    context: str = "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"  # noqa: E501
     schema_version: str = "1.1"
 
-    def __init__(self, context_resolver: ContextResolver, document_loader: Callable):
+    def __init__(
+        self, context_resolver: ContextResolver, document_loader: Callable
+    ):
         self.context_resolver: ContextResolver = context_resolver
         self.document_loader = document_loader
 

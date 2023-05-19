@@ -4,22 +4,22 @@ from typing import Type
 from apps.activities.domain.activity_full import ActivityFull
 from apps.jsonld_converter.service.base import LdKeyword
 from apps.jsonld_converter.service.export import (
-    ActivityItemTextExport,
-    ActivityItemSingleSelectExport,
-    ActivityItemMultipleSelectExport,
-    ActivityItemSliderExport,
-    ActivityItemMessageExport,
-    ActivityItemNumberExport,
+    ActivityItemAudioExport,
+    ActivityItemAudioPlayerExport,
     ActivityItemDateExport,
+    ActivityItemDrawingExport,
+    ActivityItemGeolocationExport,
+    ActivityItemMessageExport,
+    ActivityItemMultipleSelectExport,
+    ActivityItemNumberExport,
+    ActivityItemPhotoExport,
+    ActivityItemSingleSelectExport,
+    ActivityItemSliderExport,
+    ActivityItemSliderRowsExport,
+    ActivityItemTextExport,
     ActivityItemTimeExport,
     ActivityItemTimeRangeExport,
-    ActivityItemGeolocationExport,
-    ActivityItemAudioExport,
-    ActivityItemPhotoExport,
     ActivityItemVideoExport,
-    ActivityItemDrawingExport,
-    ActivityItemAudioPlayerExport,
-    ActivityItemSliderRowsExport,
 )
 from apps.jsonld_converter.service.export.base import (
     BaseModelExport,
@@ -54,11 +54,11 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             ActivityItemAudioPlayerExport,
         ]
 
-    async def export(self, model: ActivityFull, expand: bool = False) -> dict:
+    async def export(self, model: ActivityFull, expand: bool = False) -> dict:  # type: ignore  # noqa: E501
         ui = await self._build_ui_prop(model)
         doc = {
             LdKeyword.context: self.context,
-            LdKeyword.id: f"_:{self.str_to_id(model.name)}",  # TODO ensure uniques
+            LdKeyword.id: f"_:{self.str_to_id(model.name)}",  # TODO ensure uniques  # noqa: E501
             LdKeyword.type: "reproschema:Activity",
             "skos:prefLabel": model.name,
             "skos:altLabel": model.name,
@@ -84,12 +84,14 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
                 processor = self.get_supported_processor(item)
                 order_cors.append(processor.export(item))
 
-                properties.append({
-                    "isAbout": _id,
-                    "prefLabel": item.name,
-                    "isVis": not item.is_hidden,
-                    "variableName": _var
-                })
+                properties.append(
+                    {
+                        "isAbout": _id,
+                        "prefLabel": item.name,
+                        "isVis": not item.is_hidden,
+                        "variableName": _var,
+                    }
+                )
             order = await asyncio.gather(*order_cors)
 
         return {

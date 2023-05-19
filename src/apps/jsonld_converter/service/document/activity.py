@@ -26,9 +26,9 @@ from apps.jsonld_converter.service.document.field import (
     ReproFieldSlider,
     ReproFieldSliderStacked,
     ReproFieldText,
+    ReproFieldTime,
     ReproFieldTimeRange,
     ReproFieldVideo,
-    ReproFieldTime,
 )
 
 

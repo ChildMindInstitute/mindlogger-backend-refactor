@@ -4,8 +4,8 @@ from typing import Type
 from apps.applets.domain.applet_full import AppletFull
 from apps.jsonld_converter.service.base import LdKeyword
 from apps.jsonld_converter.service.export import (
-    ActivityFlowExport,
     ActivityExport,
+    ActivityFlowExport,
 )
 from apps.jsonld_converter.service.export.base import (
     BaseModelExport,
@@ -23,10 +23,9 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
         return [ActivityExport, ActivityFlowExport]
 
-    async def export(self, model: AppletFull, expand: bool = False) -> dict:
+    async def export(self, model: AppletFull, expand: bool = False) -> dict:  # type: ignore  # noqa: E501
         ui, activity_flows = await asyncio.gather(
-            self._build_ui_prop(model),
-            self._build_activity_flows_prop(model)
+            self._build_ui_prop(model), self._build_activity_flows_prop(model)
         )
         doc = {
             LdKeyword.context: self.context,
@@ -39,7 +38,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
             "landingPageType": "markdown",
             "schema:image": model.image,
             "schema:watermark": model.watermark,
-            "schema:schemaVersion": self.schema_version,  # TODO load from extra
+            "schema:schemaVersion": self.schema_version,  # TODO load from extra  # noqa: E501
             "schema:version": model.version,
             "ui": ui,
             "activityFlows": activity_flows,
@@ -51,10 +50,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
         if model.about:
             about = []
             for lang, val in model.about.items():
-                about.append({
-                    LdKeyword.language: lang,
-                    LdKeyword.value: val
-                })
+                about.append({LdKeyword.language: lang, LdKeyword.value: val})
             return about
         return None
 
@@ -64,18 +60,22 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
         if model.activities:
             order_cors = []
             for i, activity in enumerate(model.activities):
-                _id = f"_:{self.str_to_id(activity.name)}"  # TODO ensure uniques
+                _id = (
+                    f"_:{self.str_to_id(activity.name)}"  # TODO ensure uniques
+                )
                 _var = f"activity_{i}"  # TODO load from extra if exists
 
                 processor = self.get_supported_processor(activity)
                 order_cors.append(processor.export(activity))
 
-                properties.append({
-                    "isAbout": _id,
-                    "prefLabel": activity.name,
-                    "isVis": not activity.is_hidden,
-                    "variableName": _var
-                })
+                properties.append(
+                    {
+                        "isAbout": _id,
+                        "prefLabel": activity.name,
+                        "isVis": not activity.is_hidden,
+                        "variableName": _var,
+                    }
+                )
             order = await asyncio.gather(*order_cors)
 
         return {
@@ -95,12 +95,14 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
 
                 processor = self.get_supported_processor(flow)
                 order_cors.append(processor.export(flow))
-                properties.append({
-                    "isAbout": _id,
-                    "prefLabel": flow.name,
-                    "isVis": not flow.is_hidden,
-                    "variableName": _var
-                })
+                properties.append(
+                    {
+                        "isAbout": _id,
+                        "prefLabel": flow.name,
+                        "isVis": not flow.is_hidden,
+                        "variableName": _var,
+                    }
+                )
 
             order = await asyncio.gather(*order_cors)
 

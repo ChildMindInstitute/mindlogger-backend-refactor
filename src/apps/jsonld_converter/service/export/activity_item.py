@@ -1,44 +1,36 @@
-from abc import (
-    abstractmethod,
-    ABC,
-)
+from abc import abstractmethod
 
-from apps.activities.domain.activity_full import (
-    ActivityItemFull,
-)
+from apps.activities.domain.activity_full import ActivityItemFull
 from apps.activities.domain.response_type_config import (
+    AudioPlayerConfig,
+    DrawingConfig,
     ResponseType,
     SingleSelectionConfig,
     SliderConfig,
-    TextConfig,
-    NumberSelectionConfig,
-    DefaultConfig,
-    DrawingConfig,
-    AudioPlayerConfig,
     SliderRowsConfig,
+    TextConfig,
 )
 from apps.activities.domain.response_values import (
-    SingleSelectionValues,
-    SliderValues,
-    NumberSelectionValues,
+    AudioPlayerValues,
     AudioValues,
     DrawingValues,
-    AudioPlayerValues,
+    NumberSelectionValues,
+    SingleSelectionValues,
     SliderRowsValues,
+    SliderValues,
 )
 from apps.jsonld_converter.service.base import LdKeyword
-from apps.jsonld_converter.service.export.base import (
-    BaseModelExport,
-)
-from apps.shared.domain import (
-    InternalModel,
-)
+from apps.jsonld_converter.service.export.base import BaseModelExport
+from apps.shared.domain import InternalModel
 
 
 class ActivityItemBaseExport(BaseModelExport):
     @classmethod
     def supports(cls, model: InternalModel) -> bool:
-        return isinstance(model, ActivityItemFull) and model.response_type == cls._get_supported_response_type()
+        return (
+            isinstance(model, ActivityItemFull)
+            and model.response_type == cls._get_supported_response_type()
+        )
 
     @classmethod
     @abstractmethod
@@ -59,15 +51,27 @@ class ActivityItemBaseExport(BaseModelExport):
             "skos:altLabel": model.name,
             "question": model.question,
             "allowEdit": True,
-            "ui": self._build_ui_prop(model)
+            "ui": self._build_ui_prop(model),
         }
+
+        config = model.config
+        if additional_option := getattr(
+            config, "additional_response_option", None
+        ):
+            doc["isOptionalText"] = additional_option.text_input_option
+
+        if timer := getattr(config, "timer", None):
+            doc.update({"timer": timer * 1000})  # set in milliseconds
+
         response_options = self._build_response_options_prop(model)
         if response_options:
             doc["responseOptions"] = response_options
 
         return doc
 
-    async def export(self, model: ActivityItemFull, expand: bool = False) -> dict:
+    async def export(  # type: ignore
+        self, model: ActivityItemFull, expand: bool = False
+    ) -> dict:
         doc = self._build_doc(model)
 
         return await self._post_process(doc, expand)
@@ -75,7 +79,7 @@ class ActivityItemBaseExport(BaseModelExport):
     def _build_ui_prop(self, model: ActivityItemFull) -> dict:
         return {
             "inputType": self._get_input_type(),
-            "allow": self._build_allow_prop(model)
+            "allow": self._build_allow_prop(model),
         }
 
     def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
@@ -87,8 +91,19 @@ class ActivityItemBaseExport(BaseModelExport):
 
         return allow
 
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
-        return None
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
+        config = model.config
+        options = {}
+        if getattr(config, "remove_back_button", False):
+            options["removeBackOption"] = True
+        if additional_option := getattr(
+            config, "additional_response_option", None
+        ):
+            options[
+                "isOptionalTextRequired"
+            ] = additional_option.text_input_required
+
+        return options
 
 
 class ActivityItemTextExport(ActivityItemBaseExport):
@@ -97,31 +112,23 @@ class ActivityItemTextExport(ActivityItemBaseExport):
         return ResponseType.TEXT
 
     def _get_input_type(self):
-        return 'text'
+        return "text"
 
-    def _build_doc(self, model: ActivityItemFull) -> dict:
-        doc = super()._build_doc(model)
-        if getattr(model.config, "correct_answer_required", False) and (correct_answer := getattr(model.config, "correct_answer", None)):
-            doc["correctAnswer"] = correct_answer
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
+        options = super()._build_response_options_prop(model)
 
-        return doc
-
-    def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
-        allow = super()._build_allow_prop(model)
-        return allow
-
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
-        config: TextConfig = model.config
+        config: TextConfig = model.config  # type: ignore[assignment]
         value_type = "xsd:string"
         if config.numerical_response_required:
             value_type = "xsd:integer"
-        options = {
-            "valueType": value_type,
-            "removeBackOption": config.remove_back_button,
-            "requiredValue": config.response_required,
-            "isResponseIdentifier": config.response_data_identifier,
-            "maxLength": config.max_response_length
-        }
+        options.update(
+            {
+                "valueType": value_type,
+                "requiredValue": config.response_required,
+                "isResponseIdentifier": config.response_data_identifier,
+                "maxLength": config.max_response_length,
+            }
+        )
 
         return options
 
@@ -132,44 +139,28 @@ class ActivityItemSingleSelectExport(ActivityItemBaseExport):
         return ResponseType.SINGLESELECT
 
     def _get_input_type(self):
-        return 'radio'
+        return "radio"
 
-    def _build_doc(self, model: ActivityItemFull) -> dict:
-        doc = super()._build_doc(model)
-        config: SingleSelectionConfig = model.config
-        additional_option = config.additional_response_option
-        if additional_option:
-            doc["isOptionalText"] = additional_option.text_input_option
-
-        if config.timer:
-            doc.update({
-                "timer": config.timer * 1000  # set in milliseconds
-            })
-
-        return doc
-
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
-        config: SingleSelectionConfig = model.config
-        options = {
-            "valueType": "xsd:anyURI",
-            "removeBackOption": config.remove_back_button,
-            "randomizeOptions": config.randomize_options,
-            "scoring": config.add_scores,
-            "responseAlert": config.set_alerts,
-            "colorPalette": config.set_palette,
-            "multipleChoice": False,
-            "choices": self._build_choices_prop(model)
-
-        }
-        additional_option = config.additional_response_option
-        if additional_option and additional_option.text_input_option:
-            options["isOptionalTextRequired"] = additional_option.text_input_required
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
+        options = super()._build_response_options_prop(model)
+        config: SingleSelectionConfig = model.config  # type: ignore[assignment]  # noqa: E501
+        options.update(
+            {
+                "valueType": "xsd:anyURI",  # todo tokens
+                "randomizeOptions": config.randomize_options,
+                "scoring": config.add_scores,
+                "responseAlert": config.set_alerts,
+                "colorPalette": config.set_palette,
+                "multipleChoice": False,
+                "choices": self._build_choices_prop(model),
+            }
+        )
 
         return options
 
     def _build_choices_prop(self, model: ActivityItemFull) -> list:
         choices = []
-        values: SingleSelectionValues = model.response_values
+        values: SingleSelectionValues = model.response_values  # type: ignore[assignment]  # noqa: E501
         for i, option in enumerate(values.options):
             choice = {
                 LdKeyword.type: "schema:option",
@@ -192,7 +183,7 @@ class ActivityItemMultipleSelectExport(ActivityItemSingleSelectExport):
     def _get_supported_response_type(cls) -> ResponseType:
         return ResponseType.MULTISELECT
 
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
         options = super()._build_response_options_prop(model)
         options["multipleChoice"] = True
 
@@ -200,12 +191,11 @@ class ActivityItemMultipleSelectExport(ActivityItemSingleSelectExport):
 
 
 class SliderValuesMixin:
-
     def _build_choices_prop(self, values: SliderValues) -> list:
         choices = []
         scores = values.scores
         for i, v in enumerate(range(values.min_value, values.max_value + 1)):
-            lbl = str(v)
+            lbl: str | None = str(v)
             image = None
             if v == values.min_value:
                 lbl = values.min_label
@@ -233,44 +223,33 @@ class ActivityItemSliderExport(ActivityItemBaseExport, SliderValuesMixin):
         return ResponseType.SLIDER
 
     def _get_input_type(self):
-        return 'slider'
+        return "slider"
 
-    def _build_doc(self, model: ActivityItemFull) -> dict:
-        doc = super()._build_doc(model)
-        config = model.config
-        additional_option = config.additional_response_option
-        if additional_option:
-            doc["isOptionalText"] = additional_option.text_input_option
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
+        options = super()._build_response_options_prop(model)
 
-        if config.timer:
-            doc.update({
-                "timer": model.config.timer * 1000  # set in milliseconds
-            })
+        config: SliderConfig = model.config  # type: ignore[assignment]
+        values: SliderValues = model.response_values  # type: ignore[assignment]  # noqa: E501
 
-        return doc
-
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
-        config: SliderConfig = model.config
-        values: SliderValues = model.response_values
-
-        options = {
-            "valueType": "xsd:integer",
-            "removeBackOption": config.remove_back_button,
-            "scoring": config.add_scores,
-            "responseAlert": config.set_alerts,
-            "choices": self._build_choices_prop(model.response_values),
-            "continousSlider": config.continuous_slider,
-            "tickLabel": config.show_tick_labels,
-            # "textAnchors": true,  # TODO
-            "tickMark": config.show_tick_marks,
-            "schema:minValue": values.min_label,
-            "schema:maxValue": values.max_label,
-            "schema:minValueImg": values.min_image,
-            "schema:maxValueImg": values.max_image,
-        }
-        additional_option = config.additional_response_option
-        if additional_option and additional_option.text_input_option:
-            options["isOptionalTextRequired"] = additional_option.text_input_required
+        options.update(
+            {
+                "valueType": "xsd:integer",
+                "scoring": config.add_scores,
+                "responseAlert": config.set_alerts,
+                "choices": self._build_choices_prop(values),
+                "continousSlider": config.continuous_slider,
+                "tickLabel": config.show_tick_labels,
+                # "textAnchors": true,  # TODO
+                "tickMark": config.show_tick_marks,
+                "schema:minValue": values.min_label,
+                "schema:maxValue": values.max_label,
+                "schema:minValueImg": values.min_image,
+                "schema:maxValueImg": values.max_image,
+                "minAlertValue": 0,  # TODO
+                "maxAlertValue": 0,  # TODO
+                "responseAlertMessage": "",  # TODO
+            }
+        )
 
         return options
 
@@ -281,23 +260,13 @@ class ActivityItemSliderRowsExport(ActivityItemBaseExport, SliderValuesMixin):
         return ResponseType.SLIDERROWS
 
     def _get_input_type(self):
-        return 'stackedSlider'
+        return "stackedSlider"
 
-    def _build_doc(self, model: ActivityItemFull) -> dict:
-        doc = super()._build_doc(model)
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
+        options = super()._build_response_options_prop(model)
 
-        config: SliderRowsConfig = model.config
-
-        if config.timer:
-            doc.update({
-                "timer": config.timer * 1000  # set in milliseconds
-            })
-
-        return doc
-
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
-        config: SliderRowsConfig = model.config
-        values: SliderRowsValues = model.response_values
+        config: SliderRowsConfig = model.config  # type: ignore[assignment]
+        values: SliderRowsValues = model.response_values  # type: ignore[assignment]  # noqa: E501
 
         slider_options = []
         for row in values.rows:
@@ -307,17 +276,18 @@ class ActivityItemSliderRowsExport(ActivityItemBaseExport, SliderValuesMixin):
                 "schema:maxValue": row.max_label,
                 "schema:minValueImg": row.min_image,
                 "schema:maxValueImg": row.max_image,
-                "choices": self._build_choices_prop(model.response_values)
+                "choices": self._build_choices_prop(row),
             }
             slider_options.append(option)
 
-        options = {
-            "valueType": "xsd:integer",
-            "removeBackOption": config.remove_back_button,
-            "scoring": config.add_scores,
-            "responseAlert": config.set_alerts,
-            "sliderOptions": slider_options
-        }
+        options.update(
+            {
+                "valueType": "xsd:integer",
+                "scoring": config.add_scores,
+                "responseAlert": config.set_alerts,
+                "sliderOptions": slider_options,
+            }
+        )
 
         return options
 
@@ -328,16 +298,7 @@ class ActivityItemMessageExport(ActivityItemBaseExport):
         return ResponseType.MESSAGE
 
     def _get_input_type(self):
-        return 'markdownMessage'
-
-    def _build_doc(self, model: ActivityItemFull) -> dict:
-        doc = super()._build_doc(model)
-        if model.config.timer:
-            doc.update({
-                "timer": model.config.timer * 1000  # set in milliseconds
-            })
-
-        return doc
+        return "markdownMessage"
 
 
 class ActivityItemNumberExport(ActivityItemBaseExport):
@@ -346,174 +307,128 @@ class ActivityItemNumberExport(ActivityItemBaseExport):
         return ResponseType.NUMBERSELECT
 
     def _get_input_type(self):
-        return 'ageSelector'
+        return "ageSelector"
 
-    def _build_doc(self, model: ActivityItemFull) -> dict:
-        doc = super()._build_doc(model)
-        config: NumberSelectionConfig = model.config
-        additional_option = config.additional_response_option
-        if additional_option:
-            doc["isOptionalText"] = additional_option.text_input_option
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
+        options = super()._build_response_options_prop(model)
 
-        return doc
+        values: NumberSelectionValues = model.response_values  # type: ignore[assignment]  # noqa: E501
 
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
-        config: NumberSelectionConfig = model.config
-        values: NumberSelectionValues = model.response_values
-
-        options = {
-            "schema:minAge": values.min_value,
-            "schema:maxAge": values.max_value,
-            "minValue": values.min_value,
-            "maxValue": values.max_value,
-            "removeBackOption": config.remove_back_button,
-        }
-        additional_option = config.additional_response_option
-        if additional_option and additional_option.text_input_option:
-            options["isOptionalTextRequired"] = additional_option.text_input_required
+        options.update(
+            {
+                "schema:minAge": values.min_value,
+                "schema:maxAge": values.max_value,
+                "minValue": values.min_value,
+                "maxValue": values.max_value,
+            }
+        )
 
         return options
 
 
-class ActivityItemDefaultConfigExport(ActivityItemBaseExport, ABC):
-
-    def _build_doc(self, model: ActivityItemFull) -> dict:
-        doc = super()._build_doc(model)
-        config: DefaultConfig = model.config
-        additional_option = config.additional_response_option
-        if additional_option:
-            doc["isOptionalText"] = additional_option.text_input_option
-
-        if config.timer:
-            doc.update({
-                "timer": model.config.timer * 1000  # set in milliseconds
-            })
-
-        return doc
-
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
-        config: DefaultConfig = model.config
-        options = {
-            "removeBackOption": config.remove_back_button,
-        }
-        additional_option = config.additional_response_option
-        if additional_option and additional_option.text_input_option:
-            options["isOptionalTextRequired"] = additional_option.text_input_required
-
-        return options
-
-
-class ActivityItemDateExport(ActivityItemDefaultConfigExport):
+class ActivityItemDateExport(ActivityItemBaseExport):
     @classmethod
     def _get_supported_response_type(cls) -> ResponseType:
         return ResponseType.DATE
 
     def _get_input_type(self):
-        return 'date'
+        return "date"
 
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
         options = super()._build_response_options_prop(model)
-        options.update({
-            "valueType": "xsd:date",
-            "requiredValue": True,
-            "schema:maxValue": "new Date()",
-        })
+        options.update(
+            {
+                "valueType": "xsd:date",
+                "requiredValue": True,
+                "schema:maxValue": "new Date()",
+            }
+        )
 
         return options
 
 
-class ActivityItemTimeExport(ActivityItemDefaultConfigExport):
+class ActivityItemTimeExport(ActivityItemBaseExport):
     @classmethod
     def _get_supported_response_type(cls) -> ResponseType:
         return ResponseType.TIME
 
     def _get_input_type(self):
-        return 'time'
+        return "time"
 
 
-class ActivityItemTimeRangeExport(ActivityItemDefaultConfigExport):
+class ActivityItemTimeRangeExport(ActivityItemBaseExport):
     @classmethod
     def _get_supported_response_type(cls) -> ResponseType:
         return ResponseType.TIMERANGE
 
     def _get_input_type(self):
-        return 'timeRange'
+        return "timeRange"
 
 
-class ActivityItemGeolocationExport(ActivityItemDefaultConfigExport):
+class ActivityItemGeolocationExport(ActivityItemBaseExport):
     @classmethod
     def _get_supported_response_type(cls) -> ResponseType:
         return ResponseType.GEOLOCATION
 
     def _get_input_type(self):
-        return 'geolocation'
+        return "geolocation"
 
 
-class ActivityItemAudioExport(ActivityItemDefaultConfigExport):
+class ActivityItemAudioExport(ActivityItemBaseExport):
     @classmethod
     def _get_supported_response_type(cls) -> ResponseType:
         return ResponseType.AUDIO
 
     def _get_input_type(self):
-        return 'audio'
+        return "audio"
 
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
         options = super()._build_response_options_prop(model)
-        values: AudioValues = model.response_values
-        options.update({
-            "schema:maxValue": values.max_duration * 1000,  # milliseconds
-            "schema:minValue": 0
-        })
+
+        values: AudioValues = model.response_values  # type: ignore[assignment]
+        options.update(
+            {
+                "schema:maxValue": values.max_duration * 1000,  # milliseconds
+                "schema:minValue": 0,
+            }
+        )
 
         return options
 
 
-class ActivityItemPhotoExport(ActivityItemDefaultConfigExport):
+class ActivityItemPhotoExport(ActivityItemBaseExport):
     @classmethod
     def _get_supported_response_type(cls) -> ResponseType:
         return ResponseType.PHOTO
 
     def _get_input_type(self):
-        return 'photo'
+        return "photo"
 
 
-class ActivityItemVideoExport(ActivityItemDefaultConfigExport):
+class ActivityItemVideoExport(ActivityItemBaseExport):
     @classmethod
     def _get_supported_response_type(cls) -> ResponseType:
         return ResponseType.VIDEO
 
     def _get_input_type(self):
-        return 'video'
+        return "video"
 
 
-class ActivityItemDrawingExport(ActivityItemDefaultConfigExport):
+class ActivityItemDrawingExport(ActivityItemBaseExport):
     @classmethod
     def _get_supported_response_type(cls) -> ResponseType:
         return ResponseType.DRAWING
 
     def _get_input_type(self):
-        return 'drawing'
+        return "drawing"
 
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
-        options = super()._build_response_options_prop(model)
+    def _build_doc(self, model: ActivityItemFull) -> dict:
+        doc = super()._build_doc(model)
 
-        config: DrawingConfig = model.config
-        values: DrawingValues = model.response_values
-        options.update({
-            "removeUndoOption": config.remove_undo_button,
-            "topNavigationOption": config.navigation_to_top,
-        })
-        if example_img := values.drawing_example:
-            options["schema:image"] = example_img
-
-        return options
-
-    def _build_ui_prop(self, model: ActivityItemFull) -> dict:
-        ui = super()._build_ui_prop(model)
-
-        values: DrawingValues = model.response_values
+        values: DrawingValues = model.response_values  # type: ignore[assignment]  # noqa: E501
+        # TODO inputOptions in UI by context but in index by legacy
         if bg_img := values.drawing_example:
-            ui["inputOptions"] = [
+            doc["inputOptions"] = [
                 {
                     LdKeyword.type: "http://schema.org/URL",
                     "schema:name": "backgroundImage",
@@ -521,7 +436,23 @@ class ActivityItemDrawingExport(ActivityItemDefaultConfigExport):
                 }
             ]
 
-        return ui
+        return doc
+
+    def _build_response_options_prop(self, model: ActivityItemFull) -> dict:
+        options = super()._build_response_options_prop(model)
+
+        config: DrawingConfig = model.config  # type: ignore[assignment]
+        values: DrawingValues = model.response_values  # type: ignore[assignment]  # noqa: E501
+        options.update(
+            {
+                "removeUndoOption": config.remove_undo_button,
+                "topNavigationOption": config.navigation_to_top,
+            }
+        )
+        if example_img := values.drawing_example:
+            options["schema:image"] = example_img
+
+        return options
 
 
 class ActivityItemAudioPlayerExport(ActivityItemBaseExport):
@@ -530,52 +461,23 @@ class ActivityItemAudioPlayerExport(ActivityItemBaseExport):
         return ResponseType.AUDIOPLAYER
 
     def _get_input_type(self):
-        return 'audioStimulus'
+        return "audioStimulus"
 
     def _build_doc(self, model: ActivityItemFull) -> dict:
         doc = super()._build_doc(model)
 
-        config: AudioPlayerConfig = model.config
-        values: AudioPlayerValues = model.response_values
-
-        additional_option = config.additional_response_option
-        if additional_option:
-            doc["isOptionalText"] = additional_option.text_input_option
+        config: AudioPlayerConfig = model.config  # type: ignore[assignment]
+        values: AudioPlayerValues = model.response_values  # type: ignore[assignment]  # noqa: E501
 
         doc["media"] = {
             values.file: {
                 "schema:name": "stimulus",
-                "schema:contentUrl": values.file
+                "schema:contentUrl": values.file,
             }
         }
 
-        return doc
-
-    def _build_allow_prop(self, model: ActivityItemFull) -> list[str]:
-        allow = super()._build_allow_prop(model)
-
-        config: AudioPlayerConfig = model.config
-        if config.skippable_item:
-            allow.append("dontKnow")
-        return allow
-
-    def _build_response_options_prop(self, model: ActivityItemFull) -> dict | None:
-        config: AudioPlayerConfig = model.config
-        options = {
-            "removeBackOption": config.remove_back_button,
-        }
-        additional_option = config.additional_response_option
-        if additional_option and additional_option.text_input_option:
-            options["isOptionalTextRequired"] = additional_option.text_input_required
-
-        return options
-
-    def _build_ui_prop(self, model: ActivityItemFull) -> dict:
-        ui = super()._build_ui_prop(model)
-
-        config: AudioPlayerConfig = model.config
-        values: AudioPlayerValues = model.response_values
-        ui["inputOptions"] = [
+        # TODO inputOptions in UI by context but in index by legacy
+        doc["inputOptions"] = [
             {
                 LdKeyword.type: "http://schema.org/URL",
                 "schema:name": "stimulus",
@@ -586,7 +488,7 @@ class ActivityItemAudioPlayerExport(ActivityItemBaseExport):
                 LdKeyword.type: "http://schema.org/Boolean",
                 "schema:name": "allowReplay",
                 "schema:value": not config.play_once,
-            }
+            },
         ]
 
-        return ui
+        return doc

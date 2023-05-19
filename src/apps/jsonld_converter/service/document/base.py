@@ -1,36 +1,24 @@
 import asyncio
-import enum
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional, Tuple, Type
+from typing import Any, Callable, Tuple, Type
 
 from pyld import ContextResolver, jsonld  # type: ignore[import]
 
 from apps.jsonld_converter.errors import (
-    JsonLDLoaderError,
     JsonLDNotSupportedError,
     JsonLDProcessingError,
     JsonLDStructureError,
 )
 from apps.jsonld_converter.service.base import (
-    LdKeyword,
     ContextResolverAwareMixin,
+    LdKeyword,
 )
 from apps.shared.domain import InternalModel
 
 
-class LdKeyword(str, enum.Enum):
-    context = "@context"
-    type = "@type"
-    id = "@id"
-    value = "@value"
-    graph = "@graph"
-    language = "@language"
-    list = "@list"
-
-
 class LdAttributeProcessor:
     """
-    context: https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json
+    context: https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json  # noqa: E501
     """
 
     TERMS = {

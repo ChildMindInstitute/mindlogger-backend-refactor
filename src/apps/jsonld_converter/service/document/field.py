@@ -26,9 +26,9 @@ from apps.activities.domain.response_type_config import (
     SliderConfig,
     SliderRowsConfig,
     TextConfig,
+    TimeConfig,
     TimeRangeConfig,
     VideoConfig,
-    TimeConfig,
 )
 from apps.activities.domain.response_values import (
     AudioPlayerValues,
@@ -401,6 +401,7 @@ class ReproFieldRadio(ReproFieldBase):
                 color = Color(color_val)  # TODO process error
 
             values.append(
+                # TODO tokens
                 _SingleSelectionValue(  # TODO where is value???
                     text=choice.get("name"),
                     image=choice.get("image"),

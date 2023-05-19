@@ -1,14 +1,8 @@
 import asyncio
 import enum
-from typing import (
-    Optional,
-    Callable,
-)
+from typing import Callable, Optional
 
-from pyld import (
-    ContextResolver,
-    jsonld,
-)
+from pyld import ContextResolver, jsonld  # type: ignore[import]
 
 from apps.jsonld_converter.errors import (
     JsonLDLoaderError,
@@ -17,8 +11,8 @@ from apps.jsonld_converter.errors import (
 
 
 class LdKeyword(str, enum.Enum):
-    context = '@context'
-    type = '@type'
+    context = "@context"
+    type = "@type"
     id = "@id"
     value = "@value"
     graph = "@graph"
@@ -46,15 +40,24 @@ class ContextResolverAwareMixin:
         try:
             return await asyncio.to_thread(jsonld.expand, doc, options)
         except Exception as e:
-            raise JsonLDProcessingError("Document compacting error", doc) from e
+            raise JsonLDProcessingError(
+                "Document compacting error", doc
+            ) from e
 
-    async def _compact(self, doc: dict | str, context: str | dict | list | None, base_url: str | None = None):
+    async def _compact(
+        self,
+        doc: dict | str,
+        context: str | dict | list | None,
+        base_url: str | None = None,
+    ):
         options = dict(
             base=base_url,
             contextResolver=self.context_resolver,
             documentLoader=self.document_loader,
         )
         try:
-            return await asyncio.to_thread(jsonld.compact, doc, context, options)
+            return await asyncio.to_thread(
+                jsonld.compact, doc, context, options
+            )
         except Exception as e:
             raise JsonLDProcessingError("Document expanding error", doc) from e

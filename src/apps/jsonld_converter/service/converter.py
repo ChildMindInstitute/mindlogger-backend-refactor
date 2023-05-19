@@ -17,10 +17,10 @@ from apps.jsonld_converter.service.document import (
     ReproFieldSlider,
     ReproFieldSliderStacked,
     ReproFieldText,
+    ReproFieldTime,
     ReproFieldTimeRange,
     ReproFieldVideo,
     ReproProtocol,
-    ReproFieldTime,
 )
 from apps.jsonld_converter.service.document.base import (
     ContainsNestedMixin,
@@ -28,8 +28,8 @@ from apps.jsonld_converter.service.document.base import (
 )
 from apps.jsonld_converter.service.export import AppletExport
 from apps.jsonld_converter.service.export.base import (
-    ContainsNestedModelMixin,
     BaseModelExport,
+    ContainsNestedModelMixin,
 )
 from apps.shared.domain import InternalModel
 
@@ -97,9 +97,11 @@ class JsonLDModelConverter(ContainsNestedMixin):
 
 class ModelJsonLDConverter(ContainsNestedModelMixin):
 
-    CONTEXT_TO_COMPACT = "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+    CONTEXT_TO_COMPACT = "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"  # noqa: E501
 
-    def __init__(self, context_resolver: ContextResolver, document_loader: Callable):
+    def __init__(
+        self, context_resolver: ContextResolver, document_loader: Callable
+    ):
         self.context_resolver: ContextResolver = context_resolver
         self.document_loader: Callable = document_loader
 
