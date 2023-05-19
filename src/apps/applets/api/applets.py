@@ -155,7 +155,7 @@ async def applet_create(
                 ),
             )
         )
-    return Response(result=public_detail.Applet(**applet.dict()))
+    return Response(result=public_detail.Applet.from_orm(applet))
 
 
 async def applet_update(
@@ -183,7 +183,7 @@ async def applet_update(
         #         ),
         #     )
         # )
-    return Response(result=public_detail.Applet(**applet.dict()))
+    return Response(result=public_detail.Applet.from_orm(applet))
 
 
 async def applet_encryption_update(
@@ -232,7 +232,7 @@ async def applet_duplicate(
                 ),
             )
         )
-    return Response(result=public_detail.Applet(**applet.dict()))
+    return Response(result=public_detail.Applet.from_orm(applet))
 
 
 async def applet_set_report_configuration(
