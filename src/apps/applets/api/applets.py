@@ -232,7 +232,7 @@ async def applet_duplicate(
                 ),
             )
         )
-    return Response(result=public_detail.Applet(**applet.dict(by_alias=True)))
+    return Response(result=public_detail.Applet.from_orm(applet))
 
 
 async def applet_set_report_configuration(
