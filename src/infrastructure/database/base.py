@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, MetaData
+from sqlalchemy import Boolean, Column, DateTime, MetaData, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_method
 from sqlalchemy.orm import declarative_base
@@ -21,15 +21,31 @@ meta = MetaData(
 )
 
 
-class _Base:
+_Base = declarative_base(bind=engine.sync_engine, metadata=meta)
+
+
+class Base(_Base):  # type: ignore
     """Base class for all database models."""
 
+    __abstract__ = True
+
     id = Column(
-        UUID(as_uuid=True), primary_key=True, default=lambda: uuid.uuid4()
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=lambda: uuid.uuid4(),
+        server_default=text("gen_random_uuid()"),
     )
-    created_at = Column(DateTime(), default=datetime.now)
+    created_at = Column(
+        DateTime(),
+        default=datetime.now,
+        server_default=text("timezone('utc', now())"),
+    )
     updated_at = Column(
-        DateTime(), default=datetime.now, onupdate=datetime.now
+        DateTime(),
+        default=datetime.now,
+        onupdate=datetime.now,
+        server_default=text("timezone('utc', now())"),
+        server_onupdate=text("timezone('utc', now())"),
     )
     is_deleted = Column(Boolean(), default=False)
 
@@ -51,6 +67,3 @@ class _Base:
         if exists:
             return cls.is_deleted.isnot(True)
         return cls.is_deleted.is_(True)
-
-
-Base = declarative_base(cls=_Base, bind=engine.sync_engine, metadata=meta)

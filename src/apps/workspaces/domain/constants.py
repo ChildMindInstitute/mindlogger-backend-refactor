@@ -61,6 +61,11 @@ class ManagersRole(str, Enum):
     EDITOR = "editor"
 
 
+class UserPinRole(str, Enum):
+    manager = "manager"
+    respondent = "respondent"
+
+
 class DataRetention(str, Enum):
     INDEFINITELY = "indefinitely"
     DAYS = "days"

@@ -9,7 +9,7 @@ from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
-from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.constants import Role, UserPinRole
 from apps.workspaces.domain.user_applet_access import (
     ManagerAccesses,
     ManagerAppletAccess,
@@ -228,21 +228,37 @@ class UserAccessService:
         if not has_access:
             raise WorkspaceDoesNotExistError
 
-    async def pin(self, access_id: uuid.UUID, owner_id: uuid.UUID):
-        await self._validate_pin(access_id, owner_id)
-        await UserAppletAccessCRUD(self.session).pin(access_id)
+    async def pin(
+        self, owner_id: uuid.UUID, user_id: uuid.UUID, pin_role: UserPinRole
+    ):
+        await self._validate_pin(owner_id, user_id, pin_role)
+        await UserAppletAccessCRUD(self.session).pin(
+            self._user_id, owner_id, user_id, pin_role
+        )
 
-    async def _validate_pin(self, access_id: uuid.UUID, owner_id: uuid.UUID):
-        access = await UserAppletAccessCRUD(self.session).get_by_id(access_id)
-        if owner_id and access.owner_id != owner_id:
+    async def _validate_pin(
+        self, owner_id: uuid.UUID, user_id: uuid.UUID, pin_role: UserPinRole
+    ):
+        can_pin = await UserAppletAccessCRUD(
+            self.session
+        ).check_access_by_user_and_owner(
+            self._user_id,
+            owner_id,
+            [Role.MANAGER, Role.COORDINATOR, Role.OWNER],
+        )
+        if not can_pin:
             raise WorkspaceDoesNotExistError
 
-        applet_manager_ids = await UserAppletAccessCRUD(
+        roles = None
+        if pin_role == UserPinRole.respondent:
+            roles = [Role.RESPONDENT]
+        elif pin_role == UserPinRole.manager:
+            roles = [Role.OWNER, Role.MANAGER, Role.COORDINATOR, Role.EDITOR]
+
+        has_user = await UserAppletAccessCRUD(
             self.session
-        ).get_applet_users_by_roles(
-            access.applet_id, [Role.MANAGER, Role.COORDINATOR, Role.OWNER]
-        )
-        if self._user_id not in applet_manager_ids:
+        ).check_access_by_user_and_owner(user_id, owner_id, roles)
+        if not has_user:
             raise UserAppletAccessesDenied
 
     async def get_respondent_accesses_by_workspace(
