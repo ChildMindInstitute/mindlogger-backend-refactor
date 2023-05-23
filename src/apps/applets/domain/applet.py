@@ -1,12 +1,13 @@
 import datetime
 import uuid
 
-from pydantic import Field, PositiveInt
+from pydantic import Field, PositiveInt, root_validator
 
 from apps.activities.domain.activity import (
     ActivitySingleLanguageDetail,
     ActivitySingleLanguageDetailPublic,
 )
+from apps.activities.errors import PeriodIsRequiredError
 from apps.activity_flows.domain.flow import (
     FlowSingleLanguageDetail,
     FlowSingleLanguageDetailPublic,
@@ -101,5 +102,15 @@ class AppletUniqueName(PublicModel):
 
 
 class AppletDataRetention(InternalModel):
-    period: PositiveInt
     retention: DataRetention
+    period: PositiveInt | None = None
+
+    @root_validator()
+    def validate_period(cls, values):
+        retention = values.get("retention")
+        value = values.get("period")
+        if retention != DataRetention.INDEFINITELY and not value:
+            raise PeriodIsRequiredError()
+        if retention == DataRetention.INDEFINITELY:
+            values["period"] = None
+        return values

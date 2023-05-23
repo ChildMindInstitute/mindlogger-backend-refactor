@@ -131,7 +131,8 @@ class IncorrectConditionItemError(FieldError):
 
 class IncorrectConditionItemIndexError(ValidationError):
     message = _(
-        " Selected position of the Item in the list contradicts the Item Flow."  # noqa: E501
+        " Selected position of the Item in the list contradicts the Item Flow."
+        # noqa: E501
     )
 
 
@@ -145,3 +146,7 @@ class IncorrectConditionLogicItemTypeError(ValidationError):
 
 class HiddenWhenConditionalLogicSetError(ValidationError):
     message = _("Item type cannot be hidden if conditional logic is set.")
+
+
+class PeriodIsRequiredError(ValidationError):
+    message = _("Period field is required.")
