@@ -16,10 +16,6 @@ class ActivityItem(PublicModel):
     response_type: str
     response_values: ResponseValueConfig | None
     config: ResponseTypeConfig
-    question: dict[str, str]
-    response_type: str
-    response_values: ResponseValueConfig | None
-    config: ResponseTypeConfig
     order: int
     is_hidden: bool | None
     conditional_logic: ConditionalLogic | None = None
