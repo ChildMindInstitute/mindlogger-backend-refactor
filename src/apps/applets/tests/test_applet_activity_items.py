@@ -634,7 +634,7 @@ class TestActivityItems(BaseTest):
                                             ),
                                         ),
                                         dict(
-                                            item_name="activity_item_singleselect",
+                                            item_name="activity_item_singleselect",  # noqa E501
                                             type="EQUAL_TO_OPTION",
                                             payload=dict(
                                                 option_id="25e69155-22cd-4484-8a49-364779ea9de1"  # noqa E501
