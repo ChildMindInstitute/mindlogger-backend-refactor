@@ -16,6 +16,7 @@ class ConditionType(str, Enum):
     NOT_EQUAL = "NOT_EQUAL"
     BETWEEN = "BETWEEN"
     OUTSIDE_OF = "OUTSIDE_OF"
+    EQUAL_TO_SCORE = "EQUAL_TO_SCORE"
 
 
 class MultiSelectConditionType(str, Enum):
@@ -46,8 +47,12 @@ class ValuePayload(PublicModel):
 
 
 class MinMaxPayload(PublicModel):
-    minValue: int
-    maxValue: int
+    min_value: int
+    max_value: int
+
+
+class ScoreConditionPayload(PublicModel):
+    value: bool
 
 
 class BaseCondition(PublicModel):
@@ -104,6 +109,11 @@ class OutsideOfCondition(BaseCondition):
     payload: MinMaxPayload
 
 
+class ScoreBoolCondition(BaseCondition):
+    type: str = Field(ConditionType.EQUAL_TO_SCORE, const=True)
+    payload: ScoreConditionPayload
+
+
 Condition = (
     IncludesOptionCondition
     | NotIncludesOptionCondition
@@ -115,4 +125,26 @@ Condition = (
     | NotEqualCondition
     | BetweenCondition
     | OutsideOfCondition
+)
+
+ScoreCondition = (
+    GreaterThanCondition
+    | LessThanCondition
+    | EqualCondition
+    | NotEqualCondition
+    | BetweenCondition
+    | OutsideOfCondition
+)
+SectionCondition = (
+    IncludesOptionCondition
+    | NotIncludesOptionCondition
+    | EqualToOptionCondition
+    | NotEqualToOptionCondition
+    | GreaterThanCondition
+    | LessThanCondition
+    | EqualCondition
+    | NotEqualCondition
+    | BetweenCondition
+    | OutsideOfCondition
+    | ScoreBoolCondition
 )

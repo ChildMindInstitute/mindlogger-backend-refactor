@@ -129,6 +129,18 @@ class IncorrectConditionItemError(FieldError):
     message = _("Condition item does not exist.")
 
 
+class IncorrectScoreItemError(FieldError):
+    message = _("Score item does not exist.")
+
+
+class IncorrectScorePrintItemError(FieldError):
+    message = _("Score print item does not exist.")
+
+
+class IncorrectSectionPrintItemError(FieldError):
+    message = _("Section print item does not exist.")
+
+
 class IncorrectConditionItemIndexError(ValidationError):
     message = _(
         " Selected position of the Item in the list contradicts the Item Flow."
@@ -144,8 +156,78 @@ class IncorrectConditionLogicItemTypeError(ValidationError):
     message = _("Item type is not supported for conditional logic.")
 
 
+class IncorrectScoreItemTypeError(ValidationError):
+    message = _("Item type is not supported for score setting.")
+
+
+class IncorrectScorePrintItemTypeError(ValidationError):
+    message = _("Item type is not supported for score print setting.")
+
+
+class IncorrectSectionPrintItemTypeError(ValidationError):
+    message = _("Item type is not supported for section print setting.")
+
+
+class IncorrectSectionConditionItemError(ValidationError):
+    message = _("Section condition item does not exist.")
+
+
+class IncorrectScoreItemConfigError(ValidationError):
+    message = _("Item config is not supported for score setting.")
+
+
 class HiddenWhenConditionalLogicSetError(ValidationError):
     message = _("Item type cannot be hidden if conditional logic is set.")
+
+
+class DuplicateScoreNameError(FieldError):
+    message = _("Score names are duplicated.")
+
+
+class DuplicateSectionNameError(FieldError):
+    message = _("Section names are duplicated.")
+
+
+class DuplicateScoreIdError(FieldError):
+    message = _("Score ids are duplicated.")
+
+
+class DuplicateScoreItemNameError(FieldError):
+    message = _("Score item names are duplicated.")
+
+
+class DuplicateScoreConditionNameError(FieldError):
+    message = _("Score condition names are duplicated.")
+
+
+class DuplicateScoreConditionIdError(FieldError):
+    message = _("Score condition ids are duplicated.")
+
+
+class DuplicateSectionConditionNameError(FieldError):
+    message = _("Score condition names are duplicated.")
+
+
+class DuplicateSectionConditionIdError(FieldError):
+    message = _("Score condition ids are duplicated.")
+
+
+class MessageRequiredForConditionalLogicError(FieldError):
+    message = _("Message must be set if show_message is True.")
+
+
+class ItemsRequiredForConditionalLogicError(FieldError):
+    message = _("Items must be set if print_items is True.")
+
+
+class ScoreConditionItemNameError(FieldError):
+    message = _(
+        "The item_name field in conditions must be same as score name."
+    )
+
+
+class SectionMessageOrItemError(FieldError):
+    message = _("Either show_message or print_items must be true.")
 
 
 class PeriodIsRequiredError(ValidationError):
