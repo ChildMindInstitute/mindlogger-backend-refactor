@@ -98,6 +98,8 @@ class UserAccessService:
                     report_email_body=schema.report_email_body,
                     created_at=schema.created_at,
                     updated_at=schema.updated_at,
+                    retention_period=schema.retention_period,
+                    retention_type=schema.retention_type,
                 )
             )
         return applets
