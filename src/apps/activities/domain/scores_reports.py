@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import Field, validator
+from pydantic import Field, root_validator, validator
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
@@ -22,14 +22,14 @@ from apps.shared.domain import PublicModel
 
 
 class CalculationType(str, Enum):
-    SUM = "SUM"
-    AVERAGE = "AVERAGE"
-    PERCENTAGE = "PERCENTAGE"
+    SUM = "sum"
+    AVERAGE = "average"
+    PERCENTAGE = "percentage"
 
 
 class ScoreConditionalLogic(PublicModel):
     name: str
-    condition_id: str
+    id: str
     flag_score: bool = False
     show_message: bool = False
     message: str | None = None
@@ -102,7 +102,7 @@ class Score(PublicModel):
 
 class SectionConditionalLogic(PublicModel):
     name: str
-    condition_id: str
+    id: str
     flag_score: bool = False
     show_message: bool = False
     message: str | None = None
@@ -134,11 +134,11 @@ class Section(PublicModel):
     items_print: list[str] | None = Field(default_factory=list)
     conditional_logic: SectionConditionalLogic | None = None
 
-    @validator("show_message")
-    def validate_show_message(cls, value, values):
-        if not value and not values.get("print_items"):
+    @root_validator()
+    def validate_show_message(cls, values):
+        if not values.get("show_message") and not values.get("print_items"):
             raise SectionMessageOrItemError()
-        return value
+        return values
 
     @validator("message")
     def validate_message(cls, value, values):
@@ -174,8 +174,12 @@ class ScoresAndReports(PublicModel):
             score_condition_ids = []
             for score in value:
                 if score.conditional_logic:
-                    score_condition_names.extend(score.conditional_logic.name)
-                    score_condition_ids.extend(score.conditional_logic.id)
+                    score_condition_names += [
+                        logic.name for logic in score.conditional_logic
+                    ]
+                    score_condition_ids += [
+                        logic.id for logic in score.conditional_logic
+                    ]
             if len(score_condition_names) != len(set(score_condition_names)):
                 raise DuplicateScoreConditionNameError()
             if len(score_condition_ids) != len(set(score_condition_ids)):
@@ -195,10 +199,10 @@ class ScoresAndReports(PublicModel):
             section_condition_ids = []
             for section in value:
                 if section.conditional_logic:
-                    section_condition_names.extend(
+                    section_condition_names.append(
                         section.conditional_logic.name
                     )
-                    section_condition_ids.extend(section.conditional_logic.id)
+                    section_condition_ids.append(section.conditional_logic.id)
             if len(section_condition_names) != len(
                 set(section_condition_names)
             ):

@@ -555,6 +555,96 @@ class TestActivityItems(BaseTest):
                         en="Understand morning feelings.",
                         fr="Understand morning feelings.",
                     ),
+                    subscales=None,
+                    scores_and_reports=dict(
+                        generateReport=True,
+                        showScoreSummary=True,
+                        scores=[
+                            dict(
+                                name="score1",
+                                id="score1_activity1",
+                                calculationType="sum",
+                                minScore=0,
+                                maxScore=3,
+                                itemsScore=["activity_item_singleselect"],
+                                showMessage=True,
+                                message="Hello",
+                                printItems=True,
+                                itemsPrint=[
+                                    "activity_item_singleselect",
+                                    "activity_item_multiselect",
+                                    "activity_item_slideritem",
+                                    "activity_item_text",
+                                ],
+                                conditionalLogic=[
+                                    dict(
+                                        name="score1_condition1",
+                                        id="score1_condition1_id",
+                                        flagScore=True,
+                                        showMessage=True,
+                                        message="Hello2",
+                                        printItems=False,
+                                        match="any",
+                                        conditions=[
+                                            dict(
+                                                item_name="score1",
+                                                type="GREATER_THAN",
+                                                payload=dict(
+                                                    value=1,
+                                                ),
+                                            ),
+                                            dict(
+                                                item_name="score1",
+                                                type="GREATER_THAN",
+                                                payload=dict(
+                                                    value=2,
+                                                ),
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+                        ],
+                        sections=[
+                            dict(
+                                name="section1",
+                                showMessages=True,
+                                messages="Hello from the other side",
+                                printItems=True,
+                                itemsPrint=[
+                                    "activity_item_singleselect",
+                                    "activity_item_multiselect",
+                                    "activity_item_slideritem",
+                                    "activity_item_text",
+                                ],
+                                conditionalLogic=dict(
+                                    name="section1_condition1",
+                                    id="section1_condition1_id",
+                                    flagScore=True,
+                                    message="Hello2",
+                                    showMessage=True,
+                                    printItems=False,
+                                    match="all",
+                                    conditions=[
+                                        dict(
+                                            item_name="score1",
+                                            type="GREATER_THAN",
+                                            payload=dict(
+                                                value=1,
+                                            ),
+                                        ),
+                                        dict(
+                                            item_name="activity_item_singleselect",
+                                            type="EQUAL_TO_OPTION",
+                                            payload=dict(
+                                                option_id="25e69155-22cd-4484-8a49-364779ea9de1"  # noqa E501
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ],
+                    ),
                     items=[
                         dict(
                             name="activity_item_singleselect",
@@ -565,10 +655,12 @@ class TestActivityItems(BaseTest):
                                 options=[
                                     {
                                         "text": "option1",
+                                        "score": 1,
                                         "id": "25e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
                                     },
                                     {
                                         "text": "option2",
+                                        "score": 2,
                                         "id": "26e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
                                     },
                                 ],
@@ -576,7 +668,7 @@ class TestActivityItems(BaseTest):
                             config=dict(
                                 remove_back_button=False,
                                 skippable_item=False,
-                                add_scores=False,
+                                add_scores=True,
                                 set_alerts=False,
                                 timer=1,
                                 add_tooltip=False,
@@ -767,7 +859,20 @@ class TestActivityItems(BaseTest):
             data=create_data,
         )
         assert response.status_code == 201, response.json()
-
+        assert (
+            type(
+                response.json()["result"]["activities"][0]["items"][3][
+                    "conditionalLogic"
+                ]
+            )
+            == dict
+        )
+        assert (
+            type(
+                response.json()["result"]["activities"][0]["scoresAndReports"]
+            )
+            == dict
+        )
         response = await self.client.get(
             self.applet_detail_url.format(pk=response.json()["result"]["id"])
         )

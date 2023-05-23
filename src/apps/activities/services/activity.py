@@ -57,6 +57,10 @@ class ActivityService:
                     is_reviewable=activity_data.is_reviewable,
                     response_is_editable=activity_data.response_is_editable,
                     is_hidden=activity_data.is_hidden,
+                    scores_and_reports=activity_data.scores_and_reports.dict()
+                    if activity_data.scores_and_reports
+                    else None,
+                    subscales=activity_data.subscales,
                     order=index + 1,
                 )
             )
@@ -73,6 +77,9 @@ class ActivityService:
                         config=item.config.dict(),
                         name=item.name,
                         is_hidden=item.is_hidden,
+                        conditional_logic=item.conditional_logic.dict()
+                        if item.conditional_logic
+                        else None,
                     )
                 )
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
@@ -148,6 +155,10 @@ class ActivityService:
                     is_reviewable=activity_data.is_reviewable,
                     response_is_editable=activity_data.response_is_editable,
                     is_hidden=activity_data.is_hidden,
+                    scores_and_reports=activity_data.scores_and_reports.dict()
+                    if activity_data.scores_and_reports
+                    else None,
+                    subscales=activity_data.subscales,
                     order=index + 1,
                 )
             )
@@ -164,6 +175,9 @@ class ActivityService:
                         if item.response_values
                         else None,
                         config=item.config.dict(),
+                        conditional_logic=item.conditional_logic.dict()
+                        if item.conditional_logic
+                        else None,
                     )
                 )
         activity_schemas = await ActivitiesCRUD(self.session).create_many(

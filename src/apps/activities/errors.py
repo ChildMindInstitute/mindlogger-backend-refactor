@@ -205,11 +205,11 @@ class DuplicateScoreConditionIdError(FieldError):
 
 
 class DuplicateSectionConditionNameError(FieldError):
-    message = _("Score condition names are duplicated.")
+    message = _("Section condition names are duplicated.")
 
 
 class DuplicateSectionConditionIdError(FieldError):
-    message = _("Score condition ids are duplicated.")
+    message = _("Section condition ids are duplicated.")
 
 
 class MessageRequiredForConditionalLogicError(FieldError):

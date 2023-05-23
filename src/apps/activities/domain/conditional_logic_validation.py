@@ -13,9 +13,9 @@ from apps.activities.errors import (
     IncorrectScoreItemTypeError,
     IncorrectScorePrintItemError,
     IncorrectScorePrintItemTypeError,
+    IncorrectSectionConditionItemError,
     IncorrectSectionPrintItemError,
     IncorrectSectionPrintItemTypeError,
-    IncorrectSectionConditionItemError,
 )
 
 
@@ -73,7 +73,7 @@ def validate_score_and_sections(values: dict):
         # validate items in scores
         if hasattr(scores_and_reports, "scores"):
             for score in scores_and_reports.scores:
-                score_item_names.extend(score.name)
+                score_item_names.append(score.name)
                 # check if all item names are same as values.name
                 for item in score.items_score:
                     if item not in item_names:
@@ -103,7 +103,7 @@ def validate_score_and_sections(values: dict):
 
                 if score.get("conditional_logic"):
                     for conditional_logic in score.conditional_logic:
-                        score_condition_item_names.extend(
+                        score_condition_item_names.append(
                             conditional_logic.name
                         )
                         for item in conditional_logic.items_print:

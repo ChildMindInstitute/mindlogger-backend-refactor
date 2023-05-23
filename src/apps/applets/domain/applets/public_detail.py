@@ -2,25 +2,43 @@ import uuid
 
 from pydantic import Field
 
+from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.domain.response_type_config import ResponseTypeConfig
 from apps.activities.domain.response_values import ResponseValueConfig
+from apps.activities.domain.scores_reports import ScoresAndReports, Subscale
 from apps.shared.domain import PublicModel
 
 
-class ActivityItem(BaseActivityItem):
+class ActivityItem(PublicModel):
     id: uuid.UUID
     activity_id: uuid.UUID
     question: dict[str, str]
     response_type: str
     response_values: ResponseValueConfig | None
     config: ResponseTypeConfig
+    question: dict[str, str]
+    response_type: str
+    response_values: ResponseValueConfig | None
+    config: ResponseTypeConfig
     order: int
+    is_hidden: bool | None
+    conditional_logic: ConditionalLogic | None = None
 
 
-class Activity(ActivityBase):
+class Activity(PublicModel):
     id: uuid.UUID
+    name: str
+    description: dict[str, str] = Field(default_factory=dict)
+    splash_screen: str = ""
+    image: str = ""
+    show_all_at_once: bool = False
+    is_skippable: bool = False
+    is_reviewable: bool = False
+    response_is_editable: bool = False
     order: int
     items: list[ActivityItem] = Field(default_factory=list)
+    scores_and_reports: ScoresAndReports | None = None
+    subscales: list[Subscale] | None = Field(default_factory=list)
 
 
 class ActivityFlowItem(PublicModel):
