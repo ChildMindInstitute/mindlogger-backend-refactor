@@ -1,7 +1,7 @@
 """add score_and_section field
 
 Revision ID: bb67d8d318aa
-Revises: 2d9cbd7b0928
+Revises: 00a67bc1b11d
 Create Date: 2023-05-23 09:22:37.023868
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "bb67d8d318aa"
-down_revision = "2d9cbd7b0928"
+down_revision = "00a67bc1b11d"
 branch_labels = None
 depends_on = None
 
