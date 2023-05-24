@@ -50,6 +50,10 @@ class DateValues(PublicModel):
     pass
 
 
+class FlankerValues(PublicModel):
+    pass
+
+
 class _SingleSelectionValue(PublicModel):
     id: str | None = None
     text: str
@@ -252,6 +256,7 @@ ResponseValueConfigOptions = [
     AudioPlayerValues,
     MessageValues,
     TimeValues,
+    FlankerValues,
 ]
 
 
