@@ -1,7 +1,7 @@
 """allow_edit field for activity item
 
 Revision ID: 0c48e3afead1
-Revises: 00a67bc1b11d
+Revises: bb67d8d318aa
 Create Date: 2023-05-24 02:01:34.255411
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "0c48e3afead1"
-down_revision = "00a67bc1b11d"
+down_revision = "bb67d8d318aa"
 branch_labels = None
 depends_on = None
 
