@@ -441,6 +441,16 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(UserSchema)
         )
 
+        has_access = (
+            exists()
+            .where(
+                UserAppletAccessSchema.user_id == user_id,
+                UserAppletAccessSchema.applet_id == AppletSchema.id,
+                UserAppletAccessSchema.role != Role.RESPONDENT,
+            )
+            .correlate(AppletSchema)
+        )
+
         field_nickname = UserAppletAccessSchema.meta[text("'nickname'")].astext
         field_secret_user_id = UserAppletAccessSchema.meta[
             text("'secretUserId'")
@@ -499,6 +509,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .where(
                 UserAppletAccessSchema.owner_id == owner_id,
                 UserAppletAccessSchema.role == Role.RESPONDENT,
+                has_access,
                 UserAppletAccessSchema.applet_id == applet_id
                 if applet_id
                 else True,
@@ -554,6 +565,16 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(UserSchema)
         )
 
+        has_access = (
+            exists()
+            .where(
+                UserAppletAccessSchema.user_id == user_id,
+                UserAppletAccessSchema.applet_id == AppletSchema.id,
+                UserAppletAccessSchema.role != Role.RESPONDENT,
+            )
+            .correlate(AppletSchema)
+        )
+
         query: Query = (
             select(
                 # fmt: off
@@ -585,7 +606,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                         ),
                         AppletSchema.id
                     )
-                ).label("details"),
+                ).label("applets"),
                 # fmt: on
             )
             .select_from(UserAppletAccessSchema)
@@ -603,6 +624,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .where(
                 UserAppletAccessSchema.owner_id == owner_id,
                 UserAppletAccessSchema.role != Role.RESPONDENT,
+                has_access,
                 UserAppletAccessSchema.applet_id == applet_id
                 if applet_id
                 else True,
