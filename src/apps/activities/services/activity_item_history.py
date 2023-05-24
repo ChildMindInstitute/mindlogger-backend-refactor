@@ -29,6 +29,10 @@ class ActivityItemHistoryService:
                     config=item.config.dict(),
                     order=item.order,
                     name=item.name,
+                    conditional_logic=item.conditional_logic.dict()
+                    if item.conditional_logic
+                    else None,
+                    allow_edit=item.allow_edit,
                 )
             )
         await ActivityItemHistoriesCRUD(self.session).create_many(schemas)

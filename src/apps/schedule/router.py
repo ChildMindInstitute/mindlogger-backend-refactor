@@ -5,6 +5,7 @@ from apps.schedule.api.schedule import (
     public_schedule_get_all,
     schedule_count,
     schedule_create,
+    schedule_create_individual,
     schedule_delete_all,
     schedule_delete_by_id,
     schedule_delete_by_user,
@@ -45,6 +46,19 @@ router.post(
         **NO_CONTENT_ERROR_RESPONSES,
     },
 )(schedule_import)
+
+# Create individual schedule
+router.post(
+    "/{applet_id}/events/individual",
+    response_model=ResponseMulti[PublicEvent],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {"model": ResponseMulti[PublicEvent]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+        **NO_CONTENT_ERROR_RESPONSES,
+    },
+)(schedule_create_individual)
 
 # Create schedule
 router.post(
