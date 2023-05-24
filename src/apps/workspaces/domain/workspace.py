@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from pydantic import Field
+from pydantic import Field, validator
 
 from apps.applets.domain.applet import (
     AppletSingleLanguageInfo,
@@ -69,11 +69,34 @@ class WorkspaceRespondent(InternalModel):
     details: list[WorkspaceRespondentDetails] | None = None
 
 
-class WorkspaceManagerDetails(InternalModel):
-    applet_id: uuid.UUID
-    applet_display_name: str
+class AppletRoles(InternalModel):
     access_id: uuid.UUID
     role: Role
+
+
+class WorkspaceManagerApplet(InternalModel):
+    id: uuid.UUID
+    display_name: str
+    roles: list[AppletRoles]
+
+
+def group_applet_roles(value):
+    applets = {}
+    for applet_role in value:
+        applet_id = applet_role["applet_id"]
+        applet = applets.get(applet_id)
+        if not applet:
+            applet = {
+                "id": applet_id,
+                "display_name": applet_role["applet_display_name"],
+                "roles": [],
+            }
+        applet["roles"].append(
+            dict(access_id=applet_role["access_id"], role=applet_role["role"])
+        )
+        applets[applet_id] = applet
+
+    return list(applets.values())
 
 
 class WorkspaceManager(InternalModel):
@@ -84,7 +107,29 @@ class WorkspaceManager(InternalModel):
     roles: list[Role]
     last_seen: datetime.datetime
     is_pinned: bool = False
-    details: list[WorkspaceManagerDetails] | None = None
+    applets: list[WorkspaceManagerApplet] | None = None
+
+    @validator("applets", pre=True)
+    def group_applets(cls, value):
+        applets = {}
+        for applet_role in value:
+            applet_id = applet_role["applet_id"]
+            applet = applets.get(applet_id)
+            if not applet:
+                applet = {
+                    "id": applet_id,
+                    "display_name": applet_role["applet_display_name"],
+                    "roles": [],
+                }
+            applet["roles"].append(
+                dict(
+                    access_id=applet_role["access_id"],
+                    role=applet_role["role"],
+                )
+            )
+            applets[applet_id] = applet
+
+        return list(applets.values())
 
 
 class PublicWorkspaceRespondent(PublicModel):
@@ -104,7 +149,7 @@ class PublicWorkspaceManager(PublicModel):
     roles: list[Role]
     last_seen: datetime.datetime
     is_pinned: bool = False
-    details: list[WorkspaceManagerDetails] | None = None
+    applets: list[WorkspaceManagerApplet] | None = None
 
 
 class WorkspaceInfo(InternalModel):
