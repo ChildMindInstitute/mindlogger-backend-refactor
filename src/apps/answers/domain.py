@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import Any
 
-from pydantic import Field
+from pydantic import Field, validator
 
 from apps.activities.domain.activity_full import PublicActivityItemFull
 from apps.activities.domain.response_type_config import ResponseType
@@ -40,22 +40,36 @@ ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
 
 
 class ActivityItemAnswerCreate(InternalModel):
-    activity_item_id: uuid.UUID
-    answer: AnswerTypes
+    flow_id: uuid.UUID | None = None
+    activity_id: uuid.UUID
+    answer: str
+    item_ids: list[uuid.UUID]
+
+    @validator("item_ids")
+    def convert_item_ids(cls, value: list[uuid.UUID]):
+        return list(map(str, value))
 
 
-class AnsweredActivityItem(InternalModel):
+class AnswerItemSchemaAnsweredActivityItem(InternalModel):
     activity_item_history_id: str
-    answer: AnswerTypes
+    answer: str
 
 
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
-    flow_id: uuid.UUID | None = None
-    activity_id: uuid.UUID
     answers: list[ActivityItemAnswerCreate]
     created_at: int | None
+    user_public_key: str
+
+    @validator("answers")
+    def validate_answers(cls, value: list[ActivityItemAnswerCreate]):
+        answer_activity_ids = set()
+        for answer in value:
+            if answer.activity_id in answer_activity_ids:
+                raise ValueError("Duplicate activity")
+            answer_activity_ids.add(answer.activity_id)
+        return value
 
 
 class AnswerDate(InternalModel):
@@ -84,28 +98,16 @@ class PublicAnswerDates(PublicModel):
     dates: list[datetime.date]
 
 
-class ActivityItemAnswer(InternalModel):
-    type: ResponseType
-    activity_item: PublicActivityItemFull
-    answer: AnswerTypes | None
-
-
 class ActivityAnswer(InternalModel):
-    activity_item_answers: list[ActivityItemAnswer] = Field(
-        default_factory=list
-    )
-
-
-class ActivityItemAnswerPublic(PublicModel):
-    type: ResponseType
-    activity_item: PublicActivityItemFull
-    answer: AnswerTypes | None
+    answer: str
+    item_ids: list[str]
+    items: list[PublicActivityItemFull] = Field(default_factory=list)
 
 
 class ActivityAnswerPublic(PublicModel):
-    activity_item_answers: list[ActivityItemAnswerPublic] = Field(
-        default_factory=list
-    )
+    answer: str
+    item_ids: list[str]
+    items: list[PublicActivityItemFull] = Field(default_factory=list)
 
 
 class AnswerNote(InternalModel):

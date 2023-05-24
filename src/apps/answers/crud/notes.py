@@ -20,13 +20,17 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
         return await self._create(schema)
 
     async def get_by_answer_id(
-        self, answer_id: uuid.UUID, query_params: QueryParams
+        self,
+        answer_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        query_params: QueryParams,
     ) -> list[AnswerNoteDetail]:
         query: Query = select(AnswerNoteSchema, UserSchema)
         query = query.join(
             UserSchema, UserSchema.id == AnswerNoteSchema.user_id
         )
         query = query.where(AnswerNoteSchema.answer_id == answer_id)
+        query = query.where(AnswerNoteSchema.activity_id == activity_id)
         query = query.order_by(AnswerNoteSchema.created_at.desc())
         query = paging(query, query_params.page, query_params.limit)
 
@@ -49,9 +53,12 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
             )
         return results
 
-    async def get_count_by_answer_id(self, answer_id: uuid.UUID) -> int:
+    async def get_count_by_answer_id(
+        self, answer_id: uuid.UUID, activity_id: uuid.UUID
+    ) -> int:
         query: Query = select(count(AnswerNoteSchema.id))
         query = query.where(AnswerNoteSchema.answer_id == answer_id)
+        query = query.where(AnswerNoteSchema.activity_id == activity_id)
         db_result = await self._execute(query)
         return db_result.scalars().first() or 0
 

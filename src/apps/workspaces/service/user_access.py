@@ -1,7 +1,7 @@
 import uuid
 from collections import defaultdict
 
-from apps.answers.crud import AnswerActivityItemsCRUD, AnswerFlowItemsCRUD
+from apps.answers.crud import AnswerItemsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain.applet import AppletSingleLanguageInfo
 from apps.folders.crud import FolderCRUD
@@ -148,12 +148,7 @@ class UserAccessService:
         # delete all responses of respondent in applets
         if schema.delete_responses:
             for applet_id in schema.applet_ids:
-                await AnswerActivityItemsCRUD(
-                    self.session
-                ).delete_by_applet_user(
-                    applet_id=applet_id, user_id=schema.user_id
-                )
-                await AnswerFlowItemsCRUD(self.session).delete_by_applet_user(
+                await AnswerItemsCRUD(self.session).delete_by_applet_user(
                     user_id=schema.user_id, applet_id=applet_id
                 )
 

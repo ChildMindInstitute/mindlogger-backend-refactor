@@ -41,3 +41,7 @@ class WrongAnswerType(ValidationError):
 
 class FlowDoesNotHaveActivity(ValidationError):
     message = _("Activity flow does not have such activity.")
+
+
+class ActivityDoesNotHaveItem(ValidationError):
+    message = _("Activity does not have such item.")

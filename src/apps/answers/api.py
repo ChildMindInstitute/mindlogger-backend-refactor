@@ -91,9 +91,10 @@ async def applet_submit_date_list(
     return Response(result=PublicAnswerDates(dates=list(sorted(set(dates)))))
 
 
-async def applet_answer_retrieve(
+async def applet_activity_answer_retrieve(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
+    activity_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ) -> Response[ActivityAnswerPublic]:
@@ -103,7 +104,7 @@ async def applet_answer_retrieve(
             applet_id
         )
         answer = await AnswerService(session, user.id).get_by_id(
-            applet_id, answer_id
+            applet_id, answer_id, activity_id
         )
     return Response(
         result=ActivityAnswerPublic.from_orm(answer),
@@ -113,6 +114,7 @@ async def applet_answer_retrieve(
 async def note_add(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
+    activity_id: uuid.UUID,
     schema: AnswerNote = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
@@ -123,7 +125,7 @@ async def note_add(
             applet_id
         )
         await AnswerService(session, user.id).add_note(
-            applet_id, answer_id, schema.note
+            applet_id, answer_id, activity_id, schema.note
         )
     return
 
@@ -131,6 +133,7 @@ async def note_add(
 async def note_list(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
+    activity_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
     query_params: QueryParams = Depends(parse_query_params(BaseQueryParams)),
@@ -141,10 +144,10 @@ async def note_list(
             applet_id
         )
         notes = await AnswerService(session, user.id).get_note_list(
-            applet_id, answer_id, query_params
+            applet_id, answer_id, activity_id, query_params
         )
         count = await AnswerService(session, user.id).get_notes_count(
-            answer_id
+            answer_id, activity_id
         )
     return ResponseMulti(
         result=[AnswerNoteDetailPublic.from_orm(note) for note in notes],
@@ -155,6 +158,7 @@ async def note_list(
 async def note_edit(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
+    activity_id: uuid.UUID,
     note_id: uuid.UUID,
     schema: AnswerNote = Body(...),
     user: User = Depends(get_current_user),

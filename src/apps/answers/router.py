@@ -3,7 +3,7 @@ from starlette import status
 
 from apps.answers.api import (
     applet_activities_list,
-    applet_answer_retrieve,
+    applet_activity_answer_retrieve,
     applet_submit_date_list,
     create_anonymous_answer,
     create_answer,
@@ -69,17 +69,17 @@ router.get(
 )(applet_submit_date_list)
 
 router.get(
-    "/applet/{applet_id}/answers/{answer_id}",
+    "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}",
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": Response[ActivityAnswerPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(applet_answer_retrieve)
+)(applet_activity_answer_retrieve)
 
 router.post(
-    "/applet/{applet_id}/answers/{answer_id}/notes",
+    "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes",
     status_code=status.HTTP_201_CREATED,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
@@ -88,7 +88,7 @@ router.post(
 )(note_add)
 
 router.get(
-    "/applet/{applet_id}/answers/{answer_id}/notes",
+    "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes",
     status_code=status.HTTP_200_OK,
     response_model=ResponseMulti[AnswerNoteDetailPublic],
     responses={
@@ -98,7 +98,7 @@ router.get(
 )(note_list)
 
 router.put(
-    "/applet/{applet_id}/answers/{answer_id}/notes/{note_id}",
+    "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}",  # noqa: E501
     status_code=status.HTTP_200_OK,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
@@ -107,7 +107,7 @@ router.put(
 )(note_edit)
 
 router.delete(
-    "/applet/{applet_id}/answers/{answer_id}/notes/{note_id}",
+    "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}",  # noqa: E501
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
