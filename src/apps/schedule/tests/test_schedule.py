@@ -29,6 +29,8 @@ class TestSchedule(BaseTest):
 
     schedule_url = f"{applet_detail_url}/events"
     schedule_import_url = f"{applet_detail_url}/events/import"
+    schedule_create_individual = f"{applet_detail_url}/events/individual"
+
     delete_user_url = (
         f"{applet_detail_url}/events/delete_individual/{{respondent_id}}"
     )
@@ -717,3 +719,21 @@ class TestSchedule(BaseTest):
         events = response.json()["result"]
         assert len(events) == 2
         assert events[0]["respondentId"] == create_data[0]["respondent_id"]
+
+    @rollback
+    async def test_schedule_create_individual(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.post(
+            self.schedule_create_individual.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+        )
+        assert response.status_code == 201
+
+        events = response.json()["result"]
+        assert len(events) == 3
+        assert (
+            events[0]["respondentId"] == "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+        )
