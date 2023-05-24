@@ -17,6 +17,8 @@ class _BaseActivitySchema:
     response_is_editable = Column(Boolean(), default=False)
     order = Column(REAL())
     is_hidden = Column(Boolean(), default=False)
+    scores_and_reports = Column(JSONB())
+    subscales = Column(JSONB())
 
 
 class ActivitySchema(Base, _BaseActivitySchema):

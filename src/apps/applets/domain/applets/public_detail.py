@@ -2,8 +2,10 @@ import uuid
 
 from pydantic import Field
 
+from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.domain.response_type_config import ResponseTypeConfig
 from apps.activities.domain.response_values import ResponseValueConfig
+from apps.activities.domain.scores_reports import ScoresAndReports, Subscale
 from apps.shared.domain import PublicModel
 
 
@@ -16,6 +18,7 @@ class ActivityItem(PublicModel):
     config: ResponseTypeConfig
     order: int
     is_hidden: bool | None
+    conditional_logic: ConditionalLogic | None = None
 
 
 class Activity(PublicModel):
@@ -30,6 +33,8 @@ class Activity(PublicModel):
     response_is_editable: bool = False
     order: int
     items: list[ActivityItem] = Field(default_factory=list)
+    scores_and_reports: ScoresAndReports | None = None
+    subscales: list[Subscale] | None = Field(default_factory=list)
 
 
 class ActivityFlowItem(PublicModel):
