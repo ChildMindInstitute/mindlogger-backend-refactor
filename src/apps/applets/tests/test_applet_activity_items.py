@@ -620,7 +620,6 @@ class TestActivityItems(BaseTest):
                                 conditionalLogic=dict(
                                     name="section1_condition1",
                                     id="section1_condition1_id",
-                                    flagScore=True,
                                     message="Hello2",
                                     showMessage=True,
                                     printItems=False,

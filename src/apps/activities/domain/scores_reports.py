@@ -103,7 +103,6 @@ class Score(PublicModel):
 class SectionConditionalLogic(PublicModel):
     name: str
     id: str
-    flag_score: bool = False
     show_message: bool = False
     message: str | None = None
     print_items: bool = False
