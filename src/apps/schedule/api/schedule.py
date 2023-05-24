@@ -231,3 +231,22 @@ async def schedule_import(
         result=schedules,
         count=len(schedules),
     )
+
+
+# TODO: Add logic to allow to create events by permissions
+# TODO: Restrict by admin
+async def schedule_create_individual(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(session_manager.get_session),
+) -> ResponseMulti[PublicEvent]:
+    """Create a new event for an applet."""
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(
+            session, user.id
+        ).check_applet_schedule_create_access(applet_id)
+        schedules = await ScheduleService(session).create_schedule_individual(
+            applet_id, user.id
+        )
+    return ResponseMulti(result=schedules, count=len(schedules))
