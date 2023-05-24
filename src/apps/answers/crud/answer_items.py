@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
 
-from apps.answers.db.schemas import AnswerItemSchema
+from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import AppletAnswerCreate
 from infrastructure.database.crud import BaseCRUD
 
@@ -20,10 +20,17 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
     async def delete_by_applet_user(
         self, applet_id: uuid.UUID, user_id: uuid.UUID | None = None
     ):
-        query: Query = delete(AnswerItemSchema)
-        query = query.where(AnswerItemSchema.applet_id == applet_id)
+        answer_id_query: Query = select(AnswerSchema.id)
+        answer_id_query = answer_id_query.where(
+            AnswerSchema.applet_id == applet_id
+        )
         if user_id:
-            query = query.where(AnswerItemSchema.respondent_id == user_id)
+            answer_id_query = answer_id_query.where(
+                AnswerSchema.respondent_id == user_id
+            )
+
+        query: Query = delete(AnswerItemSchema)
+        query = query.where(AnswerItemSchema.answer_id.in_(answer_id_query))
         await self._execute(query)
 
     async def get_for_answers_created(
