@@ -30,6 +30,7 @@ class BaseActivityItem(BaseModel):
     name: str
     is_hidden: bool | None = False
     conditional_logic: ConditionalLogic | None = None
+    allow_edit: bool | None = None
 
     # class Config:
     #     schema_extra = {

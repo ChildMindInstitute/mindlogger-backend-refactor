@@ -15,6 +15,7 @@ class _BaseActivityItemSchema:
     order = Column(REAL())
     is_hidden = Column(Boolean(), default=False)
     conditional_logic = Column(JSONB())
+    allow_edit = Column(Boolean(), default=False)
 
 
 class ActivityItemSchema(_BaseActivityItemSchema, Base):

@@ -19,6 +19,7 @@ class ActivityItem(PublicModel):
     order: int
     is_hidden: bool | None
     conditional_logic: ConditionalLogic | None = None
+    allow_edit: bool | None = None
 
 
 class Activity(PublicModel):
