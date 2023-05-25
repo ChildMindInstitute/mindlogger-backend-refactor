@@ -1,7 +1,7 @@
 import uuid
 from copy import deepcopy
 
-from fastapi import Body, Depends
+from fastapi import Body, Depends, Query
 
 from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.filters import AppletQueryParams
@@ -98,6 +98,21 @@ async def managers_priority_role_retrieve(
         )
 
     return Response(result=WorkspacePrioritizedRole(role=role))
+
+
+async def workspace_roles_retrieve(
+    owner_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    applet_ids: list[uuid.UUID] | None = Query(None, alias="appletIds"),
+    session=Depends(session_manager.get_session),
+) -> Response[dict[uuid.UUID, list[Role]]]:
+
+    await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+    applet_roles = await UserAccessService(
+        session, user.id
+    ).get_workspace_applet_roles(owner_id, applet_ids)
+
+    return Response(result=applet_roles)
 
 
 async def workspace_applets(
