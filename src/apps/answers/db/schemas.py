@@ -13,6 +13,7 @@ class AnswerSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=True,
     )
+    user_public_key = Column(Text())
 
 
 class AnswerNoteSchema(Base):

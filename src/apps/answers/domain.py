@@ -99,12 +99,14 @@ class PublicAnswerDates(PublicModel):
 
 
 class ActivityAnswer(InternalModel):
+    user_public_key: str
     answer: str
     item_ids: list[str]
     items: list[PublicActivityItemFull] = Field(default_factory=list)
 
 
 class ActivityAnswerPublic(PublicModel):
+    user_public_key: str
     answer: str
     item_ids: list[str]
     items: list[PublicActivityItemFull] = Field(default_factory=list)

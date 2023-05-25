@@ -172,6 +172,7 @@ class AnswerService:
                 applet_id=applet_answer.applet_id,
                 version=applet_answer.version,
                 respondent_id=self.user_id,
+                user_public_key=applet_answer.user_public_key,
             )
         )
         answer_item_schemas = []
@@ -295,6 +296,7 @@ class AnswerService:
         ).get_by_activity_id(activity_id)
 
         answer = ActivityAnswer(
+            user_public_key=schema.user_public_key,
             answer=answer_item.answer,
             item_ids=answer_item.item_ids,
             items=activity_items,
