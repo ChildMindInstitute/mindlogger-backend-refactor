@@ -69,7 +69,7 @@ class WorkspaceRespondent(InternalModel):
     details: list[WorkspaceRespondentDetails] | None = None
 
 
-class AppletRoles(InternalModel):
+class AppletRole(InternalModel):
     access_id: uuid.UUID
     role: Role
 
@@ -77,7 +77,7 @@ class AppletRoles(InternalModel):
 class WorkspaceManagerApplet(InternalModel):
     id: uuid.UUID
     display_name: str
-    roles: list[AppletRoles]
+    roles: list[AppletRole]
 
 
 def group_applet_roles(value):
@@ -172,3 +172,8 @@ class WorkspaceAppletPublic(AppletSingleLanguageInfoPublic):
 
 class WorkspacePrioritizedRole(PublicModel):
     role: Role
+
+
+class AppletRoles(InternalModel):
+    applet_id: uuid.UUID
+    roles: list[Role]

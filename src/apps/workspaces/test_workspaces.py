@@ -30,6 +30,7 @@ class TestWorkspaces(BaseTest):
     workspaces_list_url = "/workspaces"
     workspaces_detail_url = f"{workspaces_list_url}/{{owner_id}}"
     workspaces_priority_role_url = f"{workspaces_detail_url}/priority_role"
+    workspace_roles_url = f"{workspaces_detail_url}/roles"
     workspace_applets_url = f"{workspaces_detail_url}/applets"
     workspace_applets_detail_url = f"{workspace_applets_url}/{{applet_id}}"
     applet_respondent_url = (
@@ -92,6 +93,20 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["role"] == Role.COORDINATOR
+
+    @rollback
+    async def test_workspace_roles_retrieve(self):
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+
+        response = await self.client.get(
+            self.workspace_roles_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            )
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()["result"]
+        roles = data.get("92917a56-d586-4613-b7aa-991f2c4b15b1", [])
+        assert roles == [Role.MANAGER, Role.RESPONDENT]
 
     @rollback
     async def test_user_workspace_retrieve_with_managers(self):
