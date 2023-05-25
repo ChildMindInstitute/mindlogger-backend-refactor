@@ -5,6 +5,7 @@ from typing import Tuple
 from pydantic import parse_obj_as
 from sqlalchemy import (
     and_,
+    any_,
     case,
     delete,
     distinct,
@@ -37,6 +38,7 @@ from apps.workspaces.domain.user_applet_access import (
     UserAppletAccess,
 )
 from apps.workspaces.domain.workspace import (
+    AppletRoles,
     WorkspaceManager,
     WorkspaceRespondent,
 )
@@ -974,3 +976,45 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.values(meta=meta)
 
         await self._execute(query)
+
+    async def get_workspace_applet_roles(
+        self,
+        owner_id: uuid.UUID,
+        user_id: uuid.UUID,
+        applet_ids: list[uuid.UUID] | None = None,
+    ) -> list[AppletRoles]:
+        ordered_roles = [
+            Role.OWNER,
+            Role.MANAGER,
+            Role.COORDINATOR,
+            Role.EDITOR,
+            Role.REVIEWER,
+            Role.RESPONDENT,
+        ]
+        query: Query = select(
+            UserAppletAccessSchema.applet_id,
+            func.array_agg(
+                aggregate_order_by(
+                    UserAppletAccessSchema.role,
+                    func.array_position(
+                        ordered_roles, UserAppletAccessSchema.role
+                    ),
+                )
+            ).label("roles"),
+        ).where(
+            UserAppletAccessSchema.owner_id == owner_id,
+            UserAppletAccessSchema.user_id == user_id,
+        )
+        if applet_ids:
+            query = query.where(
+                UserAppletAccessSchema.applet_id == any_(applet_ids)
+            )
+
+        query = query.group_by(UserAppletAccessSchema.applet_id).order_by(
+            UserAppletAccessSchema.applet_id
+        )
+
+        result = await self._execute(query)
+        data = result.all()
+
+        return parse_obj_as(list[AppletRoles], data)

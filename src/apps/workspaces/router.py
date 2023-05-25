@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi.routing import APIRouter
 from starlette import status
 
@@ -27,8 +29,10 @@ from apps.workspaces.api import (
     workspace_respondent_pin,
     workspace_respondents_list,
     workspace_retrieve,
+    workspace_roles_retrieve,
     workspace_users_applet_access_list,
 )
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.user_applet_access import (
     PublicManagerAppletAccess,
     PublicRespondentAppletAccess,
@@ -76,6 +80,16 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(managers_priority_role_retrieve)
+
+router.get(
+    "/{owner_id}/roles",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[dict[uuid.UUID, list[Role]]]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_roles_retrieve)
 
 # Applets in a specific workspace where owner_id is applet owner
 router.get(

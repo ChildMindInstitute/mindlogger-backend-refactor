@@ -371,3 +371,12 @@ class UserAccessService:
         ).remove_manager_accesses_by_user_id_in_workspace(owner_id, manager_id)
 
         await UserAppletAccessCRUD(self.session).create_many(schemas)
+
+    async def get_workspace_applet_roles(
+        self, owner_id: uuid.UUID, applet_ids: list[uuid.UUID] | None = None
+    ) -> dict[uuid.UUID, list[Role]]:
+        applet_roles = await UserAppletAccessCRUD(
+            self.session
+        ).get_workspace_applet_roles(owner_id, self._user_id, applet_ids)
+
+        return {val.applet_id: val.roles for val in applet_roles}
