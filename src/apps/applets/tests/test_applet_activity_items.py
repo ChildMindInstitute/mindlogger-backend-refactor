@@ -22,6 +22,7 @@ class TestActivityItems(BaseTest):
     applet_list_url = "applets"
     applet_create_url = "workspaces/{owner_id}/applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
+    activity_detail_url = "activities/{activity_id}"
 
     @rollback
     async def test_creating_applet_with_activity_items(self):
@@ -876,3 +877,13 @@ class TestActivityItems(BaseTest):
             self.applet_detail_url.format(pk=response.json()["result"]["id"])
         )
         assert response.status_code == 200
+
+        activity_id = response.json()["result"]["activities"][0]["id"]
+        response = await self.client.get(
+            self.activity_detail_url.format(activity_id=activity_id)
+        )
+        assert response.status_code == 200
+        assert (
+            type(response.json()["result"]["items"][3]["conditionalLogic"])
+            == dict
+        )

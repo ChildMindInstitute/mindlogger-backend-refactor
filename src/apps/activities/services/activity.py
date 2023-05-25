@@ -250,6 +250,8 @@ class ActivityService:
                     response_is_editable=schema.response_is_editable,
                     order=schema.order,
                     is_hidden=schema.is_hidden,
+                    scores_and_reports=schema.scores_and_reports,
+                    subscales=schema.subscales,
                 )
             )
         return activities
@@ -299,6 +301,8 @@ class ActivityService:
                 response_is_editable=schema.response_is_editable,
                 order=schema.order,
                 is_hidden=schema.is_hidden,
+                scores_and_reports=schema.scores_and_reports,
+                subscales=schema.subscales,
             )
             activity_map[activity.id] = activity
             activities.append(activity)
@@ -326,6 +330,8 @@ class ActivityService:
             response_is_editable=schema.response_is_editable,
             order=schema.order,
             is_hidden=schema.is_hidden,
+            scores_and_reports=schema.scores_and_reports,
+            subscales=schema.subscales,
         )
         activity.items = await ActivityItemService(
             self.session
@@ -356,6 +362,8 @@ class ActivityService:
             response_is_editable=schema.response_is_editable,
             order=schema.order,
             is_hidden=schema.is_hidden,
+            scores_and_reports=schema.scores_and_reports,
+            subscales=schema.subscales,
         )
         activity.items = await ActivityItemService(
             self.session
