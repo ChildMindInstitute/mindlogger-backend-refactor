@@ -215,12 +215,13 @@ async def workspace_respondents_list(
     ),
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicWorkspaceRespondent]:
-    service = WorkspaceService(session, user.id)
-    await service.exists_by_owner_id(owner_id)
+    async with atomic(session):
+        service = WorkspaceService(session, user.id)
+        await service.exists_by_owner_id(owner_id)
 
-    data, total = await WorkspaceService(
-        session, user.id
-    ).get_workspace_respondents(owner_id, None, deepcopy(query_params))
+        data, total = await WorkspaceService(
+            session, user.id
+        ).get_workspace_respondents(owner_id, None, deepcopy(query_params))
 
     return ResponseMulti(result=data, count=total)
 
@@ -234,9 +235,10 @@ async def workspace_applet_respondents_list(
     ),
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicWorkspaceRespondent]:
-    data, total = await WorkspaceService(
-        session, user.id
-    ).get_workspace_respondents(owner_id, applet_id, deepcopy(query_params))
+    async with atomic(session):
+        data, total = await WorkspaceService(
+            session, user.id
+        ).get_workspace_respondents(owner_id, applet_id, deepcopy(query_params))
 
     return ResponseMulti(result=data, count=total)
 
@@ -249,12 +251,13 @@ async def workspace_managers_list(
     ),
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicWorkspaceManager]:
-    service = WorkspaceService(session, user.id)
-    await service.exists_by_owner_id(owner_id)
+    async with atomic(session):
+        service = WorkspaceService(session, user.id)
+        await service.exists_by_owner_id(owner_id)
 
-    data, total = await service.get_workspace_managers(
-        owner_id, None, deepcopy(query_params)
-    )
+        data, total = await service.get_workspace_managers(
+            owner_id, None, deepcopy(query_params)
+        )
 
     return ResponseMulti(result=data, count=total)
 
@@ -268,12 +271,13 @@ async def workspace_applet_managers_list(
     ),
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicWorkspaceManager]:
-    service = WorkspaceService(session, user.id)
-    await service.exists_by_owner_id(owner_id)
+    async with atomic(session):
+        service = WorkspaceService(session, user.id)
+        await service.exists_by_owner_id(owner_id)
 
-    data, total = await service.get_workspace_managers(
-        owner_id, applet_id, deepcopy(query_params)
-    )
+        data, total = await service.get_workspace_managers(
+            owner_id, applet_id, deepcopy(query_params)
+        )
 
     return ResponseMulti(result=data, count=total)
 
