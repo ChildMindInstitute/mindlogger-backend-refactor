@@ -259,8 +259,8 @@ async def applet_publish(
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
         await CheckAccessService(
-            session, user.id
-        ).check_publish_conceal_access(applet_id)
+            session, user.id, user.is_super_admin
+        ).check_publish_conceal_access()
         await service.publish(applet_id)
 
 
@@ -273,8 +273,8 @@ async def applet_conceal(
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
         await CheckAccessService(
-            session, user.id
-        ).check_publish_conceal_access(applet_id)
+            session, user.id, user.is_super_admin
+        ).check_publish_conceal_access()
         await service.conceal(applet_id)
 
 

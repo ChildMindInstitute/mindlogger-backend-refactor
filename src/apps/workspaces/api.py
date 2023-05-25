@@ -87,6 +87,8 @@ async def managers_priority_role_retrieve(
     session=Depends(session_manager.get_session),
 ) -> Response[WorkspacePrioritizedRole]:
     """Fetch all workspaces for the specific user."""
+    if user.is_super_admin:
+        return Response(result=WorkspacePrioritizedRole(role=Role.SUPER_ADMIN))
 
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)

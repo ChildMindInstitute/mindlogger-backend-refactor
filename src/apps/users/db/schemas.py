@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String
 
 from infrastructure.database.base import Base
 
@@ -13,6 +13,7 @@ class UserSchema(Base):
     last_name = Column(String(length=50))
     hashed_password = Column(String(length=100))
     last_seen_at = Column(DateTime(), default=datetime.now)
+    is_super_admin = Column(Boolean(), default=False, server_default="false")
 
     def __repr__(self):
         return f"UserSchema(id='{self.id}', email='{self.email}')"

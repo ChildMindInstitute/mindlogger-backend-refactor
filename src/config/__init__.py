@@ -12,6 +12,7 @@ from config.redis import RedisSettings
 from config.secret import SecretSettings
 from config.sentry import SentrySettings
 from config.service import ServiceSettings
+from config.superuser import SuperAdmin
 
 
 # NOTE: Settings powered by pydantic
@@ -59,6 +60,8 @@ class Settings(BaseSettings):
 
     # NOTE: This config is used by SQLAlchemy for imports
     migrations_apps: list[str]
+
+    super_admin = SuperAdmin()
 
     class Config:
         env_nested_delimiter = "__"
