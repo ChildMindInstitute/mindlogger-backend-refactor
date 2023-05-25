@@ -55,8 +55,6 @@ def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
         ]
     )
 
-    logger.error(response)
-
     return JSONResponse(
         response.dict(by_alias=True),
         status_code=error.status_code,
@@ -94,8 +92,6 @@ def _pydantic_validation_errors_handler(
             for err in error.errors()
         ]
     )
-
-    logger.error(response)
 
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),
