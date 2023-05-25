@@ -26,41 +26,67 @@ class CheckAccessService:
         self.user_id = user_id
         self.is_super_admin = is_super_admin
 
-    async def check_applet_detail_access(self, applet_id: uuid.UUID):
+    async def _check_workspace_roles(
+        self,
+        owner_id: uuid.UUID,
+        roles: list[Role] | None = None,
+        *,
+        exception=None,
+    ):
         has_access = await AppletAccessCRUD(
             self.session
-        ).has_any_roles_for_applet(applet_id, self.user_id)
+        ).has_any_roles_for_workspace(owner_id, self.user_id, roles)
 
         if not has_access:
-            raise AppletAccessDenied()
+            raise exception or WorkspaceAccessDenied()
+
+    async def _check_applet_roles(
+        self,
+        applet_id: uuid.UUID,
+        roles: list[Role] | None = None,
+        *,
+        exception=None,
+    ):
+        has_access = await AppletAccessCRUD(
+            self.session
+        ).has_any_roles_for_applet(applet_id, self.user_id, roles)
+
+        if not has_access:
+            raise exception or AppletAccessDenied()
+
+    async def check_applet_detail_access(self, applet_id: uuid.UUID):
+        await self._check_applet_roles(applet_id)
 
     async def check_workspace_access(self, owner_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(
-            self.session
-        ).has_any_roles_for_workspace(owner_id, self.user_id)
-
-        if not has_access:
-            raise WorkspaceAccessDenied()
+        await self._check_workspace_roles(owner_id)
 
     async def check_workspace_manager_accesses_access(
         self, owner_id: uuid.UUID
     ):
-        has_access = await AppletAccessCRUD(
-            self.session
-        ).has_any_roles_for_workspace(
-            owner_id, self.user_id, [Role.OWNER, Role.MANAGER]
-        )
+        await self._check_workspace_roles(owner_id, [Role.OWNER, Role.MANAGER])
 
-        if not has_access:
-            raise WorkspaceAccessDenied()
+    async def check_workspace_manager_list_access(self, owner_id: uuid.UUID):
+        await self._check_workspace_roles(owner_id, [Role.OWNER, Role.MANAGER])
+
+    async def check_applet_manager_list_access(self, applet_id: uuid.UUID):
+        await self._check_applet_roles(applet_id, [Role.OWNER, Role.MANAGER])
+
+    async def check_workspace_respondent_list_access(
+        self, owner_id: uuid.UUID
+    ):
+        roles = [Role.OWNER, Role.MANAGER, Role.COORDINATOR, Role.REVIEWER]
+        await self._check_workspace_roles(owner_id, roles)
+
+    async def check_applet_respondent_list_access(self, applet_id: uuid.UUID):
+        roles = [Role.OWNER, Role.MANAGER, Role.COORDINATOR, Role.REVIEWER]
+        await self._check_applet_roles(applet_id, roles)
 
     async def check_workspace_folder_access(self, owner_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(
-            self.session
-        ).has_any_roles_for_workspace(owner_id, self.user_id, Role.managers())
-
-        if not has_access:
-            raise WorkspaceFolderManipulationAccessDenied()
+        await self._check_workspace_roles(
+            owner_id,
+            Role.managers(),
+            exception=WorkspaceFolderManipulationAccessDenied(),
+        )
 
     async def check_applet_create_access(self, owner_id: uuid.UUID):
         if owner_id == self.user_id:
@@ -88,16 +114,11 @@ class CheckAccessService:
             raise AppletEditionAccessDenied()
 
     async def check_link_edit_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(
-            self.session
-        ).has_any_roles_for_applet(
+        await self._check_applet_roles(
             applet_id,
-            self.user_id,
             [Role.OWNER, Role.MANAGER, Role.COORDINATOR],
+            exception=AppletEditionAccessDenied(),
         )
-
-        if not has_access:
-            raise AppletEditionAccessDenied()
 
     async def check_applet_duplicate_access(self, applet_id: uuid.UUID):
         has_access = await AppletAccessCRUD(self.session).can_edit_applet(
