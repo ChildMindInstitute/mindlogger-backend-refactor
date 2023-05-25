@@ -493,6 +493,72 @@ class TestActivityItems(BaseTest):
                                 },
                             ),
                         ),
+                        dict(
+                            name="activity_item_flanker",
+                            question=dict(
+                                en="flanker question?",
+                                fr="flanker question?",
+                            ),
+                            response_type="flanker",
+                            response_values=None,
+                            config=dict(
+                                name="name",
+                                description="description",
+                                isHidden=False,
+                                general=dict(
+                                    instruction="instruction",
+                                    buttons=[
+                                        dict(
+                                            name="button 1",
+                                            image="image button 1",
+                                        ),
+                                        dict(
+                                            name="button 2",
+                                            image="image button 2",
+                                        ),
+                                    ],
+                                    fixation=dict(
+                                        image="image fixation",
+                                        duration=10,
+                                    ),
+                                    stimulusTrials=[
+                                        {
+                                            "id": "1",
+                                            "image": "image stimulus_trials 1",
+                                            "correctPress": "left",
+                                        },
+                                        {
+                                            "id": "2",
+                                            "image": "image stimulus_trials 2",
+                                            "correctPress": "left",
+                                        },
+                                    ],
+                                ),
+                                practice=dict(
+                                    instruction="instruction",
+                                    blocks=[
+                                        {"order": ["1", "2"]},
+                                        {"order": ["2", "1"]},
+                                    ],
+                                    stimulusDuration=20,
+                                    threshold=15,
+                                    randomizeOrder=True,
+                                    showFeedback=True,
+                                    showSummary=True,
+                                ),
+                                test=dict(
+                                    instruction="instruction",
+                                    blocks=[
+                                        {"order": ["1", "2"]},
+                                        {"order": ["2", "1"]},
+                                    ],
+                                    stimulusDuration=20,
+                                    randomizeOrder=True,
+                                    showFeedback=True,
+                                    showSummary=True,
+                                ),
+                            ),
+                        ),
                     ],
                 ),
             ],
