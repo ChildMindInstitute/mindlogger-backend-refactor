@@ -91,7 +91,7 @@ async def schedule_delete_all(
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
-    """Delete all schedules for an applet."""
+    """Delete all default schedules for an applet."""
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(
