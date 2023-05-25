@@ -59,3 +59,25 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         query = query.order_by(ActivityItemHistorySchema.order.asc())
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_by_id_versions(
+        self, id_versions: list[str]
+    ) -> list[ActivityItemHistorySchema]:
+        query: Query = select(ActivityItemHistorySchema)
+        query = query.where(
+            ActivityItemHistorySchema.id_version.in_(id_versions)
+        )
+        query = query.order_by(ActivityItemHistorySchema.order.asc())
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
+    async def get_by_activity_id_versions(
+        self, id_versions: list[str]
+    ) -> list[ActivityItemHistorySchema]:
+        query: Query = select(ActivityItemHistorySchema)
+        query = query.where(
+            ActivityItemHistorySchema.activity_id.in_(id_versions)
+        )
+        query = query.order_by(ActivityItemHistorySchema.order.asc())
+        db_result = await self._execute(query)
+        return db_result.scalars().all()

@@ -12,6 +12,10 @@ from infrastructure.database.crud import BaseCRUD
 class AnswersCRUD(BaseCRUD[AnswerSchema]):
     schema_class = AnswerSchema
 
+    async def create(self, schema: AnswerSchema):
+        schema = await self._create(schema)
+        return schema
+
     async def create_many(
         self, schemas: list[AnswerSchema]
     ) -> list[AnswerSchema]:

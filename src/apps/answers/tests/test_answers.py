@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -26,11 +27,11 @@ class TestAnswerActivityItems(BaseTest):
     public_answer_activity_item_create_url = "/public/answers"
     answered_applet_activities_url = "/answers/applet/{id_}/activities"
     applet_submit_dates_url = "/answers/applet/{id_}/dates"
-    answers_url = "/answers/applet/{id_}/answers/{answer_id}"
-    answer_notes_url = "/answers/applet/{id_}/answers/{answer_id}/notes"
-    answer_note_detail_url = (
-        "/answers/applet/{id_}/answers/{answer_id}/notes/{note_id}"
+    activity_answers_url = (
+        "/answers/applet/{id_}/answers/{answer_id}/activities/{activity_id}"
     )
+    answer_notes_url = "/answers/applet/{id_}/answers/{answer_id}/activities/{activity_id}/notes"  # noqa: E501
+    answer_note_detail_url = "/answers/applet/{id_}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
 
     @rollback
     async def test_answer_activity_items_create_for_respondent(self):
@@ -41,22 +42,22 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            user_public_key="user key",
             created_at=1681216969,
             answers=[
                 dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                    answer=dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
-                        additional_text=None,
+                    activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    answer=json.dumps(
+                        dict(
+                            value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                            additional_text=None,
+                        )
                     ),
-                ),
-                dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
-                    answer=dict(
-                        value="string",
-                    ),
-                ),
+                    item_ids=[
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    ],
+                )
             ],
         )
 
@@ -71,22 +72,22 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            user_public_key="user key",
             created_at=1681216969,
             answers=[
                 dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                    answer=dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
-                        additional_text=None,
+                    activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    answer=json.dumps(
+                        dict(
+                            value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                            additional_text=None,
+                        )
                     ),
-                ),
-                dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
-                    answer=dict(
-                        value="string",
-                    ),
-                ),
+                    item_ids=[
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    ],
+                )
             ],
         )
 
@@ -105,7 +106,7 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
             version="2.0.1",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3612",
+            user_public_key="user key",
             answers=[],
         )
 
@@ -137,21 +138,21 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            user_public_key="user key",
             answers=[
                 dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                    answer=dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
-                        additional_text=None,
+                    activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    answer=json.dumps(
+                        dict(
+                            value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                            additional_text=None,
+                        )
                     ),
-                ),
-                dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
-                    answer=dict(
-                        value="string",
-                    ),
-                ),
+                    item_ids=[
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    ],
+                )
             ],
         )
 
@@ -182,23 +183,23 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            flow_id="3013dfb1-9202-4577-80f2-ba7450fb5831",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             created_at=1681216969,
+            user_public_key="user key",
             answers=[
                 dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                    answer=dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
-                        additional_text=None,
+                    flow_id="3013dfb1-9202-4577-80f2-ba7450fb5831",
+                    activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    answer=json.dumps(
+                        dict(
+                            value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                            additional_text=None,
+                        )
                     ),
-                ),
-                dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
-                    answer=dict(
-                        value="string",
-                    ),
-                ),
+                    item_ids=[
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    ],
+                )
             ],
         )
 
@@ -217,7 +218,7 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
             version="2.0.1",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3612",
+            user_public_key="user key",
             created_at=1681216969,
             answers=[],
         )
@@ -237,21 +238,21 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            user_public_key="user key",
             answers=[
                 dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                    answer=dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
-                        additional_text=None,
+                    activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    answer=json.dumps(
+                        dict(
+                            value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                            additional_text=None,
+                        )
                     ),
-                ),
-                dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
-                    answer=dict(
-                        value="string",
-                    ),
-                ),
+                    item_ids=[
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    ],
+                )
             ],
         )
 
@@ -277,18 +278,20 @@ class TestAnswerActivityItems(BaseTest):
 
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
         response = await self.client.get(
-            self.answers_url.format(
+            self.activity_answers_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             )
         )
 
         assert response.status_code == 200, response.json()
 
         response = await self.client.get(
-            self.answers_url.format(
+            self.activity_answers_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             )
         )
 
@@ -323,21 +326,21 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            user_public_key="user key",
             answers=[
                 dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                    answer=dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
-                        additional_text=None,
+                    activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    answer=json.dumps(
+                        dict(
+                            value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                            additional_text=None,
+                        )
                     ),
-                ),
-                dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
-                    answer=dict(
-                        value="string",
-                    ),
-                ),
+                    item_ids=[
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    ],
+                )
             ],
         )
 
@@ -362,6 +365,7 @@ class TestAnswerActivityItems(BaseTest):
             self.answer_notes_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
             dict(note="Some note"),
         )
@@ -372,6 +376,7 @@ class TestAnswerActivityItems(BaseTest):
             self.answer_notes_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
         )
 
@@ -387,21 +392,21 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            user_public_key="user key",
             answers=[
                 dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                    answer=dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
-                        additional_text=None,
+                    activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    answer=json.dumps(
+                        dict(
+                            value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                            additional_text=None,
+                        )
                     ),
-                ),
-                dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
-                    answer=dict(
-                        value="string",
-                    ),
-                ),
+                    item_ids=[
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    ],
+                )
             ],
         )
 
@@ -426,6 +431,7 @@ class TestAnswerActivityItems(BaseTest):
             self.answer_notes_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
             dict(note="Some note"),
         )
@@ -436,6 +442,7 @@ class TestAnswerActivityItems(BaseTest):
             self.answer_notes_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
         )
 
@@ -447,6 +454,7 @@ class TestAnswerActivityItems(BaseTest):
             self.answer_note_detail_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
                 note_id=response.json()["result"][0]["id"],
             ),
             dict(note="Some note 2"),
@@ -457,6 +465,7 @@ class TestAnswerActivityItems(BaseTest):
             self.answer_notes_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
         )
 
@@ -473,21 +482,21 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            user_public_key="user key",
             answers=[
                 dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                    answer=dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
-                        additional_text=None,
+                    activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    answer=json.dumps(
+                        dict(
+                            value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                            additional_text=None,
+                        )
                     ),
-                ),
-                dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
-                    answer=dict(
-                        value="string",
-                    ),
-                ),
+                    item_ids=[
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    ],
+                )
             ],
         )
 
@@ -512,6 +521,7 @@ class TestAnswerActivityItems(BaseTest):
             self.answer_notes_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
             dict(note="Some note"),
         )
@@ -522,6 +532,7 @@ class TestAnswerActivityItems(BaseTest):
             self.answer_notes_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
         )
 
@@ -533,6 +544,7 @@ class TestAnswerActivityItems(BaseTest):
             self.answer_note_detail_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
                 note_id=response.json()["result"][0]["id"],
             )
         )
@@ -542,6 +554,7 @@ class TestAnswerActivityItems(BaseTest):
             self.answer_notes_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
         )
 
@@ -555,20 +568,20 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            user_public_key="user key",
             answers=[
                 dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                    answer=dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                    activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    answer=json.dumps(
+                        dict(
+                            value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        )
                     ),
-                ),
-                dict(
-                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
-                    answer=dict(
-                        value="string",
-                    ),
-                ),
+                    item_ids=[
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                    ],
+                )
             ],
         )
 

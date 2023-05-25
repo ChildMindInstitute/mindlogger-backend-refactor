@@ -180,6 +180,14 @@ class ActivityHistoryService:
 
         return groups_map
 
+    async def get_by_history_ids(
+        self, activity_ids: list[str]
+    ) -> list[ActivityHistory]:
+        schemas = await ActivityHistoriesCRUD(self.session).get_by_ids(
+            activity_ids
+        )
+        return [ActivityHistory.from_orm(schema) for schema in schemas]
+
     async def list(self) -> list[ActivityHistory]:
         schemas = await ActivityHistoriesCRUD(
             self.session

@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Query
 
 from apps.activity_flows.db.schemas import (
@@ -44,5 +44,22 @@ class FlowItemHistoriesCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
         query = query.where(
             ActivityFlowItemHistorySchema.activity_flow_id == flow_id
         )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
+    async def get_by_map(
+        self, activity_flow_map: dict[str, str]
+    ) -> list[ActivityFlowItemHistorySchema]:
+        query: Query = select(ActivityFlowItemHistorySchema)
+        filters = []
+        for activity_id, flow_id in activity_flow_map.items():
+            filters.append(
+                and_(
+                    ActivityFlowItemHistorySchema.activity_id == activity_id,
+                    ActivityFlowItemHistorySchema.activity_flow_id == flow_id,
+                )
+            )
+
+        query = query.where(or_(*filters))
         db_result = await self._execute(query)
         return db_result.scalars().all()
