@@ -141,6 +141,7 @@ class NoneResponseType(str, Enum):
     VIDEO = "video"
     DATE = "date"
     TIME = "time"
+    FLANKER = "flanker"
 
 
 class CorrectPress(str, Enum):
@@ -158,12 +159,16 @@ class FixationSettings(PublicModel):
     duration: int
 
 
-# class BlockSettings(PublicModel):
-#     order: list[str]
+class StimulusId(str):
+    pass
+
+
+class BlockSettings(PublicModel):
+    order: list[StimulusId]
 
 
 class StimulusSettings(PublicModel):
-    # id: str
+    id: StimulusId
     image: str
     correct_press: CorrectPress
 
@@ -177,7 +182,7 @@ class GeneralSettings(PublicModel):
 
 class TestSettings(PublicModel):
     instruction: str
-    # blocks: list[BlockSettings]
+    blocks: list[BlockSettings]
     stimulus_duration: int
     randomize_order: bool
     show_feedback: bool
@@ -191,6 +196,7 @@ class PracticeSettings(TestSettings, PublicModel):
 class FlankerConfig(PublicModel):
     name: str
     description: str | None
+    is_hidden: bool | None
     general: GeneralSettings
     practice: PracticeSettings
     test: TestSettings
