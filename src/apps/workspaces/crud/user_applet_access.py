@@ -12,11 +12,12 @@ from sqlalchemy import (
     exists,
     func,
     literal_column,
+    or_,
     select,
     text,
     update,
 )
-from sqlalchemy.dialects.postgresql import aggregate_order_by
+from sqlalchemy.dialects.postgresql import UUID, aggregate_order_by
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
@@ -443,14 +444,37 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(UserSchema)
         )
 
+        assigned_respondents = select(
+            func.jsonb_array_elements_text(
+                case(
+                    (
+                        func.jsonb_typeof(
+                            UserAppletAccessSchema.meta[text("'respondents'")]
+                        )
+                        == text("'array'"),
+                        UserAppletAccessSchema.meta[text("'respondents'")],
+                    ),
+                    else_=text("'[]'::jsonb"),
+                )
+            ).cast(UUID)
+        )
+
         has_access = (
             exists()
             .where(
                 UserAppletAccessSchema.user_id == user_id,
                 UserAppletAccessSchema.applet_id == AppletSchema.id,
-                UserAppletAccessSchema.role != Role.RESPONDENT,
+                or_(
+                    UserAppletAccessSchema.role.in_(
+                        [Role.OWNER, Role.MANAGER, Role.COORDINATOR]
+                    ),
+                    and_(
+                        UserAppletAccessSchema.role == Role.REVIEWER,
+                        UserSchema.id == any_(assigned_respondents),
+                    ),
+                ),
             )
-            .correlate(AppletSchema)
+            .correlate(AppletSchema, UserSchema)
         )
 
         field_nickname = UserAppletAccessSchema.meta[text("'nickname'")].astext
@@ -573,7 +597,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .where(
                 UserAppletAccessSchema.user_id == user_id,
                 UserAppletAccessSchema.applet_id == AppletSchema.id,
-                UserAppletAccessSchema.role != Role.RESPONDENT,
+                UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER]),
             )
             .correlate(AppletSchema)
         )

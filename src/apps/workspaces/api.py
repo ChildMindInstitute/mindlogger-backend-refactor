@@ -219,9 +219,13 @@ async def workspace_respondents_list(
         service = WorkspaceService(session, user.id)
         await service.exists_by_owner_id(owner_id)
 
-        data, total = await WorkspaceService(
+        await CheckAccessService(
             session, user.id
-        ).get_workspace_respondents(owner_id, None, deepcopy(query_params))
+        ).check_workspace_respondent_list_access(owner_id)
+
+        data, total = await service.get_workspace_respondents(
+            owner_id, None, deepcopy(query_params)
+        )
 
     return ResponseMulti(result=data, count=total)
 
@@ -236,9 +240,16 @@ async def workspace_applet_respondents_list(
     session=Depends(session_manager.get_session),
 ) -> ResponseMulti[PublicWorkspaceRespondent]:
     async with atomic(session):
-        data, total = await WorkspaceService(
+        service = WorkspaceService(session, user.id)
+        await service.exists_by_owner_id(owner_id)
+
+        await CheckAccessService(
             session, user.id
-        ).get_workspace_respondents(owner_id, applet_id, deepcopy(query_params))
+        ).check_applet_respondent_list_access(applet_id)
+
+        data, total = await service.get_workspace_respondents(
+            owner_id, applet_id, deepcopy(query_params)
+        )
 
     return ResponseMulti(result=data, count=total)
 
@@ -254,6 +265,10 @@ async def workspace_managers_list(
     async with atomic(session):
         service = WorkspaceService(session, user.id)
         await service.exists_by_owner_id(owner_id)
+
+        await CheckAccessService(
+            session, user.id
+        ).check_workspace_manager_list_access(owner_id)
 
         data, total = await service.get_workspace_managers(
             owner_id, None, deepcopy(query_params)
@@ -275,6 +290,10 @@ async def workspace_applet_managers_list(
         service = WorkspaceService(session, user.id)
         await service.exists_by_owner_id(owner_id)
 
+        await CheckAccessService(
+            session, user.id
+        ).check_applet_manager_list_access(applet_id)
+
         data, total = await service.get_workspace_managers(
             owner_id, applet_id, deepcopy(query_params)
         )
@@ -288,6 +307,7 @@ async def workspace_respondent_pin(
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
+    await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
     async with atomic(session):
         await UserAccessService(session, user.id).pin(
             owner_id, user_id, UserPinRole.respondent
@@ -300,8 +320,8 @@ async def workspace_manager_pin(
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
+    await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
     async with atomic(session):
-        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
         await UserAccessService(session, user.id).pin(
             owner_id, user_id, UserPinRole.manager
         )
