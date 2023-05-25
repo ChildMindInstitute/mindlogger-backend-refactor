@@ -58,6 +58,7 @@ class UserUpdateRequest(InternalModel):
 
 class User(UserCreate):
     id: uuid.UUID
+    is_super_admin: bool
 
 
 class PublicUser(_UserBase, PublicModel):

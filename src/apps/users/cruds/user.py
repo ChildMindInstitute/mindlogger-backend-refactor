@@ -4,14 +4,10 @@ from typing import Any
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Query
 
 from apps.users.db.schemas import UserSchema
-from apps.users.domain import (
-    User,
-    UserChangePassword,
-    UserCreate,
-    UserUpdateRequest,
-)
+from apps.users.domain import User, UserChangePassword, UserUpdateRequest
 from apps.users.errors import (
     UserAlreadyExistError,
     UserIsDeletedError,
@@ -48,19 +44,14 @@ class UsersCRUD(BaseCRUD[UserSchema]):
     async def get_by_email(self, email: str) -> User:
         return await self._fetch(key="email", value=email)
 
-    async def save(self, schema: UserCreate) -> tuple[User, bool]:
+    async def save(self, schema: UserSchema) -> UserSchema:
         # Save user into the database
         try:
-            instance: UserSchema = await self._create(
-                self.schema_class(**schema.dict())
-            )
+            instance: UserSchema = await self._create(schema)
         except IntegrityError:
             raise UserAlreadyExistError()
 
-        # Create internal data model
-        user = User.from_orm(instance)
-
-        return user, True
+        return instance
 
     async def update(
         self, user: User, update_schema: UserUpdateRequest
@@ -76,6 +67,17 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         user = User.from_orm(instance)
 
         return user
+
+    async def update_by_id(
+        self, pk: uuid.UUID, update_schema: UserSchema
+    ) -> UserSchema:
+        instance = await self._update_one(
+            lookup="id",
+            value=pk,
+            schema=update_schema,
+        )
+
+        return instance
 
     async def delete(self, user: User) -> User:
         # Update user in database
@@ -113,3 +115,9 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().first() is not None
+
+    async def get_super_admin(self) -> UserSchema | None:
+        query: Query = select(UserSchema)
+        query = query.where(UserSchema.is_super_admin == True)  # noqa: E712
+        db_result = await self._execute(query)
+        return db_result.scalars().one_or_none()

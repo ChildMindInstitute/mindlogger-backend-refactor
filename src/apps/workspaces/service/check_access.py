@@ -21,9 +21,10 @@ from apps.workspaces.errors import (
 
 
 class CheckAccessService:
-    def __init__(self, session, user_id: uuid.UUID):
+    def __init__(self, session, user_id: uuid.UUID, is_super_admin=False):
         self.session = session
         self.user_id = user_id
+        self.is_super_admin = is_super_admin
 
     async def check_applet_detail_access(self, applet_id: uuid.UUID):
         has_access = await AppletAccessCRUD(
@@ -162,10 +163,6 @@ class CheckAccessService:
         if not has_access:
             raise TransferOwnershipAccessDenied()
 
-    async def check_publish_conceal_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).has_role(
-            applet_id, self.user_id, Role.OWNER
-        )
-
-        if not has_access:
+    async def check_publish_conceal_access(self):
+        if not self.is_super_admin:
             raise PublishConcealAccessDenied()

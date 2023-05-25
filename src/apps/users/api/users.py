@@ -3,11 +3,11 @@ from fastapi import Body, Depends
 from apps.authentication.deps import get_current_user
 from apps.authentication.services import AuthenticationService
 from apps.shared.domain.response import Response
+from apps.users import UserSchema
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     PublicUser,
     User,
-    UserCreate,
     UserCreateRequest,
     UserUpdateRequest,
 )
@@ -22,18 +22,19 @@ async def user_create(
     session=Depends(session_manager.get_session),
 ) -> Response[PublicUser]:
     async with atomic(session):
-        user_create = UserCreate(
-            email=user_create_schema.email,
-            first_name=user_create_schema.first_name,
-            last_name=user_create_schema.last_name,
-            hashed_password=AuthenticationService.get_password_hash(
-                user_create_schema.password
-            ),
+        user = await UsersCRUD(session).save(
+            UserSchema(
+                email=user_create_schema.email,
+                first_name=user_create_schema.first_name,
+                last_name=user_create_schema.last_name,
+                hashed_password=AuthenticationService.get_password_hash(
+                    user_create_schema.password
+                ),
+            )
         )
-        user, _ = await UsersCRUD(session).save(schema=user_create)
 
         # Create public user model in order to avoid password sharing
-        public_user = PublicUser(**user.dict())
+        public_user = PublicUser.from_orm(user)
 
         # Create default workspace for new user
         user_workspace = UserWorkspaceSchema(

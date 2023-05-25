@@ -52,3 +52,13 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         user_workspace = UserWorkspace.from_orm(instance)
 
         return user_workspace
+
+    async def update_by_user_id(
+        self, user_id: uuid.UUID, schema: UserWorkspaceSchema
+    ) -> UserWorkspaceSchema:
+        instance = await self._update_one(
+            lookup="user_id",
+            value=user_id,
+            schema=schema,
+        )
+        return instance
