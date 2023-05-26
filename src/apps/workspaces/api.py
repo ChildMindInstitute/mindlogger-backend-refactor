@@ -307,8 +307,8 @@ async def workspace_respondent_pin(
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
-    await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
     async with atomic(session):
+        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
         await UserAccessService(session, user.id).pin(
             owner_id, user_id, UserPinRole.respondent
         )
@@ -320,8 +320,8 @@ async def workspace_manager_pin(
     user: User = Depends(get_current_user),
     session=Depends(session_manager.get_session),
 ):
-    await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
     async with atomic(session):
+        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
         await UserAccessService(session, user.id).pin(
             owner_id, user_id, UserPinRole.manager
         )
