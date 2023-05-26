@@ -49,7 +49,10 @@ from apps.schedule.domain.schedule.public import (
     ScheduleEventDto,
     TimerDto,
 )
-from apps.schedule.domain.schedule.requests import EventRequest
+from apps.schedule.domain.schedule.requests import (
+    EventRequest,
+    EventUpdateRequest,
+)
 from apps.schedule.errors import (
     AccessDeniedToApplet,
     ActivityOrFlowNotFoundError,
@@ -153,6 +156,7 @@ class ScheduleService:
                             to_time=notification.to_time,
                             at_time=notification.at_time,
                             trigger_type=notification.trigger_type,
+                            order=notification.order,
                         )
                     )
                 notifications = await NotificationCRUD(
@@ -435,12 +439,21 @@ class ScheduleService:
         self,
         applet_id: uuid.UUID,
         schedule_id: uuid.UUID,
-        schedule: EventRequest,
+        schedule: EventUpdateRequest,
     ) -> PublicEvent:
-        # Validate schedule
-        await self._validate_schedule(applet_id=applet_id, schedule=schedule)
+        # Check if applet exists
+        await self._validate_applet(applet_id=applet_id)
 
         event: Event = await EventCRUD(self.session).get_by_id(pk=schedule_id)
+        activity_id = await ActivityEventsCRUD(self.session).get_by_event_id(
+            event_id=schedule_id
+        )
+        flow_id = await FlowEventsCRUD(self.session).get_by_event_id(
+            event_id=schedule_id
+        )
+        respondent_id = await UserEventsCRUD(self.session).get_by_event_id(
+            event_id=schedule_id
+        )
         periodicity: Periodicity = await PeriodicityCRUD(
             self.session
         ).get_by_id(event.periodicity_id)
@@ -453,9 +466,9 @@ class ScheduleService:
         ):  # noqa: E501
             await self._delete_by_activity_or_flow(
                 applet_id=applet_id,
-                activity_id=schedule.activity_id,
-                flow_id=schedule.flow_id,
-                respondent_id=schedule.respondent_id,
+                activity_id=activity_id,
+                flow_id=flow_id,
+                respondent_id=respondent_id,
                 only_always_available=False,
                 except_event_id=schedule_id,
             )
@@ -479,36 +492,6 @@ class ScheduleService:
                 applet_id=applet_id,
             ),
         )
-
-        # Update event-user
-        await UserEventsCRUD(self.session).delete_all_by_event_ids(
-            event_ids=[schedule_id]
-        )
-        if schedule.respondent_id:
-            await UserEventsCRUD(self.session).save(
-                UserEventCreate(
-                    event_id=event.id, user_id=schedule.respondent_id
-                )
-            )
-
-        # Update event-activity or event-flow
-        await ActivityEventsCRUD(self.session).delete_all_by_event_ids(
-            event_ids=[schedule_id]
-        )
-        await FlowEventsCRUD(self.session).delete_all_by_event_ids(
-            event_ids=[schedule_id]
-        )
-        if schedule.activity_id:
-            await ActivityEventsCRUD(self.session).save(
-                ActivityEventCreate(
-                    event_id=event.id, activity_id=schedule.activity_id
-                )
-            )
-        else:
-            await FlowEventsCRUD(self.session).save(
-                FlowEventCreate(event_id=event.id, flow_id=schedule.flow_id)
-            )
-
         # Update notification
         await NotificationCRUD(self.session).delete_by_event_ids([schedule_id])
         await ReminderCRUD(self.session).delete_by_event_ids([schedule_id])
@@ -527,6 +510,7 @@ class ScheduleService:
                             to_time=notification.to_time,
                             at_time=notification.at_time,
                             trigger_type=notification.trigger_type,
+                            order=notification.order,
                         )
                     )
                 notifications = await NotificationCRUD(
@@ -560,9 +544,9 @@ class ScheduleService:
         return PublicEvent(
             **event.dict(),
             periodicity=PublicPeriodicity(**periodicity.dict()),
-            respondent_id=schedule.respondent_id,
-            activity_id=schedule.activity_id,
-            flow_id=schedule.flow_id,
+            respondent_id=respondent_id,
+            activity_id=activity_id,
+            flow_id=flow_id,
             notification=notification_public,
         )
 
@@ -1074,10 +1058,6 @@ class ScheduleService:
                 respondent_id,
                 True,
             )
-        print(activity_id)
-        print(flow_id)
-        print(respondent_id)
-        print(event_schemas)
         if event_schemas:
             raise EventAlwaysAvailableExistsError
 

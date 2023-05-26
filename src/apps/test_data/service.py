@@ -446,11 +446,11 @@ class TestDataService:
                 ),
                 entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
-            default_event.periodicity.start_date = (
-                anchor_datetime.date() - timedelta(days=5)
+            default_event.periodicity.start_date = anchor_datetime - timedelta(
+                days=5
             )
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() - timedelta(days=3)
+            default_event.periodicity.end_date = anchor_datetime - timedelta(
+                days=3
             )
             default_event.periodicity.type = PeriodicityType.DAILY
             default_event = self._set_timer(
@@ -473,11 +473,11 @@ class TestDataService:
                 ),
                 entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
-            default_event.periodicity.start_date = (
-                anchor_datetime.date() - timedelta(days=2)
+            default_event.periodicity.start_date = anchor_datetime - timedelta(
+                days=2
             )
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=2)
+            default_event.periodicity.end_date = anchor_datetime + timedelta(
+                days=2
             )
             default_event.periodicity.type = PeriodicityType.DAILY
             default_event = self._set_timer(
@@ -500,11 +500,11 @@ class TestDataService:
                 ),
                 entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
-            default_event.periodicity.start_date = (
-                anchor_datetime.date() + timedelta(days=2)
+            default_event.periodicity.start_date = anchor_datetime + timedelta(
+                days=2
             )
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=5)
+            default_event.periodicity.end_date = anchor_datetime + timedelta(
+                days=5
             )
             default_event.periodicity.type = PeriodicityType.DAILY
             default_event = self._set_timer(
@@ -529,9 +529,9 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.DAILY
 
-            default_event.periodicity.start_date = anchor_datetime.date()
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=30)
+            default_event.periodicity.start_date = anchor_datetime
+            default_event.periodicity.end_date = anchor_datetime + timedelta(
+                days=30
             )
 
             default_event.notification.notifications[0].at_time = (
@@ -577,9 +577,9 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.DAILY
 
-            default_event.periodicity.start_date = anchor_datetime.date()
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=30)
+            default_event.periodicity.start_date = anchor_datetime
+            default_event.periodicity.end_date = anchor_datetime + timedelta(
+                days=30
             )
 
             default_event.notification.notifications[0].at_time = (
@@ -627,9 +627,9 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.DAILY
 
-            default_event.periodicity.start_date = anchor_datetime.date()
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=30)
+            default_event.periodicity.start_date = anchor_datetime
+            default_event.periodicity.end_date = anchor_datetime + timedelta(
+                days=30
             )
 
             default_event.notification.notifications[0].at_time = (
@@ -676,9 +676,9 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.DAILY
 
-            default_event.periodicity.start_date = anchor_datetime.date()
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=30)
+            default_event.periodicity.start_date = anchor_datetime
+            default_event.periodicity.end_date = anchor_datetime + timedelta(
+                days=30
             )
 
             default_event.notification.notifications[0].at_time = (
@@ -724,7 +724,7 @@ class TestDataService:
             )
 
             default_event.periodicity.selected_date = (
-                anchor_datetime.date() - timedelta(days=2)
+                anchor_datetime - timedelta(days=2)
             )
             default_event.periodicity.type = PeriodicityType.WEEKLY
 
@@ -749,7 +749,7 @@ class TestDataService:
                 entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
-            default_event.periodicity.selected_date = anchor_datetime.date()
+            default_event.periodicity.selected_date = anchor_datetime
             default_event.periodicity.type = PeriodicityType.WEEKLY
             default_event = self._set_timer(
                 default_event, current_entity_index
@@ -773,7 +773,7 @@ class TestDataService:
             )
 
             default_event.periodicity.selected_date = (
-                anchor_datetime.date() + timedelta(days=2)
+                anchor_datetime + timedelta(days=2)
             )
             default_event.periodicity.type = PeriodicityType.WEEKLY
             default_event = self._set_timer(
@@ -797,7 +797,7 @@ class TestDataService:
                 entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
-            default_event.periodicity.selected_date = anchor_datetime.date()
+            default_event.periodicity.selected_date = anchor_datetime
             default_event.periodicity.type = PeriodicityType.MONTHLY
 
             default_event = self._set_timer(
@@ -823,9 +823,9 @@ class TestDataService:
 
             default_event.periodicity.type = PeriodicityType.WEEKDAYS
 
-            default_event.periodicity.start_date = anchor_datetime.date()
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=30)
+            default_event.periodicity.start_date = anchor_datetime
+            default_event.periodicity.end_date = anchor_datetime + timedelta(
+                days=30
             )
 
             default_event = self._set_timer(
@@ -849,7 +849,7 @@ class TestDataService:
                 entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
-            default_event.periodicity.selected_date = anchor_datetime.date()
+            default_event.periodicity.selected_date = anchor_datetime
             default_event.periodicity.type = PeriodicityType.ONCE
 
             default_event = self._set_timer(

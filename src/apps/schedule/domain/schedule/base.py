@@ -1,4 +1,4 @@
-from datetime import date, time, timedelta
+from datetime import datetime, time, timedelta
 
 from pydantic import BaseModel, Field, NonNegativeInt, root_validator
 
@@ -19,9 +19,9 @@ class BasePeriodicity(BaseModel):
     """Periodicity of an event"""
 
     type: PeriodicityType
-    start_date: date | None
-    end_date: date | None
-    selected_date: date | None = Field(
+    start_date: datetime | None
+    end_date: datetime | None
+    selected_date: datetime | None = Field(
         None,
         description="If type is WEEKLY, MONTHLY or ONCE,"
         " selectedDate must be set.",
@@ -91,6 +91,7 @@ class BaseNotificationSetting(BaseModel):
         None,
         description="If triggerType is FIXED, atTime must be set.",
     )
+    order: int | None = None
 
     @root_validator
     def validate_notification(cls, values):
