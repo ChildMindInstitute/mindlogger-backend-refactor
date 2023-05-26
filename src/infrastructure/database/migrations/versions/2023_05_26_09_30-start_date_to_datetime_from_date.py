@@ -1,7 +1,7 @@
 """start_date to DAtetime from Date
 
 Revision ID: 14c4f2e988c5
-Revises: 0c48e3afead1
+Revises: 6594a374a3e1
 Create Date: 2023-05-26 09:30:57.435693
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "14c4f2e988c5"
-down_revision = "0c48e3afead1"
+down_revision = "6594a374a3e1"
 branch_labels = None
 depends_on = None
 
