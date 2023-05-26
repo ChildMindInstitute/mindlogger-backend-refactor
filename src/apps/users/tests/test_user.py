@@ -11,7 +11,7 @@ from apps.users.tests.factories import (
     UserCreateRequestFactory,
     UserUpdateRequestFactory,
 )
-from infrastructure.database import rollback
+from infrastructure.database import rollback, session_manager
 
 
 class TestUser(BaseTest):
@@ -115,6 +115,8 @@ class TestUser(BaseTest):
         )
 
         with pytest.raises(UserIsDeletedError):
-            await UsersCRUD().get_by_email(login_request_user.email)
+            await UsersCRUD(session_manager.get_session()).get_by_email(
+                login_request_user.email
+            )
 
         assert response.status_code == status.HTTP_204_NO_CONTENT

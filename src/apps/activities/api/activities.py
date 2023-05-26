@@ -11,7 +11,8 @@ from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response
 from apps.users import User
 from apps.workspaces.service.check_access import CheckAccessService
-from infrastructure.database import atomic, session_manager
+from infrastructure.database import atomic
+from infrastructure.database.deps import get_session
 from infrastructure.http import get_language
 
 
@@ -19,7 +20,7 @@ async def activity_retrieve(
     activity_id: uuid.UUID,
     user: User = Depends(get_current_user),
     language: str = Depends(get_language),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[ActivitySingleLanguageWithItemsDetailPublic]:
     async with atomic(session):
         schema = await ActivitiesCRUD(session).get_by_id(activity_id)
@@ -38,7 +39,7 @@ async def activity_retrieve(
 async def public_activity_retrieve(
     id_: uuid.UUID,
     language: str = Depends(get_language),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[ActivitySingleLanguageWithItemsDetailPublic]:
     async with atomic(session):
         activity = await ActivityService(

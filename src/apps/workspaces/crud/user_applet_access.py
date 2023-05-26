@@ -671,7 +671,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 _AppletUsersSearch().get_clauses(query_params.search)
             )
 
-        res_total = await self._execute(
+        coro_total = self._execute(
             select(count()).select_from(query.with_only_columns(UserSchema.id))
         )
 
@@ -681,10 +681,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             )
         query = paging(query, query_params.page, query_params.limit)
 
-        res_data = await self._execute(query)
+        coro_data = self._execute(query)
+
+        res_data, res_total = await asyncio.gather(coro_data, coro_total)
 
         data = parse_obj_as(list[WorkspaceManager], res_data.all())
-        total = res_total.scalars().first() or 0
+        total = res_total.scalar()
 
         return data, total
 
