@@ -11,7 +11,10 @@ from apps.schedule.domain.schedule.public import (
     PublicEventByUser,
     PublicEventCount,
 )
-from apps.schedule.domain.schedule.requests import EventRequest
+from apps.schedule.domain.schedule.requests import (
+    EventRequest,
+    EventUpdateRequest,
+)
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
@@ -121,7 +124,7 @@ async def schedule_update(
     applet_id: uuid.UUID,
     schedule_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    schema: EventRequest = Body(...),
+    schema: EventUpdateRequest = Body(...),
     session=Depends(session_manager.get_session),
 ) -> Response[PublicEvent]:
     """Update a schedule by id."""

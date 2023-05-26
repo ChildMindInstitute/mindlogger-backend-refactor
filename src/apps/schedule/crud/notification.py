@@ -37,7 +37,7 @@ class NotificationCRUD(BaseCRUD[NotificationSchema]):
 
         query: Query = select(NotificationSchema)
         query = query.where(NotificationSchema.event_id == event_id)
-        query = query.order_by(NotificationSchema.id.asc())
+        query = query.order_by(NotificationSchema.order.asc())
         db_result = await self._execute(query)
         result = db_result.scalars().all()
 

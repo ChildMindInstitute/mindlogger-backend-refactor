@@ -458,6 +458,11 @@ class EventCRUD(BaseCRUD[EventSchema]):
             ActivityEventsSchema.event_id == EventSchema.id,
             isouter=True,
         )
+        query = query.join(
+            UserEventsSchema,
+            UserEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
 
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
@@ -473,6 +478,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
                 ActivityEventsSchema.activity_id.not_in(activity_ids),
             )
         )
+        query = query.where(UserEventsSchema.user_id == None)  # noqa: E711
         db_result = await self._execute(query)
 
         return db_result.scalar()
