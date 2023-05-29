@@ -50,6 +50,14 @@ class DateValues(PublicModel):
     pass
 
 
+class GyroscopeValues(PublicModel):
+    pass
+
+
+class TouchValues(PublicModel):
+    pass
+
+
 class _SingleSelectionValue(PublicModel):
     id: str | None = None
     text: str
@@ -252,6 +260,8 @@ ResponseValueConfigOptions = [
     AudioPlayerValues,
     MessageValues,
     TimeValues,
+    GyroscopeValues,
+    TouchValues,
 ]
 
 

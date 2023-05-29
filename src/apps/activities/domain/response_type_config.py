@@ -132,6 +132,54 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
     play_once: bool
 
 
+class GyroscopeGeneralSettings(PublicModel):
+    instruction: str
+    number_of_trials: int
+    length_of_test: int
+    lambda_slope: int
+
+
+class GyroscopePracticeSettings(PublicModel):
+    instruction: str
+
+
+class GyroscopeTestSettings(PublicModel):
+    instruction: str
+
+
+class GyroscopeConfig(PublicModel):
+    name: str
+    description: str | None
+    is_hidden: bool | None
+    general: GyroscopeGeneralSettings
+    practice: GyroscopePracticeSettings
+    test: GyroscopeTestSettings
+
+
+class TouchGeneralSettings(PublicModel):
+    instruction: str
+    number_of_trials: int
+    length_of_test: int
+    lambda_slope: int
+
+
+class TouchPracticeSettings(PublicModel):
+    instruction: str
+
+
+class TouchTestSettings(PublicModel):
+    instruction: str
+
+
+class TouchConfig(PublicModel):
+    name: str
+    description: str | None
+    is_hidden: bool | None
+    general: TouchGeneralSettings
+    practice: TouchPracticeSettings
+    test: TouchTestSettings
+
+
 class NoneResponseType(str, Enum):
     TEXT = "text"
     MESSAGE = "message"
@@ -141,6 +189,8 @@ class NoneResponseType(str, Enum):
     VIDEO = "video"
     DATE = "date"
     TIME = "time"
+    GYROSCOPE = "gyroscope"
+    TOUCH = "touch"
 
 
 class ResponseType(str, Enum):
@@ -162,6 +212,8 @@ class ResponseType(str, Enum):
     AUDIOPLAYER = "audioPlayer"
     MESSAGE = "message"
     TIME = "time"
+    GYROSCOPE = "gyroscope"
+    TOUCH = "touch"
     # FLANKER = "flanker"
     # ABTEST = "abTest"
 
@@ -185,6 +237,8 @@ ResponseTypeConfigOptions = [
     AudioPlayerConfig,
     MessageConfig,
     TimeConfig,
+    GyroscopeConfig,
+    TouchConfig,
 ]
 
 ResponseTypeConfig = (
@@ -206,6 +260,8 @@ ResponseTypeConfig = (
     | AudioPlayerConfig
     | MessageConfig
     | TimeConfig
+    | GyroscopeConfig
+    | TouchConfig
 )
 
 ResponseTypeValueConfig = {}

@@ -494,6 +494,61 @@ class TestActivityItems(BaseTest):
                                 },
                             ),
                         ),
+                        dict(
+                            name="activity_item_gyroscope",
+                            question=dict(
+                                en="gyroscope question?",
+                                fr="gyroscope question?",
+                            ),
+                            response_type="gyroscope",
+                            response_values=None,
+                            config=dict(
+                                name="name",
+                                description="description",
+                                isHidden=False,
+                                general={
+                                    "instruction": "gyroscope instruction",
+                                    "number_of_trials": 3,
+                                    "length_of_test": 3,
+                                    "lambda_slope": 3,
+                                },
+                                practice={
+                                    "instruction": "gyroscope practice "
+                                    "instruction",
+                                },
+                                test={
+                                    "instruction": "gyroscope test "
+                                    "instruction",
+                                },
+                            ),
+                        ),
+                        dict(
+                            name="activity_item_touch",
+                            question=dict(
+                                en="touch question?",
+                                fr="touch question?",
+                            ),
+                            response_type="touch",
+                            response_values=None,
+                            config=dict(
+                                name="name",
+                                description="description",
+                                isHidden=False,
+                                general={
+                                    "instruction": "touch instruction",
+                                    "number_of_trials": 3,
+                                    "length_of_test": 3,
+                                    "lambda_slope": 3,
+                                },
+                                practice={
+                                    "instruction": "touch practice "
+                                    "instruction",
+                                },
+                                test={
+                                    "instruction": "touch test " "instruction",
+                                },
+                            ),
+                        ),
                     ],
                 ),
             ],
