@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import Field, root_validator
+from pydantic import Field, root_validator, validator
 
 from apps.schedule.domain.constants import (
     NotificationTriggerType,
@@ -18,13 +18,14 @@ from apps.schedule.errors import (
     StartEndTimeAccessBeforeScheduleCaseError,
     UnavailableActivityOrFlowError,
 )
-from apps.shared.domain import PublicModel
+from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
     "EventRequest",
     "PeriodicityRequest",
     "NotificationSettingRequest",
     "ReminderSettingRequest",
+    "EventUpdateRequest",
 ]
 
 
@@ -44,25 +45,21 @@ class Notification(PublicModel):
     notifications: list[NotificationSettingRequest] | None = None
     reminder: ReminderSettingRequest | None = None
 
+    @validator("notifications")
+    def validate_notification_order(cls, value):
+        if value:
+            # set order of notifications
+            for i, notification in enumerate(value):
+                notification.order = i + 1
+        return value
 
-class EventRequest(BaseEvent, PublicModel):
+
+class EventUpdateRequest(BaseEvent, InternalModel):
     periodicity: PeriodicityRequest
-    respondent_id: uuid.UUID | None
-    activity_id: uuid.UUID | None = Field(
-        None,
-        description="If flow_id is not set, activity_id must be set.",
-    )
-    flow_id: uuid.UUID | None = Field(
-        None,
-        description="If activity_id is not set, flow_id must be set.",
-    )
     notification: Notification | None = None
 
     @root_validator
     def validate_optional_fields(cls, values):
-        if not (bool(values.get("activity_id")) ^ bool(values.get("flow_id"))):
-            raise ActivityOrFlowRequiredError()
-
         # if periodicity is Always, one_time_completion must be set.
         if (
             values.get("periodicity").type == PeriodicityType.ALWAYS
@@ -114,4 +111,23 @@ class EventRequest(BaseEvent, PublicModel):
                         <= values.get("end_time")
                     ):
                         raise UnavailableActivityOrFlowError()
+        return values
+
+
+class EventRequest(EventUpdateRequest):
+    respondent_id: uuid.UUID | None
+    activity_id: uuid.UUID | None = Field(
+        None,
+        description="If flow_id is not set, activity_id must be set.",
+    )
+    flow_id: uuid.UUID | None = Field(
+        None,
+        description="If activity_id is not set, flow_id must be set.",
+    )
+
+    @root_validator
+    def validate_optional_fields(cls, values):
+        if not (bool(values.get("activity_id")) ^ bool(values.get("flow_id"))):
+            raise ActivityOrFlowRequiredError()
+
         return values

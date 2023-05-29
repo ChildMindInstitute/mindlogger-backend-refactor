@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, time, timedelta
+from datetime import datetime, time, timedelta
 from enum import Enum
 
 from pydantic import BaseModel
@@ -38,7 +38,7 @@ class DefaultEvent(BaseModel):
         "type": PeriodicityType.ALWAYS,
         "start_date": None,
         "end_date": None,
-        "selectedDate": date.today(),
+        "selected_date": datetime.now(),
     }
     respondent_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None

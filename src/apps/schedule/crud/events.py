@@ -242,14 +242,11 @@ class EventCRUD(BaseCRUD[EventSchema]):
             ),
         )
         # differentiate general and individual events
-        if respondent_id:
-            query = query.join(
-                UserEventsSchema,
-                and_(
-                    EventSchema.id == UserEventsSchema.event_id,
-                    UserEventsSchema.user_id == respondent_id,
-                ),
-            )
+        query = query.join(
+            UserEventsSchema,
+            EventSchema.id == UserEventsSchema.event_id,
+            isouter=True,
+        )
         # select only always available if requested
         if only_always_available:
             query = query.join(
@@ -259,9 +256,9 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     PeriodicitySchema.type == PeriodicityType.ALWAYS,
                 ),
             )
-
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        query = query.where(UserEventsSchema.user_id == respondent_id)
 
         result = await self._execute(query)
         return result.scalars().all()
@@ -284,14 +281,12 @@ class EventCRUD(BaseCRUD[EventSchema]):
         )
 
         # differentiate general and individual events
-        if respondent_id:
-            query = query.join(
-                UserEventsSchema,
-                and_(
-                    EventSchema.id == UserEventsSchema.event_id,
-                    UserEventsSchema.user_id == respondent_id,
-                ),
-            )
+        query = query.join(
+            UserEventsSchema,
+            EventSchema.id == UserEventsSchema.event_id,
+            isouter=True,
+        )
+
         # select only always available if requested
         if only_always_available:
             query = query.join(
@@ -304,6 +299,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        query = query.where(UserEventsSchema.user_id == respondent_id)
 
         result = await self._execute(query)
         return result.scalars().all()
@@ -462,6 +458,11 @@ class EventCRUD(BaseCRUD[EventSchema]):
             ActivityEventsSchema.event_id == EventSchema.id,
             isouter=True,
         )
+        query = query.join(
+            UserEventsSchema,
+            UserEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
 
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
@@ -477,6 +478,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
                 ActivityEventsSchema.activity_id.not_in(activity_ids),
             )
         )
+        query = query.where(UserEventsSchema.user_id == None)  # noqa: E711
         db_result = await self._execute(query)
 
         return db_result.scalar()
@@ -631,16 +633,24 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
 
         return activity_event_counts
 
-    async def count_by_activity(self, activity_id: uuid.UUID) -> int:
+    async def count_by_activity(
+        self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None
+    ) -> int:
         """Return event count."""
 
         query: Query = select(
             func.count(ActivityEventsSchema.event_id).label("count"),
         )
+        query = query.join(
+            UserEventsSchema,
+            UserEventsSchema.event_id == ActivityEventsSchema.event_id,
+            isouter=True,
+        )
         query = query.filter(ActivityEventsSchema.activity_id == activity_id)
         query = query.filter(
             ActivityEventsSchema.is_deleted == False  # noqa: E712
         )
+        query = query.filter(UserEventsSchema.user_id == respondent_id)
         result = await self._execute(query)
 
         count: int = result.scalar()
@@ -796,16 +806,24 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         flow_ids = result.scalars().all()
         return flow_ids
 
-    async def count_by_flow(self, flow_id: uuid.UUID) -> int:
+    async def count_by_flow(
+        self, flow_id: uuid.UUID, respondent_id: uuid.UUID | None
+    ) -> int:
         """Return event count."""
 
         query: Query = select(
             func.count(FlowEventsSchema.event_id).label("count"),
         )
+        query = query.join(
+            UserEventsSchema,
+            FlowEventsSchema.event_id == UserEventsSchema.event_id,
+            isouter=True,
+        )
         query = query.filter(FlowEventsSchema.flow_id == flow_id)
         query = query.filter(
             FlowEventsSchema.is_deleted == False  # noqa: E712
         )
+        query = query.filter(UserEventsSchema.user_id == respondent_id)
         result = await self._execute(query)
 
         count: int = result.scalar()

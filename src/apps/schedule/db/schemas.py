@@ -1,7 +1,7 @@
 from sqlalchemy import (
     Boolean,
     Column,
-    Date,
+    DateTime,
     ForeignKey,
     Integer,
     Interval,
@@ -20,9 +20,9 @@ class PeriodicitySchema(Base):
     type = Column(
         String(10), nullable=False
     )  # Options: ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY, ALWAYS
-    start_date = Column(Date, nullable=True)
-    end_date = Column(Date, nullable=True)
-    selected_date = Column(Date, nullable=True)
+    start_date = Column(DateTime, nullable=True)
+    end_date = Column(DateTime, nullable=True)
+    selected_date = Column(DateTime, nullable=True)
 
 
 class EventSchema(Base):
@@ -108,6 +108,7 @@ class NotificationSchema(Base):
     to_time = Column(Time, nullable=True)
     at_time = Column(Time, nullable=True)
     trigger_type = Column(String(10), nullable=False)  # fixed, random
+    order = Column(Integer, nullable=True)
 
 
 class ReminderSchema(Base):
