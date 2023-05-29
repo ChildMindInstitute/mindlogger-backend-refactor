@@ -173,14 +173,14 @@ class StimulusSettings(PublicModel):
     correct_press: CorrectPress
 
 
-class GeneralSettings(PublicModel):
+class FlankerGeneralSettings(PublicModel):
     instruction: str
     buttons: list[ButtonSetting]
     fixation: FixationSettings | None
     stimulus_trials: list[StimulusSettings]
 
 
-class TestSettings(PublicModel):
+class FlankerTestSettings(PublicModel):
     instruction: str
     blocks: list[BlockSettings]
     stimulus_duration: int
@@ -189,7 +189,7 @@ class TestSettings(PublicModel):
     show_summary: bool
 
 
-class PracticeSettings(TestSettings, PublicModel):
+class FlankerPracticeSettings(FlankerTestSettings, PublicModel):
     threshold: int
 
 
@@ -197,9 +197,9 @@ class FlankerConfig(PublicModel):
     name: str
     description: str | None
     is_hidden: bool | None
-    general: GeneralSettings
-    practice: PracticeSettings
-    test: TestSettings
+    general: FlankerGeneralSettings
+    practice: FlankerPracticeSettings
+    test: FlankerTestSettings
 
 
 class ResponseType(str, Enum):
