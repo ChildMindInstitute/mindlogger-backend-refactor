@@ -1,6 +1,9 @@
 from pydantic import BaseModel, Field
 
-from apps.activities.domain.scores_reports import ScoresAndReports, Subscale
+from apps.activities.domain.scores_reports import (
+    ScoresAndReports,
+    SubscaleSetting,
+)
 from apps.shared.enums import Language
 
 
@@ -15,5 +18,5 @@ class ActivityBase(BaseModel):
     response_is_editable: bool = False
     is_hidden: bool = False
     scores_and_reports: ScoresAndReports | None = None
-    subscales: list[Subscale] | None = Field(default_factory=list)
+    subscale_setting: SubscaleSetting | None = None
     is_assessment: bool = False

@@ -17,6 +17,7 @@ from apps.activities.errors import (
     MessageRequiredForConditionalLogicError,
     ScoreConditionItemNameError,
     SectionMessageOrItemError,
+    InvalidRawScoreSubscaleError,
 )
 from apps.shared.domain import PublicModel
 
@@ -212,5 +213,64 @@ class ScoresAndReports(PublicModel):
         return value
 
 
+class SubscaleCalculationType(str, Enum):
+    SUM = "sum"
+    AVERAGE = "average"
+
+
+class SubScaleTable(PublicModel):
+    raw_score: int | str
+    optional_text: str | None = None
+
+    @validator("raw_score")
+    def validate_raw_score(cls, value):
+        if isinstance(value, str):
+            # make sure it's format is "x~y"
+            if "~" not in value:
+                raise InvalidRawScoreSubscaleError()
+            # make sure x and y are integers
+            x, y = value.split("~")
+            try:
+                x = int(x)
+                y = int(y)
+            except ValueError:
+                raise InvalidRawScoreSubscaleError()
+
+        return value
+
+
 class Subscale(PublicModel):
-    pass
+    id: str
+    name: str
+    scoring: SubscaleCalculationType
+    items: list[str] | None = Field(default_factory=list)
+    subscale_table_data: str | None = None
+
+
+class TotalScoreTable(PublicModel):
+    raw_score: int | str
+    optional_text: str | None = None
+
+    @validator("raw_score")
+    def validate_raw_score(cls, value):
+        if isinstance(value, str):
+            # make sure it's format is "x~y"
+            if "~" not in value:
+                raise InvalidRawScoreSubscaleError()
+            # make sure x and y are integers
+            x, y = value.split("~")
+            try:
+                x = int(x)
+                y = int(y)
+            except ValueError:
+                raise InvalidRawScoreSubscaleError()
+
+        return value
+
+
+class SubscaleSetting(PublicModel):
+    calculate_total_score: SubscaleCalculationType | None = None
+    subscales: list[Subscale] | None = Field(default_factory=list)
+    total_scores_table_data: list[TotalScoreTable] | None = Field(
+        default_factory=list
+    )

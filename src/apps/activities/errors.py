@@ -236,3 +236,7 @@ class SectionMessageOrItemError(FieldError):
 
 class PeriodIsRequiredError(ValidationError):
     message = _("Period field is required.")
+
+
+class InvalidRawScoreSubscaleError(ValidationError):
+    message = _("Raw score subscale is invalid.")
