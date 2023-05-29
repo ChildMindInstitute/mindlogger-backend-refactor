@@ -50,6 +50,10 @@ class DateValues(PublicModel):
     pass
 
 
+class FlankerValues(PublicModel):
+    pass
+
+
 class GyroscopeValues(PublicModel):
     pass
 
@@ -260,6 +264,7 @@ ResponseValueConfigOptions = [
     AudioPlayerValues,
     MessageValues,
     TimeValues,
+    FlankerValues,
     GyroscopeValues,
     TouchValues,
 ]
