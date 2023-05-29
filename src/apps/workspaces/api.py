@@ -135,10 +135,11 @@ async def workspace_applets(
     async with atomic(session):
         service = WorkspaceService(session, user.id)
         await service.exists_by_owner_id(owner_id)
-        await CheckAccessService(session, user.id).check_workspace_access(
-            owner_id
-        )
-        await UserAccessService(session, user.id).check_access(owner_id)
+        if not user.is_super_admin:
+            await CheckAccessService(session, user.id).check_workspace_access(
+                owner_id
+            )
+            await UserAccessService(session, user.id).check_access(owner_id)
         applets = await service.get_workspace_applets(
             language, deepcopy(query_params)
         )
