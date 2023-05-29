@@ -49,9 +49,14 @@ async def user_workspaces(
     """Fetch all workspaces for the specific user."""
 
     async with atomic(session):
-        workspaces = await UserAccessService(
-            session, user.id
-        ).get_user_workspaces()
+        if user.is_super_admin:
+            workspaces = await UserAccessService(
+                session, user.id
+            ).get_super_admin_workspaces()
+        else:
+            workspaces = await UserAccessService(
+                session, user.id
+            ).get_user_workspaces()
 
     return ResponseMulti[PublicWorkspace](
         count=len(workspaces),
@@ -109,7 +114,6 @@ async def workspace_roles_retrieve(
     applet_ids: list[uuid.UUID] | None = Query(None, alias="appletIds"),
     session=Depends(get_session),
 ) -> Response[dict[uuid.UUID, list[Role]]]:
-
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
     applet_roles = await UserAccessService(
         session, user.id
