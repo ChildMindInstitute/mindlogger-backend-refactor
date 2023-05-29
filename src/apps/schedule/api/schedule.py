@@ -17,7 +17,8 @@ from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
-from infrastructure.database import atomic, session_manager
+from infrastructure.database import atomic
+from infrastructure.database.deps import get_session
 
 
 # TODO: Add logic to allow to create events by permissions
@@ -26,7 +27,7 @@ async def schedule_create(
     applet_id: uuid.UUID,
     schema: EventRequest = Body(...),
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicEvent]:
     """Create a new event for an applet."""
     async with atomic(session):
@@ -44,7 +45,7 @@ async def schedule_get_by_id(
     applet_id: uuid.UUID,
     schedule_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicEvent]:
     """Get a schedule by id."""
     async with atomic(session):
@@ -59,7 +60,7 @@ async def schedule_get_all(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     query_params: QueryParams = Depends(parse_query_params(EventQueryParams)),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> ResponseMulti[PublicEvent]:
     """Get schedules for an applet. If respondentId is provided,it
     will return only individual events for that respondent. If respondentId
@@ -75,7 +76,7 @@ async def schedule_get_all(
 
 async def public_schedule_get_all(
     key: uuid.UUID,
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicEventByUser]:
     """Get all schedules for an applet."""
     async with atomic(session):
@@ -89,7 +90,7 @@ async def public_schedule_get_all(
 async def schedule_delete_all(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ):
     """Delete all schedules for an applet."""
     async with atomic(session):
@@ -104,7 +105,7 @@ async def schedule_delete_by_id(
     applet_id: uuid.UUID,
     schedule_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ):
     """Delete a schedule by id."""
     async with atomic(session):
@@ -122,7 +123,7 @@ async def schedule_update(
     schedule_id: uuid.UUID,
     user: User = Depends(get_current_user),
     schema: EventRequest = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicEvent]:
     """Update a schedule by id."""
     async with atomic(session):
@@ -139,7 +140,7 @@ async def schedule_update(
 async def schedule_count(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicEventCount]:
     """Get the count of schedules for an applet."""
     async with atomic(session):
@@ -154,7 +155,7 @@ async def schedule_delete_by_user(
     applet_id: uuid.UUID,
     respondent_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ):
     """Delete all schedules for a respondent and create default ones."""
     async with atomic(session):
@@ -169,7 +170,7 @@ async def schedule_delete_by_user(
 
 async def schedule_get_all_by_user(
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> ResponseMulti[PublicEventByUser]:
     """Get all schedules for a user."""
     async with atomic(session):
@@ -185,7 +186,7 @@ async def schedule_get_all_by_user(
 async def schedule_get_by_user(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicEventByUser]:
     """Get all schedules for a respondent per applet id."""
     async with atomic(session):
@@ -200,7 +201,7 @@ async def schedule_remove_individual_calendar(
     applet_id: uuid.UUID,
     respondent_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ):
     """Remove individual calendar for a respondent."""
     async with atomic(session):
@@ -219,7 +220,7 @@ async def schedule_import(
     applet_id: uuid.UUID,
     schemas: list[EventRequest] = Body(...),
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> ResponseMulti[PublicEvent]:
     """Create a new event for an applet."""
     async with atomic(session):
@@ -238,7 +239,7 @@ async def schedule_import(
 async def schedule_create_individual(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> ResponseMulti[PublicEvent]:
     """Create a new event for an applet."""
     async with atomic(session):

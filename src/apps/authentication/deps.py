@@ -14,7 +14,8 @@ from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from config import settings
 from infrastructure.cache import CacheNotFound
-from infrastructure.database import atomic, session_manager
+from infrastructure.database import atomic
+from infrastructure.database.deps import get_session
 
 oauth2_oauth = OAuth2PasswordBearer(
     tokenUrl="/auth/openapi", scheme_name="Bearer"
@@ -23,7 +24,7 @@ oauth2_oauth = OAuth2PasswordBearer(
 
 async def get_current_user(
     token: str = Depends(oauth2_oauth),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> User:
     async with atomic(session):
         try:
@@ -77,7 +78,7 @@ async def get_current_token(
 
 async def openapi_auth(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ):
     async with atomic(session):
         user_login_schema = UserLoginRequest(

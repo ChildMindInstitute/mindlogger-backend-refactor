@@ -22,13 +22,14 @@ from infrastructure.cache import (
     CacheNotFound,
     PasswordRecoveryHealthCheckNotValid,
 )
-from infrastructure.database import atomic, session_manager
+from infrastructure.database import atomic
+from infrastructure.database.deps import get_session
 
 
 async def password_update(
     user: User = Depends(get_current_user),
     schema: ChangePasswordRequest = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicUser]:
     """General endpoint for update password for signin."""
     async with atomic(session):
@@ -54,7 +55,7 @@ async def password_update(
 
 async def password_recovery(
     schema: PasswordRecoveryRequest = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicUser]:
     """General endpoint for sending password recovery email
     and stored info in Redis.
@@ -73,7 +74,7 @@ async def password_recovery(
 
 async def password_recovery_approve(
     schema: PasswordRecoveryApproveRequest = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicUser]:
     """General endpoint to approve the password recovery."""
 

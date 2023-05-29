@@ -2,7 +2,7 @@ import uuid
 
 from apps.folders.crud import FolderCRUD
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback
+from infrastructure.database import rollback, session_manager
 
 
 class TestAppletMoveToFolder(BaseTest):
@@ -29,7 +29,9 @@ class TestAppletMoveToFolder(BaseTest):
         response = await self.client.post(self.set_folder_url, data)
         assert response.status_code == 200
 
-        folder_id = await FolderCRUD().get_applets_folder_id_in_workspace(
+        folder_id = await FolderCRUD(
+            session_manager.get_session()
+        ).get_applets_folder_id_in_workspace(
             uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
@@ -94,7 +96,9 @@ class TestAppletMoveToFolder(BaseTest):
         response = await self.client.post(self.set_folder_url, data)
         assert response.status_code == 200
 
-        folder_id = await FolderCRUD().get_applets_folder_id_in_workspace(
+        folder_id = await FolderCRUD(
+            session_manager.get_session()
+        ).get_applets_folder_id_in_workspace(
             uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )

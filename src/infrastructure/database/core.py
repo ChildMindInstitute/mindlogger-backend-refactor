@@ -1,5 +1,6 @@
 import asyncio
 import json
+from functools import wraps
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -73,10 +74,8 @@ class atomic:
         if settings.env != "testing":
             if not exc_type:
                 await self.session.commit()
-                await self.session.close()
             else:
                 await self.session.rollback()
-                await self.session.close()
                 raise
         else:
             if exc_type:
@@ -85,6 +84,7 @@ class atomic:
 
 
 def rollback(func):
+    @wraps(func)
     async def _wrap(*args, **kwargs):
         session = session_manager.get_session()
         try:

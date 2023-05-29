@@ -26,13 +26,14 @@ from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
-from infrastructure.database import atomic, session_manager
+from infrastructure.database import atomic
+from infrastructure.database.deps import get_session
 
 
 async def alert_config_create(
     user: User = Depends(get_current_user),
     schema: AlertsConfigCreateRequest = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[AlertsConfigPublic]:
     async with atomic(session):
         # Check user permissions.
@@ -66,7 +67,7 @@ async def alert_config_update(
     alert_config_id: uuid.UUID,
     user: User = Depends(get_current_user),
     schema: AlertsConfigUpdateRequest = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[AlertsConfigPublic]:
     async with atomic(session):
         # Check user permissions.
@@ -97,7 +98,7 @@ async def alert_config_update(
 async def alert_config_get_by_id(
     alert_config_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[AlertsConfigPublic]:
     async with atomic(session):
         # This instance is taken in order to get the applet id
@@ -126,7 +127,7 @@ async def alert_config_get_all_by_applet_id(
     query_params: QueryParams = Depends(
         parse_query_params(AlertConfigQueryParams)
     ),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> ResponseMulti[AlertsConfigPublic]:
     async with atomic(session):
         # Check user permissions.

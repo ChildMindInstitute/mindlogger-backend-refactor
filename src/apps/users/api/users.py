@@ -13,13 +13,13 @@ from apps.users.domain import (
 )
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
-from infrastructure.database import session_manager
 from infrastructure.database.core import atomic
+from infrastructure.database.deps import get_session
 
 
 async def user_create(
     user_create_schema: UserCreateRequest = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicUser]:
     async with atomic(session):
         user = await UsersCRUD(session).save(
@@ -59,7 +59,7 @@ async def user_retrieve(
 async def user_update(
     user: User = Depends(get_current_user),
     user_update_schema: UserUpdateRequest = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicUser]:
     async with atomic(session):
         updated_user: User = await UsersCRUD(session).update(
@@ -74,7 +74,7 @@ async def user_update(
 
 async def user_delete(
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> None:
     async with atomic(session):
         await UsersCRUD(session).delete(user)

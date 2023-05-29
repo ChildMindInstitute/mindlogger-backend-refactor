@@ -12,13 +12,14 @@ from apps.activities.domain.reusable_item_choices import (
 from apps.authentication.deps import get_current_user
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.users.domain import User
-from infrastructure.database import atomic, session_manager
+from infrastructure.database import atomic
+from infrastructure.database.deps import get_session
 
 
 async def item_choice_create(
     user: User = Depends(get_current_user),
     schema: ReusableItemChoiceInitializeCreate = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[PublicReusableItemChoice]:
     async with atomic(session):
         item_template: ReusableItemChoice = await ReusableItemChoiceCRUD(
@@ -33,7 +34,7 @@ async def item_choice_create(
 async def item_choice_delete(
     id_: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ):
     # TODO: validate user access
     async with atomic(session):
@@ -42,7 +43,7 @@ async def item_choice_delete(
 
 async def item_choice_retrieve(
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> ResponseMulti[PublicReusableItemChoice]:
     async with atomic(session):
         item_templates = await ReusableItemChoiceCRUD(

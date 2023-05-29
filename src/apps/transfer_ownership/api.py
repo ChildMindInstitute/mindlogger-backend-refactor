@@ -10,14 +10,15 @@ from apps.transfer_ownership.domain import InitiateTransfer
 from apps.transfer_ownership.service import TransferService
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
-from infrastructure.database import atomic, session_manager
+from infrastructure.database import atomic
+from infrastructure.database.deps import get_session
 
 
 async def transfer_initiate(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     transfer: InitiateTransfer = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> None:
     """Initiate a transfer of ownership of an applet."""
     async with atomic(session):
@@ -34,7 +35,7 @@ async def transfer_accept(
     applet_id: uuid.UUID,
     key: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> None:
     """Respond to a transfer of ownership of an applet."""
     async with atomic(session):
@@ -49,7 +50,7 @@ async def transfer_decline(
     applet_id: uuid.UUID,
     key: uuid.UUID,
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> None:
     """Decline a transfer of ownership of an applet."""
     async with atomic(session):

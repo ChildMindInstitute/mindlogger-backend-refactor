@@ -8,7 +8,6 @@ from sqlalchemy.engine import Result
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Query
 
-from infrastructure.database import session_manager
 from infrastructure.database.base import Base
 
 ConcreteSchema = TypeVar("ConcreteSchema", bound=Base)
@@ -19,8 +18,8 @@ __all__ = ["BaseCRUD"]
 class BaseCRUD(Generic[ConcreteSchema]):
     schema_class: Type[ConcreteSchema]
 
-    def __init__(self, session=None):
-        self.session = session or session_manager.get_session()
+    def __init__(self, session):
+        self.session = session
 
     async def _execute(self, query: Query) -> Result:
         """Executes the specified query and returns the result"""
