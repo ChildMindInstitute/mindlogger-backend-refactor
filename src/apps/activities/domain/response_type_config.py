@@ -141,6 +141,65 @@ class NoneResponseType(str, Enum):
     VIDEO = "video"
     DATE = "date"
     TIME = "time"
+    FLANKER = "flanker"
+
+
+class CorrectPress(str, Enum):
+    LEFT = "left"
+    RIGHT = "right"
+
+
+class ButtonSetting(PublicModel):
+    name: str | None
+    image: str | None
+
+
+class FixationSettings(PublicModel):
+    image: str | None
+    duration: int
+
+
+class StimulusId(str):
+    pass
+
+
+class BlockSettings(PublicModel):
+    order: list[StimulusId]
+
+
+class StimulusSettings(PublicModel):
+    id: StimulusId
+    image: str
+    correct_press: CorrectPress
+
+
+class FlankerGeneralSettings(PublicModel):
+    instruction: str
+    buttons: list[ButtonSetting]
+    fixation: FixationSettings | None
+    stimulus_trials: list[StimulusSettings]
+
+
+class FlankerTestSettings(PublicModel):
+    instruction: str
+    blocks: list[BlockSettings]
+    stimulus_duration: int
+    randomize_order: bool
+    show_feedback: bool
+    show_summary: bool
+
+
+class FlankerPracticeSettings(FlankerTestSettings, PublicModel):
+    threshold: int
+
+
+class FlankerConfig(PublicModel):
+    name: str
+    description: str | None
+    is_hidden: bool | None
+    general: FlankerGeneralSettings
+    practice: FlankerPracticeSettings
+    test: FlankerTestSettings
 
 
 class ResponseType(str, Enum):
@@ -162,7 +221,7 @@ class ResponseType(str, Enum):
     AUDIOPLAYER = "audioPlayer"
     MESSAGE = "message"
     TIME = "time"
-    # FLANKER = "flanker"
+    FLANKER = "flanker"
     # ABTEST = "abTest"
 
 
@@ -185,6 +244,7 @@ ResponseTypeConfigOptions = [
     AudioPlayerConfig,
     MessageConfig,
     TimeConfig,
+    FlankerConfig,
 ]
 
 ResponseTypeConfig = (
@@ -206,6 +266,7 @@ ResponseTypeConfig = (
     | AudioPlayerConfig
     | MessageConfig
     | TimeConfig
+    | FlankerConfig
 )
 
 ResponseTypeValueConfig = {}
