@@ -54,6 +54,14 @@ class FlankerValues(PublicModel):
     pass
 
 
+class GyroscopeValues(PublicModel):
+    pass
+
+
+class TouchValues(PublicModel):
+    pass
+
+
 class _SingleSelectionValue(PublicModel):
     id: str | None = None
     text: str
@@ -257,6 +265,8 @@ ResponseValueConfigOptions = [
     MessageValues,
     TimeValues,
     FlankerValues,
+    GyroscopeValues,
+    TouchValues,
 ]
 
 

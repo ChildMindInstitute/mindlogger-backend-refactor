@@ -132,16 +132,52 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
     play_once: bool
 
 
-class NoneResponseType(str, Enum):
-    TEXT = "text"
-    MESSAGE = "message"
-    TIMERANGE = "timeRange"
-    GEOLOCATION = "geolocation"
-    PHOTO = "photo"
-    VIDEO = "video"
-    DATE = "date"
-    TIME = "time"
-    FLANKER = "flanker"
+class GyroscopeGeneralSettings(PublicModel):
+    instruction: str
+    number_of_trials: int
+    length_of_test: int
+    lambda_slope: int
+
+
+class GyroscopePracticeSettings(PublicModel):
+    instruction: str
+
+
+class GyroscopeTestSettings(PublicModel):
+    instruction: str
+
+
+class GyroscopeConfig(PublicModel):
+    name: str
+    description: str | None
+    is_hidden: bool | None
+    general: GyroscopeGeneralSettings
+    practice: GyroscopePracticeSettings
+    test: GyroscopeTestSettings
+
+
+class TouchGeneralSettings(PublicModel):
+    instruction: str
+    number_of_trials: int
+    length_of_test: int
+    lambda_slope: int
+
+
+class TouchPracticeSettings(PublicModel):
+    instruction: str
+
+
+class TouchTestSettings(PublicModel):
+    instruction: str
+
+
+class TouchConfig(PublicModel):
+    name: str
+    description: str | None
+    is_hidden: bool | None
+    general: TouchGeneralSettings
+    practice: TouchPracticeSettings
+    test: TouchTestSettings
 
 
 class CorrectPress(str, Enum):
@@ -202,6 +238,20 @@ class FlankerConfig(PublicModel):
     test: FlankerTestSettings
 
 
+class NoneResponseType(str, Enum):
+    TEXT = "text"
+    MESSAGE = "message"
+    TIMERANGE = "timeRange"
+    GEOLOCATION = "geolocation"
+    PHOTO = "photo"
+    VIDEO = "video"
+    DATE = "date"
+    TIME = "time"
+    FLANKER = "flanker"
+    GYROSCOPE = "gyroscope"
+    TOUCH = "touch"
+
+
 class ResponseType(str, Enum):
     TEXT = "text"
     SINGLESELECT = "singleSelect"
@@ -222,6 +272,8 @@ class ResponseType(str, Enum):
     MESSAGE = "message"
     TIME = "time"
     FLANKER = "flanker"
+    GYROSCOPE = "gyroscope"
+    TOUCH = "touch"
     # ABTEST = "abTest"
 
 
@@ -245,6 +297,8 @@ ResponseTypeConfigOptions = [
     MessageConfig,
     TimeConfig,
     FlankerConfig,
+    GyroscopeConfig,
+    TouchConfig,
 ]
 
 ResponseTypeConfig = (
@@ -267,6 +321,8 @@ ResponseTypeConfig = (
     | MessageConfig
     | TimeConfig
     | FlankerConfig
+    | GyroscopeConfig
+    | TouchConfig
 )
 
 ResponseTypeValueConfig = {}
