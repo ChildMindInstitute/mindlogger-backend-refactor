@@ -16,12 +16,13 @@ from apps.users.domain import PublicUser, User
 from apps.users.errors import UserNotFound
 from apps.users.services.user_device import UserDeviceService
 from config import settings
-from infrastructure.database import atomic, session_manager
+from infrastructure.database import atomic
+from infrastructure.database.deps import get_session
 
 
 async def get_token(
     user_login_schema: UserLoginRequest = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[UserLogin]:
     """Generate the JWT access token."""
     async with atomic(session):
@@ -60,7 +61,7 @@ async def get_token(
 
 async def refresh_access_token(
     schema: RefreshAccessTokenRequest = Body(...),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[Token]:
     """Refresh access token."""
     async with atomic(session):
@@ -96,7 +97,7 @@ async def delete_access_token(
     schema: UserLogoutRequest | None = Body(default=None),
     token: InternalToken = Depends(get_current_token),
     user: User = Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ):
     """Add token to the blacklist."""
     async with atomic(session):

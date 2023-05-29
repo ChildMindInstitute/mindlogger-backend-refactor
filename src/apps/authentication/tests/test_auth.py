@@ -9,7 +9,7 @@ from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
 from apps.users.router import router as user_router
 from apps.users.tests import UserCreateRequestFactory
-from infrastructure.database import rollback
+from infrastructure.database import rollback, session_manager
 
 
 class TestAuthentication(BaseTest):
@@ -37,7 +37,7 @@ class TestAuthentication(BaseTest):
             data=login_request_user.dict(),
         )
 
-        user = await UsersCRUD().get_by_email(
+        user = await UsersCRUD(session_manager.get_session()).get_by_email(
             email=self.create_request_user.dict()["email"]
         )
 

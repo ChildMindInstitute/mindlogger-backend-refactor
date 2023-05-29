@@ -8,7 +8,7 @@ from apps.folders.domain import FolderCreate, FolderPublic, FolderUpdate
 from apps.folders.service import FolderService
 from apps.shared.domain import Response, ResponseMulti
 from apps.workspaces.service.check_access import CheckAccessService
-from infrastructure.database import atomic, session_manager
+from infrastructure.database import atomic
 
 __all__ = [
     "folder_list",
@@ -19,11 +19,13 @@ __all__ = [
     "folder_unpin",
 ]
 
+from infrastructure.database.deps import get_session
+
 
 async def folder_list(
     workspace_id: uuid.UUID,
     user=Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> ResponseMulti[FolderPublic]:
     async with atomic(session):
         await CheckAccessService(
@@ -39,7 +41,7 @@ async def folder_create(
     workspace_id: uuid.UUID,
     data: FolderCreate,
     user=Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[FolderPublic]:
     async with atomic(session):
         await CheckAccessService(
@@ -56,7 +58,7 @@ async def folder_update_name(
     folder_id: uuid.UUID,
     data: FolderUpdate,
     user=Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ) -> Response[FolderPublic]:
     async with atomic(session):
         await CheckAccessService(
@@ -72,7 +74,7 @@ async def folder_delete(
     workspace_id: uuid.UUID,
     folder_id: uuid.UUID,
     user=Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ):
     async with atomic(session):
         await CheckAccessService(
@@ -88,7 +90,7 @@ async def folder_pin(
     folder_id: uuid.UUID,
     applet_id: uuid.UUID,
     user=Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ):
     async with atomic(session):
         await AppletService(session, workspace_id).exist_by_id(applet_id)
@@ -105,7 +107,7 @@ async def folder_unpin(
     folder_id: uuid.UUID,
     applet_id: uuid.UUID,
     user=Depends(get_current_user),
-    session=Depends(session_manager.get_session),
+    session=Depends(get_session),
 ):
     async with atomic(session):
         await AppletService(session, workspace_id).exist_by_id(applet_id)

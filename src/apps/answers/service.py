@@ -206,7 +206,7 @@ class AnswerService:
         )
         activity_map: dict[str, AnsweredAppletActivity] = dict()
         if not answers:
-            applet = await AppletsCRUD().get_by_id(applet_id)
+            applet = await AppletsCRUD(self.session).get_by_id(applet_id)
             activities = await ActivityHistoryService(
                 self.session, applet_id, applet.version
             ).list()
