@@ -32,6 +32,12 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
 
         return db_result.scalars().all()
 
+    async def get_all(self) -> list[UserWorkspaceSchema]:
+        query: Query = select(self.schema_class)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
     async def save(self, schema: UserWorkspaceSchema) -> UserWorkspaceSchema:
         """Return UserWorkspace instance."""
         return await self._create(schema)

@@ -50,6 +50,14 @@ class UserAccessService:
         workspaces = await UserWorkspaceCRUD(self.session).get_by_ids(user_ids)
         return [UserWorkspace.from_orm(workspace) for workspace in workspaces]
 
+    async def get_super_admin_workspaces(self) -> list[UserWorkspace]:
+        """
+        Returns the super admins workspaces.
+        """
+
+        workspaces = await UserWorkspaceCRUD(self.session).get_all()
+        return [UserWorkspace.from_orm(workspace) for workspace in workspaces]
+
     async def get_workspace_applets_by_language(
         self, language: str, query_params: QueryParams
     ) -> list[AppletSingleLanguageInfo]:
