@@ -9,10 +9,7 @@ from apps.activities.domain.conditional_logic_validation import (
     validate_score_and_sections,
     validate_subscales,
 )
-
-from apps.activities.errors import (
-    DuplicateActivityItemNameNameError,
-)
+from apps.activities.errors import DuplicateActivityItemNameNameError
 from apps.shared.domain import InternalModel
 
 

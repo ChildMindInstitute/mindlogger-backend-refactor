@@ -677,7 +677,51 @@ class TestActivityItems(BaseTest):
                         en="Understand morning feelings.",
                         fr="Understand morning feelings.",
                     ),
-                    subscales=None,
+                    subscale_setting=dict(
+                        calculate_total_score="sum",
+                        total_scores_table_data=[
+                            dict(
+                                raw_score=1,
+                                optional_text="optional_text",
+                            ),
+                            dict(
+                                raw_score=2,
+                                optional_text="optional_text2",
+                            ),
+                        ],
+                        subscales=[
+                            dict(
+                                name="subscale1",
+                                scoring="sum",
+                                items=[
+                                    "activity_item_singleselect",
+                                ],
+                                subscale_table_data=[
+                                    dict(
+                                        score=1,
+                                        raw_score=1,
+                                        age=15,
+                                        sex="F",
+                                        optional_text="optional_text",
+                                    ),
+                                    dict(
+                                        score=1,
+                                        raw_score="1~6",
+                                        age=10,
+                                        sex="M",
+                                        optional_text="optional_text12",
+                                    ),
+                                    dict(
+                                        score=1,
+                                        raw_score=1,
+                                        age=15,
+                                        sex="M",
+                                        optional_text="optional_text13",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
                     scores_and_reports=dict(
                         generateReport=True,
                         showScoreSummary=True,
@@ -992,6 +1036,10 @@ class TestActivityItems(BaseTest):
             type(
                 response.json()["result"]["activities"][0]["scoresAndReports"]
             )
+            == dict
+        )
+        assert (
+            type(response.json()["result"]["activities"][0]["subscaleSetting"])
             == dict
         )
         response = await self.client.get(

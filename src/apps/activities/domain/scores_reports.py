@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import Field, root_validator, validator, PositiveInt
+from pydantic import Field, PositiveInt, root_validator, validator
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
@@ -13,11 +13,12 @@ from apps.activities.errors import (
     DuplicateSectionConditionIdError,
     DuplicateSectionConditionNameError,
     DuplicateSectionNameError,
+    DuplicateSubscaleNameError,
+    InvalidRawScoreSubscaleError,
     ItemsRequiredForConditionalLogicError,
     MessageRequiredForConditionalLogicError,
     ScoreConditionItemNameError,
     SectionMessageOrItemError,
-    InvalidRawScoreSubscaleError,
 )
 from apps.shared.domain import PublicModel
 
@@ -227,7 +228,7 @@ class SubScaleLookupTable(PublicModel):
     )
     optional_text: str | None = None
 
-    @validator(("raw_score", "score"))
+    @validator("raw_score", "score")
     def validate_raw_score(cls, value):
         if isinstance(value, str):
             # make sure it's format is "x~y"
@@ -245,7 +246,6 @@ class SubScaleLookupTable(PublicModel):
 
 
 class Subscale(PublicModel):
-    id: str
     name: str
     scoring: SubscaleCalculationType
     items: list[str] | None = Field(default_factory=list)
@@ -279,3 +279,13 @@ class SubscaleSetting(PublicModel):
     total_scores_table_data: list[TotalScoreTable] | None = Field(
         default_factory=list
     )
+
+    @validator("subscales")
+    def validate_unique_subscale_names(cls, value):
+        if value:
+            # check if there are duplicate subscale names
+            subscale_names = [subscale.name for subscale in value]
+            if len(subscale_names) != len(set(subscale_names)):
+                raise DuplicateSubscaleNameError()
+
+        return value

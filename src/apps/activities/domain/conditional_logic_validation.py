@@ -169,20 +169,22 @@ def validate_subscales(values: dict):
     subscale_setting = values.get("subscale_setting")
     if subscale_setting:
         subscales = subscale_setting.subscales
-        items = values.get("items")
+        items = values.get("items", [])
         item_names = [item.name for item in items]
         for subscale in subscales:
             for subscale_item_name in subscale.items:
                 if subscale_item_name not in item_names:
                     raise IncorrectSubscaleItemError()
                 subscale_item_index = item_names.index(subscale_item_name)
-                if not items[subscale_item_index].config.add_scores:
-                    raise SubscaleItemScoreError()
+
                 if not items[subscale_item_index].response_type in [
                     ResponseType.SINGLESELECT,
                     ResponseType.MULTISELECT,
                     ResponseType.SLIDER,
                 ]:
                     raise SubscaleItemTypeError()
+
+                if not items[subscale_item_index].config.add_scores:
+                    raise SubscaleItemScoreError()
 
     return values

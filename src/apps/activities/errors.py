@@ -254,3 +254,7 @@ class SubscaleItemTypeError(ValidationError):
     message = _(
         "Activity item inside subscale must be of type singleselect, multiselect or slider."  # noqa: E501
     )
+
+
+class DuplicateSubscaleNameError(FieldError):
+    message = _("Subscale names are duplicated.")
