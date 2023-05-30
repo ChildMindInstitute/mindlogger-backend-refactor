@@ -507,7 +507,7 @@ class AppletService:
     async def delete_applet_by_id(self, applet_id: uuid.UUID):
         await AppletsCRUD(self.session).get_by_id(applet_id)
 
-        await AnswersCRUD(self.session).delete_all_by_applet_id(applet_id)
+        await AnswersCRUD(self.session).delete_by_applet_user(applet_id)
         await UserAppletAccessCRUD(self.session).delete_all_by_applet_id(
             applet_id
         )

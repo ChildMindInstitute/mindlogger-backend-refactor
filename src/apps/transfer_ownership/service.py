@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from apps.answers.crud import AnswerItemsCRUD
+from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
@@ -96,7 +96,7 @@ class TransferService:
             self.session, self._user
         ).clear_applets_invitations(applet_id)
 
-        await AnswerItemsCRUD(self.session).delete_by_applet_user(
+        await AnswersCRUD(self.session).delete_by_applet_user(
             applet_id=transfer.applet_id
         )
 

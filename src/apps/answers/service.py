@@ -9,6 +9,7 @@ from apps.activities.services.activity_item_history import (
 from apps.activity_flows.crud import FlowItemHistoriesCRUD
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
+from apps.answers.crud.assessment_answer_items import AssessmentAnswerItemsCRUD
 from apps.answers.crud.notes import AnswerNotesCRUD
 from apps.answers.db.schemas import (
     AnswerItemSchema,
@@ -372,3 +373,34 @@ class AnswerService:
         note = await AnswerNotesCRUD(self.session).get_by_id(note_id)
         if note.user_id != self.user_id:
             raise AnswerNoteAccessDeniedError()
+
+    async def get_assessment_by_answer_id(
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+    ) -> ActivityAnswer:
+        assert self.user_id
+
+        await self._validate_answer_access(applet_id, answer_id)
+        schema = await AnswersCRUD(self.session).get_by_id(answer_id)
+        pk = self._generate_history_id(schema.version)
+
+        activity_items = await ActivityItemHistoriesCRUD(
+            self.session
+        ).get_applets_assessments(pk(applet_id))
+        if len(activity_items) == 0:
+            return ActivityAnswer()
+
+        assessment_answer = await AssessmentAnswerItemsCRUD(
+            self.session
+        ).get_by_answer_and_activity(
+            answer_id, activity_items[0].activity_id, self.user_id
+        )
+
+        answer = ActivityAnswer(
+            user_public_key=assessment_answer.reviewer_public_key
+            if assessment_answer
+            else None,
+            answer=assessment_answer.answer if assessment_answer else None,
+            item_ids=assessment_answer.item_ids if assessment_answer else [],
+            items=activity_items,
+        )
+        return answer

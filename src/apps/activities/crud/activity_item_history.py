@@ -81,3 +81,23 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         query = query.order_by(ActivityItemHistorySchema.order.asc())
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_applets_assessments(
+        self, applet_id_version: str
+    ) -> list[ActivityItemHistorySchema]:
+        query: Query = select(ActivityItemHistorySchema)
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == ActivityItemHistorySchema.activity_id,
+        )
+        query = query.where(
+            ActivityHistorySchema.applet_id == applet_id_version
+        )
+        query = query.where(
+            ActivityHistorySchema.is_assessment == True  # noqa: E712
+        )
+        query = query.order_by(ActivityItemHistorySchema.order.asc())
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()

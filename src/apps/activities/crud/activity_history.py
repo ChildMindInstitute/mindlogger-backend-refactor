@@ -23,6 +23,9 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
     ) -> list[ActivityHistorySchema]:
         query: Query = select(ActivityHistorySchema)
         query = query.where(ActivityHistorySchema.applet_id == id_version)
+        query = query.where(
+            ActivityHistorySchema.is_assessment == False  # noqa: E712
+        )
         query = query.order_by(ActivityHistorySchema.order.asc())
         result = await self._execute(query)
         return result.scalars().all()

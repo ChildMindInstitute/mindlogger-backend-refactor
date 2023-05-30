@@ -51,3 +51,26 @@ class AnswerItemSchema(Base):
         nullable=False,
     )
     item_ids = Column(JSONB())
+
+
+class AssessmentAnswerItemSchema(Base):
+    __tablename__ = "assessment_answer_items"
+
+    answer_id = Column(
+        ForeignKey("answers.id", ondelete="CASCADE"),
+    )
+    answer = Column(Text())
+    applet_history_id = Column(
+        ForeignKey("applet_histories.id_version", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    activity_history_id = Column(
+        ForeignKey("activity_histories.id_version", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    item_ids = Column(JSONB())
+    reviewer_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    reviewer_public_key = Column(Text())
