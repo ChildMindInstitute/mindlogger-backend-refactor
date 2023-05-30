@@ -36,6 +36,7 @@ class Activity(PublicModel):
     items: list[ActivityItem] = Field(default_factory=list)
     scores_and_reports: ScoresAndReports | None = None
     subscales: list[Subscale] | None = Field(default_factory=list)
+    is_assessment: bool
 
 
 class ActivityFlowItem(PublicModel):

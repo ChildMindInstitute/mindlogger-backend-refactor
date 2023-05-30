@@ -303,6 +303,7 @@ class ActivityService:
                 is_hidden=schema.is_hidden,
                 scores_and_reports=schema.scores_and_reports,
                 subscales=schema.subscales,
+                is_assessment=schema.is_assessment,
             )
             activity_map[activity.id] = activity
             activities.append(activity)

@@ -16,3 +16,4 @@ class ActivityBase(BaseModel):
     is_hidden: bool = False
     scores_and_reports: ScoresAndReports | None = None
     subscales: list[Subscale] | None = Field(default_factory=list)
+    is_assessment: bool = False
