@@ -61,7 +61,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             raise AnswerNotFoundError()
         return schema
 
-    async def delete_all_by_applet_id(self, applet_id: uuid.UUID):
+    async def delete_by_applet_user(
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None = None
+    ):
         query: Query = delete(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
+        if respondent_id:
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
         await self._execute(query)

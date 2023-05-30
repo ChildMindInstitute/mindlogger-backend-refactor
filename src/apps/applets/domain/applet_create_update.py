@@ -3,6 +3,7 @@ from pydantic import root_validator
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.activity_update import ActivityUpdate
 from apps.activities.errors import (
+    AssessmentLimitExceed,
     DuplicateActivityFlowNameError,
     DuplicateActivityNameError,
     DuplicatedActivitiesError,
@@ -29,10 +30,15 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
 
         activity_names = set()
         flow_names = set()
+        assessments_count = 0
         for activity in activities:  # type:ActivityCreate
             if activity.name in activity_names:
                 raise DuplicateActivityNameError()
             activity_names.add(activity.name)
+            assessments_count += int(activity.is_assessment)
+
+        if assessments_count > 1:
+            raise AssessmentLimitExceed()
 
         for flow in flows:  # type:FlowCreate
             if flow.name in flow_names:
@@ -54,6 +60,7 @@ class AppletUpdate(AppletBase, InternalModel):
         flow_names = set()
         activity_ids = set()
         flow_ids = set()
+        assessments_count = 0
         for activity in activities:  # type:ActivityUpdate
             if activity.name in activity_names:
                 raise DuplicateActivityNameError()
@@ -61,6 +68,10 @@ class AppletUpdate(AppletBase, InternalModel):
                 raise DuplicatedActivitiesError()
             activity_ids.add(activity.id)
             activity_names.add(activity.name)
+            assessments_count += int(activity.is_assessment)
+
+        if assessments_count > 1:
+            raise AssessmentLimitExceed()
 
         for flow in flows:  # type:FlowUpdate
             if flow.name in flow_names:

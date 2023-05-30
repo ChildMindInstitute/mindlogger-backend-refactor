@@ -112,6 +112,26 @@ async def applet_activity_answer_retrieve(
     )
 
 
+async def applet_activity_assessment_retrieve(
+    applet_id: uuid.UUID,
+    answer_id: uuid.UUID,
+    activity_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[ActivityAnswerPublic]:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(
+            applet_id
+        )
+        answer = await AnswerService(
+            session, user.id
+        ).get_assessment_by_answer_id(applet_id, answer_id)
+    return Response(
+        result=ActivityAnswerPublic.from_orm(answer),
+    )
+
+
 async def note_add(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,

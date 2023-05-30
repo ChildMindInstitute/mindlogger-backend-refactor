@@ -113,6 +113,10 @@ class DuplicateActivityNameError(FieldError):
     message = _("Activity names are duplicated.")
 
 
+class AssessmentLimitExceed(FieldError):
+    message = _("Assessments count can not be more than one.")
+
+
 class DuplicateActivityItemNameNameError(FieldError):
     message = _("Activity item names are duplicated.")
 
