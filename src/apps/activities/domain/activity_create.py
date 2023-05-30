@@ -7,8 +7,12 @@ from apps.activities.domain.activity_item_base import BaseActivityItem
 from apps.activities.domain.conditional_logic_validation import (
     validate_item_flow,
     validate_score_and_sections,
+    validate_subscales,
 )
-from apps.activities.errors import DuplicateActivityItemNameNameError
+
+from apps.activities.errors import (
+    DuplicateActivityItemNameNameError,
+)
 from apps.shared.domain import InternalModel
 
 
@@ -42,3 +46,7 @@ class ActivityCreate(ActivityBase, InternalModel):
     @root_validator()
     def validate_score_and_sections_conditional_logic(cls, values):
         return validate_score_and_sections(values)
+
+    @root_validator()
+    def validate_subscales(cls, values):
+        return validate_subscales(values)

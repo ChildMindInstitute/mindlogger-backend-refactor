@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import Field, root_validator, validator
+from pydantic import Field, root_validator, validator, PositiveInt
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
@@ -218,11 +218,16 @@ class SubscaleCalculationType(str, Enum):
     AVERAGE = "average"
 
 
-class SubScaleTable(PublicModel):
+class SubScaleLookupTable(PublicModel):
+    score: int
     raw_score: int | str
+    age: PositiveInt | None = None
+    sex: str | None = Field(
+        default=None, regex="^(M|F)$", description="M or F"
+    )
     optional_text: str | None = None
 
-    @validator("raw_score")
+    @validator(("raw_score", "score"))
     def validate_raw_score(cls, value):
         if isinstance(value, str):
             # make sure it's format is "x~y"
@@ -244,7 +249,7 @@ class Subscale(PublicModel):
     name: str
     scoring: SubscaleCalculationType
     items: list[str] | None = Field(default_factory=list)
-    subscale_table_data: str | None = None
+    subscale_table_data: list[SubScaleLookupTable] | None = None
 
 
 class TotalScoreTable(PublicModel):
