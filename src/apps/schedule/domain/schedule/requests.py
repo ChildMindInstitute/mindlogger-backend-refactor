@@ -126,7 +126,7 @@ class EventRequest(EventUpdateRequest):
     )
 
     @root_validator
-    def validate_optional_fields(cls, values):
+    def validate_optional_fields_activity_or_flow(cls, values):
         if not (bool(values.get("activity_id")) ^ bool(values.get("flow_id"))):
             raise ActivityOrFlowRequiredError()
 

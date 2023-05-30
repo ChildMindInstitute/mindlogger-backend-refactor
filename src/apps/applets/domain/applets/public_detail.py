@@ -5,7 +5,10 @@ from pydantic import Field
 from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.domain.response_type_config import ResponseTypeConfig
 from apps.activities.domain.response_values import ResponseValueConfig
-from apps.activities.domain.scores_reports import ScoresAndReports, Subscale
+from apps.activities.domain.scores_reports import (
+    ScoresAndReports,
+    SubscaleSetting,
+)
 from apps.shared.domain import PublicModel
 
 
@@ -35,7 +38,7 @@ class Activity(PublicModel):
     order: int
     items: list[ActivityItem] = Field(default_factory=list)
     scores_and_reports: ScoresAndReports | None = None
-    subscales: list[Subscale] | None = Field(default_factory=list)
+    subscale_setting: SubscaleSetting | None = None
     is_assessment: bool
 
 

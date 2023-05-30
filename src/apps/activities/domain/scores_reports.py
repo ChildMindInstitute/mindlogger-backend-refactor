@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import Field, root_validator, validator
+from pydantic import Field, PositiveInt, root_validator, validator
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
@@ -13,6 +13,8 @@ from apps.activities.errors import (
     DuplicateSectionConditionIdError,
     DuplicateSectionConditionNameError,
     DuplicateSectionNameError,
+    DuplicateSubscaleNameError,
+    InvalidRawScoreSubscaleError,
     ItemsRequiredForConditionalLogicError,
     MessageRequiredForConditionalLogicError,
     ScoreConditionItemNameError,
@@ -212,5 +214,78 @@ class ScoresAndReports(PublicModel):
         return value
 
 
+class SubscaleCalculationType(str, Enum):
+    SUM = "sum"
+    AVERAGE = "average"
+
+
+class SubScaleLookupTable(PublicModel):
+    score: int
+    raw_score: int | str
+    age: PositiveInt | None = None
+    sex: str | None = Field(
+        default=None, regex="^(M|F)$", description="M or F"
+    )
+    optional_text: str | None = None
+
+    @validator("raw_score", "score")
+    def validate_raw_score(cls, value):
+        if isinstance(value, str):
+            # make sure it's format is "x~y"
+            if "~" not in value:
+                raise InvalidRawScoreSubscaleError()
+            # make sure x and y are integers
+            x, y = value.split("~")
+            try:
+                x = int(x)
+                y = int(y)
+            except ValueError:
+                raise InvalidRawScoreSubscaleError()
+
+        return value
+
+
 class Subscale(PublicModel):
-    pass
+    name: str
+    scoring: SubscaleCalculationType
+    items: list[str] | None = Field(default_factory=list)
+    subscale_table_data: list[SubScaleLookupTable] | None = None
+
+
+class TotalScoreTable(PublicModel):
+    raw_score: int | str
+    optional_text: str | None = None
+
+    @validator("raw_score")
+    def validate_raw_score(cls, value):
+        if isinstance(value, str):
+            # make sure it's format is "x~y"
+            if "~" not in value:
+                raise InvalidRawScoreSubscaleError()
+            # make sure x and y are integers
+            x, y = value.split("~")
+            try:
+                x = int(x)
+                y = int(y)
+            except ValueError:
+                raise InvalidRawScoreSubscaleError()
+
+        return value
+
+
+class SubscaleSetting(PublicModel):
+    calculate_total_score: SubscaleCalculationType | None = None
+    subscales: list[Subscale] | None = Field(default_factory=list)
+    total_scores_table_data: list[TotalScoreTable] | None = Field(
+        default_factory=list
+    )
+
+    @validator("subscales")
+    def validate_unique_subscale_names(cls, value):
+        if value:
+            # check if there are duplicate subscale names
+            subscale_names = [subscale.name for subscale in value]
+            if len(subscale_names) != len(set(subscale_names)):
+                raise DuplicateSubscaleNameError()
+
+        return value

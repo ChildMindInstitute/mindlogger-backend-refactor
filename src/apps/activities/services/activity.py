@@ -60,7 +60,9 @@ class ActivityService:
                     scores_and_reports=activity_data.scores_and_reports.dict()
                     if activity_data.scores_and_reports
                     else None,
-                    subscales=activity_data.subscales,
+                    subscale_setting=activity_data.subscale_setting.dict()
+                    if activity_data.subscale_setting
+                    else None,
                     order=index + 1,
                 )
             )
@@ -159,7 +161,9 @@ class ActivityService:
                     scores_and_reports=activity_data.scores_and_reports.dict()
                     if activity_data.scores_and_reports
                     else None,
-                    subscales=activity_data.subscales,
+                    subscale_setting=activity_data.subscale_setting.dict()
+                    if activity_data.subscale_setting
+                    else None,
                     order=index + 1,
                 )
             )
@@ -251,7 +255,7 @@ class ActivityService:
                     order=schema.order,
                     is_hidden=schema.is_hidden,
                     scores_and_reports=schema.scores_and_reports,
-                    subscales=schema.subscales,
+                    subscale_setting=schema.subscale_setting,
                 )
             )
         return activities
@@ -302,7 +306,7 @@ class ActivityService:
                 order=schema.order,
                 is_hidden=schema.is_hidden,
                 scores_and_reports=schema.scores_and_reports,
-                subscales=schema.subscales,
+                subscale_setting=schema.subscale_setting,
                 is_assessment=schema.is_assessment,
             )
             activity_map[activity.id] = activity
@@ -332,7 +336,7 @@ class ActivityService:
             order=schema.order,
             is_hidden=schema.is_hidden,
             scores_and_reports=schema.scores_and_reports,
-            subscales=schema.subscales,
+            subscale_setting=schema.subscale_setting,
         )
         activity.items = await ActivityItemService(
             self.session
@@ -364,7 +368,7 @@ class ActivityService:
             order=schema.order,
             is_hidden=schema.is_hidden,
             scores_and_reports=schema.scores_and_reports,
-            subscales=schema.subscales,
+            subscale_setting=schema.subscale_setting,
         )
         activity.items = await ActivityItemService(
             self.session

@@ -236,3 +236,25 @@ class SectionMessageOrItemError(FieldError):
 
 class PeriodIsRequiredError(ValidationError):
     message = _("Period field is required.")
+
+
+class InvalidRawScoreSubscaleError(ValidationError):
+    message = _("Raw score subscale is invalid.")
+
+
+class IncorrectSubscaleItemError(ValidationError):
+    message = _("Activity item inside subscale does not exist.")
+
+
+class SubscaleItemScoreError(ValidationError):
+    message = _("Score must be provided for activity item inside subscale.")
+
+
+class SubscaleItemTypeError(ValidationError):
+    message = _(
+        "Activity item inside subscale must be of type singleselect, multiselect or slider."  # noqa: E501
+    )
+
+
+class DuplicateSubscaleNameError(FieldError):
+    message = _("Subscale names are duplicated.")

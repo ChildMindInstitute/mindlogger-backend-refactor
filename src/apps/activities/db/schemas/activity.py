@@ -18,7 +18,7 @@ class _BaseActivitySchema:
     order = Column(REAL())
     is_hidden = Column(Boolean(), default=False)
     scores_and_reports = Column(JSONB())
-    subscales = Column(JSONB())
+    subscale_setting = Column(JSONB())
     is_assessment = Column(Boolean(), default=False)
 
 
