@@ -54,6 +54,7 @@ class UserWorkspace(InternalModel):
 class WorkspaceRespondentDetails(InternalModel):
     applet_id: uuid.UUID
     applet_display_name: str
+    applet_image: str | None
     access_id: uuid.UUID
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
@@ -77,6 +78,7 @@ class AppletRole(InternalModel):
 class WorkspaceManagerApplet(InternalModel):
     id: uuid.UUID
     display_name: str
+    image: str | None
     roles: list[AppletRole]
 
 
@@ -119,6 +121,7 @@ class WorkspaceManager(InternalModel):
                 applet = {
                     "id": applet_id,
                     "display_name": applet_role["applet_display_name"],
+                    "image": applet_role["applet_image"],
                     "roles": [],
                 }
             applet["roles"].append(
