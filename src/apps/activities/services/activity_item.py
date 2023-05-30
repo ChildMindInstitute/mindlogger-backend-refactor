@@ -76,6 +76,7 @@ class ActivityItemService:
                     order=schema.order,
                     name=schema.name,
                     conditional_logic=schema.conditional_logic,
+                    allow_edit=schema.allow_edit,
                 )
             )
         return items
