@@ -513,8 +513,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 func.array_agg(
                     func.json_build_object(
                         text("'applet_id'"), AppletSchema.id,
-                        text("'applet_display_name'"),
-                        AppletSchema.display_name,  # noqa: E501
+                        text("'applet_display_name'"), AppletSchema.display_name,  # noqa: E501
+                        text("'applet_image'"), AppletSchema.image,  # noqa: E501
                         text("'access_id'"), UserAppletAccessSchema.id,
                         text("'respondent_nickname'"), field_nickname,
                         text("'respondent_secret_id'"), field_secret_user_id,
@@ -629,8 +629,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     aggregate_order_by(
                         func.json_build_object(
                             text("'applet_id'"), AppletSchema.id,
-                            text("'applet_display_name'"),
-                            AppletSchema.display_name,  # noqa: E501
+                            text("'applet_display_name'"), AppletSchema.display_name,  # noqa: E501
+                            text("'applet_image'"), AppletSchema.image,
                             text("'access_id'"), UserAppletAccessSchema.id,
                             text("'role'"), UserAppletAccessSchema.role,
                         ),
