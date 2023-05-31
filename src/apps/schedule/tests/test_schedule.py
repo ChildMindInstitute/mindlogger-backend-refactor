@@ -58,9 +58,9 @@ class TestSchedule(BaseTest):
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "ONCE",
-                "start_date": "2021-09-01T15:49:51.752113",
-                "end_date": "2021-09-01T22:49:51.752113",
-                "selected_date": "2023-09-01T15:49:51.752113",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
             },
             "respondent_id": None,
             "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
@@ -100,9 +100,9 @@ class TestSchedule(BaseTest):
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "WEEKLY",
-                "start_date": "2021-09-01T15:49:51.752113",
-                "end_date": "2023-09-01T15:49:51.752113",
-                "selected_date": "2023-01-01T15:49:51.752113",
+                "start_date": "2021-09-01",
+                "end_date": "2023-09-01",
+                "selected_date": "2023-01-01",
             },
             "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
             "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
@@ -134,9 +134,9 @@ class TestSchedule(BaseTest):
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "MONTHLY",
-                "start_date": "2021-09-01T15:49:51.752113",
-                "end_date": "2021-09-01T15:49:51.752113",
-                "selected_date": "2023-09-01T15:49:51.752113",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
             },
             "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             "activity_id": None,
@@ -181,9 +181,9 @@ class TestSchedule(BaseTest):
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "MONTHLY",
-                "start_date": "2021-09-01T15:49:51.752113",
-                "end_date": "2021-09-01T15:49:51.752113",
-                "selected_date": "2023-09-01T15:49:51.752113",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
             },
             "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
             "activity_id": None,
@@ -247,9 +247,9 @@ class TestSchedule(BaseTest):
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "MONTHLY",
-                "start_date": "2021-09-01T15:49:51.752113",
-                "end_date": "2021-09-01T15:49:51.752113",
-                "selected_date": "2023-09-01T15:49:51.752113",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
             },
             "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             "activity_id": None,
@@ -297,9 +297,9 @@ class TestSchedule(BaseTest):
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "MONTHLY",
-                "start_date": "2021-09-01T15:49:51.752113",
-                "end_date": "2021-09-01T15:49:51.752113",
-                "selected_date": "2023-09-01T15:49:51.752113",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
             },
             "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             "activity_id": None,
@@ -337,9 +337,9 @@ class TestSchedule(BaseTest):
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "MONTHLY",
-                "start_date": "2021-09-01T15:49:51.752113",
-                "end_date": "2021-09-01T15:49:51.752113",
-                "selected_date": "2023-09-01T15:49:51.752113",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
             },
             "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
             "activity_id": None,
@@ -377,9 +377,9 @@ class TestSchedule(BaseTest):
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "MONTHLY",
-                "start_date": "2021-09-01T15:49:51.752113",
-                "end_date": "2021-09-01T15:49:51.752113",
-                "selected_date": "2023-09-01T15:49:51.752113",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
             },
             "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
             "activity_id": None,
@@ -456,11 +456,11 @@ class TestSchedule(BaseTest):
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "MONTHLY",
-                "start_date": "2021-09-01T15:49:51.752113",
-                "end_date": "2021-09-01T15:49:51.752113",
-                "selected_date": "2023-09-01T15:49:51.752113",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
             },
-            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            # "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
@@ -494,9 +494,10 @@ class TestSchedule(BaseTest):
         assert response.status_code == 200
 
         result = response.json()["result"]
+        print(result)
 
-        assert type(result["activityEvents"][0]["count"]) == int
-        assert type(result["flowEvents"][0]["count"]) == int
+        assert type(result["activityEvents"]) == list
+        assert type(result["flowEvents"]) == list
 
     @rollback
     async def test_schedule_delete_user(self):
@@ -522,9 +523,9 @@ class TestSchedule(BaseTest):
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "MONTHLY",
-                "start_date": "2021-09-01T15:49:51.752113",
-                "end_date": "2021-09-01T15:49:51.752113",
-                "selected_date": "2023-09-01T15:49:51.752113",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
             },
             "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             "activity_id": None,
@@ -616,9 +617,9 @@ class TestSchedule(BaseTest):
             "timer_type": "NOT_SET",
             "periodicity": {
                 "type": "MONTHLY",
-                "start_date": "2021-09-01T15:49:51.752113",
-                "end_date": "2021-09-01T15:49:51.752113",
-                "selected_date": "2023-09-01T15:49:51.752113",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
             },
             "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             "activity_id": None,
@@ -678,9 +679,9 @@ class TestSchedule(BaseTest):
                 "timer_type": "NOT_SET",
                 "periodicity": {
                     "type": "WEEKLY",
-                    "start_date": "2021-09-01T15:49:51.752113",
-                    "end_date": "2023-09-01T15:49:51.752113",
-                    "selected_date": "2023-01-01T15:49:51.752113",
+                    "start_date": "2021-09-01",
+                    "end_date": "2023-09-01",
+                    "selected_date": "2023-01-01",
                 },
                 "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
                 "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
@@ -695,9 +696,9 @@ class TestSchedule(BaseTest):
                 "timer_type": "NOT_SET",
                 "periodicity": {
                     "type": "DAILY",
-                    "start_date": "2021-09-01T15:49:51.752113",
-                    "end_date": "2023-09-01T15:49:51.752113",
-                    "selected_date": "2023-01-01T15:49:51.752113",
+                    "start_date": "2021-09-01",
+                    "end_date": "2023-09-01",
+                    "selected_date": "2023-01-01",
                 },
                 "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
                 "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",

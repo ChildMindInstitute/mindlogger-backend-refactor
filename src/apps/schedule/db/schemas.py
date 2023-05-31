@@ -1,7 +1,7 @@
 from sqlalchemy import (
     Boolean,
     Column,
-    DateTime,
+    Date,
     ForeignKey,
     Integer,
     Interval,
@@ -20,9 +20,9 @@ class PeriodicitySchema(Base):
     type = Column(
         String(10), nullable=False
     )  # Options: ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY, ALWAYS
-    start_date = Column(DateTime, nullable=True)
-    end_date = Column(DateTime, nullable=True)
-    selected_date = Column(DateTime, nullable=True)
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
+    selected_date = Column(Date, nullable=True)
 
 
 class EventSchema(Base):

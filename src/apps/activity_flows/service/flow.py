@@ -187,6 +187,7 @@ class FlowService:
                 hide_badge=schema.hide_badge,
                 order=schema.order,
                 is_hidden=schema.is_hidden,
+                created_at=schema.created_at,
             )
             flow_map[flow.id] = flow
             flows.append(flow)

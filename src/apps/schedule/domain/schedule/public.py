@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date
 
 from pydantic import NonNegativeInt, validator
 
@@ -119,15 +119,15 @@ class EventAvailabilityDto(PublicModel):
     timeFrom: HourMinute | None = None
     timeTo: HourMinute | None = None
     allowAccessBeforeFromTime: bool | None = None
-    startDate: datetime | None = None
-    endDate: datetime | None = None
+    startDate: date | None = None
+    endDate: date | None = None
 
 
 class ScheduleEventDto(PublicModel):
     id: uuid.UUID
     entityId: uuid.UUID
     availability: EventAvailabilityDto
-    selectedDate: datetime | None = None
+    selectedDate: date | None = None
     timers: TimerDto
     availabilityType: AvailabilityType
     notificationSettings: NotificationDTO | None = None

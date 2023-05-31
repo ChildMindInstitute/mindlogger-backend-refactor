@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import Field
 
@@ -32,12 +33,14 @@ class ActivitySingleLanguageDetail(ActivityBase, InternalModel):
     id: uuid.UUID
     order: int
     description: str  # type: ignore[assignment]
+    created_at: datetime
 
 
 class ActivitySingleLanguageDetailPublic(ActivityBase, PublicModel):
     id: uuid.UUID
     order: int
     description: str  # type: ignore[assignment]
+    created_at: datetime
 
 
 class ActivitySingleLanguageWithItemsDetail(ActivityBase, InternalModel):
@@ -45,6 +48,7 @@ class ActivitySingleLanguageWithItemsDetail(ActivityBase, InternalModel):
     order: int
     description: str  # type: ignore[assignment]
     items: list[ActivityItemSingleLanguageDetail] = Field(default_factory=list)
+    created_at: datetime
 
 
 class ActivitySingleLanguageWithItemsDetailPublic(ActivityBase, PublicModel):
@@ -54,3 +58,4 @@ class ActivitySingleLanguageWithItemsDetailPublic(ActivityBase, PublicModel):
     items: list[ActivityItemSingleLanguageDetailPublic] = Field(
         default_factory=list
     )
+    created_at: datetime

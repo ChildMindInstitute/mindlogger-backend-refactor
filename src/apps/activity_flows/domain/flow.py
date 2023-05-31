@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import Field
 
@@ -21,6 +22,7 @@ class FlowSingleLanguageDetail(FlowBase, InternalModel):
     order: int
     description: str  # type: ignore[assignment]
     activity_ids: list[uuid.UUID] = Field(default_factory=list)
+    created_at: datetime
 
 
 class FlowSingleLanguageDetailPublic(FlowPublic):
@@ -28,6 +30,7 @@ class FlowSingleLanguageDetailPublic(FlowPublic):
     order: int
     description: str  # type: ignore[assignment]
     activity_ids: list[uuid.UUID] = Field(default_factory=list)
+    created_at: datetime
 
 
 class FlowDuplicate(FlowBase, InternalModel):
