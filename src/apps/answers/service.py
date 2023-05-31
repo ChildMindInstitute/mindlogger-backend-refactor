@@ -435,7 +435,7 @@ class AnswerService:
                 activity_history_id=pk(schema.activity_id),
                 item_ids=list(map(str, schema.item_ids)),
                 reviewer_id=self.user_id,
-                reviewer_public_key=schema.user_public_key,
+                reviewer_public_key=schema.reviewer_public_key,
                 is_edited=False,
             )
         )
