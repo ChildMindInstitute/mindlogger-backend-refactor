@@ -1,6 +1,8 @@
 import datetime
 import json
 
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -359,6 +361,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200, response.json()
 
+    @pytest.mark.main
     @rollback
     async def test_applet_assessment_create(self):
         await self.client.login(
@@ -434,10 +437,47 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["answer"] == "some answer"
-        assert response.json()["result"]["userPublicKey"] == "some public key"
+        assert (
+            response.json()["result"]["reviewerPublicKey"] == "some public key"
+        )
         assert response.json()["result"]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
         ]
+        assert response.json()["result"]["isEdited"] is False
+
+        response = await self.client.post(
+            self.assessment_answers_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            ),
+            dict(
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3621",
+                answer="some answer",
+                item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
+                user_public_key="some public key",
+            ),
+        )
+
+        assert response.status_code == 201
+
+        response = await self.client.get(
+            self.assessment_answers_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["result"]["answer"] == "some answer"
+        assert (
+            response.json()["result"]["reviewerPublicKey"] == "some public key"
+        )
+        assert response.json()["result"]["itemIds"] == [
+            "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
+        ]
+        assert response.json()["result"]["isEdited"] is True
 
     @rollback
     async def test_applet_activities(self):

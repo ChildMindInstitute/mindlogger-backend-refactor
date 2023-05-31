@@ -26,6 +26,7 @@ from apps.answers.domain import (
     AnsweredAppletActivity,
     AnswerNoteDetail,
     AppletAnswerCreate,
+    AssessmentAnswer,
     AssessmentAnswerCreate,
 )
 from apps.answers.errors import (
@@ -382,7 +383,7 @@ class AnswerService:
 
     async def get_assessment_by_answer_id(
         self, applet_id: uuid.UUID, answer_id: uuid.UUID
-    ) -> ActivityAnswer:
+    ) -> AssessmentAnswer:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
@@ -393,7 +394,7 @@ class AnswerService:
             self.session
         ).get_applets_assessments(pk(applet_id))
         if len(activity_items) == 0:
-            return ActivityAnswer()
+            return AssessmentAnswer()
 
         assessment_answer = await AssessmentAnswerItemsCRUD(
             self.session
@@ -401,13 +402,16 @@ class AnswerService:
             answer_id, activity_items[0].activity_id, self.user_id
         )
 
-        answer = ActivityAnswer(
-            user_public_key=assessment_answer.reviewer_public_key
+        answer = AssessmentAnswer(
+            reviewer_public_key=assessment_answer.reviewer_public_key
             if assessment_answer
             else None,
             answer=assessment_answer.answer if assessment_answer else None,
             item_ids=assessment_answer.item_ids if assessment_answer else [],
             items=activity_items,
+            is_edited=assessment_answer.is_edited
+            if assessment_answer
+            else False,
         )
         return answer
 
@@ -432,6 +436,7 @@ class AnswerService:
                 item_ids=list(map(str, schema.item_ids)),
                 reviewer_id=self.user_id,
                 reviewer_public_key=schema.user_public_key,
+                is_edited=False,
             )
         )
 

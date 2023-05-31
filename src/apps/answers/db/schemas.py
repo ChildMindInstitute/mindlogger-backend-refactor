@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Text
+from sqlalchemy import Boolean, Column, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
@@ -74,3 +74,4 @@ class AssessmentAnswerItemSchema(Base):
         nullable=True,
     )
     reviewer_public_key = Column(Text())
+    is_edited = Column(Boolean(), default=False)

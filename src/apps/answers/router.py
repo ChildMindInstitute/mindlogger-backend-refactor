@@ -17,6 +17,7 @@ from apps.answers.api import (
 from apps.answers.domain import (
     ActivityAnswerPublic,
     AnswerNoteDetailPublic,
+    AssessmentAnswerPublic,
     PublicAnswerDates,
     PublicAnsweredAppletActivity,
 )
@@ -85,7 +86,7 @@ router.get(
     "{activity_id}/assessment",
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": Response[ActivityAnswerPublic]},
+        status.HTTP_200_OK: {"model": Response[AssessmentAnswerPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

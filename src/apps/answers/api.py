@@ -8,6 +8,7 @@ from apps.answers.domain import (
     AnswerNoteDetailPublic,
     AppletAnswerCreate,
     AssessmentAnswerCreate,
+    AssessmentAnswerPublic,
     PublicAnswerDates,
     PublicAnsweredAppletActivity,
 )
@@ -119,7 +120,7 @@ async def applet_activity_assessment_retrieve(
     activity_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-) -> Response[ActivityAnswerPublic]:
+) -> Response[AssessmentAnswerPublic]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
@@ -129,7 +130,7 @@ async def applet_activity_assessment_retrieve(
             session, user.id
         ).get_assessment_by_answer_id(applet_id, answer_id)
     return Response(
-        result=ActivityAnswerPublic.from_orm(answer),
+        result=AssessmentAnswerPublic.from_orm(answer),
     )
 
 
