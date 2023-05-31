@@ -72,6 +72,13 @@ class AppletAnswerCreate(InternalModel):
         return value
 
 
+class AssessmentAnswerCreate(InternalModel):
+    activity_id: uuid.UUID
+    answer: str
+    item_ids: list[uuid.UUID]
+    user_public_key: str
+
+
 class AnswerDate(InternalModel):
     created_at: datetime.datetime
     answer_id: uuid.UUID
