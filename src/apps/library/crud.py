@@ -10,8 +10,8 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
     async def save(self, schema: LibrarySchema):
         await self._create(schema)
 
-    async def get_by_id_version(self, id_version: str) -> LibrarySchema | None:
-        schema = await self._get("applet_id_version", id_version)
+    async def get_by_id(self, id: str) -> LibrarySchema | None:
+        schema = await self._get("id", id)
         return schema
 
     async def get_all(self) -> list[LibrarySchema] | None:
