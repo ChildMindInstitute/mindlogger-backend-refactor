@@ -1,3 +1,4 @@
+import urllib.parse
 import uuid
 
 from apps.authentication.services import AuthenticationService
@@ -77,7 +78,8 @@ class PasswordRecoveryService:
                 url=(
                     f"https://{settings.service.urls.frontend.web_base}"
                     f"/{settings.service.urls.frontend.password_recovery_send}"
-                    f"?key={password_recovery_info.key}&email={user.email}"
+                    f"?key={password_recovery_info.key}"
+                    f"&email={urllib.parse.quote(user.email)}"
                 ),
             ),
         )
