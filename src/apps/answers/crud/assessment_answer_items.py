@@ -20,7 +20,10 @@ class AssessmentAnswerItemsCRUD(BaseCRUD[AssessmentAnswerItemSchema]):
         delete_query = delete_query.where(
             AssessmentAnswerItemSchema.reviewer_id == schema.reviewer_id
         )
-        await self._execute(delete_query)
+        delete_query = delete_query.returning(AssessmentAnswerItemSchema.id)
+        db_result = await self._execute(delete_query)
+        schema.is_edited = db_result.scalars().first() is not None
+
         return await self._create(schema)
 
     async def get_by_answer_and_activity(

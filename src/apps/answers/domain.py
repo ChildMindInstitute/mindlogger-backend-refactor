@@ -112,11 +112,27 @@ class ActivityAnswer(InternalModel):
     items: list[PublicActivityItemFull] = Field(default_factory=list)
 
 
+class AssessmentAnswer(InternalModel):
+    reviewer_public_key: str | None
+    answer: str | None
+    item_ids: list[str] = Field(default_factory=list)
+    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    is_edited: bool = False
+
+
 class ActivityAnswerPublic(PublicModel):
     user_public_key: str | None
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
+
+
+class AssessmentAnswerPublic(PublicModel):
+    reviewer_public_key: str | None
+    answer: str | None
+    item_ids: list[str] = Field(default_factory=list)
+    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    is_edited: bool = False
 
 
 class AnswerNote(InternalModel):
