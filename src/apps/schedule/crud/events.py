@@ -782,7 +782,6 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         query = query.group_by(
             ActivityFlowSchema.applet_id, ActivityFlowSchema.id
         )
-
         result = await self._execute(query)
 
         flow_event_counts: list[FlowEventCount] = [

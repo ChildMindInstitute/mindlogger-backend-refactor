@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import Field
 
@@ -16,6 +17,7 @@ class FlowFull(FlowBase, InternalModel):
     id: uuid.UUID
     items: list[ActivityFlowItemFull] = Field(default_factory=list)
     order: int
+    created_at: datetime
 
 
 class PublicActivityFlowItemFull(FlowItemBase, PublicModel):
@@ -27,3 +29,4 @@ class PublicFlowFull(FlowBase, PublicModel):
     id: uuid.UUID
     items: list[PublicActivityFlowItemFull] = Field(default_factory=list)
     order: int
+    created_at: datetime

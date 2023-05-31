@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import Field
 
@@ -18,6 +19,7 @@ class ActivityFull(ActivityBase, InternalModel):
     key: uuid.UUID
     items: list[ActivityItemFull] = Field(default_factory=list)
     order: int
+    created_at: datetime
 
 
 class PublicActivityItemFull(BaseActivityItem, PublicModel):
@@ -28,3 +30,4 @@ class PublicActivityItemFull(BaseActivityItem, PublicModel):
 class PublicActivityFull(ActivityBase, PublicModel):
     id: uuid.UUID
     items: list[PublicActivityItemFull] = Field(default_factory=list)
+    created_at: datetime

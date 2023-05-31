@@ -19,4 +19,4 @@ class ActivityBase(BaseModel):
     is_hidden: bool = False
     scores_and_reports: ScoresAndReports | None = None
     subscale_setting: SubscaleSetting | None = None
-    is_assessment: bool = False
+    is_assessment: bool | None = False

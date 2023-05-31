@@ -256,6 +256,7 @@ class ActivityService:
                     is_hidden=schema.is_hidden,
                     scores_and_reports=schema.scores_and_reports,
                     subscale_setting=schema.subscale_setting,
+                    created_at=schema.created_at,
                 )
             )
         return activities
@@ -337,6 +338,7 @@ class ActivityService:
             is_hidden=schema.is_hidden,
             scores_and_reports=schema.scores_and_reports,
             subscale_setting=schema.subscale_setting,
+            created_at=schema.created_at,
         )
         activity.items = await ActivityItemService(
             self.session
@@ -369,6 +371,7 @@ class ActivityService:
             is_hidden=schema.is_hidden,
             scores_and_reports=schema.scores_and_reports,
             subscale_setting=schema.subscale_setting,
+            created_at=schema.created_at,
         )
         activity.items = await ActivityItemService(
             self.session
