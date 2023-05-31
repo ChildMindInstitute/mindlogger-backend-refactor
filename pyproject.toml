@@ -41,8 +41,8 @@ env = [
     "ENV=testing",
     "DATABASE__HOST=localhost",
     "DATABASE__PORT=5432",
-    "DATABASE__PASSWORD=postgres",
-    "DATABASE__USER=postgres",
+    "DATABASE__PASSWORD=test",
+    "DATABASE__USER=test",
     "DATABASE__DB=test",
 ]
 

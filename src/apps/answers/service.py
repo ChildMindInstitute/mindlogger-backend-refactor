@@ -1,7 +1,10 @@
 import datetime
 import uuid
 
-from apps.activities.crud import ActivityItemHistoriesCRUD
+from apps.activities.crud import (
+    ActivityHistoriesCRUD,
+    ActivityItemHistoriesCRUD,
+)
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
@@ -15,6 +18,7 @@ from apps.answers.db.schemas import (
     AnswerItemSchema,
     AnswerNoteSchema,
     AnswerSchema,
+    AssessmentAnswerItemSchema,
 )
 from apps.answers.domain import (
     ActivityAnswer,
@@ -22,9 +26,11 @@ from apps.answers.domain import (
     AnsweredAppletActivity,
     AnswerNoteDetail,
     AppletAnswerCreate,
+    AssessmentAnswerCreate,
 )
 from apps.answers.errors import (
     ActivityDoesNotHaveItem,
+    ActivityIsNotAssessment,
     AnswerAccessDeniedError,
     AnswerNoteAccessDeniedError,
     FlowDoesNotHaveActivity,
@@ -404,3 +410,37 @@ class AnswerService:
             items=activity_items,
         )
         return answer
+
+    async def create_assessment_answer(
+        self,
+        applet_id: uuid.UUID,
+        answer_id: uuid.UUID,
+        schema: AssessmentAnswerCreate,
+    ):
+        assert self.user_id
+
+        await self._validate_answer_access(applet_id, answer_id)
+        answer = await AnswersCRUD(self.session).get_by_id(answer_id)
+        pk = self._generate_history_id(answer.version)
+        await self._validate_activity_for_assessment(pk(schema.activity_id))
+        await AssessmentAnswerItemsCRUD(self.session).create(
+            AssessmentAnswerItemSchema(
+                answer_id=answer_id,
+                answer=schema.answer,
+                applet_history_id=pk(applet_id),
+                activity_history_id=pk(schema.activity_id),
+                item_ids=list(map(str, schema.item_ids)),
+                reviewer_id=self.user_id,
+                reviewer_public_key=schema.user_public_key,
+            )
+        )
+
+    async def _validate_activity_for_assessment(
+        self, activity_history_id: str
+    ):
+        schema = await ActivityHistoriesCRUD(self.session).get_by_id(
+            activity_history_id
+        )
+
+        if not schema.is_assessment:
+            raise ActivityIsNotAssessment()

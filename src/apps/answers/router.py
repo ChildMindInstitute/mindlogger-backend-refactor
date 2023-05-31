@@ -4,6 +4,7 @@ from starlette import status
 from apps.answers.api import (
     applet_activities_list,
     applet_activity_answer_retrieve,
+    applet_activity_assessment_create,
     applet_activity_assessment_retrieve,
     applet_submit_date_list,
     create_anonymous_answer,
@@ -89,6 +90,16 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_assessment_retrieve)
+
+router.post(
+    "/applet/{applet_id}/answers/{answer_id}/activities/"
+    "{activity_id}/assessment",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_activity_assessment_create)
 
 router.post(
     "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes",

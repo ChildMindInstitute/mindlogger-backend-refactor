@@ -45,3 +45,7 @@ class FlowDoesNotHaveActivity(ValidationError):
 
 class ActivityDoesNotHaveItem(ValidationError):
     message = _("Activity does not have such item.")
+
+
+class ActivityIsNotAssessment(ValidationError):
+    message = _("Activity is not assessment.")

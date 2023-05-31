@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
 
 from apps.answers.db.schemas import AssessmentAnswerItemSchema
@@ -10,10 +10,18 @@ from infrastructure.database.crud import BaseCRUD
 class AssessmentAnswerItemsCRUD(BaseCRUD[AssessmentAnswerItemSchema]):
     schema_class = AssessmentAnswerItemSchema
 
-    async def create_many(
-        self, schemas: list[AssessmentAnswerItemSchema]
-    ) -> list[AssessmentAnswerItemSchema]:
-        raise NotImplementedError
+    async def create(
+        self, schema: AssessmentAnswerItemSchema
+    ) -> AssessmentAnswerItemSchema:
+        delete_query: Query = delete(AssessmentAnswerItemSchema)
+        delete_query = delete_query.where(
+            AssessmentAnswerItemSchema.answer_id == schema.answer_id
+        )
+        delete_query = delete_query.where(
+            AssessmentAnswerItemSchema.reviewer_id == schema.reviewer_id
+        )
+        await self._execute(delete_query)
+        return await self._create(schema)
 
     async def get_by_answer_and_activity(
         self,
