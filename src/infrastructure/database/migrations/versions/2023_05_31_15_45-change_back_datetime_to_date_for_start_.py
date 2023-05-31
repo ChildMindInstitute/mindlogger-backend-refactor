@@ -1,7 +1,7 @@
 """change back datetime to date for start, end, selected date
 
 Revision ID: e66dc1333ffb
-Revises: 70feaadd3564
+Revises: ee42eec076eb
 Create Date: 2023-05-31 07:45:21.431428
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "e66dc1333ffb"
-down_revision = "70feaadd3564"
+down_revision = "ee42eec076eb"
 branch_labels = None
 depends_on = None
 
