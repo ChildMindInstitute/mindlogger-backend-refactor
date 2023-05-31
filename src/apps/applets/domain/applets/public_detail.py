@@ -23,6 +23,7 @@ class ActivityItem(PublicModel):
     is_hidden: bool | None
     conditional_logic: ConditionalLogic | None = None
     allow_edit: bool | None = None
+    name: str
 
 
 class Activity(PublicModel):
