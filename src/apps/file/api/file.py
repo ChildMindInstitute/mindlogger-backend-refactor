@@ -1,5 +1,3 @@
-import uuid
-
 from botocore.exceptions import ClientError  # type: ignore
 from fastapi import Body, Depends, File, UploadFile
 from fastapi.responses import StreamingResponse
@@ -19,8 +17,7 @@ async def upload(
 ) -> Response[UploadedFile]:
     cdn_client = CDNClient(settings.cdn, env=settings.env)
 
-    _, fmt = file.filename.split(".")
-    key = CDNClient.generate_key(hash(user.id), f"{uuid.uuid4()}.{fmt}")
+    key = CDNClient.generate_key(hash(user.id), file.filename)
 
     cdn_client.upload(key, file.file)
 
