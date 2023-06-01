@@ -13,6 +13,7 @@ from apps.answers.api import (
     note_delete,
     note_edit,
     note_list,
+    applet_answer_reviews_retrieve,
 )
 from apps.answers.domain import (
     ActivityAnswerPublic,
@@ -20,6 +21,7 @@ from apps.answers.domain import (
     AssessmentAnswerPublic,
     PublicAnswerDates,
     PublicAnsweredAppletActivity,
+    AnswerReviewPublic,
 )
 from apps.shared.domain import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -80,6 +82,16 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_answer_retrieve)
+
+router.get(
+    "/applet/{applet_id}/answers/{answer_id}/reviews",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[AnswerReviewPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_answer_reviews_retrieve)
 
 router.get(
     "/applet/{applet_id}/answers/{answer_id}/activities/"

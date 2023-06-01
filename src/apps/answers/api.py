@@ -11,6 +11,7 @@ from apps.answers.domain import (
     AssessmentAnswerPublic,
     PublicAnswerDates,
     PublicAnsweredAppletActivity,
+    AnswerReviewPublic,
 )
 from apps.answers.filters import AppletActivityFilter, AppletSubmitDateFilter
 from apps.answers.service import AnswerService
@@ -111,6 +112,26 @@ async def applet_activity_answer_retrieve(
         )
     return Response(
         result=ActivityAnswerPublic.from_orm(answer),
+    )
+
+
+async def applet_answer_reviews_retrieve(
+    applet_id: uuid.UUID,
+    answer_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> ResponseMulti[AnswerReviewPublic]:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(
+            applet_id
+        )
+        reviews = await AnswerService(
+            session, user.id
+        ).get_reviews_by_answer_id(applet_id, answer_id)
+    return ResponseMulti(
+        result=[AnswerReviewPublic.from_orm(review) for review in reviews],
+        count=len(reviews),
     )
 
 
