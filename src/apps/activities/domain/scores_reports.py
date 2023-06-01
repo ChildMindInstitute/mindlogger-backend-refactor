@@ -3,6 +3,10 @@ from enum import Enum
 from pydantic import Field, PositiveInt, root_validator, validator
 
 from apps.activities.domain.conditional_logic import Match
+from apps.activities.domain.conditional_logic_validation import (
+    validate_raw_score_subscale,
+    validate_score_subscale_table,
+)
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
 from apps.activities.errors import (
     DuplicateScoreConditionIdError,
@@ -14,7 +18,6 @@ from apps.activities.errors import (
     DuplicateSectionConditionNameError,
     DuplicateSectionNameError,
     DuplicateSubscaleNameError,
-    InvalidRawScoreSubscaleError,
     ItemsRequiredForConditionalLogicError,
     MessageRequiredForConditionalLogicError,
     ScoreConditionItemNameError,
@@ -220,29 +223,21 @@ class SubscaleCalculationType(str, Enum):
 
 
 class SubScaleLookupTable(PublicModel):
-    score: int
-    raw_score: int | str
+    score: str
+    raw_score: str
     age: PositiveInt | None = None
     sex: str | None = Field(
         default=None, regex="^(M|F)$", description="M or F"
     )
     optional_text: str | None = None
 
-    @validator("raw_score", "score")
-    def validate_raw_score(cls, value):
-        if isinstance(value, str):
-            # make sure it's format is "x~y"
-            if "~" not in value:
-                raise InvalidRawScoreSubscaleError()
-            # make sure x and y are integers
-            x, y = value.split("~")
-            try:
-                x = int(x)
-                y = int(y)
-            except ValueError:
-                raise InvalidRawScoreSubscaleError()
+    @validator("raw_score")
+    def validate_raw_score_lookup(cls, value):
+        return validate_raw_score_subscale(value)
 
-        return value
+    @validator("score")
+    def validate_score_lookup(cls, value):
+        return validate_score_subscale_table(value)
 
 
 class Subscale(PublicModel):
@@ -253,24 +248,12 @@ class Subscale(PublicModel):
 
 
 class TotalScoreTable(PublicModel):
-    raw_score: int | str
+    raw_score: str
     optional_text: str | None = None
 
     @validator("raw_score")
     def validate_raw_score(cls, value):
-        if isinstance(value, str):
-            # make sure it's format is "x~y"
-            if "~" not in value:
-                raise InvalidRawScoreSubscaleError()
-            # make sure x and y are integers
-            x, y = value.split("~")
-            try:
-                x = int(x)
-                y = int(y)
-            except ValueError:
-                raise InvalidRawScoreSubscaleError()
-
-        return value
+        return validate_raw_score_subscale(value)
 
 
 class SubscaleSetting(PublicModel):
