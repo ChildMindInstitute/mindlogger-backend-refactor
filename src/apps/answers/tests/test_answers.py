@@ -1,8 +1,6 @@
 import datetime
 import json
 
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -61,6 +59,7 @@ class TestAnswerActivityItems(BaseTest):
                             additional_text=None,
                         )
                     ),
+                    events=json.dumps(dict(events=["event1", "event2"])),
                     item_ids=[
                         "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                         "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
@@ -85,6 +84,7 @@ class TestAnswerActivityItems(BaseTest):
             answers=[
                 dict(
                     activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    events=json.dumps(dict(events=["event1", "event2"])),
                     answer=json.dumps(
                         dict(
                             value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
@@ -150,6 +150,7 @@ class TestAnswerActivityItems(BaseTest):
             answers=[
                 dict(
                     activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    events=json.dumps(dict(events=["event1", "event2"])),
                     answer=json.dumps(
                         dict(
                             value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
@@ -197,6 +198,7 @@ class TestAnswerActivityItems(BaseTest):
                 dict(
                     flow_id="3013dfb1-9202-4577-80f2-ba7450fb5831",
                     activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    events=json.dumps(dict(events=["event1", "event2"])),
                     answer=json.dumps(
                         dict(
                             value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
@@ -250,6 +252,7 @@ class TestAnswerActivityItems(BaseTest):
             answers=[
                 dict(
                     activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                    events=json.dumps(dict(events=["event1", "event2"])),
                     answer=json.dumps(
                         dict(
                             value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
@@ -304,6 +307,10 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
+        assert (
+            response.json()["result"]["events"]
+            == '{"events": ["event1", "event2"]}'
+        )
 
     @rollback
     async def test_applet_assessment_retrieve(self):
@@ -363,7 +370,6 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200, response.json()
 
-    @pytest.mark.main
     @rollback
     async def test_applet_assessment_create(self):
         await self.client.login(

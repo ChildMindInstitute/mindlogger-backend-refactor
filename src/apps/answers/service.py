@@ -190,6 +190,7 @@ class AnswerService:
                 AnswerItemSchema(
                     answer_id=answer.id,
                     answer=answer_item.answer,
+                    events=answer_item.events,
                     applet_history_id=pk(applet_answer.applet_id),
                     flow_history_id=pk(answer_item.flow_id)
                     if answer_item.flow_id
@@ -309,6 +310,7 @@ class AnswerService:
             answer=answer_item.answer,
             item_ids=answer_item.item_ids,
             items=activity_items,
+            events=answer_item.events,
         )
 
         return answer
