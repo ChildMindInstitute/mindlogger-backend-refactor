@@ -1,5 +1,6 @@
 import io
 import mimetypes
+import uuid
 from typing import BinaryIO
 
 import boto3
@@ -40,7 +41,7 @@ class CDNClient:
 
     @staticmethod
     def generate_key(unique, filename):
-        return f"mindlogger/{unique}/{filename}"
+        return f"mindlogger/{unique}/{uuid.uuid4()}/{filename}"
 
     def download(self, key):
         file = io.BytesIO()
