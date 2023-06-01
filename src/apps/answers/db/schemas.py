@@ -38,6 +38,7 @@ class AnswerItemSchema(Base):
         ForeignKey("answers.id", ondelete="CASCADE"),
     )
     answer = Column(Text())
+    events = Column(Text())
     applet_history_id = Column(
         ForeignKey("applet_histories.id_version", ondelete="RESTRICT"),
         nullable=False,

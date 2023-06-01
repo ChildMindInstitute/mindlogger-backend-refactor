@@ -43,6 +43,7 @@ class ActivityItemAnswerCreate(InternalModel):
     flow_id: uuid.UUID | None = None
     activity_id: uuid.UUID
     answer: str
+    events: str | None
     item_ids: list[uuid.UUID]
 
     @validator("item_ids")
@@ -108,6 +109,7 @@ class PublicAnswerDates(PublicModel):
 class ActivityAnswer(InternalModel):
     user_public_key: str | None
     answer: str | None
+    events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
 
@@ -137,6 +139,7 @@ class AnswerReview(InternalModel):
 class ActivityAnswerPublic(PublicModel):
     user_public_key: str | None
     answer: str | None
+    events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
 
