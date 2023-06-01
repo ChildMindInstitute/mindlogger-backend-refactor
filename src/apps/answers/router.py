@@ -6,6 +6,7 @@ from apps.answers.api import (
     applet_activity_answer_retrieve,
     applet_activity_assessment_create,
     applet_activity_assessment_retrieve,
+    applet_answer_reviews_retrieve,
     applet_submit_date_list,
     create_anonymous_answer,
     create_answer,
@@ -13,15 +14,14 @@ from apps.answers.api import (
     note_delete,
     note_edit,
     note_list,
-    applet_answer_reviews_retrieve,
 )
 from apps.answers.domain import (
     ActivityAnswerPublic,
     AnswerNoteDetailPublic,
+    AnswerReviewPublic,
     AssessmentAnswerPublic,
     PublicAnswerDates,
     PublicAnsweredAppletActivity,
-    AnswerReviewPublic,
 )
 from apps.shared.domain import (
     AUTHENTICATION_ERROR_RESPONSES,

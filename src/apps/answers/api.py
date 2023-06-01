@@ -6,12 +6,12 @@ from apps.answers.domain import (
     ActivityAnswerPublic,
     AnswerNote,
     AnswerNoteDetailPublic,
+    AnswerReviewPublic,
     AppletAnswerCreate,
     AssessmentAnswerCreate,
     AssessmentAnswerPublic,
     PublicAnswerDates,
     PublicAnsweredAppletActivity,
-    AnswerReviewPublic,
 )
 from apps.answers.filters import AppletActivityFilter, AppletSubmitDateFilter
 from apps.answers.service import AnswerService

@@ -25,10 +25,10 @@ from apps.answers.domain import (
     AnswerDate,
     AnsweredAppletActivity,
     AnswerNoteDetail,
+    AnswerReview,
     AppletAnswerCreate,
     AssessmentAnswer,
     AssessmentAnswerCreate,
-    AnswerReview,
 )
 from apps.answers.errors import (
     ActivityDoesNotHaveItem,
