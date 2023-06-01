@@ -13,3 +13,7 @@ class AppletSubmitDateFilter(BaseQueryParams):
     respondent_id: uuid.UUID
     from_date: datetime.date
     to_date: datetime.date
+
+
+class AnswerExportFilters(BaseQueryParams):
+    respondent_id: uuid.UUID | None = None

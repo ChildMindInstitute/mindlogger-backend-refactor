@@ -5,8 +5,10 @@ from sqlalchemy import (
     ForeignKey,
     String,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from apps.workspaces.domain.constants import UserPinRole
 from infrastructure.database.base import Base
@@ -34,6 +36,22 @@ class UserAppletAccessSchema(Base):
     )
     meta = Column(JSONB())
     is_pinned = Column(Boolean(), default=False)
+
+    @hybrid_property
+    def respondent_nickname(self):
+        return self.meta.get("nickname")
+
+    @respondent_nickname.expression  # type: ignore[no-redef]
+    def respondent_nickname(cls):
+        return cls.meta[text("'nickname'")].astext
+
+    @hybrid_property
+    def respondent_secret_id(self):
+        return self.meta.get("secretUserId")
+
+    @respondent_secret_id.expression  # type: ignore[no-redef]
+    def respondent_secret_id(cls):
+        return cls.meta[text("'secretUserId'")].astext
 
 
 class UserPinSchema(Base):

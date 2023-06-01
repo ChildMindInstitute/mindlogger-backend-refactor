@@ -1,12 +1,22 @@
 import datetime
 import uuid
 
+from pydantic import Field, validator
+
+from apps.activities.domain.activity_full import (
+    PublicActivityFull,
+    PublicActivityItemFull,
+)
+from apps.activities.domain.activity_item_history import ActivityItemHistory
 from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain.custom_validations import extract_history_version
 
 __all__ = [
     "ActivityHistory",
     "ActivityHistoryChange",
     "PublicActivityHistoryChange",
+    "ActivityHistoryExport",
+    "ActivityHistoryFull",
 ]
 
 
@@ -48,3 +58,17 @@ class PublicActivityHistoryChange(PublicModel):
     is_reviewable: str | None = None
     response_is_editable: str | None = None
     order: str | None = None
+
+
+class ActivityHistoryFull(ActivityHistory):
+    items: list[ActivityItemHistory] = Field(default_factory=list)
+
+
+class ActivityHistoryExport(PublicActivityFull):
+    id_version: str
+    version: str | None = None
+    items: list[PublicActivityItemFull] = Field(default_factory=list)
+
+    _version = validator("version", always=True, allow_reuse=True)(
+        extract_history_version
+    )

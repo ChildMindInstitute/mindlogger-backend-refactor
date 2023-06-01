@@ -2,9 +2,13 @@ import datetime
 import uuid
 from typing import Any
 
-from pydantic import Field, validator
+from pydantic import BaseModel, Field, validator
 
 from apps.activities.domain.activity_full import PublicActivityItemFull
+from apps.activities.domain.activity_history import (
+    ActivityHistoryExport,
+    ActivityHistoryFull,
+)
 from apps.activities.domain.response_type_config import ResponseType
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -192,3 +196,54 @@ class AnswerNoteDetailPublic(PublicModel):
     user: NoteOwnerPublic
     note: str
     created_at: datetime.datetime
+
+
+class UserAnswerDataBase(BaseModel):
+    version: str
+    user_public_key: str | None
+    respondent_id: uuid.UUID | str | None = None
+    respondent_nickname: str | None = None
+    respondent_secret_id: str | None = None
+    answer: str | None = None
+    item_ids: list[str] = Field(default_factory=list)
+    applet_history_id: str
+    activity_history_id: str
+    flow_history_id: str | None
+    flow_name: str | None
+    created_at: datetime.datetime
+
+
+class UserAnswerData(UserAnswerDataBase, InternalModel):
+    is_manager: bool = False
+    respondent_email: str | None = None
+
+
+class UserAnswerDataPublic(UserAnswerDataBase, PublicModel):
+    applet_id: str | None
+    activity_id: str | None
+    flow_id: str | None
+
+    @validator("applet_id", always=True)
+    def extract_applet_id(cls, value, values):
+        return values["applet_history_id"][:36]
+
+    @validator("activity_id", always=True)
+    def extract_activity_id(cls, value, values):
+        return values["activity_history_id"][:36]
+
+    @validator("flow_id", always=True)
+    def extract_flow_id(cls, value, values):
+        if val := values.get("flow_history_id"):
+            return val[:36]
+
+        return value
+
+
+class AnswerExport(InternalModel):
+    answers: list[UserAnswerData] = Field(default_factory=list)
+    activities: list[ActivityHistoryFull] = Field(default_factory=list)
+
+
+class PublicAnswerExport(PublicModel):
+    answers: list[UserAnswerDataPublic] = Field(default_factory=list)
+    activities: list[ActivityHistoryExport] = Field(default_factory=list)

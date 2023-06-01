@@ -187,3 +187,8 @@ class CheckAccessService:
     async def check_publish_conceal_access(self):
         if not self.is_super_admin:
             raise PublishConcealAccessDenied()
+
+    async def check_answers_export_access(self, applet_id: uuid.UUID):
+        await self._check_applet_roles(
+            applet_id, [Role.OWNER, Role.MANAGER, Role.REVIEWER]
+        )
