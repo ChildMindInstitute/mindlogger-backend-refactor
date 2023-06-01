@@ -36,6 +36,8 @@ class TestAnswerActivityItems(BaseTest):
         "/answers/applet/{id_}/answers/{answer_id}"
         "/activities/{activity_id}/assessment"
     )
+
+    answer_reviews_url = "/answers/applet/{id_}/answers/{answer_id}/reviews"
     answer_notes_url = "/answers/applet/{id_}/answers/{answer_id}/activities/{activity_id}/notes"  # noqa: E501
     answer_note_detail_url = "/answers/applet/{id_}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
 
@@ -478,6 +480,24 @@ class TestAnswerActivityItems(BaseTest):
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
         ]
         assert response.json()["result"]["isEdited"] is True
+        response = await self.client.get(
+            self.answer_reviews_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0]["answer"] == "some answer"
+        assert (
+            response.json()["result"][0]["reviewerPublicKey"]
+            == "some public key"
+        )
+        assert response.json()["result"][0]["itemIds"] == [
+            "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
+        ]
+        assert response.json()["result"][0]["isEdited"] is True
 
     @rollback
     async def test_applet_activities(self):

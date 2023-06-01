@@ -25,6 +25,7 @@ from apps.answers.domain import (
     AnswerDate,
     AnsweredAppletActivity,
     AnswerNoteDetail,
+    AnswerReview,
     AppletAnswerCreate,
     AssessmentAnswer,
     AssessmentAnswerCreate,
@@ -414,6 +415,24 @@ class AnswerService:
             else False,
         )
         return answer
+
+    async def get_reviews_by_answer_id(
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+    ) -> list[AnswerReview]:
+        assert self.user_id
+
+        await self._validate_answer_access(applet_id, answer_id)
+        schema = await AnswersCRUD(self.session).get_by_id(answer_id)
+        pk = self._generate_history_id(schema.version)
+
+        activity_items = await ActivityItemHistoriesCRUD(
+            self.session
+        ).get_applets_assessments(pk(applet_id))
+
+        reviews = await AssessmentAnswerItemsCRUD(
+            self.session
+        ).get_reviews_by_answer_id(answer_id, activity_items)
+        return reviews
 
     async def create_assessment_answer(
         self,

@@ -6,6 +6,7 @@ from apps.answers.api import (
     applet_activity_answer_retrieve,
     applet_activity_assessment_create,
     applet_activity_assessment_retrieve,
+    applet_answer_reviews_retrieve,
     applet_submit_date_list,
     create_anonymous_answer,
     create_answer,
@@ -17,6 +18,7 @@ from apps.answers.api import (
 from apps.answers.domain import (
     ActivityAnswerPublic,
     AnswerNoteDetailPublic,
+    AnswerReviewPublic,
     AssessmentAnswerPublic,
     PublicAnswerDates,
     PublicAnsweredAppletActivity,
@@ -80,6 +82,16 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_answer_retrieve)
+
+router.get(
+    "/applet/{applet_id}/answers/{answer_id}/reviews",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[AnswerReviewPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_answer_reviews_retrieve)
 
 router.get(
     "/applet/{applet_id}/answers/{answer_id}/activities/"
