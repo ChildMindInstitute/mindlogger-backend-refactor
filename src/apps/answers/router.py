@@ -7,6 +7,7 @@ from apps.answers.api import (
     applet_activity_assessment_create,
     applet_activity_assessment_retrieve,
     applet_answer_reviews_retrieve,
+    applet_answers_export,
     applet_submit_date_list,
     create_anonymous_answer,
     create_answer,
@@ -22,6 +23,7 @@ from apps.answers.domain import (
     AssessmentAnswerPublic,
     PublicAnswerDates,
     PublicAnsweredAppletActivity,
+    PublicAnswerExport,
 )
 from apps.shared.domain import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -150,3 +152,13 @@ router.delete(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(note_delete)
+
+router.get(
+    "/applet/{applet_id}/data",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicAnswerExport]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_answers_export)

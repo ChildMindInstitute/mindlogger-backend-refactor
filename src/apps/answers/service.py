@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import uuid
 
@@ -5,6 +6,7 @@ from apps.activities.crud import (
     ActivityHistoriesCRUD,
     ActivityItemHistoriesCRUD,
 )
+from apps.activities.domain.activity_history import ActivityHistoryFull
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
@@ -24,6 +26,7 @@ from apps.answers.domain import (
     ActivityAnswer,
     AnswerDate,
     AnsweredAppletActivity,
+    AnswerExport,
     AnswerNoteDetail,
     AnswerReview,
     AppletAnswerCreate,
@@ -470,3 +473,38 @@ class AnswerService:
 
         if not schema.is_assessment:
             raise ActivityIsNotAssessment()
+
+    async def get_export_data(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> AnswerExport:
+        assert self.user_id is not None
+
+        repository = AnswersCRUD(self.session)
+        answers = await repository.get_applet_answers(
+            applet_id, self.user_id, **query_params.filters
+        )
+
+        if not answers:
+            return AnswerExport()
+
+        activity_hist_ids = list(
+            {answer.activity_history_id for answer in answers}
+        )
+
+        activities, items = await asyncio.gather(
+            repository.get_activity_history_by_ids(activity_hist_ids),
+            repository.get_item_history_by_activity_history(activity_hist_ids),
+        )
+
+        activity_map = {
+            activity.id_version: ActivityHistoryFull.from_orm(activity)
+            for activity in activities
+        }
+        for item in items:
+            activity = activity_map.get(item.activity_id)
+            if activity:
+                activity.items.append(item)
+
+        return AnswerExport(
+            answers=answers, activities=list(activity_map.values())
+        )

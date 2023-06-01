@@ -4,6 +4,7 @@ from fastapi import Body, Depends
 
 from apps.answers.domain import (
     ActivityAnswerPublic,
+    AnswerExport,
     AnswerNote,
     AnswerNoteDetailPublic,
     AnswerReviewPublic,
@@ -12,8 +13,13 @@ from apps.answers.domain import (
     AssessmentAnswerPublic,
     PublicAnswerDates,
     PublicAnsweredAppletActivity,
+    PublicAnswerExport,
 )
-from apps.answers.filters import AppletActivityFilter, AppletSubmitDateFilter
+from apps.answers.filters import (
+    AnswerExportFilters,
+    AppletActivityFilter,
+    AppletSubmitDateFilter,
+)
 from apps.answers.service import AnswerService
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
@@ -254,3 +260,27 @@ async def note_delete(
             applet_id, answer_id, note_id
         )
     return
+
+
+async def applet_answers_export(
+    applet_id: uuid.UUID,
+    query_params: QueryParams = Depends(
+        parse_query_params(AnswerExportFilters)
+    ),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answers_export_access(
+        applet_id
+    )
+    data: AnswerExport = await AnswerService(session, user.id).get_export_data(
+        applet_id, query_params
+    )
+    for answer in data.answers:
+        if answer.is_manager:
+            answer.respondent_secret_id = (
+                f"[admin account]({answer.respondent_email})"
+            )
+
+    return Response(result=PublicAnswerExport.from_orm(data))

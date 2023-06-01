@@ -479,10 +479,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(AppletSchema, UserSchema)
         )
 
-        field_nickname = UserAppletAccessSchema.meta[text("'nickname'")].astext
-        field_secret_user_id = UserAppletAccessSchema.meta[
-            text("'secretUserId'")
-        ].astext
+        field_nickname = UserAppletAccessSchema.respondent_nickname
+        field_secret_user_id = UserAppletAccessSchema.respondent_secret_id
 
         query: Query = (
             select(

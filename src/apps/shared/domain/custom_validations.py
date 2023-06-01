@@ -7,6 +7,7 @@ __all__ = [
     "validate_image",
     "validate_color",
     "validate_audio",
+    "extract_history_version",
 ]
 
 from apps.shared.exception import ValidationError
@@ -48,3 +49,13 @@ def validate_audio(value: str) -> str:
     ):
         return value
     raise InvalidAudioError()
+
+
+def extract_history_version(value, values):
+    """
+    Requires id_version in values. Format: <uuid4>_<version_str>
+    """
+    if val := values.get("id_version"):
+        return val[37:]
+
+    return value
