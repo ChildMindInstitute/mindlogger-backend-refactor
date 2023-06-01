@@ -238,6 +238,20 @@ class FlankerConfig(PublicModel):
     test: FlankerTestSettings
 
 
+class ABTrailsIpadConfig(PublicModel):
+    name: str
+    description: str
+    image_placeholder: str
+    is_hidden: bool | None
+
+
+class ABTrailsMobileConfig(PublicModel):
+    name: str
+    description: str
+    image_placeholder: str
+    is_hidden: bool | None
+
+
 class NoneResponseType(str, Enum):
     TEXT = "text"
     MESSAGE = "message"
@@ -250,6 +264,8 @@ class NoneResponseType(str, Enum):
     FLANKER = "flanker"
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"
+    ABTRAILSIPAD = "ABTrailsIpad"
+    ABTRAILSMOBILE = "ABTrailsMobile"
 
 
 class ResponseType(str, Enum):
@@ -274,7 +290,8 @@ class ResponseType(str, Enum):
     FLANKER = "flanker"
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"
-    # ABTEST = "abTest"
+    ABTRAILSIPAD = "ABTrailsIpad"
+    ABTRAILSMOBILE = "ABTrailsMobile"
 
 
 ResponseTypeConfigOptions = [
@@ -299,6 +316,8 @@ ResponseTypeConfigOptions = [
     FlankerConfig,
     GyroscopeConfig,
     TouchConfig,
+    ABTrailsIpadConfig,
+    ABTrailsMobileConfig,
 ]
 
 ResponseTypeConfig = (
@@ -323,6 +342,8 @@ ResponseTypeConfig = (
     | FlankerConfig
     | GyroscopeConfig
     | TouchConfig
+    | ABTrailsIpadConfig
+    | ABTrailsMobileConfig
 )
 
 ResponseTypeValueConfig = {}
