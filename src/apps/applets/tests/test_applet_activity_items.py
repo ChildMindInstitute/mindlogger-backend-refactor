@@ -538,8 +538,14 @@ class TestActivityItems(BaseTest):
                                 practice=dict(
                                     instruction="instruction",
                                     blocks=[
-                                        {"order": ["1", "2"]},
-                                        {"order": ["2", "1"]},
+                                        {
+                                            "order": ["1", "2"],
+                                            "name": "name order 1",
+                                        },
+                                        {
+                                            "order": ["2", "1"],
+                                            "name": "name order 2",
+                                        },
                                     ],
                                     stimulusDuration=20,
                                     threshold=15,
@@ -550,8 +556,14 @@ class TestActivityItems(BaseTest):
                                 test=dict(
                                     instruction="instruction",
                                     blocks=[
-                                        {"order": ["1", "2"]},
-                                        {"order": ["2", "1"]},
+                                        {
+                                            "order": ["1", "2"],
+                                            "name": "name order 1",
+                                        },
+                                        {
+                                            "order": ["2", "1"],
+                                            "name": "name order 2",
+                                        },
                                     ],
                                     stimulusDuration=20,
                                     randomizeOrder=True,

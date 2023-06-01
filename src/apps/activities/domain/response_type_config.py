@@ -201,6 +201,7 @@ class StimulusId(str):
 
 class BlockSettings(PublicModel):
     order: list[StimulusId]
+    name: str
 
 
 class StimulusSettings(PublicModel):
