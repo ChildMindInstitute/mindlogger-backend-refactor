@@ -62,6 +62,14 @@ class TouchValues(PublicModel):
     pass
 
 
+class ABTrailsIpadValues(PublicModel):
+    pass
+
+
+class ABTrailsMobileValues(PublicModel):
+    pass
+
+
 class _SingleSelectionValue(PublicModel):
     id: str | None = None
     text: str
@@ -267,6 +275,8 @@ ResponseValueConfigOptions = [
     FlankerValues,
     GyroscopeValues,
     TouchValues,
+    ABTrailsIpadValues,
+    ABTrailsMobileValues,
 ]
 
 

@@ -611,8 +611,38 @@ class TestActivityItems(BaseTest):
                                     "instruction",
                                 },
                                 test={
-                                    "instruction": "touch test " "instruction",
+                                    "instruction": "touch test instruction",
                                 },
+                            ),
+                        ),
+                        dict(
+                            name="activity_item_ab_trails_ipad",
+                            question=dict(
+                                en="ab_trails_ipad question?",
+                                fr="ab_trails_ipad question?",
+                            ),
+                            response_type="ABTrailsIpad",
+                            response_values=None,
+                            config=dict(
+                                name="name",
+                                description="description",
+                                isHidden=False,
+                                imagePlaceholder="image placeholder",
+                            ),
+                        ),
+                        dict(
+                            name="activity_item_ab_trails_mobile",
+                            question=dict(
+                                en="ab_trails_mobile question?",
+                                fr="ab_trails_mobile question?",
+                            ),
+                            response_type="ABTrailsMobile",
+                            response_values=None,
+                            config=dict(
+                                name="name",
+                                description="description",
+                                isHidden=False,
+                                imagePlaceholder="image placeholder",
                             ),
                         ),
                     ],
