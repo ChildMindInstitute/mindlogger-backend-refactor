@@ -59,7 +59,7 @@ class RemoveManagerAccess(InternalModel):
     applet_ids: list[uuid.UUID] = Field(
         description="This field represents the applet ids",
     )
-    role: Role
+    # role: Role
 
 
 class RemoveRespondentAccess(InternalModel):

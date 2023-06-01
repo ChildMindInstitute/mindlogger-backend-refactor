@@ -668,7 +668,7 @@ class TestWorkspaces(BaseTest):
             "applet_ids": [
                 "92917a56-d586-4613-b7aa-991f2c4b15b1",
             ],
-            "role": Role.MANAGER,
+            # "role": Role.MANAGER,
         }
 
         response = await self.client.post(
