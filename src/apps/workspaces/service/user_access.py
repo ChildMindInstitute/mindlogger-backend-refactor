@@ -118,20 +118,25 @@ class UserAccessService:
         await self._validate_ownership(schema.applet_ids)
         if self._user_id == schema.user_id:
             raise RemoveOwnPermissionAccessDenied()
+        manager_roles = [
+            Role.COORDINATOR,
+            Role.MANAGER,
+            Role.EDITOR,
+            Role.REVIEWER,
+        ]
 
         # check if schema.user_id is manager of all applets
         await self._validate_access(
             user_id=schema.user_id,
             removing_applets=schema.applet_ids,
-            roles=[schema.role],
+            roles=manager_roles,
             invitor_id=self._user_id,
         )
-
         # remove manager access
         await UserAppletAccessCRUD(
             self.session
         ).remove_access_by_user_and_applet_to_role(
-            schema.user_id, schema.applet_ids, [schema.role]
+            schema.user_id, schema.applet_ids, manager_roles
         )
 
     async def remove_respondent_access(self, schema: RemoveRespondentAccess):
