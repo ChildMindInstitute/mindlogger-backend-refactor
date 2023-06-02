@@ -510,16 +510,16 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
                 func.array_agg(
                     func.json_build_object(
-                        text("'applet_id'"), AppletSchema.id,
-                        text("'applet_display_name'"), AppletSchema.display_name,  # noqa: E501
-                        text("'applet_image'"), AppletSchema.image,  # noqa: E501
-                        text("'access_id'"), UserAppletAccessSchema.id,
-                        text("'respondent_nickname'"), field_nickname,
-                        text("'respondent_secret_id'"), field_secret_user_id,
-                        text("'has_individual_schedule'"), schedule_exists,
+                        'applet_id', AppletSchema.id,
+                        'applet_display_name', AppletSchema.display_name,
+                        'applet_image', AppletSchema.image,
+                        'access_id', UserAppletAccessSchema.id,
+                        'respondent_nickname', field_nickname,
+                        'respondent_secret_id', field_secret_user_id,
+                        'has_individual_schedule', schedule_exists,
+                        "encryption", AppletSchema.encryption,
                     )
                 ).label("details"),
-                # fmt: on
             )
             .select_from(UserAppletAccessSchema)
             .join(
@@ -626,16 +626,16 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 func.array_agg(
                     aggregate_order_by(
                         func.json_build_object(
-                            text("'applet_id'"), AppletSchema.id,
-                            text("'applet_display_name'"), AppletSchema.display_name,  # noqa: E501
-                            text("'applet_image'"), AppletSchema.image,
-                            text("'access_id'"), UserAppletAccessSchema.id,
-                            text("'role'"), UserAppletAccessSchema.role,
+                            'applet_id', AppletSchema.id,
+                            'applet_display_name', AppletSchema.display_name,
+                            'applet_image', AppletSchema.image,
+                            'access_id', UserAppletAccessSchema.id,
+                            'role', UserAppletAccessSchema.role,
+                            'encryption', AppletSchema.encryption
                         ),
                         AppletSchema.id
                     )
                 ).label("applets"),
-                # fmt: on
             )
             .select_from(UserAppletAccessSchema)
             .join(
