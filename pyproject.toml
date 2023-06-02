@@ -81,6 +81,6 @@ module = [
 ignore_missing_imports = true
 
 [tool.codespell]
-skip = '.git,*.pdf,*.svg'
+skip = '.git,*.pdf,*.svg,*.fr.mako,fr.py'
 #
 # ignore-words-list = ''
