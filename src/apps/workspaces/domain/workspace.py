@@ -51,6 +51,13 @@ class UserWorkspace(InternalModel):
     )
 
 
+class WorkspaceAppletEncryption(InternalModel):
+    public_key: str
+    prime: str
+    base: str
+    account_id: str
+
+
 class WorkspaceRespondentDetails(InternalModel):
     applet_id: uuid.UUID
     applet_display_name: str
@@ -59,6 +66,7 @@ class WorkspaceRespondentDetails(InternalModel):
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
     has_individual_schedule: bool = False
+    encryption: WorkspaceAppletEncryption
 
 
 class WorkspaceRespondent(InternalModel):
@@ -80,6 +88,7 @@ class WorkspaceManagerApplet(InternalModel):
     display_name: str
     image: str | None
     roles: list[AppletRole]
+    encryption: WorkspaceAppletEncryption
 
 
 def group_applet_roles(value):
@@ -123,6 +132,7 @@ class WorkspaceManager(InternalModel):
                     "display_name": applet_role["applet_display_name"],
                     "image": applet_role["applet_image"],
                     "roles": [],
+                    "encryption": applet_role["encryption"],
                 }
             applet["roles"].append(
                 dict(
