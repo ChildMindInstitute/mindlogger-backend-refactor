@@ -117,7 +117,7 @@ async def workspace_roles_retrieve(
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
     applet_roles = await UserAccessService(
         session, user.id
-    ).get_workspace_applet_roles(owner_id, applet_ids)
+    ).get_workspace_applet_roles(owner_id, applet_ids, user.is_super_admin)
 
     return Response(result=applet_roles)
 
