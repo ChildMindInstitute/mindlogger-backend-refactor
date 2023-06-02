@@ -231,9 +231,6 @@ class FlankerPracticeSettings(FlankerTestSettings, PublicModel):
 
 
 class FlankerConfig(PublicModel):
-    name: str
-    description: str | None
-    is_hidden: bool | None
     general: FlankerGeneralSettings
     practice: FlankerPracticeSettings
     test: FlankerTestSettings
