@@ -387,10 +387,20 @@ class UserAccessService:
         await UserAppletAccessCRUD(self.session).create_many(schemas)
 
     async def get_workspace_applet_roles(
-        self, owner_id: uuid.UUID, applet_ids: list[uuid.UUID] | None = None
+        self,
+        owner_id: uuid.UUID,
+        applet_ids: list[uuid.UUID] | None = None,
+        is_super_admin=False,
     ) -> dict[uuid.UUID, list[Role]]:
         applet_roles = await UserAppletAccessCRUD(
             self.session
         ).get_workspace_applet_roles(owner_id, self._user_id, applet_ids)
+
+        if is_super_admin:
+            for applet_role in applet_roles:
+                if Role.OWNER in applet_role.roles:
+                    applet_role.roles.insert(1, Role.SUPER_ADMIN)
+                else:
+                    applet_role.roles.insert(0, Role.SUPER_ADMIN)
 
         return {val.applet_id: val.roles for val in applet_roles}

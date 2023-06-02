@@ -109,6 +109,22 @@ class TestWorkspaces(BaseTest):
         assert roles == [Role.MANAGER, Role.RESPONDENT]
 
     @rollback
+    async def test_workspace_roles_with_super_admin_retrieve(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.workspace_roles_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            )
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()["result"]
+        roles = data.get("92917a56-d586-4613-b7aa-991f2c4b15b1", [])
+        assert roles == [Role.OWNER, Role.SUPER_ADMIN, Role.RESPONDENT]
+
+    @rollback
     async def test_user_workspace_retrieve_with_managers(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
