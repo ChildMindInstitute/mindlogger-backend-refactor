@@ -478,16 +478,23 @@ class TestActivityItems(BaseTest):
                                 min_image=None,
                                 max_image=None,
                                 scores=None,
+                                alerts=[
+                                    dict(
+                                        min_value=1,
+                                        max_value=4,
+                                        alert="alert1",
+                                    ),
+                                ],
                             ),
                             config=dict(
                                 remove_back_button=False,
                                 skippable_item=False,
                                 add_scores=False,
-                                set_alerts=False,
+                                set_alerts=True,
                                 timer=1,
                                 show_tick_labels=False,
                                 show_tick_marks=False,
-                                continuous_slider=False,
+                                continuous_slider=True,
                                 additional_response_option={
                                     "text_input_option": False,
                                     "text_input_required": False,

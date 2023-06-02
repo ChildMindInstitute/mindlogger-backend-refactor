@@ -110,10 +110,19 @@ class MultiSelectionValues(PublicModel):
 
 
 class SliderValueAlert(PublicModel):
-    value: int
-    min_value: int
-    max_value: int
+    value: int | None = Field(
+        default=0,
+        description="Either value or min_value and max_value must be provided",
+    )
+    min_value: int | None
+    max_value: int | None
     alert: str
+
+    @root_validator()
+    def validate_min_max_values(cls, values):
+        if values.get("min_value") >= values.get("max_value"):
+            raise MinValueError()
+        return values
 
 
 class SliderValues(PublicModel):

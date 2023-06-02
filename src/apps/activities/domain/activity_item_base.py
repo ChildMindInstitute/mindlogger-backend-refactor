@@ -16,6 +16,7 @@ from apps.activities.errors import (
     NullScoreError,
     ScoreRequiredForResponseValueError,
     ScoreRequiredForValueError,
+    SliderMinMaxValueError,
 )
 from apps.shared.domain import PublicModel
 
@@ -191,4 +192,23 @@ class BaseActivityItem(BaseModel):
         value = values.get("is_hidden")
         if value and values.get("conditional_logic"):
             raise HiddenWhenConditionalLogicSetError()
+        return values
+
+    @root_validator()
+    def validate_slider_value_alert(cls, values):
+        # validate slider value alert
+        response_type = values.get("response_type")
+        config = values.get("config")
+        response_values = values.get("response_values")
+        if response_type is ResponseType.SLIDER:
+            if config.set_alerts:
+                for alert in response_values.alerts:
+                    if (
+                        (alert.min_value is None or alert.max_value is None)
+                        and config.continuous_slider
+                    ) or (
+                        alert.value is None and not config.continuous_slider
+                    ):
+                        raise SliderMinMaxValueError()
+
         return values
