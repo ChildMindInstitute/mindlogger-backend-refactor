@@ -25,3 +25,7 @@ class NonUniqueValue(ValidationError):
 
 class RespondentDoesNotExist(ValidationError):
     message = _("Respondent does not exist in applet.")
+
+
+class RespondentsNotSet(ValidationError):
+    message = _("Respondents are not set for the reviewer")

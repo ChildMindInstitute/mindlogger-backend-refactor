@@ -5,6 +5,7 @@ from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain.applet import AppletSingleLanguageInfo
 from apps.folders.crud import FolderCRUD
+from apps.invitations.errors import RespondentDoesNotExist, RespondentsNotSet
 from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
@@ -358,6 +359,7 @@ class UserAccessService:
                 access.roles.remove(Role.RESPONDENT)
             except ValueError:
                 pass
+            meta: dict = {}
             if Role.MANAGER in access.roles:
                 schemas.append(
                     UserAppletAccessSchema(
@@ -366,10 +368,32 @@ class UserAccessService:
                         applet_id=access.applet_id,
                         owner_id=owner_id,
                         invitor_id=self._user_id,
+                        meta=meta,
                     )
                 )
             else:
                 for role in access.roles:
+                    meta = {}
+                    if role == Role.REVIEWER:
+                        if access.respondents:
+                            exist_respondents = await UserAppletAccessCRUD(
+                                self.session
+                            ).get_user_id_applet_and_role(
+                                applet_id=access.applet_id,
+                                role=Role.RESPONDENT,
+                            )
+                            for respondent in access.respondents:
+                                if respondent not in exist_respondents:
+                                    raise RespondentDoesNotExist()
+                            respondents = [
+                                str(respondent_id)
+                                for respondent_id in access.respondents
+                            ]
+                            meta.update(
+                                respondents=respondents,
+                            )
+                        else:
+                            raise RespondentsNotSet()
                     schemas.append(
                         UserAppletAccessSchema(
                             user_id=manager_id,
@@ -377,6 +401,7 @@ class UserAccessService:
                             applet_id=access.applet_id,
                             owner_id=owner_id,
                             invitor_id=self._user_id,
+                            meta=meta,
                         )
                     )
 
