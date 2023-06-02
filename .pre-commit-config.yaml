@@ -30,3 +30,10 @@ repos:
         language: system
         types: [python]
         exclude: "apps/girderformindlogger"
+
+- repo: https://github.com/codespell-project/codespell
+  rev: v2.2.2
+  hooks:
+  - id: codespell
+    additional_dependencies:
+      - tomli
