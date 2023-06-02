@@ -641,7 +641,7 @@ class Applet(FolderModel):
 
         applet = self.setMetadata(applet, applet.get("meta"))
 
-        successed = True
+        succeeded = True
         # profiles = []
 
         if applet.get("meta", {}).get("applet", {}).get("deleted") == True:
@@ -666,7 +666,7 @@ class Applet(FolderModel):
 
             AppletLibrary().deleteAppletFromLibrary(applet)
         else:
-            successed = False
+            succeeded = False
 
         # thread = threading.Thread(
         #    target=send_applet_update_notification,
@@ -674,7 +674,7 @@ class Applet(FolderModel):
         # )
         # thread.start()
 
-        return successed
+        return succeeded
 
     def receiveOwnerShip(self, applet, thisUser, email, invitationId):
         from apps.girderformindlogger.models.group import Group
