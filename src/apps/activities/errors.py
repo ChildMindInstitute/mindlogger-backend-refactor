@@ -239,7 +239,11 @@ class PeriodIsRequiredError(ValidationError):
 
 
 class InvalidRawScoreSubscaleError(ValidationError):
-    message = _("Raw score subscale is invalid.")
+    message = _("Raw score in subscale table is invalid.")
+
+
+class InvalidScoreSubscaleError(ValidationError):
+    message = _("Score in subscale lookup table is invalid.")
 
 
 class IncorrectSubscaleItemError(ValidationError):
