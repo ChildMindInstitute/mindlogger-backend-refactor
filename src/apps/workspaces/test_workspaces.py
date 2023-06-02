@@ -472,7 +472,11 @@ class TestWorkspaces(BaseTest):
                     },
                     {
                         "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
-                        "roles": ["coordinator", "editor"],
+                        "roles": ["coordinator", "editor", "reviewer"],
+                        "respondents": [
+                            "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                            "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+                        ],
                     },
                 ]
             ),
