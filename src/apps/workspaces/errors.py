@@ -7,6 +7,8 @@ __all__ = [
     "AppletAccessDenied",
     "WorkspaceDoesNotExistError",
     "UserAppletAccessesDenied",
+    "AccessDeniedToUpdateOwnAccesses",
+    "RemoveOwnPermissionAccessDenied",
 ]
 
 

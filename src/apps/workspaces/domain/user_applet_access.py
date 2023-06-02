@@ -16,6 +16,9 @@ __all__ = [
     "UserAppletAccessItem",
     "RemoveRespondentAccess",
     "RemoveManagerAccess",
+    "ManagerAccesses",
+    "ManagerAppletAccess",
+    "PublicRespondentAppletAccess",
 ]
 
 
@@ -126,6 +129,7 @@ class PublicManagerAppletAccess(PublicModel):
 class ManagerAccess(InternalModel):
     applet_id: uuid.UUID
     roles: list[Role]
+    respondents: list[uuid.UUID] | None
 
 
 class ManagerAccesses(InternalModel):
