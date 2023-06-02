@@ -78,6 +78,8 @@ class _SingleSelectionValue(PublicModel):
     tooltip: str | None
     is_hidden: bool = Field(default=False)
     color: Color | None
+    alert: str | None
+    value: int | None
 
     @validator("image")
     def validate_image(cls, value):
@@ -107,6 +109,26 @@ class MultiSelectionValues(PublicModel):
     options: list[_SingleSelectionValue]
 
 
+class SliderValueAlert(PublicModel):
+    value: int | None = Field(
+        default=0,
+        description="Either value or min_value and max_value must be provided",
+    )
+    min_value: int | None
+    max_value: int | None
+    alert: str
+
+    @root_validator()
+    def validate_min_max_values(cls, values):
+        if (
+            values.get("min_value") is not None
+            and values.get("max_value") is not None
+        ):
+            if values.get("min_value") >= values.get("max_value"):
+                raise MinValueError()
+        return values
+
+
 class SliderValues(PublicModel):
     min_label: str | None = Field(..., max_length=20)
     max_label: str | None = Field(..., max_length=20)
@@ -115,6 +137,7 @@ class SliderValues(PublicModel):
     min_image: str | None
     max_image: str | None
     scores: list[int] | None
+    alerts: list[SliderValueAlert] | None
 
     @validator("min_image", "max_image")
     def validate_image(cls, value):
@@ -212,6 +235,7 @@ class _SingleSelectionDataOption(PublicModel):
     option_id: str
     score: int | None
     alert: str | None
+    value: int | None
 
 
 class _SingleSelectionDataRow(PublicModel):

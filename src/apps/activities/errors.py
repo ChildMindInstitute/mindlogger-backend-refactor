@@ -63,7 +63,33 @@ class CorrectAnswerRequiredError(FieldError):
 
 
 class MinValueError(FieldError):
-    message = _("Value must be less than max value.")
+    message = _("min value must be less than max value.")
+
+
+class SliderValueError(FieldError):
+    message = _("Either value or min_value and max_value must be set.")
+
+
+class SliderMinMaxValueError(FieldError):
+    message = _(
+        "If continuous_slider is checked, min_value and max_value must be set. If not, then value must be set."  # noqa: E501
+    )
+
+
+class SliderRowsValueError(FieldError):
+    message = _("Only value must be set.")
+
+
+class AlertFlagMissingSingleMultiRowItemError(FieldError):
+    message = _(
+        "set_alerts flag is not set for (single, multi selection) items with alerts."  # noqa: E501
+    )
+
+
+class AlertFlagMissingSliderItemError(FieldError):
+    message = _(
+        "set_alerts flag is not set for slider(rows) items with alerts."
+    )
 
 
 class InvalidDataMatrixError(FieldError):

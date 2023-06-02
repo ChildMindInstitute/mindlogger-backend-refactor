@@ -7,6 +7,8 @@ from apps.activities.domain.response_type_config import (
     ResponseTypeValueConfig,
 )
 from apps.activities.errors import (
+    AlertFlagMissingSingleMultiRowItemError,
+    AlertFlagMissingSliderItemError,
     DataMatrixRequiredError,
     HiddenWhenConditionalLogicSetError,
     IncorrectConditionLogicItemTypeError,
@@ -16,6 +18,8 @@ from apps.activities.errors import (
     NullScoreError,
     ScoreRequiredForResponseValueError,
     ScoreRequiredForValueError,
+    SliderMinMaxValueError,
+    SliderRowsValueError,
 )
 from apps.shared.domain import PublicModel
 
@@ -163,7 +167,7 @@ class BaseActivityItem(BaseModel):
             ResponseType.MULTISELECTROWS,
         ]:
             # if add_scores is True in config, then score must be provided in each option of each row of response_values  # noqa: E501
-            if config.add_scores:
+            if config.add_scores or config.add_tokens:
                 if response_values.data_matrix is None:
                     raise DataMatrixRequiredError()
 
@@ -191,4 +195,62 @@ class BaseActivityItem(BaseModel):
         value = values.get("is_hidden")
         if value and values.get("conditional_logic"):
             raise HiddenWhenConditionalLogicSetError()
+        return values
+
+    @root_validator()
+    def validate_slider_value_alert(cls, values):
+        # validate slider value alert
+        response_type = values.get("response_type")
+        config = values.get("config")
+        response_values = values.get("response_values")
+        if response_type in [
+            ResponseType.SLIDER,
+        ]:
+            if response_values.alerts is not None:
+                if not config.set_alerts:
+                    raise AlertFlagMissingSliderItemError()
+
+                for alert in response_values.alerts:
+                    if config.continuous_slider:
+                        if alert.min_value is None or alert.max_value is None:
+                            raise SliderMinMaxValueError()
+                    else:
+                        if alert.value is None:
+                            raise SliderMinMaxValueError()
+
+        elif response_type in [
+            ResponseType.SLIDERROWS,
+        ]:
+            for row in response_values.rows:
+                for alert in row.alerts:
+                    if alert.value is None:
+                        raise SliderRowsValueError()
+                    if alert.value is not None and not config.set_alerts:
+                        raise AlertFlagMissingSliderItemError()
+
+        return values
+
+    @root_validator()
+    def validate_single_multi_alert(cls, values):
+        # validate single/multi selection type alerts
+        response_type = values.get("response_type")
+        config = values.get("config")
+        response_values = values.get("response_values")
+        if response_type in [
+            ResponseType.SINGLESELECT,
+            ResponseType.MULTISELECT,
+        ]:
+            for option in response_values.options:
+                if option.alert is not None and not config.set_alerts:
+                    raise AlertFlagMissingSingleMultiRowItemError()
+
+        if response_type in [
+            ResponseType.SINGLESELECTROWS,
+            ResponseType.MULTISELECTROWS,
+        ]:
+            if response_values.data_matrix is not None:
+                for data in response_values.data_matrix:
+                    for option in data.options:
+                        if option.alert is not None and not config.set_alerts:
+                            raise AlertFlagMissingSingleMultiRowItemError()
         return values

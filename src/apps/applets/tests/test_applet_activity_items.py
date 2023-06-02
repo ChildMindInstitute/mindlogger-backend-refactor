@@ -253,6 +253,13 @@ class TestActivityItems(BaseTest):
                                         "min_image": None,
                                         "max_image": None,
                                         "score": None,
+                                        "alerts": [
+                                            dict(
+                                                min_value=1,
+                                                max_value=4,
+                                                alert="alert1",
+                                            ),
+                                        ],
                                     }
                                 ]
                             ),
@@ -260,7 +267,7 @@ class TestActivityItems(BaseTest):
                                 remove_back_button=False,
                                 skippable_item=False,
                                 add_scores=False,
-                                set_alerts=False,
+                                set_alerts=True,
                                 timer=1,
                             ),
                         ),
@@ -379,7 +386,7 @@ class TestActivityItems(BaseTest):
                                             {
                                                 "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
                                                 "score": 1,
-                                                "alert": None,
+                                                "alert": "alert1",
                                             },
                                             {
                                                 "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",  # noqa E501
@@ -409,7 +416,7 @@ class TestActivityItems(BaseTest):
                                 remove_back_button=False,
                                 skippable_item=False,
                                 add_scores=False,
-                                set_alerts=False,
+                                set_alerts=True,
                                 timer=1,
                                 add_tooltip=False,
                             ),
@@ -421,15 +428,23 @@ class TestActivityItems(BaseTest):
                             response_values=dict(
                                 palette_name="palette1",
                                 options=[
-                                    {"text": "option1"},
-                                    {"text": "option2"},
+                                    {
+                                        "text": "option1",
+                                        "value": 1,
+                                        "alert": "alert1",
+                                    },
+                                    {
+                                        "text": "option2",
+                                        "value": 2,
+                                        "alert": "alert2",
+                                    },
                                 ],
                             ),
                             config=dict(
                                 remove_back_button=False,
                                 skippable_item=False,
                                 add_scores=False,
-                                set_alerts=False,
+                                set_alerts=True,
                                 timer=1,
                                 add_tooltip=False,
                                 set_palette=False,
@@ -478,12 +493,53 @@ class TestActivityItems(BaseTest):
                                 min_image=None,
                                 max_image=None,
                                 scores=None,
+                                alerts=[
+                                    dict(
+                                        min_value=1,
+                                        max_value=4,
+                                        alert="alert1",
+                                    ),
+                                ],
                             ),
                             config=dict(
                                 remove_back_button=False,
                                 skippable_item=False,
                                 add_scores=False,
-                                set_alerts=False,
+                                set_alerts=True,
+                                timer=1,
+                                show_tick_labels=False,
+                                show_tick_marks=False,
+                                continuous_slider=True,
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                            ),
+                        ),
+                        dict(
+                            name="activity_item_slideritem_another",
+                            question={"en": "What is your name?"},
+                            response_type="slider",
+                            response_values=dict(
+                                min_value=0,
+                                max_value=10,
+                                min_label="min_label",
+                                max_label="max_label",
+                                min_image=None,
+                                max_image=None,
+                                scores=None,
+                                alerts=[
+                                    dict(
+                                        value="1",
+                                        alert="alert1",
+                                    ),
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=False,
+                                add_scores=False,
+                                set_alerts=True,
                                 timer=1,
                                 show_tick_labels=False,
                                 show_tick_marks=False,

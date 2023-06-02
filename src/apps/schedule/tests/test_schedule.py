@@ -494,7 +494,6 @@ class TestSchedule(BaseTest):
         assert response.status_code == 200
 
         result = response.json()["result"]
-        print(result)
 
         assert type(result["activityEvents"]) == list
         assert type(result["flowEvents"]) == list
