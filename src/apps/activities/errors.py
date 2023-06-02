@@ -76,6 +76,22 @@ class SliderMinMaxValueError(FieldError):
     )
 
 
+class SliderRowsValueError(FieldError):
+    message = _("Only value must be set.")
+
+
+class AlertFlagMissingSingleMultiRowItemError(FieldError):
+    message = _(
+        "set_alerts flag is not set for (single, multi selection) items with alerts."  # noqa: E501
+    )
+
+
+class AlertFlagMissingSliderItemError(FieldError):
+    message = _(
+        "set_alerts flag is not set for slider(rows) items with alerts."
+    )
+
+
 class InvalidDataMatrixError(FieldError):
     message = _("data_matrix must have the same length as rows")
 

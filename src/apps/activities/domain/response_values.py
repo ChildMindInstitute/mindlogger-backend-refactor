@@ -120,8 +120,12 @@ class SliderValueAlert(PublicModel):
 
     @root_validator()
     def validate_min_max_values(cls, values):
-        if values.get("min_value") >= values.get("max_value"):
-            raise MinValueError()
+        if (
+            values.get("min_value") is not None
+            and values.get("max_value") is not None
+        ):
+            if values.get("min_value") >= values.get("max_value"):
+                raise MinValueError()
         return values
 
 
