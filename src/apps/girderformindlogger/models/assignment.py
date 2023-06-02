@@ -210,7 +210,7 @@ class Assignment(Folder):
             self._removeSupplementalFields(doc, fields)
             try:
                 parent = pathFromRoot[-1]["object"]
-                if parent["name"] == "Assigments" and doc[
+                if parent["name"] == "Assignments" and doc[
                     "baseParentType"
                 ] in {"collection", "user"}:
                     """

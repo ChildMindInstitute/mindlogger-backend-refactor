@@ -71,7 +71,7 @@ class Settings(BaseSettings):
 # Load settings
 settings = Settings(
     # NOTE: We would like to hardcode the root and applications directories
-    #       to avoid overridding via environment variables
+    #       to avoid overriding via environment variables
     root_dir=Path(__file__).parent.parent,
     apps_dir=Path(__file__).parent.parent / "apps",
     locale_dir=Path(__file__).parent.parent / "locale",

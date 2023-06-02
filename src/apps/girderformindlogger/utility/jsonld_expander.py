@@ -496,7 +496,7 @@ def createProtocolFromExpandedDocument(
                         )
 
                         activityIdToHistoryObj = {}
-                        # handle deleted activites
+                        # handle deleted activities
                         if "activities" in removed:
                             removedActivities = list(
                                 ActivityModel().find(
@@ -1397,7 +1397,7 @@ def inferRelationships(person):
 def oidIffHex(s):
     """
     Function to return a list of the passed string and its ObjectId if the
-    passed string is a valid hexidecimal string, or a list of just the passed
+    passed string is a valid hexadecimal string, or a list of just the passed
     string otherwise.
 
     :param s: string to check and potentially convert

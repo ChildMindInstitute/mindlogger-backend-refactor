@@ -28,7 +28,7 @@ def findThemeById(themeId=None):
 
 def validateThemeColor(color, fieldName=None):
     """ "
-    check that the theme color matches a 6 charater hex code.
+    check that the theme color matches a 6 character hex code.
     returns True or raises a ValidationException
     """
     if not isValidHexColor(color):

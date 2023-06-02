@@ -1452,7 +1452,7 @@ class Applet(FolderModel):
         :type appletId: ObjectId or str
         :param reviewer: Reviewer making request
         :type reviewer: dict
-        :reutrns: TBD
+        :returns: TBD
         """
         import moment
         from pymongo import DESCENDING

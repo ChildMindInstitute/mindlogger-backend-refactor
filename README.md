@@ -8,7 +8,7 @@
 - ✅ [Python3.10+](https://www.python.org/downloads/release/python-3108/)
 - ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
 - ✅ [FastAPI](https://fastapi.tiangolo.com)
-- ✅ [Postgesql](https://www.postgresql.org/docs/14/index.html)
+- ✅ [Postgresql](https://www.postgresql.org/docs/14/index.html)
 - ✅ [Redis](https://redis.io)
 - ✅ [Docker](https://docs.docker.com/get-docker/)
 - ✅ [Pydantic](https://pydantic-docs.helpmanual.io)
@@ -151,7 +151,7 @@ It is a good practice to use Git hooks to provide better commits.
 pre-commit install
 ```
 
-👉 Then all your staged cahnges will be checked via git hooks on every `git commit`
+👉 Then all your staged changes will be checked via git hooks on every `git commit`
 
 #### 3.2 Using Makefile 🤖
 
@@ -221,7 +221,7 @@ docker-compose build
 
 ✅ Check building with `docker images` command. You should see the record with `fastapi_service`.
 
-💡 If you would like to debug the application insode Docker comtainer make sure that you use `COMPOSE_FILE=docker-compose.dev.yaml` in `.env`. It has opened stdin and tty.
+💡 If you would like to debug the application insode Docker container make sure that you use `COMPOSE_FILE=docker-compose.dev.yaml` in `.env`. It has opened stdin and tty.
 
 
 
@@ -234,7 +234,7 @@ docker-compose up
 Additional `docker-compose up` flags that might be useful for development
 
 ```bash
--d  # Run docker containers as deamons (in background)
+-d  # Run docker containers as daemons (in background)
 --no-recreate  # If containers already exist, don't recreate them
 ```
 

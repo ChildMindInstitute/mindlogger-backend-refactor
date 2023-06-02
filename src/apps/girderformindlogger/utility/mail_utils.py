@@ -187,7 +187,7 @@ class _SMTPConnection(object):
                 self.connection.login(self.username, self.password)
         except:
             raise AccessException(
-                "An error occured when we were sending message. "
+                "An error occurred when we were sending message. "
                 "Please try again later."
             )
         return self
@@ -198,7 +198,7 @@ class _SMTPConnection(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_tb:
             raise AccessException(
-                "An error occured when we were sending message. "
+                "An error occurred when we were sending message. "
                 "Please try again later."
             )
         self.connection.quit()

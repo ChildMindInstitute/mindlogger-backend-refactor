@@ -786,7 +786,7 @@ class TestDataService:
                 )
             )
 
-            # thirteenth event montly
+            # thirteenth event monthly
             current_entity_index = self._increment_index(
                 current_entity_index, len(entity_ids)
             )

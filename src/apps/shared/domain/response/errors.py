@@ -39,7 +39,7 @@ class ErrorResponse(PublicModel):
 
 
 class ErrorResponseMulti(PublicModel):
-    """The public error respnse model that includes multiple objects."""
+    """The public error response model that includes multiple objects."""
 
     result: conlist(ErrorResponse)  # type: ignore
 

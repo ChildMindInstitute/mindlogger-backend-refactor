@@ -47,7 +47,7 @@ class Activity(Folder):
     ):
         """
         Returns a list of activity version IDs for an Activity or a list
-        containing only the given activty version IDs if an activity version ID
+        containing only the given activity version IDs if an activity version ID
         is passed in.
 
         :param id: The id of the resource.

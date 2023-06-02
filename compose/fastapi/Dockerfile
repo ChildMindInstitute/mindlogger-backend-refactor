@@ -31,7 +31,7 @@ RUN pipenv sync --system ${PIPENV_EXTRA_ARGS}
 # Copy the whole project project
 COPY ./ ./
 
-# Copy infrustructure scripts
+# Copy infrastructure scripts
 
 # Application scripts
 COPY --chown=code:code ./compose/fastapi/entrypoint /fastapi-entrypoint
