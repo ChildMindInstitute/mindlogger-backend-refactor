@@ -79,3 +79,8 @@ module = [
     'pyfcm'
 ]
 ignore_missing_imports = true
+
+[tool.codespell]
+skip = '.git,*.pdf,*.svg'
+#
+# ignore-words-list = ''
