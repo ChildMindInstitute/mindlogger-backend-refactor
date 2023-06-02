@@ -503,9 +503,6 @@ class TestActivityItems(BaseTest):
                             response_type="flanker",
                             response_values=None,
                             config=dict(
-                                name="name",
-                                description="description",
-                                isHidden=False,
                                 general=dict(
                                     instruction="instruction",
                                     buttons=[
