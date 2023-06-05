@@ -708,9 +708,8 @@ class TestWorkspaces(BaseTest):
 
     @rollback
     async def test_workspace_remove_respondent_access(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        # coordinator can remove respondent access
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
 
         data = {
             "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
