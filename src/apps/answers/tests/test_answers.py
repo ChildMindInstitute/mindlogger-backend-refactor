@@ -806,6 +806,7 @@ class TestAnswerActivityItems(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
+        # create answer
         create_data = dict(
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
@@ -833,6 +834,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
+        # get answer id
         response = await self.client.get(
             self.answered_applet_activities_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
@@ -843,21 +845,27 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 1
-        assert len(response.json()["result"][0]["answerDates"]) == 1
-
+        assert response.status_code == 200
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
-        response = await self.client.get(
-            self.activity_answers_url.format(
+
+        # create assessment
+        response = await self.client.post(
+            self.assessment_answers_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-            )
+            ),
+            dict(
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3621",
+                answer="some answer",
+                item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
+                reviewer_public_key="some public key",
+            ),
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == 201
 
+        # test export
         response = await self.client.get(
             self.applet_answers_export_url.format(
                 id="92917a56-d586-4613-b7aa-991f2c4b15b1",
@@ -867,3 +875,17 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         data = response.json()["result"]
         assert set(data.keys()) == {"answers", "activities"}
+        assert len(data["answers"]) == 2
+
+        assessment, answer = data["answers"][0], data["answers"][1]
+        # fmt: off
+        expected_keys = {
+            'activityHistoryId', 'activityId', 'answer', 'appletHistoryId',
+            'appletId', 'createdAt', 'events', 'flowHistoryId', 'flowId',
+            'flowName', 'id', 'itemIds', 'respondentId', 'respondentSecretId',
+            'reviewedAnswerId', 'userPublicKey', 'version'
+        }
+        # fmt: on
+
+        assert set(assessment.keys()) == expected_keys
+        assert assessment["reviewedAnswerId"] == answer["id"]
