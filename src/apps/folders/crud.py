@@ -137,20 +137,19 @@ class FolderCRUD(BaseCRUD):
         applet_id: uuid.UUID,
         folder_id: uuid.UUID | None,
     ):
+        folder_query: Query = select(FolderSchema.id)
+        folder_query = folder_query.where(
+            FolderSchema.workspace_id == workspace_id
+        )
+        folder_query = folder_query.where(FolderSchema.creator_id == user_id)
+
+        query: Query = delete(FolderAppletSchema)
+        query = query.where(FolderAppletSchema.applet_id == applet_id)
+        query = query.where(FolderAppletSchema.folder_id.in_(folder_query))
+
+        await self._execute(query)
+
         if folder_id is None:
-            folder_query: Query = select(FolderSchema.id)
-            folder_query = folder_query.where(
-                FolderSchema.workspace_id == workspace_id
-            )
-            folder_query = folder_query.where(
-                FolderSchema.creator_id == user_id
-            )
-
-            query: Query = delete(FolderAppletSchema)
-            query = query.where(FolderAppletSchema.applet_id == applet_id)
-            query = query.where(FolderAppletSchema.folder_id.in_(folder_query))
-
-            await self._execute(query)
             return
         query = select(FolderAppletSchema)
         query = query.where(FolderAppletSchema.folder_id == folder_id)
