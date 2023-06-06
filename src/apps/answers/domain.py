@@ -199,26 +199,31 @@ class AnswerNoteDetailPublic(PublicModel):
 
 
 class UserAnswerDataBase(BaseModel):
+    id: uuid.UUID
     version: str
     user_public_key: str | None
-    respondent_id: uuid.UUID | str | None = None
-    respondent_nickname: str | None = None
-    respondent_secret_id: str | None = None
     answer: str | None = None
     item_ids: list[str] = Field(default_factory=list)
     applet_history_id: str
     activity_history_id: str
-    flow_history_id: str | None
-    flow_name: str | None
     created_at: datetime.datetime
 
 
-class UserAnswerData(UserAnswerDataBase, InternalModel):
+class RespondentAnswerDataBase(UserAnswerDataBase):
+    respondent_id: uuid.UUID | str | None = None
+    respondent_secret_id: str | None = None
+    events: str | None = None
+    flow_history_id: str | None
+    flow_name: str | None
+    reviewed_answer_id: uuid.UUID | str | None
+
+
+class RespondentAnswerData(RespondentAnswerDataBase, InternalModel):
     is_manager: bool = False
     respondent_email: str | None = None
 
 
-class UserAnswerDataPublic(UserAnswerDataBase, PublicModel):
+class RespondentAnswerDataPublic(RespondentAnswerDataBase, PublicModel):
     applet_id: str | None
     activity_id: str | None
     flow_id: str | None
@@ -240,10 +245,10 @@ class UserAnswerDataPublic(UserAnswerDataBase, PublicModel):
 
 
 class AnswerExport(InternalModel):
-    answers: list[UserAnswerData] = Field(default_factory=list)
+    answers: list[RespondentAnswerData] = Field(default_factory=list)
     activities: list[ActivityHistoryFull] = Field(default_factory=list)
 
 
 class PublicAnswerExport(PublicModel):
-    answers: list[UserAnswerDataPublic] = Field(default_factory=list)
+    answers: list[RespondentAnswerDataPublic] = Field(default_factory=list)
     activities: list[ActivityHistoryExport] = Field(default_factory=list)
