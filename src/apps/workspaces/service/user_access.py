@@ -116,7 +116,9 @@ class UserAccessService:
     async def remove_manager_access(self, schema: RemoveManagerAccess):
         """Remove manager access from a specific user."""
         # check if user is owner of all applets
-        await self._validate_ownership(schema.applet_ids)
+        await self._validate_ownership(
+            schema.applet_ids, [Role.OWNER, Role.MANAGER]
+        )
         if self._user_id == schema.user_id:
             raise RemoveOwnPermissionAccessDenied()
         manager_roles = [
@@ -143,7 +145,9 @@ class UserAccessService:
     async def remove_respondent_access(self, schema: RemoveRespondentAccess):
         """Remove respondent access from a specific user."""
         # check if user is owner of all applets
-        await self._validate_ownership(schema.applet_ids)
+        await self._validate_ownership(
+            schema.applet_ids, [Role.OWNER, Role.MANAGER, Role.COORDINATOR]
+        )
 
         # check if schema.user_id is respondent of all applets
         await self._validate_access(
@@ -167,11 +171,15 @@ class UserAccessService:
                     schema.user_id,
                 )
 
-    async def _validate_ownership(self, applet_ids: list[uuid.UUID]):
+    async def _validate_ownership(
+        self, applet_ids: list[uuid.UUID], roles: list[Role]
+    ):
         accesses = await UserAppletAccessCRUD(
             self.session
         ).get_user_applet_accesses_by_roles(
-            self._user_id, applet_ids, [Role.OWNER, Role.MANAGER]
+            self._user_id,
+            applet_ids,
+            roles,
         )
         owners_applet_ids = [access.applet_id for access in accesses]
         no_access_applets = set(applet_ids) - set(owners_applet_ids)
