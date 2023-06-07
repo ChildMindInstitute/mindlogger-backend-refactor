@@ -210,7 +210,6 @@ async def applet_activity_versions_retrieve(
 async def applet_activity_assessment_create(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
-    activity_id: uuid.UUID,
     schema: AssessmentAnswerCreate = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),

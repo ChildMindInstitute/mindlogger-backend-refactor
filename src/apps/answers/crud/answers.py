@@ -14,7 +14,7 @@ from sqlalchemy import (
     or_,
     select,
     text,
-    true,
+    # true,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Query
@@ -27,13 +27,9 @@ from apps.activities.domain import ActivityHistory
 from apps.activities.domain.activity_item_history import ActivityItemHistory
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.alerts.errors import AnswerNotFoundError
-from apps.answers.db.schemas import (
-    AnswerItemSchema,
-    AnswerSchema,
-)
+from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import RespondentAnswerData
-from apps.shared.filtering import Comparisons
-from apps.shared.filtering import FilterField, Filtering
+from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.query_params import QueryParams
 from apps.users import UserSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
@@ -153,16 +149,16 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
             .correlate(AnswerSchema)
         )
-
-        has_reviewer_access = (
-            exists()
-            .where(
-                UserAppletAccessSchema.user_id == user_id,
-                UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
-                UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER]),
-            )
-            .correlate(AnswerSchema)
-        )
+        #
+        # has_reviewer_access = (
+        #     exists()
+        #     .where(
+        #         UserAppletAccessSchema.user_id == user_id,
+        #         UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
+        #         UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER]),
+        #     )
+        #     .correlate(AnswerSchema)
+        # )
 
         is_manager = (
             exists()
@@ -221,45 +217,45 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 has_access,
                 *filter_clauses,
             )
-            .union(
-                select(
-                    AssessmentAnswerItemSchema.id,
-                    AnswerSchema.version,
-                    AssessmentAnswerItemSchema.reviewer_public_key.label(
-                        "user_public_key"
-                    ),
-                    AssessmentAnswerItemSchema.reviewer_id.label(
-                        "respondent_id"
-                    ),
-                    null().label("respondent_secret_id"),
-                    UserSchema.email.label("respondent_email"),
-                    true().label("is_manager"),
-                    AssessmentAnswerItemSchema.answer,
-                    null().label("events"),
-                    AssessmentAnswerItemSchema.item_ids,
-                    AssessmentAnswerItemSchema.applet_history_id,
-                    AssessmentAnswerItemSchema.activity_history_id,
-                    null().label("flow_history_id"),  # TODO
-                    null().label("flow_name"),  # TODO
-                    AssessmentAnswerItemSchema.created_at,
-                    AnswerSchema.id.label("reviewed_answer_id"),
-                )
-                .select_from(AnswerSchema)
-                .join(
-                    AssessmentAnswerItemSchema,
-                    AssessmentAnswerItemSchema.answer_id == AnswerSchema.id,
-                )
-                .join(
-                    UserSchema,
-                    UserSchema.id == AssessmentAnswerItemSchema.reviewer_id,
-                )
-                .where(
-                    AnswerSchema.applet_id == applet_id,
-                    has_reviewer_access,
-                    *filter_clauses,
-                )
-            )
-            .order_by(literal_column("created_at").desc())
+            # .union(
+            #     select(
+            #         AssessmentAnswerItemSchema.id,
+            #         AnswerSchema.version,
+            #         AssessmentAnswerItemSchema.reviewer_public_key.label(
+            #             "user_public_key"
+            #         ),
+            #         AssessmentAnswerItemSchema.reviewer_id.label(
+            #             "respondent_id"
+            #         ),
+            #         null().label("respondent_secret_id"),
+            #         UserSchema.email.label("respondent_email"),
+            #         true().label("is_manager"),
+            #         AssessmentAnswerItemSchema.answer,
+            #         null().label("events"),
+            #         AssessmentAnswerItemSchema.item_ids,
+            #         AssessmentAnswerItemSchema.applet_history_id,
+            #         AssessmentAnswerItemSchema.activity_history_id,
+            #         null().label("flow_history_id"),  # TODO
+            #         null().label("flow_name"),  # TODO
+            #         AssessmentAnswerItemSchema.created_at,
+            #         AnswerSchema.id.label("reviewed_answer_id"),
+            #     )
+            #     .select_from(AnswerSchema)
+            #     .join(
+            #         AssessmentAnswerItemSchema,
+            #         AssessmentAnswerItemSchema.answer_id == AnswerSchema.id,
+            #     )
+            #     .join(
+            #         UserSchema,
+            #         UserSchema.id == AssessmentAnswerItemSchema.reviewer_id,
+            #     )
+            #     .where(
+            #         AnswerSchema.applet_id == applet_id,
+            #         has_reviewer_access,
+            #         *filter_clauses,
+            #     )
+            # )
+            # .order_by(literal_column("created_at").desc())
         )
 
         res = await self._execute(query)
