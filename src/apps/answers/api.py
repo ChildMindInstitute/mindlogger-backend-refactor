@@ -29,6 +29,7 @@ from apps.shared.query_params import (
     QueryParams,
     parse_query_params,
 )
+from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic
@@ -53,7 +54,12 @@ async def create_anonymous_answer(
     session=Depends(get_session),
 ) -> None:
     async with atomic(session):
-        await AnswerService(session).create_answer(schema)
+        anonymous_respondent = await UsersCRUD(
+            session
+        ).get_anonymous_respondent()
+        await AnswerService(
+            session, anonymous_respondent.id  # type: ignore
+        ).create_answer(schema)
     return
 
 

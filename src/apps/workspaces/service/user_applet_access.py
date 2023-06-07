@@ -3,7 +3,7 @@ import uuid
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.domain import InvitationDetailGeneric
-from apps.users import User, UsersCRUD
+from apps.users import User, UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
@@ -30,6 +30,19 @@ class UserAppletAccessService:
 
         return meta
 
+    async def _get_default_role_meta_for_anonymous_respondent(
+        self, user_id: uuid.UUID
+    ) -> dict:
+        meta: dict = {}
+
+        user = await UsersCRUD(self.session).get_by_id(user_id)
+        meta.update(
+            secretUserId="Guest Account Submission",
+            nickname=f"{user.first_name} {user.last_name}",
+        )
+
+        return meta
+
     async def add_role(
         self, user_id: uuid.UUID, role: Role
     ) -> UserAppletAccess:
@@ -52,6 +65,39 @@ class UserAppletAccessService:
             )
         )
         return UserAppletAccess.from_orm(access_schema)
+
+    async def add_role_for_anonymous_respondent(
+        self,
+    ) -> UserAppletAccess | None:
+        anonymous_respondent = await UsersCRUD(
+            self.session
+        ).get_anonymous_respondent()
+        if anonymous_respondent:
+            access_schema = await UserAppletAccessCRUD(
+                self.session
+            ).get_applet_role_by_user_id(
+                self._applet_id, anonymous_respondent.id, Role.RESPONDENT
+            )
+            if access_schema:
+                return UserAppletAccess.from_orm(access_schema)
+
+            meta = await self._get_default_role_meta_for_anonymous_respondent(
+                anonymous_respondent.id,
+            )
+
+            access_schema = await UserAppletAccessCRUD(self.session).save(
+                UserAppletAccessSchema(
+                    user_id=anonymous_respondent.id,
+                    applet_id=self._applet_id,
+                    role=Role.RESPONDENT,
+                    owner_id=self._user_id,
+                    invitor_id=self._user_id,
+                    meta=meta,
+                )
+            )
+            return UserAppletAccess.from_orm(access_schema)
+        else:
+            raise UserNotFound
 
     async def add_role_by_invitation(
         self, invitation: InvitationDetailGeneric
