@@ -137,14 +137,17 @@ class BaseActivityItem(BaseModel):
             ResponseType.SINGLESELECT,
             ResponseType.MULTISELECT,
         ]:
-            # if add_scores is True in config, then score must be provided in each option of response_values  # noqa: E501
+            # if add_scores is True in config,
+            # then score must be provided in each option of response_values
             if config.add_scores:
                 scores = [option.score for option in response_values.options]
                 if None in scores:
                     raise ScoreRequiredForResponseValueError()
 
         if response_type is ResponseType.SLIDER:
-            # if add_scores is True in config, then length of scores must be equal to max_value - min_value + 1 and must not include None  # noqa: E501
+            # if add_scores is True in config,
+            # then length of scores must be equal
+            # to max_value - min_value + 1 and must not include None
             if config.add_scores:
                 if len(response_values.scores) != (
                     response_values.max_value - response_values.min_value + 1
@@ -154,7 +157,10 @@ class BaseActivityItem(BaseModel):
                     raise NullScoreError()
 
         if response_type is ResponseType.SLIDERROWS:
-            # if add_scores is True in config, then length of scores in each row must be equal to max_value - min_value + 1 of each row and must not include None  # noqa: E501
+            # if add_scores is True in config,
+            # then length of scores in each row must be
+            # equal to max_value - min_value + 1 of each row
+            # and must not include None
             if config.add_scores:
                 for row in response_values.rows:
                     if len(row.scores) != (row.max_value - row.min_value + 1):
