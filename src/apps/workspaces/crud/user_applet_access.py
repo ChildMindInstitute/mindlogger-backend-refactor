@@ -25,7 +25,7 @@ from sqlalchemy.sql.functions import count
 
 from apps.applets.db.schemas import AppletSchema
 from apps.schedule.db.schemas import EventSchema, UserEventsSchema
-from apps.shared.filtering import FilterField, Filtering
+from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
@@ -54,7 +54,7 @@ __all__ = ["UserAppletAccessCRUD"]
 
 class _UserAppletFilter(Filtering):
     owner_id = FilterField(UserAppletAccessSchema.owner_id)
-    roles = FilterField(UserAppletAccessSchema.role, lookup="in")
+    roles = FilterField(UserAppletAccessSchema.role, lookup=Comparisons.IN)
 
     def prepare_roles(self, value: str):
         return value.split(",")

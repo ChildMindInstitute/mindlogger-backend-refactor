@@ -213,6 +213,7 @@ class TestApplet(BaseTest):
                                 "numericalResponseRequired": True,
                                 "responseDataIdentifier": True,
                                 "responseRequired": True,
+                                "isIdentifier": True,
                             },
                             "responseValues": None,
                             "responseType": "text",
@@ -1742,6 +1743,7 @@ class TestApplet(BaseTest):
         )
         assert len(response.json()["result"]["activities"]) == 4
 
+    @rollback
     async def test_get_applet_unique_name(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -1754,6 +1756,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 200
         assert response.json()["result"]["name"] == "Applet 1 (1)"
 
+    @rollback
     async def test_get_applet_unique_name_case_insensitive(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"

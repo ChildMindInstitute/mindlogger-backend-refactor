@@ -14,13 +14,11 @@ from apps.activities.services.activity_item_history import (
 from apps.activity_flows.crud import FlowItemHistoriesCRUD
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
-from apps.answers.crud.assessment_answer_items import AssessmentAnswerItemsCRUD
 from apps.answers.crud.notes import AnswerNotesCRUD
 from apps.answers.db.schemas import (
     AnswerItemSchema,
     AnswerNoteSchema,
     AnswerSchema,
-    AssessmentAnswerItemSchema,
 )
 from apps.answers.domain import (
     ActivityAnswer,
@@ -100,25 +98,27 @@ class AnswerService:
         activity_flow_map: dict[str, str] = dict()
         item_activity_map: dict[str, str] = dict()
         get_pk = self._generate_history_id(applet_answer.version)
-        for answer in applet_answer.answers:
-            if answer.flow_id:
-                activity_flow_map[get_pk(answer.activity_id)] = get_pk(
-                    answer.flow_id
-                )
+        if not applet_answer.answer:
+            return
+        activity_id = applet_answer.activity_id
+        if applet_answer.flow_id:
+            activity_flow_map[get_pk(activity_id)] = get_pk(
+                applet_answer.flow_id
+            )
 
-            for activity_item_id in answer.item_ids:
-                activity_id_version = item_activity_map.get(
-                    get_pk(activity_item_id)
+        for activity_item_id in applet_answer.answer.item_ids:
+            activity_id_version = item_activity_map.get(
+                get_pk(activity_item_id)
+            )
+            if activity_id_version and activity_id_version != get_pk(
+                applet_answer.activity_id
+            ):
+                raise ValueError(
+                    "Same activity item can not have several activity"
                 )
-                if activity_id_version and activity_id_version != get_pk(
-                    answer.activity_id
-                ):
-                    raise ValueError(
-                        "Same activity item can not have several activity"
-                    )
-                item_activity_map[get_pk(activity_item_id)] = get_pk(
-                    answer.activity_id
-                )
+            item_activity_map[get_pk(activity_item_id)] = get_pk(
+                applet_answer.activity_id
+            )
 
         activity_item_histories = []
         flow_item_histories = []
@@ -180,30 +180,41 @@ class AnswerService:
             )
         answer = await AnswersCRUD(self.session).create(
             AnswerSchema(
+                submit_id=applet_answer.submit_id,
                 created_at=created_at,
                 applet_id=applet_answer.applet_id,
                 version=applet_answer.version,
+                applet_history_id=pk(applet_answer.applet_id),
+                flow_history_id=pk(applet_answer.flow_id)
+                if applet_answer.flow_id
+                else None,
+                activity_history_id=pk(applet_answer.activity_id),
                 respondent_id=self.user_id,
-                user_public_key=applet_answer.user_public_key,
             )
         )
-        answer_item_schemas = []
-        for answer_item in applet_answer.answers:
-            answer_item_schemas.append(
-                AnswerItemSchema(
-                    answer_id=answer.id,
-                    answer=answer_item.answer,
-                    events=answer_item.events,
-                    applet_history_id=pk(applet_answer.applet_id),
-                    flow_history_id=pk(answer_item.flow_id)
-                    if answer_item.flow_id
-                    else None,
-                    activity_history_id=pk(answer_item.activity_id),
-                    item_ids=answer_item.item_ids,
-                )
+        item_answer = applet_answer.answer
+        if not item_answer:
+            return
+        item_answer = AnswerItemSchema(
+            answer_id=answer.id,
+            answer=item_answer.answer,
+            events=item_answer.events,
+            respondent_id=self.user_id,
+            user_public_key=item_answer.user_public_key,
+            item_ids=item_answer.item_ids,
+            identifier=item_answer.identifier,
+            scheduled_datetime=datetime.datetime.fromtimestamp(
+                item_answer.scheduled_time
             )
+            if item_answer.scheduled_time
+            else None,
+            start_datetime=datetime.datetime.fromtimestamp(
+                item_answer.start_time
+            ),
+            end_datetime=datetime.datetime.fromtimestamp(item_answer.end_time),
+        )
 
-        await AnswerItemsCRUD(self.session).create_many(answer_item_schemas)
+        await AnswerItemsCRUD(self.session).create(item_answer)
 
     async def applet_activities(
         self,
@@ -222,7 +233,7 @@ class AnswerService:
             applet = await AppletsCRUD(self.session).get_by_id(applet_id)
             activities = await ActivityHistoryService(
                 self.session, applet_id, applet.version
-            ).list()
+            ).activities_list()
             for activity in activities:
                 activity_map[str(activity.id)] = AnsweredAppletActivity(
                     id=activity.id, name=activity.name
@@ -233,7 +244,7 @@ class AnswerService:
                 answer_map[answer.id] = answer
                 activities = await ActivityHistoryService(
                     self.session, applet_id, answer.version
-                ).list()
+                ).activities_list()
                 for activity in activities:
                     activity_map[str(activity.id)] = AnsweredAppletActivity(
                         id=activity.id, name=activity.name
@@ -246,9 +257,7 @@ class AnswerService:
             answer_item_duplicate = set()
             for answer_item in answer_items:
                 answer = answer_map[answer_item.answer_id]
-                activity_id, version = answer_item.activity_history_id.split(
-                    "_"
-                )
+                activity_id, version = answer.activity_history_id.split("_")
                 key = f"{answer.id}|{activity_id}"
                 if key in answer_item_duplicate:
                     continue
@@ -309,7 +318,7 @@ class AnswerService:
         ).get_by_activity_id(activity_id)
 
         answer = ActivityAnswer(
-            user_public_key=schema.user_public_key,
+            user_public_key=answer_item.user_public_key,
             answer=answer_item.answer,
             item_ids=answer_item.item_ids,
             items=activity_items,
@@ -402,20 +411,19 @@ class AnswerService:
         if len(activity_items) == 0:
             return AssessmentAnswer()
 
-        assessment_answer = await AssessmentAnswerItemsCRUD(
-            self.session
-        ).get_by_answer_and_activity(
-            answer_id, activity_items[0].activity_id, self.user_id
+        assessment_answer = await AnswerItemsCRUD(self.session).get_assessment(
+            answer_id, self.user_id
         )
 
         answer = AssessmentAnswer(
-            reviewer_public_key=assessment_answer.reviewer_public_key
+            reviewer_public_key=assessment_answer.user_public_key
             if assessment_answer
             else None,
             answer=assessment_answer.answer if assessment_answer else None,
             item_ids=assessment_answer.item_ids if assessment_answer else [],
             items=activity_items,
-            is_edited=assessment_answer.is_edited
+            is_edited=assessment_answer.created_at
+            != assessment_answer.updated_at
             if assessment_answer
             else False,
         )
@@ -434,9 +442,9 @@ class AnswerService:
             self.session
         ).get_applets_assessments(pk(applet_id))
 
-        reviews = await AssessmentAnswerItemsCRUD(
-            self.session
-        ).get_reviews_by_answer_id(answer_id, activity_items)
+        reviews = await AnswerItemsCRUD(self.session).get_reviews_by_answer_id(
+            answer_id, activity_items
+        )
         return reviews
 
     async def create_assessment_answer(
@@ -451,18 +459,49 @@ class AnswerService:
         answer = await AnswersCRUD(self.session).get_by_id(answer_id)
         pk = self._generate_history_id(answer.version)
         await self._validate_activity_for_assessment(pk(schema.activity_id))
-        await AssessmentAnswerItemsCRUD(self.session).create(
-            AssessmentAnswerItemSchema(
-                answer_id=answer_id,
-                answer=schema.answer,
-                applet_history_id=pk(applet_id),
-                activity_history_id=pk(schema.activity_id),
-                item_ids=list(map(str, schema.item_ids)),
-                reviewer_id=self.user_id,
-                reviewer_public_key=schema.reviewer_public_key,
-                is_edited=False,
-            )
+        assessment = await AnswerItemsCRUD(self.session).get_assessment(
+            answer_id, self.user_id
         )
+        if assessment:
+            await AnswerItemsCRUD(self.session).update(
+                AnswerItemSchema(
+                    id=assessment.id,
+                    created_at=assessment.created_at,
+                    updated_at=datetime.datetime.now(),
+                    answer_id=answer_id,
+                    respondent_id=self.user_id,
+                    answer=schema.answer,
+                    item_ids=list(map(str, schema.item_ids)),
+                    user_public_key=schema.reviewer_public_key,
+                    is_assessment=True,
+                    start_datetime=datetime.datetime.fromtimestamp(
+                        schema.start_time
+                    ),
+                    end_datetime=datetime.datetime.fromtimestamp(
+                        schema.end_time
+                    ),
+                )
+            )
+        else:
+            now = datetime.datetime.now()
+            await AnswerItemsCRUD(self.session).create(
+                AnswerItemSchema(
+                    answer_id=answer_id,
+                    respondent_id=self.user_id,
+                    answer=schema.answer,
+                    item_ids=list(map(str, schema.item_ids)),
+                    user_public_key=schema.reviewer_public_key,
+                    is_assessment=True,
+                    start_datetime=datetime.datetime.fromtimestamp(
+                        schema.start_time
+                    ),
+                    end_datetime=datetime.datetime.fromtimestamp(
+                        schema.end_time
+                    ),
+                    created_at=now,
+                    updated_at=now,
+                )
+            )
 
     async def _validate_activity_for_assessment(
         self, activity_history_id: str
@@ -507,4 +546,22 @@ class AnswerService:
 
         return AnswerExport(
             answers=answers, activities=list(activity_map.values())
+        )
+
+    async def get_activity_identifiers(
+        self,
+        activity_id: uuid.UUID,
+        filters: QueryParams,
+    ) -> list[str]:
+        return await AnswersCRUD(self.session).get_identifiers_by_activity_id(
+            activity_id, filters
+        )
+
+    async def get_activity_versions(
+        self,
+        activity_id: uuid.UUID,
+        filters: QueryParams,
+    ) -> list[str]:
+        return await AnswersCRUD(self.session).get_versions_by_activity_id(
+            activity_id, filters
         )

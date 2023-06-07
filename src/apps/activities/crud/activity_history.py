@@ -13,13 +13,13 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
     schema_class = ActivityHistorySchema
 
     async def create_many(
-        self,
-        activities: list[ActivityHistorySchema],
+            self,
+            activities: list[ActivityHistorySchema],
     ):
         await self._create_many(activities)
 
     async def retrieve_by_applet_version(
-        self, id_version
+            self, id_version
     ) -> list[ActivityHistorySchema]:
         query: Query = select(ActivityHistorySchema)
         query = query.where(ActivityHistorySchema.applet_id == id_version)
@@ -30,8 +30,23 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
+    async def retrieve_activities_by_applet_version(
+            self, id_version
+    ) -> list[ActivityHistorySchema]:
+        query: Query = select(ActivityHistorySchema)
+        query = query.where(ActivityHistorySchema.applet_id == id_version)
+        query = query.where(
+            ActivityHistorySchema.is_assessment == False  # noqa
+        )
+        query = query.where(
+            ActivityHistorySchema.is_assessment == False  # noqa: E712
+        )
+        query = query.order_by(ActivityHistorySchema.order.asc())
+        result = await self._execute(query)
+        return result.scalars().all()
+
     async def retrieve_by_applet_ids(
-        self, applet_versions: list[str]
+            self, applet_versions: list[str]
     ) -> list[ActivityHistorySchema]:
         """
         retrieve activities by applet id_version fields
@@ -53,7 +68,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         return db_result.scalars().all()
 
     async def get_by_id(
-        self, activity_id_version: str
+            self, activity_id_version: str
     ) -> ActivityHistorySchema:
         schema = await self._get("id_version", activity_id_version)
         if not schema:
@@ -61,7 +76,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         return schema
 
     async def get_by_ids(
-        self, activity_id_versions: list[str]
+            self, activity_id_versions: list[str]
     ) -> list[ActivityHistorySchema]:
         query: Query = select(ActivityHistorySchema)
         query = query.where(

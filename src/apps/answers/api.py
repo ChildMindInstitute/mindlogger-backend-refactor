@@ -17,6 +17,7 @@ from apps.answers.domain import (
 )
 from apps.answers.filters import (
     AnswerExportFilters,
+    AnswerIdentifierVersionFilter,
     AppletActivityFilter,
     AppletSubmitDateFilter,
 )
@@ -150,7 +151,6 @@ async def applet_answer_reviews_retrieve(
 async def applet_activity_assessment_retrieve(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
-    activity_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> Response[AssessmentAnswerPublic]:
@@ -167,10 +167,49 @@ async def applet_activity_assessment_retrieve(
     )
 
 
+async def applet_activity_identifiers_retrieve(
+    applet_id: uuid.UUID,
+    activity_id: uuid.UUID,
+    query_params: QueryParams = Depends(
+        parse_query_params(AnswerIdentifierVersionFilter)
+    ),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> ResponseMulti[str]:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(
+            applet_id
+        )
+        versions = await AnswerService(session, user.id).get_activity_versions(
+            activity_id, query_params
+        )
+    return ResponseMulti[str](result=versions, count=len(versions))
+
+
+async def applet_activity_versions_retrieve(
+    applet_id: uuid.UUID,
+    activity_id: uuid.UUID,
+    query_params: QueryParams = Depends(
+        parse_query_params(AnswerIdentifierVersionFilter)
+    ),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> ResponseMulti[str]:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(
+            applet_id
+        )
+        identifiers = await AnswerService(
+            session, user.id
+        ).get_activity_versions(activity_id, query_params)
+    return ResponseMulti[str](result=identifiers, count=len(identifiers))
+
+
 async def applet_activity_assessment_create(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
-    activity_id: uuid.UUID,
     schema: AssessmentAnswerCreate = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
