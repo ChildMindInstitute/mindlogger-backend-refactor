@@ -8,6 +8,6 @@ __all__ = [
     "ResponseType",
 ]
 
-_BaseModel = TypeVar("_BaseModel", bound=(BaseModel | dict))
+_BaseModel = TypeVar("_BaseModel", bound=(BaseModel | dict | str | int))
 
 ResponseType = Mapping[int | str, dict[str, Any]]

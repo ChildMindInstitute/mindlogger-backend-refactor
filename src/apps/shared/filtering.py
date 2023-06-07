@@ -2,7 +2,17 @@ import operator
 
 __all__ = ["Filtering", "FilterField"]
 
+from enum import Enum
+
 from sqlalchemy import Column
+
+
+class Comparisons(str, Enum):
+    EQUAL = "eq"
+    NOT_EQUAL = "neq"
+    IN = "in"
+    GREAT_OR_EQUAL = "gte"
+    LESS_OR_EQUAL = "lte"
 
 
 def generate_clause(condition):
@@ -14,9 +24,11 @@ def generate_clause(condition):
 
 
 lookups = {
-    "eq": operator.eq,
-    "neq": operator.ne,
-    "in": generate_clause("in_"),
+    Comparisons.EQUAL: operator.eq,
+    Comparisons.NOT_EQUAL: operator.ne,
+    Comparisons.IN: generate_clause("in_"),
+    Comparisons.GREAT_OR_EQUAL: generate_clause("gte"),
+    Comparisons.LESS_OR_EQUAL: generate_clause("lte"),
 }
 
 
@@ -30,14 +42,14 @@ class FilterField:
     def __init__(
         self,
         field: Column,
-        lookup: str = "eq",
+        lookup: Comparisons = Comparisons.EQUAL,
         cast=lambda x: x,
         method_name=None,
     ):
         assert lookup not in [None, ""] and isinstance(lookup, str)
         self.field = field
         self.lookup = lookup
-        self._lookup = lookups.get(lookup, lookups["eq"])
+        self._lookup = lookups.get(lookup, lookups[Comparisons.EQUAL])
         self.method_name = method_name
         self.cast = cast
 

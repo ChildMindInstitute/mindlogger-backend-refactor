@@ -6,6 +6,7 @@ from apps.answers.api import (
     applet_activity_answer_retrieve,
     applet_activity_assessment_create,
     applet_activity_assessment_retrieve,
+    applet_activity_identifiers_retrieve,
     applet_answer_reviews_retrieve,
     applet_answers_export,
     applet_submit_date_list,
@@ -96,8 +97,7 @@ router.get(
 )(applet_answer_reviews_retrieve)
 
 router.get(
-    "/applet/{applet_id}/answers/{answer_id}/activities/"
-    "{activity_id}/assessment",
+    "/applet/{applet_id}/answers/{answer_id}/assessment",
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": Response[AssessmentAnswerPublic]},
@@ -107,14 +107,31 @@ router.get(
 )(applet_activity_assessment_retrieve)
 
 router.post(
-    "/applet/{applet_id}/answers/{answer_id}/activities/"
-    "{activity_id}/assessment",
+    "/applet/{applet_id}/answers/{answer_id}/assessment",
     status_code=status.HTTP_201_CREATED,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_assessment_create)
+
+router.get(
+    "/applet/{applet_id}/activities/{activity_id}/identifiers",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_activity_identifiers_retrieve)
+
+router.get(
+    "/applet/{applet_id}/activities/{activity_id}/versions",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_activity_identifiers_retrieve)
 
 router.post(
     "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes",

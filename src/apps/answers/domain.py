@@ -43,12 +43,15 @@ ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
 }
 
 
-class ActivityItemAnswerCreate(InternalModel):
-    flow_id: uuid.UUID | None = None
-    activity_id: uuid.UUID
+class ItemAnswerCreate(InternalModel):
     answer: str
     events: str | None
     item_ids: list[uuid.UUID]
+    identifier: str | None
+    scheduled_time: int | None
+    start_time: int
+    end_time: int
+    user_public_key: str
 
     @validator("item_ids")
     def convert_item_ids(cls, value: list[uuid.UUID]):
@@ -63,18 +66,11 @@ class AnswerItemSchemaAnsweredActivityItem(InternalModel):
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
-    answers: list[ActivityItemAnswerCreate]
+    submit_id: uuid.UUID
+    flow_id: uuid.UUID | None = None
+    activity_id: uuid.UUID
+    answer: ItemAnswerCreate | None
     created_at: int | None
-    user_public_key: str
-
-    @validator("answers")
-    def validate_answers(cls, value: list[ActivityItemAnswerCreate]):
-        answer_activity_ids = set()
-        for answer in value:
-            if answer.activity_id in answer_activity_ids:
-                raise ValueError("Duplicate activity")
-            answer_activity_ids.add(answer.activity_id)
-        return value
 
 
 class AssessmentAnswerCreate(InternalModel):
@@ -82,6 +78,8 @@ class AssessmentAnswerCreate(InternalModel):
     answer: str
     item_ids: list[uuid.UUID]
     reviewer_public_key: str
+    start_time: int
+    end_time: int
 
 
 class AnswerDate(InternalModel):

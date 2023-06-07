@@ -17,3 +17,8 @@ class AppletSubmitDateFilter(BaseQueryParams):
 
 class AnswerExportFilters(BaseQueryParams):
     respondent_id: uuid.UUID | None = None
+
+
+class AnswerIdentifierVersionFilter(BaseQueryParams):
+    from_datetime: datetime.datetime | None
+    to_datetime: datetime.datetime | None

@@ -28,6 +28,7 @@ class TextConfig(_ScreenConfig, PublicModel):
     numerical_response_required: bool
     response_data_identifier: bool
     response_required: bool
+    is_identifier: bool | None = None
 
     @validator("correct_answer")
     def validate_correct_answer(cls, value, values):
