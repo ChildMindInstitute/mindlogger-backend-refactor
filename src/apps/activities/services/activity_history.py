@@ -189,10 +189,10 @@ class ActivityHistoryService:
         )
         return [ActivityHistory.from_orm(schema) for schema in schemas]
 
-    async def list(self) -> list[ActivityHistory]:
+    async def activities_list(self) -> list[ActivityHistory]:
         schemas = await ActivityHistoriesCRUD(
             self.session
-        ).retrieve_by_applet_version(self._applet_id_version)
+        ).retrieve_activities_by_applet_version(self._applet_id_version)
         return [ActivityHistory.from_orm(schema) for schema in schemas]
 
     async def get_by_id(self, activity_id: uuid.UUID) -> ActivityHistory:

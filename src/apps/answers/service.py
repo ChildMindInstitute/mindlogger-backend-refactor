@@ -233,7 +233,7 @@ class AnswerService:
             applet = await AppletsCRUD(self.session).get_by_id(applet_id)
             activities = await ActivityHistoryService(
                 self.session, applet_id, applet.version
-            ).list()
+            ).activities_list()
             for activity in activities:
                 activity_map[str(activity.id)] = AnsweredAppletActivity(
                     id=activity.id, name=activity.name
@@ -244,7 +244,7 @@ class AnswerService:
                 answer_map[answer.id] = answer
                 activities = await ActivityHistoryService(
                     self.session, applet_id, answer.version
-                ).list()
+                ).activities_list()
                 for activity in activities:
                     activity_map[str(activity.id)] = AnsweredAppletActivity(
                         id=activity.id, name=activity.name
