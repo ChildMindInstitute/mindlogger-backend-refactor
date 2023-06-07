@@ -38,6 +38,7 @@ from apps.applets.errors import (
 from apps.applets.service.applet_history_service import AppletHistoryService
 from apps.folders.crud import FolderCRUD
 from apps.themes.service import ThemeService
+from apps.users.services.user import UserService
 from apps.workspaces.errors import AppletEncryptionUpdateDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from config import settings
@@ -600,6 +601,11 @@ class AppletService:
         link = self._generate_link_url(
             create_request.require_login, applet_link
         )
+        if not create_request.require_login:
+            await UserService(self.session).create_anonymous_respondent()
+            await UserAppletAccessService(
+                self.session, self.user_id, applet_id
+            ).add_role_for_anonymous_respondent()
         return AppletLink(
             link=link, require_login=create_request.require_login
         )

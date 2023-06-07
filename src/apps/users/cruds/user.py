@@ -121,3 +121,11 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         query = query.where(UserSchema.is_super_admin == True)  # noqa: E712
         db_result = await self._execute(query)
         return db_result.scalars().one_or_none()
+
+    async def get_anonymous_respondent(self) -> UserSchema | None:
+        query: Query = select(UserSchema)
+        query = query.where(
+            UserSchema.is_anonymous_respondent == True  # noqa: E712
+        )
+        db_result = await self._execute(query)
+        return db_result.scalars().one_or_none()

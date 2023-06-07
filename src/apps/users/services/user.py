@@ -51,3 +51,35 @@ class UserService:
                 is_modified=False,
             )
             await UserWorkspaceCRUD(self.session).save(schema=workspace)
+
+    async def create_anonymous_respondent(self):
+        crud = UsersCRUD(self.session)
+        anonymous_respondent = await crud.get_anonymous_respondent()
+        if anonymous_respondent is not None:
+            if not settings.anonymous_respondent.force_update:
+                return
+            anonymous_respondent.email = settings.anonymous_respondent.email
+            anonymous_respondent.first_name = (
+                settings.anonymous_respondent.first_name
+            )
+            anonymous_respondent.last_name = (
+                settings.anonymous_respondent.last_name
+            )
+            anonymous_respondent.hashed_password = AuthenticationService(
+                self.session
+            ).get_password_hash(settings.anonymous_respondent.password)
+            anonymous_respondent.is_anonymous_respondent = True
+            await crud.update_by_id(
+                anonymous_respondent.id, anonymous_respondent
+            )
+        else:
+            anonymous_respondent = UserSchema(
+                email=settings.anonymous_respondent.email,
+                first_name=settings.anonymous_respondent.first_name,
+                last_name=settings.anonymous_respondent.last_name,
+                hashed_password=AuthenticationService(
+                    self.session
+                ).get_password_hash(settings.anonymous_respondent.password),
+                is_anonymous_respondent=True,
+            )
+            await crud.save(anonymous_respondent)

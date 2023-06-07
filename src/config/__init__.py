@@ -2,6 +2,7 @@ from pathlib import Path
 
 from pydantic import BaseSettings
 
+from config.anonymous_respondent import AnonymousRespondent
 from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
 from config.cors import CorsSettings
@@ -62,6 +63,8 @@ class Settings(BaseSettings):
     migrations_apps: list[str]
 
     super_admin = SuperAdmin()
+
+    anonymous_respondent = AnonymousRespondent()
 
     class Config:
         env_nested_delimiter = "__"

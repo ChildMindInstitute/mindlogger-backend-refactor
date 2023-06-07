@@ -14,6 +14,9 @@ class UserSchema(Base):
     hashed_password = Column(String(length=100))
     last_seen_at = Column(DateTime(), default=datetime.now)
     is_super_admin = Column(Boolean(), default=False, server_default="false")
+    is_anonymous_respondent = Column(
+        Boolean(), default=False, server_default="false"
+    )
 
     def __repr__(self):
         return f"UserSchema(id='{self.id}', email='{self.email}')"
