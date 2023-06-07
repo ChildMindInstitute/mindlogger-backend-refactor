@@ -103,16 +103,24 @@ class SingleSelectionValues(PublicModel):
     palette_name: str | None
     options: list[_SingleSelectionValue]
 
+    @validator("options")
+    def validate_options(cls, value):
+        return validate_options_value(value)
+
 
 class MultiSelectionValues(PublicModel):
     palette_name: str | None
     options: list[_SingleSelectionValue]
 
+    @validator("options")
+    def validate_options(cls, value):
+        return validate_options_value(value)
+
 
 class SliderValueAlert(PublicModel):
     value: int | None = Field(
         default=0,
-        description="Either value or min_value and max_value must be provided",
+        description="Either value or min_value and max_value must be provided. For SliderRows, only value is allowed.",  # noqa: E501
     )
     min_value: int | None
     max_value: int | None
@@ -242,6 +250,10 @@ class _SingleSelectionDataRow(PublicModel):
     row_id: str
     options: list[_SingleSelectionDataOption]
 
+    @validator("options")
+    def validate_options(cls, value):
+        return validate_options_value(value)
+
 
 class SingleSelectionRowsValues(PublicModel):
     rows: list[_SingleSelectionRow]
@@ -326,3 +338,21 @@ def validate_uuid(value):
     if not isinstance(value, str) or not uuid.UUID(value):
         raise InvalidUUIDError()
     return value
+
+
+def validate_options_value(options):
+    # if value inside options is None, set it to max_value + 1
+    for option in options:
+        if option.value is None:
+            option.value = (
+                max(
+                    [
+                        option.value if option.value is not None else 0
+                        for option in options
+                    ],
+                    default=0,
+                )
+                + 1
+            )
+
+    return options

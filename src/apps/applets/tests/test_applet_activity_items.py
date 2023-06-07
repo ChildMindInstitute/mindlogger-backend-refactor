@@ -1151,3 +1151,292 @@ class TestActivityItems(BaseTest):
             type(response.json()["result"]["items"][3]["conditionalLogic"])
             == dict
         )
+
+    @rollback
+    async def test_creating_activity_items_without_option_value(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            display_name="User daily behave",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+            ),
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    name="Morning activity",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="activity_item_sliderrows",
+                            question={"en": "What is your name?"},
+                            response_type="sliderRows",
+                            response_values=dict(
+                                rows=[
+                                    {
+                                        "label": "label1",
+                                        "min_label": "min_label1",
+                                        "max_label": "max_label1",
+                                        "min_value": 0,
+                                        "max_value": 10,
+                                        "min_image": None,
+                                        "max_image": None,
+                                        "score": None,
+                                        "alerts": [
+                                            dict(
+                                                min_value=1,
+                                                max_value=4,
+                                                alert="alert1",
+                                            ),
+                                        ],
+                                    }
+                                ]
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=False,
+                                add_scores=False,
+                                set_alerts=True,
+                                timer=1,
+                            ),
+                        ),
+                        dict(
+                            name="activity_item_singleselectionrows",
+                            question={"en": "What is your name?"},
+                            response_type="singleSelectRows",
+                            response_values=dict(
+                                rows=[
+                                    {
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9df1",  # noqa E501
+                                        "row_name": "row1",
+                                        "row_image": None,
+                                        "tooltip": None,
+                                    },
+                                    {
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9df2",  # noqa E501
+                                        "row_name": "row2",
+                                        "row_image": None,
+                                        "tooltip": None,
+                                    },
+                                ],
+                                options=[
+                                    {
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
+                                        "text": "option1",
+                                        "image": None,
+                                        "tooltip": None,
+                                    },
+                                    {
+                                        "id": "17e69155-22cd-4484-8a49-364779ea9de2",  # noqa E501
+                                        "text": "option2",
+                                        "image": None,
+                                        "tooltip": None,
+                                    },
+                                ],
+                                data_matrix=[
+                                    {
+                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df1",  # noqa E501
+                                        "options": [
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
+                                                "score": 1,
+                                                "alert": "alert1",
+                                            },
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",  # noqa E501
+                                                "score": 2,
+                                                "alert": None,
+                                            },
+                                        ],
+                                    },
+                                    {
+                                        "row_id": "17e69155-22cd-4484-8a49-364779ea9df2",  # noqa E501
+                                        "options": [
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
+                                                "score": 3,
+                                                "alert": None,
+                                            },
+                                            {
+                                                "option_id": "17e69155-22cd-4484-8a49-364779ea9de2",  # noqa E501
+                                                "score": 4,
+                                                "alert": None,
+                                            },
+                                        ],
+                                    },
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=False,
+                                add_scores=False,
+                                set_alerts=True,
+                                timer=1,
+                                add_tooltip=False,
+                            ),
+                        ),
+                        dict(
+                            name="activity_item_slideritem",
+                            question={"en": "What is your name?"},
+                            response_type="slider",
+                            response_values=dict(
+                                min_value=0,
+                                max_value=10,
+                                min_label="min_label",
+                                max_label="max_label",
+                                min_image=None,
+                                max_image=None,
+                                scores=None,
+                                alerts=[
+                                    dict(
+                                        min_value=1,
+                                        max_value=4,
+                                        alert="alert1",
+                                    ),
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=False,
+                                add_scores=False,
+                                set_alerts=True,
+                                timer=1,
+                                show_tick_labels=False,
+                                show_tick_marks=False,
+                                continuous_slider=True,
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                            ),
+                        ),
+                        dict(
+                            name="activity_item_singleselect",
+                            question={"en": "What is your name?"},
+                            response_type="singleSelect",
+                            response_values=dict(
+                                palette_name="palette1",
+                                options=[
+                                    {
+                                        "text": "option1",
+                                        "alert": "alert1",
+                                    },
+                                    {
+                                        "text": "option2",
+                                        "alert": "alert2",
+                                    },
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=False,
+                                add_scores=False,
+                                set_alerts=True,
+                                timer=1,
+                                add_tooltip=False,
+                                set_palette=False,
+                                randomize_options=False,
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="Morning questionnaire",
+                    description=dict(
+                        en="Understand how was the morning",
+                        fr="Understand how was the morning",
+                    ),
+                    items=[
+                        dict(
+                            activity_key="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
+        )
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"])
+        )
+        assert response.status_code == 200
+        applet_id = response.json()["result"]["id"]
+
+        response = await self.client.get(
+            self.activity_detail_url.format(
+                activity_id=response.json()["result"]["activities"][0]["id"]
+            )
+        )
+        slider_rows_id = response.json()["result"]["items"][0]["id"]
+
+        assert response.status_code == 200
+        assert (
+            type(
+                response.json()["result"]["items"][3]["responseValues"][
+                    "options"
+                ][0]["value"]
+            )
+            == int
+        )
+
+        create_data["activities"][0]["items"][0] = dict(
+            id=slider_rows_id,
+            name="activity_item_sliderrows",
+            question={"en": "What is your name?"},
+            response_type="sliderRows",
+            response_values=dict(
+                rows=[
+                    {
+                        "label": "label1",
+                        "min_label": "min_label1",
+                        "max_label": "max_label1",
+                        "min_value": 1,
+                        "max_value": 5,
+                        "min_image": None,
+                        "max_image": None,
+                        "score": [1, 2, 3, 4, 5],
+                    }
+                ]
+            ),
+            config=dict(
+                remove_back_button=False,
+                skippable_item=False,
+                add_scores=True,
+                set_alerts=True,
+                timer=1,
+            ),
+        )
+
+        response = await self.client.put(
+            self.applet_detail_url.format(pk=applet_id),
+            data=create_data,
+        )
+        assert response.status_code == 200

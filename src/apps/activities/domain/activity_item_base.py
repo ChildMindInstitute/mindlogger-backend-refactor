@@ -222,11 +222,12 @@ class BaseActivityItem(BaseModel):
             ResponseType.SLIDERROWS,
         ]:
             for row in response_values.rows:
-                for alert in row.alerts:
-                    if alert.value is None:
-                        raise SliderRowsValueError()
-                    if alert.value is not None and not config.set_alerts:
-                        raise AlertFlagMissingSliderItemError()
+                if row.alerts is not None:
+                    for alert in row.alerts:
+                        if alert.value is None:
+                            raise SliderRowsValueError()
+                        if alert.value is not None and not config.set_alerts:
+                            raise AlertFlagMissingSliderItemError()
 
         return values
 
