@@ -2,7 +2,7 @@ import datetime
 import uuid
 
 from pydantic import parse_obj_as
-from sqlalchemy import (
+from sqlalchemy import (  # true,
     and_,
     any_,
     case,
@@ -14,7 +14,6 @@ from sqlalchemy import (
     or_,
     select,
     text,
-    # true,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Query

@@ -237,11 +237,11 @@ class TestWorkspaces(BaseTest):
                 role="respondent",
             ),
         )
-        assert response.json()["count"] == 2
-        assert "New respondent" in response.json()["result"][0]["nicknames"]
+        assert response.json()["count"] == 3
+        assert "New respondent" in response.json()["result"][1]["nicknames"]
         assert (
             "f0dd4996-e0eb-461f-b2f8-ba873a674710"
-            in response.json()["result"][0]["secretIds"]
+            in response.json()["result"][1]["secretIds"]
         )
 
     @rollback
@@ -268,7 +268,7 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         data = response.json()
-        assert data["count"] == 2
+        assert data["count"] == 3
         assert data["result"][0]["nicknames"]
         assert data["result"][0]["secretIds"]
 
@@ -316,7 +316,7 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         data = response.json()
-        assert data["count"] == 2
+        assert data["count"] == 3
         assert data["result"][0]["nicknames"]
         assert data["result"][0]["secretIds"]
 
