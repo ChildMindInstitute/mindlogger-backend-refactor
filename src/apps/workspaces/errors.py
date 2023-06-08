@@ -1,6 +1,6 @@
 from gettext import gettext as _
 
-from apps.shared.exception import AccessDeniedError, NotFoundError
+from apps.shared.exception import AccessDeniedError, NotFoundError, FieldError
 
 __all__ = [
     "UserAppletAccessesNotFound",
@@ -99,3 +99,7 @@ class PublishConcealAccessDenied(AccessDeniedError):
 
 class AccessDeniedToUpdateOwnAccesses(AccessDeniedError):
     message = _("Access denied to update own accesses in current workspace.")
+
+
+class InvalidAppletIDFilter(FieldError):
+    message = _("Invalid applet IDs .")

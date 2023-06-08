@@ -16,6 +16,7 @@ from apps.workspaces.domain.workspace import (
 from apps.workspaces.errors import (
     WorkspaceAccessDenied,
     WorkspaceDoesNotExistError,
+    InvalidAppletIDFilter,
 )
 from apps.workspaces.service.user_access import UserAccessService
 
@@ -144,3 +145,24 @@ class WorkspaceService:
         exists = await UsersCRUD(self.session).exist_by_key("id", owner_id)
         if not exists:
             raise WorkspaceDoesNotExistError()
+
+    async def get_applets_roles_by_priority(self, owner_id, appletIDs):
+        # parse applet ids
+        try:
+            applet_ids = list(
+                map(uuid.UUID, filter(None, appletIDs.split(",")))
+            )
+        except ValueError:
+            raise InvalidAppletIDFilter
+
+        # check if applets exist
+        # check if user has access to applets
+        # await CheckAccessService(session, user.id).check_applet_detail_access(
+        #     owner_id
+        # )
+
+        return await UserAppletAccessCRUD(
+            self.session
+        ).get_applets_roles_by_priority_for_workspace(
+            owner_id, self._user_id, applet_ids
+        )
