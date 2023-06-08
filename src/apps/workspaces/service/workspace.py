@@ -162,8 +162,6 @@ class WorkspaceService:
                 self.session, self._user_id
             ).check_applet_detail_access(applet_id)
 
-        # check if user has access to applets
-
         return await UserAppletAccessCRUD(
             self.session
         ).get_applets_roles_by_priority_for_workspace(
