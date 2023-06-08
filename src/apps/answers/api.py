@@ -309,10 +309,10 @@ async def note_delete(
 
 async def applet_answers_export(
     applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
     query_params: QueryParams = Depends(
         parse_query_params(AnswerExportFilters)
     ),
-    user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
     await AppletService(session, user.id).exist_by_id(applet_id)

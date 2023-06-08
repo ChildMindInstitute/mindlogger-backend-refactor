@@ -198,30 +198,28 @@ class AnswerNoteDetailPublic(PublicModel):
 
 class UserAnswerDataBase(BaseModel):
     id: uuid.UUID
+    submit_id: uuid.UUID
     version: str
+    respondent_id: uuid.UUID | str | None = None
+    respondent_secret_id: str | None = None
     user_public_key: str | None
     answer: str | None = None
     item_ids: list[str] = Field(default_factory=list)
+    events: str | None = None
     applet_history_id: str
     activity_history_id: str
-    created_at: datetime.datetime
-
-
-class RespondentAnswerDataBase(UserAnswerDataBase):
-    respondent_id: uuid.UUID | str | None = None
-    respondent_secret_id: str | None = None
-    events: str | None = None
     flow_history_id: str | None
     flow_name: str | None
     reviewed_answer_id: uuid.UUID | str | None
+    created_at: datetime.datetime
 
 
-class RespondentAnswerData(RespondentAnswerDataBase, InternalModel):
+class RespondentAnswerData(UserAnswerDataBase, InternalModel):
     is_manager: bool = False
     respondent_email: str | None = None
 
 
-class RespondentAnswerDataPublic(RespondentAnswerDataBase, PublicModel):
+class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
     applet_id: str | None
     activity_id: str | None
     flow_id: str | None

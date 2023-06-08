@@ -1,6 +1,9 @@
 import datetime
 import uuid
 
+from fastapi import Query
+from pydantic import Field
+
 from apps.shared.query_params import BaseQueryParams
 
 
@@ -16,7 +19,7 @@ class AppletSubmitDateFilter(BaseQueryParams):
 
 
 class AnswerExportFilters(BaseQueryParams):
-    respondent_id: uuid.UUID | None = None
+    respondent_ids: list[uuid.UUID] | None = Field(Query(None))
 
 
 class AnswerIdentifierVersionFilter(BaseQueryParams):
