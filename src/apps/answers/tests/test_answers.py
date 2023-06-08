@@ -915,7 +915,8 @@ class TestAnswerActivityItems(BaseTest):
             "activityHistoryId", "activityId", "answer", "appletHistoryId",
             "appletId", "createdAt", "events", "flowHistoryId", "flowId",
             "flowName", "id", "itemIds", "respondentId", "respondentSecretId",
-            "reviewedAnswerId", "userPublicKey", "version", "submitId"
+            "reviewedAnswerId", "userPublicKey", "version", "submitId",
+            "scheduledDatetime", "startDatetime", "endDatetime"
         }
         # fmt: on
 

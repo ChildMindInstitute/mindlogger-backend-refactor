@@ -206,6 +206,9 @@ class UserAnswerDataBase(BaseModel):
     answer: str | None = None
     item_ids: list[str] = Field(default_factory=list)
     events: str | None = None
+    scheduled_datetime: datetime.datetime | None = None
+    start_datetime: datetime.datetime | None = None
+    end_datetime: datetime.datetime | None = None
     applet_history_id: str
     activity_history_id: str
     flow_history_id: str | None
