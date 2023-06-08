@@ -13,13 +13,12 @@ from apps.workspaces.domain.workspace import (
     WorkspaceManager,
     WorkspaceRespondent,
 )
-from apps.workspaces.service.check_access import CheckAccessService
-
 from apps.workspaces.errors import (
     InvalidAppletIDFilter,
     WorkspaceAccessDenied,
     WorkspaceDoesNotExistError,
 )
+from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.user_access import UserAccessService
 
 
