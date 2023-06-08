@@ -14,6 +14,7 @@ from sqlalchemy import (  # true,
     or_,
     select,
     text,
+    true,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Query
@@ -37,7 +38,7 @@ from infrastructure.database.crud import BaseCRUD
 
 
 class _AnswersExportFilter(Filtering):
-    respondent_id = FilterField(AnswerSchema.respondent_id)
+    respondent_ids = FilterField(AnswerSchema.respondent_id, Comparisons.IN)
 
 
 class _IdentifierFilter(Filtering):
@@ -140,33 +141,37 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                         [Role.OWNER, Role.MANAGER]
                     ),
                     and_(
+                        AnswerItemSchema.is_assessment.isnot(True),
                         UserAppletAccessSchema.role == Role.REVIEWER,
                         AnswerSchema.respondent_id
                         == any_(assigned_respondents.scalar_subquery()),
                     ),
                 ),
             )
-            .correlate(AnswerSchema)
+            .correlate(AnswerSchema, AnswerItemSchema)
         )
-        #
-        # has_reviewer_access = (
-        #     exists()
-        #     .where(
-        #         UserAppletAccessSchema.user_id == user_id,
-        #         UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
-        #         UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER]),
-        #     )
-        #     .correlate(AnswerSchema)
-        # )
 
-        is_manager = (
-            exists()
-            .where(
-                UserAppletAccessSchema.user_id == UserSchema.id,
-                UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
-                UserAppletAccessSchema.role != Role.RESPONDENT,
-            )
-            .correlate(AnswerSchema, UserSchema)
+        is_manager = case(
+            (AnswerItemSchema.is_assessment.is_(True), true()),
+            else_=(
+                exists()
+                .where(
+                    UserAppletAccessSchema.user_id == UserSchema.id,
+                    UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
+                    UserAppletAccessSchema.role != Role.RESPONDENT,
+                )
+                .correlate(AnswerSchema, UserSchema)
+            ),
+        )
+
+        reviewed_answer_id = case(
+            (AnswerItemSchema.is_assessment.is_(True), AnswerSchema.id),
+            else_=null(),
+        )
+
+        record_id = case(
+            (AnswerItemSchema.is_assessment.is_(True), AnswerItemSchema.id),
+            else_=AnswerSchema.id,
         )
 
         filter_clauses = []
@@ -175,22 +180,26 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         query: Query = (
             select(
-                AnswerSchema.id,
+                record_id.label("id"),
+                AnswerSchema.submit_id,
                 AnswerSchema.version,
-                AnswerSchema.user_public_key,
-                AnswerSchema.respondent_id,
+                AnswerItemSchema.user_public_key,
+                AnswerItemSchema.respondent_id,
                 UserAppletAccessSchema.respondent_secret_id,
                 UserSchema.email.label("respondent_email"),
                 is_manager.label("is_manager"),
                 AnswerItemSchema.answer,
                 AnswerItemSchema.events,
                 AnswerItemSchema.item_ids,
-                AnswerItemSchema.applet_history_id,
-                AnswerItemSchema.activity_history_id,
-                AnswerItemSchema.flow_history_id,
+                AnswerItemSchema.scheduled_datetime,
+                AnswerItemSchema.start_datetime,
+                AnswerItemSchema.end_datetime,
+                AnswerSchema.applet_history_id,
+                AnswerSchema.activity_history_id,
+                AnswerSchema.flow_history_id,
                 ActivityFlowHistoriesSchema.name.label("flow_name"),
                 AnswerItemSchema.created_at,
-                null().label("reviewed_answer_id"),
+                reviewed_answer_id.label("reviewed_answer_id"),
             )
             .select_from(AnswerSchema)
             .join(
@@ -199,15 +208,16 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .outerjoin(
                 ActivityFlowHistoriesSchema,
                 ActivityFlowHistoriesSchema.id_version
-                == AnswerItemSchema.flow_history_id,
+                == AnswerSchema.flow_history_id,
             )
             .outerjoin(UserSchema, UserSchema.id == AnswerSchema.respondent_id)
             .outerjoin(
                 UserAppletAccessSchema,
                 and_(
+                    AnswerItemSchema.is_assessment.isnot(True),
                     UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
                     UserAppletAccessSchema.user_id
-                    == AnswerSchema.respondent_id,
+                    == AnswerItemSchema.respondent_id,
                     UserAppletAccessSchema.role == Role.RESPONDENT,
                 ),
             )
@@ -216,45 +226,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 has_access,
                 *filter_clauses,
             )
-            # .union(
-            #     select(
-            #         AssessmentAnswerItemSchema.id,
-            #         AnswerSchema.version,
-            #         AssessmentAnswerItemSchema.reviewer_public_key.label(
-            #             "user_public_key"
-            #         ),
-            #         AssessmentAnswerItemSchema.reviewer_id.label(
-            #             "respondent_id"
-            #         ),
-            #         null().label("respondent_secret_id"),
-            #         UserSchema.email.label("respondent_email"),
-            #         true().label("is_manager"),
-            #         AssessmentAnswerItemSchema.answer,
-            #         null().label("events"),
-            #         AssessmentAnswerItemSchema.item_ids,
-            #         AssessmentAnswerItemSchema.applet_history_id,
-            #         AssessmentAnswerItemSchema.activity_history_id,
-            #         null().label("flow_history_id"),  # TODO
-            #         null().label("flow_name"),  # TODO
-            #         AssessmentAnswerItemSchema.created_at,
-            #         AnswerSchema.id.label("reviewed_answer_id"),
-            #     )
-            #     .select_from(AnswerSchema)
-            #     .join(
-            #         AssessmentAnswerItemSchema,
-            #         AssessmentAnswerItemSchema.answer_id == AnswerSchema.id,
-            #     )
-            #     .join(
-            #         UserSchema,
-            #         UserSchema.id == AssessmentAnswerItemSchema.reviewer_id,
-            #     )
-            #     .where(
-            #         AnswerSchema.applet_id == applet_id,
-            #         has_reviewer_access,
-            #         *filter_clauses,
-            #     )
-            # )
-            # .order_by(literal_column("created_at").desc())
+            .order_by(AnswerItemSchema.created_at.desc())
         )
 
         res = await self._execute(query)

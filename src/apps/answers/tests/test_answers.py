@@ -1,8 +1,6 @@
 import datetime
 import json
 
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -831,7 +829,6 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 403, response.json()
 
-    @pytest.mark.skip
     @rollback
     async def test_answers_export(self):
         await self.client.login(
@@ -840,31 +837,33 @@ class TestAnswerActivityItems(BaseTest):
 
         # create answer
         create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            user_public_key="user key",
-            answers=[
-                dict(
-                    activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-                    answer=json.dumps(
-                        dict(
-                            value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
-                            additional_text=None,
-                        )
-                    ),
-                    item_ids=[
-                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                        "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
-                    ],
-                )
-            ],
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answer=dict(
+                user_public_key="user key",
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                scheduled_time=10,
+                start_time=10,
+                end_time=11,
+            ),
         )
 
         response = await self.client.post(
             self.answer_activity_item_create_url, data=create_data
         )
 
-        assert response.status_code == 201, response.json()
+        assert response.status_code == 201
 
         # get answer id
         response = await self.client.get(
@@ -877,7 +876,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 200, response.json()
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
 
         # create assessment
@@ -885,13 +884,14 @@ class TestAnswerActivityItems(BaseTest):
             self.assessment_answers_url.format(
                 id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
-                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
             dict(
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3621",
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                start_time=10,
+                end_time=11,
             ),
         )
 
@@ -912,15 +912,30 @@ class TestAnswerActivityItems(BaseTest):
         assessment, answer = data["answers"][0], data["answers"][1]
         # fmt: off
         expected_keys = {
-            'activityHistoryId', 'activityId', 'answer', 'appletHistoryId',
-            'appletId', 'createdAt', 'events', 'flowHistoryId', 'flowId',
-            'flowName', 'id', 'itemIds', 'respondentId', 'respondentSecretId',
-            'reviewedAnswerId', 'userPublicKey', 'version'
+            "activityHistoryId", "activityId", "answer", "appletHistoryId",
+            "appletId", "createdAt", "events", "flowHistoryId", "flowId",
+            "flowName", "id", "itemIds", "respondentId", "respondentSecretId",
+            "reviewedAnswerId", "userPublicKey", "version", "submitId",
+            "scheduledDatetime", "startDatetime", "endDatetime"
         }
         # fmt: on
 
         assert set(assessment.keys()) == expected_keys
         assert assessment["reviewedAnswerId"] == answer["id"]
+
+        # test filters
+        response = await self.client.get(
+            self.applet_answers_export_url.format(
+                id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            ),
+            dict(
+                respondentIds="7484f34a-3acc-4ee6-8a94-000000000000",
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        data = response.json()["result"]
+        assert not data["answers"]
 
     @rollback
     async def test_get_identifiers(self):
