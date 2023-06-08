@@ -33,6 +33,9 @@ class CheckAccessService:
         *,
         exception=None,
     ):
+        if owner_id == self.user_id:
+            return
+
         has_access = await AppletAccessCRUD(
             self.session
         ).has_any_roles_for_workspace(owner_id, self.user_id, roles)
