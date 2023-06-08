@@ -14,7 +14,8 @@ from apps.shared.query_params import (
     parse_query_params,
 )
 from apps.users.domain import User
-from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+
+# from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role, UserPinRole
 from apps.workspaces.domain.user_applet_access import (
     ManagerAccesses,
@@ -98,12 +99,12 @@ async def managers_priority_role_retrieve(
 
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        applet_ids = list(map(uuid.UUID, filter(None, appletIDs.split(","))))
-        role = await UserAppletAccessCRUD(
-            session
-        ).get_applets_roles_by_priority_for_workspace(
-            owner_id, user.id, applet_ids
+        await CheckAccessService(session, user.id).check_workspace_access(
+            owner_id
         )
+        role = await WorkspaceService(
+            session, user.id
+        ).get_applets_roles_by_priority(owner_id, appletIDs)
 
     return Response(result=WorkspacePrioritizedRole(role=role))
 

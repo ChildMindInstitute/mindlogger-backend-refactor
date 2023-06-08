@@ -29,7 +29,7 @@ class UserAppletAccessCreate(InternalModel):
     owner_id: uuid.UUID
     invitor_id: uuid.UUID
     meta: dict
-    is_pinned: bool
+    is_pinned: bool | None
 
 
 class UserAppletAccess(UserAppletAccessCreate):

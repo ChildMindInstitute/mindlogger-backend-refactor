@@ -184,7 +184,7 @@ class WorkspaceAppletPublic(AppletSingleLanguageInfoPublic):
 
 
 class WorkspacePrioritizedRole(PublicModel):
-    role: Role
+    role: Role | None
 
 
 class AppletRoles(InternalModel):
