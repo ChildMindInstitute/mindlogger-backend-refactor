@@ -4,7 +4,10 @@ from typing import Type
 
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.jsonld_converter.errors import JsonLDNotSupportedError
-from apps.jsonld_converter.service.document import ReproActivity
+from apps.jsonld_converter.service.document import (
+    ABTrailsIpadActivity,
+    ABTrailsMobileActivity, ReproActivity,
+)
 from apps.jsonld_converter.service.document.activity_flow import (
     ReproActivityFlow,
 )
@@ -45,7 +48,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
 
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
-        return [ReproActivity, ReproActivityFlow]
+        return [ABTrailsIpadActivity, ABTrailsMobileActivity, ReproActivity, ReproActivityFlow]
 
     async def load(self, doc: dict, base_url: str | None = None):
         await super().load(doc, base_url)

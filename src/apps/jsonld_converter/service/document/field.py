@@ -8,7 +8,7 @@ from pydantic.color import Color
 
 from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.response_type_config import (
-    AdditionalResponseOption,
+    ABTrailsIpadConfig, ABTrailsMobileConfig, AdditionalResponseOption,
     AudioConfig,
     AudioPlayerConfig,
     DateConfig,
@@ -1051,3 +1051,36 @@ class ReproFieldAudioStimulus(ReproFieldBase):
         return AudioPlayerValues(
             file=self.audio_file,
         )
+
+
+class ReproFieldABTrailIpad(ReproFieldBase):
+    INPUT_TYPE = "trail"
+    RESPONSE_TYPE = ResponseType.ABTRAILSIPAD
+    CFG_TYPE = ABTrailsIpadConfig
+
+    ld_description: str | None = None
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+    async def _load_from_processed_doc(
+        self, processed_doc: dict, base_url: str | None = None
+    ):
+        await super()._load_from_processed_doc(processed_doc, base_url)
+        self.ld_description = self.attr_processor.get_translation(processed_doc, "schema:description", self.lang)
+
+    def _build_config(self, _cls: Type | None, **attrs):
+        config = _cls(
+            name=self.ld_pref_label or self.ld_alt_label,  # TODO
+            description=self.ld_description,
+            image_placeholder='',  # TODO
+            is_hidden=self.ld_is_vis is False,  # TODO
+        )
+
+        return config
+
+
+class ReproFieldABTrailMobile(ReproFieldABTrailIpad):
+    RESPONSE_TYPE = ResponseType.ABTRAILSMOBILE
+    CFG_TYPE = ABTrailsMobileConfig

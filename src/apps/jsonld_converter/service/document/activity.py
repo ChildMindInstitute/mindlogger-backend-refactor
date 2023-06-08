@@ -12,7 +12,7 @@ from apps.jsonld_converter.service.document.base import (
     LdKeyword,
 )
 from apps.jsonld_converter.service.document.field import (
-    ReproFieldAge,
+    ReproFieldABTrailIpad, ReproFieldABTrailMobile, ReproFieldAge,
     ReproFieldAudio,
     ReproFieldAudioStimulus,
     ReproFieldBase,
@@ -58,7 +58,26 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             "reproschema:Activity",
             *cls.attr_processor.resolve_key("reproschema:Activity"),
         ]
-        return cls.attr_processor.first(doc.get(LdKeyword.type)) in ld_types
+        return (
+            cls.attr_processor.first(doc.get(LdKeyword.type)) in ld_types
+            and cls.supports_activity_type(doc)
+        )
+
+    @classmethod
+    def supports_activity_type(cls, doc: dict) -> bool:
+        _type = cls.get_activity_type(doc)
+        return not _type or _type == "NORMAL"
+
+    @classmethod
+    def get_activity_type(cls, doc: dict) -> str | None:
+        _type = cls.attr_processor.get_attr_value(
+            doc, "reproschema:activityType"
+        )
+        if not _type:
+            # try fetch from compact
+            _type = doc.get("activityType")
+
+        return _type
 
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
@@ -164,3 +183,25 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             items=items,
             extra_fields=self.extra,
         )
+
+
+class ABTrailsIpadActivity(ReproActivity):
+
+    @classmethod
+    def supports_activity_type(cls, doc: dict) -> bool:
+        return cls.get_activity_type(doc) == "TRAILS_IPAD"
+
+    @classmethod
+    def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
+        return [ReproFieldABTrailIpad]
+
+
+class ABTrailsMobileActivity(ReproActivity):
+
+    @classmethod
+    def supports_activity_type(cls, doc: dict) -> bool:
+        return cls.get_activity_type(doc) == "TRAILS_MOBILE"
+
+    @classmethod
+    def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
+        return [ReproFieldABTrailMobile]
