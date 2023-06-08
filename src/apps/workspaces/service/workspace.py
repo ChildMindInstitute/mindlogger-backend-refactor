@@ -13,10 +13,12 @@ from apps.workspaces.domain.workspace import (
     WorkspaceManager,
     WorkspaceRespondent,
 )
+from apps.workspaces.service.check_access import CheckAccessService
+
 from apps.workspaces.errors import (
+    InvalidAppletIDFilter,
     WorkspaceAccessDenied,
     WorkspaceDoesNotExistError,
-    InvalidAppletIDFilter,
 )
 from apps.workspaces.service.user_access import UserAccessService
 
@@ -156,10 +158,12 @@ class WorkspaceService:
             raise InvalidAppletIDFilter
 
         # check if applets exist
+        for applet_id in applet_ids:
+            await CheckAccessService(
+                self.session, self._user_id
+            ).check_applet_detail_access(applet_id)
+
         # check if user has access to applets
-        # await CheckAccessService(session, user.id).check_applet_detail_access(
-        #     owner_id
-        # )
 
         return await UserAppletAccessCRUD(
             self.session
