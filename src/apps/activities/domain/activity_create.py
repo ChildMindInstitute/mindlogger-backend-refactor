@@ -4,7 +4,7 @@ from pydantic import root_validator
 
 from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_item_base import BaseActivityItem
-from apps.activities.domain.conditional_logic_validation import (
+from apps.activities.domain.custom_validation import (
     validate_item_flow,
     validate_score_and_sections,
     validate_subscales,

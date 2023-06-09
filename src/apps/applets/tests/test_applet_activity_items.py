@@ -23,6 +23,7 @@ class TestActivityItems(BaseTest):
     applet_create_url = "workspaces/{owner_id}/applets"
     applet_detail_url = f"{applet_list_url}/{{pk}}"
     activity_detail_url = "activities/{activity_id}"
+    applet_workspace_detail_url = "workspaces/{owner_id}/applets/{pk}"
 
     @rollback
     async def test_creating_applet_with_activity_items(self):
@@ -1436,3 +1437,207 @@ class TestActivityItems(BaseTest):
             data=create_data,
         )
         assert response.status_code == 200
+
+    @rollback
+    async def test_create_applet_with_preformance_activity_item(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            display_name="User daily behave",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+            ),
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    name="Morning activity",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="activity_item_text",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="text",
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="Morning questionnaire",
+                    description=dict(
+                        en="Understand how was the morning",
+                        fr="Understand how was the morning",
+                    ),
+                    items=[
+                        dict(
+                            activity_key="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
+        )
+        assert response.status_code == 201, response.json()
+        assert (
+            response.json()["result"]["activities"][0]["isPerformanceTask"]
+            is False
+        )
+        assert (
+            response.json()["result"]["activities"][0]["performanceTaskType"]
+            is None
+        )
+
+        create_data["activities"] = [
+            dict(
+                name="Morning activity",
+                key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                description=dict(
+                    en="Understand morning feelings.",
+                    fr="Understand morning feelings.",
+                ),
+                items=[
+                    dict(
+                        name="activity_item_flanker",
+                        question=dict(
+                            en="flanker question?",
+                            fr="flanker question?",
+                        ),
+                        response_type="flanker",
+                        response_values=None,
+                        config=dict(
+                            general=dict(
+                                instruction="instruction",
+                                buttons=[
+                                    dict(
+                                        name="button 1",
+                                        image="image button 1",
+                                    ),
+                                    dict(
+                                        name="button 2",
+                                        image="image button 2",
+                                    ),
+                                ],
+                                fixation=dict(
+                                    image="image fixation",
+                                    duration=10,
+                                ),
+                                stimulusTrials=[
+                                    {
+                                        "id": "1",
+                                        "image": "image stimulus_trials 1",
+                                        "correctPress": "left",
+                                    },
+                                    {
+                                        "id": "2",
+                                        "image": "image stimulus_trials 2",
+                                        "correctPress": "left",
+                                    },
+                                ],
+                            ),
+                            practice=dict(
+                                instruction="instruction",
+                                blocks=[
+                                    {
+                                        "order": ["1", "2"],
+                                        "name": "name order 1",
+                                    },
+                                    {
+                                        "order": ["2", "1"],
+                                        "name": "name order 2",
+                                    },
+                                ],
+                                stimulusDuration=20,
+                                threshold=15,
+                                randomizeOrder=True,
+                                showFeedback=True,
+                                showSummary=True,
+                            ),
+                            test=dict(
+                                instruction="instruction",
+                                blocks=[
+                                    {
+                                        "order": ["1", "2"],
+                                        "name": "name order 1",
+                                    },
+                                    {
+                                        "order": ["2", "1"],
+                                        "name": "name order 2",
+                                    },
+                                ],
+                                stimulusDuration=20,
+                                randomizeOrder=True,
+                                showFeedback=True,
+                                showSummary=True,
+                            ),
+                        ),
+                    ),
+                ],
+            ),
+        ]
+
+        response = await self.client.put(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"]),
+            data=create_data,
+        )
+        assert response.status_code == 200
+
+        assert (
+            response.json()["result"]["activities"][0]["isPerformanceTask"]
+            is True
+        )
+        assert (
+            response.json()["result"]["activities"][0]["performanceTaskType"]
+            == "flanker"
+        )
+
+        response = await self.client.get(
+            self.applet_workspace_detail_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                pk=response.json()["result"]["id"],
+            )
+        )
+        assert response.status_code == 200
+        assert (
+            response.json()["result"]["activities"][0]["isPerformanceTask"]
+            is True
+        )
+        assert (
+            response.json()["result"]["activities"][0]["performanceTaskType"]
+            == "flanker"
+        )
