@@ -29,7 +29,9 @@ class TestSchedule(BaseTest):
 
     schedule_url = f"{applet_detail_url}/events"
     schedule_import_url = f"{applet_detail_url}/events/import"
-    schedule_create_individual = f"{applet_detail_url}/events/individual"
+    schedule_create_individual = (
+        f"{applet_detail_url}/events/individual/{{respondent_id}}"
+    )
 
     delete_user_url = (
         f"{applet_detail_url}/events/delete_individual/{{respondent_id}}"
@@ -724,7 +726,8 @@ class TestSchedule(BaseTest):
         )
         response = await self.client.post(
             self.schedule_create_individual.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2",
             ),
         )
         assert response.status_code == 201
@@ -732,5 +735,5 @@ class TestSchedule(BaseTest):
         events = response.json()["result"]
         assert len(events) == 3
         assert (
-            events[0]["respondentId"] == "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            events[0]["respondentId"] == "7484f34a-3acc-4ee6-8a94-fd7299502fa2"
         )

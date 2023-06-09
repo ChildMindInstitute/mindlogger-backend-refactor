@@ -49,7 +49,7 @@ router.post(
 
 # Create individual schedule
 router.post(
-    "/{applet_id}/events/individual",
+    "/{applet_id}/events/individual/{respondent_id}",
     response_model=ResponseMulti[PublicEvent],
     status_code=status.HTTP_201_CREATED,
     responses={
