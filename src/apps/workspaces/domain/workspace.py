@@ -66,7 +66,7 @@ class WorkspaceRespondentDetails(InternalModel):
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
     has_individual_schedule: bool = False
-    encryption: WorkspaceAppletEncryption
+    encryption: WorkspaceAppletEncryption | None = None
 
 
 class WorkspaceRespondent(InternalModel):
