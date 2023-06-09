@@ -239,6 +239,7 @@ def validate_score_subscale_table(value: str):
 
 
 def validate_is_performance_task(value: bool, values: dict):
+    # if items type is performance task, then is_performance_task must be set
     items = values.get("items", [])
     if any(item.response_type in list(PerformanceTaskType) for item in items):
         return True

@@ -39,10 +39,10 @@ class PublicActivityFull(ActivityBase, PublicModel):
     is_performance_task: bool = False
     performance_task_type: PerformanceTaskType | None = None
 
-    @validator("is_performance_task")
+    @validator("is_performance_task", always=True)
     def validate_is_performance_task_full(cls, value, values):
         return validate_is_performance_task(value, values)
 
-    @validator("performance_task_type")
+    @validator("performance_task_type", always=True)
     def validate_performance_task_type_full(cls, value, values):
         return validate_performance_task_type(value, values)

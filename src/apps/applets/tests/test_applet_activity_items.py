@@ -1,7 +1,5 @@
 import uuid
 
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -1440,7 +1438,6 @@ class TestActivityItems(BaseTest):
         )
         assert response.status_code == 200
 
-    @pytest.mark.run
     @rollback
     async def test_create_applet_with_preformance_activity_item(self):
         await self.client.login(
