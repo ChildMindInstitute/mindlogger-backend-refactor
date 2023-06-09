@@ -689,9 +689,7 @@ class TestActivityItems(BaseTest):
                             response_type="ABTrailsIpad",
                             response_values=None,
                             config=dict(
-                                name="name",
                                 description="description",
-                                isHidden=False,
                                 imagePlaceholder="image placeholder",
                             ),
                         ),
@@ -704,9 +702,7 @@ class TestActivityItems(BaseTest):
                             response_type="ABTrailsMobile",
                             response_values=None,
                             config=dict(
-                                name="name",
                                 description="description",
-                                isHidden=False,
                                 imagePlaceholder="image placeholder",
                             ),
                         ),

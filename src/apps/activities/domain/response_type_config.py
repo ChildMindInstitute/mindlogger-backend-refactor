@@ -240,17 +240,13 @@ class FlankerConfig(PublicModel):
 
 
 class ABTrailsIpadConfig(PublicModel):
-    name: str
     description: str
     image_placeholder: str
-    is_hidden: bool | None
 
 
 class ABTrailsMobileConfig(PublicModel):
-    name: str
     description: str
     image_placeholder: str
-    is_hidden: bool | None
 
 
 class NoneResponseType(str, Enum):
