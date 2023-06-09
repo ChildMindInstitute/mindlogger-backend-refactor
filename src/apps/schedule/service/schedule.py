@@ -1108,7 +1108,7 @@ class ScheduleService:
         return events
 
     async def create_schedule_individual(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID
     ) -> list[PublicEvent]:
         """Create individual schedule for a user for the first time"""
         # get list of activity ids
@@ -1130,18 +1130,18 @@ class ScheduleService:
             applet_id=applet_id,
             activity_ids=activity_ids,
             is_activity=True,
-            respondent_id=user_id,
+            respondent_id=respondent_id,
         )
 
         await self.create_default_schedules(
             applet_id=applet_id,
             activity_ids=flow_ids,
             is_activity=False,
-            respondent_id=user_id,
+            respondent_id=respondent_id,
         )
 
         # get all events for user
         return await self.get_all_schedules(
             applet_id,
-            QueryParams(filters={"respondent_id": user_id}),
+            QueryParams(filters={"respondent_id": respondent_id}),
         )

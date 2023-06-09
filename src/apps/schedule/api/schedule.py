@@ -241,6 +241,7 @@ async def schedule_import(
 # TODO: Restrict by admin
 async def schedule_create_individual(
     applet_id: uuid.UUID,
+    respondent_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> ResponseMulti[PublicEvent]:
@@ -250,7 +251,8 @@ async def schedule_create_individual(
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
+
         schedules = await ScheduleService(session).create_schedule_individual(
-            applet_id, user.id
+            applet_id, respondent_id
         )
     return ResponseMulti(result=schedules, count=len(schedules))
