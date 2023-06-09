@@ -171,7 +171,7 @@ async def workspace_applet_detail(
             applet_id
         )
 
-    return Response(result=PublicAppletFull.from_orm(applet))
+    return Response(result=PublicAppletFull(**applet.dict()))
 
 
 async def workspace_applet_respondent_update(

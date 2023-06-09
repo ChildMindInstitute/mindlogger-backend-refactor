@@ -291,6 +291,14 @@ class ResponseType(str, Enum):
     ABTRAILSMOBILE = "ABTrailsMobile"
 
 
+class PerformanceTaskType(str, Enum):
+    FLANKER = "flanker"
+    GYROSCOPE = "gyroscope"
+    TOUCH = "touch"
+    ABTRAILSIPAD = "ABTrailsIpad"
+    ABTRAILSMOBILE = "ABTrailsMobile"
+
+
 ResponseTypeConfigOptions = [
     TextConfig,
     SingleSelectionConfig,

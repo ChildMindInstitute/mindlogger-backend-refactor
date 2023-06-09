@@ -2,7 +2,10 @@ from apps.activities.domain.conditions import (
     MultiSelectConditionType,
     SingleSelectConditionType,
 )
-from apps.activities.domain.response_type_config import ResponseType
+from apps.activities.domain.response_type_config import (
+    PerformanceTaskType,
+    ResponseType,
+)
 from apps.activities.errors import (
     IncorrectConditionItemError,
     IncorrectConditionItemIndexError,
@@ -232,4 +235,25 @@ def validate_score_subscale_table(value: str):
         except ValueError:
             raise InvalidScoreSubscaleError()
 
+    return value
+
+
+def validate_is_performance_task(value: bool, values: dict):
+    items = values.get("items", [])
+    if any(item.response_type in list(PerformanceTaskType) for item in items):
+        return True
+    return value
+
+
+def validate_performance_task_type(value: str | None, values: dict):
+    # if items type is performance task, then performance task type must be set
+    items = values.get("items", [])
+    value = next(
+        (
+            item.response_type
+            for item in items
+            if item.response_type in list(PerformanceTaskType)
+        ),
+        None,
+    )
     return value

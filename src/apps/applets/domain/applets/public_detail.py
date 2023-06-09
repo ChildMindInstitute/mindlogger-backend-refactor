@@ -1,9 +1,16 @@
 import uuid
 
-from pydantic import Field
+from pydantic import Field, validator
 
 from apps.activities.domain.conditional_logic import ConditionalLogic
-from apps.activities.domain.response_type_config import ResponseTypeConfig
+from apps.activities.domain.custom_validation import (
+    validate_is_performance_task,
+    validate_performance_task_type,
+)
+from apps.activities.domain.response_type_config import (
+    PerformanceTaskType,
+    ResponseTypeConfig,
+)
 from apps.activities.domain.response_values import ResponseValueConfig
 from apps.activities.domain.scores_reports import (
     ScoresAndReports,
@@ -41,6 +48,16 @@ class Activity(PublicModel):
     scores_and_reports: ScoresAndReports | None = None
     subscale_setting: SubscaleSetting | None = None
     is_assessment: bool
+    is_performance_task: bool = False
+    performance_task_type: PerformanceTaskType | None = None
+
+    @validator("is_performance_task")
+    def validate_is_performance_task(cls, value, values):
+        return validate_is_performance_task(value, values)
+
+    @validator("performance_task_type")
+    def validate_performance_task_type(cls, value, values):
+        return validate_performance_task_type(value, values)
 
 
 class ActivityFlowItem(PublicModel):

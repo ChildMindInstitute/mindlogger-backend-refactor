@@ -3,11 +3,11 @@ from enum import Enum
 from pydantic import Field, PositiveInt, root_validator, validator
 
 from apps.activities.domain.conditional_logic import Match
-from apps.activities.domain.conditional_logic_validation import (
+from apps.activities.domain.conditions import ScoreCondition, SectionCondition
+from apps.activities.domain.custom_validation import (
     validate_raw_score_subscale,
     validate_score_subscale_table,
 )
-from apps.activities.domain.conditions import ScoreCondition, SectionCondition
 from apps.activities.errors import (
     DuplicateScoreConditionIdError,
     DuplicateScoreConditionNameError,
