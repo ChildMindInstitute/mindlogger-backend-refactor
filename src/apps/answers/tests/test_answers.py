@@ -506,8 +506,6 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
-                start_time=10,
-                end_time=11,
             ),
         )
 
@@ -540,8 +538,6 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
-                start_time=10,
-                end_time=11,
             ),
         )
 
@@ -945,8 +941,6 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
-                start_time=10,
-                end_time=11,
             ),
         )
 

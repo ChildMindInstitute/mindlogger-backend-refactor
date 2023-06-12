@@ -74,12 +74,9 @@ class AppletAnswerCreate(InternalModel):
 
 
 class AssessmentAnswerCreate(InternalModel):
-    activity_id: uuid.UUID
     answer: str
     item_ids: list[uuid.UUID]
     reviewer_public_key: str
-    start_time: int
-    end_time: int
 
 
 class AnswerDate(InternalModel):

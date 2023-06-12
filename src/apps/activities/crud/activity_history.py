@@ -85,3 +85,16 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query = query.order_by(ActivityHistorySchema.order.asc())
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_applet_assessment(
+        self, applet_id_version: str
+    ) -> ActivityHistorySchema:
+        query: Query = select(ActivityHistorySchema)
+        query = query.where(
+            ActivityHistorySchema.applet_id == applet_id_version
+        )
+        query = query.order_by(ActivityHistorySchema.order.asc())
+        query = query.limit(1)
+
+        db_result = await self._execute(query)
+        return db_result.scalars().first()
