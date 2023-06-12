@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import uuid
+from collections import defaultdict
 
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
@@ -27,6 +28,7 @@ from apps.answers.domain import (
     AnswerExport,
     AnswerNoteDetail,
     AnswerReview,
+    AppletActivityAnswer,
     AppletAnswerCreate,
     AssessmentAnswer,
     AssessmentAnswerCreate,
@@ -106,7 +108,7 @@ class AnswerService:
                 applet_answer.flow_id
             )
 
-        for activity_item_id in applet_answer.answer.item_ids:
+        for activity_item_id in applet_answer.answer.item_ids or []:
             activity_id_version = item_activity_map.get(
                 get_pk(activity_item_id)
             )
@@ -193,8 +195,7 @@ class AnswerService:
             )
         )
         item_answer = applet_answer.answer
-        if not item_answer:
-            return
+
         item_answer = AnswerItemSchema(
             answer_id=answer.id,
             answer=item_answer.answer,
@@ -212,6 +213,7 @@ class AnswerService:
                 item_answer.start_time
             ),
             end_datetime=datetime.datetime.fromtimestamp(item_answer.end_time),
+            is_assessment=False,
         )
 
         await AnswerItemsCRUD(self.session).create(item_answer)
@@ -565,3 +567,34 @@ class AnswerService:
         return await AnswersCRUD(self.session).get_versions_by_activity_id(
             activity_id, filters
         )
+
+    async def get_activity_answers(
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        filters: QueryParams,
+    ) -> list[AppletActivityAnswer]:
+        versions = filters.filters.get("versions")
+        if isinstance(versions, str):
+            versions = versions.split(",")
+        activity_items = await ActivityItemHistoriesCRUD(
+            self.session
+        ).get_activity_items(activity_id, versions)
+        answers = await AnswerItemsCRUD(
+            self.session
+        ).get_applet_answers_by_activity_id(applet_id, activity_id, filters)
+
+        activity_item_map = defaultdict(list)
+        for activity_item in activity_items:
+            activity_item_map[activity_item.activity_id].append(activity_item)
+
+        activity_answers = list()
+        for answer, answer_item in answers:
+            answer_item.items = activity_item_map.get(
+                answer.activity_history_id
+            )
+            activity_answer = AppletActivityAnswer.from_orm(answer_item)
+            activity_answer.version = answer.version
+            activity_answers.append(activity_answer)
+
+        return activity_answers

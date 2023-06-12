@@ -26,6 +26,9 @@ class TestAnswerActivityItems(BaseTest):
     answer_activity_item_create_url = "/answers"
     public_answer_activity_item_create_url = "/public/answers"
     answered_applet_activities_url = "/answers/applet/{id_}/activities"
+    answers_for_activity_url = (
+        "/answers/applet/{id_}/activities/{activity_id}/answers"
+    )
     applet_answers_export_url = "/answers/applet/{id}/data"
     applet_submit_dates_url = "/answers/applet/{id_}/dates"
     activity_answers_url = (
@@ -127,7 +130,10 @@ class TestAnswerActivityItems(BaseTest):
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
-            answer=None,
+            answer=dict(
+                start_time=10,
+                end_time=11,
+            ),
         )
 
         response = await self.client.post(
@@ -247,7 +253,10 @@ class TestAnswerActivityItems(BaseTest):
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
             created_at=1681216969,
-            answer=None,
+            answer=dict(
+                start_time=10,
+                end_time=11,
+            ),
         )
 
         response = await self.client.post(
@@ -330,6 +339,52 @@ class TestAnswerActivityItems(BaseTest):
             response.json()["result"]["events"]
             == '{"events": ["event1", "event2"]}'
         )
+
+    @rollback
+    async def test_applet_activity_answers(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answer=dict(
+                user_public_key="user key",
+                events=json.dumps(dict(events=["event1", "event2"])),
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                scheduled_time=10,
+                start_time=10,
+                end_time=11,
+            ),
+        )
+
+        response = await self.client.post(
+            self.answer_activity_item_create_url, data=create_data
+        )
+
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.answers_for_activity_url.format(
+                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 1
 
     @rollback
     async def test_applet_assessment_retrieve(self):

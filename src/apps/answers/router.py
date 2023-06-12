@@ -4,6 +4,7 @@ from starlette import status
 from apps.answers.api import (
     applet_activities_list,
     applet_activity_answer_retrieve,
+    applet_activity_answers_list,
     applet_activity_assessment_create,
     applet_activity_assessment_retrieve,
     applet_activity_identifiers_retrieve,
@@ -21,6 +22,7 @@ from apps.answers.domain import (
     ActivityAnswerPublic,
     AnswerNoteDetailPublic,
     AnswerReviewPublic,
+    AppletActivityAnswerPublic,
     AssessmentAnswerPublic,
     PublicAnswerDates,
     PublicAnsweredAppletActivity,
@@ -67,10 +69,22 @@ router.get(
 )(applet_activities_list)
 
 router.get(
+    "/applet/{applet_id}/activities/{activity_id}/answers",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {
+            "model": ResponseMulti[AppletActivityAnswerPublic]
+        },
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_activity_answers_list)
+
+router.get(
     "/applet/{applet_id}/dates",
     status_code=status.HTTP_200_OK,
-    response_model=Response[PublicAnswerDates],
     responses={
+        status.HTTP_200_OK: {"model": Response[PublicAnswerDates]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -119,6 +133,7 @@ router.get(
     "/applet/{applet_id}/activities/{activity_id}/identifiers",
     status_code=status.HTTP_200_OK,
     responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[str]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -145,8 +160,8 @@ router.post(
 router.get(
     "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes",
     status_code=status.HTTP_200_OK,
-    response_model=ResponseMulti[AnswerNoteDetailPublic],
     responses={
+        status.HTTP_200_OK: {"model": Response[AnswerNoteDetailPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
