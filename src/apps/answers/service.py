@@ -458,8 +458,6 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        answer = await AnswersCRUD(self.session).get_by_id(answer_id)
-        pk = self._generate_history_id(answer.version)
         assessment = await AnswerItemsCRUD(self.session).get_assessment(
             answer_id, self.user_id
         )
