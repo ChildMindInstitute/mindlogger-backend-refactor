@@ -8,6 +8,10 @@ from apps.activities.domain.activity_full import (
     PublicActivityItemFull,
 )
 from apps.activities.domain.activity_item_history import ActivityItemHistory
+from apps.activities.domain.scores_reports import (
+    ScoresAndReports,
+    SubscaleSetting,
+)
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.domain.custom_validations import extract_history_version
 
@@ -34,6 +38,8 @@ class ActivityHistory(InternalModel):
     response_is_editable: bool
     order: int
     created_at: datetime.datetime
+    scores_and_reports: ScoresAndReports | None = None
+    subscale_setting: SubscaleSetting | None = None
 
 
 class ActivityHistoryChange(InternalModel):
