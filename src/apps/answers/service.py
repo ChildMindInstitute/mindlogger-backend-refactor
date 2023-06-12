@@ -460,7 +460,6 @@ class AnswerService:
         await self._validate_answer_access(applet_id, answer_id)
         answer = await AnswersCRUD(self.session).get_by_id(answer_id)
         pk = self._generate_history_id(answer.version)
-        await self._validate_activity_for_assessment(pk(schema.activity_id))
         assessment = await AnswerItemsCRUD(self.session).get_assessment(
             answer_id, self.user_id
         )
@@ -476,12 +475,8 @@ class AnswerService:
                     item_ids=list(map(str, schema.item_ids)),
                     user_public_key=schema.reviewer_public_key,
                     is_assessment=True,
-                    start_datetime=datetime.datetime.fromtimestamp(
-                        schema.start_time
-                    ),
-                    end_datetime=datetime.datetime.fromtimestamp(
-                        schema.end_time
-                    ),
+                    start_datetime=datetime.datetime.now(),
+                    end_datetime=datetime.datetime.now(),
                 )
             )
         else:
@@ -494,12 +489,8 @@ class AnswerService:
                     item_ids=list(map(str, schema.item_ids)),
                     user_public_key=schema.reviewer_public_key,
                     is_assessment=True,
-                    start_datetime=datetime.datetime.fromtimestamp(
-                        schema.start_time
-                    ),
-                    end_datetime=datetime.datetime.fromtimestamp(
-                        schema.end_time
-                    ),
+                    start_datetime=now,
+                    end_datetime=now,
                     created_at=now,
                     updated_at=now,
                 )
