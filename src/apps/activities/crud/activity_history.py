@@ -24,7 +24,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query: Query = select(ActivityHistorySchema)
         query = query.where(ActivityHistorySchema.applet_id == id_version)
         query = query.where(
-            ActivityHistorySchema.is_assessment == False  # noqa: E712
+            ActivityHistorySchema.is_reviewable == False  # noqa: E712
         )
         query = query.order_by(ActivityHistorySchema.order.asc())
         result = await self._execute(query)
@@ -36,10 +36,10 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query: Query = select(ActivityHistorySchema)
         query = query.where(ActivityHistorySchema.applet_id == id_version)
         query = query.where(
-            ActivityHistorySchema.is_assessment == False  # noqa
+            ActivityHistorySchema.is_reviewable == False  # noqa
         )
         query = query.where(
-            ActivityHistorySchema.is_assessment == False  # noqa: E712
+            ActivityHistorySchema.is_reviewable == False  # noqa: E712
         )
         query = query.order_by(ActivityHistorySchema.order.asc())
         result = await self._execute(query)

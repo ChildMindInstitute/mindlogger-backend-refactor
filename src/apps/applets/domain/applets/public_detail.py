@@ -47,7 +47,6 @@ class Activity(PublicModel):
     items: list[ActivityItem] = Field(default_factory=list)
     scores_and_reports: ScoresAndReports | None = None
     subscale_setting: SubscaleSetting | None = None
-    is_assessment: bool
     is_performance_task: bool = False
     performance_task_type: PerformanceTaskType | None = None
 

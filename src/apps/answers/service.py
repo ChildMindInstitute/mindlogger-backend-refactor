@@ -409,7 +409,7 @@ class AnswerService:
             self.session
         ).get_applets_assessments(pk(applet_id))
         if len(activity_items) == 0:
-            return AssessmentAnswer()
+            return AssessmentAnswer(items=activity_items)
 
         assessment_answer = await AnswerItemsCRUD(self.session).get_assessment(
             answer_id, self.user_id
@@ -510,7 +510,7 @@ class AnswerService:
             activity_history_id
         )
 
-        if not schema.is_assessment:
+        if not schema.is_reviewable:
             raise ActivityIsNotAssessment()
 
     async def get_export_data(

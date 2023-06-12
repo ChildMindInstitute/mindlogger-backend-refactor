@@ -235,7 +235,7 @@ class ActivityService:
         self, applet_id: uuid.UUID, language: str
     ) -> list[ActivitySingleLanguageDetail]:
         schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
-            applet_id
+            applet_id, is_reviewable=False
         )
         activities = []
         for schema in schemas:
@@ -308,7 +308,6 @@ class ActivityService:
                 is_hidden=schema.is_hidden,
                 scores_and_reports=schema.scores_and_reports,
                 subscale_setting=schema.subscale_setting,
-                is_assessment=schema.is_assessment,
             )
             activity_map[activity.id] = activity
             activities.append(activity)

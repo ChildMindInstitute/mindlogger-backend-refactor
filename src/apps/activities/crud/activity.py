@@ -26,10 +26,12 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         await self._execute(query)
 
     async def get_by_applet_id(
-        self, applet_id: uuid.UUID
+        self, applet_id: uuid.UUID, is_reviewable=None
     ) -> list[ActivitySchema]:
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.applet_id == applet_id)
+        if isinstance(is_reviewable, bool):
+            query = query.where(ActivitySchema.is_reviewable == is_reviewable)
         query = query.order_by(ActivitySchema.order.asc())
         result = await self._execute(query)
         return result.scalars().all()
