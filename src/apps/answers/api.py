@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import Body, Depends
+from pydantic import parse_obj_as
 
 from apps.answers.domain import (
     ActivityAnswerPublic,
@@ -8,6 +9,7 @@ from apps.answers.domain import (
     AnswerNote,
     AnswerNoteDetailPublic,
     AnswerReviewPublic,
+    AppletActivityAnswerPublic,
     AppletAnswerCreate,
     AssessmentAnswerCreate,
     AssessmentAnswerPublic,
@@ -18,6 +20,7 @@ from apps.answers.domain import (
 from apps.answers.filters import (
     AnswerExportFilters,
     AnswerIdentifierVersionFilter,
+    AppletActivityAnswerFilter,
     AppletActivityFilter,
     AppletSubmitDateFilter,
 )
@@ -86,6 +89,29 @@ async def applet_activities_list(
             for activity in activities
         ],
         count=len(activities),
+    )
+
+
+async def applet_activity_answers_list(
+    applet_id: uuid.UUID,
+    activity_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    query_params: QueryParams = Depends(
+        parse_query_params(AppletActivityAnswerFilter)
+    ),
+) -> ResponseMulti[AppletActivityAnswerPublic]:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(
+            applet_id
+        )
+        answers = await AnswerService(session, user.id).get_activity_answers(
+            applet_id, activity_id, query_params
+        )
+    return ResponseMulti(
+        result=parse_obj_as(list[AppletActivityAnswerPublic], answers),
+        count=len(answers),
     )
 
 

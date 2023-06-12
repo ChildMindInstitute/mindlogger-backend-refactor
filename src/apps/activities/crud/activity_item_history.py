@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.orm import Query
 
@@ -5,6 +7,7 @@ from apps.activities.db.schemas import (
     ActivityHistorySchema,
     ActivityItemHistorySchema,
 )
+from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
 
 __all__ = ["ActivityItemHistoriesCRUD"]
@@ -96,6 +99,31 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         )
         query = query.where(
             ActivityHistorySchema.is_reviewable == True  # noqa: E712
+        )
+        query = query.order_by(ActivityItemHistorySchema.order.asc())
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
+    async def get_activity_items(
+        self, activity_id: uuid.UUID, versions: list[str] | None
+    ) -> list[ActivityItemHistorySchema]:
+        query: Query = select(ActivityItemHistorySchema)
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == ActivityItemHistorySchema.activity_id,
+        )
+        query = query.where(ActivityHistorySchema.id == activity_id)
+        if versions:
+            query = query.join(
+                AppletHistorySchema,
+                AppletHistorySchema.id_version
+                == ActivityHistorySchema.applet_id,
+            )
+            query = query.where(AppletHistorySchema.version.in_(versions))
+        query = query.where(
+            ActivityHistorySchema.is_reviewable == False  # noqa
         )
         query = query.order_by(ActivityItemHistorySchema.order.asc())
         db_result = await self._execute(query)

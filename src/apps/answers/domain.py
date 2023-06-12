@@ -44,14 +44,14 @@ ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
 
 
 class ItemAnswerCreate(InternalModel):
-    answer: str
+    answer: str | None
     events: str | None
-    item_ids: list[uuid.UUID]
+    item_ids: list[uuid.UUID] | None
     identifier: str | None
     scheduled_time: int | None
     start_time: int
     end_time: int
-    user_public_key: str
+    user_public_key: str | None
 
     @validator("item_ids")
     def convert_item_ids(cls, value: list[uuid.UUID]):
@@ -69,7 +69,7 @@ class AppletAnswerCreate(InternalModel):
     submit_id: uuid.UUID
     flow_id: uuid.UUID | None = None
     activity_id: uuid.UUID
-    answer: ItemAnswerCreate | None
+    answer: ItemAnswerCreate
     created_at: int | None
 
 
@@ -116,6 +116,18 @@ class ActivityAnswer(InternalModel):
     items: list[PublicActivityItemFull] = Field(default_factory=list)
 
 
+class AppletActivityAnswer(InternalModel):
+    answer_id: uuid.UUID | None
+    version: str | None
+    user_public_key: str | None
+    answer: str | None
+    events: str | None
+    item_ids: list[str] = Field(default_factory=list)
+    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    start_datetime: datetime.datetime | None
+    end_datetime: datetime.datetime | None
+
+
 class AssessmentAnswer(InternalModel):
     reviewer_public_key: str | None
     answer: str | None
@@ -144,6 +156,18 @@ class ActivityAnswerPublic(PublicModel):
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
+
+
+class AppletActivityAnswerPublic(PublicModel):
+    answer_id: uuid.UUID
+    version: str
+    user_public_key: str | None
+    answer: str | None
+    events: str | None
+    item_ids: list[str] = Field(default_factory=list)
+    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    start_datetime: datetime.datetime
+    end_datetime: datetime.datetime
 
 
 class ReviewerPublic(PublicModel):

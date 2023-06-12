@@ -1,12 +1,33 @@
 import uuid
 
-from sqlalchemy import delete, select
+from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import Query
 
+from apps.activities.db.schemas import ActivityHistorySchema
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import AnswerReview
+from apps.shared.filtering import Comparisons, FilterField, Filtering
+from apps.shared.query_params import QueryParams
 from apps.users import UserSchema
 from infrastructure.database.crud import BaseCRUD
+
+
+class _ActivityAnswerFilter(Filtering):
+    respondent_id = FilterField(AnswerSchema.respondent_id)
+    from_datetime = FilterField(
+        AnswerItemSchema.start_datetime, Comparisons.GREAT_OR_EQUAL
+    )
+    to_datetime = FilterField(
+        AnswerItemSchema.end_datetime, Comparisons.LESS_OR_EQUAL
+    )
+    identifiers = FilterField(AnswerItemSchema.identifier, Comparisons.IN)
+    versions = FilterField(AnswerSchema.version, Comparisons.IN)
+
+    def prepare_identifiers(self, value: str):
+        return value.split(",")
+
+    def prepare_versions(self, value: str):
+        return value.split(",")
 
 
 class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
@@ -109,3 +130,33 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
 
         db_result = await self._execute(query)
         return db_result.scalars().first()
+
+    async def get_applet_answers_by_activity_id(
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        filters: QueryParams,
+    ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
+        query: Query = select(AnswerSchema, AnswerItemSchema)
+        query = query.join(
+            AnswerItemSchema,
+            and_(
+                AnswerItemSchema.answer_id == AnswerSchema.id,
+                AnswerItemSchema.is_assessment == False,  # noqa
+            ),
+            isouter=True,
+        )
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == AnswerSchema.activity_history_id,
+        )
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(ActivityHistorySchema.id == activity_id)
+        if filters.filters:
+            query = query.where(
+                *_ActivityAnswerFilter().get_clauses(**filters.filters)
+            )
+        db_result = await self._execute(query)
+
+        return db_result.all()
