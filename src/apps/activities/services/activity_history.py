@@ -43,6 +43,13 @@ class ActivityHistoryService:
                     is_reviewable=activity.is_reviewable,
                     response_is_editable=activity.response_is_editable,
                     order=activity.order,
+                    is_hidden=activity.is_hidden,
+                    scores_and_reports=activity.scores_and_reports.dict()
+                    if activity.scores_and_reports
+                    else None,
+                    subscale_setting=activity.subscale_setting.dict()
+                    if activity.subscale_setting
+                    else None,
                 )
             )
 
