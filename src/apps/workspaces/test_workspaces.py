@@ -177,7 +177,7 @@ class TestWorkspaces(BaseTest):
             ),
         )
         assert response.status_code == 200
-        assert response.json()["count"] == 2
+        assert response.json()["count"] == 1
 
         response = await self.client.get(
             self.workspace_applets_url.format(

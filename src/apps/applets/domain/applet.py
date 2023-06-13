@@ -84,6 +84,7 @@ class AppletSingleLanguageInfo(AppletFetchBase, InternalModel):
     description: str  # type: ignore[assignment]
     about: str  # type: ignore[assignment]
     theme: Theme | None
+    is_pinned: bool = False
 
 
 class AppletSingleLanguageInfoPublic(AppletFetchBase, PublicModel):

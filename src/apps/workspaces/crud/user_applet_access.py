@@ -10,11 +10,13 @@ from sqlalchemy import (
     delete,
     distinct,
     exists,
+    false,
     func,
     literal_column,
     or_,
     select,
     text,
+    true,
     update,
 )
 from sqlalchemy.dialects.postgresql import UUID, aggregate_order_by
@@ -24,6 +26,7 @@ from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
 
 from apps.applets.db.schemas import AppletSchema
+from apps.folders.db.schemas import FolderAppletSchema
 from apps.schedule.db.schemas import EventSchema, UserEventsSchema
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.ordering import Ordering
@@ -151,22 +154,48 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         folder_applet_query: Query,
         folder_id: uuid.UUID | None,
     ) -> list[AppletSchema]:
-        query: Query = select(AppletSchema)
+        if folder_id:
+            is_pinned_var = func.coalesce(
+                FolderAppletSchema.pinned_at, func.now()
+            )
+            query: Query = select(
+                AppletSchema,
+                case(
+                    (FolderAppletSchema.pinned_at != None, true()),  # noqa
+                    else_=false(),
+                ),
+            )
+            query = query.where(AppletSchema.id.in_(folder_applet_query))
+            query = query.join(
+                FolderAppletSchema,
+                and_(
+                    FolderAppletSchema.applet_id == AppletSchema.id,
+                    FolderAppletSchema.folder_id == folder_id,
+                ),
+                isouter=True,
+            )
+            query = query.order_by(is_pinned_var.desc())
+            query = query.group_by(
+                AppletSchema.id,
+                AppletSchema.display_name,
+                AppletSchema.created_at,
+                FolderAppletSchema.pinned_at,
+            )
+        else:
+            query = select(AppletSchema, false())
+            query = query.where(AppletSchema.id.notin_(folder_applet_query))
+            query = query.group_by(
+                AppletSchema.id,
+                AppletSchema.display_name,
+                AppletSchema.created_at,
+            )
+
         query = query.join(
             UserAppletAccessSchema,
             UserAppletAccessSchema.applet_id == AppletSchema.id,
         )
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
-        if folder_id:
-            query = query.where(AppletSchema.id.in_(folder_applet_query))
-        else:
-            query = query.where(AppletSchema.id.notin_(folder_applet_query))
-        query = query.group_by(
-            AppletSchema.id,
-            AppletSchema.display_name,
-            AppletSchema.created_at,
-        )
 
         if query_params.filters:
             query = query.where(
@@ -184,7 +213,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
 
         applets = []
-        for applet_schema in db_result.scalars().all():
+        for applet_schema, is_pinned in db_result.all():
+            applet_schema.is_pinned = is_pinned
             applets.append(applet_schema)
         return applets
 
@@ -511,7 +541,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 func.array_agg(
                     func.json_build_object(
                         text("'applet_id'"), AppletSchema.id,
-                        text("'applet_display_name'"), AppletSchema.display_name,  # noqa: E501
+                        text("'applet_display_name'"),
+                        AppletSchema.display_name,  # noqa: E501
                         text("'applet_image'"), AppletSchema.image,
                         text("'access_id'"), UserAppletAccessSchema.id,
                         text("'respondent_nickname'"), field_nickname,
@@ -627,9 +658,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     aggregate_order_by(
                         func.json_build_object(
                             text("'applet_id'"), AppletSchema.id,
-                            text("'applet_display_name'"), AppletSchema.display_name,  # noqa: E501
+                            text("'applet_display_name'"),
+                            AppletSchema.display_name,  # noqa: E501
                             text("'applet_image'"), AppletSchema.image,
-                            text("'access_id'"), UserAppletAccessSchema.id,  # noqa: E501
+                            text("'access_id'"), UserAppletAccessSchema.id,
+                            # noqa: E501
                             text("'role'"), UserAppletAccessSchema.role,
                             text("'encryption'"), AppletSchema.encryption
                         ),
