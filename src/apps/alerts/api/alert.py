@@ -1,7 +1,7 @@
 import uuid
 from copy import deepcopy
 
-from fastapi import Body, Depends
+from fastapi import Body, Depends, WebSocket
 
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
@@ -74,6 +74,13 @@ async def alert_get_all_by_applet_id(
         ],
         count=count,
     )
+
+
+async def ws_alert_get_all_by_applet_id(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        data = await websocket.receive_text()
+        await websocket.send_text(f"Message text was: {data}")
 
 
 async def alert_update_status_by_id(

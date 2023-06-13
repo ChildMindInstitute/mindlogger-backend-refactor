@@ -5,6 +5,7 @@ from apps.alerts.api.alert import (
     alert_get_all_by_applet_id,
     alert_update_status_by_id,
     alerts_create,
+    ws_alert_get_all_by_applet_id,
 )
 from apps.alerts.api.alert_config import (
     alert_config_create,
@@ -114,3 +115,6 @@ router.put(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(alert_update_status_by_id)
+
+# Receiving Alerts with WebSockets
+router.websocket("/{applet_id}")(ws_alert_get_all_by_applet_id)
