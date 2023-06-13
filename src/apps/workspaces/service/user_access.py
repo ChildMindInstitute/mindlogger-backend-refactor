@@ -109,6 +109,7 @@ class UserAccessService:
                     updated_at=schema.updated_at,
                     retention_period=schema.retention_period,
                     retention_type=schema.retention_type,
+                    is_pinned=getattr(schema, "is_pinned", False),
                 )
             )
         return applets
