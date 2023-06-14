@@ -1,7 +1,10 @@
 import uuid
 from copy import deepcopy
+from time import sleep
+from typing import Annotated
 
-from fastapi import Body, Depends, WebSocket
+from fastapi import Body, Depends, WebSocket, Cookie, Query, status
+from websockets.exceptions import WebSocketException
 
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
@@ -76,10 +79,24 @@ async def alert_get_all_by_applet_id(
     )
 
 
-async def ws_alert_get_all_by_applet_id(websocket: WebSocket):
+# async def get_cookie_or_token(
+#     websocket: WebSocket,
+#     session: Annotated[str | None, Cookie()] = None,
+#     token: Annotated[str | None, Query()] = None,
+# ):
+#     if session is None and token is None:
+#         raise WebSocketException(status.WS_1008_POLICY_VIOLATION)
+#     return session or token
+
+
+async def ws_alert_get_all_by_applet_id(
+    websocket: WebSocket,
+    # user: User = Depends(get_current_user)
+):
     await websocket.accept()
     while True:
-        data = await websocket.receive_text()
+
+        data = "test"
         await websocket.send_text(f"Message text was: {data}")
 
 
