@@ -82,27 +82,6 @@ async def alert_get_all_by_applet_id(
     )
 
 
-# async def get_cookie_or_token(
-#     websocket: WebSocket,
-#     session: Annotated[str | None, Cookie()] = None,
-#     token: Annotated[str | None, Query()] = None,
-# ):
-#     if session is None and token is None:
-#         raise WebSocketException(status.WS_1008_POLICY_VIOLATION)
-#     return session or token
-
-
-async def ws_alert_get_all_by_applet_id(
-    websocket: WebSocket,
-    # user: User = Depends(get_current_user)
-):
-    await websocket.accept()
-    while True:
-
-        data = "test"
-        await websocket.send_text(f"Message text was: {data}")
-
-
 async def alert_update_status_by_id(
     alert_id: uuid.UUID,
     user: User = Depends(get_current_user),
@@ -158,10 +137,12 @@ async def ws_alert_get_all_by_applet_id(
         )
         for instance in instances
     }
-    response = ResponseMulti(result=instances, count=count)
+    responses: ResponseMulti[AlertPublic] = ResponseMulti(
+        result=instances, count=count
+    )
 
     with suppress(ConnectionClosed):
-        await websocket.send_json(json.loads(response.json()))
+        await websocket.send_json(json.loads(responses.json()))
 
     # RUN THE INF LOOP FOR TRACKING NEW ALERTS IN THE DATABASE
     while True:
@@ -182,7 +163,7 @@ async def ws_alert_get_all_by_applet_id(
 
         for instance in instances:
             if instance.id not in last_sent_alerts.keys():
-                response = Response(result=instance)
+                response: Response[AlertPublic] = Response(result=instance)
                 last_sent_alerts[instance.id] = AlertWSInternal(
                     id=instance.id, is_watched=instance.is_watched
                 )
@@ -193,13 +174,8 @@ async def ws_alert_get_all_by_applet_id(
 
                 continue
 
-            if (
-                instance.is_watched
-                != last_sent_alerts.get[instance.id].is_watched
-            ):
-                last_sent_alerts.get[
-                    instance.id
-                ].is_watched = instance.is_watched
+            if instance.is_watched != last_sent_alerts[instance.id].is_watched:
+                last_sent_alerts[instance.id].is_watched = instance.is_watched
 
                 response = Response(result=instance)
 
