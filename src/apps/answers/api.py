@@ -16,6 +16,7 @@ from apps.answers.domain import (
     PublicAnswerDates,
     PublicAnsweredAppletActivity,
     PublicAnswerExport,
+    VersionPublic,
 )
 from apps.answers.filters import (
     AnswerExportFilters,
@@ -207,9 +208,9 @@ async def applet_activity_identifiers_retrieve(
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
-        versions = await AnswerService(session, user.id).get_activity_versions(
-            activity_id, query_params
-        )
+        versions = await AnswerService(
+            session, user.id
+        ).get_activity_identifiers(activity_id, query_params)
     return ResponseMulti[str](result=versions, count=len(versions))
 
 
@@ -221,16 +222,18 @@ async def applet_activity_versions_retrieve(
     ),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-) -> ResponseMulti[str]:
+) -> ResponseMulti[VersionPublic]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
-        identifiers = await AnswerService(
-            session, user.id
-        ).get_activity_versions(activity_id, query_params)
-    return ResponseMulti[str](result=identifiers, count=len(identifiers))
+        versions = await AnswerService(session, user.id).get_activity_versions(
+            activity_id, query_params
+        )
+    return ResponseMulti(
+        result=parse_obj_as(list[VersionPublic], versions), count=len(versions)
+    )
 
 
 async def applet_activity_assessment_create(

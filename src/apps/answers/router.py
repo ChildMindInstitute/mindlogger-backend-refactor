@@ -8,6 +8,7 @@ from apps.answers.api import (
     applet_activity_assessment_create,
     applet_activity_assessment_retrieve,
     applet_activity_identifiers_retrieve,
+    applet_activity_versions_retrieve,
     applet_answer_reviews_retrieve,
     applet_answers_export,
     applet_submit_date_list,
@@ -146,7 +147,7 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(applet_activity_identifiers_retrieve)
+)(applet_activity_versions_retrieve)
 
 router.post(
     "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes",
