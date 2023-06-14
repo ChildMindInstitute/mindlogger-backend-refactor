@@ -1,11 +1,8 @@
 import asyncio
 import uuid
 from copy import deepcopy
-from time import sleep
-from typing import Annotated
 
-from fastapi import Body, Depends, WebSocket, Cookie, Query, status
-from websockets.exceptions import WebSocketException
+from fastapi import Body, Depends, WebSocket
 
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema

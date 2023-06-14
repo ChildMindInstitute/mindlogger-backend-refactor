@@ -117,4 +117,4 @@ router.put(
 )(alert_update_status_by_id)
 
 # Receiving Alerts with WebSockets
-router.websocket("/{applet_id}/ws")(ws_alert_get_all_by_applet_id)
+router.websocket("/{applet_id}")(ws_alert_get_all_by_applet_id)
