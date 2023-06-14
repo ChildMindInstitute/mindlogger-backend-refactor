@@ -114,6 +114,15 @@ router.get(
     },
 )(applet_activity_answers_list)
 
+router.post(
+    "/applet/{applet_id}/activities/{activity_id}/answers/latest_report",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_activity_answers_list)
+
 router.get(
     "/applet/{applet_id}/dates",
     status_code=status.HTTP_200_OK,

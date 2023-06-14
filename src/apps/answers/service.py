@@ -3,6 +3,7 @@ import datetime
 import uuid
 from collections import defaultdict
 
+import requests
 from pydantic import parse_obj_as
 
 from apps.activities.crud import (
@@ -630,6 +631,21 @@ class AnswerService:
 
         return activity_answers
 
+    async def get_summary_latest_report(
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+    ):
+        answer = await AnswersCRUD(self.session).get_latest_answer(
+            applet_id, activity_id, respondent_id
+        )
+        if not answer:
+            return None
+        report = await self._create_report(applet_id, answer.answer)
+
+        return report
+
     async def get_summary_activities(
         self, applet_id: uuid.UUID
     ) -> list[SummaryActivity]:
@@ -637,3 +653,13 @@ class AnswerService:
             self.session
         ).get_by_applet_id(applet_id)
         return parse_obj_as(list[SummaryActivity], activities)
+
+    async def _create_report(self, applet_id: uuid.UUID, answer: str):
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        url = f"{applet.report_server_ip}/send-pdf-report?appletId={applet_id}"
+        response = requests.post(
+            url,
+            data=dict(responses=answer, now=datetime.date.today().isoformat()),
+            headers={"Token": ""},
+        )
+        return response

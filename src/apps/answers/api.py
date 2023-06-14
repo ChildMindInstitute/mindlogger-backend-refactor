@@ -135,6 +135,24 @@ async def applet_activity_answers_list(
     )
 
 
+async def summary_latest_report_retrieve(
+    applet_id: uuid.UUID,
+    activity_id: uuid.UUID,
+    respondent_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(
+            applet_id
+        )
+        report = await AnswerService(
+            session, user.id
+        ).get_summary_latest_report(applet_id, activity_id, respondent_id)
+    return Response()
+
+
 async def applet_submit_date_list(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),

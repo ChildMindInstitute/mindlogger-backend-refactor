@@ -299,3 +299,27 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             results.append(Version(version=version, created_at=created_at))
 
         return results
+
+    async def get_latest_answer(
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        respond_id: uuid.UUID,
+    ) -> AnswerItemSchema | None:
+        query: Query = select(AnswerItemSchema)
+        query = query.join(
+            AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
+        )
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == AnswerSchema.activity_history_id,
+        )
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(ActivityHistorySchema.id == activity_id)
+        query = query.where(AnswerItemSchema.respondent_id == respond_id)
+        query = query.order_by(AnswerSchema.created_at.dec())
+        query = query.limit(1)
+
+        db_result = await self._execute(query)
+        return db_result.scalars().first()
