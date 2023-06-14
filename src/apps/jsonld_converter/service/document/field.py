@@ -14,7 +14,8 @@ from apps.activities.domain.response_type_config import (
     DateConfig,
     DrawingConfig,
     GeolocationConfig,
-    MessageConfig,
+    GyroscopeConfig, GyroscopeGeneralSettings, GyroscopePracticeSettings,
+    GyroscopeTestSettings, MessageConfig,
     MultiSelectionConfig,
     MultiSelectionRowsConfig,
     NumberSelectionConfig,
@@ -1084,3 +1085,42 @@ class ReproFieldABTrailIpad(ReproFieldBase):
 class ReproFieldABTrailMobile(ReproFieldABTrailIpad):
     RESPONSE_TYPE = ResponseType.ABTRAILSMOBILE
     CFG_TYPE = ABTrailsMobileConfig
+
+
+class ReproFieldStabilityTracker(ReproFieldBase):
+    INPUT_TYPE = "stabilityTracker"
+    RESPONSE_TYPE = ResponseType.GYROSCOPE
+    CFG_TYPE = GyroscopeConfig
+
+    ld_description: str | None = None
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+    async def _load_from_processed_doc(
+        self, processed_doc: dict, base_url: str | None = None
+    ):
+        await super()._load_from_processed_doc(processed_doc, base_url)
+        self.ld_description = self.attr_processor.get_translation(processed_doc, "schema:description", self.lang)
+
+    def _build_config(self, _cls: Type | None, **attrs):
+        config = GyroscopeConfig(
+            name=self.ld_pref_label or self.ld_alt_label,  # TODO
+            description=self.ld_description,
+            is_hidden=self.ld_is_vis is False,  # TODO
+            general=GyroscopeGeneralSettings(
+                instruction='',
+                number_of_trials=2,
+                length_of_test=3,
+                lambda_slope=4,
+            ),
+            practice=GyroscopePracticeSettings(
+                instruction=''
+            ),
+            test=GyroscopeTestSettings(
+                instruction=''
+            )
+        )
+
+        return config
