@@ -3,6 +3,8 @@ import datetime
 import uuid
 from collections import defaultdict
 
+from pydantic import parse_obj_as
+
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
     ActivityItemHistoriesCRUD,
@@ -24,7 +26,6 @@ from apps.answers.db.schemas import (
 from apps.answers.domain import (
     ActivityAnswer,
     AnswerDate,
-    AnsweredAppletActivity,
     AnswerExport,
     AnswerNoteDetail,
     AnswerReview,
@@ -32,6 +33,8 @@ from apps.answers.domain import (
     AppletAnswerCreate,
     AssessmentAnswer,
     AssessmentAnswerCreate,
+    ReviewActivity,
+    SummaryActivity,
     Version,
 )
 from apps.answers.errors import (
@@ -219,26 +222,26 @@ class AnswerService:
 
         await AnswerItemsCRUD(self.session).create(item_answer)
 
-    async def applet_activities(
+    async def get_review_activities(
         self,
         applet_id: uuid.UUID,
         respondent_id: uuid.UUID,
         created_date: datetime.date,
-    ) -> list[AnsweredAppletActivity]:
+    ) -> list[ReviewActivity]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
         answers = await AnswersCRUD(
             self.session
         ).get_respondents_answered_activities_by_applet_id(
             respondent_id, applet_id, created_date
         )
-        activity_map: dict[str, AnsweredAppletActivity] = dict()
+        activity_map: dict[str, ReviewActivity] = dict()
         if not answers:
             applet = await AppletsCRUD(self.session).get_by_id(applet_id)
             activities = await ActivityHistoryService(
                 self.session, applet_id, applet.version
             ).activities_list()
             for activity in activities:
-                activity_map[str(activity.id)] = AnsweredAppletActivity(
+                activity_map[str(activity.id)] = ReviewActivity(
                     id=activity.id, name=activity.name
                 )
         else:
@@ -249,7 +252,7 @@ class AnswerService:
                     self.session, applet_id, answer.version
                 ).activities_list()
                 for activity in activities:
-                    activity_map[str(activity.id)] = AnsweredAppletActivity(
+                    activity_map[str(activity.id)] = ReviewActivity(
                         id=activity.id, name=activity.name
                     )
 
@@ -552,10 +555,9 @@ class AnswerService:
     async def get_activity_versions(
         self,
         activity_id: uuid.UUID,
-        filters: QueryParams,
     ) -> list[Version]:
         return await AnswersCRUD(self.session).get_versions_by_activity_id(
-            activity_id, filters
+            activity_id
         )
 
     async def get_activity_answers(
@@ -588,3 +590,11 @@ class AnswerService:
             activity_answers.append(activity_answer)
 
         return activity_answers
+
+    async def get_summary_activities(
+        self, applet_id: uuid.UUID
+    ) -> list[SummaryActivity]:
+        activities = await ActivityHistoriesCRUD(
+            self.session
+        ).get_by_applet_id(applet_id)
+        return parse_obj_as(list[SummaryActivity], activities)
