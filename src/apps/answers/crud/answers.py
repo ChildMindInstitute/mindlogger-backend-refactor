@@ -272,6 +272,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     ) -> list[str]:
         query: Query = select(AnswerItemSchema.identifier)
         query = query.distinct(AnswerItemSchema.identifier)
+        query = query.where(AnswerItemSchema.identifier != None)  # noqa: E711
         query = query.join(
             AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
         )
