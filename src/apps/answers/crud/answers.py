@@ -28,7 +28,7 @@ from apps.activities.domain.activity_item_history import ActivityItemHistory
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.alerts.errors import AnswerNotFoundError
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
-from apps.answers.domain import RespondentAnswerData
+from apps.answers.domain import RespondentAnswerData, Version
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.query_params import QueryParams
 from apps.users import UserSchema
@@ -273,9 +273,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query: Query = select(AnswerItemSchema.identifier)
         query = query.distinct(AnswerItemSchema.identifier)
         query = query.join(
+            AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
+        )
+        query = query.join(
             ActivityHistorySchema,
             ActivityHistorySchema.id_version
-            == AnswerItemSchema.activity_history_id,
+            == AnswerSchema.activity_history_id,
         )
         query = query.where(ActivityHistorySchema.id == activity_id)
         if query_params.filters:
@@ -289,10 +292,17 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_versions_by_activity_id(
         self, activity_id: uuid.UUID, query_params: QueryParams
-    ) -> list[str]:
-        query: Query = select(AnswerSchema.version)
+    ) -> list[Version]:
+        query: Query = select(
+            AnswerSchema.version, ActivityHistorySchema.created_at
+        )
         query = query.join(
             AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
+        )
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == AnswerSchema.activity_history_id,
         )
         query = query.distinct(AnswerSchema.version)
         query = query.where(ActivityHistorySchema.id == activity_id)
@@ -302,5 +312,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
 
         db_result = await self._execute(query)
+        results = []
+        for version, created_at in db_result.all():
+            results.append(Version(version=version, created_at=created_at))
 
-        return db_result.scalars().all()
+        return results

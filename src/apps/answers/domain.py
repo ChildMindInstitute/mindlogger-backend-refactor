@@ -272,3 +272,13 @@ class AnswerExport(InternalModel):
 class PublicAnswerExport(PublicModel):
     answers: list[RespondentAnswerDataPublic] = Field(default_factory=list)
     activities: list[ActivityHistoryExport] = Field(default_factory=list)
+
+
+class Version(InternalModel):
+    version: str
+    created_at: datetime.datetime
+
+
+class VersionPublic(PublicModel):
+    version: str
+    created_at: datetime.datetime

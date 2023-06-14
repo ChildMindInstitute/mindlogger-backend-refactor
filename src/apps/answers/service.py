@@ -32,6 +32,7 @@ from apps.answers.domain import (
     AppletAnswerCreate,
     AssessmentAnswer,
     AssessmentAnswerCreate,
+    Version,
 )
 from apps.answers.errors import (
     ActivityDoesNotHaveItem,
@@ -552,7 +553,7 @@ class AnswerService:
         self,
         activity_id: uuid.UUID,
         filters: QueryParams,
-    ) -> list[str]:
+    ) -> list[Version]:
         return await AnswersCRUD(self.session).get_versions_by_activity_id(
             activity_id, filters
         )

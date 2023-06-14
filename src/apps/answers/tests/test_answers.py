@@ -1,6 +1,8 @@
 import datetime
 import json
 
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -983,6 +985,7 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()["result"]
         assert not data["answers"]
 
+    @pytest.mark.main
     @rollback
     async def test_get_identifiers(self):
         await self.client.login(
@@ -1038,7 +1041,9 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["count"] == 1
+        assert response.json()["result"][0] == "some identifier"
 
+    @pytest.mark.main
     @rollback
     async def test_get_versions(self):
         await self.client.login(
@@ -1093,5 +1098,6 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         assert response.status_code == 200
-        assert response.json()["result"][0] == "1.0.0"
+        assert response.json()["result"][0]["version"] == "1.0.0"
+        assert response.json()["result"][0]["createdAt"]
         assert response.json()["count"] == 1
