@@ -14,8 +14,9 @@ from apps.answers.domain import (
     AssessmentAnswerCreate,
     AssessmentAnswerPublic,
     PublicAnswerDates,
-    PublicAnsweredAppletActivity,
     PublicAnswerExport,
+    PublicReviewActivity,
+    PublicSummaryActivity,
     VersionPublic,
 )
 from apps.answers.filters import (
@@ -68,27 +69,45 @@ async def create_anonymous_answer(
     return
 
 
-async def applet_activities_list(
+async def review_activity_list(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     query_params: QueryParams = Depends(
         parse_query_params(AppletActivityFilter)
     ),
-) -> ResponseMulti[PublicAnsweredAppletActivity]:
+) -> ResponseMulti[PublicReviewActivity]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
-        activities = await AnswerService(session, user.id).applet_activities(
-            applet_id, **query_params.filters
-        )
+        activities = await AnswerService(
+            session, user.id
+        ).get_review_activities(applet_id, **query_params.filters)
     return ResponseMulti(
         result=[
-            PublicAnsweredAppletActivity.from_orm(activity)
-            for activity in activities
+            PublicReviewActivity.from_orm(activity) for activity in activities
         ],
+        count=len(activities),
+    )
+
+
+async def summary_activity_list(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> ResponseMulti[PublicSummaryActivity]:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(
+            applet_id
+        )
+        activities = await AnswerService(
+            session, user.id
+        ).get_summary_activities(applet_id)
+    return ResponseMulti(
+        result=parse_obj_as(list[PublicSummaryActivity], activities),
         count=len(activities),
     )
 
@@ -217,9 +236,6 @@ async def applet_activity_identifiers_retrieve(
 async def applet_activity_versions_retrieve(
     applet_id: uuid.UUID,
     activity_id: uuid.UUID,
-    query_params: QueryParams = Depends(
-        parse_query_params(AnswerIdentifierVersionFilter)
-    ),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> ResponseMulti[VersionPublic]:
@@ -229,7 +245,7 @@ async def applet_activity_versions_retrieve(
             applet_id
         )
         versions = await AnswerService(session, user.id).get_activity_versions(
-            activity_id, query_params
+            activity_id
         )
     return ResponseMulti(
         result=parse_obj_as(list[VersionPublic], versions), count=len(versions)

@@ -110,5 +110,33 @@
       "id": "92917a56-d586-4613-b7aa-991f2c4b15b4",
       "display_name": "Applet 4"
     }
+  },
+  {
+    "table": "applet_histories",
+    "fields": {
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "description": {
+        "en": "Patient Health Questionnaire"
+      },
+      "about": {
+        "en": "Patient Health Questionnaire"
+      },
+      "image": "",
+      "watermark": "",
+      "theme_id": null,
+      "version": "2.0.0",
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "report_server_ip": "",
+      "report_public_key": "",
+      "report_recipients": [],
+      "report_include_user_id": false,
+      "report_include_case_id": false,
+      "report_email_body": "",
+      "id_version": "92917a56-d586-4613-b7aa-991f2c4b15b1_2.0.0",
+      "id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
+      "display_name": "Applet 1"
+    }
   }
 ]

@@ -2,7 +2,6 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.answers.api import (
-    applet_activities_list,
     applet_activity_answer_retrieve,
     applet_activity_answers_list,
     applet_activity_assessment_create,
@@ -18,6 +17,8 @@ from apps.answers.api import (
     note_delete,
     note_edit,
     note_list,
+    review_activity_list,
+    summary_activity_list,
 )
 from apps.answers.domain import (
     ActivityAnswerPublic,
@@ -26,8 +27,10 @@ from apps.answers.domain import (
     AppletActivityAnswerPublic,
     AssessmentAnswerPublic,
     PublicAnswerDates,
-    PublicAnsweredAppletActivity,
     PublicAnswerExport,
+    PublicReviewActivity,
+    PublicSummaryActivity,
+    VersionPublic,
 )
 from apps.shared.domain import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -60,14 +63,44 @@ public_router.post(
 )(create_anonymous_answer)
 
 router.get(
-    "/applet/{applet_id}/activities",
+    "/applet/{applet_id}/review/activities",
     status_code=status.HTTP_200_OK,
-    response_model=ResponseMulti[PublicAnsweredAppletActivity],
+    response_model=ResponseMulti[PublicReviewActivity],
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(applet_activities_list)
+)(review_activity_list)
+
+router.get(
+    "/applet/{applet_id}/summary/activities",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[PublicSummaryActivity],
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(summary_activity_list)
+
+router.get(
+    "/applet/{applet_id}/summary/activities/{activity_id}/identifiers",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[str]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_activity_identifiers_retrieve)
+
+router.get(
+    "/applet/{applet_id}/summary/activities/{activity_id}/versions",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[VersionPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_activity_versions_retrieve)
 
 router.get(
     "/applet/{applet_id}/activities/{activity_id}/answers",
@@ -130,25 +163,6 @@ router.post(
     },
 )(applet_activity_assessment_create)
 
-router.get(
-    "/applet/{applet_id}/activities/{activity_id}/identifiers",
-    status_code=status.HTTP_200_OK,
-    responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[str]},
-        **DEFAULT_OPENAPI_RESPONSE,
-        **AUTHENTICATION_ERROR_RESPONSES,
-    },
-)(applet_activity_identifiers_retrieve)
-
-router.get(
-    "/applet/{applet_id}/activities/{activity_id}/versions",
-    status_code=status.HTTP_200_OK,
-    responses={
-        **DEFAULT_OPENAPI_RESPONSE,
-        **AUTHENTICATION_ERROR_RESPONSES,
-    },
-)(applet_activity_versions_retrieve)
-
 router.post(
     "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes",
     status_code=status.HTTP_201_CREATED,
@@ -169,7 +183,9 @@ router.get(
 )(note_list)
 
 router.put(
-    "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}",  # noqa: E501
+    "/applet/{applet_id}/answers/{answer_id}/activities/"
+    "{activity_id}/notes/{note_id}",
+    # noqa: E501
     status_code=status.HTTP_200_OK,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
@@ -178,7 +194,9 @@ router.put(
 )(note_edit)
 
 router.delete(
-    "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}",  # noqa: E501
+    "/applet/{applet_id}/answers/{answer_id}/activities/"
+    "{activity_id}/notes/{note_id}",
+    # noqa: E501
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,

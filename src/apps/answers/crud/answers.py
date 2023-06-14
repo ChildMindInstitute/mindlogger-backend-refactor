@@ -292,7 +292,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return db_result.scalars().all()
 
     async def get_versions_by_activity_id(
-        self, activity_id: uuid.UUID, query_params: QueryParams
+        self, activity_id: uuid.UUID
     ) -> list[Version]:
         query: Query = select(
             AnswerSchema.version, ActivityHistorySchema.created_at
@@ -307,11 +307,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
         query = query.distinct(AnswerSchema.version)
         query = query.where(ActivityHistorySchema.id == activity_id)
-        if query_params.filters:
-            query = query.where(
-                *_IdentifierFilter().get_clauses(**query_params.filters)
-            )
-
         db_result = await self._execute(query)
         results = []
         for version, created_at in db_result.all():

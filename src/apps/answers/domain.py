@@ -84,10 +84,15 @@ class AnswerDate(InternalModel):
     answer_id: uuid.UUID
 
 
-class AnsweredAppletActivity(InternalModel):
+class ReviewActivity(InternalModel):
     id: uuid.UUID
     name: str
     answer_dates: list[AnswerDate] = Field(default_factory=list)
+
+
+class SummaryActivity(InternalModel):
+    id: uuid.UUID
+    name: str
 
 
 class PublicAnswerDate(PublicModel):
@@ -95,10 +100,15 @@ class PublicAnswerDate(PublicModel):
     answer_id: uuid.UUID
 
 
-class PublicAnsweredAppletActivity(PublicModel):
+class PublicReviewActivity(PublicModel):
     id: uuid.UUID
     name: str
     answer_dates: list[PublicAnswerDate] = Field(default_factory=list)
+
+
+class PublicSummaryActivity(InternalModel):
+    id: uuid.UUID
+    name: str
 
 
 class PublicAnswerDates(PublicModel):
