@@ -27,8 +27,8 @@ lookups = {
     Comparisons.EQUAL: operator.eq,
     Comparisons.NOT_EQUAL: operator.ne,
     Comparisons.IN: generate_clause("in_"),
-    Comparisons.GREAT_OR_EQUAL: generate_clause("gte"),
-    Comparisons.LESS_OR_EQUAL: generate_clause("lte"),
+    Comparisons.GREAT_OR_EQUAL: operator.ge,
+    Comparisons.LESS_OR_EQUAL: operator.le,
 }
 
 
