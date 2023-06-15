@@ -2,13 +2,20 @@ import uuid
 
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
+from apps.invitations.constants import InvitationStatus
+from apps.invitations.crud import InvitationCRUD
 from apps.invitations.domain import InvitationDetailGeneric
 from apps.users import User, UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
 
-from apps.workspaces.errors import UserAppletAccessNotFound
+from apps.workspaces.domain.user_applet_access import RespondentInfo
+from apps.workspaces.errors import (
+    UserAppletAccessNotFound,
+    UserSecretIdAlreadyExists,
+    UserSecretIdAlreadyExistsInInvitation,
+)
 
 
 class UserAppletAccessService:
@@ -192,15 +199,32 @@ class UserAppletAccessService:
         return roles
 
     async def update_meta(
-        self, respondent_id: uuid.UUID, role: Role, **kwargs
+        self, respondent_id: uuid.UUID, role: Role, schema: RespondentInfo
     ):
         crud = UserAppletAccessCRUD(self.session)
         access = await crud.get(respondent_id, self._applet_id, role)
         if not access:
             raise UserAppletAccessNotFound()
-        for key, val in kwargs.items():
+        await self._validate_secret_user_id(access.id, schema.secret_user_id)
+        for key, val in schema.dict(by_alias=True).items():
             access.meta[key] = val
         await crud.update_meta_by_access_id(access.id, access.meta)
+
+    async def _validate_secret_user_id(
+        self, exclude_id: uuid.UUID, secret_id: str
+    ):
+        access = await UserAppletAccessCRUD(
+            self.session
+        ).get_by_secret_user_id_for_applet(
+            self._applet_id, secret_id, exclude_id
+        )
+        if access:
+            raise UserSecretIdAlreadyExists()
+        invitation = await InvitationCRUD(self.session).get_for_respondent(
+            self._applet_id, secret_id, InvitationStatus.PENDING
+        )
+        if invitation:
+            raise UserSecretIdAlreadyExistsInInvitation()
 
     async def get_admins_role(self) -> Role | None:
         """

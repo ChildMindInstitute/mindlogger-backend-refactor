@@ -418,10 +418,15 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return db_result.scalars().all()
 
     async def get_by_secret_user_id_for_applet(
-        self, applet_id: uuid.UUID, secret_user_id: str
+        self,
+        applet_id: uuid.UUID,
+        secret_user_id: str,
+        exclude_id: uuid.UUID | None = None,
     ) -> UserAppletAccessSchema | None:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        if exclude_id:
+            query = query.where(UserAppletAccessSchema.id != exclude_id)
         query = query.where(
             UserAppletAccessSchema.meta.op("->>")("secretUserId")
             == secret_user_id
