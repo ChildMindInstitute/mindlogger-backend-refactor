@@ -2,7 +2,7 @@ import asyncio
 from typing import Type
 
 from apps.applets.domain.applet_full import AppletFull
-from apps.jsonld_converter.service.base import LdKeyword
+from apps.jsonld_converter.service.base import LdKeyword, str_to_id
 from apps.jsonld_converter.service.export import (
     ActivityExport,
     ActivityFlowExport,
@@ -29,7 +29,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
         )
         doc = {
             LdKeyword.context: self.context,
-            LdKeyword.id: f"_:{self.str_to_id(model.display_name)}",
+            LdKeyword.id: f"_:{str_to_id(model.display_name)}",
             LdKeyword.type: "reproschema:Protocol",
             "skos:prefLabel": model.display_name,
             "skos:altLabel": model.display_name,
@@ -60,9 +60,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
         if model.activities:
             order_cors = []
             for i, activity in enumerate(model.activities):
-                _id = (
-                    f"_:{self.str_to_id(activity.name)}"  # TODO ensure uniques
-                )
+                _id = f"_:{str_to_id(activity.name)}"  # TODO ensure unique
                 _var = f"activity_{i}"  # TODO load from extra if exists
 
                 processor = self.get_supported_processor(activity)
@@ -90,7 +88,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
         if model.activity_flows:
             order_cors = []
             for i, flow in enumerate(model.activity_flows):
-                _id = f"_:{self.str_to_id(flow.name)}"  # TODO ensure unique
+                _id = f"_:{str_to_id(flow.name)}"  # TODO ensure unique
                 _var = f"flow_{i}"  # TODO load from extra if exists
 
                 processor = self.get_supported_processor(flow)

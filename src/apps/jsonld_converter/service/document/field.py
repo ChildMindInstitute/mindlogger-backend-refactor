@@ -2,20 +2,28 @@ import dataclasses
 import uuid
 from abc import ABC, abstractmethod
 from copy import copy, deepcopy
+from functools import lru_cache
 from typing import Type
 
+from pydantic import parse_obj_as
 from pydantic.color import Color
 
 from apps.activities.domain.activity_create import ActivityItemCreate
+from apps.activities.domain.conditions import Condition, ConditionType
 from apps.activities.domain.response_type_config import (
-    ABTrailsIpadConfig, ABTrailsMobileConfig, AdditionalResponseOption,
+    ABTrailsIpadConfig,
+    ABTrailsMobileConfig,
+    AdditionalResponseOption,
     AudioConfig,
     AudioPlayerConfig,
     DateConfig,
     DrawingConfig,
     GeolocationConfig,
-    GyroscopeConfig, GyroscopeGeneralSettings, GyroscopePracticeSettings,
-    GyroscopeTestSettings, MessageConfig,
+    GyroscopeConfig,
+    GyroscopeGeneralSettings,
+    GyroscopePracticeSettings,
+    GyroscopeTestSettings,
+    MessageConfig,
     MultiSelectionConfig,
     MultiSelectionRowsConfig,
     NumberSelectionConfig,
@@ -51,10 +59,14 @@ from apps.activities.domain.response_values import (
     _SingleSelectionValue,
 )
 from apps.jsonld_converter.errors import JsonLDStructureError
+from apps.jsonld_converter.service.base import str_to_id
 from apps.jsonld_converter.service.document.base import (
     CommonFieldsMixin,
     LdDocumentBase,
     LdKeyword,
+)
+from apps.jsonld_converter.service.document.conditional_logic import (
+    ConditionData,
 )
 
 
@@ -99,6 +111,12 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
             _type in ld_types
             and _input_type in cls._get_supported_input_types()
         )
+
+    @property
+    @lru_cache
+    def name(self):
+        name = self.ld_pref_label or self.ld_alt_label
+        return str_to_id(name)
 
     def _get_ld_question(self, doc: dict, drop=False):
         return self.attr_processor.get_translations(
@@ -261,6 +279,14 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
     def _build_response_values(self) -> ResponseValueConfig | None:
         return None
 
+    def resolve_condition(self, condition: ConditionData) -> Condition:
+        """
+        Resolve ConditionData of item to Condition
+        """
+        raise NotImplementedError(
+            f'Condition type "{condition.type}" not supported'
+        )
+
     def export(self) -> ActivityItemCreate:
         cfg_cls = self.CFG_TYPE
         config = self._build_config(cfg_cls)
@@ -270,7 +296,7 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin):
             response_type=self.RESPONSE_TYPE,
             response_values=response_values,
             config=config,
-            name=self.ld_pref_label or self.ld_alt_label,
+            name=self.name,
             is_hidden=self.ld_is_vis is False,
             extra_fields=self.extra,
         )
@@ -421,6 +447,42 @@ class ReproFieldRadio(ReproFieldBase):
         response_values = _cls(options=values)
 
         return response_values
+
+    def resolve_condition(self, condition: ConditionData) -> Condition:
+        if self.is_multiple:
+            # checkbox
+            if condition.type not in (
+                ConditionType.INCLUDES_OPTION,
+                ConditionType.NOT_INCLUDES_OPTION,
+            ):
+                raise NotImplementedError(
+                    f'Condition type "{condition.type}" not supported'
+                )
+
+            _type = condition.type
+
+        else:
+            # radio
+            if condition.type not in (
+                ConditionType.EQUAL,
+                ConditionType.NOT_EQUAL,
+            ):
+                raise NotImplementedError(
+                    f'Condition type "{condition.type}" not supported'
+                )
+
+            _type = (
+                ConditionType.EQUAL_TO_OPTION
+                if condition.type == ConditionType.EQUAL
+                else ConditionType.NOT_EQUAL_TO_OPTION
+            )
+
+        data = dict(
+            item_name=self.name,
+            type=_type,
+            payload=dict(option_id=condition.values[0]),
+        )
+        return parse_obj_as(Condition, data)  # type: ignore[arg-type]
 
     def export(self) -> ActivityItemCreate:
         if self.is_multiple:
@@ -695,6 +757,33 @@ class ReproFieldSlider(ReproFieldSliderBase):
         # fmt: on
 
         return response_values
+
+    def resolve_condition(self, condition: ConditionData) -> Condition:
+        payload = None
+        if condition.type in [
+            ConditionType.EQUAL,
+            ConditionType.NOT_EQUAL,
+            ConditionType.LESS_THAN,
+            ConditionType.GREATER_THAN,
+        ]:
+            payload = dict(value=int(condition.values[0]))
+        elif condition.type in [
+            ConditionType.BETWEEN,
+            ConditionType.OUTSIDE_OF,
+        ]:
+            payload = dict(
+                min_value=int(condition.values[0]),
+                max_value=int(condition.values[1]),
+            )
+
+        if not payload:
+            raise NotImplementedError(
+                f'Condition type "{condition.type}" not supported'
+            )
+
+        data = dict(item_name=self.name, type=condition.type, payload=payload)
+
+        return parse_obj_as(Condition, data)  # type: ignore[arg-type]
 
 
 class ReproFieldSliderStacked(ReproFieldSliderBase):
@@ -1069,13 +1158,16 @@ class ReproFieldABTrailIpad(ReproFieldBase):
         self, processed_doc: dict, base_url: str | None = None
     ):
         await super()._load_from_processed_doc(processed_doc, base_url)
-        self.ld_description = self.attr_processor.get_translation(processed_doc, "schema:description", self.lang)
+        self.ld_description = self.attr_processor.get_translation(
+            processed_doc, "schema:description", self.lang
+        )
 
     def _build_config(self, _cls: Type | None, **attrs):
+        assert _cls is not None
         config = _cls(
             name=self.ld_pref_label or self.ld_alt_label,  # TODO
             description=self.ld_description,
-            image_placeholder='',  # TODO
+            image_placeholder="",  # TODO
             is_hidden=self.ld_is_vis is False,  # TODO
         )
 
@@ -1084,7 +1176,7 @@ class ReproFieldABTrailIpad(ReproFieldBase):
 
 class ReproFieldABTrailMobile(ReproFieldABTrailIpad):
     RESPONSE_TYPE = ResponseType.ABTRAILSMOBILE
-    CFG_TYPE = ABTrailsMobileConfig
+    CFG_TYPE = ABTrailsMobileConfig  # type: ignore[assignment]
 
 
 class ReproFieldStabilityTracker(ReproFieldBase):
@@ -1102,7 +1194,9 @@ class ReproFieldStabilityTracker(ReproFieldBase):
         self, processed_doc: dict, base_url: str | None = None
     ):
         await super()._load_from_processed_doc(processed_doc, base_url)
-        self.ld_description = self.attr_processor.get_translation(processed_doc, "schema:description", self.lang)
+        self.ld_description = self.attr_processor.get_translation(
+            processed_doc, "schema:description", self.lang
+        )
 
     def _build_config(self, _cls: Type | None, **attrs):
         config = GyroscopeConfig(
@@ -1110,17 +1204,13 @@ class ReproFieldStabilityTracker(ReproFieldBase):
             description=self.ld_description,
             is_hidden=self.ld_is_vis is False,  # TODO
             general=GyroscopeGeneralSettings(
-                instruction='',
+                instruction="",
                 number_of_trials=2,
                 length_of_test=3,
                 lambda_slope=4,
             ),
-            practice=GyroscopePracticeSettings(
-                instruction=''
-            ),
-            test=GyroscopeTestSettings(
-                instruction=''
-            )
+            practice=GyroscopePracticeSettings(instruction=""),
+            test=GyroscopeTestSettings(instruction=""),
         )
 
         return config

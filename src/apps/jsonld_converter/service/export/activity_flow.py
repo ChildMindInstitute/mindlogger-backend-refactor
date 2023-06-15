@@ -1,5 +1,5 @@
 from apps.activity_flows.domain.flow_full import FlowFull
-from apps.jsonld_converter.service.base import LdKeyword
+from apps.jsonld_converter.service.base import LdKeyword, str_to_id
 from apps.jsonld_converter.service.export.base import BaseModelExport
 from apps.shared.domain import InternalModel
 
@@ -12,7 +12,7 @@ class ActivityFlowExport(BaseModelExport):
     async def export(self, model: FlowFull, expand: bool = False) -> dict:  # type: ignore  # noqa: E501
         doc = {
             LdKeyword.context: self.context,
-            LdKeyword.id: f"_:{self.str_to_id(model.name)}",
+            LdKeyword.id: f"_:{str_to_id(model.name)}",
             LdKeyword.type: "reproschema:ActivityFlow",
             "skos:prefLabel": model.name,
             "skos:altLabel": model.name,

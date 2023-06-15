@@ -1,4 +1,3 @@
-import re
 from abc import ABC, abstractmethod
 from typing import Callable, Type
 
@@ -47,10 +46,3 @@ class BaseModelExport(ABC, ContextResolverAwareMixin):
             expanded = await self._expand(doc)
             return expanded[0]
         return doc
-
-    @classmethod
-    def str_to_id(cls, name: str) -> str:
-        name = re.sub(r"[^0-9a-zA-Z\s_-]+", "", name)
-        name = re.sub(r"[\s_-]+", "_", name)
-
-        return name

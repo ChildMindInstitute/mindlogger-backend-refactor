@@ -21,7 +21,7 @@ from apps.activities.domain.response_values import (
     SliderRowsValues,
     SliderValues,
 )
-from apps.jsonld_converter.service.base import LdKeyword
+from apps.jsonld_converter.service.base import LdKeyword, str_to_id
 from apps.jsonld_converter.service.export.base import BaseModelExport
 from apps.shared.domain import InternalModel
 
@@ -46,7 +46,7 @@ class ActivityItemBaseExport(BaseModelExport):
     def _build_doc(self, model: ActivityItemFull) -> dict:
         doc = {
             LdKeyword.context: self.context,
-            LdKeyword.id: f"_:{self.str_to_id(model.name)}",
+            LdKeyword.id: f"_:{str_to_id(model.name)}",
             LdKeyword.type: "reproschema:Field",
             "name": model.name,
             "skos:prefLabel": model.name,

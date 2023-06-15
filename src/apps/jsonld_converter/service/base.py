@@ -1,5 +1,6 @@
 import asyncio
 import enum
+import re
 from typing import Callable, Optional
 
 from pyld import ContextResolver, jsonld  # type: ignore[import]
@@ -61,3 +62,11 @@ class ContextResolverAwareMixin:
             )
         except Exception as e:
             raise JsonLDProcessingError("Document expanding error", doc) from e
+
+
+def str_to_id(name: str, to_underscore=r"\s-") -> str:
+    name = re.sub(r"[^0-9a-zA-Z\s_-]+", "", name)
+    if to_underscore:
+        name = re.sub(rf"[_{to_underscore}]+", "_", name)
+
+    return name

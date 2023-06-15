@@ -2,7 +2,7 @@ import asyncio
 from typing import Type
 
 from apps.activities.domain.activity_full import ActivityFull
-from apps.jsonld_converter.service.base import LdKeyword
+from apps.jsonld_converter.service.base import LdKeyword, str_to_id
 from apps.jsonld_converter.service.export import (
     ActivityItemAudioExport,
     ActivityItemAudioPlayerExport,
@@ -62,7 +62,7 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
         ui = await self._build_ui_prop(model)
         doc = {
             LdKeyword.context: self.context,
-            LdKeyword.id: f"_:{self.str_to_id(model.name)}",  # TODO ensure uniques  # noqa: E501
+            LdKeyword.id: f"_:{str_to_id(model.name)}",  # TODO ensure uniques  # noqa: E501
             LdKeyword.type: "reproschema:Activity",
             "skos:prefLabel": model.name,
             "skos:altLabel": model.name,
@@ -82,7 +82,7 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
         if model.items:
             order_cors = []
             for i, item in enumerate(model.items):
-                _id = f"_:{self.str_to_id(item.name)}"  # TODO ensure uniques
+                _id = f"_:{str_to_id(item.name)}"  # TODO ensure uniques
                 _var = f"item_{i}"  # TODO load from extra if exists
 
                 processor = self.get_supported_processor(item)

@@ -3,16 +3,28 @@ from copy import deepcopy
 from typing import Type
 from uuid import uuid4
 
-from apps.activities.domain.activity_create import ActivityCreate
-from apps.jsonld_converter.errors import JsonLDNotSupportedError
+from apps.activities.domain.activity_create import (
+    ActivityCreate,
+    ActivityItemCreate,
+)
+from apps.activities.domain.conditional_logic import ConditionalLogic
+from apps.jsonld_converter.errors import (
+    ConditionalLogicError,
+    JsonLDNotSupportedError,
+)
 from apps.jsonld_converter.service.document.base import (
     CommonFieldsMixin,
     ContainsNestedMixin,
     LdDocumentBase,
     LdKeyword,
 )
+from apps.jsonld_converter.service.document.conditional_logic import (
+    ConditionalLogicParser,
+)
 from apps.jsonld_converter.service.document.field import (
-    ReproFieldABTrailIpad, ReproFieldABTrailMobile, ReproFieldAge,
+    ReproFieldABTrailIpad,
+    ReproFieldABTrailMobile,
+    ReproFieldAge,
     ReproFieldAudio,
     ReproFieldAudioStimulus,
     ReproFieldBase,
@@ -58,10 +70,9 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             "reproschema:Activity",
             *cls.attr_processor.resolve_key("reproschema:Activity"),
         ]
-        return (
-            cls.attr_processor.first(doc.get(LdKeyword.type)) in ld_types
-            and cls.supports_activity_type(doc)
-        )
+        return cls.attr_processor.first(
+            doc.get(LdKeyword.type)
+        ) in ld_types and cls.supports_activity_type(doc)
 
     @classmethod
     def supports_activity_type(cls, doc: dict) -> bool:
@@ -134,14 +145,16 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         self._load_extra(processed_doc)
 
     async def _get_nested_items(self, doc: dict, drop=False) -> list:
+        nested_items = []
         if items := self.attr_processor.get_attr_list(
             doc, "reproschema:order", drop=drop
         ):
             nested = await asyncio.gather(
                 *[self._load_nested_doc(item) for item in items]
             )
-            return [node for node in nested if node]
-        return []
+            nested_items = [node for node in nested if node]
+
+        return nested_items
 
     async def _load_nested_doc(self, doc: dict):
         try:
@@ -163,12 +176,47 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         for k, v in doc.items():
             self.extra[k] = v
 
+    def _export_items(self) -> list[ActivityItemCreate]:
+        var_item_map = {
+            item.ld_variable_name: item
+            for item in self.nested_by_order or []
+            if isinstance(item, ReproFieldBase)
+        }
+        models = []
+        for item in var_item_map.values():
+            model: ActivityItemCreate = item.export()
+
+            expression = item.ld_is_vis
+            if isinstance(expression, str):
+                try:
+                    match, conditions = ConditionalLogicParser(
+                        expression
+                    ).parse()
+                    resolved_conditions = []
+                    for condition in conditions:
+                        condition_item: ReproFieldBase = var_item_map.get(  # type: ignore # noqa: E501
+                            condition.var_name
+                        )
+                        if condition_item is None:
+                            raise ConditionalLogicError(expression)
+                        resolved_conditions.append(
+                            condition_item.resolve_condition(condition)
+                        )
+                    model.conditional_logic = ConditionalLogic(
+                        match=match, conditions=resolved_conditions
+                    )
+
+                except ConditionalLogicError:
+                    ...  # TODO
+                    raise
+
+            models.append(model)
+
+        return models
+
     def export(self) -> ActivityCreate:
-        items = [
-            nested.export()
-            for nested in self.nested_by_order or []
-            if isinstance(nested, ReproFieldBase)
-        ]
+        items = self._export_items()
+
         return ActivityCreate(
             key=uuid4(),
             name=self.ld_pref_label or self.ld_alt_label,
@@ -186,7 +234,6 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
 
 
 class ABTrailsIpadActivity(ReproActivity):
-
     @classmethod
     def supports_activity_type(cls, doc: dict) -> bool:
         return cls.get_activity_type(doc) == "TRAILS_IPAD"
@@ -197,7 +244,6 @@ class ABTrailsIpadActivity(ReproActivity):
 
 
 class ABTrailsMobileActivity(ReproActivity):
-
     @classmethod
     def supports_activity_type(cls, doc: dict) -> bool:
         return cls.get_activity_type(doc) == "TRAILS_MOBILE"
@@ -208,7 +254,6 @@ class ABTrailsMobileActivity(ReproActivity):
 
 
 class GyroActivity(ReproActivity):
-
     @classmethod
     def supports_activity_type(cls, doc: dict) -> bool:
         return cls.get_activity_type(doc) == "CST_GYRO"

@@ -25,3 +25,14 @@ class JsonLDProcessingError(JsonLDBaseError):
         message = message or "Document processing error"
         super().__init__(message, doc, *args, **kwargs)
         self.doc = doc
+
+
+class ConditionalLogicError(JsonLDBaseError):
+    def __init__(self, expression=None, *args, **kwargs):
+        message = "Conditional logic processing error"
+        super().__init__(message, expression, *args, **kwargs)
+        self.expression = expression
+
+
+class ConditionalLogicParsingError(JsonLDBaseError):
+    ...
