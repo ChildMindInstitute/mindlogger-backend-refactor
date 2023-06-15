@@ -1,8 +1,9 @@
-from apps.applets.domain import AppletHistoryChange
-from apps.activities.domain import ActivityHistoryChange
 from apps.shared.domain.base import to_camelcase
+from apps.activities.domain.activity_item_history import (
+    ActivityItemHistoryChange,
+)
 
-__all__ = ["ChangeTextGenerator"]
+__all__ = ["ChangeTextGenerator", "ChangeGenerator"]
 
 """
 Dictionary to generate needed text in one format
@@ -121,9 +122,6 @@ class ChangeGenerator:
         self._change_text_generator = ChangeTextGenerator()
 
     def generate_applet_changes(self, new_applet, old_applet):
-        changes_applet = AppletHistoryChange(
-            display_name=new_applet.display_name
-        )
         changes = []
         for field, old_value in old_applet.dict().items():
             new_value = getattr(new_applet, field, None)
@@ -152,14 +150,14 @@ class ChangeGenerator:
                     else f"Applet {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, new_value)}."
                 )
 
-        changes_applet.changes = changes
-
-        return changes_applet
+        return changes
 
     def generate_activity_insert(self, new_activity):
         changes = list()
         for field, value in new_activity.dict().items():
-            if field == "name":
+            if field == "items":
+                continue
+            elif field == "name":
                 changes.append(
                     self._change_text_generator.set_text(
                         f"Activity {to_camelcase(field)}", value
@@ -253,7 +251,9 @@ class ChangeGenerator:
 
         for field, value in new_activity.dict().items():
             old_value = getattr(old_activity, field, None)
-            if field in [
+            if field == "items":
+                continue
+            elif field in [
                 "id",
                 "created_at",
                 "id_version",
@@ -265,7 +265,7 @@ class ChangeGenerator:
                 "subscale_setting",
             ]:
                 if field == "scores_and_reports":
-                    if value:
+                    if value and value != old_value:
                         for key, val in value.items():
                             old_val = getattr(old_activity, key, None)
                             if key in [
@@ -376,7 +376,7 @@ class ChangeGenerator:
                                 )
                             )
                 elif field == "subscale_setting":
-                    if value:
+                    if value and value != old_value:
                         for key, val in value.items():
                             old_val = getattr(old_activity, key, None)
 
@@ -455,14 +455,15 @@ class ChangeGenerator:
                             )
 
             elif type(value) == bool:
-                changes.append(
-                    self._change_text_generator.set_bool(
-                        f"Activity {to_camelcase(field)}",
-                        "enabled" if value else "disabled",
-                    ),
-                )
+                if value and value != old_value:
+                    changes.append(
+                        self._change_text_generator.set_bool(
+                            f"Activity {to_camelcase(field)}",
+                            "enabled" if value else "disabled",
+                        ),
+                    )
             else:
-                if value:
+                if value != old_value:
                     if field == "description":
                         desc_change = f"Activity {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, value)}."  # noqa: E501
                         changes.append(desc_change)
@@ -473,4 +474,219 @@ class ChangeGenerator:
                                 f"Activity {to_camelcase(field)}", value
                             )
                         )
+        return changes, bool(changes)
+
+    def generate_activity_items_insert(self, items):
+        change_items = []
+        for item in items:
+            change = ActivityItemHistoryChange(
+                name=self._change_text_generator.added_text(
+                    f"Item {item.name}"
+                )
+            )
+            changes = []
+            for field, value in item.dict().items():
+                if field == "name":
+                    changes.append(
+                        self._change_text_generator.set_text(
+                            f"Item {to_camelcase(field)}", value
+                        )
+                    )
+                elif field in [
+                    "id",
+                    "created_at",
+                    "id_version",
+                    "activity_id",
+                ]:
+                    continue
+                elif type(value) == bool:
+                    changes.append(
+                        self._change_text_generator.set_bool(
+                            f"Item {to_camelcase(field)}",
+                            "enabled" if value else "disabled",
+                        ),
+                    )
+
+                elif field in [
+                    "response_values",
+                    "config",
+                    "conditional_logic",
+                ]:
+                    if field == "response_values":
+                        if value:
+                            changes.append(
+                                self._change_text_generator.added_text(
+                                    f"Item {field}"
+                                )
+                            )
+                    elif field == "config":
+                        if value:
+                            for key, val in value.items():
+                                if type(val) == bool:
+                                    changes.append(
+                                        self._change_text_generator.set_bool(
+                                            f"Item {to_camelcase(key)}",
+                                            "enabled" if val else "disabled",
+                                        )
+                                    )
+
+                                elif type(val) == dict:
+                                    for k, v in val.items():
+                                        if type(v) == bool:
+                                            changes.append(
+                                                self._change_text_generator.set_bool(
+                                                    f"Item {to_camelcase(k)}",
+                                                    "enabled"
+                                                    if v
+                                                    else "disabled",
+                                                )
+                                            )
+                                        else:
+                                            changes.append(
+                                                self._change_text_generator.added_text(
+                                                    f"Item {to_camelcase(k)}",
+                                                )
+                                            )
+                                else:
+                                    changes.append(
+                                        self._change_text_generator.added_text(
+                                            f"Item  {to_camelcase(key)}"
+                                        )
+                                    )
+
+                else:
+                    if value:
+                        changes.append(
+                            self._change_text_generator.set_text(
+                                f"Item {to_camelcase(field)}", value
+                            )
+                            if field not in ["question"]
+                            else self._change_text_generator.set_dict(
+                                f"Item {to_camelcase(field)}", value
+                            ),
+                        )
+
+            change.changes = changes
+            change_items.append(change)
+
+        return change_items
+
+    def generate_activity_items_update(self, item_groups):
+        change_items = []
+
+        for _, (prev_item, new_item) in item_groups.items():
+            if not prev_item and new_item:
+                change_items.extend(
+                    self.generate_activity_items_insert(
+                        [
+                            new_item,
+                        ]
+                    )
+                )
+            elif not new_item and prev_item:
+                change_items.append(
+                    ActivityItemHistoryChange(
+                        name=self._change_text_generator.removed_text(
+                            f"Item {prev_item.name}"
+                        )
+                    )
+                )
+            elif new_item and prev_item:
+                changes, has_changes = self._generate_activity_item_update(
+                    new_item, prev_item
+                )
+                if has_changes:
+                    change_items.append(
+                        ActivityItemHistoryChange(
+                            name=self._change_text_generator.updated_text(
+                                f"Item {new_item.name}",
+                            ),
+                            changes=changes,
+                        )
+                    )
+
+        return change_items, bool(change_items)
+
+    def _generate_activity_item_update(self, new_item, prev_item):
+        changes = list()
+
+        for field, value in new_item.dict().items():
+            old_value = getattr(prev_item, field, None)
+            if field in [
+                "id",
+                "created_at",
+                "id_version",
+                "activity_id",
+            ]:
+                continue
+            elif type(value) == bool:
+                if value and value != old_value:
+                    changes.append(
+                        self._change_text_generator.set_bool(
+                            f"Item {to_camelcase(field)}",
+                            "enabled" if value else "disabled",
+                        ),
+                    )
+
+            elif field in [
+                "response_values",
+                "config",
+                "conditional_logic",
+            ]:
+                if field == "response_values":
+                    if value and value != old_value:
+                        changes.append(
+                            self._change_text_generator.added_text(
+                                f"Item {field}"
+                            )
+                        )
+                elif field == "config":
+                    if value and value != old_value:
+                        for key, val in value.items():
+                            old_val = getattr(old_value, key, None)
+                            if val != old_val:
+                                if type(val) == bool:
+                                    changes.append(
+                                        self._change_text_generator.set_bool(
+                                            f"Item {to_camelcase(key)}",
+                                            "enabled" if val else "disabled",
+                                        )
+                                    )
+
+                                elif type(val) == dict:
+                                    for k, v in val.items():
+                                        old_v = getattr(old_val, k, None)
+                                        if v != old_v:
+                                            if type(v) == bool:
+                                                changes.append(
+                                                    self._change_text_generator.set_bool(
+                                                        f"Item {to_camelcase(k)}",
+                                                        "enabled"
+                                                        if v
+                                                        else "disabled",
+                                                    )
+                                                )
+                                            else:
+                                                changes.append(
+                                                    self._change_text_generator.added_text(
+                                                        f"Item {to_camelcase(k)}",
+                                                    )
+                                                )
+                                else:
+                                    changes.append(
+                                        self._change_text_generator.added_text(
+                                            f"Item  {to_camelcase(key)}"
+                                        )
+                                    )
+
+            else:
+                if value and value != old_value:
+                    changes.append(
+                        self._change_text_generator.changed_text(
+                            f"Item {to_camelcase(field)}", value
+                        )
+                        if field not in ["question"]
+                        else f"Item {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, value)}."  # noqa: E501
+                    )
+
         return changes, bool(changes)

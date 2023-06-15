@@ -10,8 +10,9 @@ __all__ = ["AppletHistoryService"]
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
-from apps.shared.changes_generator import ChangeTextGenerator, ChangeGenerator
+
 from apps.shared.version import get_prev_version
+from apps.shared.changes_generator import ChangeGenerator
 
 
 class AppletHistoryService:
@@ -83,8 +84,8 @@ class AppletHistoryService:
             )
 
             return changes
-
-        changes = ChangeGenerator().generate_applet_changes(
+        changes.display_name = f"Applet {new_history.display_name} updated "
+        changes.changes = ChangeGenerator().generate_applet_changes(
             new_history, old_history
         )
 

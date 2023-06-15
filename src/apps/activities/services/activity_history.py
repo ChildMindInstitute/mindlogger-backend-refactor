@@ -3,7 +3,12 @@ from typing import Optional
 
 from apps.activities.crud import ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivityHistorySchema
-from apps.activities.domain import ActivityHistory, ActivityHistoryChange
+from apps.activities.domain import (
+    ActivityHistory,
+    ActivityHistoryFull,
+    ActivityHistoryChange,
+)
+from apps.activities.domain.activity_item_history import ActivityItemHistory
 
 __all__ = ["ActivityHistoryService"]
 
@@ -79,10 +84,14 @@ class ActivityHistoryService:
             [self._applet_id_version, old_applet_id_version]
         )
         activities = [
-            ActivityHistory.from_orm(schema) for schema in activity_schemas
+            ActivityHistoryFull.from_orm(schema) for schema in activity_schemas
         ]
+        for activity in activities:
+            activity.items = await ActivityItemHistoryService(
+                self.session, self._applet_id, self._version
+            ).get_by_activity_id_versions([activity.id_version])
 
-        activity_groups = self._group_and_sort_activities(activities)
+        activity_groups = self._group_and_sort_activities_or_items(activities)
         for _, (prev_activity, new_activity) in activity_groups.items():
             if not prev_activity and new_activity:
                 activity_changes.append(
@@ -92,6 +101,9 @@ class ActivityHistoryService:
                         ),
                         changes=change_activity_generator.generate_activity_insert(
                             new_activity
+                        ),
+                        items=change_activity_generator.generate_activity_items_insert(
+                            new_activity.items
                         ),
                     )
                 )
@@ -111,37 +123,52 @@ class ActivityHistoryService:
                 ) = change_activity_generator.generate_activity_update(
                     new_activity, prev_activity
                 )
+                changes_items = []
+                (
+                    changes_items,
+                    has_changes,
+                ) = change_activity_generator.generate_activity_items_update(
+                    self._group_and_sort_activities_or_items(
+                        new_activity.items + prev_activity.items
+                    ),
+                )
 
                 if has_changes:
                     activity_changes.append(
                         ActivityHistoryChange(
-                            name=changes_generator.updated_text("name"),
+                            name=changes_generator.updated_text(
+                                f"Activity {new_activity.name}"
+                            ),
                             changes=changes,
+                            items=changes_items,
                         )
                     )
         return activity_changes
 
-    def _group_and_sort_activities(
-        self, activities: list[ActivityHistory]
+    def _group_and_sort_activities_or_items(
+        self, items: list[ActivityHistoryFull] | list[ActivityItemHistory]
     ) -> dict[
-        uuid.UUID, tuple[Optional[ActivityHistory], Optional[ActivityHistory]]
+        uuid.UUID,
+        tuple[Optional[ActivityHistoryFull], Optional[ActivityHistoryFull]]
+        | tuple[Optional[ActivityItemHistory], Optional[ActivityItemHistory]],
     ]:
         groups_map: dict[
-            uuid.UUID, tuple[ActivityHistory | None, ActivityHistory | None]
+            uuid.UUID,
+            tuple[ActivityHistoryFull | None, ActivityHistoryFull | None],
         ] = dict()
-        for activity in activities:
-            group = groups_map.get(activity.id)
+        for item in items:
+            group = groups_map.get(item.id)
             if not group:
-                if self._version in activity.id_version.split("_"):
-                    group = (None, activity)
+                if self._version in item.id_version.split("_"):
+                    group = (None, item)
                 else:
-                    group = (activity, None)
+                    group = (item, None)
             elif group:
-                if self._version in activity.id_version.split("_"):
-                    group = (group[0], activity)
+                if self._version in item.id_version.split("_"):
+                    group = (group[0], item)
                 else:
-                    group = (activity, group[1])
-            groups_map[activity.id] = group
+                    group = (item, group[1])
+            groups_map[item.id] = group
 
         return groups_map
 

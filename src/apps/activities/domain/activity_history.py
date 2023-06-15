@@ -7,7 +7,10 @@ from apps.activities.domain.activity_full import (
     PublicActivityFull,
     PublicActivityItemFull,
 )
-from apps.activities.domain.activity_item_history import ActivityItemHistory
+from apps.activities.domain.activity_item_history import (
+    ActivityItemHistory,
+    ActivityItemHistoryChange,
+)
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.domain.custom_validations import extract_history_version
 
@@ -43,11 +46,13 @@ class ActivityHistory(InternalModel):
 class ActivityHistoryChange(InternalModel):
     name: str | None = None
     changes: list[str] | None = Field(default_factory=list)
+    items: list[ActivityItemHistoryChange] | None = Field(default_factory=list)
 
 
 class PublicActivityHistoryChange(PublicModel):
     name: str | None = None
     changes: list[str] | None = Field(default_factory=list)
+    items: list[ActivityItemHistoryChange] | None = Field(default_factory=list)
 
 
 class ActivityHistoryFull(ActivityHistory):
