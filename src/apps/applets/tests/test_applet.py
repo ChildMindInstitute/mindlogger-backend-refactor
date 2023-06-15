@@ -1739,7 +1739,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 200
         assert (
             response.json()["result"]["displayName"]
-            == '"User daily behave" is changed to "User daily behave updated".'
+            == "Applet User daily behave updated updated "
         )
         assert len(response.json()["result"]["activities"]) == 4
 

@@ -144,7 +144,7 @@ class ChangeGenerator:
             else:
                 changes.append(
                     self._change_text_generator.changed_text(
-                        old_value, new_value
+                        f"Applet {field}", new_value
                     )
                     if field not in ["about", "description"]
                     else f"Applet {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, new_value)}."  # noqa: E501
