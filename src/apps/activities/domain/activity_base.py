@@ -16,6 +16,6 @@ class ActivityBase(BaseModel):
     is_skippable: bool = False
     is_reviewable: bool = False
     response_is_editable: bool = False
-    is_hidden: bool = False
+    is_hidden: bool | None = False
     scores_and_reports: ScoresAndReports | None = None
     subscale_setting: SubscaleSetting | None = None

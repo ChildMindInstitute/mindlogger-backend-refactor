@@ -41,7 +41,7 @@ class ActivityHistory(InternalModel):
     response_is_editable: bool
     order: int
     created_at: datetime.datetime
-    is_hidden: bool = False
+    is_hidden: bool | None = False
     scores_and_reports: ScoresAndReports | None = None
     subscale_setting: SubscaleSetting | None = None
 
