@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.orm import Query
 
@@ -23,9 +25,6 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
     ) -> list[ActivityHistorySchema]:
         query: Query = select(ActivityHistorySchema)
         query = query.where(ActivityHistorySchema.applet_id == id_version)
-        # query = query.where(
-        #     ActivityHistorySchema.is_assessment == False  # noqa: E712
-        # )
         query = query.order_by(ActivityHistorySchema.order.asc())
         result = await self._execute(query)
         return result.scalars().all()
@@ -36,10 +35,10 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query: Query = select(ActivityHistorySchema)
         query = query.where(ActivityHistorySchema.applet_id == id_version)
         query = query.where(
-            ActivityHistorySchema.is_assessment == False  # noqa
+            ActivityHistorySchema.is_reviewable == False  # noqa
         )
         query = query.where(
-            ActivityHistorySchema.is_assessment == False  # noqa: E712
+            ActivityHistorySchema.is_reviewable == False  # noqa: E712
         )
         query = query.order_by(ActivityHistorySchema.order.asc())
         result = await self._execute(query)
@@ -84,4 +83,39 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         )
         query = query.order_by(ActivityHistorySchema.order.asc())
         db_result = await self._execute(query)
+        return db_result.scalars().all()
+
+    async def get_applet_assessment(
+        self, applet_id_version: str
+    ) -> ActivityHistorySchema:
+        query: Query = select(ActivityHistorySchema)
+        query = query.where(
+            ActivityHistorySchema.applet_id == applet_id_version
+        )
+        query = query.order_by(ActivityHistorySchema.order.asc())
+        query = query.limit(1)
+
+        db_result = await self._execute(query)
+        return db_result.scalars().first()
+
+    async def get_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> ActivityHistorySchema:
+        query: Query = select(ActivityHistorySchema)
+        query = query.join(
+            AppletHistorySchema,
+            AppletHistorySchema.id_version == ActivityHistorySchema.applet_id,
+        )
+        query = query.where(AppletHistorySchema.id == applet_id)
+        query = query.where(
+            ActivityHistorySchema.is_reviewable == False  # noqa
+        )
+        query = query.order_by(
+            ActivityHistorySchema.id.desc(),
+            ActivityHistorySchema.created_at.desc(),
+        )
+        query = query.distinct(ActivityHistorySchema.id)
+
+        db_result = await self._execute(query)
+
         return db_result.scalars().all()

@@ -1,6 +1,9 @@
 import asyncio
 import datetime
 import uuid
+from collections import defaultdict
+
+from pydantic import parse_obj_as
 
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
@@ -23,13 +26,16 @@ from apps.answers.db.schemas import (
 from apps.answers.domain import (
     ActivityAnswer,
     AnswerDate,
-    AnsweredAppletActivity,
     AnswerExport,
     AnswerNoteDetail,
     AnswerReview,
+    AppletActivityAnswer,
     AppletAnswerCreate,
     AssessmentAnswer,
     AssessmentAnswerCreate,
+    ReviewActivity,
+    SummaryActivity,
+    Version,
 )
 from apps.answers.errors import (
     ActivityDoesNotHaveItem,
@@ -106,7 +112,7 @@ class AnswerService:
                 applet_answer.flow_id
             )
 
-        for activity_item_id in applet_answer.answer.item_ids:
+        for activity_item_id in applet_answer.answer.item_ids or []:
             activity_id_version = item_activity_map.get(
                 get_pk(activity_item_id)
             )
@@ -193,8 +199,7 @@ class AnswerService:
             )
         )
         item_answer = applet_answer.answer
-        if not item_answer:
-            return
+
         item_answer = AnswerItemSchema(
             answer_id=answer.id,
             answer=item_answer.answer,
@@ -212,30 +217,31 @@ class AnswerService:
                 item_answer.start_time
             ),
             end_datetime=datetime.datetime.fromtimestamp(item_answer.end_time),
+            is_assessment=False,
         )
 
         await AnswerItemsCRUD(self.session).create(item_answer)
 
-    async def applet_activities(
+    async def get_review_activities(
         self,
         applet_id: uuid.UUID,
         respondent_id: uuid.UUID,
         created_date: datetime.date,
-    ) -> list[AnsweredAppletActivity]:
+    ) -> list[ReviewActivity]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
         answers = await AnswersCRUD(
             self.session
         ).get_respondents_answered_activities_by_applet_id(
             respondent_id, applet_id, created_date
         )
-        activity_map: dict[str, AnsweredAppletActivity] = dict()
+        activity_map: dict[str, ReviewActivity] = dict()
         if not answers:
             applet = await AppletsCRUD(self.session).get_by_id(applet_id)
             activities = await ActivityHistoryService(
                 self.session, applet_id, applet.version
             ).activities_list()
             for activity in activities:
-                activity_map[str(activity.id)] = AnsweredAppletActivity(
+                activity_map[str(activity.id)] = ReviewActivity(
                     id=activity.id, name=activity.name
                 )
         else:
@@ -246,7 +252,7 @@ class AnswerService:
                     self.session, applet_id, answer.version
                 ).activities_list()
                 for activity in activities:
-                    activity_map[str(activity.id)] = AnsweredAppletActivity(
+                    activity_map[str(activity.id)] = ReviewActivity(
                         id=activity.id, name=activity.name
                     )
 
@@ -409,7 +415,7 @@ class AnswerService:
             self.session
         ).get_applets_assessments(pk(applet_id))
         if len(activity_items) == 0:
-            return AssessmentAnswer()
+            return AssessmentAnswer(items=activity_items)
 
         assessment_answer = await AnswerItemsCRUD(self.session).get_assessment(
             answer_id, self.user_id
@@ -456,9 +462,6 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        answer = await AnswersCRUD(self.session).get_by_id(answer_id)
-        pk = self._generate_history_id(answer.version)
-        await self._validate_activity_for_assessment(pk(schema.activity_id))
         assessment = await AnswerItemsCRUD(self.session).get_assessment(
             answer_id, self.user_id
         )
@@ -474,12 +477,8 @@ class AnswerService:
                     item_ids=list(map(str, schema.item_ids)),
                     user_public_key=schema.reviewer_public_key,
                     is_assessment=True,
-                    start_datetime=datetime.datetime.fromtimestamp(
-                        schema.start_time
-                    ),
-                    end_datetime=datetime.datetime.fromtimestamp(
-                        schema.end_time
-                    ),
+                    start_datetime=datetime.datetime.now(),
+                    end_datetime=datetime.datetime.now(),
                 )
             )
         else:
@@ -492,12 +491,8 @@ class AnswerService:
                     item_ids=list(map(str, schema.item_ids)),
                     user_public_key=schema.reviewer_public_key,
                     is_assessment=True,
-                    start_datetime=datetime.datetime.fromtimestamp(
-                        schema.start_time
-                    ),
-                    end_datetime=datetime.datetime.fromtimestamp(
-                        schema.end_time
-                    ),
+                    start_datetime=now,
+                    end_datetime=now,
                     created_at=now,
                     updated_at=now,
                 )
@@ -510,7 +505,7 @@ class AnswerService:
             activity_history_id
         )
 
-        if not schema.is_assessment:
+        if not schema.is_reviewable:
             raise ActivityIsNotAssessment()
 
     async def get_export_data(
@@ -551,17 +546,54 @@ class AnswerService:
     async def get_activity_identifiers(
         self,
         activity_id: uuid.UUID,
-        filters: QueryParams,
     ) -> list[str]:
         return await AnswersCRUD(self.session).get_identifiers_by_activity_id(
-            activity_id, filters
+            activity_id
         )
 
     async def get_activity_versions(
         self,
         activity_id: uuid.UUID,
-        filters: QueryParams,
-    ) -> list[str]:
+    ) -> list[Version]:
         return await AnswersCRUD(self.session).get_versions_by_activity_id(
-            activity_id, filters
+            activity_id
         )
+
+    async def get_activity_answers(
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        filters: QueryParams,
+    ) -> list[AppletActivityAnswer]:
+        versions = filters.filters.get("versions")
+        if isinstance(versions, str):
+            versions = versions.split(",")
+        activity_items = await ActivityItemHistoriesCRUD(
+            self.session
+        ).get_activity_items(activity_id, versions)
+        answers = await AnswerItemsCRUD(
+            self.session
+        ).get_applet_answers_by_activity_id(applet_id, activity_id, filters)
+
+        activity_item_map = defaultdict(list)
+        for activity_item in activity_items:
+            activity_item_map[activity_item.activity_id].append(activity_item)
+
+        activity_answers = list()
+        for answer, answer_item in answers:
+            answer_item.items = activity_item_map.get(
+                answer.activity_history_id
+            )
+            activity_answer = AppletActivityAnswer.from_orm(answer_item)
+            activity_answer.version = answer.version
+            activity_answers.append(activity_answer)
+
+        return activity_answers
+
+    async def get_summary_activities(
+        self, applet_id: uuid.UUID
+    ) -> list[SummaryActivity]:
+        activities = await ActivityHistoriesCRUD(
+            self.session
+        ).get_by_applet_id(applet_id)
+        return parse_obj_as(list[SummaryActivity], activities)

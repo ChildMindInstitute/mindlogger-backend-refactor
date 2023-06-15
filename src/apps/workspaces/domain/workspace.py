@@ -181,6 +181,7 @@ class WorkspaceApplet(AppletSingleLanguageInfo):
 
 class WorkspaceAppletPublic(AppletSingleLanguageInfoPublic):
     role: Role
+    is_pinned: bool = False
 
 
 class WorkspacePrioritizedRole(PublicModel):

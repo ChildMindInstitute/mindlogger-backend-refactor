@@ -23,27 +23,34 @@ class TestAnswerActivityItems(BaseTest):
     ]
 
     login_url = "/auth/login"
-    answer_activity_item_create_url = "/answers"
-    public_answer_activity_item_create_url = "/public/answers"
-    answered_applet_activities_url = "/answers/applet/{id_}/activities"
-    applet_answers_export_url = "/answers/applet/{id}/data"
-    applet_submit_dates_url = "/answers/applet/{id_}/dates"
+    answer_url = "/answers"
+    public_answer_url = "/public/answers"
+
+    review_activities_url = "/answers/applet/{applet_id}/review/activities"
+
+    summary_activities_url = "/answers/applet/{applet_id}/summary/activities"
+    identifiers_url = f"{summary_activities_url}/{{activity_id}}/identifiers"
+    versions_url = f"{summary_activities_url}/{{activity_id}}/versions"
+
+    answers_for_activity_url = (
+        "/answers/applet/{applet_id}/activities/{activity_id}/answers"
+    )
+    applet_answers_export_url = "/answers/applet/{applet_id}/data"
+    applet_submit_dates_url = "/answers/applet/{applet_id}/dates"
+
     activity_answers_url = (
-        "/answers/applet/{id_}/answers/{answer_id}/activities/{activity_id}"
-    )
-    identifiers_url = (
-        "/answers/applet/{applet_id}/activities/{activity_id}/identifiers"
-    )
-    versions_url = (
-        "/answers/applet/{applet_id}/activities/{activity_id}/versions"
+        "/answers/applet/{applet_id}/answers/"
+        "{answer_id}/activities/{activity_id}"
     )
     assessment_answers_url = (
-        "/answers/applet/{id_}/answers/{answer_id}/assessment"
+        "/answers/applet/{applet_id}/answers/{answer_id}/assessment"
     )
 
-    answer_reviews_url = "/answers/applet/{id_}/answers/{answer_id}/reviews"
-    answer_notes_url = "/answers/applet/{id_}/answers/{answer_id}/activities/{activity_id}/notes"  # noqa: E501
-    answer_note_detail_url = "/answers/applet/{id_}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
+    answer_reviews_url = (
+        "/answers/applet/{applet_id}/answers/{answer_id}/reviews"  # noqa: E501
+    )
+    answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"  # noqa: E501
+    answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
 
     @rollback
     async def test_answer_activity_items_create_for_respondent(self):
@@ -77,9 +84,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
@@ -111,7 +116,7 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         response = await self.client.post(
-            self.public_answer_activity_item_create_url, data=create_data
+            self.public_answer_url, data=create_data
         )
 
         assert response.status_code == 201, response.json()
@@ -127,18 +132,19 @@ class TestAnswerActivityItems(BaseTest):
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
-            answer=None,
+            answer=dict(
+                start_time=10,
+                end_time=11,
+            ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
         response = await self.client.get(
             self.applet_submit_dates_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -179,14 +185,12 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
         assert response.status_code == 201, response.json()
 
         response = await self.client.get(
             self.applet_submit_dates_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -229,9 +233,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
@@ -247,12 +249,13 @@ class TestAnswerActivityItems(BaseTest):
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
             created_at=1681216969,
-            answer=None,
+            answer=dict(
+                start_time=10,
+                end_time=11,
+            ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
@@ -286,15 +289,13 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
         response = await self.client.get(
-            self.answered_applet_activities_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            self.review_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -309,7 +310,7 @@ class TestAnswerActivityItems(BaseTest):
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
         response = await self.client.get(
             self.activity_answers_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             )
@@ -319,7 +320,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.get(
             self.activity_answers_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             )
@@ -330,6 +331,50 @@ class TestAnswerActivityItems(BaseTest):
             response.json()["result"]["events"]
             == '{"events": ["event1", "event2"]}'
         )
+
+    @rollback
+    async def test_applet_activity_answers(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answer=dict(
+                user_public_key="user key",
+                events=json.dumps(dict(events=["event1", "event2"])),
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                scheduled_time=10,
+                start_time=10,
+                end_time=11,
+            ),
+        )
+
+        response = await self.client.post(self.answer_url, data=create_data)
+
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.answers_for_activity_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 1
 
     @rollback
     async def test_applet_assessment_retrieve(self):
@@ -360,15 +405,13 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
         response = await self.client.get(
-            self.answered_applet_activities_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            self.review_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -383,7 +426,7 @@ class TestAnswerActivityItems(BaseTest):
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
         response = await self.client.get(
             self.assessment_answers_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
             )
         )
@@ -419,15 +462,13 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
         response = await self.client.get(
-            self.answered_applet_activities_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            self.review_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -443,16 +484,13 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.post(
             self.assessment_answers_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
             ),
             dict(
-                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3621",
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
-                start_time=10,
-                end_time=11,
             ),
         )
 
@@ -460,7 +498,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.get(
             self.assessment_answers_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
             )
         )
@@ -477,16 +515,13 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.post(
             self.assessment_answers_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
             ),
             dict(
-                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3621",
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
-                start_time=10,
-                end_time=11,
             ),
         )
 
@@ -494,7 +529,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.get(
             self.assessment_answers_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
             )
         )
@@ -510,7 +545,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"]["isEdited"] is True
         response = await self.client.get(
             self.answer_reviews_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
             )
         )
@@ -534,8 +569,8 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         response = await self.client.get(
-            self.answered_applet_activities_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            self.review_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -576,15 +611,13 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
         response = await self.client.get(
-            self.answered_applet_activities_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            self.review_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -595,7 +628,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.post(
             self.answer_notes_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
@@ -606,7 +639,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.get(
             self.answer_notes_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
@@ -644,15 +677,13 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
         response = await self.client.get(
-            self.answered_applet_activities_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            self.review_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -663,7 +694,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.post(
             self.answer_notes_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
@@ -674,7 +705,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.get(
             self.answer_notes_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
@@ -686,7 +717,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.put(
             self.answer_note_detail_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
                 note_id=response.json()["result"][0]["id"],
@@ -697,7 +728,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.get(
             self.answer_notes_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
@@ -736,15 +767,13 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
         response = await self.client.get(
-            self.answered_applet_activities_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            self.review_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -755,7 +784,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.post(
             self.answer_notes_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
@@ -766,7 +795,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.get(
             self.answer_notes_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
@@ -778,7 +807,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.delete(
             self.answer_note_detail_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
                 note_id=response.json()["result"][0]["id"],
@@ -788,7 +817,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await self.client.get(
             self.answer_notes_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
@@ -823,9 +852,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 403, response.json()
 
@@ -859,16 +886,14 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201
 
         # get answer id
         response = await self.client.get(
-            self.answered_applet_activities_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            self.review_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -882,16 +907,13 @@ class TestAnswerActivityItems(BaseTest):
         # create assessment
         response = await self.client.post(
             self.assessment_answers_url.format(
-                id_="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
             ),
             dict(
-                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3621",
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
-                start_time=10,
-                end_time=11,
             ),
         )
 
@@ -900,7 +922,7 @@ class TestAnswerActivityItems(BaseTest):
         # test export
         response = await self.client.get(
             self.applet_answers_export_url.format(
-                id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             )
         )
 
@@ -926,7 +948,7 @@ class TestAnswerActivityItems(BaseTest):
         # test filters
         response = await self.client.get(
             self.applet_answers_export_url.format(
-                id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             ),
             dict(
                 respondentIds="7484f34a-3acc-4ee6-8a94-000000000000",
@@ -977,9 +999,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
+        response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
@@ -992,6 +1012,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["count"] == 1
+        assert response.json()["result"][0] == "some identifier"
 
     @rollback
     async def test_get_versions(self):
@@ -1007,45 +1028,24 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         assert response.status_code == 200
-        assert response.json()["count"] == 0
+        assert response.json()["count"] == 2
+        assert response.json()["result"][0]["version"] == "1.0.0"
+        assert response.json()["result"][0]["createdAt"]
+        assert response.json()["result"][1]["version"] == "2.0.0"
+        assert response.json()["result"][1]["createdAt"]
 
-        create_data = dict(
-            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-            version="1.0.0",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[
-                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
-                ],
-                identifier="some identifier",
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
-            ),
+    @rollback
+    async def test_get_summary_activities(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
         )
-
-        response = await self.client.post(
-            self.answer_activity_item_create_url, data=create_data
-        )
-
-        assert response.status_code == 201, response.json()
 
         response = await self.client.get(
-            self.versions_url.format(
+            self.summary_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             )
         )
 
         assert response.status_code == 200
-        assert response.json()["result"][0] == "1.0.0"
         assert response.json()["count"] == 1
+        assert response.json()["result"][0]["name"] == "PHQ2 new"

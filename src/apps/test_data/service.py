@@ -114,8 +114,14 @@ class TestDataService:
 
     def _generate_activities(self, count=5) -> list[ActivityCreate]:
         activities = []
+        has_reviewable = False
         for index in range(count):
             items = self._generate_activity_items()
+            is_reviewable = self.random_boolean()
+            if has_reviewable:
+                is_reviewable = False
+            if is_reviewable:
+                has_reviewable = True
             activities.append(
                 ActivityCreate(
                     name=f"Activity {index + 1}",
@@ -128,7 +134,7 @@ class TestDataService:
                     image=image_url,
                     show_all_at_once=self.random_boolean(),
                     is_skippable=self.random_boolean(),
-                    is_reviewable=self.random_boolean(),
+                    is_reviewable=is_reviewable,
                     response_is_editable=self.random_boolean(),
                     items=items,
                     is_hidden=self.random_boolean(),

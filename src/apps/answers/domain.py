@@ -44,14 +44,14 @@ ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
 
 
 class ItemAnswerCreate(InternalModel):
-    answer: str
+    answer: str | None
     events: str | None
-    item_ids: list[uuid.UUID]
+    item_ids: list[uuid.UUID] | None
     identifier: str | None
     scheduled_time: int | None
     start_time: int
     end_time: int
-    user_public_key: str
+    user_public_key: str | None
 
     @validator("item_ids")
     def convert_item_ids(cls, value: list[uuid.UUID]):
@@ -69,17 +69,14 @@ class AppletAnswerCreate(InternalModel):
     submit_id: uuid.UUID
     flow_id: uuid.UUID | None = None
     activity_id: uuid.UUID
-    answer: ItemAnswerCreate | None
+    answer: ItemAnswerCreate
     created_at: int | None
 
 
 class AssessmentAnswerCreate(InternalModel):
-    activity_id: uuid.UUID
     answer: str
     item_ids: list[uuid.UUID]
     reviewer_public_key: str
-    start_time: int
-    end_time: int
 
 
 class AnswerDate(InternalModel):
@@ -87,10 +84,15 @@ class AnswerDate(InternalModel):
     answer_id: uuid.UUID
 
 
-class AnsweredAppletActivity(InternalModel):
+class ReviewActivity(InternalModel):
     id: uuid.UUID
     name: str
     answer_dates: list[AnswerDate] = Field(default_factory=list)
+
+
+class SummaryActivity(InternalModel):
+    id: uuid.UUID
+    name: str
 
 
 class PublicAnswerDate(PublicModel):
@@ -98,10 +100,15 @@ class PublicAnswerDate(PublicModel):
     answer_id: uuid.UUID
 
 
-class PublicAnsweredAppletActivity(PublicModel):
+class PublicReviewActivity(PublicModel):
     id: uuid.UUID
     name: str
     answer_dates: list[PublicAnswerDate] = Field(default_factory=list)
+
+
+class PublicSummaryActivity(InternalModel):
+    id: uuid.UUID
+    name: str
 
 
 class PublicAnswerDates(PublicModel):
@@ -114,6 +121,18 @@ class ActivityAnswer(InternalModel):
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
+
+
+class AppletActivityAnswer(InternalModel):
+    answer_id: uuid.UUID | None
+    version: str | None
+    user_public_key: str | None
+    answer: str | None
+    events: str | None
+    item_ids: list[str] = Field(default_factory=list)
+    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    start_datetime: datetime.datetime | None
+    end_datetime: datetime.datetime | None
 
 
 class AssessmentAnswer(InternalModel):
@@ -144,6 +163,18 @@ class ActivityAnswerPublic(PublicModel):
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
+
+
+class AppletActivityAnswerPublic(PublicModel):
+    answer_id: uuid.UUID
+    version: str
+    user_public_key: str | None
+    answer: str | None
+    events: str | None
+    item_ids: list[str] = Field(default_factory=list)
+    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    start_datetime: datetime.datetime
+    end_datetime: datetime.datetime
 
 
 class ReviewerPublic(PublicModel):
@@ -251,3 +282,13 @@ class AnswerExport(InternalModel):
 class PublicAnswerExport(PublicModel):
     answers: list[RespondentAnswerDataPublic] = Field(default_factory=list)
     activities: list[ActivityHistoryExport] = Field(default_factory=list)
+
+
+class Version(InternalModel):
+    version: str
+    created_at: datetime.datetime
+
+
+class VersionPublic(PublicModel):
+    version: str
+    created_at: datetime.datetime

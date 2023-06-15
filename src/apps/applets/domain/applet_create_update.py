@@ -35,7 +35,7 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
             if activity.name in activity_names:
                 raise DuplicateActivityNameError()
             activity_names.add(activity.name)
-            assessments_count += int(activity.is_assessment)
+            assessments_count += int(activity.is_reviewable)
 
         if assessments_count > 1:
             raise AssessmentLimitExceed()
@@ -68,7 +68,7 @@ class AppletUpdate(AppletBase, InternalModel):
                 raise DuplicatedActivitiesError()
             activity_ids.add(activity.id)
             activity_names.add(activity.name)
-            assessments_count += int(activity.is_assessment)
+            assessments_count += int(activity.is_reviewable)
 
         if assessments_count > 1:
             raise AssessmentLimitExceed()

@@ -49,6 +49,7 @@ class ActivityHistoryService:
                     response_is_editable=activity.response_is_editable,
                     order=activity.order,
                     is_assessment=activity.is_assessment,
+                    is_hidden=activity.is_hidden,
                     scores_and_reports=activity.scores_and_reports.dict()
                     if activity.scores_and_reports
                     else None,

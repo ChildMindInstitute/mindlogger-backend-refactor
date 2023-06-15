@@ -1481,9 +1481,10 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200, response.json()
         versions = response.json()["result"]
-        assert len(versions) == 2
+        assert len(versions) == 3
         assert versions[0]["version"] == "1.0.1"
         assert versions[1]["version"] == "1.0.0"
+        assert versions[2]["version"] == "2.0.0"
 
         response = await self.client.get(
             self.history_url.format(pk=applet_id, version="1.0.1")

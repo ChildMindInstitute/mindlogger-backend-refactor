@@ -189,7 +189,7 @@ async def workspace_applet_respondent_update(
             applet_id
         )
         await UserAppletAccessService(session, user.id, applet_id).update_meta(
-            respondent_id, Role.RESPONDENT, **schema.dict(by_alias=True)
+            respondent_id, Role.RESPONDENT, schema
         )
 
 

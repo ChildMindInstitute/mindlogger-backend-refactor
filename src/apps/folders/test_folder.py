@@ -11,7 +11,9 @@ class TestFolder(BaseTest):
         "applets/fixtures/applet_user_accesses.json",
     ]
     login_url = "/auth/login"
-    list_url = "/workspaces/7484f34a-3acc-4ee6-8a94-fd7299502fa1/folders"
+    workspace_url = "/workspaces/7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+    workspace_applets_url = f"{workspace_url}/applets"
+    list_url = f"{workspace_url}/folders"
     detail_url = f"{list_url}/{{id}}"
     pin_url = f"{detail_url}/pin/{{applet_id}}"
 
@@ -157,11 +159,27 @@ class TestFolder(BaseTest):
         response = await self.client.post(
             self.pin_url.format(
                 id="ecf66358-a717-41a7-8027-807374307732",
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
             )
         )
 
         assert response.status_code == 200, response.json()
+
+        response = await self.client.get(
+            self.workspace_applets_url,
+            dict(folderId="ecf66358-a717-41a7-8027-807374307732"),
+        )
+        assert response.json()["count"] == 2
+        assert (
+            response.json()["result"][0]["id"]
+            == "92917a56-d586-4613-b7aa-991f2c4b15b2"
+        )
+        assert response.json()["result"][0]["isPinned"] is True
+        assert (
+            response.json()["result"][1]["id"]
+            == "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        )
+        assert response.json()["result"][1]["isPinned"] is True
 
     @rollback
     async def test_unpin_applet(self):
