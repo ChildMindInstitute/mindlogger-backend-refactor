@@ -77,6 +77,13 @@ class AppletHistoryService:
         new_history: AppletHistory = AppletHistory.from_orm(new_schema)
         old_history: AppletHistory = AppletHistory.from_orm(old_schema)
 
+        if old_id_version == self._id_version:
+            changes.display_name = (
+                f"New applet {new_history.display_name} added"
+            )
+
+            return changes
+
         changes = ChangeGenerator().generate_applet_changes(
             new_history, old_history
         )

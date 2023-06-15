@@ -121,7 +121,10 @@ class ChangeGenerator:
         self._change_text_generator = ChangeTextGenerator()
 
     def generate_applet_changes(self, new_applet, old_applet):
-        changes = AppletHistoryChange()
+        changes_applet = AppletHistoryChange(
+            display_name=new_applet.display_name
+        )
+        changes = []
         for field, old_value in old_applet.dict().items():
             new_value = getattr(new_applet, field, None)
             if not any([old_value, new_value]):
@@ -129,36 +132,29 @@ class ChangeGenerator:
             if new_value == old_value:
                 continue
             if self._change_text_generator.is_considered_empty(new_value):
-                setattr(
-                    changes,
-                    field,
+                changes.append(
                     self._change_text_generator.cleared_text(
                         to_camelcase(field)
                     ),
                 )
             elif self._change_text_generator.is_considered_empty(old_value):
-                setattr(
-                    changes,
-                    field,
+                changes.append(
                     self._change_text_generator.filled_text(
                         to_camelcase(field), new_value
                     ),
                 )
             else:
-                setattr(
-                    changes,
-                    field,
+                changes.append(
                     self._change_text_generator.changed_text(
                         old_value, new_value
                     )
                     if field not in ["about", "description"]
-                    else self._change_text_generator.changed_dict(
-                        old_value,
-                        new_value,
-                    ),
+                    else f"Applet {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, new_value)}."
                 )
 
-        return changes
+        changes_applet.changes = changes
+
+        return changes_applet
 
     def generate_activity_insert(self, new_activity):
         changes = list()
@@ -293,8 +289,6 @@ class ChangeGenerator:
                                     deleted_names = list(
                                         set(old_names) - set(new_names)
                                     )
-                                    print(new_names)
-                                    print(val)
                                     for k, v in enumerate(val):
                                         if v["name"] not in old_names:
                                             changes.append(
