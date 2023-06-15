@@ -1,6 +1,11 @@
 from gettext import gettext as _
 
-from apps.shared.exception import AccessDeniedError, FieldError, NotFoundError
+from apps.shared.exception import (
+    AccessDeniedError,
+    FieldError,
+    NotFoundError,
+    ValidationError,
+)
 
 __all__ = [
     "UserAppletAccessesNotFound",
@@ -103,3 +108,11 @@ class AccessDeniedToUpdateOwnAccesses(AccessDeniedError):
 
 class InvalidAppletIDFilter(FieldError):
     message = _("Invalid applet IDs .")
+
+
+class UserSecretIdAlreadyExists(ValidationError):
+    message = _("Secret id already exists.")
+
+
+class UserSecretIdAlreadyExistsInInvitation(ValidationError):
+    message = _("Secret id already exists in pending invitation.")
