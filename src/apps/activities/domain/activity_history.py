@@ -34,30 +34,20 @@ class ActivityHistory(InternalModel):
     response_is_editable: bool
     order: int
     created_at: datetime.datetime
+    is_hidden: bool = False
+    scores_and_reports: dict | None = None
+    subscale_setting: dict | None = None
+    is_assessment: bool | None = False
 
 
 class ActivityHistoryChange(InternalModel):
     name: str | None = None
-    description: str | None = None
-    splash_screen: str | None = None
-    image: str | None = None
-    show_all_at_once: str | None = None
-    is_skippable: str | None = None
-    is_reviewable: str | None = None
-    response_is_editable: str | None = None
-    order: str | None = None
+    changes: list[str] | None = Field(default_factory=list)
 
 
 class PublicActivityHistoryChange(PublicModel):
     name: str | None = None
-    description: dict | None = None
-    splash_screen: str | None = None
-    image: str | None = None
-    show_all_at_once: str | None = None
-    is_skippable: str | None = None
-    is_reviewable: str | None = None
-    response_is_editable: str | None = None
-    order: str | None = None
+    changes: list[str] | None = Field(default_factory=list)
 
 
 class ActivityHistoryFull(ActivityHistory):

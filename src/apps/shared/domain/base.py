@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Extra
 
-__all__ = ["InternalModel", "PublicModel"]
+__all__ = ["InternalModel", "PublicModel", "to_camelcase"]
 
 
 def to_camelcase(string: str) -> str:

@@ -42,6 +42,7 @@ async def retrieve_applet_by_version(
 
     for activity_schema in activity_schemas:
         activity = Activity.from_orm(activity_schema)
+        print(activity)
         applet.activities.append(activity)
         activity_map[activity.id_version] = activity
 

@@ -12,7 +12,7 @@ from apps.activities.errors import InvalidVersionError
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
-from apps.shared.changes_generator import ChangeTextGenerator
+from apps.shared.changes_generator import ChangeTextGenerator, ChangeGenerator
 from apps.shared.version import get_prev_version
 
 
@@ -44,6 +44,12 @@ class ActivityHistoryService:
                     response_is_editable=activity.response_is_editable,
                     order=activity.order,
                     is_assessment=activity.is_assessment,
+                    scores_and_reports=activity.scores_and_reports.dict()
+                    if activity.scores_and_reports
+                    else None,
+                    subscale_setting=activity.subscale_setting.dict()
+                    if activity.subscale_setting
+                    else None,
                 )
             )
 
@@ -64,6 +70,8 @@ class ActivityHistoryService:
         self, old_applet_id_version: str
     ) -> list[ActivityHistoryChange]:
         changes_generator = ChangeTextGenerator()
+        change_activity_generator = ChangeGenerator()
+
         activity_changes: list[ActivityHistoryChange] = []
         activity_schemas = await ActivityHistoriesCRUD(
             self.session
@@ -81,7 +89,10 @@ class ActivityHistoryService:
                     ActivityHistoryChange(
                         name=changes_generator.added_text(
                             f"activity by name {new_activity.name}"
-                        )
+                        ),
+                        changes=change_activity_generator.generate_activity_insert(
+                            new_activity
+                        ),
                     )
                 )
             elif not new_activity and prev_activity:
@@ -93,68 +104,21 @@ class ActivityHistoryService:
                     )
                 )
             elif new_activity and prev_activity:
-                change = ActivityHistoryChange()
                 has_changes = False
-                if prev_activity.name != new_activity.name:
-                    has_changes = True
-                    if changes_generator.is_considered_empty(
-                        new_activity.name
-                    ):
-                        change.name = changes_generator.cleared_text("name")
-                    else:
-                        change.name = changes_generator.filled_text(
-                            "name", new_activity.name
-                        )
-                if prev_activity.description != new_activity.description:
-                    has_changes = True
-                    change.description = changes_generator.updated_text(
-                        "description"
-                    )
-                if prev_activity.splash_screen != new_activity.splash_screen:
-                    has_changes = True
-                    change.splash_screen = changes_generator.updated_text(
-                        "splash screen"
-                    )
-                if prev_activity.image != new_activity.image:
-                    has_changes = True
-                    change.image = changes_generator.updated_text("image")
-                if (
-                    prev_activity.show_all_at_once
-                    != new_activity.show_all_at_once
-                ):
-                    has_changes = True
-                    change.show_all_at_once = changes_generator.changed_text(
-                        prev_activity.show_all_at_once,
-                        new_activity.show_all_at_once,
-                    )
-                if prev_activity.is_skippable != new_activity.is_skippable:
-                    has_changes = True
-                    change.is_skippable = changes_generator.changed_text(
-                        prev_activity.is_skippable, new_activity.is_skippable
-                    )
-                if prev_activity.is_reviewable != new_activity.is_reviewable:
-                    has_changes = True
-                    change.is_reviewable = changes_generator.changed_text(
-                        prev_activity.is_reviewable, new_activity.is_reviewable
-                    )
-                if (
-                    prev_activity.response_is_editable
-                    != new_activity.response_is_editable
-                ):
-                    has_changes = True
-                    change.response_is_editable = (
-                        changes_generator.changed_text(
-                            prev_activity.response_is_editable,
-                            new_activity.response_is_editable,
-                        )
-                    )
-                if prev_activity.order != new_activity.order:
-                    has_changes = True
-                    change.order = changes_generator.changed_text(
-                        prev_activity.order, new_activity.order
-                    )
+                (
+                    changes,
+                    has_changes,
+                ) = change_activity_generator.generate_activity_update(
+                    new_activity, prev_activity
+                )
+
                 if has_changes:
-                    activity_changes.append(change)
+                    activity_changes.append(
+                        ActivityHistoryChange(
+                            name=changes_generator.updated_text("name"),
+                            changes=changes,
+                        )
+                    )
         return activity_changes
 
     def _group_and_sort_activities(
