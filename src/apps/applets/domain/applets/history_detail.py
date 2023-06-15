@@ -36,7 +36,6 @@ class Activity(InternalModel):
     is_hidden: bool = False
     scores_and_reports: dict | None = None
     subscale_setting: dict | None = None
-    is_assessment: bool | None = False
     items: list[ActivityItem] = Field(default_factory=list)
 
 

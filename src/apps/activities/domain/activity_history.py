@@ -14,7 +14,6 @@ from apps.activities.domain.activity_item_history import (
 from apps.activities.domain.scores_reports import (
     ScoresAndReports,
     SubscaleSetting,
-
 )
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.domain.custom_validations import extract_history_version
@@ -43,7 +42,6 @@ class ActivityHistory(InternalModel):
     order: int
     created_at: datetime.datetime
     is_hidden: bool = False
-    is_assessment: bool | None = False
     scores_and_reports: ScoresAndReports | None = None
     subscale_setting: SubscaleSetting | None = None
 
