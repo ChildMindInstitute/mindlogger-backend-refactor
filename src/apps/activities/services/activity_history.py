@@ -5,8 +5,8 @@ from apps.activities.crud import ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activities.domain import (
     ActivityHistory,
-    ActivityHistoryFull,
     ActivityHistoryChange,
+    ActivityHistoryFull,
 )
 from apps.activities.domain.activity_item_history import ActivityItemHistory
 
@@ -17,7 +17,7 @@ from apps.activities.errors import InvalidVersionError
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
-from apps.shared.changes_generator import ChangeTextGenerator, ChangeGenerator
+from apps.shared.changes_generator import ChangeGenerator, ChangeTextGenerator
 from apps.shared.version import get_prev_version
 
 
@@ -99,11 +99,11 @@ class ActivityHistoryService:
                         name=changes_generator.added_text(
                             f"activity by name {new_activity.name}"
                         ),
-                        changes=change_activity_generator.generate_activity_insert(
+                        changes=change_activity_generator.generate_activity_insert(  # noqa: E501
                             new_activity
                         ),
-                        items=change_activity_generator.generate_activity_items_insert(
-                            new_activity.items
+                        items=change_activity_generator.generate_activity_items_insert(  # noqa: E501
+                            getattr(new_activity, "items", [])
                         ),
                     )
                 )
@@ -129,7 +129,8 @@ class ActivityHistoryService:
                     has_changes,
                 ) = change_activity_generator.generate_activity_items_update(
                     self._group_and_sort_activities_or_items(
-                        new_activity.items + prev_activity.items
+                        getattr(new_activity, "items", [])
+                        + getattr(prev_activity, "items", [])
                     ),
                 )
 
@@ -152,10 +153,7 @@ class ActivityHistoryService:
         tuple[Optional[ActivityHistoryFull], Optional[ActivityHistoryFull]]
         | tuple[Optional[ActivityItemHistory], Optional[ActivityItemHistory]],
     ]:
-        groups_map: dict[
-            uuid.UUID,
-            tuple[ActivityHistoryFull | None, ActivityHistoryFull | None],
-        ] = dict()
+        groups_map: dict = dict()
         for item in items:
             group = groups_map.get(item.id)
             if not group:

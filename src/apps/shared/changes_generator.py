@@ -1,7 +1,7 @@
-from apps.shared.domain.base import to_camelcase
 from apps.activities.domain.activity_item_history import (
     ActivityItemHistoryChange,
 )
+from apps.shared.domain.base import to_camelcase
 
 __all__ = ["ChangeTextGenerator", "ChangeGenerator"]
 
@@ -147,7 +147,7 @@ class ChangeGenerator:
                         old_value, new_value
                     )
                     if field not in ["about", "description"]
-                    else f"Applet {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, new_value)}."
+                    else f"Applet {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, new_value)}."  # noqa: E501
                 )
 
         return changes
@@ -214,14 +214,14 @@ class ChangeGenerator:
                             elif key == "total_scores_table_data":
                                 changes.append(
                                     self._change_text_generator.added_text(
-                                        f"Activity subscale {to_camelcase(key)}"
+                                        f"Activity subscale {to_camelcase(key)}"  # noqa: E501
                                     )
                                 )
 
                             elif key == "calculate_total_score":
                                 changes.append(
                                     self._change_text_generator.set_text(
-                                        f"Activity subscale {to_camelcase(key)}",
+                                        f"Activity subscale {to_camelcase(key)}",  # noqa: E501
                                         val,
                                     )
                                 )
@@ -292,8 +292,8 @@ class ChangeGenerator:
                                     for k, v in enumerate(val):
                                         if v["name"] not in old_names:
                                             changes.append(
-                                                self._change_text_generator.added_text(
-                                                    f'Activity score {v["name"]}'
+                                                self._change_text_generator.added_text(  # noqa: E501
+                                                    f'Activity score {v["name"]}'  # noqa: E501
                                                 )
                                             )
                                         else:
@@ -304,22 +304,22 @@ class ChangeGenerator:
                                                 != v.dict()
                                             ):
                                                 changes.append(
-                                                    self._change_text_generator.changed_text(
-                                                        f'Activity score {v["name"]}'
+                                                    self._change_text_generator.changed_text(  # noqa: E501
+                                                        f'Activity score {v["name"]}'  # noqa: E501
                                                     )
                                                 )
 
                                     if deleted_names:
                                         changes.append(
-                                            self._change_text_generator.removed_text(
-                                                f'Activity scores {", ".join(deleted_names)}'
+                                            self._change_text_generator.removed_text(  # noqa: E501
+                                                f'Activity scores {", ".join(deleted_names)}'  # noqa: E501
                                             )
                                         )
                                 else:
                                     if old_val:
                                         changes.append(
-                                            self._change_text_generator.removed_text(
-                                                f"Activity scores"
+                                            self._change_text_generator.removed_text(  # noqa: E501
+                                                "Activity scores"
                                             )
                                         )
 
@@ -338,8 +338,8 @@ class ChangeGenerator:
                                     for k, v in enumerate(val):
                                         if v["name"] not in old_names:
                                             changes.append(
-                                                self._change_text_generator.added_text(
-                                                    f'Activity section {v["name"]}'
+                                                self._change_text_generator.added_text(  # noqa: E501
+                                                    f'Activity section {v["name"]}'  # noqa: E501
                                                 )
                                             )
                                         else:
@@ -350,22 +350,22 @@ class ChangeGenerator:
                                                 != v.dict()
                                             ):
                                                 changes.append(
-                                                    self._change_text_generator.changed_text(
-                                                        f'Activity section {v["name"]}'
+                                                    self._change_text_generator.changed_text(  # noqa: E501
+                                                        f'Activity section {v["name"]}'  # noqa: E501
                                                     )
                                                 )
 
                                     if deleted_names:
                                         changes.append(
-                                            self._change_text_generator.removed_text(
-                                                f'Activity section {", ".join(deleted_names)}'
+                                            self._change_text_generator.removed_text(  # noqa: E501
+                                                f'Activity section {", ".join(deleted_names)}'  # noqa: E501
                                             )
                                         )
                                 else:
                                     if old_val:
                                         changes.append(
-                                            self._change_text_generator.removed_text(
-                                                f"Activity sections"
+                                            self._change_text_generator.removed_text(  # noqa: E501
+                                                "Activity sections"
                                             )
                                         )
                     else:
@@ -394,8 +394,8 @@ class ChangeGenerator:
                                     for k, v in enumerate(val):
                                         if v["name"] not in old_names:
                                             changes.append(
-                                                self._change_text_generator.added_text(
-                                                    f'Activity subscale {v["name"]}'
+                                                self._change_text_generator.added_text(  # noqa: E501
+                                                    f'Activity subscale {v["name"]}'  # noqa: E501
                                                 )
                                             )
                                         else:
@@ -406,43 +406,43 @@ class ChangeGenerator:
                                                 != v.dict()
                                             ):
                                                 changes.append(
-                                                    self._change_text_generator.changed_text(
-                                                        f'Activity subscale {v["name"]}'
+                                                    self._change_text_generator.changed_text(  # noqa: E501
+                                                        f'Activity subscale {v["name"]}'  # noqa: E501
                                                     )
                                                 )
 
                                     if deleted_names:
                                         changes.append(
-                                            self._change_text_generator.removed_text(
-                                                f'Activity subscale {", ".join(deleted_names)}'
+                                            self._change_text_generator.removed_text(  # noqa: E501
+                                                f'Activity subscale {", ".join(deleted_names)}'  # noqa: E501
                                             )
                                         )
                                 else:
                                     if old_val:
                                         changes.append(
-                                            self._change_text_generator.removed_text(
-                                                f"Activity subscales"
+                                            self._change_text_generator.removed_text(  # noqa: E501
+                                                "Activity subscales"
                                             )
                                         )
                             else:
                                 if val != old_val:
                                     if val and not old_val:
                                         changes.append(
-                                            self._change_text_generator.set_text(
-                                                f"Activity subscale {to_camelcase(key)}",
+                                            self._change_text_generator.set_text(  # noqa: E501
+                                                f"Activity subscale {to_camelcase(key)}",  # noqa: E501
                                                 val,
                                             )
                                         )
                                     elif not val and old_val:
                                         changes.append(
-                                            self._change_text_generator.removed_text(
-                                                f"Activity subscale {to_camelcase(key)}"
+                                            self._change_text_generator.removed_text(  # noqa: E501
+                                                f"Activity subscale {to_camelcase(key)}"  # noqa: E501
                                             )
                                         )
                                     else:
                                         changes.append(
-                                            self._change_text_generator.changed_text(
-                                                f"Activity subscale {to_camelcase(key)}",
+                                            self._change_text_generator.changed_text(  # noqa: E501
+                                                f"Activity subscale {to_camelcase(key)}",  # noqa: E501
                                                 val,
                                             )
                                         )
@@ -534,7 +534,7 @@ class ChangeGenerator:
                                     for k, v in val.items():
                                         if type(v) == bool:
                                             changes.append(
-                                                self._change_text_generator.set_bool(
+                                                self._change_text_generator.set_bool(  # noqa: E501
                                                     f"Item {to_camelcase(k)}",
                                                     "enabled"
                                                     if v
@@ -543,7 +543,7 @@ class ChangeGenerator:
                                             )
                                         else:
                                             changes.append(
-                                                self._change_text_generator.added_text(
+                                                self._change_text_generator.added_text(  # noqa: E501
                                                     f"Item {to_camelcase(k)}",
                                                 )
                                             )
@@ -659,8 +659,8 @@ class ChangeGenerator:
                                         if v != old_v:
                                             if type(v) == bool:
                                                 changes.append(
-                                                    self._change_text_generator.set_bool(
-                                                        f"Item {to_camelcase(k)}",
+                                                    self._change_text_generator.set_bool(  # noqa: E501
+                                                        f"Item {to_camelcase(k)}",  # noqa: E501
                                                         "enabled"
                                                         if v
                                                         else "disabled",
@@ -668,8 +668,8 @@ class ChangeGenerator:
                                                 )
                                             else:
                                                 changes.append(
-                                                    self._change_text_generator.added_text(
-                                                        f"Item {to_camelcase(k)}",
+                                                    self._change_text_generator.added_text(  # noqa: E501
+                                                        f"Item {to_camelcase(k)}",  # noqa: E501
                                                     )
                                                 )
                                 else:

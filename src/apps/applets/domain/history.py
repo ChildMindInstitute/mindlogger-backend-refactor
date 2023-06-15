@@ -1,12 +1,13 @@
-from pydantic import Field
 import uuid
-import datetime
+
+from pydantic import Field
+
 from apps.activities.domain import (
     ActivityHistoryChange,
     PublicActivityHistoryChange,
 )
-from apps.shared.enums import Language
 from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.enums import Language
 
 __all__ = ["AppletHistory", "AppletHistoryChange", "PublicAppletHistoryChange"]
 

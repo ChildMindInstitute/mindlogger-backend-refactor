@@ -10,9 +10,8 @@ __all__ = ["AppletHistoryService"]
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
-
-from apps.shared.version import get_prev_version
 from apps.shared.changes_generator import ChangeGenerator
+from apps.shared.version import get_prev_version
 
 
 class AppletHistoryService:
