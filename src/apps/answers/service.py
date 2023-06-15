@@ -546,10 +546,9 @@ class AnswerService:
     async def get_activity_identifiers(
         self,
         activity_id: uuid.UUID,
-        filters: QueryParams,
     ) -> list[str]:
         return await AnswersCRUD(self.session).get_identifiers_by_activity_id(
-            activity_id, filters
+            activity_id
         )
 
     async def get_activity_versions(

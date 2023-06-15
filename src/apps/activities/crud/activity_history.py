@@ -110,6 +110,9 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
             AppletHistorySchema.id_version == ActivityHistorySchema.applet_id,
         )
         query = query.where(AppletHistorySchema.id == applet_id)
+        query = query.where(
+            ActivityHistorySchema.is_reviewable == False  # noqa
+        )
         query = query.order_by(
             ActivityHistorySchema.id.desc(),
             ActivityHistorySchema.created_at.desc(),
