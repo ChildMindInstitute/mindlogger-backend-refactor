@@ -21,7 +21,6 @@ from apps.answers.domain import (
 )
 from apps.answers.filters import (
     AnswerExportFilters,
-    AnswerIdentifierVersionFilter,
     AppletActivityAnswerFilter,
     AppletActivityFilter,
     AppletSubmitDateFilter,
@@ -216,9 +215,6 @@ async def applet_activity_assessment_retrieve(
 async def applet_activity_identifiers_retrieve(
     applet_id: uuid.UUID,
     activity_id: uuid.UUID,
-    query_params: QueryParams = Depends(
-        parse_query_params(AnswerIdentifierVersionFilter)
-    ),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> ResponseMulti[str]:
@@ -229,7 +225,7 @@ async def applet_activity_identifiers_retrieve(
         )
         versions = await AnswerService(
             session, user.id
-        ).get_activity_identifiers(activity_id, query_params)
+        ).get_activity_identifiers(activity_id)
     return ResponseMulti[str](result=versions, count=len(versions))
 
 

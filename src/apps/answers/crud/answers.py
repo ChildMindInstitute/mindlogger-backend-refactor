@@ -29,8 +29,8 @@ from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.alerts.errors import AnswerNotFoundError
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import RespondentAnswerData, Version
+from apps.applets.db.schemas import AppletHistorySchema
 from apps.shared.filtering import Comparisons, FilterField, Filtering
-from apps.shared.query_params import QueryParams
 from apps.users import UserSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
@@ -39,15 +39,6 @@ from infrastructure.database.crud import BaseCRUD
 
 class _AnswersExportFilter(Filtering):
     respondent_ids = FilterField(AnswerSchema.respondent_id, Comparisons.IN)
-
-
-class _IdentifierFilter(Filtering):
-    from_datetime = FilterField(
-        AnswerItemSchema.created_at, Comparisons.GREAT_OR_EQUAL
-    )
-    to_datetime = FilterField(
-        AnswerItemSchema.created_at, Comparisons.LESS_OR_EQUAL
-    )
 
 
 class AnswersCRUD(BaseCRUD[AnswerSchema]):
@@ -268,7 +259,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return parse_obj_as(list[ActivityItemHistory], items)
 
     async def get_identifiers_by_activity_id(
-        self, activity_id: uuid.UUID, query_params: QueryParams
+        self, activity_id: uuid.UUID
     ) -> list[str]:
         query: Query = select(AnswerItemSchema.identifier)
         query = query.distinct(AnswerItemSchema.identifier)
@@ -282,11 +273,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             == AnswerSchema.activity_history_id,
         )
         query = query.where(ActivityHistorySchema.id == activity_id)
-        if query_params.filters:
-            query = query.where(
-                *_IdentifierFilter().get_clauses(**query_params.filters)
-            )
-
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
@@ -295,21 +281,19 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         self, activity_id: uuid.UUID
     ) -> list[Version]:
         query: Query = select(
-            AnswerSchema.version, ActivityHistorySchema.created_at
+            ActivityHistorySchema.id,
+            AppletHistorySchema.version,
+            AppletHistorySchema.created_at,
         )
         query = query.join(
-            AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
+            AppletHistorySchema,
+            AppletHistorySchema.id_version == ActivityHistorySchema.applet_id,
         )
-        query = query.join(
-            ActivityHistorySchema,
-            ActivityHistorySchema.id_version
-            == AnswerSchema.activity_history_id,
-        )
-        query = query.distinct(AnswerSchema.version)
         query = query.where(ActivityHistorySchema.id == activity_id)
+        query = query.order_by(AppletHistorySchema.created_at.asc())
         db_result = await self._execute(query)
         results = []
-        for version, created_at in db_result.all():
+        for _, version, created_at in db_result.all():
             results.append(Version(version=version, created_at=created_at))
 
         return results

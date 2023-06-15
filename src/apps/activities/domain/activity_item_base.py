@@ -22,6 +22,7 @@ from apps.activities.errors import (
     SliderRowsValueError,
 )
 from apps.shared.domain import PublicModel
+from apps.shared.exception import BaseError
 
 
 class BaseActivityItem(BaseModel):
@@ -99,7 +100,8 @@ class BaseActivityItem(BaseModel):
                         value = ResponseTypeValueConfig[response_type][
                             "value"
                         ](**value)
-
+                    except BaseError as e:
+                        raise e
                     except Exception:
                         raise IncorrectResponseValueError(
                             type=ResponseTypeValueConfig[response_type][

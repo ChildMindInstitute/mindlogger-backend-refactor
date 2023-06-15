@@ -191,7 +191,7 @@
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
             "text": "Not at all",
-            "image": null,
+            "image": "domain.com/image.jpg",
             "score": null,
             "tooltip": null,
             "is_hidden": false,
@@ -200,7 +200,7 @@
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d3",
             "text": "Several days",
-            "image": null,
+            "image": "domain.com/image.jpg",
             "score": null,
             "tooltip": null,
             "is_hidden": false,
@@ -209,7 +209,7 @@
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d4",
             "text": "More than half the days",
-            "image": null,
+            "image": "domain.com/image.jpg",
             "score": null,
             "tooltip": null,
             "is_hidden": false,
@@ -218,7 +218,7 @@
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d5",
             "text": "Nearly every day",
-            "image": null,
+            "image": "domain.com/image.jpg",
             "score": null,
             "tooltip": null,
             "is_hidden": false,
