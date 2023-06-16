@@ -687,12 +687,9 @@ class TestActivityItems(BaseTest):
                                 en="ab_trails_ipad question?",
                                 fr="ab_trails_ipad question?",
                             ),
-                            response_type="ABTrailsIpad",
+                            response_type="ABTrailsTablet",
                             response_values=None,
-                            config=dict(
-                                description="description",
-                                imagePlaceholder="image placeholder",
-                            ),
+                            config=dict(device_type="Device type"),
                         ),
                         dict(
                             name="activity_item_ab_trails_mobile",
@@ -702,10 +699,7 @@ class TestActivityItems(BaseTest):
                             ),
                             response_type="ABTrailsMobile",
                             response_values=None,
-                            config=dict(
-                                description="description",
-                                imagePlaceholder="image placeholder",
-                            ),
+                            config=dict(device_type="Device type"),
                         ),
                     ],
                 ),

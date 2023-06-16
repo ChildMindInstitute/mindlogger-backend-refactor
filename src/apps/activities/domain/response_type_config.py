@@ -254,13 +254,13 @@ class FlankerConfig(PublicModel):
 class ABTrailsTabletConfig(PublicModel):
     tablet_tutorials: list[ABTrailsTabletTutorial] = TABLET_TUTORIALS
     tablet_nodes: list[TabletNodes] = TABLET_NODES
-    deviceType: str
+    device_type: str
 
 
 class ABTrailsMobileConfig(PublicModel):
     mobile_tutorials: list[ABTrailsMobileTutorial] = MOBILE_TUTORIALS
     mobile_nodes: list[MobileNodes] = MOBILE_NODES
-    deviceType: str
+    device_type: str
 
 
 class NoneResponseType(str, Enum):
