@@ -568,6 +568,10 @@ class AnswerService:
         versions = filters.filters.get("versions")
         if isinstance(versions, str):
             versions = versions.split(",")
+        activities = await ActivityHistoriesCRUD(self.session).get_activities(
+            activity_id, versions
+        )
+
         activity_items = await ActivityItemHistoriesCRUD(
             self.session
         ).get_activity_items(activity_id, versions)
@@ -579,12 +583,19 @@ class AnswerService:
         for activity_item in activity_items:
             activity_item_map[activity_item.activity_id].append(activity_item)
 
+        activity_map = dict()
+        for activity in activities:
+            activity_map[activity.id_version] = activity
+
         activity_answers = list()
         for answer, answer_item in answers:
             answer_item.items = activity_item_map.get(
                 answer.activity_history_id
             )
             activity_answer = AppletActivityAnswer.from_orm(answer_item)
+            if answer_item.items:
+                activity = activity_map[answer_item.items[0].activity_id]
+                activity_answer.subscale_setting = activity.subscale_setting
             activity_answer.version = answer.version
             activity_answers.append(activity_answer)
 

@@ -1,6 +1,8 @@
 import datetime
 import json
 
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -332,6 +334,7 @@ class TestAnswerActivityItems(BaseTest):
             == '{"events": ["event1", "event2"]}'
         )
 
+    @pytest.mark.main
     @rollback
     async def test_applet_activity_answers(self):
         await self.client.login(
