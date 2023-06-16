@@ -59,13 +59,16 @@ def validate_item_flow(values: dict):
                     if condition.type in list(
                         SingleSelectConditionType
                     ) or condition.type in list(MultiSelectConditionType):
-                        option_ids = [
-                            option.id
+                        option_values = [
+                            str(option.value)
                             for option in items[
                                 condition_item_index
                             ].response_values.options
                         ]
-                        if condition.payload.option_id not in option_ids:
+                        if (
+                            str(condition.payload.option_value)
+                            not in option_values
+                        ):
                             raise IncorrectConditionOptionError()
     return values
 

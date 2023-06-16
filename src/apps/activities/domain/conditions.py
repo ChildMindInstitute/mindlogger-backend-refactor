@@ -39,7 +39,7 @@ class SliderConditionType(str, Enum):
 
 
 class OptionPayload(PublicModel):
-    option_id: str
+    option_value: str
 
 
 class ValuePayload(PublicModel):
