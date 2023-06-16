@@ -32,9 +32,8 @@ class TestWorkspaces(BaseTest):
     workspace_roles_url = f"{workspaces_detail_url}/roles"
 
     workspace_applets_url = f"{workspaces_detail_url}/applets"
-    search_workspace_applets_url = f"{workspace_applets_url}/search/{{text}}"
     workspace_folder_applets_url = (
-        f"{workspaces_detail_url}/folders/{{folder_id}}/applets"
+        f"{workspaces_detail_url}/folders/" f"{{folder_id}}/applets"
     )
 
     workspace_applets_detail_url = f"{workspace_applets_url}/{{applet_id}}"
@@ -168,24 +167,10 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == 200
         assert response.json()["count"] == 3
-        assert response.json()["result"][0]["type"] == "folder"
-        assert response.json()["result"][1]["type"] == "folder"
-        assert response.json()["result"][2]["type"] == "applet"
+        assert response.json()["result"][0]["type"] == 'folder'
+        assert response.json()["result"][1]["type"] == 'folder'
+        assert response.json()["result"][2]["type"] == 'applet'
         assert response.json()["result"][2]["role"] == Role.OWNER
-
-    @rollback
-    async def test_workspace_applets_search(self):
-        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-
-        response = await self.client.get(
-            self.search_workspace_applets_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2", text="applet"
-            )
-        )
-        assert response.status_code == 200
-        assert response.json()["count"] == 1
-        assert response.json()["result"][0]["displayName"] == "Applet 3"
-        assert response.json()["result"][0]["role"] == Role.OWNER
 
     @rollback
     async def test_workspace_applets_list_by_folder_id_filter(self):

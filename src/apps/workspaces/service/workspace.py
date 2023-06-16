@@ -13,7 +13,6 @@ from apps.workspaces.domain.workspace import (
     WorkspaceInfo,
     WorkspaceManager,
     WorkspaceRespondent,
-    WorkspaceSearchApplet,
 )
 from apps.workspaces.errors import (
     InvalidAppletIDFilter,
@@ -145,49 +144,6 @@ class WorkspaceService:
             )
         return folder_or_applets
 
-    async def search_workspace_applets(
-        self,
-        owner_id: uuid.UUID,
-        search_text,
-        language: str,
-        query_params: QueryParams,
-    ) -> list[WorkspaceSearchApplet]:
-        folder_or_applets = []
-        workspace_applets = await AppletsCRUD(
-            self.session
-        ).search_workspace_applets(
-            owner_id, self._user_id, search_text, query_params
-        )
-        for folder_or_applet in workspace_applets:
-            folder_or_applets.append(
-                WorkspaceSearchApplet(
-                    id=folder_or_applet[0],
-                    display_name=folder_or_applet[1],
-                    image=folder_or_applet[2],
-                    is_pinned=False,
-                    encryption=folder_or_applet[3],
-                    created_at=folder_or_applet[4],
-                    updated_at=folder_or_applet[5],
-                    version=folder_or_applet[6],
-                    type="applet",
-                    role=folder_or_applet[7],
-                    folder_id=folder_or_applet[8],
-                    folder_name=folder_or_applet[9],
-                )
-            )
-        return folder_or_applets
-
-    async def search_workspace_applets_count(
-        self,
-        owner_id: uuid.UUID,
-        search_text,
-    ) -> int:
-        count = await AppletsCRUD(self.session).search_workspace_applets_count(
-            owner_id, self._user_id, search_text
-        )
-
-        return count
-
     async def get_workspace_applets_count(self, owner_id: uuid.UUID) -> int:
         count = await AppletsCRUD(self.session).get_workspace_applets_count(
             owner_id, self._user_id
@@ -213,8 +169,6 @@ class WorkspaceService:
                     created_at=schema.created_at,
                     updated_at=schema.updated_at,
                     version=schema.version,
-                    type="applet",
-                    folders_applet_count=0,
                 )
             )
 

@@ -3,6 +3,9 @@ import uuid
 
 from pydantic import Field, validator
 
+from apps.applets.domain.applet import (
+    AppletSingleLanguageInfoPublic,
+)
 from apps.applets.domain.base import Encryption
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -28,8 +31,8 @@ class PublicWorkspace(PublicModel):
     )
     workspace_name: str = Field(
         description="This field represents the name of workspace "
-        "which is consists of 'first name', 'last name' of user "
-        "which is applet owner and prefix",
+                    "which is consists of 'first name', 'last name' of user "
+                    "which is applet owner and prefix",
     )
 
 
@@ -43,8 +46,8 @@ class UserWorkspace(InternalModel):
     )
     workspace_name: str = Field(
         description="This field represents the name of workspace "
-        "which is consists of 'first name', 'last name' of user "
-        "which is applet owner and prefix",
+                    "which is consists of 'first name', 'last name' of user "
+                    "which is applet owner and prefix",
     )
 
 
@@ -186,21 +189,6 @@ class WorkspaceApplet(InternalModel):
     folders_applet_count: int
 
 
-class WorkspaceSearchApplet(InternalModel):
-    id: uuid.UUID
-    display_name: str
-    image: str | None
-    is_pinned: bool
-    encryption: Encryption | None
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
-    version: str | None
-    role: Role | None = Role.RESPONDENT
-    type: str
-    folder_id: uuid.UUID | None
-    folder_name: str | None
-
-
 class WorkspaceAppletPublic(PublicModel):
     id: uuid.UUID
     display_name: str
@@ -213,21 +201,6 @@ class WorkspaceAppletPublic(PublicModel):
     role: Role | None
     type: str
     folders_applet_count: int
-
-
-class WorkspaceSearchAppletPublic(PublicModel):
-    id: uuid.UUID
-    display_name: str
-    image: str | None
-    is_pinned: bool
-    encryption: Encryption | None
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
-    version: str | None
-    role: Role | None = Role.RESPONDENT
-    type: str
-    folder_id: uuid.UUID | None
-    folder_name: str | None
 
 
 class WorkspacePrioritizedRole(PublicModel):
