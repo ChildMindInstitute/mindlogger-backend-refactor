@@ -62,7 +62,7 @@ class TouchValues(PublicModel):
     pass
 
 
-class ABTrailsIpadValues(PublicModel):
+class ABTrailsTabletValues(PublicModel):
     pass
 
 
@@ -311,7 +311,7 @@ ResponseValueConfigOptions = [
     FlankerValues,
     GyroscopeValues,
     TouchValues,
-    ABTrailsIpadValues,
+    ABTrailsTabletValues,
     ABTrailsMobileValues,
 ]
 

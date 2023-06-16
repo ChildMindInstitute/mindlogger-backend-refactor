@@ -2,6 +2,18 @@ from enum import Enum
 
 from pydantic import Field, NonNegativeInt, PositiveInt, validator
 
+from apps.activities.domain.constants_ab_trails_mobile import (
+    MOBILE_NODES,
+    MOBILE_TUTORIALS,
+    ABTrailsMobileTutorial,
+    MobileNodes,
+)
+from apps.activities.domain.constants_ab_trails_tablet import (
+    TABLET_NODES,
+    TABLET_TUTORIALS,
+    ABTrailsTabletTutorial,
+    TabletNodes,
+)
 from apps.activities.domain.response_values import ResponseValueConfigOptions
 from apps.activities.errors import CorrectAnswerRequiredError
 from apps.shared.domain import PublicModel
@@ -239,14 +251,16 @@ class FlankerConfig(PublicModel):
     test: FlankerTestSettings
 
 
-class ABTrailsIpadConfig(PublicModel):
-    description: str
-    image_placeholder: str
+class ABTrailsTabletConfig(PublicModel):
+    tablet_tutorials: list[ABTrailsTabletTutorial] = TABLET_TUTORIALS
+    tablet_nodes: list[TabletNodes] = TABLET_NODES
+    deviceType: str
 
 
 class ABTrailsMobileConfig(PublicModel):
-    description: str
-    image_placeholder: str
+    mobile_tutorials: list[ABTrailsMobileTutorial] = MOBILE_TUTORIALS
+    mobile_nodes: list[MobileNodes] = MOBILE_NODES
+    deviceType: str
 
 
 class NoneResponseType(str, Enum):
@@ -261,7 +275,7 @@ class NoneResponseType(str, Enum):
     FLANKER = "flanker"
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"
-    ABTRAILSIPAD = "ABTrailsIpad"
+    ABTRAILSTABLET = "ABTrailsTablet"
     ABTRAILSMOBILE = "ABTrailsMobile"
 
 
@@ -287,7 +301,7 @@ class ResponseType(str, Enum):
     FLANKER = "flanker"
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"
-    ABTRAILSIPAD = "ABTrailsIpad"
+    ABTRAILSTABLET = "ABTrailsTablet"
     ABTRAILSMOBILE = "ABTrailsMobile"
 
 
@@ -295,7 +309,7 @@ class PerformanceTaskType(str, Enum):
     FLANKER = "flanker"
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"
-    ABTRAILSIPAD = "ABTrailsIpad"
+    ABTRAILSTABLET = "ABTrailsTablet"
     ABTRAILSMOBILE = "ABTrailsMobile"
 
 
@@ -321,7 +335,7 @@ ResponseTypeConfigOptions = [
     FlankerConfig,
     GyroscopeConfig,
     TouchConfig,
-    ABTrailsIpadConfig,
+    ABTrailsTabletConfig,
     ABTrailsMobileConfig,
 ]
 
@@ -347,7 +361,7 @@ ResponseTypeConfig = (
     | FlankerConfig
     | GyroscopeConfig
     | TouchConfig
-    | ABTrailsIpadConfig
+    | ABTrailsTabletConfig
     | ABTrailsMobileConfig
 )
 
