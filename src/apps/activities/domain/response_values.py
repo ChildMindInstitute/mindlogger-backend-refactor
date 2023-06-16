@@ -62,11 +62,35 @@ class TouchValues(PublicModel):
     pass
 
 
-class ABTrailsTabletValues(PublicModel):
+class ABTrailsTabletFirstValues(PublicModel):
     pass
 
 
-class ABTrailsMobileValues(PublicModel):
+class ABTrailsTabletSecondValues(PublicModel):
+    pass
+
+
+class ABTrailsTabletThirdValues(PublicModel):
+    pass
+
+
+class ABTrailsTabletFourthValues(PublicModel):
+    pass
+
+
+class ABTrailsMobileFirstValues(PublicModel):
+    pass
+
+
+class ABTrailsMobileSecondValues(PublicModel):
+    pass
+
+
+class ABTrailsMobileThirdValues(PublicModel):
+    pass
+
+
+class ABTrailsMobileFourthValues(PublicModel):
     pass
 
 
@@ -311,8 +335,14 @@ ResponseValueConfigOptions = [
     FlankerValues,
     GyroscopeValues,
     TouchValues,
-    ABTrailsTabletValues,
-    ABTrailsMobileValues,
+    ABTrailsTabletFirstValues,
+    ABTrailsTabletSecondValues,
+    ABTrailsTabletThirdValues,
+    ABTrailsTabletFourthValues,
+    ABTrailsMobileFirstValues,
+    ABTrailsMobileSecondValues,
+    ABTrailsMobileThirdValues,
+    ABTrailsMobileFourthValues,
 ]
 
 

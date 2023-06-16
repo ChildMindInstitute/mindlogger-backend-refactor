@@ -9,7 +9,6 @@ class Node(PublicModel):
 
 
 class BaseNodes(PublicModel):
-    test_id: int
     radius: float
     font_size: float
     nodes: list[Node]
@@ -21,5 +20,4 @@ class Tutorial(PublicModel):
 
 
 class ABTrailsTutorial(PublicModel):
-    test_id: int
     tutorials: list[Tutorial]
