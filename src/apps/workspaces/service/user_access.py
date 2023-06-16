@@ -60,7 +60,10 @@ class UserAccessService:
         return [UserWorkspace.from_orm(workspace) for workspace in workspaces]
 
     async def get_workspace_applets_by_language(
-        self, language: str, query_params: QueryParams
+        self,
+        language: str,
+        query_params: QueryParams,
+        roles: list[Role] | None = None,
     ) -> list[AppletSingleLanguageInfo]:
         """Returns the user their chosen workspace applets."""
         folder_id = query_params.filters.pop("folder_id", None)
@@ -71,7 +74,7 @@ class UserAccessService:
         schemas = await UserAppletAccessCRUD(
             self.session
         ).get_accessible_applets(
-            self._user_id, query_params, folder_applet_query, folder_id
+            self._user_id, query_params, folder_applet_query, folder_id, roles
         )
 
         theme_ids = [schema.theme_id for schema in schemas if schema.theme_id]
@@ -208,7 +211,7 @@ class UserAccessService:
             )
 
     async def get_workspace_applets_count(
-        self, query_params: QueryParams
+        self, query_params: QueryParams, roles: list[Role] | None = None
     ) -> int:
         folder_id = query_params.filters.pop("folder_id", None)
         folder_applet_query = FolderCRUD(self.session).get_folder_applets(
@@ -218,7 +221,7 @@ class UserAccessService:
         count = await UserAppletAccessCRUD(
             self.session
         ).get_accessible_applets_count(
-            self._user_id, query_params, folder_applet_query, folder_id
+            self._user_id, query_params, folder_applet_query, folder_id, roles
         )
         return count
 

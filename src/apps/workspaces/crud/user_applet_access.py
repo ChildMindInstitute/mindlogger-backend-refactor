@@ -153,6 +153,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query_params: QueryParams,
         folder_applet_query: Query,
         folder_id: uuid.UUID | None,
+        roles: list[Role] | None = None,
     ) -> list[AppletSchema]:
         if folder_id:
             is_pinned_var = func.coalesce(
@@ -195,6 +196,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserAppletAccessSchema.applet_id == AppletSchema.id,
         )
         query = query.where(UserAppletAccessSchema.user_id == user_id)
+        if roles:
+            query = query.where(UserAppletAccessSchema.role.in_(roles))
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
 
         if query_params.filters:
@@ -224,6 +227,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query_params: QueryParams,
         folder_applet_query: Query,
         folder_id: uuid.UUID | None,
+        roles: list[Role] | None = None,
     ) -> int:
         applet_ids: Query = select(AppletSchema.id)
         applet_ids = applet_ids.join(
@@ -233,6 +237,10 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         applet_ids = applet_ids.where(
             UserAppletAccessSchema.user_id == user_id
         )
+        if roles:
+            applet_ids = applet_ids.where(
+                UserAppletAccessSchema.role.in_(roles)
+            )
         applet_ids = applet_ids.where(
             AppletSchema.is_deleted == False  # noqa: E712
         )

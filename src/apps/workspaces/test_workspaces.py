@@ -167,9 +167,7 @@ class TestWorkspaces(BaseTest):
 
     @rollback
     async def test_workspace_applets_list_by_folder_id_filter(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
 
         response = await self.client.get(
             self.workspace_applets_url.format(

@@ -119,11 +119,14 @@ class WorkspaceService:
         return users, total
 
     async def get_workspace_applets(
-        self, language: str, query_params: QueryParams
+        self,
+        language: str,
+        query_params: QueryParams,
+        roles: list[Role] | None = None,
     ) -> list[WorkspaceApplet]:
         applets = await UserAccessService(
             self.session, self._user_id
-        ).get_workspace_applets_by_language(language, query_params)
+        ).get_workspace_applets_by_language(language, query_params, roles)
 
         applet_ids = [applet.id for applet in applets]
 

@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from copy import deepcopy
 
@@ -133,21 +134,22 @@ async def workspace_applets(
     """Fetch all applets for the specific user and specific workspace."""
     query_params.filters["owner_id"] = owner_id
 
-    async with atomic(session):
-        service = WorkspaceService(session, user.id)
-        await service.exists_by_owner_id(owner_id)
-        if not user.is_super_admin:
-            await CheckAccessService(session, user.id).check_workspace_access(
-                owner_id
-            )
-            await UserAccessService(session, user.id).check_access(owner_id)
-        applets = await service.get_workspace_applets(
-            language, deepcopy(query_params)
+    service = WorkspaceService(session, user.id)
+    await service.exists_by_owner_id(owner_id)
+    if not user.is_super_admin:
+        await CheckAccessService(session, user.id).check_workspace_access(
+            owner_id
         )
+        await UserAccessService(session, user.id).check_access(owner_id)
 
-        count = await UserAccessService(
-            session, user.id
-        ).get_workspace_applets_count(deepcopy(query_params))
+    applets, count = await asyncio.gather(
+        service.get_workspace_applets(
+            language, deepcopy(query_params), roles=Role.managers()
+        ),
+        UserAccessService(session, user.id).get_workspace_applets_count(
+            deepcopy(query_params), roles=Role.managers()
+        ),
+    )
 
     return ResponseMulti(
         result=[WorkspaceAppletPublic.from_orm(applet) for applet in applets],
