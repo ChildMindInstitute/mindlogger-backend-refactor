@@ -10,6 +10,7 @@ from apps.activities.domain.activity_history import (
     ActivityHistoryFull,
 )
 from apps.activities.domain.response_type_config import ResponseType
+from apps.activities.domain.scores_reports import SubscaleSetting
 from apps.shared.domain import InternalModel, PublicModel
 
 
@@ -133,6 +134,7 @@ class AppletActivityAnswer(InternalModel):
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     start_datetime: datetime.datetime | None
     end_datetime: datetime.datetime | None
+    subscale_setting: SubscaleSetting | None
 
 
 class AssessmentAnswer(InternalModel):
@@ -175,6 +177,7 @@ class AppletActivityAnswerPublic(PublicModel):
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     start_datetime: datetime.datetime
     end_datetime: datetime.datetime
+    subscale_setting: SubscaleSetting | None
 
 
 class ReviewerPublic(PublicModel):

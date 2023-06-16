@@ -119,3 +119,18 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
+
+    async def get_activities(
+        self, activity_id: uuid.UUID, versions: list[str] | None
+    ):
+        query: Query = select(ActivityHistorySchema)
+        query = query.join(
+            AppletHistorySchema,
+            AppletHistorySchema.id_version == ActivityHistorySchema.applet_id,
+        )
+        query = query.where(ActivityHistorySchema.id == activity_id)
+        if versions:
+            query = query.where(AppletHistorySchema.version.in_(versions))
+
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
