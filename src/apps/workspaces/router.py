@@ -21,6 +21,7 @@ from apps.workspaces.api import (
     workspace_applet_respondent_update,
     workspace_applet_respondents_list,
     workspace_applets,
+    workspace_folder_applets,
     workspace_manager_pin,
     workspace_managers_applet_access_list,
     workspace_managers_applet_access_set,
@@ -91,7 +92,17 @@ router.get(
     },
 )(workspace_roles_retrieve)
 
-# Applets in a specific workspace where owner_id is applet owner
+router.get(
+    "/{owner_id}/folder/{folder_id}/applets",
+    response_model=ResponseMulti[WorkspaceAppletPublic],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[WorkspaceAppletPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_folder_applets)
+
 router.get(
     "/{owner_id}/applets",
     response_model=ResponseMulti[WorkspaceAppletPublic],
@@ -146,7 +157,6 @@ router.get(
     },
 )(workspace_respondents_list)
 
-
 router.get(
     "/{owner_id}/applets/{applet_id}/respondents",
     status_code=status.HTTP_200_OK,
@@ -159,7 +169,6 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_applet_respondents_list)
-
 
 router.get(
     "/{owner_id}/managers",
@@ -193,7 +202,6 @@ router.post(
     response_class=EmptyResponse,
 )(workspace_respondent_pin)
 
-
 router.post(
     "/{owner_id}/managers/{user_id}/pin",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -203,7 +211,6 @@ router.post(
     },
     response_class=EmptyResponse,
 )(workspace_manager_pin)
-
 
 router.get(
     "/{owner_id}/respondents/{respondent_id}/accesses",

@@ -1,4 +1,3 @@
-import uuid
 from uuid import uuid4
 
 from apps.shared.test import BaseTest
@@ -31,7 +30,12 @@ class TestWorkspaces(BaseTest):
     workspaces_detail_url = f"{workspaces_list_url}/{{owner_id}}"
     workspaces_priority_role_url = f"{workspaces_detail_url}/priority_role"
     workspace_roles_url = f"{workspaces_detail_url}/roles"
+
     workspace_applets_url = f"{workspaces_detail_url}/applets"
+    workspace_folder_applets_url = (
+        f"{workspaces_detail_url}/folders/" f"{{folder_id}}/applets"
+    )
+
     workspace_applets_detail_url = f"{workspace_applets_url}/{{applet_id}}"
     applet_respondent_url = (
         f"{workspace_applets_detail_url}/respondents/{{respondent_id}}"
@@ -162,8 +166,11 @@ class TestWorkspaces(BaseTest):
             )
         )
         assert response.status_code == 200
-        assert response.json()["count"] == 1
-        assert response.json()["result"][0]["role"] == Role.OWNER
+        assert response.json()["count"] == 3
+        assert response.json()["result"][0]["type"] == 'folder'
+        assert response.json()["result"][1]["type"] == 'folder'
+        assert response.json()["result"][2]["type"] == 'applet'
+        assert response.json()["result"][2]["role"] == Role.OWNER
 
     @rollback
     async def test_workspace_applets_list_by_folder_id_filter(self):
@@ -177,16 +184,7 @@ class TestWorkspaces(BaseTest):
             ),
         )
         assert response.status_code == 200
-        assert response.json()["count"] == 1
-
-        response = await self.client.get(
-            self.workspace_applets_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
-            dict(folderId=uuid.uuid4()),
-        )
-        assert response.status_code == 200
-        assert response.json()["count"] == 0
+        assert response.json()["count"] == 5
 
     @rollback
     async def test_workspace_applets_detail(self):
