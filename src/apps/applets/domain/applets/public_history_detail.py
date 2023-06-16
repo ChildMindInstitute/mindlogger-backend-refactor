@@ -12,6 +12,10 @@ class ActivityItem(PublicModel):
     response_values: list | dict | None
     config: dict = dict()
     order: int
+    name: str
+    is_hidden: bool | None = False
+    conditional_logic: dict | None = None
+    allow_edit: bool | None = None
 
 
 class Activity(PublicModel):
@@ -25,6 +29,9 @@ class Activity(PublicModel):
     is_reviewable: bool = False
     response_is_editable: bool = False
     order: int
+    is_hidden: bool = False
+    scores_and_reports: dict | None = None
+    subscale_setting: dict | None = None
     items: list[ActivityItem] = Field(default_factory=list)
 
 

@@ -10,7 +10,7 @@ __all__ = ["AppletHistoryService"]
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
-from apps.shared.changes_generator import ChangeTextGenerator
+from apps.shared.changes_generator import ChangeGenerator
 from apps.shared.version import get_prev_version
 
 
@@ -65,7 +65,6 @@ class AppletHistoryService:
     async def _get_applet_changes(
         self, old_id_version: str
     ) -> AppletHistoryChange:
-        changes_generator = ChangeTextGenerator()
         changes = AppletHistoryChange()
 
         new_schema = await AppletHistoriesCRUD(
@@ -77,26 +76,18 @@ class AppletHistoryService:
 
         new_history: AppletHistory = AppletHistory.from_orm(new_schema)
         old_history: AppletHistory = AppletHistory.from_orm(old_schema)
-        for field, old_value in old_history.dict().items():
-            new_value = getattr(new_history, field)
-            if not any([old_value, new_value]):
-                continue
-            if new_value == old_value:
-                continue
-            if changes_generator.is_considered_empty(new_value):
-                setattr(changes, field, changes_generator.cleared_text(field))
-            elif changes_generator.is_considered_empty(old_value):
-                setattr(
-                    changes,
-                    field,
-                    changes_generator.filled_text(field, new_value),
-                )
-            else:
-                setattr(
-                    changes,
-                    field,
-                    changes_generator.changed_text(old_value, new_value),
-                )
+
+        if old_id_version == self._id_version:
+            changes.display_name = (
+                f"New applet {new_history.display_name} added"
+            )
+
+            return changes
+        changes.display_name = f"Applet {new_history.display_name} updated "
+        changes.changes = ChangeGenerator().generate_applet_changes(
+            new_history, old_history
+        )
+
         return changes
 
     async def get(self) -> AppletHistory:

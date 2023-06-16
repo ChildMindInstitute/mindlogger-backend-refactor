@@ -14,3 +14,11 @@ class ActivityItemHistory(InternalModel):
     response_values: dict | list | None
     config: dict
     order: int
+    is_hidden: bool | None = False
+    conditional_logic: dict | None = None
+    allow_edit: bool | None = None
+
+
+class ActivityItemHistoryChange(InternalModel):
+    name: str | None = None
+    changes: list[str] | None = None

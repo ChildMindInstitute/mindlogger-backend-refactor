@@ -3,7 +3,12 @@ from typing import Optional
 
 from apps.activities.crud import ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivityHistorySchema
-from apps.activities.domain import ActivityHistory, ActivityHistoryChange
+from apps.activities.domain import (
+    ActivityHistory,
+    ActivityHistoryChange,
+    ActivityHistoryFull,
+)
+from apps.activities.domain.activity_item_history import ActivityItemHistory
 
 __all__ = ["ActivityHistoryService"]
 
@@ -12,7 +17,7 @@ from apps.activities.errors import InvalidVersionError
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
-from apps.shared.changes_generator import ChangeTextGenerator
+from apps.shared.changes_generator import ChangeGenerator, ChangeTextGenerator
 from apps.shared.version import get_prev_version
 
 
@@ -70,6 +75,8 @@ class ActivityHistoryService:
         self, old_applet_id_version: str
     ) -> list[ActivityHistoryChange]:
         changes_generator = ChangeTextGenerator()
+        change_activity_generator = ChangeGenerator()
+
         activity_changes: list[ActivityHistoryChange] = []
         activity_schemas = await ActivityHistoriesCRUD(
             self.session
@@ -77,17 +84,27 @@ class ActivityHistoryService:
             [self._applet_id_version, old_applet_id_version]
         )
         activities = [
-            ActivityHistory.from_orm(schema) for schema in activity_schemas
+            ActivityHistoryFull.from_orm(schema) for schema in activity_schemas
         ]
+        for activity in activities:
+            activity.items = await ActivityItemHistoryService(
+                self.session, self._applet_id, self._version
+            ).get_by_activity_id_versions([activity.id_version])
 
-        activity_groups = self._group_and_sort_activities(activities)
+        activity_groups = self._group_and_sort_activities_or_items(activities)
         for _, (prev_activity, new_activity) in activity_groups.items():
             if not prev_activity and new_activity:
                 activity_changes.append(
                     ActivityHistoryChange(
                         name=changes_generator.added_text(
                             f"activity by name {new_activity.name}"
-                        )
+                        ),
+                        changes=change_activity_generator.generate_activity_insert(  # noqa: E501
+                            new_activity
+                        ),
+                        items=change_activity_generator.generate_activity_items_insert(  # noqa: E501
+                            getattr(new_activity, "items", [])
+                        ),
                     )
                 )
             elif not new_activity and prev_activity:
@@ -99,91 +116,57 @@ class ActivityHistoryService:
                     )
                 )
             elif new_activity and prev_activity:
-                change = ActivityHistoryChange()
                 has_changes = False
-                if prev_activity.name != new_activity.name:
-                    has_changes = True
-                    if changes_generator.is_considered_empty(
-                        new_activity.name
-                    ):
-                        change.name = changes_generator.cleared_text("name")
-                    else:
-                        change.name = changes_generator.filled_text(
-                            "name", new_activity.name
-                        )
-                if prev_activity.description != new_activity.description:
-                    has_changes = True
-                    change.description = changes_generator.updated_text(
-                        "description"
-                    )
-                if prev_activity.splash_screen != new_activity.splash_screen:
-                    has_changes = True
-                    change.splash_screen = changes_generator.updated_text(
-                        "splash screen"
-                    )
-                if prev_activity.image != new_activity.image:
-                    has_changes = True
-                    change.image = changes_generator.updated_text("image")
-                if (
-                    prev_activity.show_all_at_once
-                    != new_activity.show_all_at_once
-                ):
-                    has_changes = True
-                    change.show_all_at_once = changes_generator.changed_text(
-                        prev_activity.show_all_at_once,
-                        new_activity.show_all_at_once,
-                    )
-                if prev_activity.is_skippable != new_activity.is_skippable:
-                    has_changes = True
-                    change.is_skippable = changes_generator.changed_text(
-                        prev_activity.is_skippable, new_activity.is_skippable
-                    )
-                if prev_activity.is_reviewable != new_activity.is_reviewable:
-                    has_changes = True
-                    change.is_reviewable = changes_generator.changed_text(
-                        prev_activity.is_reviewable, new_activity.is_reviewable
-                    )
-                if (
-                    prev_activity.response_is_editable
-                    != new_activity.response_is_editable
-                ):
-                    has_changes = True
-                    change.response_is_editable = (
-                        changes_generator.changed_text(
-                            prev_activity.response_is_editable,
-                            new_activity.response_is_editable,
-                        )
-                    )
-                if prev_activity.order != new_activity.order:
-                    has_changes = True
-                    change.order = changes_generator.changed_text(
-                        prev_activity.order, new_activity.order
-                    )
+                (
+                    changes,
+                    has_changes,
+                ) = change_activity_generator.generate_activity_update(
+                    new_activity, prev_activity
+                )
+                changes_items = []
+                (
+                    changes_items,
+                    has_changes,
+                ) = change_activity_generator.generate_activity_items_update(
+                    self._group_and_sort_activities_or_items(
+                        getattr(new_activity, "items", [])
+                        + getattr(prev_activity, "items", [])
+                    ),
+                )
+
                 if has_changes:
-                    activity_changes.append(change)
+                    activity_changes.append(
+                        ActivityHistoryChange(
+                            name=changes_generator.updated_text(
+                                f"Activity {new_activity.name}"
+                            ),
+                            changes=changes,
+                            items=changes_items,
+                        )
+                    )
         return activity_changes
 
-    def _group_and_sort_activities(
-        self, activities: list[ActivityHistory]
+    def _group_and_sort_activities_or_items(
+        self, items: list[ActivityHistoryFull] | list[ActivityItemHistory]
     ) -> dict[
-        uuid.UUID, tuple[Optional[ActivityHistory], Optional[ActivityHistory]]
+        uuid.UUID,
+        tuple[Optional[ActivityHistoryFull], Optional[ActivityHistoryFull]]
+        | tuple[Optional[ActivityItemHistory], Optional[ActivityItemHistory]],
     ]:
-        groups_map: dict[
-            uuid.UUID, tuple[ActivityHistory | None, ActivityHistory | None]
-        ] = dict()
-        for activity in activities:
-            group = groups_map.get(activity.id)
+        groups_map: dict = dict()
+        for item in items:
+            group = groups_map.get(item.id)
             if not group:
-                if self._version in activity.id_version.split("_"):
-                    group = (None, activity)
+                if self._version in item.id_version.split("_"):
+                    group = (None, item)
                 else:
-                    group = (activity, None)
+                    group = (item, None)
             elif group:
-                if self._version in activity.id_version.split("_"):
-                    group = (group[0], activity)
+                if self._version in item.id_version.split("_"):
+                    group = (group[0], item)
                 else:
-                    group = (activity, group[1])
-            groups_map[activity.id] = group
+                    group = (item, group[1])
+            groups_map[item.id] = group
 
         return groups_map
 
