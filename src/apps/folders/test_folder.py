@@ -1,3 +1,5 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -153,6 +155,7 @@ class TestFolder(BaseTest):
             == "Folder has applets, move applets from folder to delete it."
         )
 
+    @pytest.mark.main
     @rollback
     async def test_pin_applet(self):
         await self.client.login(
