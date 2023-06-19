@@ -15,6 +15,7 @@ from apps.shared.response import EmptyResponse
 from apps.workspaces.api import (
     applet_remove_respondent_access,
     managers_priority_role_retrieve,
+    search_workspace_applets,
     user_workspaces,
     workspace_applet_detail,
     workspace_applet_managers_list,
@@ -45,6 +46,7 @@ from apps.workspaces.domain.workspace import (
     PublicWorkspaceRespondent,
     WorkspaceAppletPublic,
     WorkspacePrioritizedRole,
+    WorkspaceSearchAppletPublic,
 )
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
@@ -93,7 +95,7 @@ router.get(
 )(workspace_roles_retrieve)
 
 router.get(
-    "/{owner_id}/folder/{folder_id}/applets",
+    "/{owner_id}/folders/{folder_id}/applets",
     response_model=ResponseMulti[WorkspaceAppletPublic],
     status_code=status.HTTP_200_OK,
     responses={
@@ -113,6 +115,17 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_applets)
+
+router.get(
+    "/{owner_id}/applets/search/{text}",
+    response_model=ResponseMulti[WorkspaceSearchAppletPublic],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[WorkspaceAppletPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(search_workspace_applets)
 
 router.get(
     "/{owner_id}/applets/{applet_id}",
