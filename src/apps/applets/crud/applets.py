@@ -8,11 +8,11 @@ from sqlalchemy import (
     case,
     distinct,
     false,
-    true,
     literal,
     null,
     or_,
     select,
+    true,
     update,
 )
 from sqlalchemy.engine import Result
