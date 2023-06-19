@@ -13,6 +13,9 @@ class TestFolder(BaseTest):
     login_url = "/auth/login"
     workspace_url = "/workspaces/7484f34a-3acc-4ee6-8a94-fd7299502fa1"
     workspace_applets_url = f"{workspace_url}/applets"
+    workspace_folder_applets_url = (
+        f"{workspace_url}/folders/{{folder_id}}/applets"
+    )
     list_url = f"{workspace_url}/folders"
     detail_url = f"{list_url}/{{id}}"
     pin_url = f"{detail_url}/pin/{{applet_id}}"
@@ -166,9 +169,11 @@ class TestFolder(BaseTest):
         assert response.status_code == 200, response.json()
 
         response = await self.client.get(
-            self.workspace_applets_url,
-            dict(folderId="ecf66358-a717-41a7-8027-807374307732"),
+            self.workspace_folder_applets_url.format(
+                folder_id="ecf66358-a717-41a7-8027-807374307732"
+            ),
         )
+        assert response.status_code == 200
         assert response.json()["count"] == 2
         assert (
             response.json()["result"][0]["id"]

@@ -1,6 +1,7 @@
 import uuid
 from typing import Tuple
 
+from apps.applets.crud import AppletsCRUD
 from apps.shared.query_params import QueryParams
 from apps.users import User, UsersCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -12,6 +13,7 @@ from apps.workspaces.domain.workspace import (
     WorkspaceInfo,
     WorkspaceManager,
     WorkspaceRespondent,
+    WorkspaceSearchApplet,
 )
 from apps.workspaces.errors import (
     InvalidAppletIDFilter,
@@ -119,11 +121,102 @@ class WorkspaceService:
         return users, total
 
     async def get_workspace_applets(
-        self, language: str, query_params: QueryParams
+        self, owner_id: uuid.UUID, language: str, query_params: QueryParams
     ) -> list[WorkspaceApplet]:
-        applets = await UserAccessService(
-            self.session, self._user_id
-        ).get_workspace_applets_by_language(language, query_params)
+        folder_or_applets = []
+        workspace_applets = await AppletsCRUD(
+            self.session
+        ).get_workspace_applets(owner_id, self._user_id, query_params)
+        for folder_or_applet in workspace_applets:
+            folder_or_applets.append(
+                WorkspaceApplet(
+                    id=folder_or_applet[0],
+                    display_name=folder_or_applet[1],
+                    image=folder_or_applet[2],
+                    is_pinned=folder_or_applet[3],
+                    encryption=folder_or_applet[4],
+                    created_at=folder_or_applet[5],
+                    updated_at=folder_or_applet[6],
+                    version=folder_or_applet[7],
+                    type=folder_or_applet[8],
+                    role=folder_or_applet[9],
+                    folders_applet_count=folder_or_applet[10],
+                )
+            )
+        return folder_or_applets
+
+    async def search_workspace_applets(
+        self,
+        owner_id: uuid.UUID,
+        search_text,
+        language: str,
+        query_params: QueryParams,
+    ) -> list[WorkspaceSearchApplet]:
+        folder_or_applets = []
+        workspace_applets = await AppletsCRUD(
+            self.session
+        ).search_workspace_applets(
+            owner_id, self._user_id, search_text, query_params
+        )
+        for folder_or_applet in workspace_applets:
+            folder_or_applets.append(
+                WorkspaceSearchApplet(
+                    id=folder_or_applet[0],
+                    display_name=folder_or_applet[1],
+                    image=folder_or_applet[2],
+                    is_pinned=False,
+                    encryption=folder_or_applet[3],
+                    created_at=folder_or_applet[4],
+                    updated_at=folder_or_applet[5],
+                    version=folder_or_applet[6],
+                    type="applet",
+                    role=folder_or_applet[7],
+                    folder_id=folder_or_applet[8],
+                    folder_name=folder_or_applet[9],
+                )
+            )
+        return folder_or_applets
+
+    async def search_workspace_applets_count(
+        self,
+        owner_id: uuid.UUID,
+        search_text,
+    ) -> int:
+        count = await AppletsCRUD(self.session).search_workspace_applets_count(
+            owner_id, self._user_id, search_text
+        )
+
+        return count
+
+    async def get_workspace_applets_count(self, owner_id: uuid.UUID) -> int:
+        count = await AppletsCRUD(self.session).get_workspace_applets_count(
+            owner_id, self._user_id
+        )
+        return count
+
+    async def get_workspace_folder_applets(
+        self, owner_id: uuid.UUID, folder_id: uuid.UUID, language: str
+    ) -> list[WorkspaceApplet]:
+        schemas = await AppletsCRUD(self.session).get_folders_applets(
+            owner_id, self._user_id, folder_id
+        )
+
+        applets = []
+        for schema, is_pinned in schemas:
+            applets.append(
+                WorkspaceApplet(
+                    id=schema.id,
+                    display_name=schema.display_name,
+                    image=schema.image,
+                    is_pinned=is_pinned,
+                    encryption=schema.encryption,
+                    created_at=schema.created_at,
+                    updated_at=schema.updated_at,
+                    version=schema.version,
+                    type="applet",
+                    folders_applet_count=0,
+                )
+            )
 
         applet_ids = [applet.id for applet in applets]
 

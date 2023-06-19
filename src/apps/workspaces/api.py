@@ -32,6 +32,7 @@ from apps.workspaces.domain.workspace import (
     PublicWorkspaceRespondent,
     WorkspaceAppletPublic,
     WorkspacePrioritizedRole,
+    WorkspaceSearchAppletPublic,
 )
 from apps.workspaces.filters import WorkspaceUsersQueryParams
 from apps.workspaces.service.check_access import CheckAccessService
@@ -123,6 +124,31 @@ async def workspace_roles_retrieve(
     return Response(result=applet_roles)
 
 
+async def workspace_folder_applets(
+    owner_id: uuid.UUID,
+    folder_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    language: str = Depends(get_language),
+    session=Depends(get_session),
+) -> ResponseMulti[WorkspaceAppletPublic]:
+    async with atomic(session):
+        service = WorkspaceService(session, user.id)
+        await service.exists_by_owner_id(owner_id)
+        if not user.is_super_admin:
+            await CheckAccessService(session, user.id).check_workspace_access(
+                owner_id
+            )
+            await UserAccessService(session, user.id).check_access(owner_id)
+        applets = await service.get_workspace_folder_applets(
+            owner_id, folder_id, language
+        )
+
+    return ResponseMulti(
+        result=[WorkspaceAppletPublic.from_orm(applet) for applet in applets],
+        count=len(applets),
+    )
+
+
 async def workspace_applets(
     owner_id: uuid.UUID,
     user: User = Depends(get_current_user),
@@ -130,9 +156,6 @@ async def workspace_applets(
     query_params: QueryParams = Depends(parse_query_params(AppletQueryParams)),
     session=Depends(get_session),
 ) -> ResponseMulti[WorkspaceAppletPublic]:
-    """Fetch all applets for the specific user and specific workspace."""
-    query_params.filters["owner_id"] = owner_id
-
     async with atomic(session):
         service = WorkspaceService(session, user.id)
         await service.exists_by_owner_id(owner_id)
@@ -142,15 +165,43 @@ async def workspace_applets(
             )
             await UserAccessService(session, user.id).check_access(owner_id)
         applets = await service.get_workspace_applets(
-            language, deepcopy(query_params)
+            owner_id, language, deepcopy(query_params)
         )
 
-        count = await UserAccessService(
-            session, user.id
-        ).get_workspace_applets_count(deepcopy(query_params))
+        count = await service.get_workspace_applets_count(owner_id)
 
     return ResponseMulti(
         result=[WorkspaceAppletPublic.from_orm(applet) for applet in applets],
+        count=count,
+    )
+
+
+async def search_workspace_applets(
+    owner_id: uuid.UUID,
+    text: str,
+    user: User = Depends(get_current_user),
+    language: str = Depends(get_language),
+    query_params: QueryParams = Depends(parse_query_params(AppletQueryParams)),
+    session=Depends(get_session),
+) -> ResponseMulti[WorkspaceSearchAppletPublic]:
+    async with atomic(session):
+        service = WorkspaceService(session, user.id)
+        await service.exists_by_owner_id(owner_id)
+        if not user.is_super_admin:
+            await CheckAccessService(session, user.id).check_workspace_access(
+                owner_id
+            )
+            await UserAccessService(session, user.id).check_access(owner_id)
+        applets = await service.search_workspace_applets(
+            owner_id, text, language, deepcopy(query_params)
+        )
+
+        count = await service.search_workspace_applets_count(owner_id, text)
+
+    return ResponseMulti(
+        result=[
+            WorkspaceSearchAppletPublic.from_orm(applet) for applet in applets
+        ],
         count=count,
     )
 

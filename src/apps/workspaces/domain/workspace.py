@@ -3,10 +3,7 @@ import uuid
 
 from pydantic import Field, validator
 
-from apps.applets.domain.applet import (
-    AppletSingleLanguageInfo,
-    AppletSingleLanguageInfoPublic,
-)
+from apps.applets.domain.base import Encryption
 from apps.shared.domain import InternalModel, PublicModel
 
 __all__ = [
@@ -175,13 +172,62 @@ class PublicWorkspaceInfo(PublicModel):
     has_managers: bool
 
 
-class WorkspaceApplet(AppletSingleLanguageInfo):
-    role: Role = Role.RESPONDENT
+class WorkspaceApplet(InternalModel):
+    id: uuid.UUID
+    display_name: str
+    image: str | None
+    is_pinned: bool
+    encryption: Encryption | None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    version: str | None
+    role: Role | None = Role.RESPONDENT
+    type: str
+    folders_applet_count: int
 
 
-class WorkspaceAppletPublic(AppletSingleLanguageInfoPublic):
-    role: Role
-    is_pinned: bool = False
+class WorkspaceSearchApplet(InternalModel):
+    id: uuid.UUID
+    display_name: str
+    image: str | None
+    is_pinned: bool
+    encryption: Encryption | None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    version: str | None
+    role: Role | None = Role.RESPONDENT
+    type: str
+    folder_id: uuid.UUID | None
+    folder_name: str | None
+
+
+class WorkspaceAppletPublic(PublicModel):
+    id: uuid.UUID
+    display_name: str
+    image: str | None
+    is_pinned: bool
+    encryption: Encryption | None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    version: str | None
+    role: Role | None
+    type: str
+    folders_applet_count: int
+
+
+class WorkspaceSearchAppletPublic(PublicModel):
+    id: uuid.UUID
+    display_name: str
+    image: str | None
+    is_pinned: bool
+    encryption: Encryption | None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    version: str | None
+    role: Role | None = Role.RESPONDENT
+    type: str
+    folder_id: uuid.UUID | None
+    folder_name: str | None
 
 
 class WorkspacePrioritizedRole(PublicModel):
