@@ -135,52 +135,31 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
     play_once: bool
 
 
-class GyroscopeGeneralSettings(PublicModel):
-    instruction: str
-    number_of_trials: int
-    length_of_test: int
-    lambda_slope: int
+class Phase(str, Enum):
+    PRACTISE = "practise"
+    TEST = "test"
 
 
-class GyroscopePracticeSettings(PublicModel):
-    instruction: str
+class GyroscopePractiseConfig(PublicModel):
+    phase: Phase
+    trials_number: int
+    duration_minutes: int
+    lambda_slope: float
 
 
-class GyroscopeTestSettings(PublicModel):
-    instruction: str
+class GyroscopeTestConfig(GyroscopePractiseConfig):
+    pass
 
 
-class GyroscopeConfig(PublicModel):
-    name: str
-    description: str | None
-    is_hidden: bool | None
-    general: GyroscopeGeneralSettings
-    practice: GyroscopePracticeSettings
-    test: GyroscopeTestSettings
+class TouchPractiseConfig(PublicModel):
+    phase: Phase
+    trials_number: int
+    duration_minutes: int
+    lambda_slope: float
 
 
-class TouchGeneralSettings(PublicModel):
-    instruction: str
-    number_of_trials: int
-    length_of_test: int
-    lambda_slope: int
-
-
-class TouchPracticeSettings(PublicModel):
-    instruction: str
-
-
-class TouchTestSettings(PublicModel):
-    instruction: str
-
-
-class TouchConfig(PublicModel):
-    name: str
-    description: str | None
-    is_hidden: bool | None
-    general: TouchGeneralSettings
-    practice: TouchPracticeSettings
-    test: TouchTestSettings
+class TouchTestConfig(TouchPractiseConfig):
+    pass
 
 
 class CorrectPress(str, Enum):
@@ -259,8 +238,10 @@ class NoneResponseType(str, Enum):
     DATE = "date"
     TIME = "time"
     FLANKER = "flanker"
-    GYROSCOPE = "gyroscope"
-    TOUCH = "touch"
+    GYROSCOPEPRACTISE = "gyroscopePractise"
+    GYROSCOPETEST = "gyroscopeTest"
+    TOUCHPRACTISE = "touchPractise"
+    TOUCHTEST = "touchTest"
     ABTRAILSIPAD = "ABTrailsIpad"
     ABTRAILSMOBILE = "ABTrailsMobile"
 
@@ -285,16 +266,20 @@ class ResponseType(str, Enum):
     MESSAGE = "message"
     TIME = "time"
     FLANKER = "flanker"
-    GYROSCOPE = "gyroscope"
-    TOUCH = "touch"
+    GYROSCOPEPRACTISE = "gyroscopePractise"
+    GYROSCOPETEST = "gyroscopeTest"
+    TOUCHPRACTISE = "touchPractise"
+    TOUCHTEST = "touchTest"
     ABTRAILSIPAD = "ABTrailsIpad"
     ABTRAILSMOBILE = "ABTrailsMobile"
 
 
 class PerformanceTaskType(str, Enum):
     FLANKER = "flanker"
-    GYROSCOPE = "gyroscope"
-    TOUCH = "touch"
+    GYROSCOPEPRACTISE = "gyroscopePractise"
+    GYROSCOPETEST = "gyroscopeTest"
+    TOUCHPRACTISE = "touchPractise"
+    TOUCHTEST = "touchTest"
     ABTRAILSIPAD = "ABTrailsIpad"
     ABTRAILSMOBILE = "ABTrailsMobile"
 
@@ -319,8 +304,10 @@ ResponseTypeConfigOptions = [
     MessageConfig,
     TimeConfig,
     FlankerConfig,
-    GyroscopeConfig,
-    TouchConfig,
+    GyroscopePractiseConfig,
+    GyroscopeTestConfig,
+    TouchPractiseConfig,
+    TouchTestConfig,
     ABTrailsIpadConfig,
     ABTrailsMobileConfig,
 ]
@@ -345,8 +332,10 @@ ResponseTypeConfig = (
     | MessageConfig
     | TimeConfig
     | FlankerConfig
-    | GyroscopeConfig
-    | TouchConfig
+    | GyroscopePractiseConfig
+    | GyroscopeTestConfig
+    | TouchPractiseConfig
+    | TouchTestConfig
     | ABTrailsIpadConfig
     | ABTrailsMobileConfig
 )
