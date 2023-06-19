@@ -457,14 +457,10 @@ ResponseTypeConfig = (
     | FlankerConfig
     | GyroscopeConfig
     | TouchConfig
-    | ABTrailsTabletFirstConfig
-    | ABTrailsTabletSecondConfig
-    | ABTrailsTabletThirdConfig
-    | ABTrailsTabletFourthConfig
-    | ABTrailsMobileFirstConfig
-    | ABTrailsMobileSecondConfig
-    | ABTrailsMobileThirdConfig
-    | ABTrailsMobileFourthConfig
+    # NOTE: Since, all Performance tasks has similar fields we should keep
+    #       the flaxible data structure in oreder to provide correct
+    #       Applet.from_orm usage()
+    | dict
 )
 
 ResponseTypeValueConfig = {}
