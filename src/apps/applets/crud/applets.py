@@ -335,6 +335,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         access_query = access_query.where(
             UserAppletAccessSchema.user_id == user_id
         )
+        access_query = access_query.where(
+            UserAppletAccessSchema.is_deleted == False  # noqa
+        )
         access_query = access_query.alias("access_query")
 
         query: Query = select(
@@ -429,6 +432,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         access_subquery: Query = select(
             UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
+        )
+        access_subquery = access_subquery.where(
+            UserAppletAccessSchema.is_deleted == False  # noqa
         )
         access_subquery = access_subquery.order_by(
             case(
@@ -526,6 +532,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         access_subquery: Query = select(
             UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
         )
+        access_subquery = access_subquery.where(
+            UserAppletAccessSchema.is_deleted == False  # noqa
+        )
         access_subquery = access_subquery.order_by(
             case(
                 (UserAppletAccessSchema.role == Role.OWNER, 1),
@@ -606,6 +615,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         access_subquery: Query = select(
             UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
         )
+        access_subquery = access_subquery.where(
+            UserAppletAccessSchema.is_deleted == False  # noqa
+        )
         access_subquery = access_subquery.order_by(
             case(
                 (UserAppletAccessSchema.role == Role.OWNER, 1),
@@ -677,6 +689,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         access_subquery: Query = select(
             UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
+        )
+        access_subquery = access_subquery.where(
+            UserAppletAccessSchema.is_deleted == False  # noqa
         )
         access_subquery = access_subquery.order_by(
             case(
