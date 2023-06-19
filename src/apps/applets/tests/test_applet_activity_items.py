@@ -627,61 +627,6 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
-                            name="activity_item_gyroscope",
-                            question=dict(
-                                en="gyroscope question?",
-                                fr="gyroscope question?",
-                            ),
-                            response_type="gyroscope",
-                            response_values=None,
-                            config=dict(
-                                name="name",
-                                description="description",
-                                isHidden=False,
-                                general={
-                                    "instruction": "gyroscope instruction",
-                                    "number_of_trials": 3,
-                                    "length_of_test": 3,
-                                    "lambda_slope": 3,
-                                },
-                                practice={
-                                    "instruction": "gyroscope practice "
-                                    "instruction",
-                                },
-                                test={
-                                    "instruction": "gyroscope test "
-                                    "instruction",
-                                },
-                            ),
-                        ),
-                        dict(
-                            name="activity_item_touch",
-                            question=dict(
-                                en="touch question?",
-                                fr="touch question?",
-                            ),
-                            response_type="touch",
-                            response_values=None,
-                            config=dict(
-                                name="name",
-                                description="description",
-                                isHidden=False,
-                                general={
-                                    "instruction": "touch instruction",
-                                    "number_of_trials": 3,
-                                    "length_of_test": 3,
-                                    "lambda_slope": 3,
-                                },
-                                practice={
-                                    "instruction": "touch practice "
-                                    "instruction",
-                                },
-                                test={
-                                    "instruction": "touch test instruction",
-                                },
-                            ),
-                        ),
-                        dict(
                             name="activity_item_ab_trails_ipad",
                             question=dict(
                                 en="ab_trails_ipad question?",
@@ -716,6 +661,272 @@ class TestActivityItems(BaseTest):
                     description=dict(
                         en="Understand how was the morning",
                         fr="Understand how was the morning",
+                    ),
+                    items=[
+                        dict(
+                            activity_key="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
+        )
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"])
+        )
+        assert response.status_code == 200
+
+    @rollback
+    async def test_creating_applet_with_gyroscope_activity_items(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            display_name="gyroscope_activity_applet",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+            ),
+            description=dict(
+                en="Performance Tasks CST Gyroscope Applet",
+                fr="Performance Tasks CST Gyroscope Applet",
+            ),
+            about=dict(
+                en="Applet CST Gyroscope Task Builder Activity",
+                fr="Applet CST Gyroscope Task Builder Activity",
+            ),
+            activities=[
+                dict(
+                    name="Activity_gyroscope",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Description Activity gyroscope.",
+                        fr="Description Activity gyroscope.",
+                    ),
+                    items=[
+                        dict(
+                            name="Gyroscope_General_instruction",
+                            question=dict(
+                                en="Gyroscope General instruction text.",
+                                fr="Gyroscope General instruction text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Gyroscope_Сalibration_Practise_instruction",
+                            question=dict(
+                                en="Gyroscope Сalibration/Practise "
+                                "instruction text.",
+                                fr="Gyroscope Сalibration/Practise "
+                                "instruction text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Gyroscope_Test_instruction",
+                            question=dict(
+                                en="Gyroscope Test instruction text.",
+                                fr="Gyroscope Test instruction text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Gyroscope_Сalibration_Practise",
+                            question=dict(
+                                en="Gyroscope Сalibration/Practise.",
+                                fr="Gyroscope Сalibration/Practise.",
+                            ),
+                            response_type="gyroscopePractise",
+                            response_values=None,
+                            config=dict(
+                                phase="practise",
+                                trials_number=3,
+                                duration_minutes=5,
+                                lambda_slope=0.2,
+                            ),
+                        ),
+                        dict(
+                            name="Gyroscope_Test",
+                            question=dict(
+                                en="Gyroscope Test.",
+                                fr="Gyroscope Test.",
+                            ),
+                            response_type="gyroscopeTest",
+                            response_values=None,
+                            config=dict(
+                                phase="test",
+                                trials_number=5,
+                                duration_minutes=7,
+                                lambda_slope=0.2,
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="name_activityFlow",
+                    description=dict(
+                        en="description activityFlow",
+                        fr="description activityFlow",
+                    ),
+                    items=[
+                        dict(
+                            activity_key="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
+        )
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"])
+        )
+        assert response.status_code == 200
+
+    @rollback
+    async def test_creating_applet_with_touch_activity_items(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            display_name="touch_activity_applet",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+            ),
+            description=dict(
+                en="Performance Tasks CST Touch Applet",
+                fr="Performance Tasks CST Touch Applet",
+            ),
+            about=dict(
+                en="Applet CST Touch Task Builder Activity",
+                fr="Applet CST Touch Task Builder Activity",
+            ),
+            activities=[
+                dict(
+                    name="Activity_touch",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Description Activity touch.",
+                        fr="Description Activity touch.",
+                    ),
+                    items=[
+                        dict(
+                            name="Touch_General_instruction",
+                            question=dict(
+                                en="Touch General instruction text.",
+                                fr="Touch General instruction text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Touch_Сalibration_Practise_instruction",
+                            question=dict(
+                                en="Touch Сalibration/Practise "
+                                "instruction text.",
+                                fr="Touch Сalibration/Practise "
+                                "instruction text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Touch_Test_instruction",
+                            question=dict(
+                                en="Touch Test instruction text.",
+                                fr="Touch Test instruction text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Touch_Сalibration_Practise",
+                            question=dict(
+                                en="Touch Сalibration/Practise.",
+                                fr="Touch Сalibration/Practise.",
+                            ),
+                            response_type="touchPractise",
+                            response_values=None,
+                            config=dict(
+                                phase="practise",
+                                trials_number=3,
+                                duration_minutes=5,
+                                lambda_slope=0.2,
+                            ),
+                        ),
+                        dict(
+                            name="Touch_Test",
+                            question=dict(
+                                en="Touch Test.",
+                                fr="Touch Test.",
+                            ),
+                            response_type="touchTest",
+                            response_values=None,
+                            config=dict(
+                                phase="test",
+                                trials_number=5,
+                                duration_minutes=7,
+                                lambda_slope=0.2,
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="name_activityFlow",
+                    description=dict(
+                        en="description activityFlow",
+                        fr="description activityFlow",
                     ),
                     items=[
                         dict(
