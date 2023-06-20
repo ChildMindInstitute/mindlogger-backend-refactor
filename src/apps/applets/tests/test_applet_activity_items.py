@@ -743,19 +743,6 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
-                            name="Gyroscope_Test_instruction",
-                            question=dict(
-                                en="Gyroscope Test instruction text.",
-                                fr="Gyroscope Test instruction text.",
-                            ),
-                            response_type="message",
-                            response_values=None,
-                            config=dict(
-                                remove_back_button=False,
-                                timer=None,
-                            ),
-                        ),
-                        dict(
                             name="Gyroscope_Сalibration_Practise",
                             question=dict(
                                 en="Gyroscope Сalibration/Practise.",
@@ -768,6 +755,19 @@ class TestActivityItems(BaseTest):
                                 trials_number=3,
                                 duration_minutes=5,
                                 lambda_slope=0.2,
+                            ),
+                        ),
+                        dict(
+                            name="Gyroscope_Test_instruction",
+                            question=dict(
+                                en="Gyroscope Test instruction text.",
+                                fr="Gyroscope Test instruction text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
                             ),
                         ),
                         dict(
@@ -876,19 +876,6 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
-                            name="Touch_Test_instruction",
-                            question=dict(
-                                en="Touch Test instruction text.",
-                                fr="Touch Test instruction text.",
-                            ),
-                            response_type="message",
-                            response_values=None,
-                            config=dict(
-                                remove_back_button=False,
-                                timer=None,
-                            ),
-                        ),
-                        dict(
                             name="Touch_Сalibration_Practise",
                             question=dict(
                                 en="Touch Сalibration/Practise.",
@@ -901,6 +888,19 @@ class TestActivityItems(BaseTest):
                                 trials_number=3,
                                 duration_minutes=5,
                                 lambda_slope=0.2,
+                            ),
+                        ),
+                        dict(
+                            name="Touch_Test_instruction",
+                            question=dict(
+                                en="Touch Test instruction text.",
+                                fr="Touch Test instruction text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
                             ),
                         ),
                         dict(
