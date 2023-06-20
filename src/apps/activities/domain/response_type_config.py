@@ -393,14 +393,8 @@ class PerformanceTaskType(str, Enum):
     FLANKER = "flanker"
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"
-    ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
-    ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
-    ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
-    ABTRAILSTABLETFOURTH = "ABTrailsTabletFourth"
-    ABTRAILSMOBILEFIRST = "ABTrailsMobileFirst"
-    ABTRAILSMOBILESECOND = "ABTrailsMobileSecond"
-    ABTRAILSMOBILETHIRD = "ABTrailsMobileThird"
-    ABTRAILSMOBILEFOURTH = "ABTrailsMobileFourth"
+    ABTRAILSTABLET = "ABTrailsTablet"
+    ABTRAILSMOBILE = "ABTrailsMobile"
 
 
 ResponseTypeConfigOptions = [

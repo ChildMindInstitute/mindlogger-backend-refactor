@@ -239,21 +239,26 @@ def validate_score_subscale_table(value: str):
 
 
 def validate_is_performance_task(value: bool, values: dict):
-    # if items type is performance task, then is_performance_task must be set
+    # if items type is performance task type or contains part of the name
+    # of some performance task, then is_performance_task must be set
     items = values.get("items", [])
-    if any(item.response_type in list(PerformanceTaskType) for item in items):
-        return True
+    for item in items:
+        for performance_task_type in list(PerformanceTaskType):
+            if performance_task_type in item.response_type:
+                return True
     return value
 
 
 def validate_performance_task_type(value: str | None, values: dict):
-    # if items type is performance task, then performance task type must be set
+    # if items type is performance task type or contains part of the name
+    # of some performance task, then performance task type must be set
     items = values.get("items", [])
     value = next(
         (
-            item.response_type
+            performance_task_type
             for item in items
-            if item.response_type in list(PerformanceTaskType)
+            for performance_task_type in list(PerformanceTaskType)
+            if performance_task_type in item.response_type
         ),
         None,
     )
