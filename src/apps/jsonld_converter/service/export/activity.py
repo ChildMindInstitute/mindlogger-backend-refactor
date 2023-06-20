@@ -1,7 +1,8 @@
 import asyncio
 from typing import Type
 
-from apps.activities.domain.activity_full import ActivityFull
+from apps.activities.domain.activity_full import ActivityFull, ActivityItemFull
+from apps.activities.domain.conditional_logic import Match
 from apps.jsonld_converter.service.base import LdKeyword, str_to_id
 from apps.jsonld_converter.service.export import (
     ActivityItemAudioExport,
@@ -26,6 +27,9 @@ from apps.jsonld_converter.service.export import (
 from apps.jsonld_converter.service.export.base import (
     BaseModelExport,
     ContainsNestedModelMixin,
+)
+from apps.jsonld_converter.service.export.conditional_logic import (
+    export_conditional_logic,
 )
 from apps.shared.domain import InternalModel
 
@@ -76,6 +80,12 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
 
         return await self._post_process(doc, expand)
 
+    def _build_item_is_vis(self, item: ActivityItemFull) -> bool | str:
+        if item.conditional_logic:
+            return export_conditional_logic(item.conditional_logic)
+
+        return not item.is_hidden
+
     async def _build_ui_prop(self, model: ActivityFull) -> dict:
         order = []
         properties = []
@@ -83,7 +93,7 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             order_cors = []
             for i, item in enumerate(model.items):
                 _id = f"_:{str_to_id(item.name)}"  # TODO ensure uniques
-                _var = f"item_{i}"  # TODO load from extra if exists
+                _var = item.name  # TODO load from extra if exists
 
                 processor = self.get_supported_processor(item)
                 order_cors.append(processor.export(item))
@@ -92,7 +102,7 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
                     {
                         "isAbout": _id,
                         "prefLabel": item.name,
-                        "isVis": not item.is_hidden,
+                        "isVis": self._build_item_is_vis(item),
                         "variableName": _var,
                     }
                 )
