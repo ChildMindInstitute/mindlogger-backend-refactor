@@ -13,6 +13,7 @@ from apps.answers.domain import (
     AppletAnswerCreate,
     AssessmentAnswerCreate,
     AssessmentAnswerPublic,
+    IdentifierPublic,
     PublicAnswerDates,
     PublicAnswerExport,
     PublicReviewActivity,
@@ -217,16 +218,16 @@ async def applet_activity_identifiers_retrieve(
     activity_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-) -> ResponseMulti[str]:
+) -> ResponseMulti[IdentifierPublic]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
-        versions = await AnswerService(
+        identifiers = await AnswerService(
             session, user.id
         ).get_activity_identifiers(activity_id)
-    return ResponseMulti[str](result=versions, count=len(versions))
+    return ResponseMulti(result=identifiers, count=len(identifiers))
 
 
 async def applet_activity_versions_retrieve(

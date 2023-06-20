@@ -295,3 +295,13 @@ class Version(InternalModel):
 class VersionPublic(PublicModel):
     version: str
     created_at: datetime.datetime
+
+
+class Identifier(InternalModel):
+    identifier: str
+    user_public_key: str
+
+
+class IdentifierPublic(PublicModel):
+    identifier: str
+    user_public_key: str
