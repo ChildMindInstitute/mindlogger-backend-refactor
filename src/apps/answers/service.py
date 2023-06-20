@@ -33,6 +33,7 @@ from apps.answers.domain import (
     AppletAnswerCreate,
     AssessmentAnswer,
     AssessmentAnswerCreate,
+    Identifier,
     ReviewActivity,
     SummaryActivity,
     Version,
@@ -546,10 +547,19 @@ class AnswerService:
     async def get_activity_identifiers(
         self,
         activity_id: uuid.UUID,
-    ) -> list[str]:
-        return await AnswersCRUD(self.session).get_identifiers_by_activity_id(
-            activity_id
-        )
+    ) -> list[Identifier]:
+        identifiers = await AnswersCRUD(
+            self.session
+        ).get_identifiers_by_activity_id(activity_id)
+        results = []
+        for identifier, key in identifiers:
+            results.append(
+                Identifier(
+                    identifier=identifier,
+                    user_public_key=key,
+                )
+            )
+        return results
 
     async def get_activity_versions(
         self,

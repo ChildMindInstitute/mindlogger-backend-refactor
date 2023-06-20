@@ -260,8 +260,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_identifiers_by_activity_id(
         self, activity_id: uuid.UUID
-    ) -> list[str]:
-        query: Query = select(AnswerItemSchema.identifier)
+    ) -> list[tuple[str, str]]:
+        query: Query = select(
+            AnswerItemSchema.identifier, AnswerItemSchema.user_public_key
+        )
         query = query.distinct(AnswerItemSchema.identifier)
         query = query.where(AnswerItemSchema.identifier != None)  # noqa: E711
         query = query.join(
@@ -275,7 +277,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query = query.where(ActivityHistorySchema.id == activity_id)
         db_result = await self._execute(query)
 
-        return db_result.scalars().all()
+        return db_result.all()
 
     async def get_versions_by_activity_id(
         self, activity_id: uuid.UUID
