@@ -72,7 +72,10 @@ class ExpressionSimple(BaseExpression):
         payload = self.condition.payload
         operator = self.simple_operator_map.get(type_)
         if isinstance(payload, OptionPayload):
-            val = payload.option_id  # TODO actualize on PR merge   # TODO process str
+            try:
+                val = int(payload.option_id)  # TODO actualize on PR merge
+            except ValueError:
+                val = f'"{payload.option_id}"'  # TODO actualize on PR merge
         elif isinstance(payload, ValuePayload):
             val = payload.value
         else:
@@ -94,11 +97,16 @@ class ExpressionIncludes(BaseExpression):
         type_ = self.condition.type
         name = self.condition.item_name
         payload = self.condition.payload
-        val = f"{name}.includes({payload.option_id})"  # TODO process str
-        if type_ == ConditionType.NOT_INCLUDES_OPTION:
-            val = "!" + val
+        try:
+            val = int(payload.option_id)  # TODO actualize on PR merge
+        except ValueError:
+            val = f'"{payload.option_id}"'  # TODO actualize on PR merge
 
-        return val
+        res = f"{name}.includes({val})"  # TODO process str
+        if type_ == ConditionType.NOT_INCLUDES_OPTION:
+            res = "!" + res
+
+        return res
 
 
 @register_expression
