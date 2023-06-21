@@ -195,3 +195,6 @@ class CheckAccessService:
         await self._check_applet_roles(
             applet_id, [Role.OWNER, Role.MANAGER, Role.REVIEWER]
         )
+
+    async def check_applet_share_library_access(self, applet_id: uuid.UUID):
+        await self._check_applet_roles(applet_id, [Role.OWNER])

@@ -97,5 +97,6 @@ settings = Settings(
         "workspaces",
         "transfer_ownership",
         "alerts",
+        "library",
     ],
 )

@@ -1,1 +1,1 @@
-from apps.library.db.schemas import LibrarySchema
+from apps.library.db.schemas import LibrarySchema  # noqa: F401, F403

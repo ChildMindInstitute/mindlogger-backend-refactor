@@ -14,6 +14,7 @@ import apps.file.router as files
 import apps.folders.router as folders
 import apps.healthcheck.router as healthcheck
 import apps.invitations.router as invitations
+import apps.library.router as library
 import apps.logs.router as logs
 import apps.schedule.router as schedule
 import apps.test_data.router as test_data
@@ -54,6 +55,7 @@ routers: Iterable[APIRouter] = (
     alerts.router,
     test_data.router,
     files.router,
+    library.router,
 )
 
 # Declare your middlewares here

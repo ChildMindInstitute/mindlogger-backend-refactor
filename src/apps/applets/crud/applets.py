@@ -746,3 +746,13 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query_union = query_union.subquery()
         db_result = await self._execute(select(func.count(query_union.c.id)))
         return db_result.scalars().first() or 0
+
+    async def update_display_name(
+        self, applet_id: uuid.UUID, display_name: str
+    ) -> None:
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.values(
+            display_name=display_name,
+        )
+        await self._execute(query)
