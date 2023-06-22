@@ -170,7 +170,7 @@ def validate_score_and_sections(values: dict):
 
 
 def validate_subscales(values: dict):
-    # validate items inside subscale are inside items
+    # validate items inside subscale exist
     # and scores for them are set
     subscale_setting = values.get("subscale_setting")
     if subscale_setting:
