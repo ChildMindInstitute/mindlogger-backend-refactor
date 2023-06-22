@@ -19,6 +19,7 @@ class LdKeyword(str, enum.Enum):
     graph = "@graph"
     language = "@language"
     list = "@list"
+    version = "@version"
 
 
 class ContextResolverAwareMixin:

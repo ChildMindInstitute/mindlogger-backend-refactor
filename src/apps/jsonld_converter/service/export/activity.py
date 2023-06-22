@@ -2,8 +2,8 @@ import asyncio
 from typing import Type
 
 from apps.activities.domain.activity_full import ActivityFull, ActivityItemFull
-from apps.activities.domain.conditional_logic import Match
-from apps.jsonld_converter.service.base import LdKeyword, str_to_id
+from apps.jsonld_converter.service.base import LdKeyword
+from apps.jsonld_converter.service.domain import ActivityExportData
 from apps.jsonld_converter.service.export import (
     ActivityItemAudioExport,
     ActivityItemAudioPlayerExport,
@@ -62,11 +62,12 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             ActivityItemMultiSelectionRowsExport,
         ]
 
-    async def export(self, model: ActivityFull, expand: bool = False) -> dict:  # type: ignore  # noqa: E501
+    async def export(self, model: ActivityFull, expand: bool = False) -> ActivityExportData:  # type: ignore  # noqa: E501
         ui = await self._build_ui_prop(model)
+        _id = self._build_id(model.name)
         doc = {
             LdKeyword.context: self.context,
-            LdKeyword.id: f"_:{str_to_id(model.name)}",  # TODO ensure uniques  # noqa: E501
+            LdKeyword.id: _id,  # TODO ensure uniques  # noqa: E501
             LdKeyword.type: "reproschema:Activity",
             "skos:prefLabel": model.name,
             "skos:altLabel": model.name,
@@ -78,7 +79,16 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             "ui": ui,
         }
 
-        return await self._post_process(doc, expand)
+        coros = []
+        for item in model.items:
+            processor = self.get_supported_processor(item)
+            coros.append(processor.export(item))
+
+        *items, data = await asyncio.gather(
+            *coros, self._post_process(doc, expand)
+        )
+
+        return ActivityExportData(id=_id, schema=data, activity_items=items)
 
     def _build_item_is_vis(self, item: ActivityItemFull) -> bool | str:
         if item.conditional_logic:
@@ -90,13 +100,9 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
         order = []
         properties = []
         if model.items:
-            order_cors = []
             for i, item in enumerate(model.items):
-                _id = f"_:{str_to_id(item.name)}"  # TODO ensure uniques
-                _var = item.name  # TODO load from extra if exists
-
-                processor = self.get_supported_processor(item)
-                order_cors.append(processor.export(item))
+                _id = self._build_id(item.name)  # TODO ensure unique
+                _var = self._build_id(item.name, None)  # TODO ensure unique
 
                 properties.append(
                     {
@@ -106,7 +112,7 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
                         "variableName": _var,
                     }
                 )
-            order = await asyncio.gather(*order_cors)
+                order.append(_id)
 
         return {
             "addProperties": properties,

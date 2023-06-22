@@ -5,6 +5,7 @@ from apps.activities.domain.conditional_logic import ConditionalLogic, Match
 from apps.activities.domain.conditions import (
     Condition,
     ConditionType,
+    MinMaxPayload,
     OptionPayload,
     ValuePayload,
 )
@@ -70,10 +71,12 @@ class ExpressionSimple(BaseExpression):
         type_ = self.condition.type
         name = self.condition.item_name
         payload = self.condition.payload
-        operator = self.simple_operator_map.get(type_)
+        operator = self.simple_operator_map.get(type_)  # type: ignore[call-overload]
         if isinstance(payload, OptionPayload):
             try:
-                val = int(payload.option_id)  # TODO actualize on PR merge
+                val: int | str = int(
+                    payload.option_id
+                )  # TODO actualize on PR merge
             except ValueError:
                 val = f'"{payload.option_id}"'  # TODO actualize on PR merge
         elif isinstance(payload, ValuePayload):
@@ -97,8 +100,11 @@ class ExpressionIncludes(BaseExpression):
         type_ = self.condition.type
         name = self.condition.item_name
         payload = self.condition.payload
+        assert isinstance(payload, OptionPayload)
         try:
-            val = int(payload.option_id)  # TODO actualize on PR merge
+            val: int | str = int(
+                payload.option_id
+            )  # TODO actualize on PR merge
         except ValueError:
             val = f'"{payload.option_id}"'  # TODO actualize on PR merge
 
@@ -122,6 +128,7 @@ class ExpressionRange(BaseExpression):
         type_ = self.condition.type
         name = self.condition.item_name
         payload = self.condition.payload
+        assert isinstance(payload, MinMaxPayload)
 
         l_val, r_val = payload.min_value, payload.max_value
         if type_ == ConditionType.BETWEEN:

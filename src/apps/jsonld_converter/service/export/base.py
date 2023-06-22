@@ -3,7 +3,11 @@ from typing import Callable, Type
 
 from pyld import ContextResolver  # type: ignore[import]
 
-from apps.jsonld_converter.service.base import ContextResolverAwareMixin
+from apps.jsonld_converter.service.base import (
+    ContextResolverAwareMixin,
+    str_to_id,
+)
+from apps.jsonld_converter.service.domain import ModelExportData
 from apps.shared.domain import InternalModel
 
 
@@ -23,14 +27,22 @@ class ContainsNestedModelMixin(ABC, ContextResolverAwareMixin):
 
 
 class BaseModelExport(ABC, ContextResolverAwareMixin):
-    context: str = "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"  # noqa: E501
+    context: list = [
+        "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json",  # noqa: E501
+    ]
     schema_version: str = "1.1"
 
     def __init__(
-        self, context_resolver: ContextResolver, document_loader: Callable
+        self,
+        context_resolver: ContextResolver,
+        document_loader: Callable,
     ):
         self.context_resolver: ContextResolver = context_resolver
         self.document_loader = document_loader
+
+    def _build_id(self, source: str, prefix="_"):
+        id_ = str_to_id(source)
+        return f"{prefix}:{id_}" if prefix else id_
 
     @classmethod
     @abstractmethod
@@ -38,7 +50,9 @@ class BaseModelExport(ABC, ContextResolverAwareMixin):
         ...
 
     @abstractmethod
-    async def export(self, model: InternalModel, expand: bool = False) -> dict:
+    async def export(
+        self, model: InternalModel, expand: bool = False
+    ) -> ModelExportData:
         ...
 
     async def _post_process(self, doc: dict, expand: bool):

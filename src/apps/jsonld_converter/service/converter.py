@@ -1,3 +1,8 @@
+import enum
+import json
+import re
+import zipfile
+from io import BytesIO
 from typing import Callable, Type
 
 from pyld import ContextResolver  # type: ignore[import]
@@ -95,12 +100,32 @@ class JsonLDModelConverter(ContainsNestedMixin):
         return obj.export()
 
 
+class ExportFormat(enum.Enum):
+    zip = "zip"
+    list = "list"
+
+
+def replace_batch(doc: str, replacements: dict):
+    replacements = {re.escape(k): v for k, v in replacements.items()}
+    pattern = re.compile("|".join(replacements.keys()))
+    return pattern.sub(lambda m: replacements[re.escape(m.group(0))], doc)
+
+
 class ModelJsonLDConverter(ContainsNestedModelMixin):
 
     CONTEXT_TO_COMPACT = "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"  # noqa: E501
 
+    url_prefix = "https://raw.githubusercontent.com"
+    activities_url = f"{url_prefix}/YOUR-PATH-TO-ACTIVITIES-FOLDER"
+    flows_url = f"{url_prefix}/YOUR-PATH-TO-ACTIVITY_FLOWS-FOLDER"
+
+    activities_prefix = "activities"
+    flows_prefix = "flows"
+
     def __init__(
-        self, context_resolver: ContextResolver, document_loader: Callable
+        self,
+        context_resolver: ContextResolver,
+        document_loader: Callable,
     ):
         self.context_resolver: ContextResolver = context_resolver
         self.document_loader: Callable = document_loader
@@ -109,11 +134,80 @@ class ModelJsonLDConverter(ContainsNestedModelMixin):
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
         return [AppletExport]
 
-    async def convert(self, model, compact=False) -> dict:
+    def _generate_new_id(
+        self,
+        prefixed_id: str,
+        new_prefix: str | None = None,
+        new_id: str | None = None,
+    ) -> str:
+        parts = prefixed_id.split(":", 1)
+        try:
+            id_ = parts[1]
+        except IndexError:
+            id_ = prefixed_id
+
+        new_id = new_id or id_
+        if new_prefix:
+            new_id = f"{new_prefix}{new_id}"
+
+        return new_id
+
+    async def to_list(self, model, compact=False):
         exporter = self.get_supported_processor(model)
-        doc = await exporter.export(model)
+        protocol_data = await exporter.export(model)
 
-        if compact:
-            return await self._compact(doc, self.CONTEXT_TO_COMPACT)
+        return protocol_data
 
-        return doc
+    async def to_zip(self, model, compact=False) -> BytesIO:
+
+        data = await self.to_list(model, compact)
+
+        schema = data.schema
+
+        files = []
+
+        protocol_doc = json.dumps(schema, indent=4)
+        protocol_id = "protocol"
+        protocol_replacements = {
+            data.id: protocol_id,
+        }
+
+        activity_dir = "activities"
+        for activity_data in data.activities:
+            activity_doc = json.dumps(activity_data.schema, indent=4)
+            new_activity_id = self._generate_new_id(activity_data.id)
+            activity_path = (
+                f"{activity_dir}/{new_activity_id}/{new_activity_id}"
+            )
+            activity_replacements = {activity_data.id: new_activity_id}
+            protocol_replacements[activity_data.id] = activity_path
+
+            for item_data in activity_data.activity_items:
+                item_doc = json.dumps(item_data.schema, indent=4)
+                new_item_id = self._generate_new_id(item_data.id)
+                item_path = (
+                    f"{activity_dir}/{new_activity_id}/items/{new_item_id}"
+                )
+                activity_replacements[item_data.id] = item_path
+
+                item_doc = item_doc.replace(item_data.id, new_item_id)
+
+                files.append((item_path, item_doc))
+
+            activity_doc = replace_batch(activity_doc, activity_replacements)
+
+            files.append((activity_path, activity_doc))
+
+        protocol_doc = replace_batch(protocol_doc, protocol_replacements)
+
+        files.append((protocol_id, protocol_doc))
+
+        res = BytesIO()
+
+        with zipfile.ZipFile(
+            res, "a", zipfile.ZIP_DEFLATED, False
+        ) as zip_file:
+            for file_name, data in files:
+                zip_file.writestr(file_name, bytes(data, "UTF-8"))
+
+        return res

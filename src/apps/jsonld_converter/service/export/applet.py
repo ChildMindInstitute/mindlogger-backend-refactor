@@ -2,7 +2,8 @@ import asyncio
 from typing import Type
 
 from apps.applets.domain.applet_full import AppletFull
-from apps.jsonld_converter.service.base import LdKeyword, str_to_id
+from apps.jsonld_converter.service.base import LdKeyword
+from apps.jsonld_converter.service.domain import ProtocolExportData
 from apps.jsonld_converter.service.export import (
     ActivityExport,
     ActivityFlowExport,
@@ -23,13 +24,14 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
         return [ActivityExport, ActivityFlowExport]
 
-    async def export(self, model: AppletFull, expand: bool = False) -> dict:  # type: ignore  # noqa: E501
+    async def export(self, model: AppletFull, expand: bool = False) -> ProtocolExportData:  # type: ignore  # noqa: E501
         ui, activity_flows = await asyncio.gather(
             self._build_ui_prop(model), self._build_activity_flows_prop(model)
         )
+        _id = self._build_id(model.display_name)
         doc = {
             LdKeyword.context: self.context,
-            LdKeyword.id: f"_:{str_to_id(model.display_name)}",
+            LdKeyword.id: _id,
             LdKeyword.type: "reproschema:Protocol",
             "skos:prefLabel": model.display_name,
             "skos:altLabel": model.display_name,
@@ -44,7 +46,16 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
             "activityFlows": activity_flows,
         }
 
-        return await self._post_process(doc, expand)
+        coros = []
+        for i, activity in enumerate(model.activities):
+            processor = self.get_supported_processor(activity)
+            coros.append(processor.export(activity))
+
+        *activities, data = await asyncio.gather(
+            *coros, self._post_process(doc, expand)
+        )
+
+        return ProtocolExportData(id=_id, schema=data, activities=activities)
 
     def _build_about(self, model: AppletFull):
         if model.about:
@@ -58,23 +69,17 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
         order = []
         properties = []
         if model.activities:
-            order_cors = []
             for i, activity in enumerate(model.activities):
-                _id = f"_:{str_to_id(activity.name)}"  # TODO ensure unique
-                _var = f"activity_{i}"  # TODO load from extra if exists
-
-                processor = self.get_supported_processor(activity)
-                order_cors.append(processor.export(activity))
-
+                _id = self._build_id(activity.name)  # TODO ensure unique
                 properties.append(
                     {
                         "isAbout": _id,
                         "prefLabel": activity.name,
                         "isVis": not activity.is_hidden,
-                        "variableName": _var,
+                        "variableName": self._build_id(activity.name, None),
                     }
                 )
-            order = await asyncio.gather(*order_cors)
+                order.append(_id)
 
         return {
             "addProperties": properties,
@@ -88,8 +93,10 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
         if model.activity_flows:
             order_cors = []
             for i, flow in enumerate(model.activity_flows):
-                _id = f"_:{str_to_id(flow.name)}"  # TODO ensure unique
-                _var = f"flow_{i}"  # TODO load from extra if exists
+                _id = self._build_id(flow.name)  # TODO ensure unique
+                _var = self._build_id(
+                    flow.name, None
+                )  # TODO load from extra if exists
 
                 processor = self.get_supported_processor(flow)
                 order_cors.append(processor.export(flow))
