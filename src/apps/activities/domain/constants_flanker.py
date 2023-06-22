@@ -73,19 +73,18 @@ FLANKER_TRAILS: list[TrialSettings] = [
 ]
 
 
-def flanker_blocks(number_of_blocks: int):
-    blocks = []
-    for count in range(0, number_of_blocks):
-        block = BlockSettings(
+def build_flanker_bloks(number_of_blocks: int):
+    return [
+        BlockSettings(
             name=f"Block {count + 1}",
             value=count,
         )
-        blocks.append(block)
-    return blocks
+        for count in range(number_of_blocks)
+    ]
 
 
-FLANKER_PRACTISE_BLOCKS: list[BlockSettings] = flanker_blocks(20)
-FLANKER_TEST_BLOCKS: list[BlockSettings] = flanker_blocks(5)
+FLANKER_PRACTISE_BLOCKS: list[BlockSettings] = build_flanker_bloks(20)
+FLANKER_TEST_BLOCKS: list[BlockSettings] = build_flanker_bloks(5)
 
 
 class FlankerBaseConfig(PublicModel):
