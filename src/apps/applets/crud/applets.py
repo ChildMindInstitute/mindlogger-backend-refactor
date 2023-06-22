@@ -459,6 +459,14 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         access_query = access_query.distinct(access_subquery.c.applet_id)
         access_query = access_query.alias("access_query")
 
+        folder_applets_query: Query = select(FolderAppletSchema.applet_id)
+        folder_applets_query = folder_applets_query.join(
+            FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
+        )
+        folder_applets_query = folder_applets_query.where(
+            FolderSchema.creator_id == user_id
+        )
+
         query: Query = select(
             AppletSchema.id.label("id"),
             AppletSchema.display_name.label("name"),
@@ -478,18 +486,19 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             access_query.c.applet_id == AppletSchema.id,
             isouter=True,
         )
+        query = query.where(AppletSchema.id.notin_(folder_applets_query))
         query = query.where(access_query.c.role != None)  # noqa
 
         query_union: Query = folders_query.union(query)
 
-        if "updatedAt" in filters.ordering:
-            query_union = query_union.order_by(
-                query_union.c.ordering.asc(), query_union.c.updated_at.asc()
-            )
-        else:
-            query_union = query_union.order_by(
-                query_union.c.ordering.asc(), query_union.c.updated_at.desc()
-            )
+        class _Ordering(Ordering):
+            display_name = query_union.c.name
+            created_at = query_union.c.created_at
+
+        query_union = query_union.order_by(
+            query_union.c.ordering.asc(),
+            *_Ordering().get_clauses(*filters.ordering),
+        )
 
         query_union = paging(query_union, filters.page, filters.limit)
 
@@ -716,12 +725,21 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         access_query = access_query.distinct(access_subquery.c.applet_id)
         access_query = access_query.alias("access_query")
 
+        folder_applets_query: Query = select(FolderAppletSchema.applet_id)
+        folder_applets_query = folder_applets_query.join(
+            FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
+        )
+        folder_applets_query = folder_applets_query.where(
+            FolderSchema.creator_id == user_id
+        )
+
         query: Query = select(AppletSchema.id.label("id"))
         query = query.join(
             access_query,
             access_query.c.applet_id == AppletSchema.id,
             isouter=True,
         )
+        query = query.where(AppletSchema.id.notin_(folder_applets_query))
         query = query.where(access_query.c.role != None)  # noqa
 
         query_union: Query = folders_query.union(query)

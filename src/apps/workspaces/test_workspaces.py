@@ -164,7 +164,8 @@ class TestWorkspaces(BaseTest):
         response = await self.client.get(
             self.workspace_applets_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2"
-            )
+            ),
+            dict(ordering="-displayName,created_at"),
         )
         assert response.status_code == 200
         assert response.json()["count"] == 3
