@@ -1,6 +1,8 @@
 import datetime
 import json
 
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -881,8 +883,8 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
                 scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                start_time=1687346100,
+                end_time=1687346100,
             ),
         )
 
@@ -940,6 +942,7 @@ class TestAnswerActivityItems(BaseTest):
             "reviewedAnswerId", "userPublicKey", "version", "submitId",
             "scheduledDatetime", "startDatetime", "endDatetime"
         }
+        assert answer['startDatetime'] == 1687346100
         # fmt: on
 
         assert set(assessment.keys()) == expected_keys

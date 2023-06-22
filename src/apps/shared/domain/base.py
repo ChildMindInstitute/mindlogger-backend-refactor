@@ -1,3 +1,5 @@
+import datetime
+
 from pydantic import BaseModel, Extra
 
 __all__ = ["InternalModel", "PublicModel", "to_camelcase"]
