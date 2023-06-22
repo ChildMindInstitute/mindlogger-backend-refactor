@@ -2,6 +2,7 @@ from pathlib import Path
 
 from pydantic import BaseSettings
 
+from config.alerts import AlertsSettings
 from config.anonymous_respondent import AnonymousRespondent
 from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
@@ -58,6 +59,9 @@ class Settings(BaseSettings):
 
     # FCM Notification configs
     notification: NotificationSettings = NotificationSettings()
+
+    # Alerts configs
+    alerts: AlertsSettings = AlertsSettings()
 
     # NOTE: This config is used by SQLAlchemy for imports
     migrations_apps: list[str]
