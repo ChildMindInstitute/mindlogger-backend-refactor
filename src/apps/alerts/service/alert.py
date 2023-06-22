@@ -24,7 +24,7 @@ class AlertService:
                         activity_item_histories_id_version=(
                             f"{item_id}_{schema.version}"
                         ),
-                        specific_answer=schema.answer.answer,  # type: ignore
+                        specific_answer=schema.answer.answer,
                     )
                 )
             except AlertConfigNotFoundError:
@@ -32,7 +32,7 @@ class AlertService:
             if alert_config:
                 await AlertCRUD(self.session).save(
                     AlertCreate(
-                        specific_answer=schema.answer.answer,  # type: ignore
+                        specific_answer=schema.answer.answer,
                         respondent_id=self.user_id,
                         alert_config_id=alert_config.id,
                         applet_id=schema.applet_id,
