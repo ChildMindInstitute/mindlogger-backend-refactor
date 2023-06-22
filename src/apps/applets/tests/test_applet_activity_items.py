@@ -627,29 +627,58 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
-                            name="activity_item_ab_trails_ipad",
+                            name="activity_item_gyroscope",
                             question=dict(
-                                en="ab_trails_ipad question?",
-                                fr="ab_trails_ipad question?",
+                                en="gyroscope question?",
+                                fr="gyroscope question?",
                             ),
-                            response_type="ABTrailsIpad",
+                            response_type="gyroscope",
                             response_values=None,
                             config=dict(
+                                name="name",
                                 description="description",
-                                imagePlaceholder="image placeholder",
+                                isHidden=False,
+                                general={
+                                    "instruction": "gyroscope instruction",
+                                    "number_of_trials": 3,
+                                    "length_of_test": 3,
+                                    "lambda_slope": 3,
+                                },
+                                practice={
+                                    "instruction": "gyroscope practice "
+                                    "instruction",
+                                },
+                                test={
+                                    "instruction": "gyroscope test "
+                                    "instruction",
+                                },
                             ),
                         ),
                         dict(
-                            name="activity_item_ab_trails_mobile",
+                            name="activity_item_touch",
                             question=dict(
-                                en="ab_trails_mobile question?",
-                                fr="ab_trails_mobile question?",
+                                en="touch question?",
+                                fr="touch question?",
                             ),
-                            response_type="ABTrailsMobile",
+                            response_type="touch",
                             response_values=None,
                             config=dict(
+                                name="name",
                                 description="description",
-                                imagePlaceholder="image placeholder",
+                                isHidden=False,
+                                general={
+                                    "instruction": "touch instruction",
+                                    "number_of_trials": 3,
+                                    "length_of_test": 3,
+                                    "lambda_slope": 3,
+                                },
+                                practice={
+                                    "instruction": "touch practice "
+                                    "instruction",
+                                },
+                                test={
+                                    "instruction": "touch test instruction",
+                                },
                             ),
                         ),
                     ],
@@ -661,6 +690,226 @@ class TestActivityItems(BaseTest):
                     description=dict(
                         en="Understand how was the morning",
                         fr="Understand how was the morning",
+                    ),
+                    items=[
+                        dict(
+                            activity_key="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
+        )
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"])
+        )
+        assert response.status_code == 200
+
+    @rollback
+    async def test_creating_applet_with_ab_trails_mobile_activity_items(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            display_name="mobile_activity_applet",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+            ),
+            description=dict(
+                en="Performance Tasks AB Trails Mobile Applet",
+                fr="Performance Tasks AB Trails Mobile Applet",
+            ),
+            about=dict(
+                en="Applet AB Trails Mobile Task Builder Activity",
+                fr="Applet AB Trails Mobile Task Builder Activity",
+            ),
+            activities=[
+                dict(
+                    name="Activity_ABTrailsMobile",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Description Activity ABTrailsMobile.",
+                        fr="Description Activity ABTrailsMobile.",
+                    ),
+                    items=[
+                        dict(
+                            name="AB_Trails_Mobile_1",
+                            question=dict(
+                                en="ab_trails_mobile question",
+                                fr="ab_trails_mobile question",
+                            ),
+                            response_type="ABTrailsMobileFirst",
+                            response_values=None,
+                            config=dict(
+                                device_type="device Type",
+                            ),
+                        ),
+                        dict(
+                            name="AB_Trails_Mobile_2",
+                            question=dict(
+                                en="ab_trails_mobile question",
+                                fr="ab_trails_mobile question",
+                            ),
+                            response_type="ABTrailsMobileSecond",
+                            response_values=None,
+                            config=dict(
+                                device_type="device Type",
+                            ),
+                        ),
+                        dict(
+                            name="AB_Trails_Mobile_3",
+                            question=dict(
+                                en="ab_trails_mobile question",
+                                fr="ab_trails_mobile question",
+                            ),
+                            response_type="ABTrailsMobileThird",
+                            response_values=None,
+                            config=dict(
+                                device_type="device Type",
+                            ),
+                        ),
+                        dict(
+                            name="AB_Trails_Mobile_4",
+                            question=dict(
+                                en="ab_trails_mobile question",
+                                fr="ab_trails_mobile question",
+                            ),
+                            response_type="ABTrailsMobileFourth",
+                            response_values=None,
+                            config=dict(
+                                device_type="device Type",
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="name_activityFlow",
+                    description=dict(
+                        en="description activityFlow",
+                        fr="description activityFlow",
+                    ),
+                    items=[
+                        dict(
+                            activity_key="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
+        )
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"])
+        )
+        assert response.status_code == 200
+
+    @rollback
+    async def test_creating_applet_with_ab_trails_tablet_activity_items(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            display_name="tablet_activity_applet",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+            ),
+            description=dict(
+                en="Performance Tasks AB Trails Tablet Applet",
+                fr="Performance Tasks AB Trails Tablet Applet",
+            ),
+            about=dict(
+                en="Applet AB Trails Tablet Task Builder Activity",
+                fr="Applet AB Trails Tablet Task Builder Activity",
+            ),
+            activities=[
+                dict(
+                    name="Activity_ABTrailsTablet",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Description Activity ABTrailsTablet.",
+                        fr="Description Activity ABTrailsTablet.",
+                    ),
+                    items=[
+                        dict(
+                            name="AB_Trails_Tablet_1",
+                            question=dict(
+                                en="ab_trails_tablet question",
+                                fr="ab_trails_tablet question",
+                            ),
+                            response_type="ABTrailsTabletFirst",
+                            response_values=None,
+                            config=dict(
+                                device_type="device Type",
+                            ),
+                        ),
+                        dict(
+                            name="AB_Trails_Tablet_2",
+                            question=dict(
+                                en="ab_trails_tablet question",
+                                fr="ab_trails_tablet question",
+                            ),
+                            response_type="ABTrailsTabletSecond",
+                            response_values=None,
+                            config=dict(
+                                device_type="device Type",
+                            ),
+                        ),
+                        dict(
+                            name="AB_Trails_Tablet_3",
+                            question=dict(
+                                en="ab_trails_tablet question",
+                                fr="ab_trails_tablet question",
+                            ),
+                            response_type="ABTrailsTabletThird",
+                            response_values=None,
+                            config=dict(
+                                device_type="device Type",
+                            ),
+                        ),
+                        dict(
+                            name="AB_Trails_Tablet_4",
+                            question=dict(
+                                en="ab_trails_tablet question",
+                                fr="ab_trails_tablet question",
+                            ),
+                            response_type="ABTrailsTabletFourth",
+                            response_values=None,
+                            config=dict(
+                                device_type="device Type",
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="name_activityFlow",
+                    description=dict(
+                        en="description activityFlow",
+                        fr="description activityFlow",
                     ),
                     items=[
                         dict(

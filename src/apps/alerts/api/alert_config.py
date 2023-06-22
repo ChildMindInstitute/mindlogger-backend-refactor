@@ -34,7 +34,7 @@ async def alert_config_create(
     user: User = Depends(get_current_user),
     schema: AlertsConfigCreateRequest = Body(...),
     session=Depends(get_session),
-) -> Response[AlertsConfigPublic]:
+) -> Response[AlertsConfigPublic] | None:
     async with atomic(session):
         # Check user permissions.
         # Only manager roles - (admin, manager, editor) can create alert config
@@ -53,14 +53,23 @@ async def alert_config_create(
         if not activity:
             raise ActivityItemHistoryNotFoundError
 
-        if schema.specific_answer not in activity.answers:
-            raise AnswerNotFoundError
-
-        alert_config_internal = AlertConfigCreate(**schema.dict())
-        instance = await AlertConfigsCRUD(session).save(alert_config_internal)
-        alert_config = AlertsConfigPublic(**instance.dict())
-
-    return Response(result=alert_config)
+        if activity.response_type == "singleSelect":
+            response_values = activity.response_values["options"]
+            values = list()
+            for value in response_values:
+                values.append(value["text"])
+            if schema.specific_answer in values:
+                alert_config_internal = AlertConfigCreate(**schema.dict())
+                instance = await AlertConfigsCRUD(session).save(
+                    alert_config_internal
+                )
+                alert_config = AlertsConfigPublic(**instance.dict())
+                return Response(result=alert_config)
+            else:
+                raise AnswerNotFoundError
+        else:
+            # logic for others response_type is not implemented yet
+            return None
 
 
 async def alert_config_update(

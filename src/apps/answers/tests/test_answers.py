@@ -1,8 +1,6 @@
 import datetime
 import json
 
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -334,7 +332,6 @@ class TestAnswerActivityItems(BaseTest):
             == '{"events": ["event1", "event2"]}'
         )
 
-    @pytest.mark.main
     @rollback
     async def test_applet_activity_answers(self):
         await self.client.login(
@@ -884,8 +881,8 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
                 scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                start_time=1687346100,
+                end_time=1687346100,
             ),
         )
 
@@ -943,6 +940,7 @@ class TestAnswerActivityItems(BaseTest):
             "reviewedAnswerId", "userPublicKey", "version", "submitId",
             "scheduledDatetime", "startDatetime", "endDatetime"
         }
+        assert answer['startDatetime'] == 1687346100
         # fmt: on
 
         assert set(assessment.keys()) == expected_keys
@@ -1015,7 +1013,8 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["count"] == 1
-        assert response.json()["result"][0] == "some identifier"
+        assert response.json()["result"][0]["identifier"] == "some identifier"
+        assert response.json()["result"][0]["userPublicKey"] == "user key"
 
     @rollback
     async def test_get_versions(self):

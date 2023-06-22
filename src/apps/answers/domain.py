@@ -274,7 +274,9 @@ class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
         if val := values.get("flow_history_id"):
             return val[:36]
 
-        return value
+    @validator("start_datetime", "end_datetime")
+    def convert_to_timestamp(cls, value: datetime.datetime):
+        return int(value.timestamp())
 
 
 class AnswerExport(InternalModel):
@@ -295,3 +297,13 @@ class Version(InternalModel):
 class VersionPublic(PublicModel):
     version: str
     created_at: datetime.datetime
+
+
+class Identifier(InternalModel):
+    identifier: str
+    user_public_key: str
+
+
+class IdentifierPublic(PublicModel):
+    identifier: str
+    user_public_key: str

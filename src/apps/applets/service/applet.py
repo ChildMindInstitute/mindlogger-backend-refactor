@@ -1,11 +1,13 @@
 import re
 import uuid
 
+from apps.activities.crud import ActivitiesCRUD, ActivityItemsCRUD
 from apps.activities.domain.activity_create import (
     ActivityCreate,
     ActivityItemCreate,
 )
 from apps.activities.services.activity import ActivityService
+from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.service.flow import FlowService
 from apps.answers.crud.answers import AnswersCRUD
@@ -37,6 +39,12 @@ from apps.applets.errors import (
 )
 from apps.applets.service.applet_history_service import AppletHistoryService
 from apps.folders.crud import FolderCRUD
+from apps.shared.version import (
+    INITIAL_VERSION,
+    VERSION_DIFFERENCE_ACTIVITY,
+    VERSION_DIFFERENCE_ITEM,
+    VERSION_DIFFERENCE_MINOR,
+)
 from apps.themes.service import ThemeService
 from apps.users.services.user import UserService
 from apps.workspaces.errors import AppletEncryptionUpdateDenied
@@ -52,8 +60,6 @@ from apps.shared.query_params import QueryParams
 
 
 class AppletService:
-    INITIAL_VERSION = "1.0.0"
-    VERSION_DIFFERENCE = 1
     APPLET_NAME_FORMAT_FOR_DUPLICATES = "{0} ({1})"
 
     # TODO: implement applet create/update logics here
@@ -130,7 +136,7 @@ class AppletService:
                 image=create_data.image,
                 watermark=create_data.watermark,
                 theme_id=create_data.theme_id,
-                version=self.get_next_version(),
+                version=await self.get_next_version(),
                 report_server_ip=create_data.report_server_ip,
                 report_public_key=create_data.report_public_key,
                 report_recipients=create_data.report_recipients,
@@ -147,11 +153,19 @@ class AppletService:
     async def update(
         self, applet_id: uuid.UUID, update_data: AppletUpdate
     ) -> AppletFull:
+        old_applet_schema = await AppletsCRUD(self.session).get_by_id(
+            applet_id
+        )
+
+        next_version = await self.get_next_version(
+            old_applet_schema.version, update_data, applet_id
+        )
+
         await FlowService(self.session).remove_applet_flows(applet_id)
         await ActivityService(
             self.session, self.user_id
         ).remove_applet_activities(applet_id)
-        applet = await self._update(applet_id, update_data)
+        applet = await self._update(applet_id, update_data, next_version)
 
         applet.activities = await ActivityService(
             self.session, self.user_id
@@ -294,10 +308,9 @@ class AppletService:
             raise AppletAlreadyExist()
 
     async def _update(
-        self, applet_id: uuid.UUID, update_data: AppletUpdate
+        self, applet_id: uuid.UUID, update_data: AppletUpdate, version: str
     ) -> AppletFull:
         await self._validate_applet_name(update_data.display_name, applet_id)
-        applet_schema = await AppletsCRUD(self.session).get_by_id(applet_id)
 
         schema = await AppletsCRUD(self.session).update_by_id(
             applet_id,
@@ -311,17 +324,77 @@ class AppletService:
                 image=update_data.image,
                 watermark=update_data.watermark,
                 theme_id=update_data.theme_id,
-                version=self.get_next_version(applet_schema.version),
+                version=version,
             ),
         )
         return AppletFull.from_orm(schema)
 
-    def get_next_version(self, version: str | None = None):
+    async def get_next_version(
+        self,
+        version: str | None = None,
+        applet_schema: AppletUpdate | None = None,
+        applet_id: uuid.UUID | None = None,
+    ):
         if not version:
-            return self.INITIAL_VERSION
-        return ".".join(
-            list(str(int(version.replace(".", "")) + self.VERSION_DIFFERENCE))
+            return INITIAL_VERSION
+
+        if applet_schema and applet_id:
+            version_difference = await self._get_next_version(
+                applet_schema, applet_id
+            )
+        else:
+            version_difference = VERSION_DIFFERENCE_MINOR
+
+        version_parts = version.split(".")
+        major_version = int(version_parts[0])
+        middle_version = int(version_parts[1])
+        minor_version = int(version_parts[2])
+
+        if version_difference == VERSION_DIFFERENCE_MINOR:
+            minor_version += 1
+        elif version_difference == VERSION_DIFFERENCE_ACTIVITY:
+            major_version += 1
+            middle_version = 0
+            minor_version = 0
+        elif version_difference == VERSION_DIFFERENCE_ITEM:
+            middle_version += 1
+            minor_version = 0
+
+        return f"{major_version}.{middle_version}.{minor_version}"
+
+    async def _get_next_version(
+        self, applet_schema: AppletUpdate, applet_id: uuid.UUID
+    ):
+        old_activity_ids = await ActivitiesCRUD(
+            self.session
+        ).get_ids_by_applet_id(applet_id)
+        old_flow_ids = await FlowsCRUD(self.session).get_ids_by_applet_id(
+            applet_id
         )
+        new_activity_ids = [
+            activity.id for activity in applet_schema.activities
+        ]
+        new_flow_ids = [flow.id for flow in applet_schema.activity_flows]
+
+        if (
+            new_activity_ids != old_activity_ids
+            or new_flow_ids != old_flow_ids
+        ):
+            return VERSION_DIFFERENCE_ACTIVITY
+        else:
+            old_activity_items_ids = await ActivityItemsCRUD(
+                self.session
+            ).get_ids_by_activity_ids(old_activity_ids)
+
+            new_activity_items = []
+            for new_activity in applet_schema.activities:
+                new_activity_items.extend(new_activity.items)
+
+            new_activity_items_ids = [item.id for item in new_activity_items]
+            if new_activity_items_ids != old_activity_items_ids:
+                return VERSION_DIFFERENCE_ITEM
+            else:
+                return VERSION_DIFFERENCE_MINOR
 
     async def get_list_by_single_language(
         self, language: str, query_params: QueryParams
@@ -498,12 +571,6 @@ class AppletService:
             self.session
         ).get_by_applet_id_duplicate(applet_id)
         return applet
-
-    def get_prev_version(self, version: str):
-        int_version = int(version.replace(".", ""))
-        if int_version < int(self.INITIAL_VERSION.replace(".", "")):
-            return self.INITIAL_VERSION
-        return ".".join(list(str(int_version - self.VERSION_DIFFERENCE)))
 
     async def delete_applet_by_id(self, applet_id: uuid.UUID):
         await AppletsCRUD(self.session).get_by_id(applet_id)

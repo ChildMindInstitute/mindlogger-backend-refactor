@@ -55,3 +55,11 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
 
         result = await self._execute(query)
         return result.scalars().first()
+
+    async def get_ids_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> list[uuid.UUID]:
+        query: Query = select(ActivitySchema.id)
+        query = query.where(ActivitySchema.applet_id == applet_id)
+        result = await self._execute(query)
+        return result.scalars().all()

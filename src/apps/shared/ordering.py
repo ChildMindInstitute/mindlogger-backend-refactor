@@ -1,4 +1,4 @@
-from sqlalchemy import asc, desc
+from sqlalchemy import Column, asc, desc
 
 __all__ = ["Ordering"]
 
@@ -35,7 +35,7 @@ class Ordering:
         self.fields = dict()
         for key, val in self.__class__.__dict__.items():
             _val = None
-            if isinstance(val, InstrumentedAttribute):
+            if isinstance(val, (InstrumentedAttribute, Column)):
                 _val = val
             elif isinstance(val, Ordering.Clause):
                 _val = val.clause
