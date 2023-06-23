@@ -4,6 +4,11 @@ from pydantic import root_validator
 
 from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_item_base import BaseActivityItem
+from apps.activities.domain.custom_validation import (
+    validate_item_flow,
+    validate_score_and_sections,
+    validate_subscales,
+)
 from apps.activities.errors import DuplicateActivityItemNameNameError
 from apps.shared.domain import InternalModel
 
@@ -32,3 +37,15 @@ class ActivityUpdate(ActivityBase, InternalModel):
                 raise DuplicateActivityItemNameNameError()
             item_names.add(item.name)
         return values
+
+    @root_validator()
+    def validate_item_flow_conditional_logic(cls, values):
+        return validate_item_flow(values)
+
+    @root_validator()
+    def validate_score_and_sections_conditional_logic(cls, values):
+        return validate_score_and_sections(values)
+
+    @root_validator()
+    def validate_subscales(cls, values):
+        return validate_subscales(values)

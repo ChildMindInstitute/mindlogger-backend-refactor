@@ -4,7 +4,7 @@ from pydantic import Field, PositiveInt, root_validator, validator
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
-from apps.activities.domain.custom_validation import (
+from apps.activities.domain.custom_validation_subscale import (
     validate_raw_score_subscale,
     validate_score_subscale_table,
 )
@@ -240,10 +240,20 @@ class SubScaleLookupTable(PublicModel):
         return validate_score_subscale_table(value)
 
 
+class SubscaleItemType(str, Enum):
+    ITEM = "item"
+    SUBSCALE = "subscale"
+
+
+class SubscaleItem(PublicModel):
+    name: str
+    type: SubscaleItemType
+
+
 class Subscale(PublicModel):
     name: str
     scoring: SubscaleCalculationType
-    items: list[str] | None = Field(default_factory=list)
+    items: list[SubscaleItem] | None = Field(default_factory=list)
     subscale_table_data: list[SubScaleLookupTable] | None = None
 
 
