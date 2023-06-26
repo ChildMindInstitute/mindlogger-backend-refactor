@@ -276,6 +276,14 @@ class IncorrectSubscaleItemError(ValidationError):
     message = _("Activity item inside subscale does not exist.")
 
 
+class IncorrectSubscaleInsideSubscaleError(ValidationError):
+    message = _("Subscale referred inside subscale does not exist.")
+
+
+class SubscaleInsideSubscaleError(ValidationError):
+    message = _("Subscale cannot refer to itself inside items.")
+
+
 class SubscaleItemScoreError(ValidationError):
     message = _("Score must be provided for activity item inside subscale.")
 

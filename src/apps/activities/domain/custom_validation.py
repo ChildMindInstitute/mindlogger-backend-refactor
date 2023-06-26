@@ -6,6 +6,7 @@ from apps.activities.domain.response_type_config import (
     PerformanceTaskType,
     ResponseType,
 )
+from apps.activities.domain.scores_reports import SubscaleItemType
 from apps.activities.errors import (
     IncorrectConditionItemError,
     IncorrectConditionItemIndexError,
@@ -19,9 +20,9 @@ from apps.activities.errors import (
     IncorrectSectionConditionItemError,
     IncorrectSectionPrintItemError,
     IncorrectSectionPrintItemTypeError,
+    IncorrectSubscaleInsideSubscaleError,
     IncorrectSubscaleItemError,
-    InvalidRawScoreSubscaleError,
-    InvalidScoreSubscaleError,
+    SubscaleInsideSubscaleError,
     SubscaleItemScoreError,
     SubscaleItemTypeError,
 )
@@ -176,66 +177,37 @@ def validate_subscales(values: dict):
         subscales = subscale_setting.subscales
         items = values.get("items", [])
         item_names = [item.name for item in items]
+        subscale_names = [subscale.name for subscale in subscales]
         for subscale in subscales:
             for subscale_item_name in subscale.items:
-                if subscale_item_name not in item_names:
-                    raise IncorrectSubscaleItemError()
-                subscale_item_index = item_names.index(subscale_item_name)
-
-                if not items[subscale_item_index].response_type in [
-                    ResponseType.SINGLESELECT,
-                    ResponseType.MULTISELECT,
-                    ResponseType.SLIDER,
+                if subscale_item_name.type in [
+                    SubscaleItemType.ITEM,
                 ]:
-                    raise SubscaleItemTypeError()
+                    if subscale_item_name.name not in item_names:
+                        raise IncorrectSubscaleItemError()
+                    subscale_item_index = item_names.index(
+                        subscale_item_name.name
+                    )
 
-                if not items[subscale_item_index].config.add_scores:
-                    raise SubscaleItemScoreError()
+                    if not items[subscale_item_index].response_type in [
+                        ResponseType.SINGLESELECT,
+                        ResponseType.MULTISELECT,
+                        ResponseType.SLIDER,
+                    ]:
+                        raise SubscaleItemTypeError()
+
+                    if not items[subscale_item_index].config.add_scores:
+                        raise SubscaleItemScoreError()
+                elif subscale_item_name.type in [
+                    SubscaleItemType.SUBSCALE,
+                ]:
+                    if subscale_item_name.name not in subscale_names:
+                        raise IncorrectSubscaleInsideSubscaleError()
+                    else:
+                        if subscale_item_name.name == subscale.name:
+                            raise SubscaleInsideSubscaleError()
 
     return values
-
-
-def validate_raw_score_subscale(value: str):
-    # make sure it's format is "x~y" or "x"
-    if "~" not in value:
-        if not value.isnumeric():
-            raise InvalidRawScoreSubscaleError()
-
-    if "~" in value:
-        # make sure x and y are integers
-        x: str | int
-        y: str | int
-        x, y = value.split("~")
-        try:
-            x = int(x)  # noqa: F841
-            y = int(y)  # noqa: F841
-        except ValueError:
-            raise InvalidRawScoreSubscaleError()
-
-    return value
-
-
-def validate_score_subscale_table(value: str):
-    # make sure it's format is "x~y" or "x"
-    if "~" not in value:
-        if not value.isnumeric():
-            raise InvalidScoreSubscaleError()
-
-    if "~" in value:
-        # make sure x and y are integers
-        x: str | float
-        y: str | float
-        x, y = value.split("~")
-        try:
-            x = float(x)  # noqa: F841
-            y = float(y)  # noqa: F841
-
-            if len(str(x).split(".")[1]) > 5 or len(str(x).split(".")[1]) > 5:
-                raise InvalidScoreSubscaleError()
-        except ValueError:
-            raise InvalidScoreSubscaleError()
-
-    return value
 
 
 def validate_is_performance_task(value: bool, values: dict):

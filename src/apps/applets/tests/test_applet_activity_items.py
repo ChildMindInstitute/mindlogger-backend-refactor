@@ -551,136 +551,6 @@ class TestActivityItems(BaseTest):
                                 },
                             ),
                         ),
-                        dict(
-                            name="activity_item_flanker",
-                            question=dict(
-                                en="flanker question?",
-                                fr="flanker question?",
-                            ),
-                            response_type="flanker",
-                            response_values=None,
-                            config=dict(
-                                general=dict(
-                                    instruction="instruction",
-                                    buttons=[
-                                        dict(
-                                            name="button 1",
-                                            image="image button 1",
-                                        ),
-                                        dict(
-                                            name="button 2",
-                                            image="image button 2",
-                                        ),
-                                    ],
-                                    fixation=dict(
-                                        image="image fixation",
-                                        duration=10,
-                                    ),
-                                    stimulusTrials=[
-                                        {
-                                            "id": "1",
-                                            "image": "image stimulus_trials 1",
-                                            "correctPress": "left",
-                                        },
-                                        {
-                                            "id": "2",
-                                            "image": "image stimulus_trials 2",
-                                            "correctPress": "left",
-                                        },
-                                    ],
-                                ),
-                                practice=dict(
-                                    instruction="instruction",
-                                    blocks=[
-                                        {
-                                            "order": ["1", "2"],
-                                            "name": "name order 1",
-                                        },
-                                        {
-                                            "order": ["2", "1"],
-                                            "name": "name order 2",
-                                        },
-                                    ],
-                                    stimulusDuration=20,
-                                    threshold=15,
-                                    randomizeOrder=True,
-                                    showFeedback=True,
-                                    showSummary=True,
-                                ),
-                                test=dict(
-                                    instruction="instruction",
-                                    blocks=[
-                                        {
-                                            "order": ["1", "2"],
-                                            "name": "name order 1",
-                                        },
-                                        {
-                                            "order": ["2", "1"],
-                                            "name": "name order 2",
-                                        },
-                                    ],
-                                    stimulusDuration=20,
-                                    randomizeOrder=True,
-                                    showFeedback=True,
-                                    showSummary=True,
-                                ),
-                            ),
-                        ),
-                        dict(
-                            name="activity_item_gyroscope",
-                            question=dict(
-                                en="gyroscope question?",
-                                fr="gyroscope question?",
-                            ),
-                            response_type="gyroscope",
-                            response_values=None,
-                            config=dict(
-                                name="name",
-                                description="description",
-                                isHidden=False,
-                                general={
-                                    "instruction": "gyroscope instruction",
-                                    "number_of_trials": 3,
-                                    "length_of_test": 3,
-                                    "lambda_slope": 3,
-                                },
-                                practice={
-                                    "instruction": "gyroscope practice "
-                                    "instruction",
-                                },
-                                test={
-                                    "instruction": "gyroscope test "
-                                    "instruction",
-                                },
-                            ),
-                        ),
-                        dict(
-                            name="activity_item_touch",
-                            question=dict(
-                                en="touch question?",
-                                fr="touch question?",
-                            ),
-                            response_type="touch",
-                            response_values=None,
-                            config=dict(
-                                name="name",
-                                description="description",
-                                isHidden=False,
-                                general={
-                                    "instruction": "touch instruction",
-                                    "number_of_trials": 3,
-                                    "length_of_test": 3,
-                                    "lambda_slope": 3,
-                                },
-                                practice={
-                                    "instruction": "touch practice "
-                                    "instruction",
-                                },
-                                test={
-                                    "instruction": "touch test instruction",
-                                },
-                            ),
-                        ),
                     ],
                 ),
             ],
@@ -1246,7 +1116,47 @@ class TestActivityItems(BaseTest):
                                 name="subscale1",
                                 scoring="sum",
                                 items=[
-                                    "activity_item_singleselect",
+                                    dict(
+                                        name="activity_item_singleselect",
+                                        type="item",
+                                    ),
+                                ],
+                                subscale_table_data=[
+                                    dict(
+                                        score="1.2342~1231",
+                                        raw_score="1",
+                                        age=15,
+                                        sex="F",
+                                        optional_text="optional_text",
+                                    ),
+                                    dict(
+                                        score="1.2342~1231.12333",
+                                        raw_score="1~6",
+                                        age=10,
+                                        sex="M",
+                                        optional_text="optional_text12",
+                                    ),
+                                    dict(
+                                        score=1,
+                                        raw_score=1,
+                                        age=15,
+                                        sex="M",
+                                        optional_text="optional_text13",
+                                    ),
+                                ],
+                            ),
+                            dict(
+                                name="subscale12",
+                                scoring="sum",
+                                items=[
+                                    dict(
+                                        name="activity_item_singleselect",
+                                        type="item",
+                                    ),
+                                    dict(
+                                        name="subscale1",
+                                        type="subscale",
+                                    ),
                                 ],
                                 subscale_table_data=[
                                     dict(
