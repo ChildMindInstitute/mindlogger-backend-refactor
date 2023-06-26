@@ -551,136 +551,6 @@ class TestActivityItems(BaseTest):
                                 },
                             ),
                         ),
-                        dict(
-                            name="activity_item_flanker",
-                            question=dict(
-                                en="flanker question?",
-                                fr="flanker question?",
-                            ),
-                            response_type="flanker",
-                            response_values=None,
-                            config=dict(
-                                general=dict(
-                                    instruction="instruction",
-                                    buttons=[
-                                        dict(
-                                            name="button 1",
-                                            image="image button 1",
-                                        ),
-                                        dict(
-                                            name="button 2",
-                                            image="image button 2",
-                                        ),
-                                    ],
-                                    fixation=dict(
-                                        image="image fixation",
-                                        duration=10,
-                                    ),
-                                    stimulusTrials=[
-                                        {
-                                            "id": "1",
-                                            "image": "image stimulus_trials 1",
-                                            "correctPress": "left",
-                                        },
-                                        {
-                                            "id": "2",
-                                            "image": "image stimulus_trials 2",
-                                            "correctPress": "left",
-                                        },
-                                    ],
-                                ),
-                                practice=dict(
-                                    instruction="instruction",
-                                    blocks=[
-                                        {
-                                            "order": ["1", "2"],
-                                            "name": "name order 1",
-                                        },
-                                        {
-                                            "order": ["2", "1"],
-                                            "name": "name order 2",
-                                        },
-                                    ],
-                                    stimulusDuration=20,
-                                    threshold=15,
-                                    randomizeOrder=True,
-                                    showFeedback=True,
-                                    showSummary=True,
-                                ),
-                                test=dict(
-                                    instruction="instruction",
-                                    blocks=[
-                                        {
-                                            "order": ["1", "2"],
-                                            "name": "name order 1",
-                                        },
-                                        {
-                                            "order": ["2", "1"],
-                                            "name": "name order 2",
-                                        },
-                                    ],
-                                    stimulusDuration=20,
-                                    randomizeOrder=True,
-                                    showFeedback=True,
-                                    showSummary=True,
-                                ),
-                            ),
-                        ),
-                        dict(
-                            name="activity_item_gyroscope",
-                            question=dict(
-                                en="gyroscope question?",
-                                fr="gyroscope question?",
-                            ),
-                            response_type="gyroscope",
-                            response_values=None,
-                            config=dict(
-                                name="name",
-                                description="description",
-                                isHidden=False,
-                                general={
-                                    "instruction": "gyroscope instruction",
-                                    "number_of_trials": 3,
-                                    "length_of_test": 3,
-                                    "lambda_slope": 3,
-                                },
-                                practice={
-                                    "instruction": "gyroscope practice "
-                                    "instruction",
-                                },
-                                test={
-                                    "instruction": "gyroscope test "
-                                    "instruction",
-                                },
-                            ),
-                        ),
-                        dict(
-                            name="activity_item_touch",
-                            question=dict(
-                                en="touch question?",
-                                fr="touch question?",
-                            ),
-                            response_type="touch",
-                            response_values=None,
-                            config=dict(
-                                name="name",
-                                description="description",
-                                isHidden=False,
-                                general={
-                                    "instruction": "touch instruction",
-                                    "number_of_trials": 3,
-                                    "length_of_test": 3,
-                                    "lambda_slope": 3,
-                                },
-                                practice={
-                                    "instruction": "touch practice "
-                                    "instruction",
-                                },
-                                test={
-                                    "instruction": "touch test instruction",
-                                },
-                            ),
-                        ),
                     ],
                 ),
             ],
@@ -977,11 +847,11 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
-                            name="Gyroscope_Сalibration_Practise_instruction",
+                            name="Gyroscope_Сalibration_Practice_instruction",
                             question=dict(
-                                en="Gyroscope Сalibration/Practise "
+                                en="Gyroscope Сalibration/Practice "
                                 "instruction text.",
-                                fr="Gyroscope Сalibration/Practise "
+                                fr="Gyroscope Сalibration/Practice "
                                 "instruction text.",
                             ),
                             response_type="message",
@@ -992,15 +862,15 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
-                            name="Gyroscope_Сalibration_Practise",
+                            name="Gyroscope_Сalibration_Practice",
                             question=dict(
-                                en="Gyroscope Сalibration/Practise.",
-                                fr="Gyroscope Сalibration/Practise.",
+                                en="Gyroscope Сalibration/Practice.",
+                                fr="Gyroscope Сalibration/Practice.",
                             ),
-                            response_type="gyroscopePractise",
+                            response_type="gyroscopePractice",
                             response_values=None,
                             config=dict(
-                                phase="practise",
+                                phase="practice",
                                 trials_number=3,
                                 duration_minutes=5,
                                 lambda_slope=0.2,
@@ -1110,11 +980,11 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
-                            name="Touch_Сalibration_Practise_instruction",
+                            name="Touch_Сalibration_Practice_instruction",
                             question=dict(
-                                en="Touch Сalibration/Practise "
+                                en="Touch Сalibration/Practice "
                                 "instruction text.",
-                                fr="Touch Сalibration/Practise "
+                                fr="Touch Сalibration/Practice "
                                 "instruction text.",
                             ),
                             response_type="message",
@@ -1125,15 +995,15 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
-                            name="Touch_Сalibration_Practise",
+                            name="Touch_Сalibration_Practice",
                             question=dict(
                                 en="Touch Сalibration/Practise.",
                                 fr="Touch Сalibration/Practise.",
                             ),
-                            response_type="touchPractise",
+                            response_type="touchPractice",
                             response_values=None,
                             config=dict(
-                                phase="practise",
+                                phase="practice",
                                 trials_number=3,
                                 duration_minutes=5,
                                 lambda_slope=0.2,
@@ -1166,6 +1036,255 @@ class TestActivityItems(BaseTest):
                                 duration_minutes=7,
                                 lambda_slope=0.2,
                             ),
+                        ),
+                    ],
+                ),
+            ],
+            activity_flows=[
+                dict(
+                    name="name_activityFlow",
+                    description=dict(
+                        en="description activityFlow",
+                        fr="description activityFlow",
+                    ),
+                    items=[
+                        dict(
+                            activity_key="577dbbda-3afc-"
+                            "4962-842b-8d8d11588bfe"
+                        )
+                    ],
+                )
+            ],
+        )
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
+        )
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"])
+        )
+        assert response.status_code == 200
+
+    @rollback
+    async def test_creating_applet_with_flanker_activity_items(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            display_name="flanker_activity_applet",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+            ),
+            description=dict(
+                en="Performance Tasks flanker Applet",
+                fr="Performance Tasks flanker Applet",
+            ),
+            about=dict(
+                en="Applet flanker Task Builder Activity",
+                fr="Applet flanker Task Builder Activity",
+            ),
+            activities=[
+                dict(
+                    name="Activity_flanker",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Description Activity flanker.",
+                        fr="Description Activity flanker.",
+                    ),
+                    items=[
+                        dict(
+                            name="Flanker_VSR_instructionsn",
+                            question=dict(
+                                en="## General Instructions\n\n\n You will "
+                                "see arrows presented at the center of the "
+                                "screen that point either to the left ‘<’ "
+                                "or right ‘>’.\n Press the left button "
+                                "if the arrow is pointing to the left ‘<’ "
+                                "or press the right button if the arrow is "
+                                "pointing to the right ‘>’.\n These arrows "
+                                "will appear in the center of a line of "
+                                "other items. Sometimes, these other items "
+                                "will be arrows pointing in the same "
+                                "direction, e.g.. ‘> > > > >’, or in the "
+                                "opposite direction, e.g. ‘< < > < <’.\n "
+                                "Your job is to respond to the central "
+                                "arrow, no matter what direction the other "
+                                "arrows are pointing.\n For example, you "
+                                "would press the left button for both "
+                                "‘< < < < <’, and ‘> > < > >’ because the "
+                                "middle arrow points to the left.\n "
+                                "Finally, in some trials dashes ‘ - ’ "
+                                "will appear beside the central arrow.\n "
+                                "Again, respond only to the direction "
+                                "of the central arrow. Please respond "
+                                "as quickly and accurately as possible.",
+                                fr="Flanker General instruction text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Flanker_Practice_instructions_1",
+                            question=dict(
+                                en="## Instructions\n\nNow you will have a "
+                                "chance to practice the task before moving "
+                                "on to the test phase.\nRemember to "
+                                "respond only to the central arrow\n",
+                                fr="Flanker Сalibration/Practice "
+                                "instruction 1 text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Flanker_Practise_1",
+                            question=dict(
+                                en="Flanker_Practise_1",
+                                fr="Flanker_Practise_1",
+                            ),
+                            response_type="flankerPractice",
+                            response_values=None,
+                            config=dict(),
+                        ),
+                        dict(
+                            name="Flanker_Practice_instructions_2",
+                            question=dict(
+                                en="## Instructions\nPress the Next button "
+                                "to restart block.",
+                                fr="Flanker Practice instruction 2 text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Flanker_Practise_2",
+                            question=dict(
+                                en="Flanker_Practise_2",
+                                fr="Flanker_Practise_2",
+                            ),
+                            response_type="flankerPractice",
+                            response_values=None,
+                            config=dict(),
+                        ),
+                        dict(
+                            name="Flanker_Practice_instructions_3",
+                            question=dict(
+                                en="## Instructions\nPress the Next button to "
+                                "restart block.",
+                                fr="Flanker Practice instruction 3 text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Flanker_Practise_3",
+                            question=dict(
+                                en="Flanker_Practise_3",
+                                fr="Flanker_Practise_3",
+                            ),
+                            response_type="flankerPractice",
+                            response_values=None,
+                            config=dict(),
+                        ),
+                        dict(
+                            name="Flanker_Test_instructions_1",
+                            question=dict(
+                                en="## Test Instructions\n\nGood job on the "
+                                "practice blocks.\nYou can now move on to "
+                                "the test blocks.\nYou will do the same "
+                                "task as in the practice, responding to "
+                                "the direction of the central arrow.\nYou "
+                                "will complete 3 blocks, each about "
+                                "3-5 minutes long.\nYou will have  a "
+                                "short break in between these blocks\n",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Flanker_test_1",
+                            question=dict(
+                                en="Flanker_test_1",
+                                fr="Flanker_test_1",
+                            ),
+                            response_type="flankerTest",
+                            response_values=None,
+                            config=dict(),
+                        ),
+                        dict(
+                            name="Flanker_test_instructions_2",
+                            question=dict(
+                                en="## Instructions\nPress the Next button "
+                                "to start next block.",
+                                fr="Flanker Test instruction 2 text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Flanker_test_2",
+                            question=dict(
+                                en="Flanker_test_2",
+                                fr="Flanker_test_2",
+                            ),
+                            response_type="flankerTest",
+                            response_values=None,
+                            config=dict(),
+                        ),
+                        dict(
+                            name="Flanker_test_instructions_3",
+                            question=dict(
+                                en="## Instructions\nPress the Next button "
+                                "to start next block.",
+                                fr="Flanker Test instruction 3 text.",
+                            ),
+                            response_type="message",
+                            response_values=None,
+                            config=dict(
+                                remove_back_button=False,
+                                timer=None,
+                            ),
+                        ),
+                        dict(
+                            name="Flanker_test_3",
+                            question=dict(
+                                en="Flanker_test_3",
+                                fr="Flanker_test_3",
+                            ),
+                            response_type="flankerTest",
+                            response_values=None,
+                            config=dict(),
                         ),
                     ],
                 ),
@@ -1985,87 +2104,199 @@ class TestActivityItems(BaseTest):
 
         create_data["activities"] = [
             dict(
-                name="Morning activity",
+                name="Activity_flanker",
                 key="577dbbda-3afc-4962-842b-8d8d11588bfe",
                 description=dict(
-                    en="Understand morning feelings.",
-                    fr="Understand morning feelings.",
+                    en="Description Activity flanker.",
+                    fr="Description Activity flanker.",
                 ),
                 items=[
                     dict(
-                        name="activity_item_flanker",
+                        name="Flanker_VSR_instructionsn",
                         question=dict(
-                            en="flanker question?",
-                            fr="flanker question?",
+                            en="## General Instructions\n\n\n You will "
+                            "see arrows presented at the center of the "
+                            "screen that point either to the left ‘<’ "
+                            "or right ‘>’.\n Press the left button "
+                            "if the arrow is pointing to the left ‘<’ "
+                            "or press the right button if the arrow is "
+                            "pointing to the right ‘>’.\n These arrows "
+                            "will appear in the center of a line of "
+                            "other items. Sometimes, these other items "
+                            "will be arrows pointing in the same "
+                            "direction, e.g.. ‘> > > > >’, or in the "
+                            "opposite direction, e.g. ‘< < > < <’.\n "
+                            "Your job is to respond to the central "
+                            "arrow, no matter what direction the other "
+                            "arrows are pointing.\n For example, you "
+                            "would press the left button for both "
+                            "‘< < < < <’, and ‘> > < > >’ because the "
+                            "middle arrow points to the left.\n "
+                            "Finally, in some trials dashes ‘ - ’ "
+                            "will appear beside the central arrow.\n "
+                            "Again, respond only to the direction "
+                            "of the central arrow. Please respond "
+                            "as quickly and accurately as possible.",
+                            fr="Flanker General instruction text.",
                         ),
-                        response_type="flanker",
+                        response_type="message",
                         response_values=None,
                         config=dict(
-                            general=dict(
-                                instruction="instruction",
-                                buttons=[
-                                    dict(
-                                        name="button 1",
-                                        image="image button 1",
-                                    ),
-                                    dict(
-                                        name="button 2",
-                                        image="image button 2",
-                                    ),
-                                ],
-                                fixation=dict(
-                                    image="image fixation",
-                                    duration=10,
-                                ),
-                                stimulusTrials=[
-                                    {
-                                        "id": "1",
-                                        "image": "image stimulus_trials 1",
-                                        "correctPress": "left",
-                                    },
-                                    {
-                                        "id": "2",
-                                        "image": "image stimulus_trials 2",
-                                        "correctPress": "left",
-                                    },
-                                ],
-                            ),
-                            practice=dict(
-                                instruction="instruction",
-                                blocks=[
-                                    {
-                                        "order": ["1", "2"],
-                                        "name": "name order 1",
-                                    },
-                                    {
-                                        "order": ["2", "1"],
-                                        "name": "name order 2",
-                                    },
-                                ],
-                                stimulusDuration=20,
-                                threshold=15,
-                                randomizeOrder=True,
-                                showFeedback=True,
-                                showSummary=True,
-                            ),
-                            test=dict(
-                                instruction="instruction",
-                                blocks=[
-                                    {
-                                        "order": ["1", "2"],
-                                        "name": "name order 1",
-                                    },
-                                    {
-                                        "order": ["2", "1"],
-                                        "name": "name order 2",
-                                    },
-                                ],
-                                stimulusDuration=20,
-                                randomizeOrder=True,
-                                showFeedback=True,
-                                showSummary=True,
-                            ),
+                            remove_back_button=False,
+                            timer=None,
                         ),
+                    ),
+                    dict(
+                        name="Flanker_Practice_instructions_1",
+                        question=dict(
+                            en="## Instructions\n\nNow you will have a "
+                            "chance to practice the task before moving "
+                            "on to the test phase.\nRemember to "
+                            "respond only to the central arrow\n",
+                            fr="Flanker Сalibration/Practice "
+                            "instruction 1 text.",
+                        ),
+                        response_type="message",
+                        response_values=None,
+                        config=dict(
+                            remove_back_button=False,
+                            timer=None,
+                        ),
+                    ),
+                    dict(
+                        name="Flanker_Practise_1",
+                        question=dict(
+                            en="Flanker_Practise_1",
+                            fr="Flanker_Practise_1",
+                        ),
+                        response_type="flankerPractice",
+                        response_values=None,
+                        config=dict(),
+                    ),
+                    dict(
+                        name="Flanker_Practice_instructions_2",
+                        question=dict(
+                            en="## Instructions\nPress the Next button "
+                            "to restart block.",
+                            fr="Flanker Practice instruction 2 text.",
+                        ),
+                        response_type="message",
+                        response_values=None,
+                        config=dict(
+                            remove_back_button=False,
+                            timer=None,
+                        ),
+                    ),
+                    dict(
+                        name="Flanker_Practise_2",
+                        question=dict(
+                            en="Flanker_Practise_2",
+                            fr="Flanker_Practise_2",
+                        ),
+                        response_type="flankerPractice",
+                        response_values=None,
+                        config=dict(),
+                    ),
+                    dict(
+                        name="Flanker_Practice_instructions_3",
+                        question=dict(
+                            en="## Instructions\nPress the Next button to "
+                            "restart block.",
+                            fr="Flanker Practice instruction 3 text.",
+                        ),
+                        response_type="message",
+                        response_values=None,
+                        config=dict(
+                            remove_back_button=False,
+                            timer=None,
+                        ),
+                    ),
+                    dict(
+                        name="Flanker_Practise_3",
+                        question=dict(
+                            en="Flanker_Practise_3",
+                            fr="Flanker_Practise_3",
+                        ),
+                        response_type="flankerPractice",
+                        response_values=None,
+                        config=dict(),
+                    ),
+                    dict(
+                        name="Flanker_Test_instructions_1",
+                        question=dict(
+                            en="## Test Instructions\n\nGood job on the "
+                            "practice blocks.\nYou can now move on to "
+                            "the test blocks.\nYou will do the same "
+                            "task as in the practice, responding to "
+                            "the direction of the central arrow.\nYou "
+                            "will complete 3 blocks, each about "
+                            "3-5 minutes long.\nYou will have  a "
+                            "short break in between these blocks\n",
+                        ),
+                        response_type="message",
+                        response_values=None,
+                        config=dict(
+                            remove_back_button=False,
+                            timer=None,
+                        ),
+                    ),
+                    dict(
+                        name="Flanker_test_1",
+                        question=dict(
+                            en="Flanker_test_1",
+                            fr="Flanker_test_1",
+                        ),
+                        response_type="flankerTest",
+                        response_values=None,
+                        config=dict(),
+                    ),
+                    dict(
+                        name="Flanker_test_instructions_2",
+                        question=dict(
+                            en="## Instructions\nPress the Next button "
+                            "to start next block.",
+                            fr="Flanker Test instruction 2 text.",
+                        ),
+                        response_type="message",
+                        response_values=None,
+                        config=dict(
+                            remove_back_button=False,
+                            timer=None,
+                        ),
+                    ),
+                    dict(
+                        name="Flanker_test_2",
+                        question=dict(
+                            en="Flanker_test_2",
+                            fr="Flanker_test_2",
+                        ),
+                        response_type="flankerTest",
+                        response_values=None,
+                        config=dict(),
+                    ),
+                    dict(
+                        name="Flanker_test_instructions_3",
+                        question=dict(
+                            en="## Instructions\nPress the Next button "
+                            "to start next block.",
+                            fr="Flanker Test instruction 3 text.",
+                        ),
+                        response_type="message",
+                        response_values=None,
+                        config=dict(
+                            remove_back_button=False,
+                            timer=None,
+                        ),
+                    ),
+                    dict(
+                        name="Flanker_test_3",
+                        question=dict(
+                            en="Flanker_test_3",
+                            fr="Flanker_test_3",
+                        ),
+                        response_type="flankerTest",
+                        response_values=None,
+                        config=dict(),
                     ),
                 ],
             ),
