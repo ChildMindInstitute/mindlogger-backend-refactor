@@ -67,3 +67,11 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
                 value=value,
             )
         return schema
+
+    async def get_id_versions_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> list[uuid.UUID]:
+        query: Query = select(AppletHistorySchema.id_version)
+        query = query.where(AppletHistorySchema.id == applet_id)
+        result = await self._execute(query)
+        return [id_version for id_version, in result]

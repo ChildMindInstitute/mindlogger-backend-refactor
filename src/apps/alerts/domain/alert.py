@@ -5,11 +5,7 @@ from pydantic import BaseModel, Field
 
 from apps.shared.domain import InternalModel, PublicModel
 
-__all__ = [
-    "AlertCreate",
-    "Alert",
-    "AlertPublic",
-]
+__all__ = ["AlertCreate", "Alert", "AlertPublic", "AlertWSInternal"]
 
 
 class _AlertBase(BaseModel):
@@ -81,3 +77,8 @@ class AlertPublic(_AlertBase, PublicModel):
         description="This field represents the meta data for respondent"
         "which which contains the fields - nickname and secret_user_id"
     )
+
+
+class AlertWSInternal(InternalModel):
+    id: int
+    is_watched: bool

@@ -5,13 +5,12 @@ from apps.activity_flows.service.flow_history import FlowHistoryService
 from apps.applets.crud import AppletHistoriesCRUD
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain import AppletHistory, AppletHistoryChange
-
-__all__ = ["AppletHistoryService"]
-
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.shared.changes_generator import ChangeGenerator
-from apps.shared.version import get_prev_version
+from apps.shared.version import INITIAL_VERSION
+
+__all__ = ["AppletHistoryService"]
 
 
 class AppletHistoryService:
@@ -51,22 +50,20 @@ class AppletHistoryService:
 
     async def get_changes(self) -> AppletHistoryChange:
         try:
-            prev_version = get_prev_version(self._version)
+            prev_version = await self.get_prev_version()
         except ValueError:
             raise InvalidVersionError()
         old_id_version = f"{self._applet_id}_{prev_version}"
-
         changes = await self._get_applet_changes(old_id_version)
         changes.activities = await ActivityHistoryService(
             self.session, self._applet_id, self._version
-        ).get_changes()
+        ).get_changes(prev_version)
         return changes
 
     async def _get_applet_changes(
         self, old_id_version: str
     ) -> AppletHistoryChange:
         changes = AppletHistoryChange()
-
         new_schema = await AppletHistoriesCRUD(
             self.session
         ).fetch_by_id_version(self._id_version)
@@ -76,7 +73,6 @@ class AppletHistoryService:
 
         new_history: AppletHistory = AppletHistory.from_orm(new_schema)
         old_history: AppletHistory = AppletHistory.from_orm(old_schema)
-
         if old_id_version == self._id_version:
             changes.display_name = (
                 f"New applet {new_history.display_name} added"
@@ -97,3 +93,17 @@ class AppletHistoryService:
         if not schema:
             raise NotValidAppletHistory()
         return AppletHistory.from_orm(schema)
+
+    async def get_prev_version(self):
+        id_versions = await AppletHistoriesCRUD(
+            self.session
+        ).get_id_versions_by_applet_id(self._applet_id)
+        versions = [v.replace(f"{self._applet_id}_", "") for v in id_versions]
+        versions.sort()
+        prev_version = ""
+        if self._version in versions:
+            prev_version = versions[max(versions.index(self._version) - 1, 0)]
+        else:
+            prev_version = INITIAL_VERSION
+
+        return prev_version

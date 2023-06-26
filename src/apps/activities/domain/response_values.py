@@ -58,19 +58,51 @@ class FlankerTestValues(PublicModel):
     pass
 
 
-class GyroscopeValues(PublicModel):
+class GyroscopePractiseValues(PublicModel):
     pass
 
 
-class TouchValues(PublicModel):
+class GyroscopeTestValues(PublicModel):
     pass
 
 
-class ABTrailsIpadValues(PublicModel):
+class TouchPractiseValues(PublicModel):
     pass
 
 
-class ABTrailsMobileValues(PublicModel):
+class TouchTestValues(PublicModel):
+    pass
+
+
+class ABTrailsTabletFirstValues(PublicModel):
+    pass
+
+
+class ABTrailsTabletSecondValues(PublicModel):
+    pass
+
+
+class ABTrailsTabletThirdValues(PublicModel):
+    pass
+
+
+class ABTrailsTabletFourthValues(PublicModel):
+    pass
+
+
+class ABTrailsMobileFirstValues(PublicModel):
+    pass
+
+
+class ABTrailsMobileSecondValues(PublicModel):
+    pass
+
+
+class ABTrailsMobileThirdValues(PublicModel):
+    pass
+
+
+class ABTrailsMobileFourthValues(PublicModel):
     pass
 
 
@@ -314,10 +346,18 @@ ResponseValueConfigOptions = [
     TimeValues,
     FlankerPractiseValues,
     FlankerTestValues,
-    GyroscopeValues,
-    TouchValues,
-    ABTrailsIpadValues,
-    ABTrailsMobileValues,
+    GyroscopePractiseValues,
+    GyroscopeTestValues,
+    TouchPractiseValues,
+    TouchTestValues,
+    ABTrailsTabletFirstValues,
+    ABTrailsTabletSecondValues,
+    ABTrailsTabletThirdValues,
+    ABTrailsTabletFourthValues,
+    ABTrailsMobileFirstValues,
+    ABTrailsMobileSecondValues,
+    ABTrailsMobileThirdValues,
+    ABTrailsMobileFourthValues,
 ]
 
 

@@ -64,9 +64,7 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         return alert
 
     async def get_by_applet_id(
-        self,
-        applet_id: uuid.UUID,
-        query_params: QueryParams,
+        self, applet_id: uuid.UUID, query_params: QueryParams | None = None
     ) -> list[AlertPublic]:
         """Get alerts by applet_id from the database"""
 
@@ -94,18 +92,20 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
             )
         )
 
-        if query_params.search:
-            query = query.where(
-                *_AlertSearching().get_clauses(query_params.search)
-            )
-        if query_params.ordering:
-            query = query.order_by(
-                *_AlertOrdering().get_clauses(*query_params.ordering)
-            )
+        if query_params:
+            if query_params.search:
+                query = query.where(
+                    *_AlertSearching().get_clauses(query_params.search)
+                )
+            if query_params.ordering:
+                query = query.order_by(
+                    *_AlertOrdering().get_clauses(*query_params.ordering)
+                )
         query = query.where(
             self.schema_class.is_deleted == False  # noqa: E712
         )
-        query = paging(query, query_params.page, query_params.limit)
+        if query_params:
+            query = paging(query, query_params.page, query_params.limit)
         result: Result = await self._execute(query)
         results = []
         for alert, applet_name, meta in result.all():
@@ -128,9 +128,7 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         return results
 
     async def get_by_applet_id_count(
-        self,
-        applet_id: uuid.UUID,
-        query_params: QueryParams,
+        self, applet_id: uuid.UUID, query_params: QueryParams | None = None
     ) -> int:
         """Get alerts count by applet_id from the database"""
 
@@ -138,10 +136,11 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         query: Query = select(count(self.schema_class.id))
         query = query.where(self.schema_class.applet_id == applet_id)
 
-        if query_params.search:
-            query = query.where(
-                *_AlertSearching().get_clauses(query_params.search)
-            )
+        if query_params:
+            if query_params.search:
+                query = query.where(
+                    *_AlertSearching().get_clauses(query_params.search)
+                )
 
         query = query.where(
             self.schema_class.is_deleted == False  # noqa: E712

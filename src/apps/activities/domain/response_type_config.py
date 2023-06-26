@@ -2,6 +2,30 @@ from enum import Enum
 
 from pydantic import Field, NonNegativeInt, PositiveInt, validator
 
+from apps.activities.domain.constants_ab_trails_mobile import (
+    MOBILE_NODES_FIRST,
+    MOBILE_NODES_FOURTH,
+    MOBILE_NODES_SECOND,
+    MOBILE_NODES_THIRD,
+    MOBILE_TUTORIALS_FIRST,
+    MOBILE_TUTORIALS_FOURTH,
+    MOBILE_TUTORIALS_SECOND,
+    MOBILE_TUTORIALS_THIRD,
+    ABTrailsMobileTutorial,
+    MobileNodes,
+)
+from apps.activities.domain.constants_ab_trails_tablet import (
+    TABLET_NODES_FIRST,
+    TABLET_NODES_FOURTH,
+    TABLET_NODES_SECOND,
+    TABLET_NODES_THIRD,
+    TABLET_TUTORIALS_FIRST,
+    TABLET_TUTORIALS_FOURTH,
+    TABLET_TUTORIALS_SECOND,
+    TABLET_TUTORIALS_THIRD,
+    ABTrailsTabletTutorial,
+    TabletNodes,
+)
 from apps.activities.domain.constants_flanker import (
     FLANKER_PRACTISE_BLOCKS,
     FLANKER_TEST_BLOCKS,
@@ -141,52 +165,31 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
     play_once: bool
 
 
-class GyroscopeGeneralSettings(PublicModel):
-    instruction: str
-    number_of_trials: int
-    length_of_test: int
-    lambda_slope: int
+class Phase(str, Enum):
+    PRACTISE = "practise"
+    TEST = "test"
 
 
-class GyroscopePracticeSettings(PublicModel):
-    instruction: str
+class GyroscopePractiseConfig(PublicModel):
+    phase: Phase
+    trials_number: int
+    duration_minutes: int
+    lambda_slope: float
 
 
-class GyroscopeTestSettings(PublicModel):
-    instruction: str
+class GyroscopeTestConfig(GyroscopePractiseConfig):
+    pass
 
 
-class GyroscopeConfig(PublicModel):
-    name: str
-    description: str | None
-    is_hidden: bool | None
-    general: GyroscopeGeneralSettings
-    practice: GyroscopePracticeSettings
-    test: GyroscopeTestSettings
+class TouchPractiseConfig(PublicModel):
+    phase: Phase
+    trials_number: int
+    duration_minutes: int
+    lambda_slope: float
 
 
-class TouchGeneralSettings(PublicModel):
-    instruction: str
-    number_of_trials: int
-    length_of_test: int
-    lambda_slope: int
-
-
-class TouchPracticeSettings(PublicModel):
-    instruction: str
-
-
-class TouchTestSettings(PublicModel):
-    instruction: str
-
-
-class TouchConfig(PublicModel):
-    name: str
-    description: str | None
-    is_hidden: bool | None
-    general: TouchGeneralSettings
-    practice: TouchPracticeSettings
-    test: TouchTestSettings
+class TouchTestConfig(TouchPractiseConfig):
+    pass
 
 
 class FlankerPractiseConfig(FlankerBaseConfig):
@@ -199,14 +202,76 @@ class FlankerTestConfig(FlankerBaseConfig):
     block_type: str = "test"
 
 
-class ABTrailsIpadConfig(PublicModel):
-    description: str
-    image_placeholder: str
+class ABTrailsTabletFirstConfig(PublicModel):
+    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_FIRST
+    tablet_nodes: TabletNodes = TABLET_NODES_FIRST
+    name: str = "trail1"
+    question: str = "Test"
+    description: str = "trail1"
+    device_type: str
 
 
-class ABTrailsMobileConfig(PublicModel):
-    description: str
-    image_placeholder: str
+class ABTrailsTabletSecondConfig(PublicModel):
+    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_SECOND
+    tablet_nodes: TabletNodes = TABLET_NODES_SECOND
+    name: str = "trail2"
+    question: str = "Test"
+    description: str = "trail2"
+    device_type: str
+
+
+class ABTrailsTabletThirdConfig(PublicModel):
+    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_THIRD
+    tablet_nodes: TabletNodes = TABLET_NODES_THIRD
+    name: str = "trail3"
+    question: str = "Test"
+    description: str = "trail3"
+    device_type: str
+
+
+class ABTrailsTabletFourthConfig(PublicModel):
+    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_FOURTH
+    tablet_nodes: TabletNodes = TABLET_NODES_FOURTH
+    name: str = "trail4"
+    question: str = "Test"
+    description: str = "trail4"
+    device_type: str
+
+
+class ABTrailsMobileFirstConfig(PublicModel):
+    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_FIRST
+    mobile_nodes: MobileNodes = MOBILE_NODES_FIRST
+    name: str = "trail1"
+    question: str = "Test"
+    description: str = "trail1"
+    device_type: str
+
+
+class ABTrailsMobileSecondConfig(PublicModel):
+    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_SECOND
+    mobile_nodes: MobileNodes = MOBILE_NODES_SECOND
+    name: str = "trail2"
+    question: str = "Test"
+    description: str = "trail2"
+    device_type: str
+
+
+class ABTrailsMobileThirdConfig(PublicModel):
+    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_THIRD
+    mobile_nodes: MobileNodes = MOBILE_NODES_THIRD
+    name: str = "trail3"
+    question: str = "Test"
+    description: str = "trail3"
+    device_type: str
+
+
+class ABTrailsMobileFourthConfig(PublicModel):
+    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_FOURTH
+    mobile_nodes: MobileNodes = MOBILE_NODES_FOURTH
+    name: str = "trail4"
+    question: str = "Test"
+    description: str = "trail4"
+    device_type: str
 
 
 class NoneResponseType(str, Enum):
@@ -220,10 +285,18 @@ class NoneResponseType(str, Enum):
     TIME = "time"
     FLANKERPRACTISE = "flankerPractise"
     FLANKERTEST = "flankerTest"
-    GYROSCOPE = "gyroscope"
-    TOUCH = "touch"
-    ABTRAILSIPAD = "ABTrailsIpad"
-    ABTRAILSMOBILE = "ABTrailsMobile"
+    GYROSCOPEPRACTISE = "gyroscopePractise"
+    GYROSCOPETEST = "gyroscopeTest"
+    TOUCHPRACTISE = "touchPractise"
+    TOUCHTEST = "touchTest"
+    ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
+    ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
+    ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
+    ABTRAILSTABLETFOURTH = "ABTrailsTabletFourth"
+    ABTRAILSMOBILEFIRST = "ABTrailsMobileFirst"
+    ABTRAILSMOBILESECOND = "ABTrailsMobileSecond"
+    ABTRAILSMOBILETHIRD = "ABTrailsMobileThird"
+    ABTRAILSMOBILEFOURTH = "ABTrailsMobileFourth"
 
 
 class ResponseType(str, Enum):
@@ -247,17 +320,25 @@ class ResponseType(str, Enum):
     TIME = "time"
     FLANKERPRACTISE = "flankerPractise"
     FLANKERTEST = "flankerTest"
-    GYROSCOPE = "gyroscope"
-    TOUCH = "touch"
-    ABTRAILSIPAD = "ABTrailsIpad"
-    ABTRAILSMOBILE = "ABTrailsMobile"
+    GYROSCOPEPRACTISE = "gyroscopePractise"
+    GYROSCOPETEST = "gyroscopeTest"
+    TOUCHPRACTISE = "touchPractise"
+    TOUCHTEST = "touchTest"
+    ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
+    ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
+    ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
+    ABTRAILSTABLETFOURTH = "ABTrailsTabletFourth"
+    ABTRAILSMOBILEFIRST = "ABTrailsMobileFirst"
+    ABTRAILSMOBILESECOND = "ABTrailsMobileSecond"
+    ABTRAILSMOBILETHIRD = "ABTrailsMobileThird"
+    ABTRAILSMOBILEFOURTH = "ABTrailsMobileFourth"
 
 
 class PerformanceTaskType(str, Enum):
     FLANKER = "flanker"
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"
-    ABTRAILSIPAD = "ABTrailsIpad"
+    ABTRAILSTABLET = "ABTrailsTablet"
     ABTRAILSMOBILE = "ABTrailsMobile"
 
 
@@ -282,10 +363,18 @@ ResponseTypeConfigOptions = [
     TimeConfig,
     FlankerPractiseConfig,
     FlankerTestConfig,
-    GyroscopeConfig,
-    TouchConfig,
-    ABTrailsIpadConfig,
-    ABTrailsMobileConfig,
+    GyroscopePractiseConfig,
+    GyroscopeTestConfig,
+    TouchPractiseConfig,
+    TouchTestConfig,
+    ABTrailsTabletFirstConfig,
+    ABTrailsTabletSecondConfig,
+    ABTrailsTabletThirdConfig,
+    ABTrailsTabletFourthConfig,
+    ABTrailsMobileFirstConfig,
+    ABTrailsMobileSecondConfig,
+    ABTrailsMobileThirdConfig,
+    ABTrailsMobileFourthConfig,
 ]
 
 ResponseTypeConfig = (
@@ -309,10 +398,14 @@ ResponseTypeConfig = (
     | TimeConfig
     | FlankerPractiseConfig
     | FlankerTestConfig
-    | GyroscopeConfig
-    | TouchConfig
-    | ABTrailsIpadConfig
-    | ABTrailsMobileConfig
+    | GyroscopePractiseConfig
+    | GyroscopeTestConfig
+    | TouchPractiseConfig
+    | TouchTestConfig
+    # NOTE: Since, all Performance tasks has similar fields we should keep
+    #       the flaxible data structure in oreder to provide correct
+    #       Applet.from_orm usage()
+    | dict
 )
 
 ResponseTypeValueConfig = {}
