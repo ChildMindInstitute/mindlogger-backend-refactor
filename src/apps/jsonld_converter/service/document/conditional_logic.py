@@ -1,10 +1,13 @@
 import dataclasses
 import re
+from abc import ABC, abstractmethod
 from operator import and_, or_
 from typing import Tuple
 
+from pydantic import parse_obj_as
+
 from apps.activities.domain.conditional_logic import Match
-from apps.activities.domain.conditions import ConditionType
+from apps.activities.domain.conditions import AnyCondition, ConditionType
 from apps.jsonld_converter.errors import (
     ConditionalLogicError,
     ConditionalLogicParsingError,
@@ -56,9 +59,12 @@ class ConditionalLogicParser:
     re_includes = rf"(!?{re_var})\.(includes)\(([\d]+)\)"
 
     #  "{variable} <= {int}"
-    re_comparison = rf"({re_var})\s*(\===?|>\=?|<\=?|!\=\=?)\s*(\d+)"
+    re_comparison = rf"({re_var})\s*(\=\=\=?|>\=?|<\=?|!\=\=?)\s*(\d+)"
 
-    re_operator = rf"(?:{re_includes}|{re_comparison})"
+    #  "{variable} == {bool}"
+    re_bool = rf"({re_var})\s*\=\=\=?\s*(true|false)"
+
+    re_operator = rf"(?:{re_includes}|{re_comparison}|{re_bool})"
 
     marker_processed = "PROCESSED"
 
@@ -99,7 +105,7 @@ class ConditionalLogicParser:
     def _process_operator(self, match_obj):
         var: str | None = None
         operator: str | None = None
-        value: str | None = None
+        value: str | bool | None = None
         if match_obj.group(1) is not None:
             var = match_obj.group(1)
             operator = match_obj.group(2)
@@ -113,6 +119,11 @@ class ConditionalLogicParser:
             value = match_obj.group(6)
             if operator == "===" or operator == "!==":
                 operator = operator[:-1]
+        elif match_obj.group(7) is not None:
+            var = match_obj.group(7)
+            value = match_obj.group(8)
+            value = True if value == "true" else False
+            operator = "=="
 
         if var:
             self.parts.append(
@@ -170,3 +181,95 @@ class ConditionalLogicParser:
 
         match = Match.ALL if operator == "&&" else Match.ANY
         return match, self.parts
+
+
+class ConditionResolver(ABC):
+    @classmethod
+    @abstractmethod
+    def resolve(cls, name: str, condition: ConditionData) -> AnyCondition:
+        ...
+
+
+class ConditionValueResolver:
+    @classmethod
+    def resolve(cls, name: str, condition: ConditionData) -> AnyCondition:
+        payload = None
+        if condition.type in [
+            ConditionType.EQUAL,
+            ConditionType.NOT_EQUAL,
+            ConditionType.LESS_THAN,
+            ConditionType.GREATER_THAN,
+        ]:
+            payload = dict(value=int(condition.values[0]))
+        elif condition.type in [
+            ConditionType.BETWEEN,
+            ConditionType.OUTSIDE_OF,
+        ]:
+            payload = dict(
+                min_value=int(condition.values[0]),
+                max_value=int(condition.values[1]),
+            )
+
+        if not payload:
+            raise NotImplementedError(
+                f'Condition type "{condition.type}" not supported'
+            )
+
+        data = dict(item_name=name, type=condition.type, payload=payload)
+
+        return parse_obj_as(AnyCondition, data)  # type: ignore[arg-type]
+
+
+class ConditionBoolResolver:
+    @classmethod
+    def resolve(cls, name: str, condition: ConditionData) -> AnyCondition:
+        val = condition.values[0]
+        if condition.type != ConditionType.EQUAL or not isinstance(val, bool):
+            raise NotImplementedError(
+                f'Condition type "{condition.type}" not supported'
+            )
+
+        data = dict(
+            item_name=name,
+            type=ConditionType.EQUAL_TO_SCORE,
+            payload=dict(value=val),
+        )
+
+        return parse_obj_as(AnyCondition, data)  # type: ignore[arg-type]
+
+
+class ConditionOptionResolver:
+    @classmethod
+    def resolve(cls, name: str, condition: ConditionData) -> AnyCondition:
+        if condition.type in (
+            ConditionType.INCLUDES_OPTION,
+            ConditionType.NOT_INCLUDES_OPTION,
+        ):
+            _type = condition.type
+        elif condition.type == ConditionType.EQUAL:
+            _type = ConditionType.EQUAL_TO_OPTION
+        elif condition.type == ConditionType.NOT_EQUAL:
+            _type = ConditionType.NOT_EQUAL_TO_OPTION
+        else:
+            raise NotImplementedError(
+                f'Condition type "{condition.type}" not supported'
+            )
+
+        data = dict(
+            item_name=name,
+            type=_type,
+            payload=dict(option_id=condition.values[0]),
+        )
+        return parse_obj_as(AnyCondition, data)  # type: ignore[arg-type]
+
+
+class ResolvesConditionalLogic(ABC):
+    ld_variable_name: str | None = None
+
+    @abstractmethod
+    def resolve_condition_name(self):
+        ...
+
+    @abstractmethod
+    def resolve_condition(self, condition: ConditionData) -> AnyCondition:
+        ...

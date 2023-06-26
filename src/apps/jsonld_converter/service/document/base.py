@@ -13,7 +13,7 @@ from apps.jsonld_converter.service.base import (
     ContextResolverAwareMixin,
     LdKeyword,
 )
-from apps.shared.domain import InternalModel
+from apps.shared.domain import InternalModel, PublicModel
 
 
 class LdAttributeProcessor:
@@ -147,6 +147,10 @@ class LdAttributeProcessor:
 
         return res
 
+    @classmethod
+    def extract_compact_id(cls, ld_expanded_id: str) -> str:
+        return ld_expanded_id.rsplit("/")[-1].rsplit(":")[-1]
+
 
 class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
     @classmethod
@@ -169,7 +173,7 @@ class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
 
         if isinstance(doc, str):
             new_doc, base_url = await self._load_by_url(doc)
-        elif LdKeyword.type not in doc:
+        elif LdKeyword.type not in doc and len(doc) == 1:
             new_doc, base_url = await self._load_by_id(doc, base_url)
         else:
             new_doc = doc
@@ -312,6 +316,18 @@ class CommonFieldsMixin:
         keys = ["reproschema:DisableBack", "reproschema:disable_back"]
         return self._is_allowed(allow_list, keys)
 
+    def _is_export_allowed(self, allow_list: list[str]) -> bool:
+        keys = [
+            "reproschema:AllowExport",
+            "reproschema:allowExport",
+            "reproschema:allow_export",
+        ]
+        return self._is_allowed(allow_list, keys)
+
+    def _is_summary_disabled(self, allow_list: list[str]) -> bool:
+        keys = ["reproschema:disableSummary", "reproschema:disable_summary"]
+        return self._is_allowed(allow_list, keys)
+
     def _is_visible(self, doc: dict, drop=False) -> bool | str | None:
         return self.attr_processor.get_attr_value(
             doc, "reproschema:isVis", drop=drop
@@ -358,7 +374,7 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
         ...
 
     @abstractmethod
-    def export(self) -> InternalModel:
+    def export(self) -> InternalModel | PublicModel:
         ...
 
     async def load(self, doc: dict, base_url: str | None = None):

@@ -36,7 +36,6 @@ from apps.jsonld_converter.service.export.base import (
     BaseModelExport,
     ContainsNestedModelMixin,
 )
-from apps.shared.domain import InternalModel
 
 
 class JsonLDModelConverter(ContainsNestedMixin):
@@ -90,9 +89,7 @@ class JsonLDModelConverter(ContainsNestedMixin):
             ReproFieldAudioStimulus,
         ]
 
-    async def convert(
-        self, input_: str | dict, base_url: str | None = None
-    ) -> InternalModel:
+    async def convert(self, input_: str | dict, base_url: str | None = None):
         obj = await self.load_supported_document(
             input_, base_url, self.settings
         )

@@ -71,7 +71,7 @@ class ExpressionSimple(BaseExpression):
         type_ = self.condition.type
         name = self.condition.item_name
         payload = self.condition.payload
-        operator = self.simple_operator_map.get(type_)  # type: ignore[call-overload]
+        operator = self.simple_operator_map.get(type_)  # type: ignore[call-overload] # noqa: E501
         if isinstance(payload, OptionPayload):
             try:
                 val: int | str = int(

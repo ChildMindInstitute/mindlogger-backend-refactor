@@ -3,10 +3,7 @@ from copy import deepcopy
 from typing import Type
 
 from apps.applets.domain.applet_create_update import AppletCreate
-from apps.jsonld_converter.errors import JsonLDNotSupportedError
-from apps.jsonld_converter.service.document import (
-    ABTrailsIpadActivity,
-    ABTrailsMobileActivity,
+from apps.jsonld_converter.service.document import (  # ABTrailsIpadActivity,; ABTrailsMobileActivity,
     ReproActivity,
 )
 from apps.jsonld_converter.service.document.activity_flow import (
@@ -50,8 +47,8 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
         return [
-            ABTrailsIpadActivity,
-            ABTrailsMobileActivity,
+            # ABTrailsIpadActivity,
+            # ABTrailsMobileActivity,
             ReproActivity,
             ReproActivityFlow,
         ]
@@ -118,28 +115,32 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     async def _get_nested_items(
         self, doc: dict, drop=False, attr_container="reproschema:order"
     ) -> list:
+        nested_items = []
         if items := self.attr_processor.get_attr_list(
             doc, attr_container, drop=drop
         ):
             nested = await asyncio.gather(
-                *[self._load_nested_doc(item) for item in items]
+                *[self._load_nested_doc(item) for item in items],
+                return_exceptions=True,
             )
-            return [node for node in nested if node]
-        return []
+            for node in nested:
+                if isinstance(node, Exception):
+                    raise node
+                if node:
+                    nested_items.append(node)
+
+        return nested_items
 
     async def _load_nested_doc(self, doc: dict):
-        try:
-            node = await self.load_supported_document(
-                doc, self.base_url, self.settings
-            )
-            # override from properties
-            if node.ld_id in self.properties:
-                for prop, val in self.properties[node.ld_id].items():
-                    if val is not None and hasattr(node, prop):
-                        setattr(node, prop, val)
-            return node
-        except JsonLDNotSupportedError:
-            return None  # TODO
+        node = await self.load_supported_document(
+            doc, self.base_url, self.settings
+        )
+        # override from properties
+        if node.ld_id in self.properties:
+            for prop, val in self.properties[node.ld_id].items():
+                if val is not None and hasattr(node, prop):
+                    setattr(node, prop, val)
+        return node
 
     def _load_extra(self, doc: dict):
         if self.extra is None:
