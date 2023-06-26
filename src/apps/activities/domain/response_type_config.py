@@ -27,7 +27,7 @@ from apps.activities.domain.constants_ab_trails_tablet import (
     TabletNodes,
 )
 from apps.activities.domain.constants_flanker import (
-    FLANKER_PRACTISE_BLOCKS,
+    FLANKER_PRACTICE_BLOCKS,
     FLANKER_TEST_BLOCKS,
     BlockSettings,
     FlankerBaseConfig,
@@ -166,34 +166,34 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
 
 
 class Phase(str, Enum):
-    PRACTISE = "practise"
+    PRACTICE = "practice"
     TEST = "test"
 
 
-class GyroscopePractiseConfig(PublicModel):
+class GyroscopePracticeConfig(PublicModel):
     phase: Phase
     trials_number: int
     duration_minutes: int
     lambda_slope: float
 
 
-class GyroscopeTestConfig(GyroscopePractiseConfig):
+class GyroscopeTestConfig(GyroscopePracticeConfig):
     pass
 
 
-class TouchPractiseConfig(PublicModel):
+class TouchPracticeConfig(PublicModel):
     phase: Phase
     trials_number: int
     duration_minutes: int
     lambda_slope: float
 
 
-class TouchTestConfig(TouchPractiseConfig):
+class TouchTestConfig(TouchPracticeConfig):
     pass
 
 
-class FlankerPractiseConfig(FlankerBaseConfig):
-    blocks: list[BlockSettings] = FLANKER_PRACTISE_BLOCKS
+class FlankerPracticeConfig(FlankerBaseConfig):
+    blocks: list[BlockSettings] = FLANKER_PRACTICE_BLOCKS
     block_type: str = "practice"
 
 
@@ -283,11 +283,11 @@ class NoneResponseType(str, Enum):
     VIDEO = "video"
     DATE = "date"
     TIME = "time"
-    FLANKERPRACTISE = "flankerPractise"
+    FLANKERPRACTICE = "flankerPractice"
     FLANKERTEST = "flankerTest"
-    GYROSCOPEPRACTISE = "gyroscopePractise"
+    GYROSCOPEPRACTICE = "gyroscopePractice"
     GYROSCOPETEST = "gyroscopeTest"
-    TOUCHPRACTISE = "touchPractise"
+    TOUCHPRACTICE = "touchPractice"
     TOUCHTEST = "touchTest"
     ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
     ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
@@ -318,11 +318,11 @@ class ResponseType(str, Enum):
     AUDIOPLAYER = "audioPlayer"
     MESSAGE = "message"
     TIME = "time"
-    FLANKERPRACTISE = "flankerPractise"
+    FLANKERPRACTICE = "flankerPractice"
     FLANKERTEST = "flankerTest"
-    GYROSCOPEPRACTISE = "gyroscopePractise"
+    GYROSCOPEPRACTICE = "gyroscopePractice"
     GYROSCOPETEST = "gyroscopeTest"
-    TOUCHPRACTISE = "touchPractise"
+    TOUCHPRACTICE = "touchPractice"
     TOUCHTEST = "touchTest"
     ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
     ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
@@ -361,11 +361,11 @@ ResponseTypeConfigOptions = [
     AudioPlayerConfig,
     MessageConfig,
     TimeConfig,
-    FlankerPractiseConfig,
+    FlankerPracticeConfig,
     FlankerTestConfig,
-    GyroscopePractiseConfig,
+    GyroscopePracticeConfig,
     GyroscopeTestConfig,
-    TouchPractiseConfig,
+    TouchPracticeConfig,
     TouchTestConfig,
     ABTrailsTabletFirstConfig,
     ABTrailsTabletSecondConfig,
@@ -396,11 +396,11 @@ ResponseTypeConfig = (
     | AudioPlayerConfig
     | MessageConfig
     | TimeConfig
-    | FlankerPractiseConfig
+    | FlankerPracticeConfig
     | FlankerTestConfig
-    | GyroscopePractiseConfig
+    | GyroscopePracticeConfig
     | GyroscopeTestConfig
-    | TouchPractiseConfig
+    | TouchPracticeConfig
     | TouchTestConfig
     # NOTE: Since, all Performance tasks has similar fields we should keep
     #       the flaxible data structure in oreder to provide correct

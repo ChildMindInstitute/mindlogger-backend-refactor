@@ -50,7 +50,7 @@ class DateValues(PublicModel):
     pass
 
 
-class FlankerPractiseValues(PublicModel):
+class FlankerPracticeValues(PublicModel):
     pass
 
 
@@ -58,7 +58,7 @@ class FlankerTestValues(PublicModel):
     pass
 
 
-class GyroscopePractiseValues(PublicModel):
+class GyroscopePracticeValues(PublicModel):
     pass
 
 
@@ -66,7 +66,7 @@ class GyroscopeTestValues(PublicModel):
     pass
 
 
-class TouchPractiseValues(PublicModel):
+class TouchPracticeValues(PublicModel):
     pass
 
 
@@ -344,11 +344,11 @@ ResponseValueConfigOptions = [
     AudioPlayerValues,
     MessageValues,
     TimeValues,
-    FlankerPractiseValues,
+    FlankerPracticeValues,
     FlankerTestValues,
-    GyroscopePractiseValues,
+    GyroscopePracticeValues,
     GyroscopeTestValues,
-    TouchPractiseValues,
+    TouchPracticeValues,
     TouchTestValues,
     ABTrailsTabletFirstValues,
     ABTrailsTabletSecondValues,

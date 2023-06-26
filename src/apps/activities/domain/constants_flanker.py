@@ -83,7 +83,7 @@ def build_flanker_bloks(number_of_blocks: int):
     ]
 
 
-FLANKER_PRACTISE_BLOCKS: list[BlockSettings] = build_flanker_bloks(20)
+FLANKER_PRACTICE_BLOCKS: list[BlockSettings] = build_flanker_bloks(20)
 FLANKER_TEST_BLOCKS: list[BlockSettings] = build_flanker_bloks(5)
 
 
