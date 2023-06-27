@@ -26,12 +26,6 @@ from apps.activities.domain.constants_ab_trails_tablet import (
     ABTrailsTabletTutorial,
     TabletNodes,
 )
-from apps.activities.domain.constants_flanker import (
-    FLANKER_PRACTICE_BLOCKS,
-    FLANKER_TEST_BLOCKS,
-    BlockSettings,
-    FlankerBaseConfig,
-)
 from apps.activities.domain.response_values import ResponseValueConfigOptions
 from apps.activities.errors import CorrectAnswerRequiredError
 from apps.shared.domain import PublicModel
@@ -192,14 +186,62 @@ class TouchTestConfig(TouchPracticeConfig):
     pass
 
 
-class FlankerPracticeConfig(FlankerBaseConfig):
-    blocks: list[BlockSettings] = FLANKER_PRACTICE_BLOCKS
-    block_type: str = "practice"
+class StimulusConfigId(str):
+    pass
 
 
-class FlankerTestConfig(FlankerBaseConfig):
-    blocks: list[BlockSettings] = FLANKER_TEST_BLOCKS
-    block_type: str = "test"
+class StimulusConfiguration(PublicModel):
+    id: StimulusConfigId
+    image: str | None
+    text: str  # name
+    value: int | None
+    weight: int | None
+
+
+class BlockConfiguration(PublicModel):
+    name: str
+    order: list[StimulusConfigId]
+
+
+class SamplingMethod(str, Enum):
+    RANDOMIZE_ORDER = "randomize-order"
+    FIXED_ORDER = "fixed-order"
+
+
+class BlockType(str, Enum):
+    TEST = "test"
+    PRACTICE = "practice"
+
+
+class ButtonConfiguration(PublicModel):
+    text: str  # name
+    image: str | None
+    value: int
+
+
+class FixationScreen(PublicModel):
+    value: str
+    image: str
+
+
+class FlankerConfig(PublicModel):
+    stimulus_trials: list[StimulusConfiguration]
+    blocks: list[BlockConfiguration]
+    buttons: list[ButtonConfiguration]
+    next_button: str
+    fixation_duration: int
+    fixation_screen: FixationScreen
+    minimum_accuracy: int
+    sample_size: int = 1
+    sampling_method: SamplingMethod
+    show_feedback: bool
+    show_fixation: bool
+    show_results: bool
+    trial_duration: int
+    is_last_practice: bool
+    is_first_practice: bool
+    is_last_test: bool
+    block_type: BlockType
 
 
 class ABTrailsTabletFirstConfig(PublicModel):
@@ -283,8 +325,7 @@ class NoneResponseType(str, Enum):
     VIDEO = "video"
     DATE = "date"
     TIME = "time"
-    FLANKERPRACTICE = "flankerPractice"
-    FLANKERTEST = "flankerTest"
+    FLANKER = "flanker"
     GYROSCOPEPRACTICE = "gyroscopePractice"
     GYROSCOPETEST = "gyroscopeTest"
     TOUCHPRACTICE = "touchPractice"
@@ -318,8 +359,7 @@ class ResponseType(str, Enum):
     AUDIOPLAYER = "audioPlayer"
     MESSAGE = "message"
     TIME = "time"
-    FLANKERPRACTICE = "flankerPractice"
-    FLANKERTEST = "flankerTest"
+    FLANKER = "flanker"
     GYROSCOPEPRACTICE = "gyroscopePractice"
     GYROSCOPETEST = "gyroscopeTest"
     TOUCHPRACTICE = "touchPractice"
@@ -361,8 +401,7 @@ ResponseTypeConfigOptions = [
     AudioPlayerConfig,
     MessageConfig,
     TimeConfig,
-    FlankerPracticeConfig,
-    FlankerTestConfig,
+    FlankerConfig,
     GyroscopePracticeConfig,
     GyroscopeTestConfig,
     TouchPracticeConfig,
@@ -396,8 +435,7 @@ ResponseTypeConfig = (
     | AudioPlayerConfig
     | MessageConfig
     | TimeConfig
-    | FlankerPracticeConfig
-    | FlankerTestConfig
+    | FlankerConfig
     | GyroscopePracticeConfig
     | GyroscopeTestConfig
     | TouchPracticeConfig

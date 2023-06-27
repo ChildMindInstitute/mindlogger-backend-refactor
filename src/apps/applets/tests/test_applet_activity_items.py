@@ -1157,134 +1157,107 @@ class TestActivityItems(BaseTest):
                                 en="Flanker_Practise_1",
                                 fr="Flanker_Practise_1",
                             ),
-                            response_type="flankerPractice",
-                            response_values=None,
-                            config=dict(),
-                        ),
-                        dict(
-                            name="Flanker_Practice_instructions_2",
-                            question=dict(
-                                en="## Instructions\nPress the Next button "
-                                "to restart block.",
-                                fr="Flanker Practice instruction 2 text.",
-                            ),
-                            response_type="message",
+                            response_type="flanker",
                             response_values=None,
                             config=dict(
-                                remove_back_button=False,
-                                timer=None,
+                                stimulusTrials=[
+                                    {
+                                        "id": "1",
+                                        "image": "https://600.jpg",
+                                        "text": "left-con",
+                                        "value": 0,
+                                        "weight": 10,
+                                    },
+                                    {
+                                        "id": "2",
+                                        "image": "https://600.jpg",
+                                        "text": "right-inc",
+                                        "value": 1,
+                                        "weight": 10,
+                                    },
+                                    {
+                                        "id": "3",
+                                        "image": "https://600.jpg",
+                                        "text": "left-inc",
+                                        "value": 0,
+                                        "weight": 10,
+                                    },
+                                    {
+                                        "id": "4",
+                                        "image": "https://600.jpg",
+                                        "text": "right-con",
+                                        "value": 1,
+                                        "weight": 10,
+                                    },
+                                    {
+                                        "id": "5",
+                                        "image": "https://600.jpg",
+                                        "text": "left-neut",
+                                        "value": 0,
+                                        "weight": 10,
+                                    },
+                                    {
+                                        "id": "6",
+                                        "image": "https://600.jpg",
+                                        "text": "right-neut",
+                                        "value": 1,
+                                        "weight": 10,
+                                    },
+                                ],
+                                blocks=[
+                                    {
+                                        "name": "Block 1",
+                                        "order": [
+                                            "left-con",
+                                            "right-con",
+                                            "left-inc",
+                                            "right-inc",
+                                            "left-neut",
+                                            "right-neut",
+                                        ],
+                                    },
+                                    {
+                                        "name": "Block 2",
+                                        "order": [
+                                            "left-con",
+                                            "right-con",
+                                            "left-inc",
+                                            "right-inc",
+                                            "left-neut",
+                                            "right-neut",
+                                        ],
+                                    },
+                                ],
+                                buttons=[
+                                    {
+                                        "text": "Button_1_name_<",
+                                        "image": "https://1.jpg",
+                                        "value": 0,
+                                    },
+                                    {
+                                        "text": "Button_2_name_>",
+                                        "image": "https://2.jpg",
+                                        "value": 1,
+                                    },
+                                ],
+                                nextButton="OK",
+                                fixationDuration=500,
+                                fixationScreen={
+                                    "value": "FixationScreen_value",
+                                    "image": "https://fixation-screen.jpg",
+                                },
+                                minimumAccuracy=75,
+                                sampleSize=1,
+                                samplingMethod="randomize-order",
+                                showFeedback=True,
+                                showFixation=True,
+                                showResults=False,
+                                trialDuration=3000,
+                                isLastPractice=False,
+                                isFirstPractice=True,
+                                isLastTest=False,
+                                blockType="practice",
                             ),
-                        ),
-                        dict(
-                            name="Flanker_Practise_2",
-                            question=dict(
-                                en="Flanker_Practise_2",
-                                fr="Flanker_Practise_2",
-                            ),
-                            response_type="flankerPractice",
-                            response_values=None,
-                            config=dict(),
-                        ),
-                        dict(
-                            name="Flanker_Practice_instructions_3",
-                            question=dict(
-                                en="## Instructions\nPress the Next button to "
-                                "restart block.",
-                                fr="Flanker Practice instruction 3 text.",
-                            ),
-                            response_type="message",
-                            response_values=None,
-                            config=dict(
-                                remove_back_button=False,
-                                timer=None,
-                            ),
-                        ),
-                        dict(
-                            name="Flanker_Practise_3",
-                            question=dict(
-                                en="Flanker_Practise_3",
-                                fr="Flanker_Practise_3",
-                            ),
-                            response_type="flankerPractice",
-                            response_values=None,
-                            config=dict(),
-                        ),
-                        dict(
-                            name="Flanker_Test_instructions_1",
-                            question=dict(
-                                en="## Test Instructions\n\nGood job on the "
-                                "practice blocks.\nYou can now move on to "
-                                "the test blocks.\nYou will do the same "
-                                "task as in the practice, responding to "
-                                "the direction of the central arrow.\nYou "
-                                "will complete 3 blocks, each about "
-                                "3-5 minutes long.\nYou will have  a "
-                                "short break in between these blocks\n",
-                            ),
-                            response_type="message",
-                            response_values=None,
-                            config=dict(
-                                remove_back_button=False,
-                                timer=None,
-                            ),
-                        ),
-                        dict(
-                            name="Flanker_test_1",
-                            question=dict(
-                                en="Flanker_test_1",
-                                fr="Flanker_test_1",
-                            ),
-                            response_type="flankerTest",
-                            response_values=None,
-                            config=dict(),
-                        ),
-                        dict(
-                            name="Flanker_test_instructions_2",
-                            question=dict(
-                                en="## Instructions\nPress the Next button "
-                                "to start next block.",
-                                fr="Flanker Test instruction 2 text.",
-                            ),
-                            response_type="message",
-                            response_values=None,
-                            config=dict(
-                                remove_back_button=False,
-                                timer=None,
-                            ),
-                        ),
-                        dict(
-                            name="Flanker_test_2",
-                            question=dict(
-                                en="Flanker_test_2",
-                                fr="Flanker_test_2",
-                            ),
-                            response_type="flankerTest",
-                            response_values=None,
-                            config=dict(),
-                        ),
-                        dict(
-                            name="Flanker_test_instructions_3",
-                            question=dict(
-                                en="## Instructions\nPress the Next button "
-                                "to start next block.",
-                                fr="Flanker Test instruction 3 text.",
-                            ),
-                            response_type="message",
-                            response_values=None,
-                            config=dict(
-                                remove_back_button=False,
-                                timer=None,
-                            ),
-                        ),
-                        dict(
-                            name="Flanker_test_3",
-                            question=dict(
-                                en="Flanker_test_3",
-                                fr="Flanker_test_3",
-                            ),
-                            response_type="flankerTest",
-                            response_values=None,
-                            config=dict(),
                         ),
                     ],
                 ),
@@ -2169,134 +2142,107 @@ class TestActivityItems(BaseTest):
                             en="Flanker_Practise_1",
                             fr="Flanker_Practise_1",
                         ),
-                        response_type="flankerPractice",
-                        response_values=None,
-                        config=dict(),
-                    ),
-                    dict(
-                        name="Flanker_Practice_instructions_2",
-                        question=dict(
-                            en="## Instructions\nPress the Next button "
-                            "to restart block.",
-                            fr="Flanker Practice instruction 2 text.",
-                        ),
-                        response_type="message",
+                        response_type="flanker",
                         response_values=None,
                         config=dict(
-                            remove_back_button=False,
-                            timer=None,
+                            stimulusTrials=[
+                                {
+                                    "id": "1",
+                                    "image": "https://600.jpg",
+                                    "text": "left-con",
+                                    "value": 0,
+                                    "weight": 10,
+                                },
+                                {
+                                    "id": "2",
+                                    "image": "https://600.jpg",
+                                    "text": "right-inc",
+                                    "value": 1,
+                                    "weight": 10,
+                                },
+                                {
+                                    "id": "3",
+                                    "image": "https://600.jpg",
+                                    "text": "left-inc",
+                                    "value": 0,
+                                    "weight": 10,
+                                },
+                                {
+                                    "id": "4",
+                                    "image": "https://600.jpg",
+                                    "text": "right-con",
+                                    "value": 1,
+                                    "weight": 10,
+                                },
+                                {
+                                    "id": "5",
+                                    "image": "https://600.jpg",
+                                    "text": "left-neut",
+                                    "value": 0,
+                                    "weight": 10,
+                                },
+                                {
+                                    "id": "6",
+                                    "image": "https://600.jpg",
+                                    "text": "right-neut",
+                                    "value": 1,
+                                    "weight": 10,
+                                },
+                            ],
+                            blocks=[
+                                {
+                                    "name": "Block 1",
+                                    "order": [
+                                        "left-con",
+                                        "right-con",
+                                        "left-inc",
+                                        "right-inc",
+                                        "left-neut",
+                                        "right-neut",
+                                    ],
+                                },
+                                {
+                                    "name": "Block 2",
+                                    "order": [
+                                        "left-con",
+                                        "right-con",
+                                        "left-inc",
+                                        "right-inc",
+                                        "left-neut",
+                                        "right-neut",
+                                    ],
+                                },
+                            ],
+                            buttons=[
+                                {
+                                    "text": "Button_1_name_<",
+                                    "image": "https://1.jpg",
+                                    "value": 0,
+                                },
+                                {
+                                    "text": "Button_2_name_>",
+                                    "image": "https://2.jpg",
+                                    "value": 1,
+                                },
+                            ],
+                            nextButton="OK",
+                            fixationDuration=500,
+                            fixationScreen={
+                                "value": "FixationScreen_value",
+                                "image": "https://fixation-screen.jpg",
+                            },
+                            minimumAccuracy=75,
+                            sampleSize=1,
+                            samplingMethod="randomize-order",
+                            showFeedback=True,
+                            showFixation=True,
+                            showResults=False,
+                            trialDuration=3000,
+                            isLastPractice=False,
+                            isFirstPractice=True,
+                            isLastTest=False,
+                            blockType="practice",
                         ),
-                    ),
-                    dict(
-                        name="Flanker_Practise_2",
-                        question=dict(
-                            en="Flanker_Practise_2",
-                            fr="Flanker_Practise_2",
-                        ),
-                        response_type="flankerPractice",
-                        response_values=None,
-                        config=dict(),
-                    ),
-                    dict(
-                        name="Flanker_Practice_instructions_3",
-                        question=dict(
-                            en="## Instructions\nPress the Next button to "
-                            "restart block.",
-                            fr="Flanker Practice instruction 3 text.",
-                        ),
-                        response_type="message",
-                        response_values=None,
-                        config=dict(
-                            remove_back_button=False,
-                            timer=None,
-                        ),
-                    ),
-                    dict(
-                        name="Flanker_Practise_3",
-                        question=dict(
-                            en="Flanker_Practise_3",
-                            fr="Flanker_Practise_3",
-                        ),
-                        response_type="flankerPractice",
-                        response_values=None,
-                        config=dict(),
-                    ),
-                    dict(
-                        name="Flanker_Test_instructions_1",
-                        question=dict(
-                            en="## Test Instructions\n\nGood job on the "
-                            "practice blocks.\nYou can now move on to "
-                            "the test blocks.\nYou will do the same "
-                            "task as in the practice, responding to "
-                            "the direction of the central arrow.\nYou "
-                            "will complete 3 blocks, each about "
-                            "3-5 minutes long.\nYou will have  a "
-                            "short break in between these blocks\n",
-                        ),
-                        response_type="message",
-                        response_values=None,
-                        config=dict(
-                            remove_back_button=False,
-                            timer=None,
-                        ),
-                    ),
-                    dict(
-                        name="Flanker_test_1",
-                        question=dict(
-                            en="Flanker_test_1",
-                            fr="Flanker_test_1",
-                        ),
-                        response_type="flankerTest",
-                        response_values=None,
-                        config=dict(),
-                    ),
-                    dict(
-                        name="Flanker_test_instructions_2",
-                        question=dict(
-                            en="## Instructions\nPress the Next button "
-                            "to start next block.",
-                            fr="Flanker Test instruction 2 text.",
-                        ),
-                        response_type="message",
-                        response_values=None,
-                        config=dict(
-                            remove_back_button=False,
-                            timer=None,
-                        ),
-                    ),
-                    dict(
-                        name="Flanker_test_2",
-                        question=dict(
-                            en="Flanker_test_2",
-                            fr="Flanker_test_2",
-                        ),
-                        response_type="flankerTest",
-                        response_values=None,
-                        config=dict(),
-                    ),
-                    dict(
-                        name="Flanker_test_instructions_3",
-                        question=dict(
-                            en="## Instructions\nPress the Next button "
-                            "to start next block.",
-                            fr="Flanker Test instruction 3 text.",
-                        ),
-                        response_type="message",
-                        response_values=None,
-                        config=dict(
-                            remove_back_button=False,
-                            timer=None,
-                        ),
-                    ),
-                    dict(
-                        name="Flanker_test_3",
-                        question=dict(
-                            en="Flanker_test_3",
-                            fr="Flanker_test_3",
-                        ),
-                        response_type="flankerTest",
-                        response_values=None,
-                        config=dict(),
                     ),
                 ],
             ),

@@ -50,11 +50,7 @@ class DateValues(PublicModel):
     pass
 
 
-class FlankerPracticeValues(PublicModel):
-    pass
-
-
-class FlankerTestValues(PublicModel):
+class FlankerValues(PublicModel):
     pass
 
 
@@ -344,8 +340,7 @@ ResponseValueConfigOptions = [
     AudioPlayerValues,
     MessageValues,
     TimeValues,
-    FlankerPracticeValues,
-    FlankerTestValues,
+    FlankerValues,
     GyroscopePracticeValues,
     GyroscopeTestValues,
     TouchPracticeValues,
