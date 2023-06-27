@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 
@@ -66,6 +66,14 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
                 value=value,
             )
         return schema
+
+    async def update_display_name(self, id_version: str, display_name: str):
+        query: Query = update(AppletHistorySchema)
+        query = query.where(AppletHistorySchema.id_version == id_version)
+        query = query.values(
+            display_name=display_name,
+        )
+        await self._execute(query)
 
     async def get_id_versions_by_applet_id(
         self, applet_id: uuid.UUID
