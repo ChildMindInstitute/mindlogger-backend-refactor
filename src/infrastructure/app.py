@@ -56,6 +56,7 @@ routers: Iterable[APIRouter] = (
     test_data.router,
     files.router,
     library.router,
+    library.applet_router,
 )
 
 # Declare your middlewares here

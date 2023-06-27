@@ -51,3 +51,7 @@ class PublicLibraryItem(PublicModel):
     keywords: list[str] | None = None
     description: dict[str, str] | None = None
     activities: list[LibraryItemActivity] | None = None
+
+
+class LibraryQueryParams(InternalModel):
+    search: str | None = None

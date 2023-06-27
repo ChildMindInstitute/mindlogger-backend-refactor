@@ -19,3 +19,7 @@ class AppletVersionExistsError(AccessDeniedError):
 
 class LibraryItemDoesNotExistError(NotFoundError):
     message = _("This Library Item does not exists.")
+
+
+class AppletVersionDoesNotExistError(NotFoundError):
+    message = _("This Applet version is not shared to the library.")

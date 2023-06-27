@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import delete, select
+from sqlalchemy import Unicode, delete, or_, select
 from sqlalchemy.orm import Query
 
 from apps.applets.db.schemas import AppletHistorySchema
@@ -20,13 +20,22 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
         schema = await self._get("id", id)
         return schema
 
+    async def get_by_applet_id_version(
+        self, applet_id_version: str
+    ) -> LibrarySchema | None:
+        schema = await self._get("applet_id_version", applet_id_version)
+        return schema
+
     async def get_all(self) -> list[LibrarySchema] | None:
         query: Query = select(self.schema_class)
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
 
-    async def get_all_library_items(self) -> list[LibraryItem]:
+    async def get_all_library_items(
+        self,
+        keyword: str | None = None,
+    ) -> list[LibraryItem]:
         query: Query = select(
             LibrarySchema.id,
             LibrarySchema.keywords,
@@ -38,6 +47,18 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
             AppletHistorySchema,
             LibrarySchema.applet_id_version == AppletHistorySchema.id_version,
         )
+        if keyword:
+            query = query.where(
+                or_(
+                    LibrarySchema.search_keywords.cast(Unicode()).ilike(
+                        f"%{keyword}%"
+                    ),
+                    LibrarySchema.keywords.cast(Unicode()).ilike(
+                        f"%{keyword}%"
+                    ),
+                )
+            )
+
         results = await self._execute(query)
 
         return [LibraryItem.from_orm(result) for result in results.all()]

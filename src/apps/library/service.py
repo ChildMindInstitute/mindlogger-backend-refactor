@@ -15,7 +15,13 @@ from apps.library.domain import (
     LibraryItemActivityItem,
     PublicLibraryItem,
 )
-from apps.library.errors import AppletNameExistsError, AppletVersionExistsError
+from apps.library.errors import (
+    AppletNameExistsError,
+    AppletVersionDoesNotExistError,
+    AppletVersionExistsError,
+)
+from apps.shared.query_params import QueryParams
+from config import settings
 
 
 class LibraryService:
@@ -38,9 +44,10 @@ class LibraryService:
         applet = await AppletsCRUD(self.session).get_by_id(
             id_=schema.applet_id
         )
+        applet_version = f"{schema.applet_id}_{applet.version}"
         # check if this applet version is already in library
         library_item = await LibraryCRUD(self.session).exist_by_key(
-            key="applet_id_version", val=f"{schema.applet_id}_{applet.version}"
+            key="applet_id_version", val=applet_version
         )
         if library_item:
             raise AppletVersionExistsError()
@@ -53,21 +60,47 @@ class LibraryService:
             )
 
             await AppletHistoriesCRUD(self.session).update_display_name(
-                id_version=f"{schema.applet_id}_{applet.version}",
+                id_version=applet_version,
                 display_name=schema.name,
             )
 
+        search_keywords = [schema.name]
+        search_keywords.extend(applet.description.values())
+
+        activities = await ActivityHistoriesCRUD(
+            session=self.session
+        ).retrieve_by_applet_version(applet_version)
+
+        search_keywords.extend([activity.name for activity in activities])
+
+        activity_items = await ActivityItemHistoriesCRUD(
+            self.session
+        ).get_by_activity_id_versions(
+            [activity.id_version for activity in activities]
+        )
+
+        for activity_item in activity_items:
+            search_keywords.extend(activity_item.question.values())
+            if activity_item.response_type in ["singleSelect", "multiSelect"]:
+                options = activity_item.response_values.get("options")
+                search_keywords.extend([option["text"] for option in options])
+
+        # save library_item
         library_item = LibrarySchema(
             applet_id_version=f"{schema.applet_id}_{applet.version}",
             keywords=schema.keywords,
+            search_keywords=search_keywords,
         )
         library_item = await LibraryCRUD(self.session).save(library_item)
         return AppletLibraryFull.from_orm(library_item)
 
-    async def get_all_applets(self) -> list[PublicLibraryItem]:
+    async def get_all_applets(
+        self, query: QueryParams
+    ) -> list[PublicLibraryItem]:
         """Get all applets for library."""
-
-        library_items = await LibraryCRUD(self.session).get_all_library_items()
+        library_items = await LibraryCRUD(self.session).get_all_library_items(
+            query.search
+        )
 
         for library_item in library_items:
             library_item = await self._get_full_library_item(library_item)
@@ -134,3 +167,16 @@ class LibraryService:
                     option["text"] for option in response_values["options"]
                 ]
         return None
+
+    async def get_applet_url(self, applet_id: uuid.UUID) -> str:
+        """Get applet url for library by id."""
+        applet = await AppletsCRUD(self.session).get_by_id(id_=applet_id)
+        applet_version = f"{applet_id}_{applet.version}"
+        library_item = await LibraryCRUD(
+            self.session
+        ).get_by_applet_id_version(applet_version)
+        if not library_item:
+            raise AppletVersionDoesNotExistError()
+
+        domain = settings.service.urls.frontend.admin_base
+        return f"https://{domain}/library/{library_item.id}"

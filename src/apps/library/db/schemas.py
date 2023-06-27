@@ -1,4 +1,5 @@
-from sqlalchemy import ARRAY, Column, ForeignKey, String
+from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy.dialects.postgresql import ARRAY
 
 from infrastructure.database import Base
 
@@ -11,3 +12,4 @@ class LibrarySchema(Base):
         nullable=False,
     )
     keywords = Column(ARRAY(String))
+    search_keywords = Column(ARRAY(String))

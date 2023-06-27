@@ -40,7 +40,10 @@ def upgrade() -> None:
         ),
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
         sa.Column("applet_id_version", sa.String(), nullable=False),
-        sa.Column("keywords", sa.ARRAY(sa.String()), nullable=True),
+        sa.Column("keywords", postgresql.ARRAY(sa.String()), nullable=True),
+        sa.Column(
+            "search_keywords", postgresql.ARRAY(sa.String()), nullable=True
+        ),
         sa.ForeignKeyConstraint(
             ["applet_id_version"],
             ["applet_histories.id_version"],

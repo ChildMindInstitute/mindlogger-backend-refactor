@@ -5,6 +5,7 @@ from apps.library.api import (
     library_check_name,
     library_get_all,
     library_get_by_id,
+    library_get_url,
     library_share_applet,
 )
 from apps.library.domain import AppletLibraryFull, PublicLibraryItem
@@ -58,3 +59,17 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(library_get_by_id)
+
+
+applet_router = APIRouter(prefix="/applets", tags=["Applets"])
+applet_router.get(
+    "/{applet_id}/library_link",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[str],
+    responses={
+        status.HTTP_200_OK: {"model": Response[str]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(library_get_url)
