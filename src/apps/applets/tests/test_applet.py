@@ -1473,7 +1473,7 @@ class TestApplet(BaseTest):
 
         applet_id = response.json()["result"]["id"]
 
-        assert response.json()["result"]["version"] == "1.0.1"
+        assert response.json()["result"]["version"] == "2.0.0"
 
         response = await self.client.get(
             self.histories_url.format(pk=applet_id)
@@ -1482,17 +1482,17 @@ class TestApplet(BaseTest):
         assert response.status_code == 200, response.json()
         versions = response.json()["result"]
         assert len(versions) == 3
-        assert versions[0]["version"] == "1.0.1"
-        assert versions[1]["version"] == "1.0.0"
-        assert versions[2]["version"] == "2.0.0"
+        assert versions[0]["version"] == "2.0.0"
+        assert versions[1]["version"] == "1.9.9"
+        assert versions[2]["version"] == "1.0.0"
 
         response = await self.client.get(
-            self.history_url.format(pk=applet_id, version="1.0.1")
+            self.history_url.format(pk=applet_id, version="1.9.9")
         )
 
         assert response.status_code == 200, response.json()
         applet = response.json()["result"]
-        assert applet["version"] == "1.0.1"
+        assert applet["version"] == "1.9.9"
 
         response = await self.client.get(
             self.history_url.format(pk=applet_id, version="1.0.0")

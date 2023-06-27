@@ -333,6 +333,65 @@ class TestAnswerActivityItems(BaseTest):
         )
 
     @rollback
+    async def test_fail_answered_applet_not_existed_activities(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answer=dict(
+                user_public_key="user key",
+                events=json.dumps(dict(events=["event1", "event2"])),
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                scheduled_time=10,
+                start_time=10,
+                end_time=11,
+            ),
+        )
+
+        response = await self.client.post(self.answer_url, data=create_data)
+
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.review_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            dict(
+                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                createdDate=datetime.date.today(),
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 1
+        assert len(response.json()["result"][0]["answerDates"]) == 1
+
+        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
+        response = await self.client.get(
+            self.activity_answers_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                answer_id=answer_id,
+                activity_id="00000000-0000-0000-0000-000000000000",
+            )
+        )
+
+        assert response.status_code == 404, response.json()
+
+    @rollback
     async def test_applet_activity_answers(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -1033,7 +1092,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 2
         assert response.json()["result"][0]["version"] == "1.0.0"
         assert response.json()["result"][0]["createdAt"]
-        assert response.json()["result"][1]["version"] == "2.0.0"
+        assert response.json()["result"][1]["version"] == "1.9.9"
         assert response.json()["result"][1]["createdAt"]
 
     @rollback

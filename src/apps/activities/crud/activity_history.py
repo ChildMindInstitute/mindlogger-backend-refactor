@@ -74,6 +74,15 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
             raise ActivityHistoryDoeNotExist()
         return schema
 
+    async def exist_by_activity_id_or_raise(self, activity_id: uuid.UUID):
+        query: Query = select(ActivityHistorySchema)
+        query = query.where(ActivityHistorySchema.id == activity_id)
+        query = query.order_by(ActivityHistorySchema.created_at.asc())
+        db_result = await self._execute(select(query.exists()))
+        result = db_result.scalars().first()
+        if not result:
+            raise ActivityHistoryDoeNotExist()
+
     async def get_by_ids(
         self, activity_id_versions: list[str]
     ) -> list[ActivityHistorySchema]:
