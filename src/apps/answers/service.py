@@ -311,7 +311,7 @@ class AnswerService:
         answer_id: uuid.UUID,
         activity_id: uuid.UUID,
     ) -> ActivityAnswer:
-        await self._validate_answer_access(applet_id, answer_id)
+        await self._validate_answer_access(applet_id, answer_id, activity_id)
 
         schema = await AnswersCRUD(self.session).get_by_id(answer_id)
         pk = self._generate_history_id(schema.version)
@@ -335,12 +335,20 @@ class AnswerService:
         return answer
 
     async def _validate_answer_access(
-        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+        self,
+        applet_id: uuid.UUID,
+        answer_id: uuid.UUID,
+        activity_id: uuid.UUID | None = None,
     ):
         answer_schema = await AnswersCRUD(self.session).get_by_id(answer_id)
         await self._validate_applet_activity_access(
             applet_id, answer_schema.respondent_id
         )
+        if activity_id:
+            pk = self._generate_history_id(answer_schema.version)
+            await ActivityHistoriesCRUD(self.session).get_by_id(
+                pk(activity_id)
+            )
 
     async def add_note(
         self,
@@ -349,7 +357,7 @@ class AnswerService:
         activity_id: uuid.UUID,
         note: str,
     ):
-        await self._validate_answer_access(applet_id, answer_id)
+        await self._validate_answer_access(applet_id, answer_id, activity_id)
         schema = AnswerNoteSchema(
             answer_id=answer_id,
             note=note,
@@ -365,7 +373,7 @@ class AnswerService:
         activity_id: uuid.UUID,
         query_params: QueryParams,
     ) -> list[AnswerNoteDetail]:
-        await self._validate_answer_access(applet_id, answer_id)
+        await self._validate_answer_access(applet_id, answer_id, activity_id)
         notes = await AnswerNotesCRUD(self.session).get_by_answer_id(
             answer_id, activity_id, query_params
         )
@@ -384,17 +392,22 @@ class AnswerService:
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
+        activity_id: uuid.UUID,
         note_id: uuid.UUID,
         note: str,
     ):
-        await self._validate_answer_access(applet_id, answer_id)
+        await self._validate_answer_access(applet_id, answer_id, activity_id)
         await self._validate_note_access(note_id)
         await AnswerNotesCRUD(self.session).update_note_by_id(note_id, note)
 
     async def delete_note(
-        self, applet_id: uuid.UUID, answer_id: uuid.UUID, note_id: uuid.UUID
+        self,
+        applet_id: uuid.UUID,
+        answer_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        note_id: uuid.UUID,
     ):
-        await self._validate_answer_access(applet_id, answer_id)
+        await self._validate_answer_access(applet_id, answer_id, activity_id)
         await self._validate_note_access(note_id)
         await AnswerNotesCRUD(self.session).delete_note_by_id(note_id)
 
@@ -548,6 +561,9 @@ class AnswerService:
         self,
         activity_id: uuid.UUID,
     ) -> list[Identifier]:
+        await ActivityHistoriesCRUD(
+            self.session
+        ).exist_by_activity_id_or_raise(activity_id)
         identifiers = await AnswersCRUD(
             self.session
         ).get_identifiers_by_activity_id(activity_id)
@@ -565,6 +581,9 @@ class AnswerService:
         self,
         activity_id: uuid.UUID,
     ) -> list[Version]:
+        await ActivityHistoriesCRUD(
+            self.session
+        ).exist_by_activity_id_or_raise(activity_id)
         return await AnswersCRUD(self.session).get_versions_by_activity_id(
             activity_id
         )

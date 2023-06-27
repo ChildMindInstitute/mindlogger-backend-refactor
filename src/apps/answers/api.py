@@ -326,7 +326,7 @@ async def note_edit(
             applet_id
         )
         await AnswerService(session, user.id).edit_note(
-            applet_id, answer_id, note_id, schema.note
+            applet_id, answer_id, activity_id, note_id, schema.note
         )
     return
 
@@ -334,6 +334,7 @@ async def note_edit(
 async def note_delete(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
+    activity_id: uuid.UUID,
     note_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
@@ -344,7 +345,7 @@ async def note_delete(
             applet_id
         )
         await AnswerService(session, user.id).delete_note(
-            applet_id, answer_id, note_id
+            applet_id, answer_id, activity_id, note_id
         )
     return
 

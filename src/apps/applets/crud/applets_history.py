@@ -34,7 +34,6 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
         It will return version and user who made this version
         """
         query: Query = select(AppletHistorySchema, UserSchema)
-        query = query.execution_options(populate_existing=True)
         query = query.where(AppletHistorySchema.id == applet_id)
         query = query.join(
             UserSchema,
