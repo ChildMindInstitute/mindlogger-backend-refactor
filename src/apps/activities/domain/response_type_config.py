@@ -164,26 +164,11 @@ class Phase(str, Enum):
     TEST = "test"
 
 
-class GyroscopePracticeConfig(PublicModel):
+class StabilityTrackerConfig(PublicModel):
     phase: Phase
     trials_number: int
     duration_minutes: int
     lambda_slope: float
-
-
-class GyroscopeTestConfig(GyroscopePracticeConfig):
-    pass
-
-
-class TouchPracticeConfig(PublicModel):
-    phase: Phase
-    trials_number: int
-    duration_minutes: int
-    lambda_slope: float
-
-
-class TouchTestConfig(TouchPracticeConfig):
-    pass
 
 
 class StimulusConfigId(str):
@@ -326,10 +311,7 @@ class NoneResponseType(str, Enum):
     DATE = "date"
     TIME = "time"
     FLANKER = "flanker"
-    GYROSCOPEPRACTICE = "gyroscopePractice"
-    GYROSCOPETEST = "gyroscopeTest"
-    TOUCHPRACTICE = "touchPractice"
-    TOUCHTEST = "touchTest"
+    STABILITYTRACKER = "stabilityTracker"
     ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
     ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
     ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
@@ -360,10 +342,7 @@ class ResponseType(str, Enum):
     MESSAGE = "message"
     TIME = "time"
     FLANKER = "flanker"
-    GYROSCOPEPRACTICE = "gyroscopePractice"
-    GYROSCOPETEST = "gyroscopeTest"
-    TOUCHPRACTICE = "touchPractice"
-    TOUCHTEST = "touchTest"
+    STABILITYTRACKER = "stabilityTracker"
     ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
     ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
     ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
@@ -376,8 +355,7 @@ class ResponseType(str, Enum):
 
 class PerformanceTaskType(str, Enum):
     FLANKER = "flanker"
-    GYROSCOPE = "gyroscope"
-    TOUCH = "touch"
+    STABILITYTRACKER = "stabilityTracker"
     ABTRAILSTABLET = "ABTrailsTablet"
     ABTRAILSMOBILE = "ABTrailsMobile"
 
@@ -402,10 +380,7 @@ ResponseTypeConfigOptions = [
     MessageConfig,
     TimeConfig,
     FlankerConfig,
-    GyroscopePracticeConfig,
-    GyroscopeTestConfig,
-    TouchPracticeConfig,
-    TouchTestConfig,
+    StabilityTrackerConfig,
     ABTrailsTabletFirstConfig,
     ABTrailsTabletSecondConfig,
     ABTrailsTabletThirdConfig,
@@ -436,10 +411,7 @@ ResponseTypeConfig = (
     | MessageConfig
     | TimeConfig
     | FlankerConfig
-    | GyroscopePracticeConfig
-    | GyroscopeTestConfig
-    | TouchPracticeConfig
-    | TouchTestConfig
+    | StabilityTrackerConfig
     # NOTE: Since, all Performance tasks has similar fields we should keep
     #       the flaxible data structure in oreder to provide correct
     #       Applet.from_orm usage()
