@@ -159,12 +159,18 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
     play_once: bool
 
 
+class InputType(str, Enum):
+    GYROSCOPE = "gyroscope"
+    TOUCH = "touch"
+
+
 class Phase(str, Enum):
     PRACTICE = "practice"
     TEST = "test"
 
 
 class StabilityTrackerConfig(PublicModel):
+    use_input_type: InputType
     phase: Phase
     trials_number: int
     duration_minutes: int
