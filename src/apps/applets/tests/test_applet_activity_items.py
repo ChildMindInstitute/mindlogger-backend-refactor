@@ -870,6 +870,7 @@ class TestActivityItems(BaseTest):
                             response_type="stabilityTracker",
                             response_values=None,
                             config=dict(
+                                use_input_type="gyroscope",
                                 phase="practice",
                                 trials_number=3,
                                 duration_minutes=5,
@@ -898,6 +899,7 @@ class TestActivityItems(BaseTest):
                             response_type="stabilityTracker",
                             response_values=None,
                             config=dict(
+                                use_input_type="gyroscope",
                                 phase="test",
                                 trials_number=5,
                                 duration_minutes=7,
@@ -1003,6 +1005,7 @@ class TestActivityItems(BaseTest):
                             response_type="stabilityTracker",
                             response_values=None,
                             config=dict(
+                                use_input_type="touch",
                                 phase="practice",
                                 trials_number=3,
                                 duration_minutes=5,
@@ -1031,6 +1034,7 @@ class TestActivityItems(BaseTest):
                             response_type="stabilityTracker",
                             response_values=None,
                             config=dict(
+                                use_input_type="touch",
                                 phase="test",
                                 trials_number=5,
                                 duration_minutes=7,
