@@ -54,19 +54,7 @@ class FlankerValues(PublicModel):
     pass
 
 
-class GyroscopePractiseValues(PublicModel):
-    pass
-
-
-class GyroscopeTestValues(PublicModel):
-    pass
-
-
-class TouchPractiseValues(PublicModel):
-    pass
-
-
-class TouchTestValues(PublicModel):
+class StabilityTrackerValues(PublicModel):
     pass
 
 
@@ -341,10 +329,7 @@ ResponseValueConfigOptions = [
     MessageValues,
     TimeValues,
     FlankerValues,
-    GyroscopePractiseValues,
-    GyroscopeTestValues,
-    TouchPractiseValues,
-    TouchTestValues,
+    StabilityTrackerValues,
     ABTrailsTabletFirstValues,
     ABTrailsTabletSecondValues,
     ABTrailsTabletThirdValues,

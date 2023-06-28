@@ -160,86 +160,73 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
 
 
 class Phase(str, Enum):
-    PRACTISE = "practise"
+    PRACTICE = "practice"
     TEST = "test"
 
 
-class GyroscopePractiseConfig(PublicModel):
+class StabilityTrackerConfig(PublicModel):
     phase: Phase
     trials_number: int
     duration_minutes: int
     lambda_slope: float
 
 
-class GyroscopeTestConfig(GyroscopePractiseConfig):
+class StimulusConfigId(str):
     pass
 
 
-class TouchPractiseConfig(PublicModel):
-    phase: Phase
-    trials_number: int
-    duration_minutes: int
-    lambda_slope: float
-
-
-class TouchTestConfig(TouchPractiseConfig):
-    pass
-
-
-class CorrectPress(str, Enum):
-    LEFT = "left"
-    RIGHT = "right"
-
-
-class ButtonSetting(PublicModel):
-    name: str | None
+class StimulusConfiguration(PublicModel):
+    id: StimulusConfigId
     image: str | None
+    text: str  # name
+    value: int | None
+    weight: int | None
 
 
-class FixationSettings(PublicModel):
-    image: str | None
-    duration: int
-
-
-class StimulusId(str):
-    pass
-
-
-class BlockSettings(PublicModel):
-    order: list[StimulusId]
+class BlockConfiguration(PublicModel):
     name: str
+    order: list[StimulusConfigId]
 
 
-class StimulusSettings(PublicModel):
-    id: StimulusId
+class SamplingMethod(str, Enum):
+    RANDOMIZE_ORDER = "randomize-order"
+    FIXED_ORDER = "fixed-order"
+
+
+class BlockType(str, Enum):
+    TEST = "test"
+    PRACTICE = "practice"
+
+
+class ButtonConfiguration(PublicModel):
+    text: str  # name
+    image: str | None
+    value: int
+
+
+class FixationScreen(PublicModel):
+    value: str
     image: str
-    correct_press: CorrectPress
-
-
-class FlankerGeneralSettings(PublicModel):
-    instruction: str
-    buttons: list[ButtonSetting]
-    fixation: FixationSettings | None
-    stimulus_trials: list[StimulusSettings]
-
-
-class FlankerTestSettings(PublicModel):
-    instruction: str
-    blocks: list[BlockSettings]
-    stimulus_duration: int
-    randomize_order: bool
-    show_feedback: bool
-    show_summary: bool
-
-
-class FlankerPracticeSettings(FlankerTestSettings, PublicModel):
-    threshold: int
 
 
 class FlankerConfig(PublicModel):
-    general: FlankerGeneralSettings
-    practice: FlankerPracticeSettings
-    test: FlankerTestSettings
+    stimulus_trials: list[StimulusConfiguration]
+    blocks: list[BlockConfiguration]
+    buttons: list[ButtonConfiguration]
+    next_button: str
+    fixation_duration: int
+    fixation_screen: FixationScreen
+    minimum_accuracy: int
+    sample_size: int = 1
+    sampling_method: SamplingMethod
+    show_feedback: bool
+    show_fixation: bool
+    show_results: bool
+    trial_duration: int
+    is_last_practice: bool
+    is_first_practice: bool
+    is_last_test: bool
+    block_type: BlockType
 
 
 class ABTrailsTabletFirstConfig(PublicModel):
@@ -324,10 +311,7 @@ class NoneResponseType(str, Enum):
     DATE = "date"
     TIME = "time"
     FLANKER = "flanker"
-    GYROSCOPEPRACTISE = "gyroscopePractise"
-    GYROSCOPETEST = "gyroscopeTest"
-    TOUCHPRACTISE = "touchPractise"
-    TOUCHTEST = "touchTest"
+    STABILITYTRACKER = "stabilityTracker"
     ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
     ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
     ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
@@ -358,10 +342,7 @@ class ResponseType(str, Enum):
     MESSAGE = "message"
     TIME = "time"
     FLANKER = "flanker"
-    GYROSCOPEPRACTISE = "gyroscopePractise"
-    GYROSCOPETEST = "gyroscopeTest"
-    TOUCHPRACTISE = "touchPractise"
-    TOUCHTEST = "touchTest"
+    STABILITYTRACKER = "stabilityTracker"
     ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
     ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
     ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
@@ -374,8 +355,7 @@ class ResponseType(str, Enum):
 
 class PerformanceTaskType(str, Enum):
     FLANKER = "flanker"
-    GYROSCOPE = "gyroscope"
-    TOUCH = "touch"
+    STABILITYTRACKER = "stabilityTracker"
     ABTRAILSTABLET = "ABTrailsTablet"
     ABTRAILSMOBILE = "ABTrailsMobile"
 
@@ -400,10 +380,7 @@ ResponseTypeConfigOptions = [
     MessageConfig,
     TimeConfig,
     FlankerConfig,
-    GyroscopePractiseConfig,
-    GyroscopeTestConfig,
-    TouchPractiseConfig,
-    TouchTestConfig,
+    StabilityTrackerConfig,
     ABTrailsTabletFirstConfig,
     ABTrailsTabletSecondConfig,
     ABTrailsTabletThirdConfig,
@@ -434,10 +411,7 @@ ResponseTypeConfig = (
     | MessageConfig
     | TimeConfig
     | FlankerConfig
-    | GyroscopePractiseConfig
-    | GyroscopeTestConfig
-    | TouchPractiseConfig
-    | TouchTestConfig
+    | StabilityTrackerConfig
     # NOTE: Since, all Performance tasks has similar fields we should keep
     #       the flaxible data structure in oreder to provide correct
     #       Applet.from_orm usage()
