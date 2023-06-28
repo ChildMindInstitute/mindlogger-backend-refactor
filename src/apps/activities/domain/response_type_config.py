@@ -170,11 +170,27 @@ class Phase(str, Enum):
 
 
 class StabilityTrackerConfig(PublicModel):
-    use_input_type: InputType
+    user_input_type: InputType
     phase: Phase
     trials_number: int
-    duration_minutes: int
+    duration_minutes: float
     lambda_slope: float
+    max_off_target_time: int = 10
+    num_test_trials: int = 10
+    task_mode: str = "pseudo_stair"
+    tracking_dims: int = 2
+    show_score: bool = True
+    basis_func: str = "zeros_1d"
+    noise_level: float = 0
+    task_loop_rate: float = 0.0167
+    cycles_per_min: float = 2
+    oob_duration: float = 0.2
+    initial_lambda: float = 0.075
+    show_preview: bool = True
+    num_preview_stim: int = 0
+    preview_step_gap: int = 100
+    dimension_count: int = 1
+    max_rad: float = 0.26167
 
 
 class StimulusConfigId(str):
