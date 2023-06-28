@@ -867,7 +867,7 @@ class TestActivityItems(BaseTest):
                                 en="Gyroscope Сalibration/Practice.",
                                 fr="Gyroscope Сalibration/Practice.",
                             ),
-                            response_type="gyroscopePractice",
+                            response_type="stabilityTracker",
                             response_values=None,
                             config=dict(
                                 phase="practice",
@@ -895,7 +895,7 @@ class TestActivityItems(BaseTest):
                                 en="Gyroscope Test.",
                                 fr="Gyroscope Test.",
                             ),
-                            response_type="gyroscopeTest",
+                            response_type="stabilityTracker",
                             response_values=None,
                             config=dict(
                                 phase="test",
@@ -1000,7 +1000,7 @@ class TestActivityItems(BaseTest):
                                 en="Touch Сalibration/Practise.",
                                 fr="Touch Сalibration/Practise.",
                             ),
-                            response_type="touchPractice",
+                            response_type="stabilityTracker",
                             response_values=None,
                             config=dict(
                                 phase="practice",
@@ -1028,7 +1028,7 @@ class TestActivityItems(BaseTest):
                                 en="Touch Test.",
                                 fr="Touch Test.",
                             ),
-                            response_type="touchTest",
+                            response_type="stabilityTracker",
                             response_values=None,
                             config=dict(
                                 phase="test",
