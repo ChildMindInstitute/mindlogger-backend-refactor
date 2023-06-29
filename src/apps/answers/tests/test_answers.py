@@ -391,8 +391,8 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200, response.json()
         assert (
-                response.json()["result"]["events"]
-                == '{"events": ["event1", "event2"]}'
+            response.json()["result"]["events"]
+            == '{"events": ["event1", "event2"]}'
         )
 
     @rollback
@@ -628,8 +628,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["answer"] == "some answer"
         assert (
-                response.json()["result"][
-                    "reviewerPublicKey"] == "some public key"
+            response.json()["result"]["reviewerPublicKey"] == "some public key"
         )
         assert response.json()["result"]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
@@ -660,8 +659,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["answer"] == "some answer"
         assert (
-                response.json()["result"][
-                    "reviewerPublicKey"] == "some public key"
+            response.json()["result"]["reviewerPublicKey"] == "some public key"
         )
         assert response.json()["result"]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
@@ -678,8 +676,8 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["answer"] == "some answer"
         assert (
-                response.json()["result"][0]["reviewerPublicKey"]
-                == "some public key"
+            response.json()["result"][0]["reviewerPublicKey"]
+            == "some public key"
         )
         assert response.json()["result"][0]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
