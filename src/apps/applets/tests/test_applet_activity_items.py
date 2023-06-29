@@ -1554,7 +1554,7 @@ class TestActivityItems(BaseTest):
                                             item_name="activity_item_singleselect",  # noqa E501
                                             type="EQUAL_TO_OPTION",
                                             payload=dict(
-                                                option_id="25e69155-22cd-4484-8a49-364779ea9de1"  # noqa E501
+                                                option_value="1",  # noqa E501
                                             ),
                                         ),
                                     ],
@@ -1574,11 +1574,13 @@ class TestActivityItems(BaseTest):
                                         "text": "option1",
                                         "score": 1,
                                         "id": "25e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
+                                        "value": "1",
                                     },
                                     {
                                         "text": "option2",
                                         "score": 2,
                                         "id": "26e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
+                                        "value": "2",
                                     },
                                 ],
                             ),
@@ -1607,10 +1609,12 @@ class TestActivityItems(BaseTest):
                                     {
                                         "text": "option1",
                                         "id": "27e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
+                                        "value": "1",
                                     },
                                     {
                                         "text": "option2",
                                         "id": "28e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
+                                        "value": "2",
                                     },
                                 ],
                             ),
@@ -1682,14 +1686,14 @@ class TestActivityItems(BaseTest):
                                         item_name="activity_item_singleselect",
                                         type="EQUAL_TO_OPTION",
                                         payload=dict(
-                                            option_id="25e69155-22cd-4484-8a49-364779ea9de1"  # noqa E501
+                                            option_value="1"  # noqa E501
                                         ),
                                     ),
                                     dict(
                                         item_name="activity_item_multiselect",
                                         type="INCLUDES_OPTION",
                                         payload=dict(
-                                            option_id="27e69155-22cd-4484-8a49-364779ea9de1"  # noqa E501
+                                            option_value="1"  # noqa E501
                                         ),
                                     ),
                                     dict(
@@ -1723,14 +1727,14 @@ class TestActivityItems(BaseTest):
                                         item_name="activity_item_singleselect",
                                         type="EQUAL_TO_OPTION",
                                         payload=dict(
-                                            option_id="25e69155-22cd-4484-8a49-364779ea9de1"  # noqa E501
+                                            option_value="1"  # noqa E501
                                         ),
                                     ),
                                     dict(
                                         item_name="activity_item_multiselect",
                                         type="INCLUDES_OPTION",
                                         payload=dict(
-                                            option_id="27e69155-22cd-4484-8a49-364779ea9de1"  # noqa E501
+                                            option_value="1"  # noqa E501
                                         ),
                                     ),
                                 ],
