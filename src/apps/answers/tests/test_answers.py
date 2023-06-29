@@ -1,7 +1,6 @@
 import datetime
 import json
 
-import pytest
 from asynctest import CoroutineMock, patch
 
 from apps.shared.test import BaseTest
@@ -92,7 +91,6 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-    @pytest.mark.main
     @patch("aiohttp.ClientSession.post")
     @rollback
     async def test_get_latest_summary(self, mock: CoroutineMock):
