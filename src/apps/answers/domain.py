@@ -4,13 +4,18 @@ from typing import Any
 
 from pydantic import BaseModel, Field, validator
 
-from apps.activities.domain.activity_full import PublicActivityItemFull
+from apps.activities.domain.activity_full import (
+    ActivityFull,
+    PublicActivityItemFull,
+)
 from apps.activities.domain.activity_history import (
     ActivityHistoryExport,
     ActivityHistoryFull,
 )
 from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.scores_reports import SubscaleSetting
+from apps.activity_flows.domain.flow_full import FlowFull
+from apps.applets.domain.base import AppletBaseInfo
 from apps.shared.domain import InternalModel, PublicModel
 
 
@@ -307,3 +312,25 @@ class Identifier(InternalModel):
 class IdentifierPublic(PublicModel):
     identifier: str
     user_public_key: str
+
+
+class SafeApplet(AppletBaseInfo, InternalModel):
+    id: uuid.UUID
+    version: str
+    created_at: datetime.datetime | None
+    updated_at: datetime.datetime | None
+
+    activities: list[ActivityFull] = Field(default_factory=list)
+    activity_flows: list[FlowFull] = Field(default_factory=list)
+
+
+class ReportServerEmail(InternalModel):
+    body: str
+    subject: str
+    attachment: str
+    email_recipients: list[str]
+
+
+class ReportServerResponse(InternalModel):
+    pdf: str
+    email: ReportServerEmail

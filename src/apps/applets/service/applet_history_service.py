@@ -5,7 +5,7 @@ from apps.activity_flows.service.flow_history import FlowHistoryService
 from apps.applets.crud import AppletHistoriesCRUD
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain import AppletHistory, AppletHistoryChange
-from apps.applets.domain.applet_full import AppletFull
+from apps.applets.domain.applet_full import AppletFull, AppletHistoryFull
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.shared.changes_generator import ChangeGenerator
 from apps.shared.version import INITIAL_VERSION
@@ -107,3 +107,16 @@ class AppletHistoryService:
             prev_version = INITIAL_VERSION
 
         return prev_version
+
+    async def get_full(self) -> AppletHistoryFull:
+        schema = await AppletHistoriesCRUD(self.session).get_by_id_version(
+            self._id_version
+        )
+        applet = AppletHistoryFull.from_orm(schema)
+        applet.activities = await ActivityHistoryService(
+            self.session, self._applet_id, self._version
+        ).get_full()
+        applet.activity_flows = await FlowHistoryService(
+            self.session, self._applet_id, self._version
+        ).get_full()
+        return applet

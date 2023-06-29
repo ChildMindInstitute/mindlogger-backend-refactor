@@ -2,7 +2,7 @@ import uuid
 
 from apps.activity_flows.crud import FlowsHistoryCRUD
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
-from apps.activity_flows.domain.flow_full import FlowFull
+from apps.activity_flows.domain.flow_full import FlowFull, FlowHistoryFull
 from apps.activity_flows.service.flow_item_history import (
     FlowItemHistoryService,
 )
@@ -38,3 +38,26 @@ class FlowHistoryService:
         await FlowItemHistoryService(
             self.session, self.applet_id, self.version
         ).add(flow_items)
+
+    async def get_full(self) -> list[FlowHistoryFull]:
+        schemas = await FlowsHistoryCRUD(self.session).get_by_applet_id(
+            self.applet_id_version
+        )
+        flows = list()
+        flow_map: dict[str, FlowHistoryFull] = dict()
+        flow_ids = list()
+
+        for schema in schemas:
+            flow: FlowHistoryFull = FlowHistoryFull.from_orm(schema)
+            flows.append(flow)
+            flow_ids.append(flow.id)
+            flow_map[flow.id_version] = flow
+
+        items = await FlowItemHistoryService(
+            self.session, self.applet_id, self.version
+        ).get_by_flow_ids(flow_ids)
+
+        for item in items:
+            flow_map[item.activity_flow_id].items.append(item)
+
+        return flows

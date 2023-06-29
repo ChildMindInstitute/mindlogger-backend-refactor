@@ -7,6 +7,7 @@ name = "pypi"
 aioredis = "~=2.0.1"
 alembic = "~=1.8.1"
 asyncpg = "~=0.27.0"
+asynctest = "*"
 boto3 = "==1.26.10"
 fastapi = "==0.87.0"
 # The latest version of the fastapi is not taken because of the issue
@@ -50,7 +51,6 @@ types-python-jose = "==3.3.4"
 typing-extensions = "~=4.4.0"
 # https://github.com/sqlalchemy/sqlalchemy/issues/7714
 greenlet = "~=2.0.1"
-
 # Old project requirements
 pymongo = "==3.7.1"
 cherrypy = "==11.0.0"

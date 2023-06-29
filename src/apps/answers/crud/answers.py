@@ -24,7 +24,7 @@ from apps.activities.db.schemas import (
     ActivityItemHistorySchema,
 )
 from apps.activities.domain import ActivityHistory
-from apps.activities.domain.activity_item_history import ActivityItemHistory
+from apps.activities.domain.activity_full import ActivityItemHistoryFull
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.alerts.errors import AnswerNotFoundError
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
@@ -242,7 +242,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_item_history_by_activity_history(
         self, activity_hist_ids: list[str]
-    ) -> list[ActivityItemHistory]:
+    ) -> list[ActivityItemHistoryFull]:
         query: Query = (
             select(ActivityItemHistorySchema)
             .where(
@@ -256,7 +256,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         res = await self._execute(query)
         items: list[ActivityItemHistorySchema] = res.scalars().all()
 
-        return parse_obj_as(list[ActivityItemHistory], items)
+        return parse_obj_as(list[ActivityItemHistoryFull], items)
 
     async def get_identifiers_by_activity_id(
         self, activity_id: uuid.UUID
@@ -299,3 +299,47 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             results.append(Version(version=version, created_at=created_at))
 
         return results
+
+    async def get_latest_answer(
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        respond_id: uuid.UUID,
+    ) -> tuple[AnswerItemSchema, str] | None:
+        query: Query = select(AnswerItemSchema, AnswerSchema.version)
+        query = query.join(
+            AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
+        )
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == AnswerSchema.activity_history_id,
+        )
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(ActivityHistorySchema.id == activity_id)
+        query = query.where(AnswerItemSchema.respondent_id == respond_id)
+        query = query.order_by(AnswerSchema.created_at.desc())
+        query = query.limit(1)
+
+        db_result = await self._execute(query)
+        return db_result.first()
+
+    async def get_by_answer_id(
+        self,
+        answer_id: uuid.UUID,
+    ) -> tuple[AnswerItemSchema, AnswerSchema] | None:
+        query: Query = select(AnswerItemSchema, AnswerSchema)
+        query = query.join(
+            AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
+        )
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == AnswerSchema.activity_history_id,
+        )
+        query = query.where(AnswerSchema.id == answer_id)
+        query = query.order_by(AnswerSchema.created_at.desc())
+        query = query.limit(1)
+
+        db_result = await self._execute(query)
+        return db_result.first()

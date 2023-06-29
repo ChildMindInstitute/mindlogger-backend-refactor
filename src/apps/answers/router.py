@@ -19,6 +19,7 @@ from apps.answers.api import (
     note_list,
     review_activity_list,
     summary_activity_list,
+    summary_latest_report_retrieve,
 )
 from apps.answers.domain import (
     ActivityAnswerPublic,
@@ -113,6 +114,15 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_answers_list)
+
+router.post(
+    "/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report",  # noqa
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(summary_latest_report_retrieve)
 
 router.get(
     "/applet/{applet_id}/dates",

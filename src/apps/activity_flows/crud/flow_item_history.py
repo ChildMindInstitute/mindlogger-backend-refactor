@@ -47,6 +47,17 @@ class FlowItemHistoriesCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
+    async def get_by_flow_ids(
+        self, flow_ids: list[str]
+    ) -> list[ActivityFlowItemHistorySchema]:
+        query: Query = select(ActivityFlowItemHistorySchema)
+        query = query.where(
+            ActivityFlowItemHistorySchema.activity_flow_id.in_(flow_ids)
+        )
+        query = query.order_by(ActivityFlowItemHistorySchema.order.asc())
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
     async def get_by_map(
         self, activity_flow_map: dict[str, str]
     ) -> list[ActivityFlowItemHistorySchema]:

@@ -26,3 +26,12 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         query = query.order_by(ActivityFlowHistoriesSchema.order.asc())
         result = await self._execute(query)
         return result.scalars().all()
+
+    async def get_by_applet_id(
+        self, applet_id: str
+    ) -> list[ActivityFlowHistoriesSchema]:
+        query: Query = select(ActivityFlowHistoriesSchema)
+        query = query.where(ActivityFlowHistoriesSchema.applet_id == applet_id)
+        query = query.order_by(ActivityFlowHistoriesSchema.order.asc())
+        result = await self._execute(query)
+        return result.scalars().all()

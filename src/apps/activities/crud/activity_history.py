@@ -129,6 +129,20 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
 
         return db_result.scalars().all()
 
+    async def get_by_applet_id_version(
+        self, applet_id_version: str
+    ) -> ActivityHistorySchema:
+        query: Query = select(ActivityHistorySchema)
+        query = query.where(
+            ActivityHistorySchema.applet_id == applet_id_version
+        )
+        query = query.where(
+            ActivityHistorySchema.is_reviewable == False  # noqa
+        )
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
     async def get_activities(
         self, activity_id: uuid.UUID, versions: list[str] | None
     ):
