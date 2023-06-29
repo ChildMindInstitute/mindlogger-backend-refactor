@@ -15,7 +15,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 class ActivityItemFull(BaseActivityItem, InternalModel):
     id: uuid.UUID
-    activity_id: uuid.UUID | None
+    activity_id: uuid.UUID
     order: int
 
 

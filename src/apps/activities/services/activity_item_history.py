@@ -51,11 +51,11 @@ class ActivityItemHistoryService:
 
     async def get_by_activity_id_versions(
         self, activity_id_versions: list[str]
-    ) -> list[ActivityItemHistory]:
+    ) -> list[ActivityItemHistoryFull]:
         schemas = await ActivityItemHistoriesCRUD(
             self.session
         ).get_by_activity_id_versions(activity_id_versions)
-        return [ActivityItemHistory.from_orm(schema) for schema in schemas]
+        return [ActivityItemHistoryFull.from_orm(schema) for schema in schemas]
 
     async def get_by_activity_ids(
         self, activity_ids: list[uuid.UUID]

@@ -1,4 +1,3 @@
-from fastapi.responses import Response as FastApiResponse
 from fastapi.routing import APIRouter
 from starlette import status
 
@@ -117,7 +116,7 @@ router.get(
 )(applet_activity_answers_list)
 
 router.post(
-    "/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report",
+    "/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report",  # noqa
     status_code=status.HTTP_200_OK,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,

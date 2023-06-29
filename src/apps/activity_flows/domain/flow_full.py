@@ -9,7 +9,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 class ActivityFlowItemFull(FlowItemBase, InternalModel):
     id: uuid.UUID
-    activity_flow_id: uuid.UUID | None
+    activity_flow_id: uuid.UUID
     order: int
 
 

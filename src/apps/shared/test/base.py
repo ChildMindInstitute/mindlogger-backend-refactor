@@ -1,6 +1,5 @@
 import json
 import os
-from unittest.mock import Mock
 
 import pytest
 from sqlalchemy import text
@@ -20,13 +19,6 @@ class BaseTest:
     async def initialize(self):
         await truncate_tables()
         await self.populate_db()
-
-    @staticmethod
-    @pytest.fixture
-    def mock_get(mocker):
-        mock = Mock()
-        mocker.patch("requests.post", return_value=mock)
-        return mock
 
     @pytest.fixture(autouse=True)
     async def update_sequence(self):

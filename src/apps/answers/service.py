@@ -5,7 +5,7 @@ import json
 import uuid
 from collections import defaultdict
 
-import requests
+import aiohttp
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -43,7 +43,6 @@ from apps.answers.domain import (
     Identifier,
     ReportServerResponse,
     ReviewActivity,
-    SafeApplet,
     SummaryActivity,
     Version,
 )
@@ -59,7 +58,6 @@ from apps.answers.errors import (
 from apps.applets.crud import AppletsCRUD
 from apps.applets.service import AppletHistoryService
 from apps.shared.query_params import QueryParams
-from apps.users import UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -454,7 +452,7 @@ class AnswerService:
             item_ids=assessment_answer.item_ids if assessment_answer else [],
             items=activity_items,
             is_edited=assessment_answer.created_at
-            != assessment_answer.updated_at
+            != assessment_answer.updated_at  # noqa
             if assessment_answer
             else False,
         )
@@ -647,11 +645,12 @@ class AnswerService:
         activity_id: uuid.UUID,
         respondent_id: uuid.UUID,
     ) -> ReportServerResponse | None:
-        answer_item, version = await AnswersCRUD(self.session).get_latest_answer(
+        answer = await AnswersCRUD(self.session).get_latest_answer(
             applet_id, activity_id, respondent_id
         )
-        if not answer_item:
+        if not answer:
             return None
+        answer_item, version = answer
         service = ReportServerService(self.session)
         report = await service.create_report(applet_id, answer_item.answer_id)
 
@@ -673,14 +672,14 @@ class ReportServerService:
     async def create_report(
         self, applet_id: uuid.UUID, answer_id: uuid.UUID
     ) -> ReportServerResponse | None:
-        answer_item, answer = await AnswersCRUD(self.session).get_by_answer_id(
-            answer_id
-        )
-        if not answer:
+        schemas = await AnswersCRUD(self.session).get_by_answer_id(answer_id)
+        if not schemas:
             return None
+        answer_item, answer = schemas
         access = await UserAppletAccessCRUD(self.session).get(
             answer.respondent_id, applet_id, Role.RESPONDENT
         )
+        assert access
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         applet_full = await AppletHistoryService(
             self.session, applet_id, answer.version
@@ -705,13 +704,15 @@ class ReportServerService:
             f"{applet_full.report_server_ip}"
             f"/send-pdf-report?appletId={applet_id}"
         )
-        response = requests.post(url, data=dict(payload=encrypted_data))
-
-        if response.status_code == 200:
-            response_data = response.json()
-            return ReportServerResponse(**response_data)
-        else:
-            raise Exception(str(response.json()))
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url, data=dict(payload=encrypted_data)
+            ) as resp:
+                if resp.status == 200:
+                    response_data = await resp.json()
+                    return ReportServerResponse(**response_data)
+                else:
+                    raise Exception(str(resp.json()))
 
 
 class ReportServerEncryption:
@@ -724,11 +725,15 @@ class ReportServerEncryption:
 
     def encrypt(self, data: dict):
         str_data = json.dumps(data, default=str)
-        chunk_size = int(self.encryption.key_size / 8 * self._rate)
+        key_size = getattr(self.encryption, "key_size", 0)
+        encrypt = getattr(self.encryption, "encrypt", lambda x, y: x)
+        chunk_size = int(key_size / 8 * self._rate)
         chunks = []
         for i in range(len(str_data) // chunk_size + 1):
-            encrypted_chunk = self.encryption.encrypt(
-                str_data[i * chunk_size : (i + 1) * chunk_size].encode(),
+            beg = i * chunk_size
+            end = beg + chunk_size
+            encrypted_chunk = encrypt(
+                str_data[beg:end].encode(),
                 self._get_padding(),
             )
             chunks.append(base64.b64encode(encrypted_chunk))

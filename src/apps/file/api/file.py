@@ -1,4 +1,4 @@
-from botocore.exceptions import ClientError  # type: ignore
+from botocore.exceptions import ClientError
 from fastapi import Body, Depends, File, UploadFile
 from fastapi.responses import StreamingResponse
 

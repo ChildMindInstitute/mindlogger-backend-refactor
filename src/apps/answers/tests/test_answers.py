@@ -2,6 +2,7 @@ import datetime
 import json
 
 import pytest
+from asynctest import CoroutineMock, patch
 
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -92,17 +93,20 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 201, response.json()
 
     @pytest.mark.main
+    @patch("aiohttp.ClientSession.post")
     @rollback
-    async def test_get_latest_summary(self, mock_get):
-        mock_get.status_code = 200
-        mock_get.json.return_value = dict(
-            pdf="cGRmIGJvZHk=",
-            email=dict(
-                body="Body",
-                subject="Subject",
-                attachment="Attachment name",
-                emailRecipients=["tom@cmiml.net"],
-            ),
+    async def test_get_latest_summary(self, mock: CoroutineMock):
+        mock.return_value.__aenter__.return_value.status = 200
+        mock.return_value.__aenter__.return_value.json = CoroutineMock(
+            side_effect=lambda: dict(
+                pdf="cGRmIGJvZHk=",
+                email=dict(
+                    body="Body",
+                    subject="Subject",
+                    attachment="Attachment name",
+                    emailRecipients=["tom@cmiml.net"],
+                ),
+            )
         )
 
         await self.client.login(
@@ -387,8 +391,8 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200, response.json()
         assert (
-            response.json()["result"]["events"]
-            == '{"events": ["event1", "event2"]}'
+                response.json()["result"]["events"]
+                == '{"events": ["event1", "event2"]}'
         )
 
     @rollback
@@ -624,7 +628,8 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["answer"] == "some answer"
         assert (
-            response.json()["result"]["reviewerPublicKey"] == "some public key"
+                response.json()["result"][
+                    "reviewerPublicKey"] == "some public key"
         )
         assert response.json()["result"]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
@@ -655,7 +660,8 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["answer"] == "some answer"
         assert (
-            response.json()["result"]["reviewerPublicKey"] == "some public key"
+                response.json()["result"][
+                    "reviewerPublicKey"] == "some public key"
         )
         assert response.json()["result"]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
@@ -672,8 +678,8 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["answer"] == "some answer"
         assert (
-            response.json()["result"][0]["reviewerPublicKey"]
-            == "some public key"
+                response.json()["result"][0]["reviewerPublicKey"]
+                == "some public key"
         )
         assert response.json()["result"][0]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"

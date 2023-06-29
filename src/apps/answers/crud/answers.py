@@ -24,7 +24,7 @@ from apps.activities.db.schemas import (
     ActivityItemHistorySchema,
 )
 from apps.activities.domain import ActivityHistory
-from apps.activities.domain.activity_item_history import ActivityItemHistory
+from apps.activities.domain.activity_full import ActivityItemHistoryFull
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.alerts.errors import AnswerNotFoundError
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
@@ -242,7 +242,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_item_history_by_activity_history(
         self, activity_hist_ids: list[str]
-    ) -> list[ActivityItemHistory]:
+    ) -> list[ActivityItemHistoryFull]:
         query: Query = (
             select(ActivityItemHistorySchema)
             .where(
@@ -256,7 +256,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         res = await self._execute(query)
         items: list[ActivityItemHistorySchema] = res.scalars().all()
 
-        return parse_obj_as(list[ActivityItemHistory], items)
+        return parse_obj_as(list[ActivityItemHistoryFull], items)
 
     async def get_identifiers_by_activity_id(
         self, activity_id: uuid.UUID
