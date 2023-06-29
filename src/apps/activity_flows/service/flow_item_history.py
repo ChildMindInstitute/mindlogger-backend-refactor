@@ -2,7 +2,10 @@ import uuid
 
 from apps.activity_flows.crud import FlowItemHistoriesCRUD
 from apps.activity_flows.db.schemas import ActivityFlowItemHistorySchema
-from apps.activity_flows.domain.flow_full import ActivityFlowItemFull
+from apps.activity_flows.domain.flow_full import (
+    ActivityFlowItemFull,
+    FlowItemHistoryFull,
+)
 
 
 class FlowItemHistoryService:
@@ -36,3 +39,11 @@ class FlowItemHistoryService:
         )
 
         return [schema.activity_id for schema in schemas]
+
+    async def get_by_flow_ids(
+        self, flow_ids: list[uuid.UUID]
+    ) -> list[FlowItemHistoryFull]:
+        schemas = await FlowItemHistoriesCRUD(self.session).get_by_flow_ids(
+            [f"{pk}_{self.version}" for pk in flow_ids]
+        )
+        return [FlowItemHistoryFull.from_orm(schema) for schema in schemas]

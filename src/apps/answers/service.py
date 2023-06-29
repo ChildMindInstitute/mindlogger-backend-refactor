@@ -1,9 +1,15 @@
 import asyncio
+import base64
 import datetime
+import json
 import uuid
 from collections import defaultdict
 
 import requests
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from pydantic import parse_obj_as
 
 from apps.activities.crud import (
@@ -35,7 +41,9 @@ from apps.answers.domain import (
     AssessmentAnswer,
     AssessmentAnswerCreate,
     Identifier,
+    ReportServerResponse,
     ReviewActivity,
+    SafeApplet,
     SummaryActivity,
     Version,
 )
@@ -51,7 +59,9 @@ from apps.answers.errors import (
 from apps.applets.crud import AppletsCRUD
 from apps.applets.service import AppletHistoryService
 from apps.shared.query_params import QueryParams
+from apps.users import UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
@@ -636,13 +646,14 @@ class AnswerService:
         applet_id: uuid.UUID,
         activity_id: uuid.UUID,
         respondent_id: uuid.UUID,
-    ):
-        answer = await AnswersCRUD(self.session).get_latest_answer(
+    ) -> ReportServerResponse | None:
+        answer_item, version = await AnswersCRUD(self.session).get_latest_answer(
             applet_id, activity_id, respondent_id
         )
-        if not answer:
+        if not answer_item:
             return None
-        report = await self._create_report(applet_id, answer.answer)
+        service = ReportServerService(self.session)
+        report = await service.create_report(applet_id, answer_item.answer_id)
 
         return report
 
@@ -654,12 +665,79 @@ class AnswerService:
         ).get_by_applet_id(applet_id)
         return parse_obj_as(list[SummaryActivity], activities)
 
-    async def _create_report(self, applet_id: uuid.UUID, answer: str):
-        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
-        url = f"{applet.report_server_ip}/send-pdf-report?appletId={applet_id}"
-        response = requests.post(
-            url,
-            data=dict(responses=answer, now=datetime.date.today().isoformat()),
-            headers={"Token": ""},
+
+class ReportServerService:
+    def __init__(self, session):
+        self.session = session
+
+    async def create_report(
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+    ) -> ReportServerResponse | None:
+        answer_item, answer = await AnswersCRUD(self.session).get_by_answer_id(
+            answer_id
         )
-        return response
+        if not answer:
+            return None
+        access = await UserAppletAccessCRUD(self.session).get(
+            answer.respondent_id, applet_id, Role.RESPONDENT
+        )
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        applet_full = await AppletHistoryService(
+            self.session, applet_id, answer.version
+        ).get_full()
+        applet_full.encryption = applet.encryption
+
+        encryption = ReportServerEncryption(applet_full.report_public_key)
+        data = dict(
+            responses=answer_item.answer,
+            userPublicKey=answer_item.user_public_key,
+            now=datetime.date.today().strftime("%x"),
+            user=dict(
+                first_name=access.meta.get("firstName"),
+                last_name=access.meta.get("lastName"),
+                nickname=access.meta.get("nickname"),
+                secret_id=access.meta.get("secretUserId"),
+            ),
+            applet=applet_full.dict(),
+        )
+        encrypted_data = encryption.encrypt(data)
+        url = (
+            f"{applet_full.report_server_ip}"
+            f"/send-pdf-report?appletId={applet_id}"
+        )
+        response = requests.post(url, data=dict(payload=encrypted_data))
+
+        if response.status_code == 200:
+            response_data = response.json()
+            return ReportServerResponse(**response_data)
+        else:
+            raise Exception(str(response.json()))
+
+
+class ReportServerEncryption:
+    _rate = 0.58
+
+    def __init__(self, key: str):
+        self.encryption = load_pem_public_key(
+            key.encode(), backend=default_backend()
+        )
+
+    def encrypt(self, data: dict):
+        str_data = json.dumps(data, default=str)
+        chunk_size = int(self.encryption.key_size / 8 * self._rate)
+        chunks = []
+        for i in range(len(str_data) // chunk_size + 1):
+            encrypted_chunk = self.encryption.encrypt(
+                str_data[i * chunk_size : (i + 1) * chunk_size].encode(),
+                self._get_padding(),
+            )
+            chunks.append(base64.b64encode(encrypted_chunk))
+
+        return chunks
+
+    def _get_padding(self):
+        return padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA1()),
+            algorithm=hashes.SHA1(),
+            label=None,
+        )

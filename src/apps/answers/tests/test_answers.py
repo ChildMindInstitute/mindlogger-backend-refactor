@@ -1,6 +1,8 @@
 import datetime
 import json
 
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -51,6 +53,7 @@ class TestAnswerActivityItems(BaseTest):
     )
     answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"  # noqa: E501
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
+    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
 
     @rollback
     async def test_answer_activity_items_create_for_respondent(self):
@@ -87,6 +90,62 @@ class TestAnswerActivityItems(BaseTest):
         response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
+
+    @pytest.mark.main
+    @rollback
+    async def test_get_latest_summary(self, mock_get):
+        mock_get.status_code = 200
+        mock_get.json.return_value = dict(
+            pdf="cGRmIGJvZHk=",
+            email=dict(
+                body="Body",
+                subject="Subject",
+                attachment="Attachment name",
+                emailRecipients=["tom@cmiml.net"],
+            ),
+        )
+
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            version="1.0.0",
+            created_at=1681216969,
+            answer=dict(
+                user_public_key="user key",
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                events=json.dumps(dict(events=["event1", "event2"])),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                identifier="encrypted_identifier",
+                scheduled_time=10,
+                start_time=10,
+                end_time=11,
+            ),
+        )
+
+        response = await self.client.post(self.answer_url, data=create_data)
+
+        assert response.status_code == 201, response.json()
+        response = await self.client.post(
+            self.latest_report_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            ),
+        )
+        assert response.status_code == 200
 
     @rollback
     async def test_public_answer_activity_items_create_for_respondent(self):

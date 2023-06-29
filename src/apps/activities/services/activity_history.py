@@ -182,3 +182,28 @@ class ActivityHistoryService:
             f"{activity_id}_{self._version}"
         )
         return ActivityHistory.from_orm(schema)
+
+    async def get_full(self) -> list[ActivityHistoryFull]:
+        schemas = await ActivityHistoriesCRUD(
+            self.session
+        ).get_by_applet_id_version(self._applet_id_version)
+        activities = []
+        activity_ids = []
+        activity_map = dict()
+        for schema in schemas:
+            schema.key = uuid.uuid4()
+            activity: ActivityHistoryFull = ActivityHistoryFull.from_orm(
+                schema
+            )
+            activities.append(activity)
+            activity_map[activity.id_version] = activity
+            activity_ids.append(activity.id)
+
+        items = await ActivityItemHistoryService(
+            self.session, self._applet_id, self._version
+        ).get_by_activity_ids(activity_ids)
+
+        for item in items:
+            activity_map[item.activity_id].items.append(item)
+
+        return activities

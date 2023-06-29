@@ -4,11 +4,11 @@ import uuid
 from pydantic import Field, validator
 
 from apps.activities.domain.activity_full import (
+    ActivityItemHistoryFull,
     PublicActivityFull,
     PublicActivityItemFull,
 )
 from apps.activities.domain.activity_item_history import (
-    ActivityItemHistory,
     ActivityItemHistoryChange,
 )
 from apps.activities.domain.scores_reports import (
@@ -59,7 +59,7 @@ class PublicActivityHistoryChange(PublicModel):
 
 
 class ActivityHistoryFull(ActivityHistory):
-    items: list[ActivityItemHistory] = Field(default_factory=list)
+    items: list[ActivityItemHistoryFull] = Field(default_factory=list)
 
 
 class ActivityHistoryExport(PublicActivityFull):

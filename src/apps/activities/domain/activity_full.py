@@ -15,7 +15,13 @@ from apps.shared.domain import InternalModel, PublicModel
 
 class ActivityItemFull(BaseActivityItem, InternalModel):
     id: uuid.UUID
-    activity_id: uuid.UUID
+    activity_id: uuid.UUID | None
+    order: int
+
+
+class ActivityItemHistoryFull(BaseActivityItem, InternalModel):
+    id: uuid.UUID
+    activity_id: str
     order: int
 
 

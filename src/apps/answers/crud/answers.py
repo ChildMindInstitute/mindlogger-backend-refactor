@@ -305,8 +305,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         applet_id: uuid.UUID,
         activity_id: uuid.UUID,
         respond_id: uuid.UUID,
-    ) -> AnswerItemSchema | None:
-        query: Query = select(AnswerItemSchema)
+    ) -> tuple[AnswerItemSchema, str] | None:
+        query: Query = select(AnswerItemSchema, AnswerSchema.version)
         query = query.join(
             AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
         )
@@ -318,8 +318,28 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(ActivityHistorySchema.id == activity_id)
         query = query.where(AnswerItemSchema.respondent_id == respond_id)
-        query = query.order_by(AnswerSchema.created_at.dec())
+        query = query.order_by(AnswerSchema.created_at.desc())
         query = query.limit(1)
 
         db_result = await self._execute(query)
-        return db_result.scalars().first()
+        return db_result.first()
+
+    async def get_by_answer_id(
+        self,
+        answer_id: uuid.UUID,
+    ) -> tuple[AnswerItemSchema, AnswerSchema] | None:
+        query: Query = select(AnswerItemSchema, AnswerSchema)
+        query = query.join(
+            AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
+        )
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == AnswerSchema.activity_history_id,
+        )
+        query = query.where(AnswerSchema.id == answer_id)
+        query = query.order_by(AnswerSchema.created_at.desc())
+        query = query.limit(1)
+
+        db_result = await self._execute(query)
+        return db_result.first()

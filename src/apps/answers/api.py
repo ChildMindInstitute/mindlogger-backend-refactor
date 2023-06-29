@@ -1,6 +1,8 @@
+import base64
 import uuid
 
 from fastapi import Body, Depends
+from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
 from apps.answers.domain import (
@@ -141,7 +143,7 @@ async def summary_latest_report_retrieve(
     respondent_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-) -> Response:
+) -> FastApiResponse:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
@@ -150,7 +152,14 @@ async def summary_latest_report_retrieve(
         report = await AnswerService(
             session, user.id
         ).get_summary_latest_report(applet_id, activity_id, respondent_id)
-    return Response()
+    if report:
+        return FastApiResponse(
+            base64.b64decode(report.pdf.encode()),
+            headers={
+                "Content-Disposition": f'attachment; filename="{report.email.attachment}.pdf"'  # noqa
+            },
+        )
+    return FastApiResponse()
 
 
 async def applet_submit_date_list(
