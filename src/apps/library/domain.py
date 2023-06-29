@@ -18,6 +18,11 @@ class AppletLibraryCreate(InternalModel):
     name: str
 
 
+class AppletLibraryUpdate(InternalModel):
+    keywords: list[str] | None = None
+    name: str
+
+
 class LibraryNameCheck(InternalModel):
     name: str
 

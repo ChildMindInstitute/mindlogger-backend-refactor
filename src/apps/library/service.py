@@ -9,6 +9,7 @@ from apps.library.crud import LibraryCRUD
 from apps.library.db import LibrarySchema
 from apps.library.domain import (
     AppletLibraryCreate,
+    AppletLibraryUpdate,
     AppletLibraryFull,
     LibraryItem,
     LibraryItemActivity,
@@ -22,6 +23,7 @@ from apps.library.errors import (
 )
 from apps.shared.query_params import QueryParams
 from config import settings
+from apps.workspaces.service.check_access import CheckAccessService
 
 
 class LibraryService:
@@ -180,3 +182,15 @@ class LibraryService:
 
         domain = settings.service.urls.frontend.admin_base
         return f"https://{domain}/library/{library_item.id}"
+
+    async def update_shared_applet(
+        self,
+        library_id: uuid.UUID,
+        schema: AppletLibraryUpdate,
+        user_id: uuid.UUID,
+    ):
+        library = await LibraryCRUD(self.session).get_by_id(id_=library_id)
+
+        await CheckAccessService(
+            self.session, user_id
+        ).check_applet_share_library_access(library_id)

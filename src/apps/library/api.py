@@ -6,6 +6,7 @@ from fastapi import Body, Depends
 from apps.authentication.deps import get_current_user
 from apps.library.domain import (
     AppletLibraryCreate,
+    AppletLibraryUpdate,
     AppletLibraryFull,
     LibraryNameCheck,
     LibraryQueryParams,
@@ -84,3 +85,13 @@ async def library_get_url(
         url = await LibraryService(session).get_applet_url(applet_id)
 
     return Response(result=url)
+
+
+async def library_update(
+    library_id: uuid.UUID,
+    schema: AppletLibraryUpdate = Body(...),
+    session=Depends(get_session),
+    user=Depends(get_current_user),
+):
+    async with atomic(session):
+        await LibraryService(session).update_shared_applet(library_id, schema)
