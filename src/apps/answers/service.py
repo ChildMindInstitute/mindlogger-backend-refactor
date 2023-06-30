@@ -53,6 +53,7 @@ from apps.answers.errors import (
     AnswerNoteAccessDeniedError,
     FlowDoesNotHaveActivity,
     NonPublicAppletError,
+    ReportServerError,
     UserDoesNotHavePermissionError,
 )
 from apps.applets.crud import AppletsCRUD
@@ -712,7 +713,7 @@ class ReportServerService:
                     response_data = await resp.json()
                     return ReportServerResponse(**response_data)
                 else:
-                    raise Exception(str(resp.json()))
+                    raise ReportServerError(message=str(resp.json()))
 
 
 class ReportServerEncryption:

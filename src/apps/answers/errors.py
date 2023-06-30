@@ -49,3 +49,7 @@ class ActivityDoesNotHaveItem(ValidationError):
 
 class ActivityIsNotAssessment(ValidationError):
     message = _("Activity is not assessment.")
+
+
+class ReportServerError(ValidationError):
+    message = _("Report server error {message}.")
