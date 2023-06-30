@@ -687,7 +687,7 @@ class ReportServerService:
         ).get_full()
         applet_full.encryption = applet.encryption
 
-        encryption = ReportServerEncryption(applet_full.report_public_key)
+        encryption = ReportServerEncryption(applet.report_public_key)
         data = dict(
             responses=answer_item.answer,
             userPublicKey=answer_item.user_public_key,
@@ -702,7 +702,7 @@ class ReportServerService:
         )
         encrypted_data = encryption.encrypt(data)
         url = (
-            f"{applet_full.report_server_ip}"
+            f"{applet.report_server_ip}"
             f"/send-pdf-report?appletId={applet_id}"
         )
         async with aiohttp.ClientSession() as session:
