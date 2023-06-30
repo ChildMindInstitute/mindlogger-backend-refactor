@@ -251,76 +251,103 @@ class FlankerConfig(PublicModel):
     block_type: BlockType
 
 
-class ABTrailsTabletFirstConfig(PublicModel):
+class ABTrailsOrder(str, Enum):
+    FIRST = "first"
+    SECOND = "second"
+    THIRD = "third"
+    FOURTH = "fourth"
+
+
+class ABTrailsDeviceType(str, Enum):
+    TABLET = "tablet"
+    MOBILE = "mobile"
+
+
+# TODO: For ABTrails - Make one type of activity instead of eight
+#  this type must include all fields for Tablet and Mobile as in the example:
+#   radius: float;
+#   font_size: float;
+#   font_size_begin_end: float | None;
+#   begin_word_length: float | None;
+#   end_word_length: float | None;
+class ABTrailsConfig(PublicModel):
     tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_FIRST
     tablet_nodes: TabletNodes = TABLET_NODES_FIRST
-    name: str = "trail1"
-    question: str = "Test"
-    description: str = "trail1"
-    device_type: str
+    device_type: ABTrailsDeviceType
+    order_name: ABTrailsOrder
+
+    @validator("tablet_tutorials")
+    def validate_type_and_phase(cls, value, values):
+        if (
+            values.get("device_type") == ABTrailsDeviceType.TABLET
+            and values.get("order_name") == ABTrailsOrder.FIRST
+        ):
+            value = TABLET_TUTORIALS_FIRST
+
+        return value
 
 
-class ABTrailsTabletSecondConfig(PublicModel):
-    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_SECOND
-    tablet_nodes: TabletNodes = TABLET_NODES_SECOND
-    name: str = "trail2"
-    question: str = "Test"
-    description: str = "trail2"
-    device_type: str
-
-
-class ABTrailsTabletThirdConfig(PublicModel):
-    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_THIRD
-    tablet_nodes: TabletNodes = TABLET_NODES_THIRD
-    name: str = "trail3"
-    question: str = "Test"
-    description: str = "trail3"
-    device_type: str
-
-
-class ABTrailsTabletFourthConfig(PublicModel):
-    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_FOURTH
-    tablet_nodes: TabletNodes = TABLET_NODES_FOURTH
-    name: str = "trail4"
-    question: str = "Test"
-    description: str = "trail4"
-    device_type: str
-
-
-class ABTrailsMobileFirstConfig(PublicModel):
-    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_FIRST
-    mobile_nodes: MobileNodes = MOBILE_NODES_FIRST
-    name: str = "trail1"
-    question: str = "Test"
-    description: str = "trail1"
-    device_type: str
-
-
-class ABTrailsMobileSecondConfig(PublicModel):
-    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_SECOND
-    mobile_nodes: MobileNodes = MOBILE_NODES_SECOND
-    name: str = "trail2"
-    question: str = "Test"
-    description: str = "trail2"
-    device_type: str
-
-
-class ABTrailsMobileThirdConfig(PublicModel):
-    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_THIRD
-    mobile_nodes: MobileNodes = MOBILE_NODES_THIRD
-    name: str = "trail3"
-    question: str = "Test"
-    description: str = "trail3"
-    device_type: str
-
-
-class ABTrailsMobileFourthConfig(PublicModel):
-    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_FOURTH
-    mobile_nodes: MobileNodes = MOBILE_NODES_FOURTH
-    name: str = "trail4"
-    question: str = "Test"
-    description: str = "trail4"
-    device_type: str
+# class ABTrailsTabletSecondConfig(PublicModel):
+#     tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_SECOND
+#     tablet_nodes: TabletNodes = TABLET_NODES_SECOND
+#     name: str = "trail2"
+#     question: str = "Test"
+#     description: str = "trail2"
+#     device_type: str
+#
+#
+# class ABTrailsTabletThirdConfig(PublicModel):
+#     tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_THIRD
+#     tablet_nodes: TabletNodes = TABLET_NODES_THIRD
+#     name: str = "trail3"
+#     question: str = "Test"
+#     description: str = "trail3"
+#     device_type: str
+#
+#
+# class ABTrailsTabletFourthConfig(PublicModel):
+#     tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_FOURTH
+#     tablet_nodes: TabletNodes = TABLET_NODES_FOURTH
+#     name: str = "trail4"
+#     question: str = "Test"
+#     description: str = "trail4"
+#     device_type: str
+#
+#
+# class ABTrailsMobileFirstConfig(PublicModel):
+#     mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_FIRST
+#     mobile_nodes: MobileNodes = MOBILE_NODES_FIRST
+#     name: str = "trail1"
+#     question: str = "Test"
+#     description: str = "trail1"
+#     device_type: str
+#
+#
+# class ABTrailsMobileSecondConfig(PublicModel):
+#     mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_SECOND
+#     mobile_nodes: MobileNodes = MOBILE_NODES_SECOND
+#     name: str = "trail2"
+#     question: str = "Test"
+#     description: str = "trail2"
+#     device_type: str
+#
+#
+# class ABTrailsMobileThirdConfig(PublicModel):
+#     mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_THIRD
+#     mobile_nodes: MobileNodes = MOBILE_NODES_THIRD
+#     name: str = "trail3"
+#     question: str = "Test"
+#     description: str = "trail3"
+#     device_type: str
+#
+#
+# class ABTrailsMobileFourthConfig(PublicModel):
+#     mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_FOURTH
+#     mobile_nodes: MobileNodes = MOBILE_NODES_FOURTH
+#     name: str = "trail4"
+#     question: str = "Test"
+#     description: str = "trail4"
+#     device_type: str
 
 
 class NoneResponseType(str, Enum):
@@ -334,14 +361,14 @@ class NoneResponseType(str, Enum):
     TIME = "time"
     FLANKER = "flanker"
     STABILITYTRACKER = "stabilityTracker"
-    ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
-    ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
-    ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
-    ABTRAILSTABLETFOURTH = "ABTrailsTabletFourth"
-    ABTRAILSMOBILEFIRST = "ABTrailsMobileFirst"
-    ABTRAILSMOBILESECOND = "ABTrailsMobileSecond"
-    ABTRAILSMOBILETHIRD = "ABTrailsMobileThird"
-    ABTRAILSMOBILEFOURTH = "ABTrailsMobileFourth"
+    ABTRAILS = "ABTrails"
+    # ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
+    # ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
+    # ABTRAILSTABLETFOURTH = "ABTrailsTabletFourth"
+    # ABTRAILSMOBILEFIRST = "ABTrailsMobileFirst"
+    # ABTRAILSMOBILESECOND = "ABTrailsMobileSecond"
+    # ABTRAILSMOBILETHIRD = "ABTrailsMobileThird"
+    # ABTRAILSMOBILEFOURTH = "ABTrailsMobileFourth"
 
 
 class ResponseType(str, Enum):
@@ -365,21 +392,21 @@ class ResponseType(str, Enum):
     TIME = "time"
     FLANKER = "flanker"
     STABILITYTRACKER = "stabilityTracker"
-    ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
-    ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
-    ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
-    ABTRAILSTABLETFOURTH = "ABTrailsTabletFourth"
-    ABTRAILSMOBILEFIRST = "ABTrailsMobileFirst"
-    ABTRAILSMOBILESECOND = "ABTrailsMobileSecond"
-    ABTRAILSMOBILETHIRD = "ABTrailsMobileThird"
-    ABTRAILSMOBILEFOURTH = "ABTrailsMobileFourth"
+    ABTRAILS = "ABTrails"
+    # ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
+    # ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
+    # ABTRAILSTABLETFOURTH = "ABTrailsTabletFourth"
+    # ABTRAILSMOBILEFIRST = "ABTrailsMobileFirst"
+    # ABTRAILSMOBILESECOND = "ABTrailsMobileSecond"
+    # ABTRAILSMOBILETHIRD = "ABTrailsMobileThird"
+    # ABTRAILSMOBILEFOURTH = "ABTrailsMobileFourth"
 
 
 class PerformanceTaskType(str, Enum):
     FLANKER = "flanker"
     STABILITYTRACKER = "stabilityTracker"
-    ABTRAILSTABLET = "ABTrailsTablet"
-    ABTRAILSMOBILE = "ABTrailsMobile"
+    ABTRAILS = "ABTrails"
+    # ABTRAILSMOBILE = "ABTrailsMobile"
 
 
 ResponseTypeConfigOptions = [
@@ -403,14 +430,14 @@ ResponseTypeConfigOptions = [
     TimeConfig,
     FlankerConfig,
     StabilityTrackerConfig,
-    ABTrailsTabletFirstConfig,
-    ABTrailsTabletSecondConfig,
-    ABTrailsTabletThirdConfig,
-    ABTrailsTabletFourthConfig,
-    ABTrailsMobileFirstConfig,
-    ABTrailsMobileSecondConfig,
-    ABTrailsMobileThirdConfig,
-    ABTrailsMobileFourthConfig,
+    ABTrailsConfig,
+    # ABTrailsTabletSecondConfig,
+    # ABTrailsTabletThirdConfig,
+    # ABTrailsTabletFourthConfig,
+    # ABTrailsMobileFirstConfig,
+    # ABTrailsMobileSecondConfig,
+    # ABTrailsMobileThirdConfig,
+    # ABTrailsMobileFourthConfig,
 ]
 
 ResponseTypeConfig = (

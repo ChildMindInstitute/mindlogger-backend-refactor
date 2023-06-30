@@ -7,9 +7,9 @@ from apps.activities.domain.ab_trails_base import (
 
 
 class TabletNodes(BaseNodes):
-    font_size_begin_end: int
+    font_size_begin_end: float
     begin_word_length: float
-    end_word_length: int
+    end_word_length: float
 
 
 class ABTrailsTabletTutorial(ABTrailsTutorial):
