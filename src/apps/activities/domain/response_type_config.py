@@ -1,6 +1,12 @@
 from enum import Enum
 
-from pydantic import Field, NonNegativeInt, PositiveInt, validator
+from pydantic import (
+    Field,
+    NonNegativeInt,
+    PositiveInt,
+    root_validator,
+    validator,
+)
 
 from apps.activities.domain.constants_ab_trails_mobile import (
     MOBILE_NODES_FIRST,
@@ -271,18 +277,29 @@ class ABTrailsDeviceType(str, Enum):
 #   begin_word_length: float | None;
 #   end_word_length: float | None;
 class ABTrailsConfig(PublicModel):
-    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_FIRST
-    tablet_nodes: TabletNodes = TABLET_NODES_FIRST
     device_type: ABTrailsDeviceType
     order_name: ABTrailsOrder
+    tablet_tutorials: ABTrailsTabletTutorial | None = None
+    tablet_nodes: TabletNodes = TABLET_NODES_FIRST
 
-    @validator("tablet_tutorials")
-    def validate_type_and_phase(cls, value, values):
+    # HACK: Remember that values get into this validator only because
+    #       of class attributes ordering. Using root_validator over it
+    #       might be preferable since it is more transparent.
+    #       This approach is used in order to follow the consistancy.
+    @validator("tablet_tutorials", pre=True)
+    def validate_type_and_phase(
+        cls, value, values
+    ) -> ABTrailsTabletTutorial | None:
         if (
             values.get("device_type") == ABTrailsDeviceType.TABLET
             and values.get("order_name") == ABTrailsOrder.FIRST
         ):
-            value = TABLET_TUTORIALS_FIRST
+            return TABLET_TUTORIALS_FIRST
+        if (
+            values.get("device_type") == ABTrailsDeviceType.TABLET
+            and values.get("order_name") == ABTrailsOrder.SECOND
+        ):
+            return TABLET_TUTORIALS_SECOND
 
         return value
 
