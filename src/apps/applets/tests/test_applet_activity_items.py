@@ -2049,12 +2049,12 @@ class TestActivityItems(BaseTest):
 
         assert response.status_code == 200
         assert (
-            type(
-                response.json()["result"]["items"][3]["responseValues"][
+            
+            response.json()["result"]["items"][3]["responseValues"][
                     "options"
                 ][0]["value"]
-            )
-            == int
+            
+            == 0
         )
 
         create_data["activities"][0]["items"][0] = dict(

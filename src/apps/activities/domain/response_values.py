@@ -372,10 +372,10 @@ def validate_options_value(options):
             option.value = (
                 max(
                     [
-                        option.value if option.value is not None else 0
+                        option.value if option.value is not None else -1
                         for option in options
                     ],
-                    default=0,
+                    default=-1,
                 )
                 + 1
             )
