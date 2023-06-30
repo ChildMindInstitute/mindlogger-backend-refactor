@@ -707,7 +707,7 @@ class ReportServerService:
         )
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                url, data=dict(payload=encrypted_data)
+                url, json=dict(payload=encrypted_data)
             ) as resp:
                 response_data = await resp.json()
                 if resp.status == 200:
