@@ -2049,11 +2049,9 @@ class TestActivityItems(BaseTest):
 
         assert response.status_code == 200
         assert (
-            
-            response.json()["result"]["items"][3]["responseValues"][
-                    "options"
-                ][0]["value"]
-            
+            response.json()["result"]["items"][3]["responseValues"]["options"][
+                0
+            ]["value"]
             == 0
         )
 
