@@ -80,12 +80,12 @@ def validate_score_and_sections(values: dict):
     # conditional logic for scores and reports
     if hasattr(values, "scores_and_reports"):
         scores_and_reports: dict = values.scores_and_reports
-        score_item_names = []
-        score_condition_item_names = []
+        score_item_ids = []
+        score_condition_item_ids = []
         # validate items in scores
         if hasattr(scores_and_reports, "scores"):
             for score in scores_and_reports.scores:
-                score_item_names.append(score.name)
+                score_item_ids.append(score.id)
                 # check if all item names are same as values.name
                 for item in score.items_score:
                     if item not in item_names:
@@ -115,9 +115,7 @@ def validate_score_and_sections(values: dict):
 
                 if score.get("conditional_logic"):
                     for conditional_logic in score.conditional_logic:
-                        score_condition_item_names.append(
-                            conditional_logic.name
-                        )
+                        score_condition_item_ids.append(conditional_logic.id)
                         for item in conditional_logic.items_print:
                             if item not in item_names:
                                 raise IncorrectScorePrintItemError()
@@ -164,8 +162,8 @@ def validate_score_and_sections(values: dict):
                     for item in section.conditional_logic.conditions:
                         if (
                             item.item_name not in item_names
-                            or item.item_name not in score_item_names
-                            or item.item_name not in score_condition_item_names
+                            or item.item_name not in score_item_ids
+                            or item.item_name not in score_condition_item_ids
                         ):
                             raise IncorrectSectionConditionItemError()
 

@@ -1485,9 +1485,7 @@ class TestActivityItems(BaseTest):
                                 minScore=0,
                                 maxScore=3,
                                 itemsScore=["activity_item_singleselect"],
-                                showMessage=True,
                                 message="Hello",
-                                printItems=True,
                                 itemsPrint=[
                                     "activity_item_singleselect",
                                     "activity_item_multiselect",
@@ -1499,20 +1497,18 @@ class TestActivityItems(BaseTest):
                                         name="score1_condition1",
                                         id="score1_condition1_id",
                                         flagScore=True,
-                                        showMessage=True,
                                         message="Hello2",
-                                        printItems=False,
                                         match="any",
                                         conditions=[
                                             dict(
-                                                item_name="score1",
+                                                item_name="score1_activity1",
                                                 type="GREATER_THAN",
                                                 payload=dict(
                                                     value=1,
                                                 ),
                                             ),
                                             dict(
-                                                item_name="score1",
+                                                item_name="score1_activity1",
                                                 type="GREATER_THAN",
                                                 payload=dict(
                                                     value=2,
@@ -1526,9 +1522,7 @@ class TestActivityItems(BaseTest):
                         sections=[
                             dict(
                                 name="section1",
-                                showMessages=True,
                                 messages="Hello from the other side",
-                                printItems=True,
                                 itemsPrint=[
                                     "activity_item_singleselect",
                                     "activity_item_multiselect",
@@ -1536,11 +1530,6 @@ class TestActivityItems(BaseTest):
                                     "activity_item_text",
                                 ],
                                 conditionalLogic=dict(
-                                    name="section1_condition1",
-                                    id="section1_condition1_id",
-                                    message="Hello2",
-                                    showMessage=True,
-                                    printItems=False,
                                     match="all",
                                     conditions=[
                                         dict(

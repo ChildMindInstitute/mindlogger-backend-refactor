@@ -234,30 +234,8 @@ class DuplicateScoreConditionIdError(FieldError):
     message = _("Score condition ids are duplicated.")
 
 
-class DuplicateSectionConditionNameError(FieldError):
-    message = _("Section condition names are duplicated.")
-
-
-class DuplicateSectionConditionIdError(FieldError):
-    message = _("Section condition ids are duplicated.")
-
-
-class MessageRequiredForConditionalLogicError(FieldError):
-    message = _("Message must be set if show_message is True.")
-
-
-class ItemsRequiredForConditionalLogicError(FieldError):
-    message = _("Items must be set if print_items is True.")
-
-
 class ScoreConditionItemNameError(FieldError):
-    message = _(
-        "The item_name field in conditions must be same as score name."
-    )
-
-
-class SectionMessageOrItemError(FieldError):
-    message = _("Either show_message or print_items must be true.")
+    message = _("The item_name field in conditions must be same as score id.")
 
 
 class PeriodIsRequiredError(ValidationError):
