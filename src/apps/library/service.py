@@ -9,8 +9,9 @@ from apps.library.crud import LibraryCRUD
 from apps.library.db import LibrarySchema
 from apps.library.domain import (
     AppletLibraryCreate,
-    AppletLibraryUpdate,
     AppletLibraryFull,
+    AppletLibraryInfo,
+    AppletLibraryUpdate,
     LibraryItem,
     LibraryItemActivity,
     LibraryItemActivityItem,
@@ -20,10 +21,11 @@ from apps.library.errors import (
     AppletNameExistsError,
     AppletVersionDoesNotExistError,
     AppletVersionExistsError,
+    LibraryItemDoesNotExistError,
 )
 from apps.shared.query_params import QueryParams
-from config import settings
 from apps.workspaces.service.check_access import CheckAccessService
+from config import settings
 
 
 class LibraryService:
@@ -66,7 +68,21 @@ class LibraryService:
                 display_name=schema.name,
             )
 
-        search_keywords = [schema.name]
+        search_keywords = await self._get_search_keywords(
+            applet, applet_version
+        )
+        search_keywords.append(schema.name)
+        # save library_item
+        library_item = LibrarySchema(
+            applet_id_version=f"{schema.applet_id}_{applet.version}",
+            keywords=schema.keywords,
+            search_keywords=search_keywords,
+        )
+        library_item = await LibraryCRUD(self.session).save(library_item)
+        return AppletLibraryFull.from_orm(library_item)
+
+    async def _get_search_keywords(self, applet, applet_version):
+        search_keywords = []
         search_keywords.extend(applet.description.values())
 
         activities = await ActivityHistoriesCRUD(
@@ -86,15 +102,7 @@ class LibraryService:
             if activity_item.response_type in ["singleSelect", "multiSelect"]:
                 options = activity_item.response_values.get("options")
                 search_keywords.extend([option["text"] for option in options])
-
-        # save library_item
-        library_item = LibrarySchema(
-            applet_id_version=f"{schema.applet_id}_{applet.version}",
-            keywords=schema.keywords,
-            search_keywords=search_keywords,
-        )
-        library_item = await LibraryCRUD(self.session).save(library_item)
-        return AppletLibraryFull.from_orm(library_item)
+        return search_keywords
 
     async def get_all_applets(
         self, query: QueryParams
@@ -170,7 +178,7 @@ class LibraryService:
                 ]
         return None
 
-    async def get_applet_url(self, applet_id: uuid.UUID) -> str:
+    async def get_applet_url(self, applet_id: uuid.UUID) -> AppletLibraryInfo:
         """Get applet url for library by id."""
         applet = await AppletsCRUD(self.session).get_by_id(id_=applet_id)
         applet_version = f"{applet_id}_{applet.version}"
@@ -181,7 +189,10 @@ class LibraryService:
             raise AppletVersionDoesNotExistError()
 
         domain = settings.service.urls.frontend.admin_base
-        return f"https://{domain}/library/{library_item.id}"
+        return AppletLibraryInfo(
+            url=f"https://{domain}/library/{library_item.id}",
+            library_id=library_item.id,
+        )
 
     async def update_shared_applet(
         self,
@@ -189,8 +200,43 @@ class LibraryService:
         schema: AppletLibraryUpdate,
         user_id: uuid.UUID,
     ):
-        library = await LibraryCRUD(self.session).get_by_id(id_=library_id)
+        library = await LibraryCRUD(self.session).get_by_id(id=library_id)
+        if not library:
+            raise LibraryItemDoesNotExistError()
+
+        # check if user has access to
+        applet_id = uuid.UUID(str(library.applet_id_version).split("_")[0])
 
         await CheckAccessService(
             self.session, user_id
-        ).check_applet_share_library_access(library_id)
+        ).check_applet_share_library_access(applet_id=applet_id)
+
+        applet = await AppletsCRUD(self.session).get_by_id(id_=applet_id)
+        new_applet_version = f"{applet_id}_{applet.version}"
+
+        # if applet name is new, check if applet with this name is already in library  # noqa E501
+        if applet.display_name != schema.name:
+            await self.check_applet_name(schema.name)
+            await AppletsCRUD(self.session).update_display_name(
+                applet_id=applet_id, display_name=schema.name
+            )
+
+            await AppletHistoriesCRUD(self.session).update_display_name(
+                id_version=new_applet_version,
+                display_name=schema.name,
+            )
+        search_keywords = await self._get_search_keywords(
+            applet, new_applet_version
+        )
+        search_keywords.append(schema.name)
+
+        # save library_item
+        library_item = LibrarySchema(
+            applet_id_version=new_applet_version,
+            keywords=schema.keywords,
+            search_keywords=search_keywords,
+        )
+        library_item = await LibraryCRUD(self.session).update(
+            library_item, library_id
+        )
+        return AppletLibraryFull.from_orm(library_item)

@@ -15,11 +15,11 @@ class LibrarySchema(Base):
     search_keywords = Column(ARRAY(String))
 
 
-class Cart(Base):
-    __tablename__ = "cart"
+# class Cart(Base):
+#     __tablename__ = "cart"
 
-    user_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"),
-        nullable=True,
-        unique=True,
-    )
+#     user_id = Column(
+#         ForeignKey("users.id", ondelete="RESTRICT"),
+#         nullable=True,
+#         unique=True,
+#     )

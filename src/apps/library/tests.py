@@ -127,4 +127,32 @@ class TestLibrary(BaseTest):
         )
         assert response.status_code == 200, response.json()
         result = response.json()["result"]
-        assert type(result) == str
+        assert type(result["url"]) == str
+
+    @rollback
+    async def test_library_update(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        data = dict(
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            keywords=["test", "test2"],
+            name="PHQ2",
+        )
+        response = await self.client.post(self.library_url, data=data)
+        assert response.status_code == 201, response.json()
+
+        result = response.json()["result"]
+
+        data = dict(
+            keywords=["test", "test2", "test3"],
+            name="PHQ23",
+        )
+
+        response = await self.client.put(
+            self.library_detail_url.format(library_id=result["id"]), data=data
+        )
+        assert response.status_code == 200, response.json()
+        result = response.json()["result"]
+        assert result["keywords"] == ["test", "test2", "test3"]

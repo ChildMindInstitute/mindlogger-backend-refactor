@@ -16,7 +16,11 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
     async def save(self, schema: LibrarySchema):
         return await self._create(schema)
 
-    async def get_by_id(self, id: str) -> LibrarySchema | None:
+    async def update(self, schema: LibrarySchema, library_id: uuid.UUID):
+        schema = await self._update_one("id", library_id, schema)
+        return schema
+
+    async def get_by_id(self, id: uuid.UUID) -> LibrarySchema | None:
         schema = await self._get("id", id)
         return schema
 

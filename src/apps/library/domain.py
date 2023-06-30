@@ -12,6 +12,11 @@ class AppletLibraryFull(AppletLibrary):
     id: uuid.UUID
 
 
+class AppletLibraryInfo(PublicModel):
+    library_id: uuid.UUID
+    url: str
+
+
 class AppletLibraryCreate(InternalModel):
     applet_id: uuid.UUID
     keywords: list[str] | None = None
