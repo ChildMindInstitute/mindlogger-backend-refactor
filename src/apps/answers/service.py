@@ -709,11 +709,11 @@ class ReportServerService:
             async with session.post(
                 url, data=dict(payload=encrypted_data)
             ) as resp:
+                response_data = await resp.json()
                 if resp.status == 200:
-                    response_data = await resp.json()
                     return ReportServerResponse(**response_data)
                 else:
-                    raise ReportServerError(message=str(resp.json()))
+                    raise ReportServerError(message=str(response_data))
 
 
 class ReportServerEncryption:
