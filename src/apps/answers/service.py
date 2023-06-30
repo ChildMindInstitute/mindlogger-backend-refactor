@@ -704,7 +704,8 @@ class ReportServerService:
         url = f"{applet.report_server_ip}/send-pdf-report?appletId={applet_id}"
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                url, json=dict(payload=encrypted_data)
+                url,
+                json=dict(payload=encrypted_data),
             ) as resp:
                 response_data = await resp.json()
                 if resp.status == 200:
@@ -734,7 +735,7 @@ class ReportServerEncryption:
                 str_data[beg:end].encode(),
                 self._get_padding(),
             )
-            chunks.append(base64.b64encode(encrypted_chunk))
+            chunks.append(base64.b64encode(encrypted_chunk).decode())
 
         return chunks
 
