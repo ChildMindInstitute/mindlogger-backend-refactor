@@ -200,9 +200,9 @@ class StimulusConfigId(str):
 class StimulusConfiguration(PublicModel):
     id: StimulusConfigId
     image: str | None
-    text: str  # name
-    value: int | None
-    weight: int | None
+    text: str | None = None  # name
+    value: int | None = None
+    weight: int | None = None
 
 
 class BlockConfiguration(PublicModel):
@@ -221,13 +221,13 @@ class BlockType(str, Enum):
 
 
 class ButtonConfiguration(PublicModel):
-    text: str  # name
-    image: str | None
-    value: int
+    text: str | None = None  # name
+    image: str | None = None
+    value: int | None = None
 
 
 class FixationScreen(PublicModel):
-    value: str
+    value: str | None = None
     image: str
 
 
@@ -235,10 +235,10 @@ class FlankerConfig(PublicModel):
     stimulus_trials: list[StimulusConfiguration]
     blocks: list[BlockConfiguration]
     buttons: list[ButtonConfiguration]
-    next_button: str
-    fixation_duration: int
-    fixation_screen: FixationScreen
-    minimum_accuracy: int
+    next_button: str | None = None
+    fixation_duration: int | None = None
+    fixation_screen: FixationScreen | None = None
+    minimum_accuracy: int | None = None
     sample_size: int = 1
     sampling_method: SamplingMethod
     show_feedback: bool
