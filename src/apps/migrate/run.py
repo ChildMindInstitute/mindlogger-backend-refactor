@@ -1,5 +1,3 @@
-from pprint import pprint as print
-
 from apps.migrate.mongo_service import Mongo
 from apps.migrate.postgres_service import Postgres
 
@@ -26,10 +24,10 @@ def main():
     # Migrate with users_workspace
     # postgres.save_users_workspace(users_mapping)
 
-    mongo.get_applets()
+    # applets = mongo.get_applets()
 
     # TODO: Migrate with applets
-    # applets: list[dict] = mongo.get_applets()
+    applets: list[dict] = mongo.get_applets()
     # postgres.save_applets(new_users_mapping, applets)
 
     # TODO: Migrate with activities
@@ -43,6 +41,8 @@ def main():
     # created_items = postgres.save_activity_items(
     #     items, new_activities_mapping
     # )
+
+    breakpoint()
 
     # Close connections
     mongo.close_connection()
