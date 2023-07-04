@@ -432,15 +432,19 @@ class ReproFieldRadio(ReproFieldBase):
 
             values.append(
                 # TODO tokens
-                _SingleSelectionValue(  # TODO where is value???
+                _SingleSelectionValue(
                     text=choice.get("name"),
+                    value=choice.get("value"),
                     image=choice.get("image"),
+
                     score=choice.get("score")
                     if bool(self.ld_scoring)
                     else None,
+
                     tooltip=choice.get("tooltip"),
                     is_hidden=True if choice.get("is_vis") is False else False,
                     color=color,
+                    alert=choice.get("alert"),
                 )
             )
         _cls: Type[MultiSelectionValues | SingleSelectionValues] = (
@@ -592,6 +596,7 @@ class ReproFieldRadioStacked(ReproFieldBase):
                     option_id=options[j].id,
                     score=_score,
                     alert=_alert,
+                    value=None,  # TODO
                 )
                 # fmt: on
                 _options.append(_option)
@@ -742,6 +747,7 @@ class ReproFieldSlider(ReproFieldSliderBase):
             min_image=first_choice.get("image") or self.slider_option.ld_min_value_img,  # noqa: E501
             max_image=last_choice.get("image") or self.slider_option.ld_max_value_img,  # noqa: E501
             scores=scores,
+            alerts=None,  # TODO list[SliderValueAlert] | None,
         )
         # fmt: on
 
@@ -838,7 +844,6 @@ class ReproFieldVideo(ReproFieldBase):
 
 
 class ReproFieldAudio(ReproFieldBase):
-    INPUT_TYPE = "audioRecord"
     RESPONSE_TYPE = ResponseType.AUDIO
     CFG_TYPE = AudioConfig
 
@@ -846,21 +851,33 @@ class ReproFieldAudio(ReproFieldBase):
 
     @classmethod
     def _get_supported_input_types(cls) -> list[str]:
-        return [cls.INPUT_TYPE]
+        return ["audioRecord", "audioImageRecord"]
 
     async def _process_ld_response_options(
         self, options_doc: dict, drop=False
     ):
         await super()._process_ld_response_options(options_doc, drop=drop)
         self.ld_max_duration = self.attr_processor.get_translation(
-            options_doc, "schema:maxValue", lang=self.lang
+            options_doc, "schema:maxValue", lang=self.lang, drop=drop
         )
+        self.ld_option_image = self._get_ld_image(options_doc, drop=drop)
 
     def _build_response_values(self) -> AudioValues | None:
         max_duration = 300
         if self.ld_max_duration is not None:
             max_duration = int(int(self.ld_max_duration) / 1000)  # seconds
         return AudioValues(max_duration=max_duration)
+
+    def export(self) -> ActivityItemCreate:
+        if self.ld_option_image and self.ld_question:
+            question = {}
+            for lang, val in copy(list(self.ld_question.items())):
+                question[lang] = "\r\n\r\n".join(
+                    [val, self._wrap_wysiwyg_img(self.ld_option_image)]
+                )
+            self.ld_question = question
+
+        return super().export()
 
 
 class ReproFieldDrawing(ReproFieldBase):

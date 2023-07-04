@@ -143,8 +143,8 @@ class ConditionalLogicParser:
             ">=": ConditionType.GREATER_THAN,  # TODO include bounds
             "<": ConditionType.LESS_THAN,
             "<=": ConditionType.LESS_THAN,  # TODO include bounds
-            "includes": ConditionType.INCLUDES_OPTION,  # TODO value!!!
-            "!includes": ConditionType.NOT_INCLUDES_OPTION,  # TODO value!!!
+            "includes": ConditionType.INCLUDES_OPTION,
+            "!includes": ConditionType.NOT_INCLUDES_OPTION,
         }
 
         return value_map[val]
@@ -258,7 +258,7 @@ class ConditionOptionResolver:
         data = dict(
             item_name=name,
             type=_type,
-            payload=dict(option_id=condition.values[0]),
+            payload=dict(option_value=condition.values[0]),
         )
         return parse_obj_as(AnyCondition, data)  # type: ignore[arg-type]
 

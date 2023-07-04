@@ -1,5 +1,8 @@
 from dataclasses import dataclass, field
 
+from apps.applets.domain.applet_create_update import AppletCreate
+from apps.applets.domain.base import Encryption
+
 
 @dataclass
 class ActivityItemExportData:
@@ -30,3 +33,7 @@ class ProtocolExportData:
 ModelExportData = (
     ProtocolExportData | ActivityExportData | ActivityItemExportData
 )
+
+
+class NotEncryptedApplet(AppletCreate):
+    encryption: Encryption | None = None

@@ -15,6 +15,7 @@ from apps.jsonld_converter.service.document.base import (
     LdDocumentBase,
     LdKeyword,
 )
+from apps.jsonld_converter.service.domain import NotEncryptedApplet
 
 
 class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
@@ -164,7 +165,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                 flow.activity_keys = activity_keys
                 activity_flows.append(flow.export())
 
-        return AppletCreate(
+        return NotEncryptedApplet(
             display_name=self.ld_pref_label or self.ld_alt_label,
             description=self.ld_description or {},
             about=self.ld_about or {},
