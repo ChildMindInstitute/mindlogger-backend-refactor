@@ -153,6 +153,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         )
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(ActivityHistorySchema.id == activity_id)
+        query = query.order_by(AnswerSchema.created_at.asc())
         if filters.filters:
             query = query.where(
                 *_ActivityAnswerFilter().get_clauses(**filters.filters)
