@@ -3,7 +3,7 @@ import enum
 import re
 from typing import Callable, Optional
 
-from pyld import ContextResolver, jsonld  # type: ignore[import]
+from pyld import ContextResolver, jsonld
 
 from apps.jsonld_converter.errors import (
     JsonLDLoaderError,

@@ -36,4 +36,4 @@ ModelExportData = (
 
 
 class NotEncryptedApplet(AppletCreate):
-    encryption: Encryption | None = None
+    encryption: Encryption | None = None  # type: ignore[assignment]

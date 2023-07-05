@@ -5,7 +5,7 @@ import zipfile
 from io import BytesIO
 from typing import Callable, Type
 
-from pyld import ContextResolver  # type: ignore[import]
+from pyld import ContextResolver
 
 from apps.jsonld_converter.service.document import (
     ReproActivity,

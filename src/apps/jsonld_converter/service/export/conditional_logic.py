@@ -75,10 +75,10 @@ class ExpressionSimple(BaseExpression):
         if isinstance(payload, OptionPayload):
             try:
                 val: int | str = int(
-                    payload.option_id
+                    payload.option_value
                 )  # TODO actualize on PR merge
             except ValueError:
-                val = f'"{payload.option_id}"'  # TODO actualize on PR merge
+                val = f'"{payload.option_value}"'  # TODO actualize on PR merge
         elif isinstance(payload, ValuePayload):
             val = payload.value
         else:
@@ -103,10 +103,10 @@ class ExpressionIncludes(BaseExpression):
         assert isinstance(payload, OptionPayload)
         try:
             val: int | str = int(
-                payload.option_id
+                payload.option_value
             )  # TODO actualize on PR merge
         except ValueError:
-            val = f'"{payload.option_id}"'  # TODO actualize on PR merge
+            val = f'"{payload.option_value}"'  # TODO actualize on PR merge
 
         res = f"{name}.includes({val})"  # TODO process str
         if type_ == ConditionType.NOT_INCLUDES_OPTION:

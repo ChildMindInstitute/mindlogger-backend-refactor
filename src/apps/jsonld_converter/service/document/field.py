@@ -7,10 +7,7 @@ from typing import Type
 from pydantic.color import Color
 
 from apps.activities.domain.activity_create import ActivityItemCreate
-from apps.activities.domain.conditions import (
-    AnyCondition,
-    ConditionType,
-)
+from apps.activities.domain.conditions import AnyCondition, ConditionType
 from apps.activities.domain.response_type_config import (  # ABTrailsIpadConfig,; ABTrailsMobileConfig,; GyroscopeConfig,; GyroscopeGeneralSettings,; GyroscopePracticeSettings,; GyroscopeTestSettings,
     AdditionalResponseOption,
     AudioConfig,
@@ -46,6 +43,7 @@ from apps.activities.domain.response_values import (
     SingleSelectionValues,
     SliderRowsValue,
     SliderRowsValues,
+    SliderValueAlert,
     SliderValues,
     _SingleSelectionDataOption,
     _SingleSelectionDataRow,
@@ -167,14 +165,13 @@ class ReproFieldBase(
         choices = []
 
         for key in keys:
-            obj_list = self.attr_processor.get_attr_list(doc, key, drop=drop)
-            if obj_list:
+            if obj_list := self.attr_processor.get_attr_list(
+                doc, key, drop=drop
+            ):
+                for obj in obj_list:
+                    choice = self._format_choice(obj)
+                    choices.append(choice)
                 break
-
-        if obj_list:
-            for obj in obj_list:
-                choice = self._format_choice(obj)
-                choices.append(choice)
 
         return choices
 
@@ -436,11 +433,9 @@ class ReproFieldRadio(ReproFieldBase):
                     text=choice.get("name"),
                     value=choice.get("value"),
                     image=choice.get("image"),
-
                     score=choice.get("score")
                     if bool(self.ld_scoring)
                     else None,
-
                     tooltip=choice.get("tooltip"),
                     is_hidden=True if choice.get("is_vis") is False else False,
                     color=color,
@@ -730,11 +725,39 @@ class ReproFieldSlider(ReproFieldSliderBase):
 
         first_choice: dict = {}
         last_choice: dict = {}
-        scores: list | None = None
+        scores: list | None = []
+        alerts: list[SliderValueAlert] | None = []
+
+        if (
+            self.ld_response_alert
+            and self.ld_continuous_slider
+            and self.ld_response_alert_message
+        ):
+            alerts = [
+                SliderValueAlert(
+                    alert=self.ld_response_alert_message,
+                    value=None,
+                    min_value=self.ld_response_alert_min_value,
+                    max_value=self.ld_response_alert_max_value,
+                )
+            ]
+
         if self.slider_option and self.slider_option.choices:
             first_choice = self.slider_option.choices[0]
             last_choice = self.slider_option.choices[-1]
-            scores = [x.get("score") for x in self.slider_option.choices]
+
+            for choice in self.slider_option.choices:
+                scores.append(choice.get("score"))  # type: ignore[union-attr]
+                if self.ld_response_alert and not self.ld_continuous_slider:
+                    alerts.append(  # type: ignore[union-attr]
+                        SliderValueAlert(
+                            alert=choice.get("alert"),
+                            value=choice.get("value"),
+                            min_value=None,
+                            max_value=None,
+                        )
+                    )
+
             if scores and scores[0] is None:
                 scores = None
 
@@ -747,7 +770,7 @@ class ReproFieldSlider(ReproFieldSliderBase):
             min_image=first_choice.get("image") or self.slider_option.ld_min_value_img,  # noqa: E501
             max_image=last_choice.get("image") or self.slider_option.ld_max_value_img,  # noqa: E501
             scores=scores,
-            alerts=None,  # TODO list[SliderValueAlert] | None,
+            alerts=alerts or None,
         )
         # fmt: on
 
@@ -798,12 +821,26 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
         for option in self.slider_options or []:
             first_choice: dict = {}
             last_choice: dict = {}
+            scores: list | None = []
+            alerts: list[SliderValueAlert] | None = []
+
             if option.choices:
                 first_choice = option.choices[0]
                 last_choice = option.choices[-1]
-            scores = [x.get("score") for x in option.choices or []]
+                for choice in option.choices:
+                    scores.append(choice.get("score"))  # type: ignore[union-attr]  # noqa: E501
+                    if self.ld_response_alert:
+                        alerts.append(  # type: ignore[union-attr]
+                            SliderValueAlert(
+                                alert=choice.get("alert"),
+                                value=choice.get("value"),
+                                min_value=None,
+                                max_value=None,
+                            )
+                        )
             if scores and scores[0] is None:
                 scores = []
+
             response_value = SliderRowsValue(
                 label=option.ld_label,
                 min_value=first_choice.get("value"),
@@ -813,6 +850,7 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
                 min_image=option.ld_min_value_img or first_choice.get("image"),
                 max_image=option.ld_max_value_img or last_choice.get("image"),
                 scores=scores,
+                alerts=alerts or None,
             )
             rows.append(response_value)
 

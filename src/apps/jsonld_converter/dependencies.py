@@ -2,8 +2,8 @@ from typing import Callable
 
 from cachetools import LRUCache  # type: ignore[import]
 from fastapi import Depends
-from pyld import ContextResolver  # type: ignore[import]
-from pyld.jsonld import requests_document_loader  # type: ignore[import]
+from pyld import ContextResolver
+from pyld.jsonld import requests_document_loader
 
 from apps.jsonld_converter.service import (
     JsonLDModelConverter,

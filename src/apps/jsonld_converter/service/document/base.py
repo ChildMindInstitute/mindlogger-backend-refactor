@@ -2,7 +2,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Tuple, Type
 
-from pyld import ContextResolver, jsonld  # type: ignore[import]
+from pyld import ContextResolver, jsonld
 
 from apps.jsonld_converter.errors import (
     JsonLDNotSupportedError,

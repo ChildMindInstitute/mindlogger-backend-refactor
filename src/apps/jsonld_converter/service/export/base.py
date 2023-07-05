@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Type
 
-from pyld import ContextResolver  # type: ignore[import]
+from pyld import ContextResolver
 
 from apps.jsonld_converter.service.base import (
     ContextResolverAwareMixin,
