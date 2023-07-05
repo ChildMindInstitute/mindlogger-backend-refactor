@@ -27,7 +27,7 @@ oauth2_oauth = OAuth2PasswordBearer(
 async def get_current_user_for_ws(
     websocket: WebSocket, session=Depends(get_session)
 ):
-    authorization = websocket.headers.get("authorization")
+    authorization = websocket.headers.get("sec-websocket-protocol")
     scheme, token = get_authorization_scheme_param(authorization)
     if not authorization or scheme.lower() != "bearer":
         raise HTTPException(
