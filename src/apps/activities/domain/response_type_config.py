@@ -377,7 +377,9 @@ class ResponseType(str, Enum):
 
 class PerformanceTaskType(str, Enum):
     FLANKER = "flanker"
-    STABILITYTRACKER = "stabilityTracker"
+    # STABILITYTRACKER = "stabilityTracker"
+    GYROSCOPE = "gyroscope"
+    TOUCH = "touch"
     ABTRAILSTABLET = "ABTrailsTablet"
     ABTRAILSMOBILE = "ABTrailsMobile"
 

@@ -219,6 +219,8 @@ def validate_is_performance_task(value: bool, values: dict):
         for performance_task_type in list(PerformanceTaskType):
             if performance_task_type in item.response_type:
                 return True
+            if item.response_type == ResponseType.STABILITYTRACKER:
+                return True
     return value
 
 
@@ -226,6 +228,12 @@ def validate_performance_task_type(value: str | None, values: dict):
     # if items type is performance task type or contains part of the name
     # of some performance task, then performance task type must be set
     items = values.get("items", [])
+    for item in items:
+        if item.response_type == ResponseType.STABILITYTRACKER:
+            for performance_task_type in list(PerformanceTaskType):
+                value = item.dict()["config"]["user_input_type"]
+                if value == performance_task_type:
+                    return value
     value = next(
         (
             performance_task_type
