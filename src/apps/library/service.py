@@ -262,10 +262,16 @@ class LibraryService:
         cart_schema = await CartCRUD(self.session).get_by_user_id(user_id)
         if not cart_schema:
             cart_schema = CartSchema(user_id=user_id, cart_items=None)
-        cart_schema.cart_items = json.dumps(schema.dict()["cart_items"])
+        if schema.cart_items:
+            cart_schema.cart_items = json.dumps(schema.dict()["cart_items"])
+        else:
+            cart_schema.cart_items = None
+
         cart = await CartCRUD(self.session).save(cart_schema)
 
-        return Cart(cart_items=json.loads(cart.cart_items))
+        return Cart(
+            cart_items=json.loads(cart.cart_items) if cart.cart_items else None
+        )
 
     async def _validate_cart_items(self, schema: Cart):
         # get library_ids and check if exist
