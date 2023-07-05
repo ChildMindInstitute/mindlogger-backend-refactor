@@ -254,8 +254,8 @@ class TestWorkspaces(BaseTest):
         assert response.json()["count"] == 3
         assert "New respondent" in response.json()["result"][1]["nicknames"]
         assert (
-                "f0dd4996-e0eb-461f-b2f8-ba873a674710"
-                in response.json()["result"][1]["secretIds"]
+            "f0dd4996-e0eb-461f-b2f8-ba873a674710"
+            in response.json()["result"][1]["secretIds"]
         )
 
     @rollback
