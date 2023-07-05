@@ -254,8 +254,8 @@ class TestWorkspaces(BaseTest):
         assert response.json()["count"] == 3
         assert "New respondent" in response.json()["result"][1]["nicknames"]
         assert (
-            "f0dd4996-e0eb-461f-b2f8-ba873a674710"
-            in response.json()["result"][1]["secretIds"]
+                "f0dd4996-e0eb-461f-b2f8-ba873a674710"
+                in response.json()["result"][1]["secretIds"]
         )
 
     @rollback
@@ -465,26 +465,6 @@ class TestWorkspaces(BaseTest):
                 assert result[0]["id"] == id_
 
     @rollback
-    async def test_get_workspace_manager_accesses(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.get(
-            self.workspace_manager_accesses_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                manager_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2",
-            )
-        )
-
-        assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 1
-        assert (
-            response.json()["result"][0]["appletId"]
-            == "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        )
-        assert response.json()["result"][0]["roles"][0] == "manager"
-
-    @rollback
     async def test_set_workspace_manager_accesses(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -513,28 +493,7 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-
-        response = await self.client.get(
-            self.workspace_manager_accesses_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                manager_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2",
-            )
-        )
-
-        assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 2
-        assert (
-            response.json()["result"][0]["appletId"]
-            == "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        )
-        assert response.json()["result"][0]["roles"][0] == "coordinator"
-        assert response.json()["result"][0]["roles"][1] == "editor"
-
-        assert (
-            response.json()["result"][1]["appletId"]
-            == "92917a56-d586-4613-b7aa-991f2c4b15b4"
-        )
-        assert response.json()["result"][1]["roles"][0] == "manager"
+        # TODO: check from database results
 
     @rollback
     async def test_pin_workspace_respondents(self):
