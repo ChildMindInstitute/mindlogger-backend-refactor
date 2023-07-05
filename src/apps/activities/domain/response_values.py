@@ -62,34 +62,6 @@ class ABTrailsValues(PublicModel):
     pass
 
 
-# class ABTrailsTabletSecondValues(PublicModel):
-#     pass
-#
-#
-# class ABTrailsTabletThirdValues(PublicModel):
-#     pass
-#
-#
-# class ABTrailsTabletFourthValues(PublicModel):
-#     pass
-#
-#
-# class ABTrailsMobileFirstValues(PublicModel):
-#     pass
-#
-#
-# class ABTrailsMobileSecondValues(PublicModel):
-#     pass
-#
-#
-# class ABTrailsMobileThirdValues(PublicModel):
-#     pass
-#
-#
-# class ABTrailsMobileFourthValues(PublicModel):
-#     pass
-
-
 class _SingleSelectionValue(PublicModel):
     id: str | None = None
     text: str
@@ -331,13 +303,6 @@ ResponseValueConfigOptions = [
     FlankerValues,
     StabilityTrackerValues,
     ABTrailsValues,
-    # ABTrailsTabletSecondValues,
-    # ABTrailsTabletThirdValues,
-    # ABTrailsTabletFourthValues,
-    # ABTrailsMobileFirstValues,
-    # ABTrailsMobileSecondValues,
-    # ABTrailsMobileThirdValues,
-    # ABTrailsMobileFourthValues,
 ]
 
 
