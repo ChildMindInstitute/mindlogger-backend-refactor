@@ -107,11 +107,6 @@ class InvalidScoreLengthError(FieldError):
     )
 
 
-class InvalidUUIDError(FieldError):
-    zero_path = None
-    message = _("Invalid uuid value.")
-
-
 class TimerRequiredError(FieldError):
     zero_path = None
     message = _("Timer is required for this timer type.")

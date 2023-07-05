@@ -15,7 +15,7 @@ class LibrarySchema(Base):
     search_keywords = Column(ARRAY(String))
 
 
-class Cart(Base):
+class CartSchema(Base):
     __tablename__ = "cart"
 
     user_id = Column(

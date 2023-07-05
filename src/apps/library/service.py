@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from apps.activities.crud import (
@@ -5,19 +6,22 @@ from apps.activities.crud import (
     ActivityItemHistoriesCRUD,
 )
 from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
-from apps.library.crud import LibraryCRUD
-from apps.library.db import LibrarySchema
+from apps.library.crud import CartCRUD, LibraryCRUD
+from apps.library.db import CartSchema, LibrarySchema
 from apps.library.domain import (
     AppletLibraryCreate,
     AppletLibraryFull,
     AppletLibraryInfo,
     AppletLibraryUpdate,
+    Cart,
     LibraryItem,
     LibraryItemActivity,
     LibraryItemActivityItem,
     PublicLibraryItem,
 )
 from apps.library.errors import (
+    ActivityInLibraryDoesNotExistError,
+    ActivityItemInLibraryDoesNotExistError,
     AppletNameExistsError,
     AppletVersionDoesNotExistError,
     AppletVersionExistsError,
@@ -142,7 +146,6 @@ class LibraryService:
         activities = await ActivityHistoriesCRUD(
             session=self.session
         ).retrieve_by_applet_version(library_item.applet_id_version)
-
         library_item_activities = []
         for activity in activities:
             activity_items = await ActivityItemHistoriesCRUD(
@@ -151,9 +154,11 @@ class LibraryService:
 
             library_item_activities.append(
                 LibraryItemActivity(
+                    id=activity.id,
                     name=activity.name,
                     items=[
                         LibraryItemActivityItem(
+                            id=item.id,
                             name=item.name,
                             question=item.question,
                             response_type=item.response_type,
@@ -240,3 +245,71 @@ class LibraryService:
             library_item, library_id
         )
         return AppletLibraryFull.from_orm(library_item)
+
+    async def get_cart(self, user_id: uuid.UUID) -> Cart:
+        """Get cart for user."""
+        cart = await CartCRUD(self.session).get_by_user_id(user_id)
+        if not cart:
+            return Cart(cart_items=None)
+        return Cart(cart_items=json.loads(cart.cart_items))
+
+    async def add_to_cart(self, user_id: uuid.UUID, schema: Cart) -> Cart:
+        """Add item to cart."""
+
+        # validate schema items
+        await self._validate_cart_items(schema)
+
+        cart_schema = await CartCRUD(self.session).get_by_user_id(user_id)
+        if not cart_schema:
+            cart_schema = CartSchema(user_id=user_id, cart_items=None)
+        cart_schema.cart_items = json.dumps(schema.dict()["cart_items"])
+        cart = await CartCRUD(self.session).save(cart_schema)
+
+        return Cart(cart_items=json.loads(cart.cart_items))
+
+    async def _validate_cart_items(self, schema: Cart):
+        # get library_ids and check if exist
+        existing_library_applets = await LibraryCRUD(self.session).get_all()
+        existing_library_ids = []
+        if existing_library_applets:
+            existing_library_ids = [
+                library.id for library in existing_library_applets
+            ]
+        if schema.cart_items:
+            if not existing_library_applets:
+                raise LibraryItemDoesNotExistError()
+            for item in schema.cart_items:
+                if uuid.UUID(item.library_id) not in existing_library_ids:
+                    raise LibraryItemDoesNotExistError()
+
+                library = await self.get_applet_by_id(
+                    uuid.UUID(item.library_id)
+                )
+
+                existing_activity_ids = []
+                if library.activities:
+                    existing_activity_ids = [
+                        activity.id for activity in library.activities
+                    ]
+                for activity in item.activities:
+                    if (
+                        uuid.UUID(activity.activity_id)
+                        not in existing_activity_ids
+                    ):
+                        raise ActivityInLibraryDoesNotExistError()
+                    index = existing_activity_ids.index(
+                        uuid.UUID(activity.activity_id)
+                    )
+                    existing_activity = library.activities[index]
+
+                    if activity.items:
+                        existing_activity_items = []
+                        if existing_activity.items:
+                            existing_activity_items = [
+                                str(activity_item.id)
+                                for activity_item in existing_activity.items
+                            ]
+                        if not set(activity.items).issubset(
+                            set(existing_activity_items)
+                        ):
+                            raise ActivityItemInLibraryDoesNotExistError()

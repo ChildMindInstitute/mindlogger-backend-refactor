@@ -1,6 +1,8 @@
 import uuid
 
-from apps.shared.domain import InternalModel, PublicModel
+from pydantic import validator
+
+from apps.shared.domain import InternalModel, PublicModel, validate_uuid
 
 
 class AppletLibrary(InternalModel):
@@ -33,6 +35,7 @@ class LibraryNameCheck(InternalModel):
 
 
 class LibraryItemActivityItem(InternalModel):
+    id: uuid.UUID
     question: dict[str, str] | None = None
     response_type: str
     response_values: list | dict | None = None
@@ -41,6 +44,7 @@ class LibraryItemActivityItem(InternalModel):
 
 
 class LibraryItemActivity(InternalModel):
+    id: uuid.UUID
     name: str
     items: list[LibraryItemActivityItem] | None = None
 
@@ -60,8 +64,30 @@ class PublicLibraryItem(PublicModel):
     display_name: str
     keywords: list[str] | None = None
     description: dict[str, str] | None = None
-    activities: list[LibraryItemActivity] | None = None
+    activities: list[LibraryItemActivity]
 
 
 class LibraryQueryParams(InternalModel):
     search: str | None = None
+
+
+class CartItemActivity(InternalModel):
+    activity_id: str
+    items: list[str] | None = None
+
+    @validator("activity_id")
+    def validate_id(cls, value):
+        return validate_uuid(value)
+
+
+class CartItem(PublicModel):
+    library_id: str
+    activities: list[CartItemActivity]
+
+    @validator("library_id")
+    def validate_id(cls, value):
+        return validate_uuid(value)
+
+
+class Cart(PublicModel):
+    cart_items: list[CartItem] | None = None

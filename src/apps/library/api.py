@@ -9,6 +9,7 @@ from apps.library.domain import (
     AppletLibraryFull,
     AppletLibraryInfo,
     AppletLibraryUpdate,
+    Cart,
     LibraryNameCheck,
     LibraryQueryParams,
     PublicLibraryItem,
@@ -99,3 +100,22 @@ async def library_update(
             session
         ).update_shared_applet(library_id, schema, user.id)
     return Response(result=library_item)
+
+
+async def cart_get(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[Cart]:
+    async with atomic(session):
+        cart = await LibraryService(session).get_cart(user.id)
+    return Response(result=cart)
+
+
+async def cart_add(
+    user: User = Depends(get_current_user),
+    schema: Cart = Body(...),
+    session=Depends(get_session),
+) -> Response[Cart]:
+    async with atomic(session):
+        cart = await LibraryService(session).add_to_cart(user.id, schema)
+    return Response(result=cart)

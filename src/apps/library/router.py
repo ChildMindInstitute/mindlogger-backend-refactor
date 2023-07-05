@@ -2,6 +2,8 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.library.api import (
+    cart_add,
+    cart_get,
     library_check_name,
     library_get_all,
     library_get_by_id,
@@ -12,6 +14,7 @@ from apps.library.api import (
 from apps.library.domain import (
     AppletLibraryFull,
     AppletLibraryInfo,
+    Cart,
     PublicLibraryItem,
 )
 from apps.shared.domain import Response, ResponseMulti
@@ -41,6 +44,28 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(library_check_name)
+
+router.get(
+    "/cart",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[Cart],
+    responses={
+        status.HTTP_200_OK: {"model": Response[Cart]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(cart_get)
+
+router.post(
+    "/cart",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[Cart],
+    responses={
+        status.HTTP_200_OK: {"model": Response[Cart]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(cart_add)
 
 
 router.get(
