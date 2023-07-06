@@ -51,12 +51,17 @@ from apps.answers.errors import (
     ActivityIsNotAssessment,
     AnswerAccessDeniedError,
     AnswerNoteAccessDeniedError,
+    DuplicateActivityInAnswerGroup,
     FlowDoesNotHaveActivity,
     NonPublicAppletError,
     ReportServerError,
     UserDoesNotHavePermissionError,
+    WrongAnswerGroupAppletId,
+    WrongAnswerGroupVersion,
+    WrongRespondentForAnswerGroup,
 )
 from apps.applets.crud import AppletsCRUD
+from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
 from apps.shared.query_params import QueryParams
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
@@ -112,9 +117,26 @@ class AnswerService:
         await self._validate_answer(activity_answer)
 
     async def _validate_answer(self, applet_answer: AppletAnswerCreate):
+        get_pk = self._generate_history_id(applet_answer.version)
+
+        existed_answers = await AnswersCRUD(self.session).get_by_submit_id(
+            applet_answer.submit_id
+        )
+
+        if existed_answers:
+            activity_ids = [ea.activity_history_id for ea in existed_answers]
+            existed_answer = existed_answers[0]
+            if existed_answer.applet_id != applet_answer.applet_id:
+                raise WrongAnswerGroupAppletId()
+            elif existed_answer.version != applet_answer.version:
+                raise WrongAnswerGroupVersion()
+            elif get_pk(applet_answer.activity_id) in activity_ids:
+                raise DuplicateActivityInAnswerGroup()
+            elif existed_answer.respondent_id != self.user_id:
+                raise WrongRespondentForAnswerGroup()
+
         activity_flow_map: dict[str, str] = dict()
         item_activity_map: dict[str, str] = dict()
-        get_pk = self._generate_history_id(applet_answer.version)
         if not applet_answer.answer:
             return
         activity_id = applet_answer.activity_id
@@ -651,9 +673,8 @@ class AnswerService:
         )
         if not answer:
             return None
-        answer_item, version = answer
         service = ReportServerService(self.session)
-        report = await service.create_report(applet_id, answer_item.answer_id)
+        report = await service.create_report(answer.submit_id)
 
         return report
 
@@ -671,37 +692,46 @@ class ReportServerService:
         self.session = session
 
     async def create_report(
-        self, applet_id: uuid.UUID, answer_id: uuid.UUID
+        self, submit_id: uuid.UUID
     ) -> ReportServerResponse | None:
-        schemas = await AnswersCRUD(self.session).get_by_answer_id(answer_id)
-        if not schemas:
+        answers = await AnswersCRUD(self.session).get_by_submit_id(submit_id)
+        if not answers:
             return None
-        answer_item, answer = schemas
-        access = await UserAppletAccessCRUD(self.session).get(
-            answer.respondent_id, applet_id, Role.RESPONDENT
+        answer_map = dict((answer.id, answer) for answer in answers)
+        initial_answer = answers[0]
+
+        applet = await AppletsCRUD(self.session).get_by_id(
+            initial_answer.applet_id
         )
-        assert access
-        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
-        applet_full = await AppletHistoryService(
-            self.session, applet_id, answer.version
-        ).get_full()
-        applet_full.encryption = applet.encryption
+        user_info = await self._get_user_info(
+            initial_answer.respondent_id, initial_answer.applet_id
+        )
+        applet_full = await self._prepare_applet_data(
+            initial_answer.applet_id, initial_answer.version, applet.encryption
+        )
 
         encryption = ReportServerEncryption(applet.report_public_key)
+        responses, user_public_keys = await self._prepare_responses(answer_map)
+
         data = dict(
-            responses=answer_item.answer,
-            userPublicKey=answer_item.user_public_key,
+            responses=responses,
+            userPublicKeys=user_public_keys,
+            userPublicKey=user_public_keys[0],
             now=datetime.date.today().strftime("%x"),
-            user=dict(
-                first_name=access.meta.get("firstName"),
-                last_name=access.meta.get("lastName"),
-                nickname=access.meta.get("nickname"),
-                secret_id=access.meta.get("secretUserId"),
-            ),
-            applet=applet_full.dict(),
+            user=user_info,
+            applet=applet_full,
         )
         encrypted_data = encryption.encrypt(data)
-        url = f"{applet.report_server_ip}/send-pdf-report?appletId={applet_id}"
+
+        activity_id, version = initial_answer.activity_history_id.split("_")
+        flow_id, version = "", ""
+        if initial_answer.flow_history_id:
+            flow_id, version = initial_answer.flow_history_id.split("_")
+
+        url = "{}/send-pdf-report?activityId={}&activityFlowId={}".format(
+            applet.report_server_ip, activity_id, flow_id
+        )
+
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 url,
@@ -712,6 +742,45 @@ class ReportServerService:
                     return ReportServerResponse(**response_data)
                 else:
                     raise ReportServerError(message=str(response_data))
+
+    async def _prepare_applet_data(
+        self, applet_id: uuid.UUID, version: str, encryption: dict
+    ):
+        applet_full = await AppletHistoryService(
+            self.session, applet_id, version
+        ).get_full()
+        applet_full.encryption = Encryption(**encryption)
+        return applet_full.dict(by_alias=True)
+
+    async def _get_user_info(
+        self, respondent_id: uuid.UUID, applet_id: uuid.UUID
+    ):
+        access = await UserAppletAccessCRUD(self.session).get(
+            respondent_id, applet_id, Role.RESPONDENT
+        )
+        assert access
+        return dict(
+            firstName=access.meta.get("firstName"),
+            lastName=access.meta.get("lastName"),
+            nickname=access.meta.get("nickname"),
+            secretId=access.meta.get("secretUserId"),
+        )
+
+    async def _prepare_responses(
+        self, answers_map: dict[uuid.UUID, AnswerSchema]
+    ) -> tuple[list[dict], list[str]]:
+        answer_items = await AnswerItemsCRUD(
+            self.session
+        ).get_respondent_submits_by_answer_ids(list(answers_map.keys()))
+
+        responses = list()
+        for answer_item in answer_items:
+            answer = answers_map[answer_item.answer_id]
+            activity_id, version = answer.activity_history_id.split("_")
+            responses.append(
+                dict(activityId=activity_id, answer=answer_item.answer)
+            )
+        return responses, [ai.user_public_key for ai in answer_items]
 
 
 class ReportServerEncryption:

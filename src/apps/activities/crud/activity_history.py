@@ -7,7 +7,6 @@ from apps.activities.db.schemas import (
     ActivityHistorySchema,
     ActivityItemHistorySchema,
 )
-from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.activities.errors import ActivityHistoryDoeNotExist
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
@@ -120,10 +119,10 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         activity_types_query = activity_types_query.where(
             ActivityItemHistorySchema.response_type.in_(
                 [
-                    PerformanceTaskType.FLANKER.value,
-                    PerformanceTaskType.GYROSCOPE.value,
-                    PerformanceTaskType.TOUCH.value,
-                    PerformanceTaskType.ABTRAILS.value,
+                    "flanker",
+                    "stabilityTracker",
+                    "ABTrailsTablet",
+                    "ABTrailsMobile",
                 ]
             )
         )

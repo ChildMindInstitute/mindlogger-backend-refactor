@@ -80,6 +80,16 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
+    async def get_respondent_submits_by_answer_ids(
+        self, answer_ids: list[uuid.UUID]
+    ) -> list[AnswerItemSchema]:
+        query: Query = select(AnswerItemSchema)
+        query = query.order_by(AnswerItemSchema.created_at.asc())
+        query = query.where(AnswerItemSchema.is_assessment == False)  # noqa
+        query = query.where(AnswerItemSchema.answer_id.in_(answer_ids))
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
     async def get_assessment(
         self, answer_id: uuid.UUID, user_id: uuid.UUID
     ) -> AnswerItemSchema | None:
