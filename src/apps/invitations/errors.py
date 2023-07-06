@@ -1,6 +1,10 @@
 from gettext import gettext as _
 
-from apps.shared.exception import NotFoundError, ValidationError
+from apps.shared.exception import (
+    AccessDeniedError,
+    NotFoundError,
+    ValidationError,
+)
 
 
 class InvitationDoesNotExist(NotFoundError):
@@ -11,7 +15,7 @@ class AppletDoesNotExist(ValidationError):
     message = _("Applet does not exist.")
 
 
-class DoesNotHaveAccess(ValidationError):
+class DoesNotHaveAccess(AccessDeniedError):
     message = _("Access denied.")
 
 
