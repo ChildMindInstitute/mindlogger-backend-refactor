@@ -732,3 +732,19 @@ class TestWorkspaces(BaseTest):
             self.remove_respondent_access, data=data
         )
         assert response.status_code == 403
+
+    @rollback
+    async def test_folder_applets(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.workspace_folder_applets_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                folder_id="ecf66358-a717-41a7-8027-807374307732",
+            )
+        )
+        assert response.status_code == 200
+        assert response.json()["result"][0]["displayName"] == "Applet 1"
+        assert response.json()["result"][1]["displayName"] == "Applet 2"
