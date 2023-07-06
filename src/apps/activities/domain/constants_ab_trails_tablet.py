@@ -1,22 +1,11 @@
 from apps.activities.domain.ab_trails_base import (
+    ABTrailsNodes,
     ABTrailsTutorial,
-    BaseNodes,
     Node,
     Tutorial,
 )
 
-
-class TabletNodes(BaseNodes):
-    font_size_begin_end: int
-    begin_word_length: float
-    end_word_length: int
-
-
-class ABTrailsTabletTutorial(ABTrailsTutorial):
-    tutorials: list[Tutorial]
-
-
-TABLET_NODES_FIRST: TabletNodes = TabletNodes(
+TABLET_NODES_FIRST: ABTrailsNodes = ABTrailsNodes(
     radius=4.18,
     font_size=5.6,
     font_size_begin_end=3,
@@ -34,7 +23,7 @@ TABLET_NODES_FIRST: TabletNodes = TabletNodes(
     ],
 )
 
-TABLET_NODES_SECOND: TabletNodes = TabletNodes(
+TABLET_NODES_SECOND: ABTrailsNodes = ABTrailsNodes(
     radius=3.2,
     font_size=3.6,
     font_size_begin_end=2.64,
@@ -69,7 +58,7 @@ TABLET_NODES_SECOND: TabletNodes = TabletNodes(
     ],
 )
 
-TABLET_NODES_THIRD: TabletNodes = TabletNodes(
+TABLET_NODES_THIRD: ABTrailsNodes = ABTrailsNodes(
     radius=4.88,
     font_size=5.6,
     font_size_begin_end=3,
@@ -87,7 +76,7 @@ TABLET_NODES_THIRD: TabletNodes = TabletNodes(
     ],
 )
 
-TABLET_NODES_FOURTH: TabletNodes = TabletNodes(
+TABLET_NODES_FOURTH: ABTrailsNodes = ABTrailsNodes(
     radius=3.2,
     font_size=3.6,
     font_size_begin_end=2.64,
@@ -118,11 +107,11 @@ TABLET_NODES_FOURTH: TabletNodes = TabletNodes(
         Node(order_index=22, cx=16.41, cy=94.33, label="K"),
         Node(order_index=23, cx=16.12, cy=61.19, label="12"),
         Node(order_index=24, cx=20.9, cy=82.99, label="L"),
-        Node(order_index=251, cx=18.21, cy=7.16, label="13"),
+        Node(order_index=25, cx=18.21, cy=7.16, label="13"),
     ],
 )
 
-TABLET_TUTORIALS_FIRST: ABTrailsTabletTutorial = ABTrailsTabletTutorial(
+TABLET_TUTORIALS_FIRST: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
         Tutorial(text="There are numbers in circles on this screen."),
         Tutorial(
@@ -142,7 +131,7 @@ TABLET_TUTORIALS_FIRST: ABTrailsTabletTutorial = ABTrailsTabletTutorial(
     ],
 )
 
-TABLET_TUTORIALS_SECOND: ABTrailsTabletTutorial = ABTrailsTabletTutorial(
+TABLET_TUTORIALS_SECOND: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
         Tutorial(text="On this screen are more numbers in circles."),
         Tutorial(
@@ -162,7 +151,7 @@ TABLET_TUTORIALS_SECOND: ABTrailsTabletTutorial = ABTrailsTabletTutorial(
     ],
 )
 
-TABLET_TUTORIALS_THIRD: ABTrailsTabletTutorial = ABTrailsTabletTutorial(
+TABLET_TUTORIALS_THIRD: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
         Tutorial(
             text="There are numbers and letters in circles on this screen."
@@ -189,7 +178,7 @@ TABLET_TUTORIALS_THIRD: ABTrailsTabletTutorial = ABTrailsTabletTutorial(
     ],
 )
 
-TABLET_TUTORIALS_FOURTH: ABTrailsTabletTutorial = ABTrailsTabletTutorial(
+TABLET_TUTORIALS_FOURTH: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
         Tutorial(
             text="On this screen there are more numbers and letters "
