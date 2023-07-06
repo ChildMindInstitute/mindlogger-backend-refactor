@@ -364,7 +364,12 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.where(FolderSchema.creator_id == user_id)
         query = query.where(access_query.c.user_id == user_id)
         query = query.order_by(
-            FolderAppletSchema.pinned_at.desc(), AppletSchema.created_at.desc()
+            case(
+                (FolderAppletSchema.pinned_at != None, true()),  # noqa
+                else_=false(),
+            ).desc(),
+            FolderAppletSchema.pinned_at.desc(),
+            AppletSchema.created_at.desc(),
         )
 
         db_result = await self._execute(query)
