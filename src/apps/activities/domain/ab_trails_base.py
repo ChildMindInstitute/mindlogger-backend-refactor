@@ -8,9 +8,12 @@ class Node(PublicModel):
     label: str
 
 
-class BaseNodes(PublicModel):
+class ABTrailsNodes(PublicModel):
     radius: float
     font_size: float
+    font_size_begin_end: float | None = None
+    begin_word_length: float | None = None
+    end_word_length: float | None = None
     nodes: list[Node]
 
 

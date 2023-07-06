@@ -1171,3 +1171,4 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["name"] == "PHQ2 new"
+        assert response.json()["result"][0]["isPerformanceTask"] is False

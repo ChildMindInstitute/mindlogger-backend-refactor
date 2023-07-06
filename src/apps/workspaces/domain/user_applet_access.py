@@ -17,7 +17,6 @@ __all__ = [
     "RemoveRespondentAccess",
     "RemoveManagerAccess",
     "ManagerAccesses",
-    "ManagerAppletAccess",
     "PublicRespondentAppletAccess",
 ]
 
@@ -102,13 +101,6 @@ class RespondentAppletAccess(InternalModel):
     encryption: Encryption | None
 
 
-class ManagerAppletAccess(InternalModel):
-    applet_id: uuid.UUID
-    applet_name: str
-    applet_image: str
-    roles: list[Role]
-
-
 class PublicRespondentAppletAccess(PublicModel):
     applet_id: uuid.UUID
     applet_name: str
@@ -117,13 +109,6 @@ class PublicRespondentAppletAccess(PublicModel):
     nickname: str
     has_individual_schedule: bool
     encryption: public_detail.Encryption | None
-
-
-class PublicManagerAppletAccess(PublicModel):
-    applet_id: uuid.UUID
-    applet_name: str
-    applet_image: str
-    roles: list[Role]
 
 
 class ManagerAccess(InternalModel):

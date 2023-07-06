@@ -11,8 +11,6 @@ from apps.activities.domain.constants_ab_trails_mobile import (
     MOBILE_TUTORIALS_FOURTH,
     MOBILE_TUTORIALS_SECOND,
     MOBILE_TUTORIALS_THIRD,
-    ABTrailsMobileTutorial,
-    MobileNodes,
 )
 from apps.activities.domain.constants_ab_trails_tablet import (
     TABLET_NODES_FIRST,
@@ -23,8 +21,8 @@ from apps.activities.domain.constants_ab_trails_tablet import (
     TABLET_TUTORIALS_FOURTH,
     TABLET_TUTORIALS_SECOND,
     TABLET_TUTORIALS_THIRD,
-    ABTrailsTabletTutorial,
-    TabletNodes,
+    ABTrailsNodes,
+    ABTrailsTutorial,
 )
 from apps.activities.domain.response_values import ResponseValueConfigOptions
 from apps.activities.errors import CorrectAnswerRequiredError
@@ -251,76 +249,75 @@ class FlankerConfig(PublicModel):
     block_type: BlockType
 
 
-class ABTrailsTabletFirstConfig(PublicModel):
-    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_FIRST
-    tablet_nodes: TabletNodes = TABLET_NODES_FIRST
-    name: str = "trail1"
-    question: str = "Test"
-    description: str = "trail1"
-    device_type: str
+class ABTrailsOrder(str, Enum):
+    FIRST = "first"
+    SECOND = "second"
+    THIRD = "third"
+    FOURTH = "fourth"
 
 
-class ABTrailsTabletSecondConfig(PublicModel):
-    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_SECOND
-    tablet_nodes: TabletNodes = TABLET_NODES_SECOND
-    name: str = "trail2"
-    question: str = "Test"
-    description: str = "trail2"
-    device_type: str
+class ABTrailsDeviceType(str, Enum):
+    TABLET = "tablet"
+    MOBILE = "mobile"
 
 
-class ABTrailsTabletThirdConfig(PublicModel):
-    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_THIRD
-    tablet_nodes: TabletNodes = TABLET_NODES_THIRD
-    name: str = "trail3"
-    question: str = "Test"
-    description: str = "trail3"
-    device_type: str
+class ABTrailsConfig(PublicModel):
+    device_type: ABTrailsDeviceType
+    order_name: ABTrailsOrder
+    tutorials: ABTrailsTutorial | None = None
+    nodes: ABTrailsNodes | None = None
 
+    # HACK: Remember that values get into this validator only because
+    #       of class attributes ordering. Using root_validator over it
+    #       might be preferable since it is more transparent.
+    #       This approach is used in order to follow the consistency.
+    @validator("tutorials", pre=True)
+    def validate_tutorials(cls, value, values) -> ABTrailsTutorial | None:
+        if values.get("device_type") == ABTrailsDeviceType.TABLET:
+            if values.get("order_name") == ABTrailsOrder.FIRST:
+                return TABLET_TUTORIALS_FIRST
+            if values.get("order_name") == ABTrailsOrder.SECOND:
+                return TABLET_TUTORIALS_SECOND
+            if values.get("order_name") == ABTrailsOrder.THIRD:
+                return TABLET_TUTORIALS_THIRD
+            if values.get("order_name") == ABTrailsOrder.FOURTH:
+                return TABLET_TUTORIALS_FOURTH
 
-class ABTrailsTabletFourthConfig(PublicModel):
-    tablet_tutorials: ABTrailsTabletTutorial = TABLET_TUTORIALS_FOURTH
-    tablet_nodes: TabletNodes = TABLET_NODES_FOURTH
-    name: str = "trail4"
-    question: str = "Test"
-    description: str = "trail4"
-    device_type: str
+        if values.get("device_type") == ABTrailsDeviceType.MOBILE:
+            if values.get("order_name") == ABTrailsOrder.FIRST:
+                return MOBILE_TUTORIALS_FIRST
+            if values.get("order_name") == ABTrailsOrder.SECOND:
+                return MOBILE_TUTORIALS_SECOND
+            if values.get("order_name") == ABTrailsOrder.THIRD:
+                return MOBILE_TUTORIALS_THIRD
+            if values.get("order_name") == ABTrailsOrder.FOURTH:
+                return MOBILE_TUTORIALS_FOURTH
 
+        return value
 
-class ABTrailsMobileFirstConfig(PublicModel):
-    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_FIRST
-    mobile_nodes: MobileNodes = MOBILE_NODES_FIRST
-    name: str = "trail1"
-    question: str = "Test"
-    description: str = "trail1"
-    device_type: str
+    @validator("nodes", pre=True)
+    def validate_nodes(cls, value, values) -> ABTrailsNodes | None:
+        if values.get("device_type") == ABTrailsDeviceType.TABLET:
+            if values.get("order_name") == ABTrailsOrder.FIRST:
+                return TABLET_NODES_FIRST
+            if values.get("order_name") == ABTrailsOrder.SECOND:
+                return TABLET_NODES_SECOND
+            if values.get("order_name") == ABTrailsOrder.THIRD:
+                return TABLET_NODES_THIRD
+            if values.get("order_name") == ABTrailsOrder.FOURTH:
+                return TABLET_NODES_FOURTH
 
+        if values.get("device_type") == ABTrailsDeviceType.MOBILE:
+            if values.get("order_name") == ABTrailsOrder.FIRST:
+                return MOBILE_NODES_FIRST
+            if values.get("order_name") == ABTrailsOrder.SECOND:
+                return MOBILE_NODES_SECOND
+            if values.get("order_name") == ABTrailsOrder.THIRD:
+                return MOBILE_NODES_THIRD
+            if values.get("order_name") == ABTrailsOrder.FOURTH:
+                return MOBILE_NODES_FOURTH
 
-class ABTrailsMobileSecondConfig(PublicModel):
-    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_SECOND
-    mobile_nodes: MobileNodes = MOBILE_NODES_SECOND
-    name: str = "trail2"
-    question: str = "Test"
-    description: str = "trail2"
-    device_type: str
-
-
-class ABTrailsMobileThirdConfig(PublicModel):
-    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_THIRD
-    mobile_nodes: MobileNodes = MOBILE_NODES_THIRD
-    name: str = "trail3"
-    question: str = "Test"
-    description: str = "trail3"
-    device_type: str
-
-
-class ABTrailsMobileFourthConfig(PublicModel):
-    mobile_tutorials: ABTrailsMobileTutorial = MOBILE_TUTORIALS_FOURTH
-    mobile_nodes: MobileNodes = MOBILE_NODES_FOURTH
-    name: str = "trail4"
-    question: str = "Test"
-    description: str = "trail4"
-    device_type: str
+        return value
 
 
 class NoneResponseType(str, Enum):
@@ -334,14 +331,7 @@ class NoneResponseType(str, Enum):
     TIME = "time"
     FLANKER = "flanker"
     STABILITYTRACKER = "stabilityTracker"
-    ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
-    ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
-    ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
-    ABTRAILSTABLETFOURTH = "ABTrailsTabletFourth"
-    ABTRAILSMOBILEFIRST = "ABTrailsMobileFirst"
-    ABTRAILSMOBILESECOND = "ABTrailsMobileSecond"
-    ABTRAILSMOBILETHIRD = "ABTrailsMobileThird"
-    ABTRAILSMOBILEFOURTH = "ABTrailsMobileFourth"
+    ABTRAILS = "ABTrails"
 
 
 class ResponseType(str, Enum):
@@ -365,23 +355,14 @@ class ResponseType(str, Enum):
     TIME = "time"
     FLANKER = "flanker"
     STABILITYTRACKER = "stabilityTracker"
-    ABTRAILSTABLETFIRST = "ABTrailsTabletFirst"
-    ABTRAILSTABLETSECOND = "ABTrailsTabletSecond"
-    ABTRAILSTABLETTHIRD = "ABTrailsTabletThird"
-    ABTRAILSTABLETFOURTH = "ABTrailsTabletFourth"
-    ABTRAILSMOBILEFIRST = "ABTrailsMobileFirst"
-    ABTRAILSMOBILESECOND = "ABTrailsMobileSecond"
-    ABTRAILSMOBILETHIRD = "ABTrailsMobileThird"
-    ABTRAILSMOBILEFOURTH = "ABTrailsMobileFourth"
+    ABTRAILS = "ABTrails"
 
 
 class PerformanceTaskType(str, Enum):
     FLANKER = "flanker"
-    # STABILITYTRACKER = "stabilityTracker"
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"
-    ABTRAILSTABLET = "ABTrailsTablet"
-    ABTRAILSMOBILE = "ABTrailsMobile"
+    ABTRAILS = "ABTrails"
 
 
 ResponseTypeConfigOptions = [
@@ -405,14 +386,7 @@ ResponseTypeConfigOptions = [
     TimeConfig,
     FlankerConfig,
     StabilityTrackerConfig,
-    ABTrailsTabletFirstConfig,
-    ABTrailsTabletSecondConfig,
-    ABTrailsTabletThirdConfig,
-    ABTrailsTabletFourthConfig,
-    ABTrailsMobileFirstConfig,
-    ABTrailsMobileSecondConfig,
-    ABTrailsMobileThirdConfig,
-    ABTrailsMobileFourthConfig,
+    ABTrailsConfig,
 ]
 
 ResponseTypeConfig = (
@@ -436,10 +410,7 @@ ResponseTypeConfig = (
     | TimeConfig
     | FlankerConfig
     | StabilityTrackerConfig
-    # NOTE: Since, all Performance tasks has similar fields we should keep
-    #       the flaxible data structure in oreder to provide correct
-    #       Applet.from_orm usage()
-    | dict
+    | ABTrailsConfig
 )
 
 ResponseTypeValueConfig = {}

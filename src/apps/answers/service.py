@@ -662,7 +662,7 @@ class AnswerService:
     ) -> list[SummaryActivity]:
         activities = await ActivityHistoriesCRUD(
             self.session
-        ).get_by_applet_id(applet_id)
+        ).get_by_applet_id_for_summary(applet_id)
         return parse_obj_as(list[SummaryActivity], activities)
 
 

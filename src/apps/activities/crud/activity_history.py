@@ -1,9 +1,13 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Query
 
-from apps.activities.db.schemas import ActivityHistorySchema
+from apps.activities.db.schemas import (
+    ActivityHistorySchema,
+    ActivityItemHistorySchema,
+)
+from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.activities.errors import ActivityHistoryDoeNotExist
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
@@ -107,10 +111,31 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         db_result = await self._execute(query)
         return db_result.scalars().first()
 
-    async def get_by_applet_id(
+    async def get_by_applet_id_for_summary(
         self, applet_id: uuid.UUID
-    ) -> ActivityHistorySchema:
-        query: Query = select(ActivityHistorySchema)
+    ) -> list[ActivityHistorySchema]:
+        activity_types_query: Query = select(
+            func.string_agg(ActivityItemHistorySchema.response_type, ",")
+        )
+        activity_types_query = activity_types_query.where(
+            ActivityItemHistorySchema.response_type.in_(
+                [
+                    PerformanceTaskType.FLANKER.value,
+                    PerformanceTaskType.GYROSCOPE.value,
+                    PerformanceTaskType.TOUCH.value,
+                    PerformanceTaskType.ABTRAILS.value,
+                ]
+            )
+        )
+        activity_types_query = activity_types_query.where(
+            ActivityItemHistorySchema.activity_id
+            == ActivityHistorySchema.id_version
+        )
+        activity_types_query = activity_types_query.limit(1)
+
+        query: Query = select(
+            ActivityHistorySchema, activity_types_query.label("item_types")
+        )
         query = query.join(
             AppletHistorySchema,
             AppletHistorySchema.id_version == ActivityHistorySchema.applet_id,
@@ -126,8 +151,13 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query = query.distinct(ActivityHistorySchema.id)
 
         db_result = await self._execute(query)
+        schemas = []
+        for activity_history_schema, response_types in db_result.all():
+            is_performance_task = response_types is not None
+            activity_history_schema.is_performance_task = is_performance_task
+            schemas.append(activity_history_schema)
 
-        return db_result.scalars().all()
+        return schemas
 
     async def get_by_applet_id_version(
         self, applet_id_version: str

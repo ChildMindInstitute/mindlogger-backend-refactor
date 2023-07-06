@@ -115,7 +115,7 @@ async def ws_alert_get_all_by_applet_id(
     user: User = Depends(get_current_user_for_ws),
     session=Depends(get_session),
 ):
-    await websocket.accept()
+    await websocket.accept(websocket.headers.get("sec-websocket-protocol"))
 
     # SEND THE HISTORICAL DATA
     async with atomic(session):

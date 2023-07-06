@@ -1,20 +1,11 @@
 from apps.activities.domain.ab_trails_base import (
+    ABTrailsNodes,
     ABTrailsTutorial,
-    BaseNodes,
     Node,
     Tutorial,
 )
 
-
-class MobileNodes(BaseNodes):
-    pass
-
-
-class ABTrailsMobileTutorial(ABTrailsTutorial):
-    tutorials: list[Tutorial]
-
-
-MOBILE_NODES_FIRST: MobileNodes = MobileNodes(
+MOBILE_NODES_FIRST: ABTrailsNodes = ABTrailsNodes(
     radius=4.18,
     font_size=5.6,
     nodes=[
@@ -32,7 +23,7 @@ MOBILE_NODES_FIRST: MobileNodes = MobileNodes(
     ],
 )
 
-MOBILE_NODES_SECOND: MobileNodes = MobileNodes(
+MOBILE_NODES_SECOND: ABTrailsNodes = ABTrailsNodes(
     radius=4.18,
     font_size=5.97,
     nodes=[
@@ -50,7 +41,7 @@ MOBILE_NODES_SECOND: MobileNodes = MobileNodes(
     ],
 )
 
-MOBILE_NODES_THIRD: MobileNodes = MobileNodes(
+MOBILE_NODES_THIRD: ABTrailsNodes = ABTrailsNodes(
     radius=4.18,
     font_size=5.97,
     nodes=[
@@ -68,7 +59,7 @@ MOBILE_NODES_THIRD: MobileNodes = MobileNodes(
     ],
 )
 
-MOBILE_NODES_FOURTH: MobileNodes = MobileNodes(
+MOBILE_NODES_FOURTH: ABTrailsNodes = ABTrailsNodes(
     radius=4.18,
     font_size=5.97,
     nodes=[
@@ -86,7 +77,7 @@ MOBILE_NODES_FOURTH: MobileNodes = MobileNodes(
     ],
 )
 
-MOBILE_TUTORIALS_FIRST: ABTrailsMobileTutorial = ABTrailsMobileTutorial(
+MOBILE_TUTORIALS_FIRST: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
         Tutorial(text="There are numbers in circles on this screen."),
         Tutorial(
@@ -106,7 +97,7 @@ MOBILE_TUTORIALS_FIRST: ABTrailsMobileTutorial = ABTrailsMobileTutorial(
     ],
 )
 
-MOBILE_TUTORIALS_SECOND: ABTrailsMobileTutorial = ABTrailsMobileTutorial(
+MOBILE_TUTORIALS_SECOND: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
         Tutorial(text="On this screen are more numbers in circles."),
         Tutorial(
@@ -126,7 +117,7 @@ MOBILE_TUTORIALS_SECOND: ABTrailsMobileTutorial = ABTrailsMobileTutorial(
     ],
 )
 
-MOBILE_TUTORIALS_THIRD: ABTrailsMobileTutorial = ABTrailsMobileTutorial(
+MOBILE_TUTORIALS_THIRD: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
         Tutorial(
             text="There are numbers and letters in circles on this screen."
@@ -153,7 +144,7 @@ MOBILE_TUTORIALS_THIRD: ABTrailsMobileTutorial = ABTrailsMobileTutorial(
     ],
 )
 
-MOBILE_TUTORIALS_FOURTH: ABTrailsMobileTutorial = ABTrailsMobileTutorial(
+MOBILE_TUTORIALS_FOURTH: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
         Tutorial(
             text="On this screen there are more numbers and letters "
