@@ -46,6 +46,7 @@ from apps.jsonld_converter.service.document.field import (
     ReproFieldRadioStacked,
     ReproFieldSlider,
     ReproFieldSliderStacked,
+    ReproFieldStabilityTracker,
     ReproFieldText,
     ReproFieldTime,
     ReproFieldTimeRange,
@@ -450,11 +451,11 @@ class ABTrailsMobileActivity(ReproActivity):
         return [ReproFieldABTrailMobile]
 
 
-# class GyroActivity(ReproActivity):
-#     @classmethod
-#     def supports_activity_type(cls, doc: dict) -> bool:
-#         return cls.get_activity_type(doc) == "CST_GYRO"
-#
-#     @classmethod
-#     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
-#         return [ReproFieldABTrailMobile]
+class StabilityTaskActivity(ReproActivity):
+    @classmethod
+    def supports_activity_type(cls, doc: dict) -> bool:
+        return cls.get_activity_type(doc) in ["CST_GYRO", "CST_TOUCH"]
+
+    @classmethod
+    def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
+        return [ReproFieldMessage, ReproFieldStabilityTracker]

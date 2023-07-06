@@ -18,10 +18,12 @@ from apps.activities.domain.response_type_config import (
     DateConfig,
     DrawingConfig,
     GeolocationConfig,
+    InputType,
     MessageConfig,
     MultiSelectionConfig,
     MultiSelectionRowsConfig,
     NumberSelectionConfig,
+    Phase,
     PhotoConfig,
     ResponseType,
     ResponseTypeConfig,
@@ -29,6 +31,7 @@ from apps.activities.domain.response_type_config import (
     SingleSelectionRowsConfig,
     SliderConfig,
     SliderRowsConfig,
+    StabilityTrackerConfig,
     TextConfig,
     TimeConfig,
     TimeRangeConfig,
@@ -1215,38 +1218,71 @@ class ReproFieldABTrailMobile(ReproFieldABTrailIpad):
     DEVICE_TYPE = ABTrailsDeviceType.MOBILE
 
 
-# class ReproFieldStabilityTracker(ReproFieldBase):
-#     INPUT_TYPE = "stabilityTracker"
-#     RESPONSE_TYPE = ResponseType.GYROSCOPE
-#     CFG_TYPE = GyroscopeConfig
-#
-#     ld_description: str | None = None
-#
-#     @classmethod
-#     def _get_supported_input_types(cls) -> list[str]:
-#         return [cls.INPUT_TYPE]
-#
-#     async def _load_from_processed_doc(
-#         self, processed_doc: dict, base_url: str | None = None
-#     ):
-#         await super()._load_from_processed_doc(processed_doc, base_url)
-#         self.ld_description = self.attr_processor.get_translation(
-#             processed_doc, "schema:description", self.lang
-#         )
-#
-#     def _build_config(self, _cls: Type | None, **attrs):
-#         config = GyroscopeConfig(
-#             name=self.ld_pref_label or self.ld_alt_label,  # TODO
-#             description=self.ld_description,
-#             is_hidden=self.ld_is_vis is False,  # TODO
-#             general=GyroscopeGeneralSettings(
-#                 instruction="",
-#                 number_of_trials=2,
-#                 length_of_test=3,
-#                 lambda_slope=4,
-#             ),
-#             practice=GyroscopePracticeSettings(instruction=""),
-#             test=GyroscopeTestSettings(instruction=""),
-#         )
-#
-#         return config
+class ReproFieldStabilityTracker(ReproFieldBase):
+    INPUT_TYPE = "stabilityTracker"
+    RESPONSE_TYPE = ResponseType.STABILITYTRACKER
+
+    input_options: dict | None = None
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+    async def _load_from_processed_doc(
+        self, processed_doc: dict, base_url: str | None = None
+    ):
+        await super()._load_from_processed_doc(processed_doc, base_url)
+        input_options = (
+            self.attr_processor.get_attr_list(
+                processed_doc, "reproschema:inputs"
+            )
+            or []
+        )
+        self.input_options = {}
+        if input_options:
+            for obj in input_options:
+                name = self.attr_processor.get_translation(
+                    obj, "schema:name", self.lang
+                )
+                val = self._get_choice_value(obj)
+                self.input_options[name] = val
+
+    def _build_config(self, _cls: Type | None, **attrs):
+        assert self.input_options is not None
+        attr_map = {
+            "maxOffTargetTime": "max_off_target_time",
+            "numTestTrials": "num_test_trials",
+            "taskMode": "task_mode",
+            "trackingDims": "tracking_dims",
+            "showScore": "show_score",
+            "lambdaSlope": "lambda_slope",
+            "basisFunc": "basis_func",
+            "noiseLevel": "noise_level",
+            "taskLoopRate": "task_loop_rate",
+            "cyclesPerMin": "cycles_per_min",
+            "durationMins": "duration_minutes",
+            "trialNumber": "trials_number",
+            "oobDuration": "oob_duration",
+            "initialLambda": "initial_lambda",
+            "showPreview": "show_preview",
+            "numPreviewStim": "num_preview_stim",
+            "previewStepGap": "preview_step_gap",
+            "dimensionCount": "dimension_count",
+            "maxRad": "max_rad",
+        }
+        params = {
+            param: self.input_options.get(name)
+            for name, param in attr_map.items()
+            if self.input_options.get(name) is not None
+        }
+        phase_type = self.input_options["phaseType"]
+        phase = (
+            Phase.TEST if phase_type == "challenge-phase" else Phase.PRACTICE
+        )
+        config = StabilityTrackerConfig(
+            user_input_type=InputType(self.input_options["userInputType"]),
+            phase=phase,
+            **params,
+        )
+
+        return config

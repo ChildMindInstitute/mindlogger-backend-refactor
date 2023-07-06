@@ -7,6 +7,7 @@ from apps.jsonld_converter.service.document import (
     ABTrailsIpadActivity,
     ABTrailsMobileActivity,
     ReproActivity,
+    StabilityTaskActivity,
 )
 from apps.jsonld_converter.service.document.activity_flow import (
     ReproActivityFlow,
@@ -50,10 +51,11 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
         return [
-            ABTrailsIpadActivity,
-            ABTrailsMobileActivity,
             ReproActivity,
             ReproActivityFlow,
+            ABTrailsIpadActivity,
+            ABTrailsMobileActivity,
+            StabilityTaskActivity,
         ]
 
     async def load(self, doc: dict, base_url: str | None = None):
