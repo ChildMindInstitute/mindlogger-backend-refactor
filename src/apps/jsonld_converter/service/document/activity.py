@@ -24,12 +24,15 @@ from apps.jsonld_converter.service.document.base import (
     ContainsNestedMixin,
     LdDocumentBase,
     LdKeyword,
+    OrderAware,
 )
 from apps.jsonld_converter.service.document.conditional_logic import (
     ConditionalLogicParser,
     ResolvesConditionalLogic,
 )
-from apps.jsonld_converter.service.document.field import (  # ReproFieldABTrailIpad,; ReproFieldABTrailMobile,
+from apps.jsonld_converter.service.document.field import (
+    ReproFieldABTrailIpad,
+    ReproFieldABTrailMobile,
     ReproFieldAge,
     ReproFieldAudio,
     ReproFieldAudioStimulus,
@@ -225,7 +228,10 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             if isinstance(item, ReproFieldBase)
         }
         models = []
-        for item in var_item_map.values():
+        for i, item in enumerate(var_item_map.values()):
+            if isinstance(item, OrderAware):
+                item.order = i
+
             model: ActivityItemCreate = item.export()
 
             expression = item.ld_is_vis
@@ -424,26 +430,26 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         )
 
 
-# class ABTrailsIpadActivity(ReproActivity):
-#     @classmethod
-#     def supports_activity_type(cls, doc: dict) -> bool:
-#         return cls.get_activity_type(doc) == "TRAILS_IPAD"
-#
-#     @classmethod
-#     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
-#         return [ReproFieldABTrailIpad]
-#
-#
-# class ABTrailsMobileActivity(ReproActivity):
-#     @classmethod
-#     def supports_activity_type(cls, doc: dict) -> bool:
-#         return cls.get_activity_type(doc) == "TRAILS_MOBILE"
-#
-#     @classmethod
-#     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
-#         return [ReproFieldABTrailMobile]
-#
-#
+class ABTrailsIpadActivity(ReproActivity):
+    @classmethod
+    def supports_activity_type(cls, doc: dict) -> bool:
+        return cls.get_activity_type(doc) == "TRAILS_IPAD"
+
+    @classmethod
+    def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
+        return [ReproFieldABTrailIpad]
+
+
+class ABTrailsMobileActivity(ReproActivity):
+    @classmethod
+    def supports_activity_type(cls, doc: dict) -> bool:
+        return cls.get_activity_type(doc) == "TRAILS_MOBILE"
+
+    @classmethod
+    def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
+        return [ReproFieldABTrailMobile]
+
+
 # class GyroActivity(ReproActivity):
 #     @classmethod
 #     def supports_activity_type(cls, doc: dict) -> bool:

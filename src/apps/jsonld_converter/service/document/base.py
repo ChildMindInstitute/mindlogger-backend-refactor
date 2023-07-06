@@ -397,3 +397,7 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
             return await asyncio.to_thread(jsonld.expand, doc, options)
         except Exception as e:
             raise JsonLDProcessingError(None, doc) from e
+
+
+class OrderAware:
+    order: int | None = None

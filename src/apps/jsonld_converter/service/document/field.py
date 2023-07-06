@@ -8,7 +8,10 @@ from pydantic.color import Color
 
 from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.conditions import AnyCondition, ConditionType
-from apps.activities.domain.response_type_config import (  # ABTrailsIpadConfig,; ABTrailsMobileConfig,; GyroscopeConfig,; GyroscopeGeneralSettings,; GyroscopePracticeSettings,; GyroscopeTestSettings,
+from apps.activities.domain.response_type_config import (
+    ABTrailsConfig,
+    ABTrailsDeviceType,
+    ABTrailsOrder,
     AdditionalResponseOption,
     AudioConfig,
     AudioPlayerConfig,
@@ -57,6 +60,7 @@ from apps.jsonld_converter.service.document.base import (
     CommonFieldsMixin,
     LdDocumentBase,
     LdKeyword,
+    OrderAware,
 )
 from apps.jsonld_converter.service.document.conditional_logic import (
     ConditionData,
@@ -1163,42 +1167,54 @@ class ReproFieldAudioStimulus(ReproFieldBase):
         )
 
 
-# class ReproFieldABTrailIpad(ReproFieldBase):
-#     INPUT_TYPE = "trail"
-#     RESPONSE_TYPE = ResponseType.ABTRAILSIPAD
-#     CFG_TYPE = ABTrailsIpadConfig
-#
-#     ld_description: str | None = None
-#
-#     @classmethod
-#     def _get_supported_input_types(cls) -> list[str]:
-#         return [cls.INPUT_TYPE]
-#
-#     async def _load_from_processed_doc(
-#         self, processed_doc: dict, base_url: str | None = None
-#     ):
-#         await super()._load_from_processed_doc(processed_doc, base_url)
-#         self.ld_description = self.attr_processor.get_translation(
-#             processed_doc, "schema:description", self.lang
-#         )
-#
-#     def _build_config(self, _cls: Type | None, **attrs):
-#         assert _cls is not None
-#         config = _cls(
-#             name=self.ld_pref_label or self.ld_alt_label,  # TODO
-#             description=self.ld_description,
-#             image_placeholder="",  # TODO
-#             is_hidden=self.ld_is_vis is False,  # TODO
-#         )
-#
-#         return config
-#
-#
-# class ReproFieldABTrailMobile(ReproFieldABTrailIpad):
-#     RESPONSE_TYPE = ResponseType.ABTRAILSMOBILE
-#     CFG_TYPE = ABTrailsMobileConfig  # type: ignore[assignment]
-#
-#
+class ReproFieldABTrailIpad(ReproFieldBase, OrderAware):
+    INPUT_TYPE = "trail"
+    RESPONSE_TYPE = ResponseType.ABTRAILS
+    DEVICE_TYPE = ABTrailsDeviceType.TABLET
+
+    ld_description: str | None = None
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+    async def _load_from_processed_doc(
+        self, processed_doc: dict, base_url: str | None = None
+    ):
+        await super()._load_from_processed_doc(processed_doc, base_url)
+        self.ld_description = (
+            self.attr_processor.get_translation(  # TODO move to extra
+                processed_doc, "schema:description", self.lang
+            )
+        )
+
+    def _get_order_name(self, order: int):
+        orders = [
+            ABTrailsOrder.FIRST,
+            ABTrailsOrder.SECOND,
+            ABTrailsOrder.THIRD,
+            ABTrailsOrder.FOURTH,
+        ]
+        try:
+            return orders[order]
+        except IndexError:
+            raise NotImplementedError(
+                "Too many trails. Only 4 items supported"
+            )
+
+    def _build_config(self, _cls: Type | None, **attrs):
+        assert self.order is not None
+        config = ABTrailsConfig(
+            device_type=self.DEVICE_TYPE,
+            order_name=self._get_order_name(self.order),
+        )
+        return config
+
+
+class ReproFieldABTrailMobile(ReproFieldABTrailIpad):
+    DEVICE_TYPE = ABTrailsDeviceType.MOBILE
+
+
 # class ReproFieldStabilityTracker(ReproFieldBase):
 #     INPUT_TYPE = "stabilityTracker"
 #     RESPONSE_TYPE = ResponseType.GYROSCOPE

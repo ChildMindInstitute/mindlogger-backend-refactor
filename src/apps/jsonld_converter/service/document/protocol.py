@@ -3,7 +3,9 @@ from copy import deepcopy
 from typing import Type
 
 from apps.applets.domain.applet_create_update import AppletCreate
-from apps.jsonld_converter.service.document import (  # ABTrailsIpadActivity,; ABTrailsMobileActivity,
+from apps.jsonld_converter.service.document import (
+    ABTrailsIpadActivity,
+    ABTrailsMobileActivity,
     ReproActivity,
 )
 from apps.jsonld_converter.service.document.activity_flow import (
@@ -48,8 +50,8 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
         return [
-            # ABTrailsIpadActivity,
-            # ABTrailsMobileActivity,
+            ABTrailsIpadActivity,
+            ABTrailsMobileActivity,
             ReproActivity,
             ReproActivityFlow,
         ]
