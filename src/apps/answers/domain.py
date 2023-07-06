@@ -99,6 +99,7 @@ class ReviewActivity(InternalModel):
 class SummaryActivity(InternalModel):
     id: uuid.UUID
     name: str
+    performance_task_type: str
 
 
 class PublicAnswerDate(PublicModel):
@@ -115,6 +116,7 @@ class PublicReviewActivity(PublicModel):
 class PublicSummaryActivity(InternalModel):
     id: uuid.UUID
     name: str
+    performance_task_type: str
 
 
 class PublicAnswerDates(PublicModel):
