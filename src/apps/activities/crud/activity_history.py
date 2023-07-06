@@ -153,10 +153,8 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         db_result = await self._execute(query)
         schemas = []
         for activity_history_schema, response_types in db_result.all():
-            response_type = ""
-            if response_types:
-                response_type = response_types.split(",")[0]
-            activity_history_schema.performance_task_type = response_type
+            is_performance_task = response_types is not None
+            activity_history_schema.is_performance_task = is_performance_task
             schemas.append(activity_history_schema)
 
         return schemas
