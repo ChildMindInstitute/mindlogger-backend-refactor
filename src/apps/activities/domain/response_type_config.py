@@ -360,7 +360,8 @@ class ResponseType(str, Enum):
 
 class PerformanceTaskType(str, Enum):
     FLANKER = "flanker"
-    STABILITYTRACKER = "stabilityTracker"
+    GYROSCOPE = "gyroscope"
+    TOUCH = "touch"
     ABTRAILS = "ABTrails"
 
 

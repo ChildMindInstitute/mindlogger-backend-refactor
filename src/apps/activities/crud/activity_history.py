@@ -121,9 +121,9 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
             ActivityItemHistorySchema.response_type.in_(
                 [
                     PerformanceTaskType.FLANKER.value,
-                    PerformanceTaskType.STABILITYTRACKER.value,
-                    PerformanceTaskType.ABTRAILSTABLET.value,
-                    PerformanceTaskType.ABTRAILSMOBILE.value,
+                    PerformanceTaskType.GYROSCOPE.value,
+                    PerformanceTaskType.TOUCH.value,
+                    PerformanceTaskType.ABTRAILS.value,
                 ]
             )
         )
