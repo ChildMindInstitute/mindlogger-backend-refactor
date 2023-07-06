@@ -53,3 +53,19 @@ class ActivityIsNotAssessment(ValidationError):
 
 class ReportServerError(ValidationError):
     message = _("Report server error {message}.")
+
+
+class WrongAnswerGroupAppletId(ValidationError):
+    message = _("In the same submit there can not be different applet id.")
+
+
+class WrongAnswerGroupVersion(ValidationError):
+    message = _("In the same submit there can not be different version.")
+
+
+class DuplicateActivityInAnswerGroup(ValidationError):
+    message = _("Activity answers should differ in the same group.")
+
+
+class WrongRespondentForAnswerGroup(ValidationError):
+    message = _("Different users can not submit with the same submit id.")
