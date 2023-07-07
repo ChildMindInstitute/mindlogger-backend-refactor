@@ -7,7 +7,7 @@ from bson.objectid import ObjectId
 from Cryptodome.Cipher import AES
 from pymongo import MongoClient
 
-from apps.applets.domain.applet_create_update import AppletCreate
+# from apps.applets.domain.applet_create_update import AppletCreate
 from apps.jsonld_converter.dependencies import (
     get_context_resolver,
     get_document_loader,
@@ -25,7 +25,7 @@ def decrypt(data):
         cipher = AES.new(aes_key, AES.MODE_EAX, nonce=data[-32:-16])
         plaintext = cipher.decrypt(data[:-32])
         cipher.verify(data[-16:])
-    except Exception as error:
+    except Exception:
         return None
 
     txt = plaintext.decode("utf-8")
@@ -100,7 +100,8 @@ class Mongo:
     #         "@context": [
     #             "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json",
     #             {
-    #                 "reprolib": "https://raw.githubusercontent.com/ReproNim/reproschema/master/"
+    #                 "reprolib":
+    #                 "https://raw.githubusercontent.com/ReproNim/reproschema/master/"
     #             },
     #         ],
     #         "@type": "reproschema:Protocol",
@@ -129,12 +130,9 @@ class Mongo:
     def get_applets(self) -> list[dict]:
         collection = self.db["folder"]
         # NOTE: All applets have baseParentId 5ea689a286d25a5dbb14e82c
-        applets = [
-            dict(el)
-            for el in collection.find(
-                {"baseParentId": ObjectId("5ea689a286d25a5dbb14e82c")},
-            ).limit(10)
-        ]
+        applets = collection.find(
+            {"baseParentId": ObjectId("5ea689a086d25a5dbb14e808")},
+        ).limit(10)
 
         results: list[Any] = []
         for applet in applets:
@@ -149,9 +147,7 @@ class Mongo:
             create_schema: InternalModel | PublicModel = asyncio.run(
                 converter.convert(ld_request_schema)
             )
-
-            breakpoint()
-
+            # breakpoint()
             results.append(create_schema)
 
         return results

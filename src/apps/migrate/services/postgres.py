@@ -2,7 +2,7 @@ import uuid
 from contextlib import suppress
 from datetime import datetime
 
-import psycopg2  # type: ignore[import]
+import psycopg2
 
 
 class Postgres:
@@ -64,7 +64,8 @@ class Postgres:
                     "hashed_password, id, first_name, last_name, "
                     "last_seen_at)"
                     "VALUES"
-                    f"('{new_user['created_at']}', '{new_user['updated_at']}', "
+                    f"('{new_user['created_at']}', "
+                    f"'{new_user['updated_at']}', "
                     f"'{new_user['is_deleted']}', '{new_user['email']}', "
                     f"'{new_user['hashed_password']}', '{new_user['id']}', "
                     f"'{new_user['first_name']}', '{new_user['last_name']}', "
@@ -170,4 +171,3 @@ class Postgres:
             }
         """
         pass
-

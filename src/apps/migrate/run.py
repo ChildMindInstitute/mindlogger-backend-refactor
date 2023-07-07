@@ -28,6 +28,7 @@ def main():
 
     # TODO: Migrate with applets
     applets: list[dict] = mongo.get_applets()
+    print(applets)
     # postgres.save_applets(new_users_mapping, applets)
 
     # TODO: Migrate with activities
