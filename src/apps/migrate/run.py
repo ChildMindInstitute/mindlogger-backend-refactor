@@ -1,5 +1,8 @@
+import asyncio
+
 from apps.migrate.services.mongo import Mongo
 from apps.migrate.services.postgres import Postgres
+
 
 # class Convertor:
 #     @staticmethod
@@ -13,7 +16,7 @@ def foo(item, key):
     return item()
 
 
-def main():
+async def main():
     mongo = Mongo()
     postgres = Postgres()
 
@@ -27,9 +30,9 @@ def main():
     # applets = mongo.get_applets()
 
     # TODO: Migrate with applets
-    applets: list[dict] = mongo.get_applets()
-    print(applets)
-    # postgres.save_applets(new_users_mapping, applets)
+    applets: list[dict] = await mongo.get_applets()
+
+    await postgres.save_applets(applets)
 
     # TODO: Migrate with activities
     # activities: list[dict] = mongo.get_activities()
@@ -51,4 +54,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

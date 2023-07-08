@@ -127,12 +127,12 @@ class Mongo:
             # TODO: Fill the template with applet data
             return data
 
-    def get_applets(self) -> list[dict]:
+    async def get_applets(self) -> list[dict]:
         collection = self.db["folder"]
         # NOTE: All applets have baseParentId 5ea689a286d25a5dbb14e82c
         applets = collection.find(
             {"baseParentId": ObjectId("5ea689a086d25a5dbb14e808")},
-        ).limit(10)
+        ).limit(2)
 
         results: list[Any] = []
         for applet in applets:
@@ -144,7 +144,7 @@ class Mongo:
                 document_loader, context_resolver
             )
 
-            create_schema: InternalModel | PublicModel = asyncio.run(
+            create_schema: InternalModel | PublicModel = await (
                 converter.convert(ld_request_schema)
             )
             # breakpoint()
