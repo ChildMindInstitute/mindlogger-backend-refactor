@@ -8,6 +8,8 @@ from apps.library.db.schemas import CartSchema, LibrarySchema
 from apps.library.domain import LibraryItem
 from apps.library.errors import LibraryItemDoesNotExistError
 from infrastructure.database.crud import BaseCRUD
+from apps.shared.paging import paging
+from apps.shared.query_params import QueryParams
 
 
 class LibraryCRUD(BaseCRUD[LibrarySchema]):
@@ -36,9 +38,25 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
 
         return db_result.scalars().all()
 
+    async def get_all_library_count(self, query_params: QueryParams) -> int:
+        query: Query = select(LibrarySchema.id)
+        if query_params.search:
+            query = query.where(
+                or_(
+                    LibrarySchema.search_keywords.cast(Unicode()).ilike(
+                        f"%{query_params.search}%"
+                    ),
+                    LibrarySchema.keywords.cast(Unicode()).ilike(
+                        f"%{query_params.search}%"
+                    ),
+                )
+            )
+        results = await self._execute(query)
+        return len(results.all())
+
     async def get_all_library_items(
         self,
-        keyword: str | None = None,
+        query_params: QueryParams,
     ) -> list[LibraryItem]:
         query: Query = select(
             LibrarySchema.id,
@@ -51,17 +69,18 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
             AppletHistorySchema,
             LibrarySchema.applet_id_version == AppletHistorySchema.id_version,
         )
-        if keyword:
+        if query_params.search:
             query = query.where(
                 or_(
                     LibrarySchema.search_keywords.cast(Unicode()).ilike(
-                        f"%{keyword}%"
+                        f"%{query_params.search}%"
                     ),
                     LibrarySchema.keywords.cast(Unicode()).ilike(
-                        f"%{keyword}%"
+                        f"%{query_params.search}%"
                     ),
                 )
             )
+        query = paging(query, query_params.page, query_params.limit)
 
         results = await self._execute(query)
 

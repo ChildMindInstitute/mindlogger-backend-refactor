@@ -1,8 +1,8 @@
 import uuid
 
-from pydantic import validator
+from pydantic import Field
 
-from apps.shared.domain import InternalModel, PublicModel, validate_uuid
+from apps.shared.domain import InternalModel, PublicModel
 
 
 class AppletLibrary(InternalModel):
@@ -35,59 +35,71 @@ class LibraryNameCheck(InternalModel):
 
 
 class LibraryItemActivityItem(InternalModel):
-    id: uuid.UUID
     question: dict[str, str] | None = None
     response_type: str
     response_values: list | dict | None = None
-    order: int
+    config: dict | None = None
     name: str
+    is_hidden: bool | None = False
+    conditional_logic: dict | None = None
+    allow_edit: bool | None = None
 
 
 class LibraryItemActivity(InternalModel):
-    id: uuid.UUID
+    key: uuid.UUID
     name: str
+    description: dict[str, str]
+    image: str
+    splash_screen: str = ""
+    show_all_at_once: bool = False
+    is_skippable: bool = False
+    is_reviewable: bool = False
+    response_is_editable: bool = False
+    is_hidden: bool | None = False
+    scores_and_reports: dict | None = None
+    subscale_settings: dict | None = None
     items: list[LibraryItemActivityItem] | None = None
 
 
-class LibraryItem(InternalModel):
+class LibraryItemFlowItem(InternalModel):
+    activity_key: uuid.UUID
+
+
+class LibraryItemFlow(InternalModel):
+    name: str
+    description: dict[str, str]
+    is_single_report: bool = False
+    hide_badge: bool = False
+    is_hidden: bool | None = False
+    items: list[LibraryItemFlowItem]
+
+
+class _LibraryItem(InternalModel):
     id: uuid.UUID
-    applet_id_version: str
     display_name: str
-    keywords: list[str] | None = None
     description: dict[str, str] | None = None
+    about: dict[str, str] | None = None
+    image: str = ""
+    watermark: str = ""
+    theme_id: uuid.UUID | None = None
+    keywords: list[str] | None = None
     activities: list[LibraryItemActivity] | None = None
+    activity_flows: list[LibraryItemFlow] | None = None
 
 
-class PublicLibraryItem(PublicModel):
-    id: uuid.UUID
+class LibraryItem(_LibraryItem):
+    applet_id_version: str
+
+
+class PublicLibraryItem(_LibraryItem):
     version: str
-    display_name: str
-    keywords: list[str] | None = None
-    description: dict[str, str] | None = None
-    activities: list[LibraryItemActivity]
 
 
 class LibraryQueryParams(InternalModel):
     search: str | None = None
-
-
-class CartItemActivity(InternalModel):
-    activity_id: str
-    items: list[str] | None = None
-
-    @validator("activity_id")
-    def validate_id(cls, value):
-        return validate_uuid(value)
-
-
-class CartItem(PublicModel):
-    library_id: str
-    activities: list[CartItemActivity]
-
-    @validator("library_id")
-    def validate_id(cls, value):
-        return validate_uuid(value)
+    page: int = Field(gt=0, default=1)
+    limit: int = Field(gt=0, default=10)
 
 
 class Cart(PublicModel):
-    cart_items: list[CartItem] | None = None
+    cart_items: list[dict] | None = None

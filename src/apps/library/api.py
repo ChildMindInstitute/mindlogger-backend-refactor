@@ -58,10 +58,13 @@ async def library_get_all(
         applets = await LibraryService(session).get_all_applets(
             deepcopy(query_params)
         )
+        count = await LibraryService(session).get_applets_count(
+            deepcopy(query_params)
+        )
 
     return ResponseMulti(
         result=applets,
-        count=len(applets),
+        count=count,
     )
 
 

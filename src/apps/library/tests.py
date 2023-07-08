@@ -189,7 +189,7 @@ class TestLibrary(BaseTest):
 
         assert len(result["cartItems"]) == 1
         assert (
-            result["cartItems"][0]["libraryId"]
+            result["cartItems"][0]["library_id"]
             == "68aadd6c-eb20-4666-85aa-fd6264825c01"
         )
 
@@ -200,6 +200,6 @@ class TestLibrary(BaseTest):
         result = response.json()["result"]
         assert len(result["cartItems"]) == 1
         assert (
-            result["cartItems"][0]["libraryId"]
+            result["cartItems"][0]["library_id"]
             == "68aadd6c-eb20-4666-85aa-fd6264825c01"
         )
