@@ -40,6 +40,16 @@ class Mongo:
         self.client = MongoClient("localhost", 27017)  # type: ignore
         self.db = self.client["mindlogger"]
 
+    @staticmethod
+    async def get_converter_result(schema) -> InternalModel | PublicModel:
+        document_loader = get_document_loader()
+        context_resolver = get_context_resolver(document_loader)
+        converter = get_jsonld_model_converter(
+            document_loader, context_resolver
+        )
+
+        return await (converter.convert(schema))
+
     def close_connection(self):
         self.client.close()
 
@@ -92,35 +102,6 @@ class Mongo:
 
         return results
 
-    # @staticmethod
-    # def _get_applet_ld_schema(
-    #     applet_id: str, ld_id: str, applet_name: str
-    # ) -> dict:
-    #     return {
-    #         "@context": [
-    #             "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json",
-    #             {
-    #                 "reprolib":
-    #                 "https://raw.githubusercontent.com/ReproNim/reproschema/master/"
-    #             },
-    #         ],
-    #         "@type": "reproschema:Protocol",
-    #         "@id": ld_id,
-    #         "appletName": applet_name,
-    #         "prefLabel": {"en": "Protocol1", "es": "Protocol1_es"},
-    #         "description": "example Protocol",
-    #         "schemaVersion": "1.0.0-rc2",
-    #         "version": "0.0.1",
-    #         "landingPage": [{"@id": "README.md", "inLanguage": "en"}],
-    #         "name": "/mindlogger-demo_schema (373)",
-    #         "parentCollection": "collection",
-    #         "baseParentId": "5ea689a286d25a5dbb14e82c",
-    #         "baseParentType": "collection",
-    #         "parentId": "5ea689a286d25a5dbb14e82c",
-    #         "creatorId": "5ef14941cf98a6223794600e",
-    #         "_id": applet_id,
-    #     }
-
     def get_applet_repro_schema(self, applet: dict) -> dict:
         with open(settings.apps_dir / "migrate/repro_template.json") as file:
             data = json.load(file)
@@ -134,28 +115,15 @@ class Mongo:
             {"baseParentId": ObjectId("5ea689a086d25a5dbb14e808")},
         ).limit(2)
 
+        # TODO: Remove limit after testing
+
         results: list[Any] = []
         for applet in applets:
             ld_request_schema = self.get_applet_repro_schema(applet)
-
-            document_loader = get_document_loader()
-            context_resolver = get_context_resolver(document_loader)
-            converter = get_jsonld_model_converter(
-                document_loader, context_resolver
+            converter_result = await self.get_converter_result(
+                ld_request_schema
             )
 
-            create_schema: InternalModel | PublicModel = await (
-                converter.convert(ld_request_schema)
-            )
-            # breakpoint()
-            results.append(create_schema)
+            results.append(converter_result)
 
         return results
-
-    def get_activities(self) -> list[dict]:
-        # TODO
-        return []
-
-    def get_items(self) -> list[dict]:
-        # TODO
-        return []

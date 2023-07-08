@@ -3,14 +3,10 @@ from contextlib import suppress
 from datetime import datetime
 
 import psycopg2
-from fastapi import Depends
 
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.service import AppletService
-from apps.jsonld_converter.service.domain import NotEncryptedApplet
-from apps.shared.domain import PublicModel
-from infrastructure.database import atomic
-from infrastructure.database.deps import get_session
+from infrastructure.database import session_manager
 
 
 class Postgres:
@@ -146,20 +142,15 @@ class Postgres:
     # ):
     #     pass
 
-    async def save_applets(
-        self, applets: list[dict],
-        session=Depends(get_session),
-    ):
+    async def save_applets(self, applets: list[dict]):
         owner_id: uuid.UUID = uuid.UUID("65656a7b-887c-4e66-b44e-f452b98d198d")
 
         for applet in applets:
-            # print(type(applet))
-            # print("NotEncryptedApplet(**applet) !!!!! =", AppletCreate(**dict(applet)))
             applet_dict = dict(applet)
-            # print("#########", applet_dict.get("activities"))
-            print()
-            print()
-            print(dict(applet))
+
+            # NOTE: Not finished ...
+            session = session_manager.get_session()
+
             applet_created = await AppletService(session, owner_id).create(
                 AppletCreate(
                     activities=applet_dict.get("activities"),
@@ -171,42 +162,7 @@ class Postgres:
                         "base": "",
                         "account_id": "",
                     },
-                    # extra_fields=applet_dict.get("activities"),
+                    # NOTE: extra_fields=applet_dict.get("activities"),
                 ),
-                owner_id
+                owner_id,
             )
-            print("$$$$$$", applet_created)
-
-    # def save_activities(self, activities: list[dict]):
-    #     """Returns the mapping between old activity ID and the created activity.
-    #
-    #     {
-    #         17: {id: 6, value: {}}
-    #     }
-    #     Where 17 is a old id and the object on the right side
-    #     is a new created object in the database
-    #     """
-    #
-    #     # TODO
-    #     return {}
-    #
-    # def save_activity_items(
-    #     self, items: list[dict], activity_mapping: dict[str, dict]
-    # ):
-    #     """
-    #     items = [
-    #         {id: 1, activity_id: 17, data: {}}
-    #         {id: 2, activity_id: 131, data: {}}
-    #     ]
-    #
-    #     mapping = {
-    #         17: {id: 6, value: {}}
-    #     }
-    #
-    #     for item in items:
-    #         created_activity: dict = mapping[iteam['activity_id']]
-    #         payload = {
-    #             'activity_id': created_activity['id']
-    #         }
-    #     """
-    #     pass
