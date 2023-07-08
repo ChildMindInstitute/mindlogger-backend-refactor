@@ -298,7 +298,6 @@ class LibraryService:
     async def get_cart(self, user_id: uuid.UUID) -> Cart:
         """Get cart for user."""
         cart = await CartCRUD(self.session).get_by_user_id(user_id)
-        print(cart.cart_items)
         if not cart or not cart.cart_items:
             return Cart(cart_items=None)
         return Cart(cart_items=json.loads(cart.cart_items))
@@ -319,50 +318,3 @@ class LibraryService:
         return Cart(
             cart_items=json.loads(cart.cart_items) if cart.cart_items else None
         )
-
-    async def _validate_cart_items(self, schema: Cart):
-        # get library_ids and check if exist
-        existing_library_applets = await LibraryCRUD(self.session).get_all()
-        existing_library_ids = []
-        if existing_library_applets:
-            existing_library_ids = [
-                library.id for library in existing_library_applets
-            ]
-        if schema.cart_items:
-            if not existing_library_applets:
-                raise LibraryItemDoesNotExistError()
-            for item in schema.cart_items:
-                if uuid.UUID(item.library_id) not in existing_library_ids:
-                    raise LibraryItemDoesNotExistError()
-
-                library = await self.get_applet_by_id(
-                    uuid.UUID(item.library_id)
-                )
-
-                existing_activity_ids = []
-                if library.activities:
-                    existing_activity_ids = [
-                        activity.id for activity in library.activities
-                    ]
-                for activity in item.activities:
-                    if (
-                        uuid.UUID(activity.activity_id)
-                        not in existing_activity_ids
-                    ):
-                        raise ActivityInLibraryDoesNotExistError()
-                    index = existing_activity_ids.index(
-                        uuid.UUID(activity.activity_id)
-                    )
-                    existing_activity = library.activities[index]
-
-                    if activity.items:
-                        existing_activity_items = []
-                        if existing_activity.items:
-                            existing_activity_items = [
-                                str(activity_item.id)
-                                for activity_item in existing_activity.items
-                            ]
-                        if not set(activity.items).issubset(
-                            set(existing_activity_items)
-                        ):
-                            raise ActivityItemInLibraryDoesNotExistError()
