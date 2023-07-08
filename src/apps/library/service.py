@@ -23,8 +23,6 @@ from apps.library.domain import (
     PublicLibraryItem,
 )
 from apps.library.errors import (
-    ActivityInLibraryDoesNotExistError,
-    ActivityItemInLibraryDoesNotExistError,
     AppletNameExistsError,
     AppletVersionDoesNotExistError,
     AppletVersionExistsError,

@@ -15,13 +15,5 @@ class LibraryItemDoesNotExistError(NotFoundError):
     message = _("This Library Item does not exists.")
 
 
-class ActivityInLibraryDoesNotExistError(NotFoundError):
-    message = _("Activity in Library does not exists.")
-
-
-class ActivityItemInLibraryDoesNotExistError(NotFoundError):
-    message = _("Activity Item in Library does not exists.")
-
-
 class AppletVersionDoesNotExistError(NotFoundError):
     message = _("This Applet version is not shared to the library.")
