@@ -7,6 +7,9 @@ from apps.authentication.deps import get_current_user
 from apps.library.domain import (
     AppletLibraryCreate,
     AppletLibraryFull,
+    AppletLibraryInfo,
+    AppletLibraryUpdate,
+    Cart,
     LibraryNameCheck,
     LibraryQueryParams,
     PublicLibraryItem,
@@ -55,10 +58,13 @@ async def library_get_all(
         applets = await LibraryService(session).get_all_applets(
             deepcopy(query_params)
         )
+        count = await LibraryService(session).get_applets_count(
+            deepcopy(query_params)
+        )
 
     return ResponseMulti(
         result=applets,
-        count=len(applets),
+        count=count,
     )
 
 
@@ -76,11 +82,43 @@ async def library_get_url(
     applet_id: uuid.UUID,
     session=Depends(get_session),
     user=Depends(get_current_user),
-) -> Response[str]:
+) -> Response[AppletLibraryInfo]:
     async with atomic(session):
         await CheckAccessService(session, user.id).check_link_edit_access(
             applet_id
         )
-        url = await LibraryService(session).get_applet_url(applet_id)
+        info = await LibraryService(session).get_applet_url(applet_id)
 
-    return Response(result=url)
+    return Response(result=info)
+
+
+async def library_update(
+    library_id: uuid.UUID,
+    schema: AppletLibraryUpdate = Body(...),
+    session=Depends(get_session),
+    user=Depends(get_current_user),
+) -> Response[AppletLibraryFull]:
+    async with atomic(session):
+        library_item: AppletLibraryFull = await LibraryService(
+            session
+        ).update_shared_applet(library_id, schema, user.id)
+    return Response(result=library_item)
+
+
+async def cart_get(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[Cart]:
+    async with atomic(session):
+        cart = await LibraryService(session).get_cart(user.id)
+    return Response(result=cart)
+
+
+async def cart_add(
+    user: User = Depends(get_current_user),
+    schema: Cart = Body(...),
+    session=Depends(get_session),
+) -> Response[Cart]:
+    async with atomic(session):
+        cart = await LibraryService(session).add_to_cart(user.id, schema)
+    return Response(result=cart)

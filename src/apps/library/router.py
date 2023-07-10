@@ -2,13 +2,21 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.library.api import (
+    cart_add,
+    cart_get,
     library_check_name,
     library_get_all,
     library_get_by_id,
     library_get_url,
     library_share_applet,
+    library_update,
 )
-from apps.library.domain import AppletLibraryFull, PublicLibraryItem
+from apps.library.domain import (
+    AppletLibraryFull,
+    AppletLibraryInfo,
+    Cart,
+    PublicLibraryItem,
+)
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -37,6 +45,28 @@ router.post(
     },
 )(library_check_name)
 
+router.get(
+    "/cart",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[Cart],
+    responses={
+        status.HTTP_200_OK: {"model": Response[Cart]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(cart_get)
+
+router.post(
+    "/cart",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[Cart],
+    responses={
+        status.HTTP_200_OK: {"model": Response[Cart]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(cart_add)
+
 
 router.get(
     "",
@@ -60,14 +90,25 @@ router.get(
     },
 )(library_get_by_id)
 
+router.put(
+    "/{library_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[AppletLibraryFull],
+    responses={
+        status.HTTP_200_OK: {"model": Response[AppletLibraryFull]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(library_update)
+
 
 applet_router = APIRouter(prefix="/applets", tags=["Applets"])
 applet_router.get(
     "/{applet_id}/library_link",
     status_code=status.HTTP_200_OK,
-    response_model=Response[str],
+    response_model=Response[AppletLibraryInfo],
     responses={
-        status.HTTP_200_OK: {"model": Response[str]},
+        status.HTTP_200_OK: {"model": Response[AppletLibraryInfo]},
         **DEFAULT_OPENAPI_RESPONSE,
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
