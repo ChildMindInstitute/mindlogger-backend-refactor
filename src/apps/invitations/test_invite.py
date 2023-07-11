@@ -410,7 +410,7 @@ class TestInvite(BaseTest):
             request_data,
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 403
         assert response.json()["result"][0]["message"] == "Access denied."
 
     @rollback

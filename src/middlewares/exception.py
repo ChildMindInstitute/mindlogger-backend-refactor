@@ -1,17 +1,11 @@
 import gettext
 import logging
-import os
 import traceback
 
-from fastapi import Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette import status
-from starlette.middleware.base import (
-    BaseHTTPMiddleware,
-    RequestResponseEndpoint,
-)
 from starlette.requests import Request
 
 from apps.shared.domain.response.errors import (
@@ -20,27 +14,9 @@ from apps.shared.domain.response.errors import (
 )
 from apps.shared.exception import BaseError
 from config import settings
-from infrastructure.http import get_language
 
 logger = logging.getLogger("mindlogger_backend")
 gettext.bindtextdomain(gettext.textdomain(), settings.locale_dir)
-
-
-class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: RequestResponseEndpoint,
-    ) -> Response:
-        os.environ["LANG"] = get_language(request)
-        try:
-            return await call_next(request)
-        except BaseError as e:
-            return _custom_base_errors_handler(request, e)
-        except ValidationError as e:
-            return _pydantic_validation_errors_handler(request, e)
-        except Exception as e:
-            return _python_base_error_handler(request, e)
 
 
 def _custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
