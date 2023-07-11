@@ -173,7 +173,7 @@ class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
 
         if isinstance(doc, str):
             new_doc, base_url = await self._load_by_url(doc)
-        elif LdKeyword.type not in doc and len(doc) == 1:
+        elif len(doc) == 1 and LdKeyword.id in doc:
             new_doc, base_url = await self._load_by_id(doc, base_url)
         else:
             new_doc = doc

@@ -1,5 +1,9 @@
 from dataclasses import dataclass, field
 
+from apps.activities.domain.scores_reports import (
+    SubscaleCalculationType,
+    TotalScoreTable,
+)
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.base import Encryption
 
@@ -37,3 +41,9 @@ ModelExportData = (
 
 class NotEncryptedApplet(AppletCreate):
     encryption: Encryption | None = None  # type: ignore[assignment]
+
+
+@dataclass
+class FinalSubscale:
+    calculate_total_score: SubscaleCalculationType
+    total_scores_table_data: list[TotalScoreTable] | None

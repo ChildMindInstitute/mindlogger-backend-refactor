@@ -14,10 +14,14 @@ from apps.activities.domain.scores_reports import (
     ScoresAndReports,
     Section,
     SectionConditionalLogic,
+    Subscale,
+    SubscaleItemType,
+    SubscaleSetting,
 )
 from apps.jsonld_converter.errors import (
     ConditionalLogicError,
     JsonLDNotSupportedError,
+    SubscaleParsingError,
 )
 from apps.jsonld_converter.service.document.base import (
     CommonFieldsMixin,
@@ -57,6 +61,11 @@ from apps.jsonld_converter.service.document.report import (
     ReproActivityScore,
     ReproActivitySection,
 )
+from apps.jsonld_converter.service.document.subscale import (
+    LdSubscale,
+    LdSubscaleFinal,
+)
+from apps.jsonld_converter.service.domain import FinalSubscale
 
 
 class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
@@ -75,6 +84,8 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     properties: dict
     nested_by_order: list[LdDocumentBase] | None = None
     reports_by_order: list[LdDocumentBase] | None = None
+    final_subscale: FinalSubscale | None = None
+    subscales: list[Subscale] | None = None
 
     extra: dict | None = None
     is_skippable: bool = False
@@ -168,8 +179,34 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             attr_container="reproschema:reports",
             skip_not_supported=False,
         )
+        self.final_subscale = self._get_final_subscale(
+            processed_doc, drop=True
+        )
+        self.subscales = self._get_subscales(processed_doc, drop=True)
 
         self._load_extra(processed_doc)
+
+    def _get_final_subscale(
+        self, doc: dict, *, drop=False
+    ) -> FinalSubscale | None:
+        ld_final_subscale = self.attr_processor.get_attr_single(
+            doc, "reproschema:finalSubScale", drop=drop
+        )
+        if not ld_final_subscale:
+            return None
+
+        return LdSubscaleFinal(ld_final_subscale).export()
+
+    def _get_subscales(
+        self, doc: dict, *, drop=False
+    ) -> list[Subscale] | None:
+        ld_subscales = self.attr_processor.get_attr_list(
+            doc, "reproschema:subScales", drop=drop
+        )
+        if not ld_subscales:
+            return None
+
+        return [LdSubscale(item).export() for item in ld_subscales]
 
     async def _get_nested_items(
         self,
@@ -407,9 +444,50 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             scores=self._export_scores(var_item_map, scores),  # type: ignore[arg-type] # noqa: E501
         )
 
+    def _export_subscales(self) -> SubscaleSetting | None:
+        settings: dict = {}
+        if fin_subscale := self.final_subscale:
+            settings.update(
+                calculate_total_score=fin_subscale.calculate_total_score,
+                total_scores_table_data=fin_subscale.total_scores_table_data,
+            )
+        if subscales := self.subscales:
+            settings["subscales"] = subscales
+
+            # validate names, fix item type
+            var_item_map = {
+                item.ld_variable_name: item
+                for item in self.nested_by_order or []
+                if isinstance(item, ReproFieldBase)
+            }
+            subscale_names = [subscale.name for subscale in subscales]
+            for subscale in subscales:
+                for item in subscale.items or []:
+                    if item.type == SubscaleItemType.SUBSCALE:
+                        if item.name in subscale_names:
+                            continue
+                        if item.name in var_item_map:
+                            item.type = SubscaleItemType.ITEM
+                        else:
+                            raise SubscaleParsingError(
+                                f'Subscale name "{item.name}" not found'
+                            )
+                    else:
+                        if item.name in var_item_map:
+                            continue
+                        if item.name in subscale_names:
+                            item.type = SubscaleItemType.SUBSCALE
+                        else:
+                            raise SubscaleParsingError(
+                                f'Item name "{item.name}" not found'
+                            )
+
+        return SubscaleSetting(**settings) if settings else None
+
     def export(self) -> ActivityCreate:
         items = self._export_items()
         reports = self._export_reports()
+        subscales = self._export_subscales()
 
         return ActivityCreate(
             key=uuid4(),
@@ -429,6 +507,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                 show_score_summary=not self.is_summary_disabled,
                 **reports,
             ),
+            subscale_setting=subscales,
         )
 
 

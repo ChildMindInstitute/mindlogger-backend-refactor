@@ -36,3 +36,7 @@ class ConditionalLogicError(JsonLDBaseError):
 
 class ConditionalLogicParsingError(JsonLDBaseError):
     ...
+
+
+class SubscaleParsingError(JsonLDBaseError):
+    ...

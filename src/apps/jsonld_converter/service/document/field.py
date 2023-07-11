@@ -127,7 +127,7 @@ class ReproFieldBase(
     @property
     def name(self):
         name = self.ld_pref_label or self.ld_alt_label
-        return str_to_id(name)
+        return str_to_id(name, r"\s")
 
     def _get_ld_question(self, doc: dict, drop=False):
         return self.attr_processor.get_translations(
@@ -371,13 +371,15 @@ class ReproFieldText(ReproFieldBase):
         config = TextConfig(
             remove_back_button=bool(self.ld_remove_back_option),
             skippable_item=self.is_skippable,
-            max_response_length=self.ld_max_length or None,
             correct_answer_required=self.ld_correct_answer not in [None, ""],
             correct_answer=self.ld_correct_answer or None,
             numerical_response_required=numerical_response_required,
             response_data_identifier=bool(self.ld_is_response_identifier),
             response_required=bool(self.ld_required_value),
         )
+        if self.ld_max_length:
+            config.max_response_length = self.ld_max_length
+
         return config
 
 
