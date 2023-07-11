@@ -1,17 +1,11 @@
 import gettext
 import logging
-import os
 import traceback
 
-from fastapi import Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette import status
-from starlette.middleware.base import (
-    BaseHTTPMiddleware,
-    RequestResponseEndpoint,
-)
 from starlette.requests import Request
 
 from apps.shared.domain.response.errors import (
@@ -20,7 +14,6 @@ from apps.shared.domain.response.errors import (
 )
 from apps.shared.exception import BaseError
 from config import settings
-from infrastructure.http import get_language
 
 logger = logging.getLogger("mindlogger_backend")
 gettext.bindtextdomain(gettext.textdomain(), settings.locale_dir)
@@ -61,7 +54,7 @@ def _python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
 
 
 def _pydantic_validation_errors_handler(
-        _: Request, error: ValidationError
+    _: Request, error: ValidationError
 ) -> JSONResponse:
     """This function is called if the Pydantic validation error was raised."""
 
