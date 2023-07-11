@@ -6,6 +6,7 @@ from apps.applets.domain.applet_create_update import AppletCreate
 from apps.jsonld_converter.service.document import (
     ABTrailsIpadActivity,
     ABTrailsMobileActivity,
+    FlankerActivity,
     ReproActivity,
     StabilityTaskActivity,
 )
@@ -56,6 +57,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             ABTrailsIpadActivity,
             ABTrailsMobileActivity,
             StabilityTaskActivity,
+            FlankerActivity,
         ]
 
     async def load(self, doc: dict, base_url: str | None = None):

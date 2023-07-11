@@ -15,8 +15,13 @@ from apps.activities.domain.response_type_config import (
     AdditionalResponseOption,
     AudioConfig,
     AudioPlayerConfig,
+    BlockConfiguration,
+    BlockType,
+    ButtonConfiguration,
     DateConfig,
     DrawingConfig,
+    FixationScreen,
+    FlankerConfig,
     GeolocationConfig,
     InputType,
     MessageConfig,
@@ -27,11 +32,13 @@ from apps.activities.domain.response_type_config import (
     PhotoConfig,
     ResponseType,
     ResponseTypeConfig,
+    SamplingMethod,
     SingleSelectionConfig,
     SingleSelectionRowsConfig,
     SliderConfig,
     SliderRowsConfig,
     StabilityTrackerConfig,
+    StimulusConfiguration,
     TextConfig,
     TimeConfig,
     TimeRangeConfig,
@@ -1283,6 +1290,130 @@ class ReproFieldStabilityTracker(ReproFieldBase):
             user_input_type=InputType(self.input_options["userInputType"]),
             phase=phase,
             **params,
+        )
+
+        return config
+
+
+class ReproFieldVisualStimulusResponse(ReproFieldBase):
+    INPUT_TYPE = "visual-stimulus-response"
+    RESPONSE_TYPE = ResponseType.FLANKER
+
+    input_options: dict | None = None
+
+    @classmethod
+    def _get_supported_input_types(cls) -> list[str]:
+        return [cls.INPUT_TYPE]
+
+    def _get_trials(self, doc: dict) -> list[StimulusConfiguration]:
+        vals = []
+
+        if obj_list := self.attr_processor.get_attr_list(
+            doc, "schema:itemListElement"
+        ):
+            for obj in obj_list:
+                vals.append(
+                    StimulusConfiguration(
+                        id=obj.get(LdKeyword.id),
+                        image=self._get_ld_image(obj),
+                        text=self.attr_processor.get_translation(
+                            obj, "schema:name", self.lang
+                        ),
+                        value=self._get_choice_value(obj),
+                        # weight: int | None = None  # TODO
+                    )
+                )
+
+        return vals
+
+    def _get_blocks(self, doc: dict):
+        vals = []
+
+        if obj_list := self.attr_processor.get_attr_list(
+            doc, "schema:itemListElement"
+        ):
+            for obj in obj_list:
+                ld_order = self.attr_processor.get_attr_list(
+                    obj, "reproschema:order"
+                )
+                order = [v[LdKeyword.id] for v in ld_order or []]
+                vals.append(
+                    BlockConfiguration(
+                        name=self.attr_processor.get_translation(
+                            obj, "schema:name", self.lang
+                        ),
+                        order=order,
+                    )
+                )
+
+        return vals
+
+    async def _load_from_processed_doc(
+        self, processed_doc: dict, base_url: str | None = None
+    ):
+        await super()._load_from_processed_doc(processed_doc, base_url)
+        input_options = (
+            self.attr_processor.get_attr_list(
+                processed_doc, "reproschema:inputs"
+            )
+            or []
+        )
+        self.input_options = {}
+        if input_options:
+            for obj in input_options:
+                name = self.attr_processor.get_translation(
+                    obj, "schema:name", self.lang
+                )
+                val = self._get_choice_value(obj)
+                if name == "trials":
+                    val = self._get_trials(obj)
+                elif name == "blocks":
+                    val = self._get_blocks(obj)
+                elif name == "buttons":
+                    choices = self._get_ld_choices_formatted(obj)
+                    if not choices:
+                        continue
+                    val = []
+                    for btn in choices:
+                        val.append(
+                            ButtonConfiguration(
+                                text=btn.get("name"),
+                                image=btn.get("image"),
+                                value=btn.get("value"),
+                            )
+                        )
+                elif name == "fixationScreen":
+                    image = self._get_ld_image(obj)
+                    if not image:
+                        continue
+                    val = FixationScreen(value=val, image=image)
+
+                self.input_options[name] = val
+
+    def _build_config(self, _cls: Type | None, **attrs):
+        assert self.input_options is not None
+        config = FlankerConfig(
+            block_type=BlockType(self.input_options["blockType"]),
+            stimulus_trials=self.input_options["trials"],
+            blocks=self.input_options["blocks"],
+            buttons=self.input_options["buttons"],
+            next_button=self.input_options.get("nextButton"),
+            fixation_duration=self.input_options.get("fixationDuration"),
+            fixation_screen=self.input_options.get("fixationScreen"),
+            minimum_accuracy=self.input_options.get("minimumAccuracy"),
+            sample_size=self.input_options.get("sampleSize", 1),
+            sampling_method=SamplingMethod(
+                self.input_options["samplingMethod"]
+            ),
+            show_feedback=self.input_options["showFeedback"],
+            show_fixation=self.input_options["showFixation"],
+            show_results=self.input_options["showResults"],
+            trial_duration=self.input_options["trialDuration"],
+            is_last_practice=bool(self.input_options.get("lastPractice")),
+            is_last_test=bool(self.input_options.get("lastTest")),
+            is_first_practice=False,  # TODO ????
+            # maxRetryCount  # TODO missed
+            # blockIndex  # TODO missed
         )
 
         return config

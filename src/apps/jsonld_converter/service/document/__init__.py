@@ -4,6 +4,7 @@ from apps.jsonld_converter.service.document.activity import (  # noqa: F401, F40
     ABTrailsIpadActivity,
     ABTrailsMobileActivity,
     StabilityTaskActivity,
+    FlankerActivity,
 )
 from apps.jsonld_converter.service.document.activity_flow import (  # noqa: F401, F403, E501
     ReproActivityFlow,
@@ -28,6 +29,7 @@ from apps.jsonld_converter.service.document.field import (  # noqa: F401, F403
     ReproFieldStabilityTracker,
     ReproFieldABTrailMobile,
     ReproFieldABTrailIpad,
+    ReproFieldVisualStimulusResponse,
 )
 from apps.jsonld_converter.service.document.protocol import (  # noqa: F401, F403, E501
     ReproProtocol,

@@ -51,6 +51,7 @@ from apps.jsonld_converter.service.document.field import (
     ReproFieldTime,
     ReproFieldTimeRange,
     ReproFieldVideo,
+    ReproFieldVisualStimulusResponse,
 )
 from apps.jsonld_converter.service.document.report import (
     ReproActivityScore,
@@ -459,3 +460,13 @@ class StabilityTaskActivity(ReproActivity):
     @classmethod
     def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
         return [ReproFieldMessage, ReproFieldStabilityTracker]
+
+
+class FlankerActivity(ReproActivity):
+    @classmethod
+    def supports_activity_type(cls, doc: dict) -> bool:
+        return cls.get_activity_type(doc) == "FLANKER"
+
+    @classmethod
+    def get_supported_types(cls) -> list[Type[LdDocumentBase]]:
+        return [ReproFieldMessage, ReproFieldVisualStimulusResponse]
