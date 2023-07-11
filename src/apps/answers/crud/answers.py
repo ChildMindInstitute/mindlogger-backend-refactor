@@ -29,7 +29,7 @@ from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.alerts.errors import AnswerNotFoundError
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import RespondentAnswerData, Version
-from apps.applets.db.schemas import AppletHistorySchema
+from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.users import UserSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
@@ -322,11 +322,64 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return db_result.scalars().first()
 
     async def get_by_submit_id(
-        self,
-        submit_id: uuid.UUID,
+        self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
     ) -> list[AnswerSchema] | None:
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.submit_id == submit_id)
+        if answer_id:
+            query = query.where(AnswerSchema.id == answer_id)
         query = query.order_by(AnswerSchema.created_at.asc())
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_activity_flow_by_answer_id(
+        self, answer_id: uuid.UUID
+    ) -> bool:
+        query: Query = select(AnswerItemSchema, ActivityFlowHistoriesSchema)
+        query = query.join(
+            AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
+        )
+        query = query.join(
+            ActivityFlowHistoriesSchema,
+            ActivityFlowHistoriesSchema.id_version
+            == AnswerSchema.flow_history_id,
+            isouter=True,
+        )
+        query = query.where(AnswerItemSchema.is_assessment == False)  # noqa
+        query = query.where(AnswerSchema.id == answer_id)
+
+        db_result = await self._execute(query)
+        (
+            _,
+            flow_history_schema,
+        ) = (
+            db_result.first()
+        )  # type: AnswerItemSchema, ActivityFlowHistoriesSchema
+        if not flow_history_schema:
+            return False
+        return flow_history_schema.is_single_report
+
+    async def get_applet_info_by_answer_id(
+        self, answer_id: uuid.UUID
+    ) -> tuple[AnswerSchema, AppletHistorySchema, ActivityHistorySchema]:
+        query: Query = select(
+            AnswerSchema,
+            AppletSchema,
+            ActivityHistorySchema,
+        )
+        query = query.join(
+            AppletSchema,
+            AppletSchema.id == AnswerSchema.applet_id,
+            isouter=True,
+        )
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == AnswerSchema.activity_history_id,
+            isouter=True,
+        )
+        query = query.where(AnswerItemSchema.is_assessment == False)  # noqa
+        query = query.where(AnswerSchema.id == answer_id)
+
+        db_result = await self._execute(query)
+        return db_result.first()

@@ -16,6 +16,13 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: mindlogger_rabbitmq
+    ports:
+      - 5672:5672
+      - 8080:15672
+
   redis:
     image: redis
     ports:
@@ -35,6 +42,27 @@ services:
     depends_on:
       - postgres
       - redis
+      - rabbitmq
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/app/
+
+  report-consumer:
+    stdin_open: true
+    tty: true
+    image: mindlogger_consumer
+    build:
+      context: .
+      dockerfile: ./compose/fastapi/Dockerfile
+    container_name: mindlogger_app
+    entrypoint: /fastapi-entrypoint
+    command: /fastapi-consume-report
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
     ports:
       - 8000:80
     volumes:

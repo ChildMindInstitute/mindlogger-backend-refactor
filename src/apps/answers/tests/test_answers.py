@@ -5,6 +5,7 @@ from asynctest import CoroutineMock, patch
 
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
+from infrastructure.utility.rabbitmq_queue import RabbitMqQueueTest
 
 
 class TestAnswerActivityItems(BaseTest):
@@ -90,6 +91,11 @@ class TestAnswerActivityItems(BaseTest):
         response = await self.client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
+        assert len(RabbitMqQueueTest.messages) == 1
+        message = RabbitMqQueueTest.messages[RabbitMqQueueTest.routing_key][
+            0
+        ].body
+        assert b"submit_id" in message and b"answer_id" in message
 
     @patch("aiohttp.ClientSession.post")
     @rollback

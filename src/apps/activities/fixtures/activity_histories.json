@@ -19,7 +19,17 @@
       "is_reviewable": false,
       "response_is_editable": false,
       "order": 1.0,
-      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611_1.0.0"
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611_1.0.0",
+      "scores_and_reports": {
+        "generate_report": true,
+        "scores": [
+          {
+            "name":"Score 1",
+            "id": "score_1",
+            "calculation_type": "sum"
+          }
+        ]
+      }
     }
   },
   {
@@ -42,7 +52,17 @@
       "is_reviewable": true,
       "response_is_editable": false,
       "order": 1.0,
-      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.0.0"
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.0.0",
+      "scores_and_reports": {
+        "generate_report": true,
+        "scores": [
+          {
+            "name": "Score 1",
+            "id": "score_1",
+            "calculation_type": "sum"
+          }
+        ]
+      }
     }
   },
   {
@@ -65,7 +85,17 @@
       "is_reviewable": false,
       "response_is_editable": false,
       "order": 2,
-      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3612_2.0.1"
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3612_2.0.1",
+      "scores_and_reports": {
+        "generate_report": true,
+        "scores": [
+          {
+            "name": "Score 1",
+            "id": "score_1",
+            "calculation_type": "sum"
+          }
+        ]
+      }
     }
   },
   {
@@ -88,7 +118,17 @@
       "is_reviewable": false,
       "response_is_editable": false,
       "order": 1,
-      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3613_1.0.0"
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3613_1.0.0",
+      "scores_and_reports": {
+        "generate_report": true,
+        "scores": [
+          {
+            "name": "Score 1",
+            "id": "score_1",
+            "calculation_type": "sum"
+          }
+        ]
+      }
     }
   },
   {
@@ -111,7 +151,17 @@
       "is_reviewable": false,
       "response_is_editable": false,
       "order": 1,
-      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3614_1.0.0"
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3614_1.0.0",
+      "scores_and_reports": {
+        "generate_report": true,
+        "scores": [
+          {
+            "name": "Score 1",
+            "id": "score_1",
+            "calculation_type": "sum"
+          }
+        ]
+      }
     }
   },
   {
@@ -134,7 +184,17 @@
       "is_reviewable": false,
       "response_is_editable": false,
       "order": 1.0,
-      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611_1.9.9"
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611_1.9.9",
+      "scores_and_reports": {
+        "generate_report": true,
+        "scores": [
+          {
+            "name": "Score 1",
+            "id": "score_1",
+            "calculation_type": "sum"
+          }
+        ]
+      }
     }
   }
 ]
