@@ -1,5 +1,3 @@
-import uuid
-
 from pydantic import Field, NonNegativeInt, root_validator, validator
 from pydantic.color import Color
 
@@ -7,7 +5,6 @@ from apps.activities.errors import (
     InvalidDataMatrixByOptionError,
     InvalidDataMatrixError,
     InvalidScoreLengthError,
-    InvalidUUIDError,
     MinValueError,
 )
 from apps.shared.domain import (
@@ -15,6 +12,7 @@ from apps.shared.domain import (
     validate_audio,
     validate_color,
     validate_image,
+    validate_uuid,
 )
 
 
@@ -319,15 +317,6 @@ ResponseValueConfig = (
     | AudioPlayerValues
     | TimeValues
 )
-
-
-def validate_uuid(value):
-    # if none, generate a new id
-    if value is None:
-        return str(uuid.uuid4())
-    if not isinstance(value, str) or not uuid.UUID(value):
-        raise InvalidUUIDError()
-    return value
 
 
 def validate_options_value(options):

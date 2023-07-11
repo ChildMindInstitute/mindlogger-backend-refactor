@@ -1,4 +1,5 @@
 import mimetypes
+import uuid
 from gettext import gettext as _
 
 from pydantic.color import Color
@@ -8,6 +9,7 @@ __all__ = [
     "validate_color",
     "validate_audio",
     "extract_history_version",
+    "validate_uuid",
 ]
 
 from apps.shared.exception import ValidationError
@@ -23,6 +25,11 @@ class InvalidColorError(ValidationError):
 
 class InvalidAudioError(ValidationError):
     message = _("Invalid audio file.")
+
+
+class InvalidUUIDError(ValidationError):
+    zero_path = None
+    message = _("Invalid uuid value.")
 
 
 def validate_image(value: str) -> str:
@@ -61,4 +68,13 @@ def extract_history_version(value, values):
     if val := values.get("id_version"):
         return val[37:]
 
+    return value
+
+
+def validate_uuid(value):
+    # if none, generate a new id
+    if value is None:
+        return str(uuid.uuid4())
+    if not isinstance(value, str) or not uuid.UUID(value):
+        raise InvalidUUIDError()
     return value

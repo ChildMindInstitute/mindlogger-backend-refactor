@@ -1,26 +1,35 @@
+import json
 import uuid
 
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
     ActivityItemHistoriesCRUD,
 )
+from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsHistoryCRUD
 from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
-from apps.library.crud import LibraryCRUD
-from apps.library.db import LibrarySchema
+from apps.library.crud import CartCRUD, LibraryCRUD
+from apps.library.db import CartSchema, LibrarySchema
 from apps.library.domain import (
     AppletLibraryCreate,
     AppletLibraryFull,
+    AppletLibraryInfo,
+    AppletLibraryUpdate,
+    Cart,
     LibraryItem,
     LibraryItemActivity,
     LibraryItemActivityItem,
+    LibraryItemFlow,
+    LibraryItemFlowItem,
     PublicLibraryItem,
 )
 from apps.library.errors import (
     AppletNameExistsError,
     AppletVersionDoesNotExistError,
     AppletVersionExistsError,
+    LibraryItemDoesNotExistError,
 )
 from apps.shared.query_params import QueryParams
+from apps.workspaces.service.check_access import CheckAccessService
 from config import settings
 
 
@@ -64,7 +73,21 @@ class LibraryService:
                 display_name=schema.name,
             )
 
-        search_keywords = [schema.name]
+        search_keywords = await self._get_search_keywords(
+            applet, applet_version
+        )
+        search_keywords.append(schema.name)
+        # save library_item
+        library_item = LibrarySchema(
+            applet_id_version=f"{schema.applet_id}_{applet.version}",
+            keywords=schema.keywords,
+            search_keywords=search_keywords,
+        )
+        library_item = await LibraryCRUD(self.session).save(library_item)
+        return AppletLibraryFull.from_orm(library_item)
+
+    async def _get_search_keywords(self, applet, applet_version):
+        search_keywords = []
         search_keywords.extend(applet.description.values())
 
         activities = await ActivityHistoriesCRUD(
@@ -84,22 +107,20 @@ class LibraryService:
             if activity_item.response_type in ["singleSelect", "multiSelect"]:
                 options = activity_item.response_values.get("options")
                 search_keywords.extend([option["text"] for option in options])
+        return search_keywords
 
-        # save library_item
-        library_item = LibrarySchema(
-            applet_id_version=f"{schema.applet_id}_{applet.version}",
-            keywords=schema.keywords,
-            search_keywords=search_keywords,
+    async def get_applets_count(self, query_param: QueryParams) -> int:
+        count = await LibraryCRUD(self.session).get_all_library_count(
+            query_param
         )
-        library_item = await LibraryCRUD(self.session).save(library_item)
-        return AppletLibraryFull.from_orm(library_item)
+        return count
 
     async def get_all_applets(
-        self, query: QueryParams
+        self, query_params: QueryParams
     ) -> list[PublicLibraryItem]:
         """Get all applets for library."""
         library_items = await LibraryCRUD(self.session).get_all_library_items(
-            query.search
+            query_params
         )
 
         for library_item in library_items:
@@ -132,16 +153,27 @@ class LibraryService:
         activities = await ActivityHistoriesCRUD(
             session=self.session
         ).retrieve_by_applet_version(library_item.applet_id_version)
-
         library_item_activities = []
+        activity_id_key_maps = dict()
         for activity in activities:
             activity_items = await ActivityItemHistoriesCRUD(
                 session=self.session
             ).get_by_activity_id_version(activity_id=activity.id_version)
-
+            activity_id_key_maps[activity.id_version] = uuid.uuid4()
             library_item_activities.append(
                 LibraryItemActivity(
+                    key=activity_id_key_maps[activity.id_version],
                     name=activity.name,
+                    description=activity.description,
+                    image=activity.image,
+                    splash_screen=activity.splash_screen,
+                    show_all_at_once=activity.show_all_at_once,
+                    is_skippable=activity.show_all_at_once,
+                    is_reviewable=activity.is_reviewable,
+                    response_is_editable=activity.response_is_editable,
+                    is_hidden=activity.is_hidden,
+                    scores_and_reports=activity.scores_and_reports,
+                    subscale_settings=activity.subscale_setting,
                     items=[
                         LibraryItemActivityItem(
                             name=item.name,
@@ -150,7 +182,10 @@ class LibraryService:
                             response_values=self._get_response_value_options(
                                 item.response_values
                             ),
-                            order=item.order,
+                            config=item.config,
+                            is_hidden=item.is_hidden,
+                            conditional_logic=item.conditional_logic,
+                            allow_edit=item.allow_edit,
                         )
                         for item in activity_items
                     ],
@@ -158,17 +193,44 @@ class LibraryService:
             )
         library_item.activities = library_item_activities
 
+        flows = await FlowsHistoryCRUD(
+            session=self.session
+        ).retrieve_by_applet_version(library_item.applet_id_version)
+        library_item_flows = []
+
+        for flow in flows:
+            flow_items = await FlowItemHistoriesCRUD(
+                session=self.session
+            ).get_by_flow_id(flow_id=flow.id_version)
+            library_item_flows.append(
+                LibraryItemFlow(
+                    name=flow.name,
+                    description=flow.description,
+                    is_single_report=flow.is_single_report,
+                    hide_badge=flow.hide_badge,
+                    is_hidden=flow.is_hidden,
+                    items=[
+                        LibraryItemFlowItem(
+                            activity_key=activity_id_key_maps[
+                                item.activity_id
+                            ],
+                        )
+                        for item in flow_items
+                    ],
+                )
+            )
+        library_item.activity_flows = library_item_flows
         return library_item
 
     def _get_response_value_options(self, response_values):
         if response_values:
             if "options" in response_values:
-                return [
-                    option["text"] for option in response_values["options"]
-                ]
+                for option in response_values["options"]:
+                    option.pop("id", None)
+                return response_values
         return None
 
-    async def get_applet_url(self, applet_id: uuid.UUID) -> str:
+    async def get_applet_url(self, applet_id: uuid.UUID) -> AppletLibraryInfo:
         """Get applet url for library by id."""
         applet = await AppletsCRUD(self.session).get_by_id(id_=applet_id)
         applet_version = f"{applet_id}_{applet.version}"
@@ -179,4 +241,78 @@ class LibraryService:
             raise AppletVersionDoesNotExistError()
 
         domain = settings.service.urls.frontend.admin_base
-        return f"https://{domain}/library/{library_item.id}"
+        return AppletLibraryInfo(
+            url=f"https://{domain}/library/{library_item.id}",
+            library_id=library_item.id,
+        )
+
+    async def update_shared_applet(
+        self,
+        library_id: uuid.UUID,
+        schema: AppletLibraryUpdate,
+        user_id: uuid.UUID,
+    ):
+        library = await LibraryCRUD(self.session).get_by_id(id=library_id)
+        if not library:
+            raise LibraryItemDoesNotExistError()
+
+        # check if user has access to
+        applet_id = uuid.UUID(str(library.applet_id_version).split("_")[0])
+
+        await CheckAccessService(
+            self.session, user_id
+        ).check_applet_share_library_access(applet_id=applet_id)
+
+        applet = await AppletsCRUD(self.session).get_by_id(id_=applet_id)
+        new_applet_version = f"{applet_id}_{applet.version}"
+
+        # if applet name is new, check if applet with this name is already in library  # noqa E501
+        if applet.display_name != schema.name:
+            await self.check_applet_name(schema.name)
+            await AppletsCRUD(self.session).update_display_name(
+                applet_id=applet_id, display_name=schema.name
+            )
+
+            await AppletHistoriesCRUD(self.session).update_display_name(
+                id_version=new_applet_version,
+                display_name=schema.name,
+            )
+        search_keywords = await self._get_search_keywords(
+            applet, new_applet_version
+        )
+        search_keywords.append(schema.name)
+
+        # save library_item
+        library_item = LibrarySchema(
+            applet_id_version=new_applet_version,
+            keywords=schema.keywords,
+            search_keywords=search_keywords,
+        )
+        library_item = await LibraryCRUD(self.session).update(
+            library_item, library_id
+        )
+        return AppletLibraryFull.from_orm(library_item)
+
+    async def get_cart(self, user_id: uuid.UUID) -> Cart:
+        """Get cart for user."""
+        cart = await CartCRUD(self.session).get_by_user_id(user_id)
+        if not cart or not cart.cart_items:
+            return Cart(cart_items=None)
+        return Cart(cart_items=json.loads(cart.cart_items))
+
+    async def add_to_cart(self, user_id: uuid.UUID, schema: Cart) -> Cart:
+        """Add item to cart."""
+
+        cart_schema = await CartCRUD(self.session).get_by_user_id(user_id)
+        if not cart_schema:
+            cart_schema = CartSchema(user_id=user_id, cart_items=None)
+        if schema.cart_items:
+            cart_schema.cart_items = json.dumps(schema.cart_items)
+        else:
+            cart_schema.cart_items = None
+
+        cart = await CartCRUD(self.session).save(cart_schema)
+
+        return Cart(
+            cart_items=json.loads(cart.cart_items) if cart.cart_items else None
+        )
