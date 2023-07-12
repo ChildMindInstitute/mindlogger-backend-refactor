@@ -1,22 +1,42 @@
-import asyncio
+import enum
+import json
+import uuid
 from collections import defaultdict
-from concurrent.futures.thread import ThreadPoolExecutor
 
-from pyfcm import FCMNotification
+import firebase_admin
+from firebase_admin import credentials, messaging
 
+from apps.shared.domain import InternalModel
 from config import settings
 
 
-class NotificationTest:
+class FirebaseNotificationType(str, enum.Enum):
+    RESPONSE = "response-data-alert"
+    APPLET_UPDATE = "applet-update-alert"
+    APPLET_DELETE = "applet-delete-alert"
+    SCHEDULE_UPDATED = "schedule-updated"
+
+
+class FirebaseData(InternalModel):
+    type: FirebaseNotificationType
+    applet_id: uuid.UUID
+    is_local: str = "false"
+
+
+class FirebaseMessage(InternalModel):
+    title: str
+    body: str
+    data: FirebaseData
+
+
+class FCMNotificationTest:
     notifications: dict[str, list] = defaultdict(list)
 
     async def notify(
         self,
         devices: list,
-        message_title: str | None = None,
-        message_body: str | None = None,
+        message: FirebaseMessage,
         time_to_live: int | None = None,
-        data_message: dict | None = None,
         badge: str | None = None,
         extra_kwargs: dict | None = None,
         *args,
@@ -26,55 +46,29 @@ class NotificationTest:
             return
         for device in devices:
             self.notifications[device].append(
-                dict(title=message_title, body=message_body, data=data_message)
+                json.dumps(message.dict(by_alias=True), default=str)
             )
 
 
-class RetryException(Exception):
-    def __init__(self, timeout):
-        self.timeout = timeout
-
-
-class _FirebaseNotification(FCMNotification):
-    def do_request(self, payload, timeout=5):
-        response = self.requests_session.post(
-            self.FCM_END_POINT, data=payload, timeout=timeout
-        )
-        if (
-            "Retry-After" in response.headers
-            and int(response.headers["Retry-After"]) > 0
-        ):
-            raise RetryException(timeout=timeout)
-        return response
-
-    def send_request(self, payloads=None, timeout=None):
-        self.send_request_responses = []
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            response = executor.map(self.do_request, payloads)
-            executor.map(self.send_request_responses.append, response)
-
-
-class Notification:
-    """SIngleton FCM Notification client"""
+class FCMNotification:
+    """Singleton FCM Notification client"""
 
     _initialized = False
-    _instance = None
-    client: _FirebaseNotification | None = None
+    _app = None
 
     def __new__(cls, *args, **kwargs):
         if settings.env == "testing":
-            return NotificationTest()
-        if not cls._instance:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+            return FCMNotificationTest()
+        if not cls._app:
+            cls._app = super().__new__(cls)
+        return cls._app
 
-    def __init__(self, **kwargs):
-
+    def __init__(self):
         if self._initialized:
             return
 
-        self.client = _FirebaseNotification(
-            api_key=settings.notification.api_key
+        self._app = firebase_admin.initialize_app(
+            credentials.Certificate(settings.fcm.certificate)
         )
 
         self._initialized = True
@@ -82,42 +76,50 @@ class Notification:
     async def notify(
         self,
         devices: list,
-        message_title: str | None = None,
-        message_body: str | None = None,
+        message: FirebaseMessage,
         time_to_live: int | None = None,
-        data_message: dict | None = None,
         badge: str | None = None,
         extra_kwargs: dict | None = None,
         *args,
         **kwargs,
     ):
-        try:
-            if devices and len(devices) > 1:
-                if self.client:
-                    self.client.notify_multiple_devices(
-                        registration_ids=devices,
-                        message_title=message_title,
-                        message_body=message_body,
-                        time_to_live=time_to_live,
-                        data_message=data_message,
-                        badge=badge,
-                        extra_kwargs=extra_kwargs,
-                        *args,
-                        **kwargs,
-                    )
-            else:
-                if self.client:
-                    self.client.notify_single_device(
-                        registration_id=devices[0],
-                        message_title=message_title,
-                        message_body=message_body,
-                        time_to_live=time_to_live,
-                        data_message=data_message,
-                        badge=badge,
-                        extra_kwargs=extra_kwargs,
-                        *args,
-                        **kwargs,
-                    )
-        except RetryException as ex:
-            await asyncio.sleep(ex.timeout)
-            await self.notify(devices, *args, **kwargs)
+        if devices and len(devices) > 1:
+            messaging.send_each_for_multicast(
+                messaging.MulticastMessage(
+                    devices,
+                    android=messaging.AndroidConfig(
+                        ttl=settings.fcm.ttl, priority="high"
+                    ),
+                    data=dict(
+                        message=json.dumps(
+                            message.dict(by_alias=True), default=str
+                        )
+                    ),
+                    apns=messaging.APNSConfig(
+                        payload=messaging.APNSPayload(
+                            aps=messaging.Aps(content_available=True)
+                        )
+                    ),
+                ),
+                app=self._app,
+            )
+        else:
+            messaging.send(
+                messaging.Message(
+                    android=messaging.AndroidConfig(
+                        ttl=settings.fcm.ttl, priority="high"
+                    ),
+                    data=dict(
+                        message=json.dumps(
+                            message.dict(by_alias=True), default=str
+                        )
+                    ),
+                    token=devices[0],
+                    apns=messaging.APNSConfig(
+                        payload=messaging.APNSPayload(
+                            aps=messaging.Aps(content_available=True)
+                        )
+                    ),
+                ),
+                app=self._app,
+            )

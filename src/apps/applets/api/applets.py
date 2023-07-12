@@ -61,6 +61,8 @@ __all__ = [
     "applet_retrieve_by_key",
 ]
 
+from infrastructure.utility import FirebaseNotificationType
+
 
 async def applet_list(
     user: User = Depends(get_current_user),
@@ -177,7 +179,7 @@ async def applet_update(
             applet_id,
             "Applet is updated.",
             "Applet is updated.",
-            "applet-update-alert",
+            FirebaseNotificationType.APPLET_UPDATE,
         )
         # await mail_service.send(
         #     MessageSchema(
@@ -352,7 +354,7 @@ async def applet_delete(
             applet_id,
             "Applet is deleted.",
             "Applet is deleted.",
-            "applet-delete-alert",
+            FirebaseNotificationType.APPLET_DELETE,
         )
 
 

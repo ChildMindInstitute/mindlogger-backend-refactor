@@ -4,7 +4,7 @@ import uuid
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
-from infrastructure.utility import NotificationTest
+from infrastructure.utility import FCMNotificationTest
 
 
 class TestApplet(BaseTest):
@@ -914,7 +914,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 200, response.json()
         # assert len(TestMail.mails) == 1
         # assert TestMail.mails[0].subject == "Applet edit success!"
-        assert len(NotificationTest.notifications) > 0
+        assert len(FCMNotificationTest.notifications) > 0
 
     @rollback
     async def test_duplicate_applet(self):
@@ -1124,7 +1124,7 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 404, response.json()
 
-        assert len(NotificationTest.notifications) > 0
+        assert len(FCMNotificationTest.notifications) > 0
 
     @rollback
     async def test_applet_delete_by_manager(self):
