@@ -16,7 +16,7 @@ class AppletActivityAnswerFilter(BaseQueryParams):
     respondent_id: uuid.UUID | None
     from_datetime: datetime.datetime | None
     to_datetime: datetime.datetime | None
-    identifiers: str | None
+    identifiers: str | None = ""
     versions: str | None
 
 
