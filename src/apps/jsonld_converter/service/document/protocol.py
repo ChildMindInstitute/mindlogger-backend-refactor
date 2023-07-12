@@ -38,6 +38,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     properties: dict
     nested_by_order: list[LdDocumentBase] | None = None
     flows_by_order: list[LdDocumentBase] | None = None
+    report_config: dict | None = None
 
     @classmethod
     def supports(cls, doc: dict) -> bool:
@@ -76,6 +77,10 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         self.ld_image = self._get_ld_image(processed_doc, drop=True)
         self.ld_watermark = self._get_ld_watermark(processed_doc, drop=True)
 
+        self.report_config = self._get_report_configuration(
+            processed_doc, drop=True
+        )
+
         properties = self._get_ld_properties_formatted(processed_doc)
         flow_properties = self._get_ld_properties_formatted(
             processed_doc, key="reproschema:activityFlowProperties"
@@ -88,6 +93,35 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         )
 
         self._load_extra(processed_doc)
+
+    def _get_report_configuration(
+        self, processed_doc: dict, *, drop=False
+    ) -> dict:
+        report_config = self.attr_processor.get_attr_list(
+            processed_doc, "reproschema:reportConfigs", drop=drop
+        )
+        cfg = {}
+        for obj in report_config or []:
+            name = self.attr_processor.get_attr_value(obj, "schema:name")
+            if name == "emailRecipients":
+                ld_recipients = self.attr_processor.get_attr_list(
+                    obj, "schema:value"
+                )
+                value = list(
+                    {
+                        recipient.get(LdKeyword.value)
+                        for recipient in ld_recipients or []
+                    }
+                )
+            elif name == "emailBody":  # TODO add translations to extra
+                value = self.attr_processor.get_translation(
+                    obj, "schema:value", self.lang
+                )
+            else:
+                value = self.attr_processor.get_attr_value(obj, "schema:value")
+            cfg[name] = value
+
+        return cfg
 
     def _get_ld_watermark(self, doc: dict, drop=False):
         return self.attr_processor.get_attr_single(
@@ -171,6 +205,8 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                 flow.activity_keys = activity_keys
                 activity_flows.append(flow.export())
 
+        report_cfg = self.report_config or {}
+
         return NotEncryptedApplet(
             display_name=self.ld_pref_label or self.ld_alt_label,
             description=self.ld_description or {},
@@ -187,10 +223,10 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             # pinned_at: datetime.datetime | None
             # retention_period: int | None
             # retention_type: str | None
-            # report_server_ip: str = ""
-            # report_public_key: str = ""
-            # report_recipients: list[str] = Field(default_factory=list)
-            # report_include_user_id: bool = False
-            # report_include_case_id: bool = False
-            # report_email_body: str = ""
+            report_server_ip=report_cfg.get("serverIp") or "",
+            report_public_key=report_cfg.get("publicEncryptionKey") or "",
+            report_recipients=report_cfg.get("emailRecipients") or [],
+            report_include_user_id=report_cfg.get("includeUserId") or False,
+            report_include_case_id=report_cfg.get("includeCaseId") or False,
+            report_email_body=report_cfg.get("emailBody") or "",
         )
