@@ -30,6 +30,7 @@ aiohttp = "*"
 firebase-admin = "*"
 aio-pika = "*"
 pyld = "*"
+aio-pika = "*"
 
 [dev-packages]
 black = "~=22.6"
