@@ -21,22 +21,21 @@ class _ActivityAnswerFilter(Filtering):
         AnswerItemSchema.end_datetime, Comparisons.LESS_OR_EQUAL
     )
     identifiers = FilterField(
-        AnswerItemSchema.identifier,
-        method_name='filter_by_identifiers'
+        AnswerItemSchema.identifier, method_name="filter_by_identifiers"
     )
     versions = FilterField(AnswerSchema.version, Comparisons.IN)
 
     def prepare_identifiers(self, value: str):
-        if value == '':
+        if value == "":
             return None
         return value.split(",")
 
     def prepare_versions(self, value: str):
         return value.split(",")
 
-    def filter_by_identifiers(self, field, values:list|None):
+    def filter_by_identifiers(self, field, values: list | None):
         if values is None:
-            return field == None
+            return field == None  # noqa
         return field.in_(values)
 
 
@@ -52,7 +51,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         return schema
 
     async def delete_by_applet_user(
-            self, applet_id: uuid.UUID, user_id: uuid.UUID | None = None
+        self, applet_id: uuid.UUID, user_id: uuid.UUID | None = None
     ):
         answer_id_query: Query = select(AnswerSchema.id)
         answer_id_query = answer_id_query.where(
@@ -68,7 +67,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         await self._execute(query)
 
     async def get_by_answer_and_activity(
-            self, answer_id: uuid.UUID, activity_history_id: str
+        self, answer_id: uuid.UUID, activity_history_id: str
     ) -> list[AnswerItemSchema]:
         query: Query = select(AnswerItemSchema)
         query = query.join(
@@ -83,7 +82,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         return db_result.scalars().all()
 
     async def get_answer_ids(
-            self, answer_ids: list[uuid.UUID]
+        self, answer_ids: list[uuid.UUID]
     ) -> list[AnswerItemSchema]:
         query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id.in_(answer_ids))
@@ -91,7 +90,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         return db_result.scalars().all()
 
     async def get_respondent_submits_by_answer_ids(
-            self, answer_ids: list[uuid.UUID]
+        self, answer_ids: list[uuid.UUID]
     ) -> list[AnswerItemSchema]:
         query: Query = select(AnswerItemSchema)
         query = query.order_by(AnswerItemSchema.created_at.asc())
@@ -101,7 +100,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         return db_result.scalars().all()
 
     async def get_assessment(
-            self, answer_id: uuid.UUID, user_id: uuid.UUID
+        self, answer_id: uuid.UUID, user_id: uuid.UUID
     ) -> AnswerItemSchema | None:
         query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
@@ -113,7 +112,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         return db_result.scalars().first()
 
     async def get_reviews_by_answer_id(
-            self, answer_id: uuid.UUID, activity_items: list
+        self, answer_id: uuid.UUID, activity_items: list
     ) -> list[AnswerReview]:
         query: Query = select(
             AnswerItemSchema,
@@ -142,7 +141,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         return results
 
     async def get_respondent_answer(
-            self, answer_id: uuid.UUID
+        self, answer_id: uuid.UUID
     ) -> AnswerItemSchema | None:
         query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
@@ -152,10 +151,10 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         return db_result.scalars().first()
 
     async def get_applet_answers_by_activity_id(
-            self,
-            applet_id: uuid.UUID,
-            activity_id: uuid.UUID,
-            filters: QueryParams,
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        filters: QueryParams,
     ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
