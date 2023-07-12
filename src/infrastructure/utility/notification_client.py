@@ -1,9 +1,33 @@
 import asyncio
+from collections import defaultdict
 from concurrent.futures.thread import ThreadPoolExecutor
 
 from pyfcm import FCMNotification
 
 from config import settings
+
+
+class NotificationTest:
+    notifications: dict[str, list] = defaultdict(list)
+
+    async def notify(
+        self,
+        devices: list,
+        message_title: str | None = None,
+        message_body: str | None = None,
+        time_to_live: int | None = None,
+        data_message: dict | None = None,
+        badge: str | None = None,
+        extra_kwargs: dict | None = None,
+        *args,
+        **kwargs,
+    ):
+        if not devices:
+            return
+        for device in devices:
+            self.notifications[device].append(
+                dict(title=message_title, body=message_body, data=data_message)
+            )
 
 
 class RetryException(Exception):
@@ -24,7 +48,6 @@ class _FirebaseNotification(FCMNotification):
         return response
 
     def send_request(self, payloads=None, timeout=None):
-
         self.send_request_responses = []
         with ThreadPoolExecutor(max_workers=2) as executor:
             response = executor.map(self.do_request, payloads)
@@ -39,6 +62,8 @@ class Notification:
     client: _FirebaseNotification | None = None
 
     def __new__(cls, *args, **kwargs):
+        if settings.env == "testing":
+            return NotificationTest()
         if not cls._instance:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -56,7 +81,7 @@ class Notification:
 
     async def notify(
         self,
-        devices: list | None = None,
+        devices: list,
         message_title: str | None = None,
         message_body: str | None = None,
         time_to_live: int | None = None,
@@ -66,7 +91,6 @@ class Notification:
         *args,
         **kwargs,
     ):
-
         try:
             if devices and len(devices) > 1:
                 if self.client:
@@ -83,7 +107,6 @@ class Notification:
                     )
             else:
                 if self.client:
-                    assert devices
                     self.client.notify_single_device(
                         registration_id=devices[0],
                         message_title=message_title,

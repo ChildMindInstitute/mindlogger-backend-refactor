@@ -32,6 +32,8 @@ from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
+from apps.users import UserSchema
+from apps.users.db.schemas import UserDeviceSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from infrastructure.database.crud import BaseCRUD
 
@@ -761,3 +763,21 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             display_name=display_name,
         )
         await self._execute(query)
+
+    async def get_respondents_device_ids(
+        self, applet_id: uuid.UUID
+    ) -> list[str]:
+        query: Query = select(UserDeviceSchema.device_id)
+        query = query.join(
+            UserSchema, UserSchema.id == UserDeviceSchema.user_id
+        )
+        query = query.join(
+            UserAppletAccessSchema,
+            UserAppletAccessSchema.user_id == UserSchema.id,
+        )
+        query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.is_deleted == False)  # noqa
+
+        db_result = await self._execute(query)
+        return db_result.scalars().all()

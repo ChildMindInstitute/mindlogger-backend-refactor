@@ -173,6 +173,12 @@ async def applet_update(
             applet_id
         )
         applet = await service.update(applet_id, schema)
+        await service.send_notification_to_applet_respondents(
+            applet_id,
+            "Applet is updated.",
+            "Applet is updated.",
+            "applet-update-alert",
+        )
         # await mail_service.send(
         #     MessageSchema(
         #         recipients=[user.email],
@@ -342,6 +348,12 @@ async def applet_delete(
             applet_id
         )
         await service.delete_applet_by_id(applet_id)
+        await service.send_notification_to_applet_respondents(
+            applet_id,
+            "Applet is deleted.",
+            "Applet is deleted.",
+            "applet-delete-alert",
+        )
 
 
 async def applet_set_folder(
