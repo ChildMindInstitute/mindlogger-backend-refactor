@@ -27,6 +27,7 @@ sentry-sdk = "~=1.6"
 sqlalchemy = {extras = ["asyncio"], version = "~=1.4.46"}
 uvicorn = {extras = ["standard"], version = "==0.19"}
 aiohttp = "*"
+aio-pika = "*"
 
 [dev-packages]
 black = "~=22.6"
