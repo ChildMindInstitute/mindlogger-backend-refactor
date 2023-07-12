@@ -10,6 +10,7 @@ from config.cors import CorsSettings
 from config.database import DatabaseSettings
 from config.mailing import MailingSettings
 from config.notification import NotificationSettings
+from config.rabbitmq import RabbitMQSettings
 from config.redis import RedisSettings
 from config.secret import SecretSettings
 from config.sentry import SentrySettings
@@ -47,6 +48,7 @@ class Settings(BaseSettings):
 
     # Redis
     redis: RedisSettings = RedisSettings()
+    rabbitmq: RabbitMQSettings = RabbitMQSettings()
 
     # Mailing
     mailing: MailingSettings = MailingSettings()

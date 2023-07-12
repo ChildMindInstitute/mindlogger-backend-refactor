@@ -24,11 +24,37 @@ sys.exit(0)
 END
 }
 
+rabbit_ready() {
+python << END
+import asyncio
+import sys
+import os
+
+import aio_pika
+from config import settings
+from aiormq.exceptions import AMQPConnectionError
+
+try:
+    await aio_pika.connect_robust(url=self.url)
+except AMQPConnectionError:
+    sys.exit(-1)
+
+sys.exit(0)
+
+END
+}
+
 until redis_ready; do
   >&2 echo 'Waiting for Redis to become available...'
   sleep 1
 done
 >&2 echo '>>> Redis is available <<<'
+
+until rabbit_ready; do
+  >&2 echo 'Waiting for RabbitMQ to become available...'
+  sleep 1
+done
+>&2 echo '>>> RabbitMQ is available <<<'
 
 exec "$@"
 

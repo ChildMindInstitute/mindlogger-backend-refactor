@@ -20,14 +20,23 @@ class _ActivityAnswerFilter(Filtering):
     to_datetime = FilterField(
         AnswerItemSchema.end_datetime, Comparisons.LESS_OR_EQUAL
     )
-    identifiers = FilterField(AnswerItemSchema.identifier, Comparisons.IN)
+    identifiers = FilterField(
+        AnswerItemSchema.identifier, method_name="filter_by_identifiers"
+    )
     versions = FilterField(AnswerSchema.version, Comparisons.IN)
 
     def prepare_identifiers(self, value: str):
+        if value == "":
+            return None
         return value.split(",")
 
     def prepare_versions(self, value: str):
         return value.split(",")
+
+    def filter_by_identifiers(self, field, values: list | None):
+        if values is None:
+            return field == None  # noqa
+        return field.in_(values)
 
 
 class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):

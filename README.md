@@ -110,6 +110,7 @@ Pipenv used as a default dependencies manager
 pipenv shell
 
 # Install all deps from Pipfile.lock
+# to install venv to current directory use `export PIPENV_VENV_IN_PROJECT=1`
 pipenv sync --dev
 ```
 

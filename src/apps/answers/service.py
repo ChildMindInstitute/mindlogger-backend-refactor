@@ -68,6 +68,7 @@ from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from infrastructure.utility.rabbitmq_queue import RabbitMqQueue
 
 
 class AnswerService:
@@ -254,6 +255,31 @@ class AnswerService:
         )
 
         await AnswerItemsCRUD(self.session).create(item_answer)
+        await self._create_report_from_answer(answer.submit_id, answer.id)
+
+    async def _create_report_from_answer(
+        self, submit_id: uuid.UUID, answer_id: uuid.UUID
+    ):
+        service = ReportServerService(self.session)
+        is_reportable = await service.is_reportable(answer_id)
+        if not is_reportable:
+            return
+
+        queue = RabbitMqQueue()
+        await queue.connect()
+        is_flow_single = await service.is_flows_single_report(answer_id)
+        try:
+            if not is_flow_single:
+                await queue.publish(
+                    data=dict(submit_id=submit_id, answer_id=answer_id)
+                )
+            else:
+                # TODO: check whether the flow is finished
+                is_single_report = True
+                if is_single_report:
+                    await queue.publish(data=dict(submit_id=submit_id))
+        finally:
+            await queue.close()
 
     async def get_review_activities(
         self,
@@ -674,7 +700,11 @@ class AnswerService:
         if not answer:
             return None
         service = ReportServerService(self.session)
-        report = await service.create_report(answer.submit_id)
+        is_single_flow = await service.is_flows_single_report(answer.id)
+        if is_single_flow:
+            report = await service.create_report(answer.submit_id)
+        else:
+            report = await service.create_report(answer.submit_id, answer.id)
 
         return report
 
@@ -691,10 +721,42 @@ class ReportServerService:
     def __init__(self, session):
         self.session = session
 
+    async def is_reportable(self, answer_id: uuid.UUID):
+        answer, applet, activity = await AnswersCRUD(
+            self.session
+        ).get_applet_info_by_answer_id(answer_id)
+        if not applet.report_server_ip:
+            return False
+        elif not applet.report_public_key:
+            return False
+        elif not applet.report_recipients:
+            return False
+        elif not activity.scores_and_reports:
+            return False
+        elif not activity.scores_and_reports.get("generate_report", False):
+            return False
+
+        scores = activity.scores_and_reports.get("scores", [])
+        sections = activity.scores_and_reports.get("sections", [])
+        if not any([scores, sections]):
+            return False
+        return True
+
+    async def is_flows_single_report(self, answer_id: uuid.UUID) -> bool:
+        """
+        Whether check to send flow reports in a single or multiple request
+        """
+        result = await AnswersCRUD(
+            self.session
+        ).get_activity_flow_by_answer_id(answer_id)
+        return result
+
     async def create_report(
-        self, submit_id: uuid.UUID
+        self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
     ) -> ReportServerResponse | None:
-        answers = await AnswersCRUD(self.session).get_by_submit_id(submit_id)
+        answers = await AnswersCRUD(self.session).get_by_submit_id(
+            submit_id, answer_id
+        )
         if not answers:
             return None
         answer_map = dict((answer.id, answer) for answer in answers)

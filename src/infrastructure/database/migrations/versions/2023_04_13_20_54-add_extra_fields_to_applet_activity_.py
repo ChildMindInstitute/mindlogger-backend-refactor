@@ -1,7 +1,7 @@
 """Add extra fields to Applet, Activity, ActivityItem, ActivityFlow
 
 Revision ID: 1e64f22ed834
-Revises: 595414bdf04f
+Revises: 150d77d42a08
 Create Date: 2023-04-13 20:54:16.683101
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "1e64f22ed834"
-down_revision = "595414bdf04f"
+down_revision = "150d77d42a08"
 branch_labels = None
 depends_on = None
 
