@@ -294,8 +294,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                     )
 
                 except ConditionalLogicError:
-                    ...  # TODO
-                    raise
+                    raise  # TODO
 
             models.append(model)
 
@@ -493,7 +492,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             key=uuid4(),
             name=self.ld_pref_label or self.ld_alt_label,
             description=self.ld_description or {},
-            splash_screen=self.ld_splash or "",  # TODO not loaded
+            splash_screen=self.ld_splash or "",
             show_all_at_once=bool(self.ld_is_one_page),
             is_skippable=self.is_skippable,
             is_reviewable=bool(self.ld_is_reviewer),

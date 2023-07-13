@@ -65,7 +65,7 @@ class ContextResolverAwareMixin:
             raise JsonLDProcessingError("Document expanding error", doc) from e
 
 
-def str_to_id(name: str, to_underscore=r"\s-") -> str:
+def str_to_id(name: str, to_underscore=r"\s") -> str:
     name = re.sub(r"[^0-9a-zA-Z\s_-]+", "", name)
     if to_underscore:
         name = re.sub(rf"[_{to_underscore}]+", "_", name)
