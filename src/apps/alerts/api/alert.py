@@ -23,12 +23,13 @@ from apps.workspaces.domain.constants import Role
 from config import settings
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
+from infrastructure.utility import RedisCache
 
 
 async def alerts_create(
-    user: User = Depends(get_current_user),
-    applet_answer: AppletAnswerCreate = Body(...),
-    session=Depends(get_session),
+        user: User = Depends(get_current_user),
+        applet_answer: AppletAnswerCreate = Body(...),
+        session=Depends(get_session),
 ) -> None:
     # Check user permissions.
     # Only respondent role can create alert
@@ -47,12 +48,12 @@ async def alerts_create(
 
 
 async def alert_get_all_by_applet_id(
-    applet_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    query_params: QueryParams = Depends(
-        parse_query_params(AlertConfigQueryParams)
-    ),
-    session=Depends(get_session),
+        applet_id: uuid.UUID,
+        user: User = Depends(get_current_user),
+        query_params: QueryParams = Depends(
+            parse_query_params(AlertConfigQueryParams)
+        ),
+        session=Depends(get_session),
 ) -> ResponseMulti[AlertPublic]:
     # Check user permissions.
     # Only manager roles - (admin) can get alert
@@ -83,9 +84,9 @@ async def alert_get_all_by_applet_id(
 
 
 async def alert_update_status_by_id(
-    alert_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    session=Depends(get_session),
+        alert_id: uuid.UUID,
+        user: User = Depends(get_current_user),
+        session=Depends(get_session),
 ) -> Response[Alert]:
     async with atomic(session):
         alert_schema: AlertSchema = await AlertCRUD(session).get_by_id(
@@ -109,11 +110,24 @@ async def alert_update_status_by_id(
     return Response(result=alert)
 
 
+async def we_alert_retrieve_by_applet_id(
+        websocket: WebSocket,
+        applet_id: uuid.UUID,
+        user: User = Depends(get_current_user_for_ws),
+        session=Depends(get_session),
+):
+    await websocket.accept(websocket.headers.get("sec-websocket-protocol"))
+    channel = f'channel-{user.id}'
+
+    cache = RedisCache()
+    task = await cache.subscribe(channel, ws=websocket)
+
+
 async def ws_alert_get_all_by_applet_id(
-    websocket: WebSocket,
-    applet_id: uuid.UUID,
-    user: User = Depends(get_current_user_for_ws),
-    session=Depends(get_session),
+        websocket: WebSocket,
+        applet_id: uuid.UUID,
+        user: User = Depends(get_current_user_for_ws),
+        session=Depends(get_session),
 ):
     await websocket.accept(websocket.headers.get("sec-websocket-protocol"))
 

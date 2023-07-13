@@ -29,7 +29,7 @@ class RabbitMqQueueTest(object):
         message = aio_pika.Message(json.dumps(data, default=str).encode())
         self.messages[routing_key or self.routing_key].append(message)
 
-    async def consume_and_wait(
+    async def consume(
         self, queue_name: str | None = None, *, callback, async_parallel=5
     ):
         assert self.connection, "Connection is closed"

@@ -1,4 +1,6 @@
+import asyncio
 import datetime
+import json
 import re
 import typing
 
@@ -58,7 +60,7 @@ class RedisCache:
     """Singleton Redis cache client"""
 
     _initialized: bool = False
-    _instance: None = None
+    _instance = None
     configuration: dict = {}
     _cache: typing.Optional[aioredis.Redis] = None
     host: str
@@ -142,3 +144,16 @@ class RedisCache:
         if not self._cache:
             return []
         return await self._cache.mget(keys)
+
+    async def publish(self, channel: str, value):
+        await self._cache.publish(channel, json.dumps(value, default=str))
+
+    async def subscribe(self, channel_name: str, callback, *args, **kwargs):
+        pubsub = self._cache.pubsub()
+        await pubsub.subscribe(channel_name)
+        task = await asyncio.create_task(self._handler(pubsub, callback, *args, **kwargs))
+        return task
+
+    async def _handler(self, pubsub: aioredis.client.PubSub, callback, *args, **kwargs):
+        async for message in pubsub.listen():
+            await callback(message=json.loads(message), *args, **kwargs)
