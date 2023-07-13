@@ -7,4 +7,4 @@ class RabbitMQSettings:
 
     @property
     def url(self):
-        return f"amqp://{self.user}:{self.password}@{self.host}:{self.port}/"
+        return f"amqps://{self.user}:{self.password}@{self.host}:{self.port}/"
