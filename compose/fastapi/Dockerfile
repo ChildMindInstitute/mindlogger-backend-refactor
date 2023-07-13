@@ -40,5 +40,8 @@ RUN sed -i 's/\r$//g' /fastapi-entrypoint && chmod +x /fastapi-entrypoint
 COPY --chown=code:code ./compose/fastapi/start /fastapi-start
 RUN sed -i 's/\r$//g' /fastapi-start && chmod +x /fastapi-start
 
+COPY --chown=code:code ./compose/fastapi/consume-report /fastapi-consume-report
+RUN sed -i 's/\r$//g' /fastapi-consume-report && chmod +x /fastapi-consume-report
+
 # Select internal user
 USER code

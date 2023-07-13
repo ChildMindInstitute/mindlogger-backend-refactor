@@ -1,5 +1,5 @@
 class RabbitMQSettings:
-    host: str = "localhost"
+    host: str = "rabbitmq"
     user: str = "guest"
     password: str = "guest"
     default_routing_key: str = "mindlogger"
