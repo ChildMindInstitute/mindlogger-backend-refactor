@@ -57,6 +57,11 @@ __all__ = [
 ]
 
 from apps.shared.query_params import QueryParams
+from infrastructure.utility import (
+    FCMNotification,
+    FirebaseMessage,
+    FirebaseNotificationType,
+)
 
 
 class AppletService:
@@ -750,6 +755,29 @@ class AppletService:
     ):
         await AppletsCRUD(self.session).set_report_configuration(
             applet_id, schema
+        )
+
+    async def send_notification_to_applet_respondents(
+        self,
+        applet_id: uuid.UUID,
+        title,
+        body,
+        type_: FirebaseNotificationType,
+    ):
+        # TODO: make background task
+        respondents_device_ids = await AppletsCRUD(
+            self.session
+        ).get_respondents_device_ids(applet_id)
+        await FCMNotification().notify(
+            respondents_device_ids,
+            FirebaseMessage(
+                title=title,
+                body=body,
+                data=dict(
+                    type=type_,
+                    applet_id=applet_id,
+                ),
+            ),
         )
 
 
