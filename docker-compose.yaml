@@ -55,7 +55,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-    container_name: mindlogger_app
+    container_name: mindlogger_consumer
     entrypoint: /fastapi-entrypoint
     command: /fastapi-consume-report
     env_file: .env
@@ -63,8 +63,6 @@ services:
       - postgres
       - redis
       - rabbitmq
-    ports:
-      - 8000:80
     volumes:
       - ./:/app/
 
