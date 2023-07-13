@@ -1,4 +1,7 @@
-class RabbitMQSettings:
+from pydantic import BaseModel
+
+
+class RabbitMQSettings(BaseModel):
     host: str = "rabbitmq"
     user: str = "guest"
     password: str = "guest"
