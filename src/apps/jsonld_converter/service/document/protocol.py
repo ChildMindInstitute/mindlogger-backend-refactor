@@ -70,10 +70,10 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         self.ld_description = self._get_ld_description(
             processed_doc, drop=True
         )
-        self.ld_about = self._get_ld_about(processed_doc)  # TODO
+        self.ld_about = self._get_ld_about(processed_doc, drop=True)  # TODO
         self.ld_shuffle = self._get_ld_shuffle(processed_doc)
-        self.ld_pref_label = self._get_ld_pref_label(processed_doc)
-        self.ld_alt_label = self._get_ld_alt_label(processed_doc)
+        self.ld_pref_label = self._get_ld_pref_label(processed_doc, drop=True)
+        self.ld_alt_label = self._get_ld_alt_label(processed_doc, drop=True)
         self.ld_image = self._get_ld_image(processed_doc, drop=True)
         self.ld_watermark = self._get_ld_watermark(processed_doc, drop=True)
 
@@ -81,15 +81,22 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             processed_doc, drop=True
         )
 
-        properties = self._get_ld_properties_formatted(processed_doc)
+        properties = self._get_ld_properties_formatted(
+            processed_doc, drop=True
+        )
+        self._to_extra("properties", properties, "fields")
         flow_properties = self._get_ld_properties_formatted(
-            processed_doc, key="reproschema:activityFlowProperties"
+            processed_doc, key="reproschema:activityFlowProperties", drop=True
         )
         self.properties = {**properties, **flow_properties}
 
-        self.nested_by_order = await self._get_nested_items(processed_doc)
+        self.nested_by_order = await self._get_nested_items(
+            processed_doc, drop=True
+        )
         self.flows_by_order = await self._get_nested_items(
-            processed_doc, attr_container="reproschema:activityFlowOrder"
+            processed_doc,
+            attr_container="reproschema:activityFlowOrder",
+            drop=True,
         )
 
         self._load_extra(processed_doc)
@@ -182,12 +189,6 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                 if val is not None and hasattr(node, prop):
                     setattr(node, prop, val)
         return node
-
-    def _load_extra(self, doc: dict):
-        if self.extra is None:
-            self.extra = {}
-        for k, v in doc.items():
-            self.extra[k] = v
 
     def export(self) -> AppletCreate:
         activity_keys = {}

@@ -63,7 +63,6 @@ class ReportBase(LdDocumentBase, CommonFieldsMixin, ABC):
 
         processed_doc: dict = deepcopy(self.doc_expanded)
         await self._load_from_processed_doc(processed_doc, base_url)
-        self._load_extra(processed_doc)
 
     async def _load_from_processed_doc(
         self, processed_doc: dict, base_url: str | None = None
@@ -92,12 +91,6 @@ class ReportBase(LdDocumentBase, CommonFieldsMixin, ABC):
                 if LdKeyword.value in item
             ]
         return []
-
-    def _load_extra(self, doc: dict):
-        if self.extra is None:
-            self.extra = {}
-        for k, v in doc.items():
-            self.extra[k] = v
 
 
 class ConditionalItem(ResolvesConditionalLogic):
@@ -195,12 +188,6 @@ class ReproActivityScore(ReportBase, ResolvesConditionalLogic):
         parts = expression.split("+")
 
         return [v.strip() for v in parts]
-
-    def _load_extra(self, doc: dict):
-        if self.extra is None:
-            self.extra = {}
-        for k, v in doc.items():
-            self.extra[k] = v
 
     @property
     def calculation_type(self) -> CalculationType:

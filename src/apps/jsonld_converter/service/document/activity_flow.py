@@ -62,12 +62,6 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
         ):
             return [item.get(LdKeyword.id) for item in items]
 
-    def _load_extra(self, doc: dict):
-        if self.extra is None:
-            self.extra = {}
-        for k, v in doc.items():
-            self.extra[k] = v
-
     def export(self) -> FlowCreate:
         activity_keys = self.activity_keys or {}
         flow_items = []

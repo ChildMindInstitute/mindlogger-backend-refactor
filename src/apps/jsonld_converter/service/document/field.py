@@ -211,7 +211,7 @@ class ReproFieldBase(
             if isinstance(options_doc, list):
                 options_doc = options_doc[0]
 
-        if drop:
+        if drop and key:
             del doc[key]
 
         return options_doc
@@ -219,24 +219,27 @@ class ReproFieldBase(
     async def _load_from_processed_doc(
         self, processed_doc: dict, base_url: str | None = None
     ):
-        self.ld_pref_label = self._get_ld_pref_label(processed_doc)
-        self.ld_alt_label = self._get_ld_alt_label(processed_doc)
-        self.ld_image = self._get_ld_image(processed_doc)
+        self.ld_pref_label = self._get_ld_pref_label(processed_doc, drop=True)
+        self.ld_alt_label = self._get_ld_alt_label(processed_doc, drop=True)
+        self.ld_image = self._get_ld_image(processed_doc, drop=True)
         self.ld_question = self._get_ld_question(processed_doc, drop=True)
         self.ld_is_vis = self._is_visible(processed_doc, drop=True)
         self.ld_allow_edit = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:allowEdit"
+            processed_doc, "reproschema:allowEdit", drop=True
         )
 
         self.ld_is_optional_text = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:isOptionalText"
+            processed_doc, "reproschema:isOptionalText", drop=True
         )
         self.ld_timer = self._get_timer(processed_doc, drop=True)
 
-        allow_list = self._get_allow_list(processed_doc)
+        allow_list = self._get_allow_list(processed_doc, drop=True)
+        self._to_extra("allow_list", allow_list, "fields")
         self.is_skippable = self._is_skippable(allow_list)
 
-        options_doc = await self._get_ld_response_options_doc(processed_doc)
+        options_doc = await self._get_ld_response_options_doc(
+            processed_doc, drop=True
+        )
         if options_doc:
             await self._process_ld_response_options(options_doc)
         self.ld_variable_name = self.name
@@ -257,12 +260,6 @@ class ReproFieldBase(
         self.ld_remove_back_option = self.attr_processor.get_attr_value(
             options_doc, "reproschema:removeBackOption"
         )
-
-    def _load_extra(self, doc: dict):
-        if self.extra is None:
-            self.extra = {}
-        for k, v in doc.items():
-            self.extra[k] = v
 
     def _build_config(self, _cls: Type | None, **attrs):
         assert _cls is not None
@@ -301,10 +298,20 @@ class ReproFieldBase(
             f'Condition type "{condition.type}" not supported'
         )
 
+    def _load_extra(self, doc: dict):
+        to_remove = ["reproschema:inputType"]
+        for attr in to_remove:
+            if key := self.attr_processor.get_key(doc, attr):
+                del doc[key]
+        super()._load_extra(doc)
+
     def export(self) -> ActivityItemCreate:
         cfg_cls = self.CFG_TYPE
         config = self._build_config(cfg_cls)
         response_values = self._build_response_values()
+        allow_edit = True
+        if self.ld_allow_edit is not None:
+            allow_edit = bool(self.ld_allow_edit)
         return ActivityItemCreate(
             question=self.ld_question or {},
             response_type=self.RESPONSE_TYPE,
@@ -313,6 +320,7 @@ class ReproFieldBase(
             name=self.name,
             is_hidden=self.ld_is_vis is False,
             extra_fields=self.extra,
+            allow_edit=allow_edit,
         )
 
 

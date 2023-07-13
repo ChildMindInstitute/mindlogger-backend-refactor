@@ -148,8 +148,8 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         processed_doc: dict = deepcopy(self.doc_expanded)
         self.ld_version = self._get_ld_version(processed_doc)
         self.ld_schema_version = self._get_ld_schema_version(processed_doc)
-        self.ld_pref_label = self._get_ld_pref_label(processed_doc)
-        self.ld_alt_label = self._get_ld_alt_label(processed_doc)
+        self.ld_pref_label = self._get_ld_pref_label(processed_doc, drop=True)
+        self.ld_alt_label = self._get_ld_alt_label(processed_doc, drop=True)
         self.ld_description = self._get_ld_description(
             processed_doc, drop=True
         )
@@ -160,22 +160,28 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         )
         self.ld_is_vis = self._is_visible(processed_doc, drop=True)
         self.ld_is_reviewer = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:isReviewerActivity"
+            processed_doc, "reproschema:isReviewerActivity", drop=True
         )
         self.ld_is_one_page = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:isOnePageAssessment"
+            processed_doc, "reproschema:isOnePageAssessment", drop=True
         )
 
-        allow_list = self._get_allow_list(processed_doc)
+        allow_list = self._get_allow_list(processed_doc, drop=True)
+        self._to_extra("allow_list", allow_list, "fields")
         self.is_skippable = self._is_skippable(allow_list)
         self.is_back_disabled = self._is_back_disabled(allow_list)
         self.is_export_allowed = self._is_export_allowed(allow_list)
         self.is_summary_disabled = self._is_summary_disabled(allow_list)
 
-        self.properties = self._get_ld_properties_formatted(processed_doc)
-        self.nested_by_order = await self._get_nested_items(processed_doc)
+        self.properties = self._get_ld_properties_formatted(
+            processed_doc, drop=True
+        )
+        self.nested_by_order = await self._get_nested_items(
+            processed_doc, drop=True
+        )
         self.reports_by_order = await self._get_nested_items(
             processed_doc,
+            drop=True,
             attr_container="reproschema:reports",
             skip_not_supported=False,
         )
@@ -255,10 +261,12 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             raise
 
     def _load_extra(self, doc: dict):
-        if self.extra is None:
-            self.extra = {}
-        for k, v in doc.items():
-            self.extra[k] = v
+        to_remove = ["reproschema:activityType"]
+        for attr in to_remove:
+            if key := self.attr_processor.get_key(doc, attr):
+                del doc[key]
+        self._to_extra("properties", self.properties, "fields")
+        super()._load_extra(doc)
 
     def _export_items(self) -> list[ActivityItemCreate]:
         var_item_map = {

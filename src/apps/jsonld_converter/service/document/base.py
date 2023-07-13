@@ -357,6 +357,10 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
 
     ld_id: str | None = None
     ld_variable_name: str | None = None
+    ld_schema_version: str | None = None
+    ld_version: str | None = None
+
+    extra: dict | None = None
 
     def __init__(
         self,
@@ -386,6 +390,12 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
         self.ld_id = self.attr_processor.first(
             self.doc_expanded.get(LdKeyword.id)
         )
+        self.ld_version = self.attr_processor.get_attr_value(
+            self.doc_expanded, "schema:version", drop=True
+        )
+        self.ld_schema_version = self.attr_processor.get_attr_value(
+            self.doc_expanded, "schema:schemaVersion", drop=True
+        )
 
     async def _expand(self, doc: dict | str, base_url: str | None = None):
         options = dict(
@@ -397,6 +407,27 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
             return await asyncio.to_thread(jsonld.expand, doc, options)
         except Exception as e:
             raise JsonLDProcessingError(None, doc) from e
+
+    def _to_extra(self, key: str, val, group: str | None = None):
+        if self.extra is None:
+            self.extra = {}
+        if group:
+            self.extra.setdefault(group, {})
+            self.extra[group][key] = val
+        else:
+            self.extra[key] = val
+
+    def _load_extra(self, doc: dict):
+        doc.pop(LdKeyword.id)
+        doc.pop(LdKeyword.type)
+        self._to_extra("doc", self.doc)
+        if self.ld_version:
+            self._to_extra("version", self.ld_version, "fields")
+        if self.ld_schema_version:
+            self._to_extra("schema_version", self.ld_schema_version, "fields")
+
+        for k, v in doc.items():
+            self._to_extra(k, v, "extra")
 
 
 class OrderAware:
