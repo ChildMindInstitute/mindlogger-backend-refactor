@@ -148,3 +148,16 @@ SectionCondition = (
     | OutsideOfCondition
     | ScoreBoolCondition
 )
+AnyCondition = (
+    IncludesOptionCondition
+    | NotIncludesOptionCondition
+    | EqualToOptionCondition
+    | NotEqualToOptionCondition
+    | GreaterThanCondition
+    | LessThanCondition
+    | EqualCondition
+    | NotEqualCondition
+    | BetweenCondition
+    | OutsideOfCondition
+    | ScoreBoolCondition
+)

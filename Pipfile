@@ -29,6 +29,7 @@ uvicorn = {extras = ["standard"], version = "==0.19"}
 aiohttp = "*"
 firebase-admin = "*"
 aio-pika = "*"
+pyld = "*"
 
 [dev-packages]
 black = "~=22.6"

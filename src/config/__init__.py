@@ -14,7 +14,7 @@ from config.rabbitmq import RabbitMQSettings
 from config.redis import RedisSettings
 from config.secret import SecretSettings
 from config.sentry import SentrySettings
-from config.service import ServiceSettings
+from config.service import JsonLdConverterSettings, ServiceSettings
 from config.superuser import SuperAdmin
 
 
@@ -61,6 +61,9 @@ class Settings(BaseSettings):
 
     # FCM Notification configs
     fcm: FirebaseCloudMessagingSettings = FirebaseCloudMessagingSettings()
+
+    # json-ld converter settings
+    jsonld_converter: JsonLdConverterSettings = JsonLdConverterSettings()
 
     # Alerts configs
     alerts: AlertsSettings = AlertsSettings()

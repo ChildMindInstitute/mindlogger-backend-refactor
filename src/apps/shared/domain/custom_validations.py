@@ -47,14 +47,17 @@ def validate_color(value: str | Color) -> str:
 def validate_audio(value: str) -> str:
     # validate file format is mp3 or wav
     type_ = mimetypes.guess_type(value)[0] or ""
-    if (
-        type_.startswith("audio/mpeg")
-        or type_.startswith("audio/wav")
-        or type_.startswith("audio/x-wav")
-        or type_.startswith("audio/x-pn-wav")
-        or type_.startswith("audio/wave")
-    ):
+    supported = (
+        "audio/mpeg",
+        "audio/wav",
+        "audio/x-wav",
+        "audio/x-pn-wav",
+        "audio/wave",
+        "video/mpeg",
+    )
+    if any(type_.startswith(mime_type) for mime_type in supported):
         return value
+
     raise InvalidAudioError()
 
 
