@@ -1,3 +1,5 @@
+import base64
+
 from pydantic import BaseModel
 
 
@@ -23,7 +25,7 @@ class FirebaseCloudMessagingSettings(BaseModel):
             type=self.type,
             project_id=self.project_id,
             private_key_id=self.private_key_id,
-            private_key=self.private_key,
+            private_key=base64.b64decode(self.private_key.encode()).decode(),
             client_email=self.client_email,
             client_id=self.client_id,
             auth_uri=self.auth_uri,
