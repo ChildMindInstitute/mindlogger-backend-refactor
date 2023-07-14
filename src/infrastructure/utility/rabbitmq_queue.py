@@ -54,7 +54,7 @@ class RabbitMqQueue:
     def __new__(cls, *args, **kwargs):
         if settings.env == "testing":
             return RabbitMqQueueTest()
-        return super().__new__(*args, **kwargs)
+        return super().__new__(cls)
 
     def __init__(self):
         self.url = settings.rabbitmq.url

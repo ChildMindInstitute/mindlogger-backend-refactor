@@ -50,6 +50,14 @@ class JsonLDModelConverter(ContainsNestedMixin):
 
         converter = JsonLDModelConverter(context_resolver, document_loader)
         protocol = await converter.convert(document_url)
+
+        With dependencies:
+
+        document_loader = get_document_loader()
+        context_resolver = get_context_resolver(document_loader)
+
+        converter = get_jsonld_model_converter(document_loader, context_resolver)  # noqa
+        protocol = await converter.convert(doc)
     """
 
     def __init__(

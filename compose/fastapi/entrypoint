@@ -35,7 +35,7 @@ from config import settings
 from aiormq.exceptions import AMQPConnectionError
 
 try:
-    await aio_pika.connect_robust(url=self.url)
+    asyncio.run(aio_pika.connect_robust(url=settings.rabbitmq.url))
 except AMQPConnectionError:
     sys.exit(-1)
 

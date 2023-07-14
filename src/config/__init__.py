@@ -9,7 +9,7 @@ from config.cdn import CDNSettings
 from config.cors import CorsSettings
 from config.database import DatabaseSettings
 from config.mailing import MailingSettings
-from config.notification import NotificationSettings
+from config.notification import FirebaseCloudMessagingSettings
 from config.rabbitmq import RabbitMQSettings
 from config.redis import RedisSettings
 from config.secret import SecretSettings
@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     sentry: SentrySettings = SentrySettings()
 
     # FCM Notification configs
-    notification: NotificationSettings = NotificationSettings()
+    fcm: FirebaseCloudMessagingSettings = FirebaseCloudMessagingSettings()
 
     # json-ld converter settings
     jsonld_converter: JsonLdConverterSettings = JsonLdConverterSettings()

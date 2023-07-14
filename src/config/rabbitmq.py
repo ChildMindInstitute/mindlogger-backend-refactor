@@ -1,5 +1,8 @@
-class RabbitMQSettings:
-    host: str = "localhost"
+from pydantic import BaseModel
+
+
+class RabbitMQSettings(BaseModel):
+    host: str = "rabbitmq"
     user: str = "guest"
     password: str = "guest"
     default_routing_key: str = "mindlogger"
@@ -7,4 +10,4 @@ class RabbitMQSettings:
 
     @property
     def url(self):
-        return f"amqp://{self.user}:{self.password}@{self.host}:{self.port}/"
+        return f"amqps://{self.user}:{self.password}@{self.host}:{self.port}/"
