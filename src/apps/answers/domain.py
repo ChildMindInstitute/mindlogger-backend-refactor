@@ -77,6 +77,7 @@ class AppletAnswerCreate(InternalModel):
     activity_id: uuid.UUID
     answer: ItemAnswerCreate
     created_at: int | None
+    alerts: list
 
 
 class AssessmentAnswerCreate(InternalModel):

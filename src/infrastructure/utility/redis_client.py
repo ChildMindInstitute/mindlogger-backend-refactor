@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import json
 import re
@@ -146,14 +145,12 @@ class RedisCache:
         return await self._cache.mget(keys)
 
     async def publish(self, channel: str, value):
+        assert self._cache
         await self._cache.publish(channel, json.dumps(value, default=str))
 
-    async def subscribe(self, channel_name: str, callback, *args, **kwargs):
+    async def messages(self, channel_name: str):
+        assert self._cache
         pubsub = self._cache.pubsub()
         await pubsub.subscribe(channel_name)
-        task = await asyncio.create_task(self._handler(pubsub, callback, *args, **kwargs))
-        return task
-
-    async def _handler(self, pubsub: aioredis.client.PubSub, callback, *args, **kwargs):
         async for message in pubsub.listen():
-            await callback(message=json.loads(message), *args, **kwargs)
+            yield message

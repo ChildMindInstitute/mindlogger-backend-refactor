@@ -1,11 +1,17 @@
+import datetime
 import uuid
-from datetime import datetime
 
 from pydantic import BaseModel, Field
 
 from apps.shared.domain import InternalModel, PublicModel
 
-__all__ = ["AlertCreate", "Alert", "AlertPublic", "AlertWSInternal"]
+__all__ = [
+    "AlertCreate",
+    "Alert",
+    "AlertPublic",
+    "AlertWSInternal",
+    "AlertMessage",
+]
 
 
 class _AlertBase(BaseModel):
@@ -67,7 +73,7 @@ class AlertPublic(_AlertBase, PublicModel):
         description="This field represents the alert message "
         "which will be shown"
     )
-    created_at: datetime = Field(
+    created_at: datetime.datetime = Field(
         description="This field represents when this alert was created"
     )
     applet_name: str = Field(
@@ -82,3 +88,12 @@ class AlertPublic(_AlertBase, PublicModel):
 class AlertWSInternal(InternalModel):
     id: int
     is_watched: bool
+
+
+class AlertMessage(InternalModel):
+    respondent_id: uuid.UUID
+    applet_id: uuid.UUID
+    version: str
+    message: str
+    created_at: datetime.datetime
+    answer_id: uuid.UUID
