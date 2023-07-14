@@ -66,6 +66,10 @@ class FCMNotification:
     def __init__(self):
         if self._initialized:
             return
+        certificate = settings.fcm.certificate
+        for key, value in certificate.items():
+            if not value:
+                return
 
         self._app = firebase_admin.initialize_app(
             credentials.Certificate(settings.fcm.certificate)
@@ -83,6 +87,8 @@ class FCMNotification:
         *args,
         **kwargs,
     ):
+        if not self._initialized:
+            return
         if devices and len(devices) > 1:
             messaging.send_each_for_multicast(
                 messaging.MulticastMessage(
