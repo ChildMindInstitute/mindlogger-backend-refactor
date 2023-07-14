@@ -89,7 +89,9 @@ class FCMNotification:
     ):
         if not self._initialized:
             return
-        if devices and len(devices) > 1:
+        if len(devices) == 0:
+            return
+        elif devices and len(devices) > 1:
             messaging.send_each_for_multicast(
                 messaging.MulticastMessage(
                     devices,
