@@ -1,7 +1,7 @@
 """change alerts
 
 Revision ID: bb7daaa5854f
-Revises: 150d77d42a08
+Revises: 1e64f22ed834
 Create Date: 2023-07-17 18:33:09.688224
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "bb7daaa5854f"
-down_revision = "150d77d42a08"
+down_revision = "1e64f22ed834"
 branch_labels = None
 depends_on = None
 
