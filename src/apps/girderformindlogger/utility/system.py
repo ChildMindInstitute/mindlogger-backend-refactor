@@ -5,7 +5,7 @@ import threading
 import time
 
 import cherrypy
-import girderformindlogger
+from apps import girderformindlogger
 import psutil
 import six
 

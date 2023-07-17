@@ -16,7 +16,7 @@ from apps.girderformindlogger.exceptions import (
     GirderException,
     ValidationException,
 )
-from apps.girderformindlogger.external.notification import send_notification
+# from apps.girderformindlogger.external.notification import send_notification
 from apps.girderformindlogger.models.folder import Folder
 from apps.girderformindlogger.models.model_base import (
     AccessControlledModel,
@@ -24,9 +24,9 @@ from apps.girderformindlogger.models.model_base import (
 )
 from apps.girderformindlogger.models.profile import Profile
 from apps.girderformindlogger.models.profile import Profile as ProfileModel
-from apps.girderformindlogger.models.push_notification import (
-    PushNotification as PushNotificationModel,
-)
+# from apps.girderformindlogger.models.push_notification import (
+#     PushNotification as PushNotificationModel,
+# )
 from apps.girderformindlogger.utility.model_importer import ModelImporter
 from apps.girderformindlogger.utility.progress import (
     noProgress,
@@ -74,12 +74,12 @@ class Events(Model):
                     },
                 )
 
-            if (
-                event.get("data", {}).get("useNotifications", False)
-                and len(event.get("data", {}).get("notifications", [])) > 0
-            ):
-                push_notification = PushNotificationModel(event=event)
-                push_notification.remove_schedules()
+            # if (
+            #     event.get("data", {}).get("useNotifications", False)
+            #     and len(event.get("data", {}).get("notifications", [])) > 0
+            # ):
+            #     push_notification = PushNotificationModel(event=event)
+            #     push_notification.remove_schedules()
 
             self.removeWithQuery({"_id": ObjectId(event_id)})
 
@@ -187,13 +187,13 @@ class Events(Model):
             current_device_ids = self.get_applet_device_ids(applet["_id"])
             for current_device_id in current_device_ids:
                 device_ids.add(current_device_id)
-        if device_ids:
-            send_notification(
-                "Tap to update the schedule.",
-                "Your schedule has been changed, tap to update.",
-                "schedule-updated",
-                list(device_ids),
-            )
+        # if device_ids:
+        #     send_notification(
+        #         "Tap to update the schedule.",
+        #         "Your schedule has been changed, tap to update.",
+        #         "schedule-updated",
+        #         list(device_ids),
+        #     )
 
     @staticmethod
     def get_applet_device_ids(applet_id, users=None) -> list:
@@ -241,8 +241,8 @@ class Events(Model):
             and "useNotifications" in event["data"]
             and event["data"]["useNotifications"]
         ):
-            push_notification = PushNotificationModel(event=event)
-            push_notification.random_reschedule()
+            # push_notification = PushNotificationModel(event=event)
+            # push_notification.random_reschedule()
             self.save(event)
 
     def getEvents(self, applet_id, individualized, profile_id=None):
@@ -277,21 +277,21 @@ class Events(Model):
         return events
 
     def setSchedule(self, event):
-        push_notification = PushNotificationModel(event=event)
-        push_notification.remove_schedules()
+        # push_notification = PushNotificationModel(event=event)
+        # push_notification.remove_schedules()
         useNotifications = event.get("data", {}).get("useNotifications", False)
         notifications = event.get("data", {}).get("notifications", [])
         hasNotifications = len(notifications) > 0
 
-        if (
-            useNotifications
-            and hasNotifications
-            and (
-                event["data"].get("reminder", {}).get("valid", False)
-                or notifications[0]["start"]
-            )
-        ):
-            push_notification.set_schedules()
+        # if (
+        #     useNotifications
+        #     and hasNotifications
+        #     and (
+        #         event["data"].get("reminder", {}).get("valid", False)
+        #         or notifications[0]["start"]
+        #     )
+        # ):
+        #     push_notification.set_schedules()
 
     def getSchedule(self, applet_id):
         events = list(
