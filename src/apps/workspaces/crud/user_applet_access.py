@@ -1069,3 +1069,32 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         data = result.all()
 
         return parse_obj_as(list[AppletRoles], data)
+
+    async def get_responsible_persons(
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+    ) -> list[uuid.UUID]:
+        query: Query = select(UserAppletAccessSchema.user_id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        if respondent_id:
+            query = query.where(
+                or_(
+                    UserAppletAccessSchema.role == Role.OWNER,
+                    UserAppletAccessSchema.role == Role.MANAGER,
+                    and_(
+                        UserAppletAccessSchema.role == Role.COORDINATOR,
+                        UserAppletAccessSchema.meta.contains(
+                            dict(respondents=[str(respondent_id)])
+                        ),
+                    ),
+                )
+            )
+        else:
+            query = query.where(
+                or_(
+                    UserAppletAccessSchema.role == Role.OWNER,
+                    UserAppletAccessSchema.role == Role.MANAGER,
+                )
+            )
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()

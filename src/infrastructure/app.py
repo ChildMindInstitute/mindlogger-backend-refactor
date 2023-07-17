@@ -7,6 +7,7 @@ from fastapi.routing import APIRouter
 
 import apps.activities.router as activities
 import apps.alerts.router as alerts
+import apps.alerts.ws_router as ws_alerts
 import apps.answers.router as answers
 import apps.applets.router as applets
 import apps.authentication.router as auth
@@ -57,6 +58,7 @@ routers: Iterable[APIRouter] = (
     files.router,
     library.router,
     library.applet_router,
+    ws_alerts.router,
 )
 
 # Declare your middlewares here

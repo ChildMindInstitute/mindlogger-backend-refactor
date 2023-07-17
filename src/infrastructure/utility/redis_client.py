@@ -1,4 +1,5 @@
 import datetime
+import json
 import re
 import typing
 
@@ -9,7 +10,7 @@ from sentry_sdk import capture_exception
 from config import settings
 
 
-class _Cache:
+class RedisCacheTest:
     _storage: dict = {}
 
     async def get(self, key: str):
@@ -53,12 +54,22 @@ class _Cache:
                 results.append(result)
         return results
 
+    async def publish(self, channel: str, value: dict):
+        values, expiry = self._storage.get(channel, ([], None))
+        values.append(json.dumps(value, default=str))
+        self._storage[channel] = (values, expiry)
+
+    async def messages(self, channel_name: str):
+        values, expiry = self._storage.get(channel_name, ([], None))
+        for value in values:
+            yield value
+
 
 class RedisCache:
     """Singleton Redis cache client"""
 
     _initialized: bool = False
-    _instance: None = None
+    _instance = None
     configuration: dict = {}
     _cache: typing.Optional[aioredis.Redis] = None
     host: str
@@ -93,7 +104,7 @@ class RedisCache:
 
     def _start(self):
         if self.env == "testing":
-            self._cache = _Cache()
+            self._cache = RedisCacheTest()
             return
         if not self.host:
             return
@@ -142,3 +153,14 @@ class RedisCache:
         if not self._cache:
             return []
         return await self._cache.mget(keys)
+
+    async def publish(self, channel: str, value: dict):
+        assert self._cache
+        await self._cache.publish(channel, json.dumps(value, default=str))
+
+    async def messages(self, channel_name: str):
+        assert self._cache
+        pubsub = self._cache.pubsub()
+        await pubsub.subscribe(channel_name)
+        async for message in pubsub.listen():
+            yield message

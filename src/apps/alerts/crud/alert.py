@@ -1,17 +1,12 @@
 import uuid
 
-from sqlalchemy import select
-from sqlalchemy.engine import Result
+from sqlalchemy import and_, func, select, update
 from sqlalchemy.orm import Query
-from sqlalchemy.sql.functions import count
 
 from apps.alerts.db.schemas import AlertSchema
-from apps.alerts.domain.alert import Alert, AlertCreate, AlertPublic
-from apps.alerts.errors import AlertIsDeletedError, AlertNotFoundError
-from apps.applets.db.schemas import AppletSchema
+from apps.applets.db.schemas import AppletHistorySchema
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
-from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
@@ -22,7 +17,7 @@ class _AlertSearching(Searching):
     search_fields = [
         AlertSchema.applet_id,
         AlertSchema.respondent_id,
-        AlertSchema.activity_item_histories_id_version,
+        AlertSchema.activity_item_id,
     ]
 
 
@@ -37,168 +32,52 @@ class _AlertOrdering(Ordering):
 class AlertCRUD(BaseCRUD[AlertSchema]):
     schema_class = AlertSchema
 
-    async def get_by_config_id_respondent_id(
-        self, alert_config_id: uuid.UUID, respondent_id: uuid.UUID
-    ) -> Alert:
-        """Get alert by alert_config_id and respondent_id from the database"""
+    async def create_many(
+        self, schemas: list[AlertSchema]
+    ) -> list[AlertSchema]:
+        return await self._create_many(schemas)
 
-        # Get alert from the database
-        query: Query = select(self.schema_class)
-        query = query.where(
-            self.schema_class.alert_config_id == alert_config_id
+    async def get_all_for_user(
+        self, user_id: uuid.UUID, page: int, limit: int
+    ) -> list[tuple[AlertSchema, AppletHistorySchema, UserAppletAccessSchema]]:
+        query: Query = select(
+            AlertSchema, AppletHistorySchema, UserAppletAccessSchema
         )
-        query = query.where(self.schema_class.respondent_id == respondent_id)
-
-        result: Result = await self._execute(query)
-        instance = result.scalars().one_or_none()
-
-        if not instance:
-            raise AlertNotFoundError
-
-        if instance.is_deleted:
-            raise AlertIsDeletedError()
-
-        # Get internal model
-        alert: Alert = Alert.from_orm(instance)
-
-        return alert
-
-    async def get_by_applet_id(
-        self, applet_id: uuid.UUID, query_params: QueryParams | None = None
-    ) -> list[AlertPublic]:
-        """Get alerts by applet_id from the database"""
-
-        # Get alert from the database
-        query: Query = (
-            select(
-                self.schema_class,
-                AppletSchema.display_name.label("applet_name"),
-                UserAppletAccessSchema.meta.label("meta"),
-            )
-            .where(self.schema_class.applet_id == applet_id)
-            .join(
-                AppletSchema.display_name,
-                AppletSchema.id == self.schema_class.applet_id,
-            )
-            .join(
-                UserAppletAccessSchema.meta,
+        query = query.join(
+            UserAppletAccessSchema,
+            and_(
+                UserAppletAccessSchema.applet_id == AlertSchema.applet_id,
+                UserAppletAccessSchema.user_id == AlertSchema.respondent_id,
                 UserAppletAccessSchema.role == Role.RESPONDENT,
-            )
-            .where(
-                UserAppletAccessSchema.user_id
-                == self.schema_class.respondent_id,
-                UserAppletAccessSchema.applet_id
-                == self.schema_class.applet_id,
-            )
+            ),
         )
-
-        if query_params:
-            if query_params.search:
-                query = query.where(
-                    *_AlertSearching().get_clauses(query_params.search)
-                )
-            if query_params.ordering:
-                query = query.order_by(
-                    *_AlertOrdering().get_clauses(*query_params.ordering)
-                )
-        query = query.where(
-            self.schema_class.is_deleted == False  # noqa: E712
+        query = query.join(
+            AppletHistorySchema,
+            and_(
+                AppletHistorySchema.id == AlertSchema.applet_id,
+                AppletHistorySchema.version == AlertSchema.version,
+            ),
         )
-        if query_params:
-            query = paging(query, query_params.page, query_params.limit)
-        result: Result = await self._execute(query)
-        results = []
-        for alert, applet_name, meta in result.all():
-            results.append(
-                AlertPublic(
-                    id=alert.id,
-                    is_watched=alert.is_watched,
-                    alert_message=alert.alert_message,
-                    respondent_id=alert.respondent_id,
-                    alert_config_id=alert.alert_config_id,
-                    applet_id=alert.applet_id,
-                    applet_name=applet_name,
-                    meta=meta,
-                    created_at=alert.created_at,
-                    activity_item_histories_id_version=(
-                        alert.activity_item_histories_id_version
-                    ),
-                )
-            )
-        return results
+        query = query.where(AlertSchema.user_id == user_id)
+        query = query.order_by(AlertSchema.created_at.desc())
+        query = paging(query, page, limit)
 
-    async def get_by_applet_id_count(
-        self, applet_id: uuid.UUID, query_params: QueryParams | None = None
-    ) -> int:
-        """Get alerts count by applet_id from the database"""
+        db_result = await self._execute(query)
 
-        # Get alert from the database
-        query: Query = select(count(self.schema_class.id))
-        query = query.where(self.schema_class.applet_id == applet_id)
+        return db_result.all()
 
-        if query_params:
-            if query_params.search:
-                query = query.where(
-                    *_AlertSearching().get_clauses(query_params.search)
-                )
+    async def get_all_for_user_count(self, user_id: uuid.UUID) -> int:
+        query: Query = select(AlertSchema.id)
+        query = query.where(AlertSchema.user_id == user_id)
 
-        query = query.where(
-            self.schema_class.is_deleted == False  # noqa: E712
-        )
+        db_result = await self._execute(select(func.count(query.c.id)))
 
-        result: Result = await self._execute(query)
+        return db_result.scalars().first() or 0
 
-        return result.scalars().first() or 0
+    async def watch(self, user_id: uuid.UUID, alert_id: uuid.UUID):
+        query: Query = update(AlertSchema)
+        query = query.where(AlertSchema.user_id == user_id)
+        query = query.where(AlertSchema.id == alert_id)
+        query = query.values(is_watched=True)
 
-    async def get_by_id(self, alert_id: uuid.UUID) -> AlertSchema:
-        """Get alert by alert_id"""
-
-        # Get alert from the database
-        query: Query = select(self.schema_class)
-        query = query.where(self.schema_class.id == alert_id)
-
-        result: Result = await self._execute(query)
-        instance = result.scalars().one_or_none()
-
-        if not instance:
-            raise AlertNotFoundError
-
-        if instance.is_deleted:
-            raise AlertIsDeletedError()
-
-        return instance
-
-    async def update(self, schema: AlertSchema) -> Alert:
-
-        # Update alert status at is_watched true
-        schema.is_watched = True
-        instance: Alert = await self._update_one(
-            lookup="id", value=schema.id, schema=schema
-        )
-        alert = Alert.from_orm(instance)
-
-        return alert
-
-    async def save(self, schema: AlertCreate) -> Alert:
-
-        # Check if the alert exist
-        try:
-            alert: Alert = await self.get_by_config_id_respondent_id(
-                schema.alert_config_id, schema.respondent_id
-            )
-        except AlertNotFoundError:
-            instance: AlertSchema = await self._create(
-                self.schema_class(
-                    respondent_id=schema.respondent_id,
-                    alert_config_id=schema.alert_config_id,
-                    applet_id=schema.applet_id,
-                    alert_message=schema.alert_message,
-                    specific_answer=schema.specific_answer,
-                    activity_item_histories_id_version=(
-                        schema.activity_item_histories_id_version
-                    ),
-                )
-            )
-            alert = Alert.from_orm(instance)
-
-        return alert
+        await self._execute(query)
