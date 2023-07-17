@@ -13,7 +13,7 @@ class Postgres:
     def __init__(self) -> None:
         # Setup PostgreSQL connection
         self.connection = psycopg2.connect(
-            host="localhost",
+            host="postgres",  # "localhost"
             dbname="mindlogger_backend",
             user="postgres",
             password="postgres",

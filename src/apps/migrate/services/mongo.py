@@ -8,6 +8,8 @@ from Cryptodome.Cipher import AES
 from pymongo import MongoClient
 
 # from apps.applets.domain.applet_create_update import AppletCreate
+
+from apps.girderformindlogger.utility import jsonld_expander
 from apps.jsonld_converter.dependencies import (
     get_context_resolver,
     get_document_loader,
@@ -37,7 +39,7 @@ def decrypt(data):
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        self.client = MongoClient("localhost", 27017)  # type: ignore
+        self.client = MongoClient("mongo", 27017)  # type: ignore # "localhost"
         self.db = self.client["mindlogger"]
 
     @staticmethod
@@ -105,25 +107,37 @@ class Mongo:
     def get_applet_repro_schema(self, applet: dict) -> dict:
         with open(settings.apps_dir / "migrate/repro_template.json") as file:
             data = json.load(file)
+
+            
             # TODO: Fill the template with applet data
             return data
 
     async def get_applets(self) -> list[dict]:
         collection = self.db["folder"]
+        cache  =self.db["cache"]
         # NOTE: All applets have baseParentId 5ea689a286d25a5dbb14e82c
-        applets = collection.find(
-            {"baseParentId": ObjectId("5ea689a086d25a5dbb14e808")},
-        ).limit(2)
+        applets = collection.find_one(
+            {"_id": ObjectId("63f5f9aded51ea1c1e6dff69")},
+            # {"parentId": ObjectId("5ea689a086d25a5dbb14e808")},
+        )
+
+        # applet_cache = json.loads(cache.find_one({"_id":applets["cached"]})["cache_data"])
+
+        applet_format = jsonld_expander.formatLdObject(applets, "applet")
+
+        print(applet_format)
+
+
 
         # TODO: Remove limit after testing
 
         results: list[Any] = []
-        for applet in applets:
-            ld_request_schema = self.get_applet_repro_schema(applet)
-            converter_result = await self.get_converter_result(
-                ld_request_schema
-            )
+        # for applet in applets:
+        #     ld_request_schema = self.get_applet_repro_schema(applet)
+        #     converter_result = await self.get_converter_result(
+        #         ld_request_schema
+        #     )
 
-            results.append(converter_result)
+        #     results.append(converter_result)
 
         return results
