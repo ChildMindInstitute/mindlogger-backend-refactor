@@ -6,29 +6,33 @@
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "alert_config_id": "7fd318e8-c118-4937-a871-2d00d6206c69",
-      "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
-      "is_watched": false,
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "is_watched":  false,
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
-      "activity_item_histories_id_version": "a18d3409-2c96-4a5e-a1f3-1c1c14be0011_1.0.0",
-      "alert_message": "alert message 1",
-      "specific_answer": "Not at all"
+      "version": "1.0.0",
+      "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+      "activity_item_id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+      "alert_message": "Hi, did something wrong",
+      "answer_id": "655ddd55-a9f4-48f3-abae-4cbfa9c695da"
     }
   },
   {
     "table": "alerts",
     "fields": {
-      "id": "3c18edc4-fef7-4ae1-b303-94df1f760e92",
-      "created_at": "2023-01-05T15:49:51.752113",
-      "updated_at": "2023-01-05T15:49:51.752113",
+      "id": "6f794861-0ff6-4c39-a3ed-602fd4e22c58",
+      "created_at": "2023-01-05T15:50:51.752113",
+      "updated_at": "2023-01-05T15:50:51.752113",
       "is_deleted": false,
-      "alert_config_id": "7fd318e8-c118-4937-a871-2d00d6206c69",
-      "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa7",
-      "is_watched": true,
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "is_watched":  false,
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
-      "activity_item_histories_id_version": "a18d3409-2c96-4a5e-a1f3-1c1c14be0013_1.0.0",
-      "alert_message": "alert message 2",
-      "specific_answer": "Several days"
+      "version": "1.0.0",
+      "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+      "activity_item_id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+      "alert_message": "Something wrong",
+      "answer_id": "655ddd55-a9f4-48f3-abae-4cbfa9c695da"
     }
   }
 ]

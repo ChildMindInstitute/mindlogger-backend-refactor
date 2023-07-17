@@ -69,6 +69,11 @@ class AnswerItemSchemaAnsweredActivityItem(InternalModel):
     answer: str
 
 
+class AnswerAlert(InternalModel):
+    activity_item_id: uuid.UUID
+    message: str
+
+
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
@@ -77,7 +82,7 @@ class AppletAnswerCreate(InternalModel):
     activity_id: uuid.UUID
     answer: ItemAnswerCreate
     created_at: int | None
-    alerts: list
+    alerts: list[AnswerAlert] = Field(default_factory=list)
 
 
 class AssessmentAnswerCreate(InternalModel):

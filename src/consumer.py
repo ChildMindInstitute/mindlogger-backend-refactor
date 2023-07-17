@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import datetime
 import io
 import json
@@ -32,7 +33,7 @@ async def create_report(message: aio_pika.abc.AbstractIncomingMessage):
             return
         file = UploadFile(
             response.email.attachment,
-            io.BytesIO(response.pdf.encode()),
+            io.BytesIO(base64.b64decode(response.pdf.encode())),
             "application/pdf",
         )
         await mail_service.send(

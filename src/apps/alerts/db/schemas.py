@@ -1,26 +1,7 @@
-from sqlalchemy import Boolean, Column, ForeignKey, String, Text
+from sqlalchemy import Boolean, Column, ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID
 
 from infrastructure.database.base import Base
-
-
-class AlertConfigSchema(Base):
-    """This table is used as an alert configuration for a
-    specific applet and specific activity item answer
-    """
-
-    __tablename__ = "alerts_configs"
-
-    applet_id = Column(
-        ForeignKey("applets.id", ondelete="RESTRICT"),
-        nullable=False,
-    )
-    activity_item_histories_id_version = Column(
-        ForeignKey("activity_item_histories.id_version", ondelete="RESTRICT"),
-        nullable=False,
-    )
-    alert_message = Column(String(), nullable=False)
-    specific_answer = Column(Text(), nullable=False)
-    viewed = Column(Boolean(), nullable=False, default=True)
 
 
 class AlertSchema(Base):
@@ -28,22 +9,21 @@ class AlertSchema(Base):
 
     __tablename__ = "alerts"
 
-    alert_config_id = Column(
-        ForeignKey("alerts_configs.id", ondelete="RESTRICT"),
+    user_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
     )
     respondent_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
     )
     is_watched = Column(Boolean(), nullable=False, default=False)
     applet_id = Column(
         ForeignKey("applets.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    activity_item_histories_id_version = Column(
-        ForeignKey("activity_item_histories.id_version", ondelete="RESTRICT"),
-        nullable=False,
-    )
+    version = Column(String())
+    activity_id = Column(UUID(as_uuid=True))
+    activity_item_id = Column(UUID(as_uuid=True))
     alert_message = Column(String(), nullable=False)
-    specific_answer = Column(Text(), nullable=False)
+    answer_id = Column(UUID(as_uuid=True))

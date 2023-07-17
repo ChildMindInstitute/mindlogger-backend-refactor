@@ -1,10 +1,12 @@
 import datetime
 import json
 
+import pytest
 from asynctest import CoroutineMock, patch
 
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
+from infrastructure.utility import RedisCacheTest
 from infrastructure.utility.rabbitmq_queue import RabbitMqQueueTest
 
 
@@ -56,6 +58,7 @@ class TestAnswerActivityItems(BaseTest):
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
     latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
 
+    @pytest.mark.main
     @rollback
     async def test_answer_activity_items_create_for_respondent(self):
         await self.client.login(
@@ -86,6 +89,12 @@ class TestAnswerActivityItems(BaseTest):
                 start_time=10,
                 end_time=11,
             ),
+            alerts=[
+                dict(
+                    activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    message="hello world",
+                )
+            ],
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -96,6 +105,12 @@ class TestAnswerActivityItems(BaseTest):
             0
         ].body
         assert b"submit_id" in message and b"answer_id" in message
+        published_values = await RedisCacheTest().get(
+            "channel_7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+        )
+        published_values = published_values or []
+        assert len(published_values) == 1
+        assert len(RedisCacheTest()._storage) == 3
 
     @patch("aiohttp.ClientSession.post")
     @rollback

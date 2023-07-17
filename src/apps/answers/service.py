@@ -6,6 +6,7 @@ import uuid
 from collections import defaultdict
 
 import aiohttp
+import sentry_sdk
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -22,6 +23,9 @@ from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
 from apps.activity_flows.crud import FlowItemHistoriesCRUD
+from apps.alerts.crud.alert import AlertCRUD
+from apps.alerts.db.schemas import AlertSchema
+from apps.alerts.domain import AlertMessage
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.crud.notes import AnswerNotesCRUD
@@ -32,6 +36,7 @@ from apps.answers.db.schemas import (
 )
 from apps.answers.domain import (
     ActivityAnswer,
+    AnswerAlert,
     AnswerDate,
     AnswerExport,
     AnswerNoteDetail,
@@ -68,6 +73,7 @@ from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from infrastructure.utility import RedisCache
 from infrastructure.utility.rabbitmq_queue import RabbitMqQueue
 
 
@@ -256,6 +262,13 @@ class AnswerService:
 
         await AnswerItemsCRUD(self.session).create(item_answer)
         await self._create_report_from_answer(answer.submit_id, answer.id)
+        await self._create_alerts(
+            answer.id,
+            answer.applet_id,
+            applet_answer.activity_id,
+            answer.version,
+            applet_answer.alerts,
+        )
 
     async def _create_report_from_answer(
         self, submit_id: uuid.UUID, answer_id: uuid.UUID
@@ -715,6 +728,60 @@ class AnswerService:
             self.session
         ).get_by_applet_id_for_summary(applet_id)
         return parse_obj_as(list[SummaryActivity], activities)
+
+    async def _create_alerts(
+        self,
+        answer_id: uuid.UUID,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        version: str,
+        raw_alerts: list[AnswerAlert],
+    ):
+        if len(raw_alerts) == 0:
+            return
+        cache = RedisCache()
+        receiver_ids = await UserAppletAccessCRUD(
+            self.session
+        ).get_responsible_persons(applet_id, self.user_id)
+        alert_schemas = []
+        for receiver_id in receiver_ids:
+            for raw_alert in raw_alerts:
+                alert_schemas.append(
+                    AlertSchema(
+                        user_id=receiver_id,
+                        respondent_id=self.user_id,
+                        is_watched=False,
+                        applet_id=applet_id,
+                        version=version,
+                        activity_id=activity_id,
+                        activity_item_id=raw_alert.activity_item_id,
+                        alert_message=raw_alert.message,
+                        answer_id=answer_id,
+                    )
+                )
+
+        alerts = await AlertCRUD(self.session).create_many(alert_schemas)
+
+        for alert in alerts:
+            channel_id = f"channel_{alert.user_id}"
+            try:
+                await cache.publish(
+                    channel_id,
+                    AlertMessage(
+                        id=alert.id,
+                        respondent_id=self.user_id,
+                        applet_id=applet_id,
+                        version=version,
+                        message=alert.alert_message,
+                        created_at=alert.created_at,
+                        activity_id=alert.activity_id,
+                        activity_item_id=alert.activity_item_id,
+                        answer_id=answer_id,
+                    ).dict(),
+                )
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
+                break
 
 
 class ReportServerService:

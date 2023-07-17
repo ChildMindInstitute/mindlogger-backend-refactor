@@ -10,7 +10,7 @@ from sentry_sdk import capture_exception
 from config import settings
 
 
-class _Cache:
+class RedisCacheTest:
     _storage: dict = {}
 
     async def get(self, key: str):
@@ -54,6 +54,16 @@ class _Cache:
                 results.append(result)
         return results
 
+    async def publish(self, channel: str, value: dict):
+        values, expiry = self._storage.get(channel, ([], None))
+        values.append(json.dumps(value, default=str))
+        self._storage[channel] = (values, expiry)
+
+    async def messages(self, channel_name: str):
+        values, expiry = self._storage.get(channel_name, ([], None))
+        for value in values:
+            yield value
+
 
 class RedisCache:
     """Singleton Redis cache client"""
@@ -94,7 +104,7 @@ class RedisCache:
 
     def _start(self):
         if self.env == "testing":
-            self._cache = _Cache()
+            self._cache = RedisCacheTest()
             return
         if not self.host:
             return
@@ -144,7 +154,7 @@ class RedisCache:
             return []
         return await self._cache.mget(keys)
 
-    async def publish(self, channel: str, value):
+    async def publish(self, channel: str, value: dict):
         assert self._cache
         await self._cache.publish(channel, json.dumps(value, default=str))
 
