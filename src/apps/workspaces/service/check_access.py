@@ -192,9 +192,12 @@ class CheckAccessService:
             raise PublishConcealAccessDenied()
 
     async def check_answers_export_access(self, applet_id: uuid.UUID):
-        await self._check_applet_roles(
-            applet_id, [Role.OWNER, Role.MANAGER, Role.REVIEWER]
+        has_access = await AppletAccessCRUD(self.session).check_export_access(
+            applet_id, self.user_id
         )
+
+        if not has_access:
+            raise AppletAccessDenied()
 
     async def check_applet_share_library_access(self, applet_id: uuid.UUID):
         await self._check_applet_roles(applet_id, [Role.OWNER])
