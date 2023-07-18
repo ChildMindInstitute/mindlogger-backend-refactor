@@ -9,7 +9,7 @@ from apps.authentication.domain.token import (
     RefreshAccessTokenRequest,
     Token,
 )
-from apps.authentication.errors import BadCredentials
+from apps.authentication.errors import InvalidRefreshToken
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.users.domain import PublicUser, User
@@ -65,10 +65,6 @@ async def refresh_access_token(
 ) -> Response[Token]:
     """Refresh access token."""
     async with atomic(session):
-        refresh_token_not_correct = BadCredentials(
-            message="Refresh token is invalid"
-        )
-
         try:
             payload = jwt.decode(
                 schema.refresh_token,
@@ -77,10 +73,10 @@ async def refresh_access_token(
             )
 
             if not (user_id := payload.get("sub")):
-                raise refresh_token_not_correct
+                raise InvalidRefreshToken()
 
         except JWTError:
-            raise BadCredentials(message="Refresh token is invalid")
+            raise InvalidRefreshToken()
 
         access_token = AuthenticationService(session).create_access_token(
             {"sub": str(user_id)}
