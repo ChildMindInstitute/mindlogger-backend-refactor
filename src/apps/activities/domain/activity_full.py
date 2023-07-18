@@ -21,6 +21,7 @@ class ActivityItemFull(BaseActivityItem, InternalModel):
 
 class ActivityItemHistoryFull(BaseActivityItem, InternalModel):
     id: uuid.UUID
+    id_version: str
     activity_id: str
     order: int
 
