@@ -6,7 +6,11 @@ from apps.shared.exception import AccessDeniedError, BaseError, ValidationError
 
 
 class BadCredentials(ValidationError):
-    message = _("Bad credentials.")
+    message = _("Old password is incorrect.")
+
+
+class InvalidRefreshToken(ValidationError):
+    message = _("Invalid refresh token.")
 
 
 class WeakPassword(ValidationError):

@@ -53,7 +53,7 @@ class AuthenticationService:
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str):
         if not pwd_context.verify(plain_password, hashed_password):
-            raise BadCredentials
+            raise BadCredentials()
 
     @staticmethod
     def verify_password_and_hash(
@@ -69,16 +69,7 @@ class AuthenticationService:
         user: User = await UsersCRUD(self.session).get_by_email(
             email=user_login_schema.email
         )
-        try:
-            self.verify_password(
-                user_login_schema.password, user.hashed_password
-            )
-        except BadCredentials:
-            raise BadCredentials(
-                message=(
-                    f"Incorrect password for {user.email} if that user exist."
-                )
-            )
+        self.verify_password(user_login_schema.password, user.hashed_password)
 
         return user
 
