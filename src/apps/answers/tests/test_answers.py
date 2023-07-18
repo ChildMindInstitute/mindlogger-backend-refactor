@@ -1,7 +1,6 @@
 import datetime
 import json
 
-import pytest
 from asynctest import CoroutineMock, patch
 
 from apps.shared.test import BaseTest
@@ -58,7 +57,6 @@ class TestAnswerActivityItems(BaseTest):
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
     latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
 
-    @pytest.mark.main
     @rollback
     async def test_answer_activity_items_create_for_respondent(self):
         await self.client.login(

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import case, select
+from sqlalchemy import JSON, and_, case, func, or_, select, text
 from sqlalchemy.orm import Query
 
 from apps.workspaces.db.schemas import UserAppletAccessSchema
@@ -35,6 +35,34 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(roles))
+        query = query.exists()
+
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first()
+
+    async def check_export_access(
+        self,
+        applet_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> bool:
+        query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(
+            or_(
+                UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER]),
+                and_(
+                    UserAppletAccessSchema.role == Role.REVIEWER,
+                    func.json_array_length(
+                        func.cast(
+                            UserAppletAccessSchema.meta[text("'respondents'")],
+                            JSON,
+                        )
+                    )
+                    > 0,
+                ),
+            )
+        )
         query = query.exists()
 
         db_result = await self._execute(select(query))
