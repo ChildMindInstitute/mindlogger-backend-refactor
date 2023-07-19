@@ -444,6 +444,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             UserAppletAccessSchema.is_deleted == False  # noqa
         )
         access_subquery = access_subquery.order_by(
+            UserAppletAccessSchema.applet_id.asc(),
             case(
                 (UserAppletAccessSchema.role == Role.OWNER, 1),
                 (UserAppletAccessSchema.role == Role.MANAGER, 2),
@@ -452,7 +453,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 (UserAppletAccessSchema.role == Role.REVIEWER, 5),
                 (UserAppletAccessSchema.role == Role.RESPONDENT, 6),
                 else_=10,
-            ).asc()
+            ).asc(),
         )
         access_subquery = access_subquery.where(
             UserAppletAccessSchema.owner_id == owner_id
