@@ -1,7 +1,7 @@
 """add user device
 
 Revision ID: 5f9ff1fc384f
-Revises: 1e64f22ed834
+Revises: 9ce2d32ab2d3
 Create Date: 2023-04-25 20:54:41.055998
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "5f9ff1fc384f"
-down_revision = "1e64f22ed834"
+down_revision = "9ce2d32ab2d3"
 branch_labels = None
 depends_on = None
 
