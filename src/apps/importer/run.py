@@ -1,9 +1,9 @@
-from pyshacl import validate as shacl_validate
-from pyld import jsonld
 from bson.objectid import ObjectId
+from pyld import jsonld
+from pyshacl import validate as shacl_validate
 
-from apps.girderformindlogger.utility import jsonld_expander
 from apps.girderformindlogger.models.applet import Applet
+from apps.girderformindlogger.utility import jsonld_expander
 
 
 def validate_data(data, shape_file_path):
@@ -42,10 +42,16 @@ def validate_data(data, shape_file_path):
 
 
 def main():
-    applet = Applet().findOne({'_id': ObjectId('62e1af24acd35a6fa2a0516e')})
-    formatted = jsonld_expander.formatLdObject(applet, 'applet', None, refreshCache=False, reimportFromUrl=False)
-    conforms, v_text = validate_data(formatted['applet'], 'https://raw.githubusercontent.com/ReproNim/reproschema/master/validation/reproschema-shacl.ttl')
-    print('conforms', conforms, 'v_text', v_text)
+    applet = Applet().findOne({"_id": ObjectId("62e1af24acd35a6fa2a0516e")})
+    formatted = jsonld_expander.formatLdObject(
+        applet, "applet", None, refreshCache=False, reimportFromUrl=False
+    )
+    conforms, v_text = validate_data(
+        formatted["applet"],
+        "https://raw.githubusercontent.com/ReproNim/reproschema/master/validation/reproschema-shacl.ttl",  # noqa: E501
+    )
+    print("conforms", conforms, "v_text", v_text)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

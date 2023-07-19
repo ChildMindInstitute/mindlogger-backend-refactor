@@ -16,6 +16,7 @@ from apps.girderformindlogger.exceptions import (
     GirderException,
     ValidationException,
 )
+
 # from apps.girderformindlogger.external.notification import send_notification
 from apps.girderformindlogger.models.folder import Folder
 from apps.girderformindlogger.models.model_base import (
@@ -24,6 +25,7 @@ from apps.girderformindlogger.models.model_base import (
 )
 from apps.girderformindlogger.models.profile import Profile
 from apps.girderformindlogger.models.profile import Profile as ProfileModel
+
 # from apps.girderformindlogger.models.push_notification import (
 #     PushNotification as PushNotificationModel,
 # )
@@ -362,7 +364,6 @@ class Events(Model):
                 or not len(event["schedule"].get("month", []))
                 or not len(event["schedule"].get("year", []))
             ):
-
                 return (False, None)
 
             launchDate = None
@@ -633,7 +634,6 @@ class Events(Model):
                     dayFilter = dayFilter + relativedelta(days=1)
 
                 for event in events:
-
                     if usedEventCards.get(str(event["id"]), False):
                         result["events"][str(event["id"])] = event
 

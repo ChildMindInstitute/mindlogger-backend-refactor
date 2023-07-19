@@ -3,6 +3,7 @@ import os
 
 import cherrypy
 
+
 def loadConfig():
     cherrypy.config["global"] = {
         "server.socket_host": "127.0.0.1",

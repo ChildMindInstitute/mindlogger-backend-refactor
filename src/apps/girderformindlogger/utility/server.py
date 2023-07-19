@@ -3,7 +3,6 @@ import mimetypes
 import os
 
 import cherrypy
-from apps.girderformindlogger import events
 import mako
 import six
 
@@ -11,6 +10,7 @@ from apps.girderformindlogger import (
     __version__,
     _setupCache,
     constants,
+    events,
     logprint,
     logStdoutStderr,
     plugin,

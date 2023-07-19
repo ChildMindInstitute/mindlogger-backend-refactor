@@ -17,6 +17,7 @@ except DistributionNotFound:
 
 __license__ = "Apache 2.0"
 
+import functools
 import logging
 import logging.handlers
 import os
@@ -24,7 +25,6 @@ import sys
 import traceback
 
 import cherrypy
-import functools
 import six
 
 from apps.girderformindlogger.constants import (
@@ -327,15 +327,20 @@ def _setupCache():
 
 
 # Expose common logging levels and colors as methods of logprint.
-logprint.info = functools.partial(logprint, level=logging.INFO, color='info')
+logprint.info = functools.partial(logprint, level=logging.INFO, color="info")
 logprint.warning = functools.partial(
-    logprint, level=logging.WARNING, color='warning')
+    logprint, level=logging.WARNING, color="warning"
+)
 logprint.error = functools.partial(
-    logprint, level=logging.ERROR, color='error')
+    logprint, level=logging.ERROR, color="error"
+)
 logprint.success = functools.partial(
-    logprint, level=logging.INFO, color='success')
+    logprint, level=logging.INFO, color="success"
+)
 logprint.critical = functools.partial(
-    logprint, level=logging.CRITICAL, color='error')
+    logprint, level=logging.CRITICAL, color="error"
+)
 logprint.debug = logprint
 logprint.exception = functools.partial(
-    logprint, level=logging.ERROR, color='error', exc_info=True)
+    logprint, level=logging.ERROR, color="error", exc_info=True
+)

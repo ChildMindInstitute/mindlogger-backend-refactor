@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import pymongo
 import six
+from six.moves import urllib
+
 from apps.girderformindlogger import logger, logprint
 from apps.girderformindlogger.utility import config
-from six.moves import urllib
 
 _dbClients = {}
 

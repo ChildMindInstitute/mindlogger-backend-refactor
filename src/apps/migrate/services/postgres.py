@@ -90,7 +90,6 @@ class Postgres:
     def save_users_workspace(
         self, users_mapping: dict[str, dict]
     ) -> list[dict]:
-
         cursor = self.connection.cursor()
 
         results: list[dict] = []
@@ -166,3 +165,4 @@ class Postgres:
                 ),
                 owner_id,
             )
+            print(applet_created)

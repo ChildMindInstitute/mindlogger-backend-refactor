@@ -1,4 +1,4 @@
-import asyncio
+# import asyncio
 import json
 from pprint import pprint as print
 from typing import Any
@@ -7,8 +7,8 @@ from bson.objectid import ObjectId
 from Cryptodome.Cipher import AES
 from pymongo import MongoClient
 
-# from apps.applets.domain.applet_create_update import AppletCreate
-
+from apps.girderformindlogger.models.activity import Activity
+from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.utility import jsonld_expander
 from apps.jsonld_converter.dependencies import (
     get_context_resolver,
@@ -17,8 +17,9 @@ from apps.jsonld_converter.dependencies import (
 )
 from apps.shared.domain.base import InternalModel, PublicModel
 from config import settings
-from apps.girderformindlogger.models.applet import Applet
-from apps.girderformindlogger.models.activity import Activity
+
+# from apps.applets.domain.applet_create_update import AppletCreate
+
 
 def decrypt(data):
     aes_key = b"n]fwen%Z.,Ce4!/0(1D-Q0#ZUOBoqJrV"
@@ -40,7 +41,7 @@ def decrypt(data):
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        self.client = MongoClient("mongo", 27017)  # type: ignore # "localhost"
+        self.client = MongoClient("mongo", 27017)  # "localhost"
         self.db = self.client["mindlogger"]
 
     @staticmethod
@@ -51,7 +52,7 @@ class Mongo:
             document_loader, context_resolver
         )
 
-        return await (converter.convert(schema))
+        return await converter.convert(schema)
 
     def close_connection(self):
         self.client.close()
@@ -109,44 +110,49 @@ class Mongo:
         with open(settings.apps_dir / "migrate/repro_template.json") as file:
             data = json.load(file)
 
-            
             # TODO: Fill the template with applet data
             return data
 
     async def get_applets(self) -> list[dict]:
-        collection = self.db["folder"]
-        cache  =self.db["cache"]
+        # collection = self.db["folder"]
+        # cache = self.db["cache"]
+
         # NOTE: All applets have baseParentId 5ea689a286d25a5dbb14e82c
         # applets = collection.find_one(
         #     {"_id": ObjectId("63f5f9aded51ea1c1e6dff69")},
         #     # {"parentId": ObjectId("5ea689a086d25a5dbb14e808")},
         # )
-        applets = Applet().findOne({'_id': ObjectId('62d15a03154fa87efa129760')})
-        # applet_cache = json.loads(cache.find_one({"_id":applets["cached"]})["cache_data"])
+        applets = Applet().findOne(
+            {"_id": ObjectId("62d15a03154fa87efa129760")}
+        )
+        # applet_cache = json.loads(cache.find_one({"_id":applets["cached"]})["cache_data"])  # noqa: E501
 
         applet_format = jsonld_expander.formatLdObject(applets, "applet")
         for key, activity in applet_format["activities"].items():
-            applet_format["activities"][key] = jsonld_expander.formatLdObject(Activity().findOne({'_id': activity}), "activity")
+            applet_format["activities"][key] = jsonld_expander.formatLdObject(
+                Activity().findOne({"_id": activity}), "activity"
+            )
 
         activities = applet_format["activities"]
         # setup activity items
         for key, value in activities.items():
-            activity_items = value['items']
+            activity_items = value["items"]
             activity_object = value["activity"]
             activity_items_objects = []
             for item in activity_object["reprolib:terms/order"][0]["@list"]:
                 activity_items_objects.append(activity_items[item["@id"]])
-            
-            activities[key]["activity"]["reprolib:terms/order"][0]["@list"] = activity_items_objects
-            activities[key].pop("items")
 
+            activities[key]["activity"]["reprolib:terms/order"][0][
+                "@list"
+            ] = activity_items_objects
+            activities[key].pop("items")
 
         applet = applet_format["applet"]
         activity_objects = []
         # setup activities
         for activity in applet["reprolib:terms/order"][0]["@list"]:
             activity_objects.append(activities[activity["@id"]]["activity"])
-        
+
         applet["reprolib:terms/order"][0]["@list"] = activity_objects
 
         activity_flows = applet_format["activityFlows"]
@@ -154,30 +160,27 @@ class Mongo:
         # setup activity flows
         for flow in applet["reprolib:terms/activityFlowOrder"][0]["@list"]:
             activity_flow_objects.append(activity_flows[flow["@id"]])
-        
 
-
-        applet["reprolib:terms/activityFlowOrder"][0]["@list"] = activity_flow_objects
+        applet["reprolib:terms/activityFlowOrder"][0][
+            "@list"
+        ] = activity_flow_objects
         # add context
-        
+
         context = {
             "@context": [
                 {
-                "reprolib": "https://raw.githubusercontent.com/ReproNim/reproschema/master/"
+                    "reprolib": "https://raw.githubusercontent.com/ReproNim/reproschema/master/"  # noqa: E501
                 },
-                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json",  # noqa: E501
             ],
-            "@type": "https://raw.githubusercontent.com/ReproNim/reproschema/master/schemas/Protocol",
+            "@type": "https://raw.githubusercontent.com/ReproNim/reproschema/master/schemas/Protocol",  # noqa: E501
         }
 
         applet["@context"] = context["@context"]
         applet["@type"] = context["@type"]
 
-
         # ld_request_schema = self.get_applet_repro_schema(applet)
-        converter_result = await self.get_converter_result(
-                applet
-            )
+        converter_result = await self.get_converter_result(applet)
         print(converter_result)
 
         # print(applet["reprolib:terms/order"][0]["@list"][0]["reprolib:terms/order"][0]["@list"][0].keys())

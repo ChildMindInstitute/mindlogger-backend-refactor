@@ -1,42 +1,56 @@
 # -*- coding: utf-8 -*-
 import cgi
-import cherrypy
 import collections
 import datetime
 import inspect
 import json
 import posixpath
-import pymongo
-import six
 import sys
 import traceback
 import types
 import unicodedata
 import uuid
 
-from sentry_sdk import capture_exception
+import cherrypy
+import pymongo
+import six
 from dogpile.cache.util import kwarg_function_key_generator
-from apps.girderformindlogger.external.mongodb_proxy import MongoProxy
+from sentry_sdk import capture_exception
+from six.moves import range, urllib
 
 # from . import docs
 from apps.girderformindlogger import auditLogger, events, logger, logprint
-from apps.girderformindlogger.constants import TokenScope, SortDir, ServerMode
-from apps.girderformindlogger.exceptions import AccessException, GirderException, ValidationException, RestException
+from apps.girderformindlogger.constants import ServerMode, SortDir, TokenScope
+from apps.girderformindlogger.exceptions import (
+    AccessException,
+    GirderException,
+    RestException,
+    ValidationException,
+)
+from apps.girderformindlogger.external.mongodb_proxy import MongoProxy
+from apps.girderformindlogger.models.account_profile import AccountProfile
 from apps.girderformindlogger.models.setting import Setting
+from apps.girderformindlogger.models.shield import Shield
 from apps.girderformindlogger.models.token import Token
 from apps.girderformindlogger.models.user import User
-from apps.girderformindlogger.models.account_profile import AccountProfile
-from apps.girderformindlogger.models.shield import Shield
 from apps.girderformindlogger.settings import SettingKey
-from apps.girderformindlogger.utility import toBool, config, JsonEncoder, optionalArgumentDecorator
+from apps.girderformindlogger.utility import (
+    JsonEncoder,
+    config,
+    optionalArgumentDecorator,
+    toBool,
+)
 from apps.girderformindlogger.utility._cache import requestCache
 from apps.girderformindlogger.utility.model_importer import ModelImporter
-from six.moves import range, urllib
 
 # Arbitrary buffer length for stream-reading request bodies
 READ_BUFFER_LEN = 65536
 
-_MONGO_CURSOR_TYPES = (MongoProxy, pymongo.cursor.Cursor, pymongo.command_cursor.CommandCursor)
+_MONGO_CURSOR_TYPES = (
+    MongoProxy,
+    pymongo.cursor.Cursor,
+    pymongo.command_cursor.CommandCursor,
+)
 
 
 def getUrlParts(url=None):
@@ -71,23 +85,25 @@ def getApiUrl(url=None, preferReferer=False):
         a cherrypy request that has a referer header that contains the api
         string, use that referer as the url.
     """
-    apiStr = config.getConfig()['server']['api_root']
+    apiStr = config.getConfig()["server"]["api_root"]
 
     if not url:
-        if preferReferer and apiStr in cherrypy.request.headers.get('referer', ''):
-            url = cherrypy.request.headers['referer']
+        if preferReferer and apiStr in cherrypy.request.headers.get(
+            "referer", ""
+        ):
+            url = cherrypy.request.headers["referer"]
         else:
             root = Setting().get(SettingKey.SERVER_ROOT)
             if root:
-                return posixpath.join(root, apiStr.lstrip('/'))
+                return posixpath.join(root, apiStr.lstrip("/"))
 
     url = url or cherrypy.url()
     idx = url.find(apiStr)
 
     if idx < 0:
-        raise GirderException('Could not determine API root in %s.' % url)
+        raise GirderException("Could not determine API root in %s." % url)
 
-    return url[:idx + len(apiStr)]
+    return url[: idx + len(apiStr)]
 
 
 def iterBody(length=READ_BUFFER_LEN, strictLength=False):
@@ -114,7 +130,7 @@ def iterBody(length=READ_BUFFER_LEN, strictLength=False):
         until ``length`` bytes have been read or end-of-stream.
     :type strictLength: bool
     """
-    if cherrypy.request.headers.get('Transfer-Encoding') == 'chunked':
+    if cherrypy.request.headers.get("Transfer-Encoding") == "chunked":
         while True:
             if strictLength:
                 buf = cherrypy.request.rfile.read(length)
@@ -125,9 +141,9 @@ def iterBody(length=READ_BUFFER_LEN, strictLength=False):
                 if cherrypy.request.rfile.closed:
                     break
                 buf = cherrypy.request.rfile.buffer
-                cherrypy.request.rfile.buffer = b''
+                cherrypy.request.rfile.buffer = b""
             yield buf
-    elif 'Content-Length' in cherrypy.request.headers:
+    elif "Content-Length" in cherrypy.request.headers:
         while True:
             buf = cherrypy.request.body.read(length)
             if not buf:
@@ -135,7 +151,9 @@ def iterBody(length=READ_BUFFER_LEN, strictLength=False):
             yield buf
 
 
-@requestCache.cache_on_arguments(function_key_generator=kwarg_function_key_generator)
+@requestCache.cache_on_arguments(
+    function_key_generator=kwarg_function_key_generator
+)
 def getCurrentToken(allowCookie=None):
     """
     Returns the current valid token object that was passed via the token header
@@ -152,15 +170,15 @@ def getCurrentToken(allowCookie=None):
     :type allowCookie: bool
     """
     if allowCookie is None:
-        allowCookie = getattr(cherrypy.request, 'girderAllowCookie', False)
+        allowCookie = getattr(cherrypy.request, "girderAllowCookie", False)
 
     tokenStr = None
-    if 'token' in cherrypy.request.params:  # Token as a parameter
-        tokenStr = cherrypy.request.params.get('token')
-    elif 'Girder-Token' in cherrypy.request.headers:
-        tokenStr = cherrypy.request.headers['Girder-Token']
-    elif allowCookie and 'girderToken' in cherrypy.request.cookie:
-        tokenStr = cherrypy.request.cookie['girderToken'].value
+    if "token" in cherrypy.request.params:  # Token as a parameter
+        tokenStr = cherrypy.request.params.get("token")
+    elif "Girder-Token" in cherrypy.request.headers:
+        tokenStr = cherrypy.request.headers["Girder-Token"]
+    elif allowCookie and "girderToken" in cherrypy.request.cookie:
+        tokenStr = cherrypy.request.cookie["girderToken"].value
 
     if not tokenStr:
         return None
@@ -180,10 +198,10 @@ def getCurrentUser(returnToken=False):
               logged in or the token is invalid or expired.  If
               returnToken=True, returns a tuple of (user, token).
     """
-    if not returnToken and hasattr(cherrypy.request, 'girderUser'):
+    if not returnToken and hasattr(cherrypy.request, "girderUser"):
         return cherrypy.request.girderUser
 
-    event = events.trigger('auth.user.get')
+    event = events.trigger("auth.user.get")
     if event.defaultPrevented and len(event.responses) > 0:
         return event.responses[0]
 
@@ -197,34 +215,51 @@ def getCurrentUser(returnToken=False):
         else:
             return user
 
-    if (token is None
-            or token['expires'] < datetime.datetime.utcnow()
-            or 'userId' not in token):
+    if (
+        token is None
+        or token["expires"] < datetime.datetime.utcnow()
+        or "userId" not in token
+    ):
         return retVal(None, token)
     else:
         try:
-            ensureTokenScopes(token, getattr(
-                cherrypy.request, 'requiredScopes', TokenScope.USER_AUTH))
+            ensureTokenScopes(
+                token,
+                getattr(
+                    cherrypy.request, "requiredScopes", TokenScope.USER_AUTH
+                ),
+            )
         except AccessException:
             return retVal(None, token)
 
-        user = User().load(token['userId'], force=True)
+        user = User().load(token["userId"], force=True)
         return retVal(user, token)
 
 
 def getAccountProfile():
     token = getCurrentToken()
-    if (token is None or token['expires'] < datetime.datetime.utcnow() or 'accountId' not in token or 'userId' not in token):
+    if (
+        token is None
+        or token["expires"] < datetime.datetime.utcnow()
+        or "accountId" not in token
+        or "userId" not in token
+    ):
         return None
 
     else:
         try:
-            ensureTokenScopes(token, getattr(
-                cherrypy.request, 'requiredScopes', TokenScope.USER_AUTH))
+            ensureTokenScopes(
+                token,
+                getattr(
+                    cherrypy.request, "requiredScopes", TokenScope.USER_AUTH
+                ),
+            )
         except AccessException:
             return None
 
-        return AccountProfile().findOne({'accountId': token['accountId'], 'userId': token['userId']})
+        return AccountProfile().findOne(
+            {"accountId": token["accountId"], "userId": token["userId"]}
+        )
 
 
 def setCurrentUser(user):
@@ -238,7 +273,7 @@ def setCurrentUser(user):
     cherrypy.request.girderUser = user
 
 
-def setContentDisposition(filename, disposition='attachment', setHeader=True):
+def setContentDisposition(filename, disposition="attachment", setHeader=True):
     """
     Set the content disposition header to either inline or attachment, and
     specify a filename that is properly escaped.  See
@@ -254,30 +289,40 @@ def setContentDisposition(filename, disposition='attachment', setHeader=True):
         Content-Disposition header, but do not set it.
     :returns: the content-disposition header value.
     """
-    if (not disposition or (disposition not in ('inline', 'attachment')
-                            and not disposition.startswith('form-data'))):
+    if not disposition or (
+        disposition not in ("inline", "attachment")
+        and not disposition.startswith("form-data")
+    ):
         raise RestException(
-            'Error: Content-Disposition (%r) is not a recognized value.' % disposition)
+            "Error: Content-Disposition (%r) is not a recognized value."
+            % disposition
+        )
     if not filename:
-        raise RestException('Error: Content-Disposition filename is empty.')
+        raise RestException("Error: Content-Disposition filename is empty.")
     if not isinstance(disposition, six.binary_type):
-        disposition = disposition.encode('iso8859-1', 'ignore')
+        disposition = disposition.encode("iso8859-1", "ignore")
     if not isinstance(filename, six.text_type):
-        filename = filename.decode('utf8', 'ignore')
+        filename = filename.decode("utf8", "ignore")
     # Decompose the name before trying to encode it.  This will de-accent
     # characters rather than remove them in some instances.
-    safeFilename = unicodedata.normalize('NFKD', filename).encode('iso8859-1', 'ignore')
-    utf8Filename = filename.encode('utf8', 'ignore')
-    value = disposition + b'; filename="' + safeFilename.replace(
-        b'\\', b'\\\\').replace(b'"', b'\\"') + b'"'
+    safeFilename = unicodedata.normalize("NFKD", filename).encode(
+        "iso8859-1", "ignore"
+    )
+    utf8Filename = filename.encode("utf8", "ignore")
+    value = (
+        disposition
+        + b'; filename="'
+        + safeFilename.replace(b"\\", b"\\\\").replace(b'"', b'\\"')
+        + b'"'
+    )
     if safeFilename != utf8Filename:
         quotedFilename = six.moves.urllib.parse.quote(utf8Filename)
         if not isinstance(quotedFilename, six.binary_type):
-            quotedFilename = quotedFilename.encode('iso8859-1', 'ignore')
+            quotedFilename = quotedFilename.encode("iso8859-1", "ignore")
         value += b"; filename*=UTF-8''" + quotedFilename
-    value = value.decode('utf8')
+    value = value.decode("utf8")
     if setHeader:
-        setResponseHeader('Content-Disposition', value)
+        setResponseHeader("Content-Disposition", value)
     return value
 
 
@@ -292,8 +337,8 @@ def requireAdmin(user, message=None):
     :type message: str or None
     :raises AccessException: If the user is not an administrator.
     """
-    if user is None or not user['admin']:
-        raise AccessException(message or 'Administrator access required.')
+    if user is None or not user["admin"]:
+        raise AccessException(message or "Administrator access required.")
 
 
 def getBodyJson(allowConstants=False):
@@ -310,14 +355,15 @@ def getBodyJson(allowConstants=False):
     if allowConstants:
         _parseConstants = None
     else:
+
         def _parseConstants(val):
             raise RestException('Error: "%s" is not valid JSON.' % val)
 
-    text = cherrypy.request.body.read().decode('utf8')
+    text = cherrypy.request.body.read().decode("utf8")
     try:
         return json.loads(text, parse_constant=_parseConstants)
     except ValueError:
-        raise RestException('Invalid JSON passed in request body.')
+        raise RestException("Invalid JSON passed in request body.")
 
 
 def getParamJson(name, params, default=None):
@@ -337,7 +383,7 @@ def getParamJson(name, params, default=None):
     try:
         return json.loads(params[name])
     except ValueError:
-        raise RestException('The %s parameter must be valid JSON.' % name)
+        raise RestException("The %s parameter must be valid JSON." % name)
 
 
 class loadmodel(object):  # noqa: class name
@@ -367,10 +413,19 @@ class loadmodel(object):  # noqa: class name
     :type requiredFlags: str or list/set/tuple of str or None
     """
 
-    def __init__(self, map=None, model=None, plugin='_core', level=None,
-                 force=False, exc=True, requiredFlags=None, **kwargs):
+    def __init__(
+        self,
+        map=None,
+        model=None,
+        plugin="_core",
+        level=None,
+        force=False,
+        exc=True,
+        requiredFlags=None,
+        **kwargs,
+    ):
         if map is None:
-            self.map = {'id': model}
+            self.map = {"id": model}
         else:
             self.map = map
 
@@ -385,10 +440,10 @@ class loadmodel(object):  # noqa: class name
     def _getIdValue(self, kwargs, idParam):
         if idParam in kwargs:
             return kwargs.pop(idParam)
-        elif idParam in kwargs['params']:
-            return kwargs['params'].pop(idParam)
+        elif idParam in kwargs["params"]:
+            return kwargs["params"].pop(idParam)
         else:
-            raise RestException('No ID parameter passed: ' + idParam)
+            raise RestException("No ID parameter passed: " + idParam)
 
     def __call__(self, fun):
         @six.wraps(fun)
@@ -400,28 +455,37 @@ class loadmodel(object):  # noqa: class name
 
                 if self.force:
                     kwargs[converted] = model.load(
-                        id, force=True, **self.kwargs)
+                        id, force=True, **self.kwargs
+                    )
                 elif self.level is not None:
                     kwargs[converted] = model.load(
-                        id=id, level=self.level, user=getCurrentUser(),
-                        **self.kwargs)
+                        id=id,
+                        level=self.level,
+                        user=getCurrentUser(),
+                        **self.kwargs,
+                    )
                 else:
                     kwargs[converted] = model.load(id, **self.kwargs)
 
                 if kwargs[converted] is None and self.exc:
                     raise RestException(
-                        'Invalid %s id (%s).' % (model.name, str(id)))
+                        "Invalid %s id (%s)." % (model.name, str(id))
+                    )
 
                 if self.requiredFlags:
                     model.requireAccessFlags(
-                        kwargs[converted], user=getCurrentUser(), flags=self.requiredFlags)
+                        kwargs[converted],
+                        user=getCurrentUser(),
+                        flags=self.requiredFlags,
+                    )
 
             return fun(*args, **kwargs)
+
         return wrapped
 
 
 class filtermodel(object):  # noqa: class name
-    def __init__(self, model, plugin='_core', addFields=None):
+    def __init__(self, model, plugin="_core", addFields=None):
         """
         This creates a decorator that will filter a model or list of models
         returned by the wrapped function using the specified model's
@@ -458,15 +522,20 @@ class filtermodel(object):  # noqa: class name
             user = getCurrentUser()
 
             if isinstance(val, _MONGO_CURSOR_TYPES):
-                if callable(getattr(val, 'count', None)):
-                    cherrypy.response.headers['Girder-Total-Count'] = val.count()
+                if callable(getattr(val, "count", None)):
+                    cherrypy.response.headers[
+                        "Girder-Total-Count"
+                    ] = val.count()
                 return [model.filter(m, user, self.addFields) for m in val]
             elif isinstance(val, (list, tuple, types.GeneratorType)):
                 return [model.filter(m, user, self.addFields) for m in val]
             elif isinstance(val, dict):
                 return model.filter(val, user, self.addFields)
             else:
-                raise Exception('Cannot call filtermodel on return type: %s.' % type(val))
+                raise Exception(
+                    "Cannot call filtermodel on return type: %s." % type(val)
+                )
+
         return wrapped
 
 
@@ -501,10 +570,12 @@ def rawResponse(fun):
     This is a decorator that can be placed on REST route handlers, and is
     equivalent to calling ``setRawResponse()`` in the handler body.
     """
+
     @six.wraps(fun)
     def wrapped(*args, **kwargs):
         setRawResponse()
         return fun(*args, **kwargs)
+
     return wrapped
 
 
@@ -515,51 +586,63 @@ def _createResponse(val):
     "text/html". If ``setRawResponse(True)`` was called on the current request
     thread, this will simply return the response raw.
     """
-    if getattr(cherrypy.request, 'girderRawResponse', False) is True:
+    if getattr(cherrypy.request, "girderRawResponse", False) is True:
         if isinstance(val, six.text_type):
             # If we were given a non-encoded text response, we have
             # to encode it, so we use UTF-8.
-            ctype = cherrypy.response.headers['Content-Type'].split(';', 1)
-            setResponseHeader('Content-Type', ctype[0] + ';charset=utf-8')
-            return val.encode('utf8')
+            ctype = cherrypy.response.headers["Content-Type"].split(";", 1)
+            setResponseHeader("Content-Type", ctype[0] + ";charset=utf-8")
+            return val.encode("utf8")
         return val
 
-    accepts = cherrypy.request.headers.elements('Accept')
+    accepts = cherrypy.request.headers.elements("Accept")
     for accept in accepts:
-        if accept.value == 'application/json':
+        if accept.value == "application/json":
             break
-        elif accept.value == 'text/html':
+        elif accept.value == "text/html":
             # Pretty-print and HTML-ify the response for the browser
-            setResponseHeader('Content-Type', 'text/html')
-            resp = cgi.escape(json.dumps(
-                val, indent=4, sort_keys=True, allow_nan=False, separators=(',', ': '),
-                cls=JsonEncoder))
-            resp = resp.replace(' ', '&nbsp;').replace('\n', '<br />')
+            setResponseHeader("Content-Type", "text/html")
+            resp = cgi.escape(
+                json.dumps(
+                    val,
+                    indent=4,
+                    sort_keys=True,
+                    allow_nan=False,
+                    separators=(",", ": "),
+                    cls=JsonEncoder,
+                )
+            )
+            resp = resp.replace(" ", "&nbsp;").replace("\n", "<br />")
             resp = '<div style="font-family:monospace;">%s</div>' % resp
-            return resp.encode('utf8')
+            return resp.encode("utf8")
 
     # Default behavior will just be normal JSON output. Keep this
     # outside of the loop body in case no Accept header is passed.
-    setResponseHeader('Content-Type', 'application/json')
+    setResponseHeader("Content-Type", "application/json")
 
     # disable api responses to be automatically cached on frontend
-    setResponseHeader('Cache-Control', 'private, no-cache, no-store, max-age=0')
-    setResponseHeader('Pragma', 'no-cache')
-    setResponseHeader('Expires', '0')
+    setResponseHeader(
+        "Cache-Control", "private, no-cache, no-store, max-age=0"
+    )
+    setResponseHeader("Pragma", "no-cache")
+    setResponseHeader("Expires", "0")
 
     # use https
-    setResponseHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    setResponseHeader(
+        "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+    )
 
-    return json.dumps(val, sort_keys=True, allow_nan=False,
-                      cls=JsonEncoder).encode('utf8')
+    return json.dumps(
+        val, sort_keys=True, allow_nan=False, cls=JsonEncoder
+    ).encode("utf8")
 
 
 def _handleRestException(e):
     # Handle all user-error exceptions from the REST layer
     cherrypy.response.status = e.code
-    val = {'message': str(e), 'type': 'rest'}
+    val = {"message": str(e), "type": "rest"}
     if e.extra is not None:
-        val['extra'] = e.extra
+        val["extra"] = e.extra
     return val
 
 
@@ -570,27 +653,27 @@ def _handleAccessException(e):
         cherrypy.response.status = 401
     else:
         cherrypy.response.status = 403
-    val = {'message': str(e), 'type': 'access'}
+    val = {"message": str(e), "type": "access"}
     if e.extra is not None:
-        val['extra'] = e.extra
+        val["extra"] = e.extra
     return val
 
 
 def _handleGirderException(e):
     # Handle general Girder exceptions
-    logger.exception('500 Error')
+    logger.exception("500 Error")
     cherrypy.response.status = 500
-    val = {'message': str(e), 'type': 'girderformindlogger'}
+    val = {"message": str(e), "type": "girderformindlogger"}
     if e.identifier is not None:
-        val['identifier'] = e.identifier
+        val["identifier"] = e.identifier
     return val
 
 
 def _handleValidationException(e):
     cherrypy.response.status = 400
-    val = {'message': str(e), 'type': 'validation'}
+    val = {"message": str(e), "type": "validation"}
     if e.field is not None:
-        val['field'] = e.field
+        val["field"] = e.field
     return val
 
 
@@ -598,23 +681,35 @@ def disableAuditLog(fun):
     """
     If calls to a REST route should not be logged in the audit log, decorate it with this function.
     """
+
     @six.wraps(fun)
     def wrapped(*args, **kwargs):
         cherrypy.request.girderNoAuditLog = True
         return fun(*args, **kwargs)
+
     return wrapped
 
 
 def _logRestRequest(resource, path, params):
-    if not hasattr(cherrypy.request, 'girderNoAuditLog'):
-        auditLogger.info('rest.request', extra={
-            'details': {
-                'method': cherrypy.request.method.upper(),
-                'route': (getattr(resource, 'resourceName', resource.__class__.__name__),) + path,
-                'params': params,
-                'status': cherrypy.response.status or 200
-            }
-        })
+    if not hasattr(cherrypy.request, "girderNoAuditLog"):
+        auditLogger.info(
+            "rest.request",
+            extra={
+                "details": {
+                    "method": cherrypy.request.method.upper(),
+                    "route": (
+                        getattr(
+                            resource,
+                            "resourceName",
+                            resource.__class__.__name__,
+                        ),
+                    )
+                    + path,
+                    "params": params,
+                    "status": cherrypy.response.status or 200,
+                }
+            },
+        )
 
 
 def _mongoCursorToList(val):
@@ -628,8 +723,8 @@ def _mongoCursorToList(val):
     # This needs to be before the callable check, as mongo cursors can
     # be callable.
     if isinstance(val, _MONGO_CURSOR_TYPES):
-        if callable(getattr(val, 'count', None)):
-            cherrypy.response.headers['Girder-Total-Count'] = val.count()
+        if callable(getattr(val, "count", None)):
+            cherrypy.response.headers["Girder-Total-Count"] = val.count()
         val = list(val)
     return val
 
@@ -646,26 +741,35 @@ def endpoint(fun):
     If you want a streamed response, simply return a generator function
     from the inner method.
     """
+
     @six.wraps(fun)
     def endpointDecorator(self, *path, **params):
         _setCommonCORSHeaders()
         cherrypy.lib.caching.expires(0)
         cherrypy.request.girderRequestUid = str(uuid.uuid4())
-        setResponseHeader('Girder-Request-Uid', cherrypy.request.girderRequestUid)
+        setResponseHeader(
+            "Girder-Request-Uid", cherrypy.request.girderRequestUid
+        )
 
-        setResponseHeader('Set-Cookie', f'domain=.mindlogger.org; Secure; HttpOnly;')
-        setResponseHeader('X-Frame-Options', 'SAMEORIGIN')
-        setResponseHeader('Cache-Control', 'private, no-cache, no-store, max-age=0')
-        setResponseHeader('Pragma', 'no-cache')
-        setResponseHeader('Expires', '0')
-        setResponseHeader('Strict-Transport-Security', 'max-age=60; includeSubDomains')
-        setResponseHeader('Content-Security-Policy', "script-src 'self'")
+        setResponseHeader(
+            "Set-Cookie", f"domain=.mindlogger.org; Secure; HttpOnly;"
+        )
+        setResponseHeader("X-Frame-Options", "SAMEORIGIN")
+        setResponseHeader(
+            "Cache-Control", "private, no-cache, no-store, max-age=0"
+        )
+        setResponseHeader("Pragma", "no-cache")
+        setResponseHeader("Expires", "0")
+        setResponseHeader(
+            "Strict-Transport-Security", "max-age=60; includeSubDomains"
+        )
+        setResponseHeader("Content-Security-Policy", "script-src 'self'")
 
         try:
             val = fun(self, path, params)
 
             # If this is a partial response, we set the status appropriately
-            if 'Content-Range' in cherrypy.response.headers:
+            if "Content-Range" in cherrypy.response.headers:
                 cherrypy.response.status = 206
 
             val = _mongoCursorToList(val)
@@ -686,16 +790,16 @@ def endpoint(fun):
                 val = list(val)
 
         except RestException as e:
-            print('RestException')
+            print("RestException")
             val = _handleRestException(e)
         except AccessException as e:
-            print('AccessException')
+            print("AccessException")
             val = _handleAccessException(e)
         except GirderException as e:
-            print('GirderException')
+            print("GirderException")
             val = _handleGirderException(e)
         except ValidationException as e:
-            print('ValidationException')
+            print("ValidationException")
             val = _handleValidationException(e)
         except cherrypy.HTTPRedirect:
             raise
@@ -703,25 +807,26 @@ def endpoint(fun):
             capture_exception(e)
 
             # These are unexpected failures; send a 500 status
-            logger.exception('500 Error')
+            logger.exception("500 Error")
             cherrypy.response.status = 500
-            val = dict(type='internal', uid=cherrypy.request.girderRequestUid)
+            val = dict(type="internal", uid=cherrypy.request.girderRequestUid)
 
-            val['exception'] = str(e)
-            val['traceback'] = traceback.format_exc()
+            val["exception"] = str(e)
+            val["traceback"] = traceback.format_exc()
             if config.getServerMode() == ServerMode.PRODUCTION:
                 # Sanitize errors in production mode
-                val['message'] = 'An unexpected error occurred on the server.'
+                val["message"] = "An unexpected error occurred on the server."
             else:
                 # Provide error details in non-production modes
                 t, value, tb = sys.exc_info()
-                val['message'] = '%s: %s' % (t.__name__, repr(value))
-                val['trace'] = traceback.extract_tb(tb)
+                val["message"] = "%s: %s" % (t.__name__, repr(value))
+                val["trace"] = traceback.extract_tb(tb)
 
         resp = _createResponse(val)
         _logRestRequest(self, path, params)
 
         return resp
+
     return endpointDecorator
 
 
@@ -745,11 +850,16 @@ def ensureTokenScopes(token, scope):
         if isinstance(scope, six.string_types):
             scope = (scope,)
         raise AccessException(
-            'Invalid token scope.\n'
-            'Required: %s.\n'
-            'Allowed: %s' % (
-                ' '.join(scope),
-                '' if token is None else ' '.join(tokenModel.getAllowedScopes(token))))
+            "Invalid token scope.\n"
+            "Required: %s.\n"
+            "Allowed: %s"
+            % (
+                " ".join(scope),
+                ""
+                if token is None
+                else " ".join(tokenModel.getAllowedScopes(token)),
+            )
+        )
 
 
 def _setCommonCORSHeaders():
@@ -759,7 +869,7 @@ def _setCommonCORSHeaders():
     header present since browsers will simply ignore them if the request is not
     cross-origin.
     """
-    origin = cherrypy.request.headers.get('origin')
+    origin = cherrypy.request.headers.get("origin")
     if not origin:
         # If there is no origin header, this is not a cross origin request
         return
@@ -767,16 +877,18 @@ def _setCommonCORSHeaders():
     allowed = Setting().get(SettingKey.CORS_ALLOW_ORIGIN)
 
     if allowed:
-        setResponseHeader('Access-Control-Allow-Credentials', 'true')
+        setResponseHeader("Access-Control-Allow-Credentials", "true")
         setResponseHeader(
-            'Access-Control-Expose-Headers', Setting().get(SettingKey.CORS_EXPOSE_HEADERS))
+            "Access-Control-Expose-Headers",
+            Setting().get(SettingKey.CORS_EXPOSE_HEADERS),
+        )
 
-        allowedList = {o.strip() for o in allowed.split(',')}
+        allowedList = {o.strip() for o in allowed.split(",")}
 
         if origin in allowedList:
-            setResponseHeader('Access-Control-Allow-Origin', origin)
-        elif '*' in allowedList:
-            setResponseHeader('Access-Control-Allow-Origin', '*')
+            setResponseHeader("Access-Control-Allow-Origin", origin)
+        elif "*" in allowedList:
+            setResponseHeader("Access-Control-Allow-Origin", "*")
 
 
 class Resource(object):
@@ -789,7 +901,8 @@ class Resource(object):
 
     def __init__(self):
         self._routes = collections.defaultdict(
-            lambda: collections.defaultdict(list))
+            lambda: collections.defaultdict(list)
+        )
 
     def _ensureInit(self):
         """
@@ -799,12 +912,13 @@ class Resource(object):
         In the past, Resource subclasses were not expected to call their
         superclass constructor.
         """
-        if not hasattr(self, '_routes'):
+        if not hasattr(self, "_routes"):
             Resource.__init__(self)
             logprint.warning(
                 'WARNING: Resource subclass "%s" did not call '
-                '"Resource__init__()" from its constructor.' %
-                self.__class__.__name__)
+                '"Resource__init__()" from its constructor.'
+                % self.__class__.__name__
+            )
 
     def route(self, method, route, handler, nodoc=False, resource=None):
         """
@@ -840,7 +954,7 @@ class Resource(object):
             nLengthRoutes.append((route, handler))
 
         # Now handle the api doc if the handler has any attached
-        if resource is None and hasattr(self, 'resourceName'):
+        if resource is None and hasattr(self, "resourceName"):
             resource = self.resourceName
         elif resource is None:
             resource = self
@@ -851,18 +965,20 @@ class Resource(object):
         #             resource=resource, route=route, method=method,
         #             info=handler.description.asDict(), handler=handler)
         # elif not nodoc:
-        if not hasattr(handler, 'description') and not nodoc:
-            routePath = '/'.join([resource] + list(route))
+        if not hasattr(handler, "description") and not nodoc:
+            routePath = "/".join([resource] + list(route))
             logprint.warning(
-                'WARNING: No description docs present for route %s %s' % (
-                    method, routePath))
+                "WARNING: No description docs present for route %s %s"
+                % (method, routePath)
+            )
 
         # Warn if there is no access decorator on the handler function
-        if not hasattr(handler, 'accessLevel'):
-            routePath = '/'.join([resource] + list(route))
+        if not hasattr(handler, "accessLevel"):
+            routePath = "/".join([resource] + list(route))
             logprint.warning(
-                'WARNING: No access level specified for route %s %s' % (
-                    method, routePath))
+                "WARNING: No access level specified for route %s %s"
+                % (method, routePath)
+            )
 
     def removeRoute(self, method, route, resource=None):
         """
@@ -879,17 +995,23 @@ class Resource(object):
         self._ensureInit()
 
         nLengthRoutes = self._routes[method.lower()][len(route)]
-        for i, (registeredRoute, registeredHandler) in enumerate(nLengthRoutes):
+        for i, (registeredRoute, registeredHandler) in enumerate(
+            nLengthRoutes
+        ):
             if registeredRoute == route:
                 handler = registeredHandler
                 del nLengthRoutes[i]
                 break
         else:
-            raise GirderException('No such route: %s %s' % (method, '/'.join(route)))
+            raise GirderException(
+                "No such route: %s %s" % (method, "/".join(route))
+            )
 
         # Remove the api doc
         if resource is None:
-            resource = getattr(self, 'resourceName', handler.__module__.rsplit('.', 1)[-1])
+            resource = getattr(
+                self, "resourceName", handler.__module__.rsplit(".", 1)[-1]
+            )
         # if getattr(handler, 'description', None) is not None:
         #     docs.removeRouteDocs(
         #         resource=resource, route=route, method=method,
@@ -908,11 +1030,16 @@ class Resource(object):
         :rtype: Function
         :raises: `Exception`, when no route can be found.
         """
-        for registeredRoute, registeredHandler in self._routes[method.lower()][len(route)]:
+        for registeredRoute, registeredHandler in self._routes[method.lower()][
+            len(route)
+        ]:
             if registeredRoute == route:
                 return registeredHandler
         else:
-            raise Exception('Could not find route "%s %s"' % (method.upper(), '/'.join(route)))
+            raise Exception(
+                'Could not find route "%s %s"'
+                % (method.upper(), "/".join(route))
+            )
 
     def _shouldInsertRoute(self, a, b):
         """
@@ -921,7 +1048,7 @@ class Resource(object):
         forward positions come before routes with wildcards in those positions.
         """
         for i in range(len(a)):
-            if a[i][0] != ':' and b[i][0] == ':':
+            if a[i][0] != ":" and b[i][0] == ":":
                 return True
         return False
 
@@ -963,27 +1090,29 @@ class Resource(object):
 
         route, handler, kwargs = self._matchRoute(method, path)
 
-        cherrypy.request.requiredScopes = getattr(
-            handler, 'requiredScopes', None) or TokenScope.USER_AUTH
+        cherrypy.request.requiredScopes = (
+            getattr(handler, "requiredScopes", None) or TokenScope.USER_AUTH
+        )
 
-        if getattr(handler, 'cookieAuth', False):
+        if getattr(handler, "cookieAuth", False):
             cherrypy.request.girderAllowCookie = True
 
-        kwargs['params'] = params
+        kwargs["params"] = params
         # Add before call for the API method. Listeners can return
         # their own responses by calling preventDefault() and
         # adding a response on the event.
 
-        if hasattr(self, 'resourceName'):
+        if hasattr(self, "resourceName"):
             resource = self.resourceName
         else:
-            resource = handler.__module__.rsplit('.', 1)[-1]
+            resource = handler.__module__.rsplit(".", 1)[-1]
 
-        routeStr = '/'.join((resource, '/'.join(route))).rstrip('/')
-        eventPrefix = '.'.join(('rest', method, routeStr))
+        routeStr = "/".join((resource, "/".join(route))).rstrip("/")
+        eventPrefix = ".".join(("rest", method, routeStr))
 
-        event = events.trigger('.'.join((eventPrefix, 'before')),
-                               kwargs, pre=self._defaultAccess)
+        event = events.trigger(
+            ".".join((eventPrefix, "before")), kwargs, pre=self._defaultAccess
+        )
         if event.defaultPrevented and len(event.responses) > 0:
             val = event.responses[0]
         else:
@@ -994,8 +1123,8 @@ class Resource(object):
         # return value of the API method that was called. You can
         # reassign the return value completely by adding a response to
         # the event and calling preventDefault() on it.
-        kwargs['returnVal'] = val
-        event = events.trigger('.'.join((eventPrefix, 'after')), kwargs)
+        kwargs["returnVal"] = val
+        event = events.trigger(".".join((eventPrefix, "after")), kwargs)
         if event.defaultPrevented and len(event.responses) > 0:
             val = event.responses[0]
 
@@ -1018,19 +1147,21 @@ class Resource(object):
         :raises: `RestException`, when no route can be matched.
         """
         if not self._routes:
-            raise GirderException('No routes defined for resource')
+            raise GirderException("No routes defined for resource")
 
         for route, handler in self._routes[method][len(path)]:
             wildcards = {}
             for routeComponent, pathComponent in six.moves.zip(route, path):
-                if routeComponent[0] == ':':  # Wildcard token
+                if routeComponent[0] == ":":  # Wildcard token
                     wildcards[routeComponent[1:]] = pathComponent
                 elif routeComponent != pathComponent:  # Exact match token
                     break
             else:
                 return route, handler, wildcards
 
-        raise RestException('No matching route for "%s %s"' % (method.upper(), '/'.join(path)))
+        raise RestException(
+            'No matching route for "%s %s"' % (method.upper(), "/".join(path))
+        )
 
     def requireParams(self, required, provided=None):
         """
@@ -1100,7 +1231,9 @@ class Resource(object):
         """
         return setRawResponse(*args, **kwargs)
 
-    def getPagingParameters(self, params, defaultSortField=None, defaultSortDir=SortDir.ASCENDING):
+    def getPagingParameters(
+        self, params, defaultSortField=None, defaultSortDir=SortDir.ASCENDING
+    ):
         """
         Pass the URL parameters into this function if the request is for a
         list of resources that should be paginated. It will return a tuple of
@@ -1119,16 +1252,18 @@ class Resource(object):
         :type defaultSortDir: girderformindlogger.constants.SortDir
         """
         try:
-            offset = int(params.get('offset', 0))
-            limit = int(params.get('limit', 50))
-            sortdir = int(params.get('sortdir', defaultSortDir))
+            offset = int(params.get("offset", 0))
+            limit = int(params.get("limit", 50))
+            sortdir = int(params.get("sortdir", defaultSortDir))
         except ValueError:
-            raise RestException('Invalid value for offset, limit, or sortdir parameter.')
+            raise RestException(
+                "Invalid value for offset, limit, or sortdir parameter."
+            )
         if sortdir not in [SortDir.ASCENDING, SortDir.DESCENDING]:
-            raise RestException('Invalid value for sortdir parameter.')
+            raise RestException("Invalid value for sortdir parameter.")
 
-        if 'sort' in params:
-            sort = [(params['sort'].strip(), sortdir)]
+        if "sort" in params:
+            sort = [(params["sort"].strip(), sortdir)]
         elif isinstance(defaultSortField, six.string_types):
             sort = [(defaultSortField, sortdir)]
         else:
@@ -1181,18 +1316,23 @@ class Resource(object):
 
     def shield(self, ctx=None):
         user = getCurrentUser()
-        prev = Shield().findOne({
-            "user": user.get('_id'),
-            "source": ctx
-        })
+        prev = Shield().findOne({"user": user.get("_id"), "source": ctx})
 
         if prev:
             prev["count"] += 1
-            elapsed_time = (datetime.datetime.now() - prev['date']).total_seconds() / 60
+            elapsed_time = (
+                datetime.datetime.now() - prev["date"]
+            ).total_seconds() / 60
 
-            if elapsed_time <= 2 and prev["count"] >= 10 and not prev['blocked']:
+            if (
+                elapsed_time <= 2
+                and prev["count"] >= 10
+                and not prev["blocked"]
+            ):
                 prev["blocked"] = True
-                prev['date_blocked'] = datetime.datetime.now() + datetime.timedelta(minutes=2)
+                prev[
+                    "date_blocked"
+                ] = datetime.datetime.now() + datetime.timedelta(minutes=2)
 
             if elapsed_time > 2 and not prev["blocked"]:
                 prev["date"] = datetime.datetime.now()
@@ -1200,7 +1340,7 @@ class Resource(object):
 
             Shield().save(prev, validate=False)
             if prev["blocked"]:
-                if prev['date_blocked'] > datetime.datetime.now():
+                if prev["date_blocked"] > datetime.datetime.now():
                     raise Exception(f"Too many requests send in one time")
                 else:
                     prev["date"] = datetime.datetime.now()
@@ -1215,7 +1355,9 @@ class Resource(object):
     def getAccountProfile(self):
         return getAccountProfile()
 
-    def sendAuthTokenCookie(self, user=None, scope=None, token=None, days=None, accountId=None):
+    def sendAuthTokenCookie(
+        self, user=None, scope=None, token=None, days=None, accountId=None
+    ):
         """
         Helper method to send the authentication cookie
         """
@@ -1223,17 +1365,22 @@ class Resource(object):
             days = float(Setting().get(SettingKey.COOKIE_LIFETIME))
 
         if token is None:
-            token = Token().createToken(user, days=days, scope=scope, accountId=accountId)
+            token = Token().createToken(
+                user, days=days, scope=scope, accountId=accountId
+            )
 
         cookie = cherrypy.response.cookie
-        cookie['girderToken'] = str(token['_id'])
-        cookie['girderToken']['path'] = '/'
-        cookie['girderToken']['expires'] = int(days * 3600 * 24)
+        cookie["girderToken"] = str(token["_id"])
+        cookie["girderToken"]["path"] = "/"
+        cookie["girderToken"]["expires"] = int(days * 3600 * 24)
 
         # CherryPy proxy tools modify the request.base, but not request.scheme, when receiving
         # X-Forwarded-Proto headers from a reverse proxy
-        if cherrypy.request.scheme == 'https' or cherrypy.request.base.startswith('https'):
-            cookie['girderToken']['secure'] = True
+        if (
+            cherrypy.request.scheme == "https"
+            or cherrypy.request.base.startswith("https")
+        ):
+            cookie["girderToken"]["secure"] = True
 
         return token
 
@@ -1242,9 +1389,9 @@ class Resource(object):
         Helper method to kill the authentication cookie
         """
         cookie = cherrypy.response.cookie
-        cookie['girderToken'] = ''
-        cookie['girderToken']['path'] = '/'
-        cookie['girderToken']['expires'] = 0
+        cookie["girderToken"] = ""
+        cookie["girderToken"]["path"] = "/"
+        cookie["girderToken"]["expires"] = 0
 
     # This is NOT wrapped in an endpoint decorator; we don't want that behavior
     def OPTIONS(self, *path, **param):
@@ -1254,43 +1401,46 @@ class Resource(object):
         allowHeaders = Setting().get(SettingKey.CORS_ALLOW_HEADERS)
         allowMethods = Setting().get(SettingKey.CORS_ALLOW_METHODS)
 
-        setResponseHeader('Access-Control-Allow-Methods', allowMethods)
-        setResponseHeader('Access-Control-Allow-Headers', allowHeaders)
+        setResponseHeader("Access-Control-Allow-Methods", allowMethods)
+        setResponseHeader("Access-Control-Allow-Headers", allowHeaders)
 
     @endpoint
     def DELETE(self, path, params):
         # DELETE bodies are optional.  Assume if we have a content-length, then
         # there is a body that should be processed.
-        if 'Content-Length' in cherrypy.request.headers:
+        if "Content-Length" in cherrypy.request.headers:
             cherrypy.request.body.process()
             params.update(cherrypy.request.params)
-        return self.handleRoute('DELETE', path, params)
+        return self.handleRoute("DELETE", path, params)
 
     @endpoint
     def GET(self, path, params):
-        return self.handleRoute('GET', path, params)
+        return self.handleRoute("GET", path, params)
 
     @endpoint
     def POST(self, path, params):
-        method = 'POST'
+        method = "POST"
         # When using a POST request, the method can be overridden and really be
         # something else.  There seem to be three different 'standards' on how
         # to do this (see http://fandry.blogspot.com/2012/03/
         # x-http-header-method-override-and-rest.html).  We might as well
         # support all three.
-        for key in ('X-HTTP-Method-Override', 'X-HTTP-Method',
-                    'X-Method-Override'):
+        for key in (
+            "X-HTTP-Method-Override",
+            "X-HTTP-Method",
+            "X-Method-Override",
+        ):
             if key in cherrypy.request.headers:
                 method = cherrypy.request.headers[key]
         return self.handleRoute(method, path, params)
 
     @endpoint
     def PUT(self, path, params):
-        return self.handleRoute('PUT', path, params)
+        return self.handleRoute("PUT", path, params)
 
     @endpoint
     def PATCH(self, path, params):
-        return self.handleRoute('PATCH', path, params)
+        return self.handleRoute("PATCH", path, params)
 
     @staticmethod
     def _defaultAccess(handler, **kwargs):
@@ -1304,7 +1454,7 @@ class Resource(object):
         override the default level, but makes sure they don't accidentally lower
         the access level for a given route.
         """
-        if not hasattr(handler, 'accessLevel'):
+        if not hasattr(handler, "accessLevel"):
             requireAdmin(getCurrentUser())
 
 
@@ -1333,7 +1483,7 @@ def boundHandler(fun, ctx=None):
     if ctx is None:
         ctx = _sharedContext
     elif not isinstance(ctx, Resource):
-        raise Exception('ctx in boundhandler must be an instance of Resource.')
+        raise Exception("ctx in boundhandler must be an instance of Resource.")
 
     @six.wraps(fun)
     def wrapped(*args, **kwargs):
