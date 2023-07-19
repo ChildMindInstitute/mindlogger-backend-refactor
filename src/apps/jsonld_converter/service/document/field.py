@@ -325,7 +325,6 @@ class ReproFieldBase(
 
 
 class ReproFieldText(ReproFieldBase):
-
     INPUT_TYPE = "text"
     RESPONSE_TYPE = ResponseType.TEXT
 
@@ -392,7 +391,6 @@ class ReproFieldText(ReproFieldBase):
 
 
 class ReproFieldRadio(ReproFieldBase):
-
     INPUT_TYPE = "radio"
     RESPONSE_TYPE = ResponseType.SINGLESELECT
 
@@ -503,7 +501,6 @@ class ReproFieldRadio(ReproFieldBase):
 
 
 class ReproFieldRadioStacked(ReproFieldBase):
-
     INPUT_TYPE = "stackedRadio"
     RESPONSE_TYPE = ResponseType.SINGLESELECTROWS
 
@@ -703,7 +700,6 @@ class ReproFieldSliderBase(ReproFieldBase, ABC):
 
 
 class ReproFieldSlider(ReproFieldSliderBase):
-
     INPUT_TYPE = "slider"
     RESPONSE_TYPE = ResponseType.SLIDER
     CFG_TYPE = SliderConfig
@@ -805,7 +801,6 @@ class ReproFieldSlider(ReproFieldSliderBase):
 
 
 class ReproFieldSliderStacked(ReproFieldSliderBase):
-
     INPUT_TYPE = "stackedSlider"
     RESPONSE_TYPE = ResponseType.SLIDERROWS
 
@@ -884,7 +879,6 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
 
 
 class ReproFieldPhoto(ReproFieldBase):
-
     INPUT_TYPE = "photo"
     RESPONSE_TYPE = ResponseType.PHOTO
     CFG_TYPE = PhotoConfig
@@ -895,7 +889,6 @@ class ReproFieldPhoto(ReproFieldBase):
 
 
 class ReproFieldVideo(ReproFieldBase):
-
     INPUT_TYPE = "video"
     RESPONSE_TYPE = ResponseType.VIDEO
     CFG_TYPE = VideoConfig
@@ -943,7 +936,6 @@ class ReproFieldAudio(ReproFieldBase):
 
 
 class ReproFieldDrawing(ReproFieldBase):
-
     INPUT_TYPE = "drawing"
     RESPONSE_TYPE = ResponseType.DRAWING
     CFG_TYPE = DrawingConfig

@@ -122,6 +122,9 @@ class Mongo:
         #     {"_id": ObjectId("63f5f9aded51ea1c1e6dff69")},
         #     # {"parentId": ObjectId("5ea689a086d25a5dbb14e808")},
         # )
+
+        # TODO: divide formatting to json-ld into functions(activities(activity items), flows)  # noqa: E501
+
         applets = Applet().findOne(
             {"_id": ObjectId("62d15a03154fa87efa129760")}
         )
@@ -181,7 +184,7 @@ class Mongo:
 
         # ld_request_schema = self.get_applet_repro_schema(applet)
         converter_result = await self.get_converter_result(applet)
-        print(converter_result)
+        print(converter_result.dict().keys())
 
         # print(applet["reprolib:terms/order"][0]["@list"][0]["reprolib:terms/order"][0]["@list"][0].keys())
 
