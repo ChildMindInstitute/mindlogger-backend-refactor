@@ -11,7 +11,7 @@ def loadConfig():
         "server.max_request_body_size": 209715200,
     }
     cherrypy.config["database"] = {
-        "uri": "mongodb://localhost:27017/test",
+        "uri": "mongodb://mongo:27017/mindlogger",
         "replica_set": None,
     }
     cherrypy.config["server"] = {

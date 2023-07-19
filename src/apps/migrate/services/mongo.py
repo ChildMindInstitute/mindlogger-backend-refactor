@@ -17,7 +17,8 @@ from apps.jsonld_converter.dependencies import (
 )
 from apps.shared.domain.base import InternalModel, PublicModel
 from config import settings
-
+from apps.girderformindlogger.models.applet import Applet
+from apps.girderformindlogger.models.activity import Activity
 
 def decrypt(data):
     aes_key = b"n]fwen%Z.,Ce4!/0(1D-Q0#ZUOBoqJrV"
@@ -116,18 +117,70 @@ class Mongo:
         collection = self.db["folder"]
         cache  =self.db["cache"]
         # NOTE: All applets have baseParentId 5ea689a286d25a5dbb14e82c
-        applets = collection.find_one(
-            {"_id": ObjectId("63f5f9aded51ea1c1e6dff69")},
-            # {"parentId": ObjectId("5ea689a086d25a5dbb14e808")},
-        )
-
+        # applets = collection.find_one(
+        #     {"_id": ObjectId("63f5f9aded51ea1c1e6dff69")},
+        #     # {"parentId": ObjectId("5ea689a086d25a5dbb14e808")},
+        # )
+        applets = Applet().findOne({'_id': ObjectId('62d15a03154fa87efa129760')})
         # applet_cache = json.loads(cache.find_one({"_id":applets["cached"]})["cache_data"])
 
         applet_format = jsonld_expander.formatLdObject(applets, "applet")
+        for key, activity in applet_format["activities"].items():
+            applet_format["activities"][key] = jsonld_expander.formatLdObject(Activity().findOne({'_id': activity}), "activity")
 
-        print(applet_format)
+        activities = applet_format["activities"]
+        # setup activity items
+        for key, value in activities.items():
+            activity_items = value['items']
+            activity_object = value["activity"]
+            activity_items_objects = []
+            for item in activity_object["reprolib:terms/order"][0]["@list"]:
+                activity_items_objects.append(activity_items[item["@id"]])
+            
+            activities[key]["activity"]["reprolib:terms/order"][0]["@list"] = activity_items_objects
+            activities[key].pop("items")
 
 
+        applet = applet_format["applet"]
+        activity_objects = []
+        # setup activities
+        for activity in applet["reprolib:terms/order"][0]["@list"]:
+            activity_objects.append(activities[activity["@id"]]["activity"])
+        
+        applet["reprolib:terms/order"][0]["@list"] = activity_objects
+
+        activity_flows = applet_format["activityFlows"]
+        activity_flow_objects = []
+        # setup activity flows
+        for flow in applet["reprolib:terms/activityFlowOrder"][0]["@list"]:
+            activity_flow_objects.append(activity_flows[flow["@id"]])
+        
+
+
+        applet["reprolib:terms/activityFlowOrder"][0]["@list"] = activity_flow_objects
+        # add context
+        
+        context = {
+            "@context": [
+                {
+                "reprolib": "https://raw.githubusercontent.com/ReproNim/reproschema/master/"
+                },
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+            ],
+            "@type": "https://raw.githubusercontent.com/ReproNim/reproschema/master/schemas/Protocol",
+        }
+
+        applet["@context"] = context["@context"]
+        applet["@type"] = context["@type"]
+
+
+        # ld_request_schema = self.get_applet_repro_schema(applet)
+        converter_result = await self.get_converter_result(
+                applet
+            )
+        print(converter_result)
+
+        # print(applet["reprolib:terms/order"][0]["@list"][0]["reprolib:terms/order"][0]["@list"][0].keys())
 
         # TODO: Remove limit after testing
 
