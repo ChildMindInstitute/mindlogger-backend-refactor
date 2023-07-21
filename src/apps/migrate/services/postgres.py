@@ -1,4 +1,6 @@
 import uuid
+
+import os
 from contextlib import suppress
 from datetime import datetime
 
@@ -17,10 +19,10 @@ class Postgres:
     def __init__(self) -> None:
         # Setup PostgreSQL connection
         self.connection = psycopg2.connect(
-            host="postgres",  # "localhost"
-            dbname="mindlogger_backend",
-            user="postgres",
-            password="postgres",
+            host=os.getenv("DATABASE__HOST", "postgres"),
+            dbname=os.getenv("DATABASE__DB", "mindlogger_backend"),
+            user=os.getenv("DATABASE__USER", "postgres"),
+            password=os.getenv("DATABASE__PASSWORD", "postgres"),
         )
 
     def close_connection(self):
