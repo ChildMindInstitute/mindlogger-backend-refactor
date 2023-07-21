@@ -194,10 +194,10 @@ class AnswerService:
             if flow_id_version != flow_item_history.activity_flow_id:
                 raise FlowDoesNotHaveActivity()
 
-            activity_flow_map.pop(flow_item_history.activity_id)
+            # activity_flow_map.pop(flow_item_history.activity_id)
 
-        if len(activity_flow_map) != 0:
-            raise ValueError("Does not exists")
+        # if len(activity_flow_map) != 0:
+        #     raise ValueError("Does not exists")
 
     async def _validate_applet_for_anonymous_response(
         self, applet_id: uuid.UUID, version: str
