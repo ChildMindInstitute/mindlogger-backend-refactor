@@ -236,6 +236,7 @@ class AnswerService:
                 else None,
                 activity_history_id=pk(applet_answer.activity_id),
                 respondent_id=self.user_id,
+                client=applet_answer.client.dict()
             )
         )
         item_answer = applet_answer.answer
