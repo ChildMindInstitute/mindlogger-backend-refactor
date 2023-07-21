@@ -61,15 +61,15 @@ async def _handle_websocket(websocket, user_id, session):
         try:
             await websocket.send_json(
                 dict(
-                    id=alert_message.id,
+                    id=str(alert_message.id),
                     applet_id=str(alert_message.applet_id),
                     applet_name=applet_history.display_name,
                     version=alert_message.version,
                     secret_id=respondent_access.meta.get(
                         "secretUserId", "Anonymous"
                     ),
-                    activity_id=alert_message.activity_id,
-                    activity_item_id=alert_message.activity_item_id,
+                    activity_id=str(alert_message.activity_id),
+                    activity_item_id=str(alert_message.activity_item_id),
                     message=alert_message.message,
                     created_at=alert_message.created_at.isoformat(),
                     answer_id=str(alert_message.answer_id),
