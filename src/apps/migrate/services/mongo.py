@@ -1,5 +1,4 @@
-# import asyncio
-import json
+import os
 from pprint import pprint as print
 from typing import Any
 
@@ -16,7 +15,6 @@ from apps.jsonld_converter.dependencies import (
     get_jsonld_model_converter,
 )
 from apps.shared.domain.base import InternalModel, PublicModel
-from config import settings
 
 # from apps.applets.domain.applet_create_update import AppletCreate
 
@@ -41,8 +39,12 @@ def decrypt(data):
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        self.client = MongoClient("mongo", 27017)  # "localhost"
-        self.db = self.client["mindlogger"]
+        uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        self.client = MongoClient(
+            uri,
+            int(os.getenv("MONGO__PORT", 27017)),
+        )  # "localhost"
+        self.db = self.client[os.getenv("MONGO__DB")]
 
     @staticmethod
     async def get_converter_result(schema) -> InternalModel | PublicModel:
@@ -67,6 +69,7 @@ class Mongo:
                 "firstName": 1,
                 "lastName": 1,
                 "salt": 1,
+                "created": 1,
             },
         )
 
@@ -95,6 +98,7 @@ class Mongo:
                         "hashed_password": user.get("salt"),
                         "first_name": first_name,
                         "last_name": last_name,
+                        "created_at": user.get("created"),
                     }
                 )
                 count += 1
@@ -106,31 +110,37 @@ class Mongo:
 
         return results
 
-    def get_applet_repro_schema(self, applet: dict) -> dict:
-        with open(settings.apps_dir / "migrate/repro_template.json") as file:
-            data = json.load(file)
-
-            # TODO: Fill the template with applet data
-            return data
-
-    async def get_applets(self) -> list[dict]:
-        # collection = self.db["folder"]
-        # cache = self.db["cache"]
-
-        # NOTE: All applets have baseParentId 5ea689a286d25a5dbb14e82c
-        # applets = collection.find_one(
-        #     {"_id": ObjectId("63f5f9aded51ea1c1e6dff69")},
-        #     # {"parentId": ObjectId("5ea689a086d25a5dbb14e808")},
-        # )
-
-        # TODO: divide formatting to json-ld into functions(activities(activity items), flows)  # noqa: E501
-
-        applets = Applet().findOne(
-            {"_id": ObjectId("62d15a03154fa87efa129760")}
+    def get_users_workspaces(self, users_ids: list[ObjectId]) -> list[dict]:
+        collection = self.db["accountProfile"]
+        users_workspaces = collection.find(
+            {
+                "$expr": {"$eq": ["$accountId", "$_id"]},
+                "userId": {"$in": users_ids},
+            }
         )
-        # applet_cache = json.loads(cache.find_one({"_id":applets["cached"]})["cache_data"])  # noqa: E501
 
-        applet_format = jsonld_expander.formatLdObject(applets, "applet")
+        count = 0
+        results = []
+
+        for user_workspace in users_workspaces:
+            workspace_name = user_workspace.get("accountName")
+            if len(workspace_name) >= 100:
+                workspace_name = workspace_name[:99]
+            results.append(
+                {
+                    "id_": user_workspace.get("_id"),
+                    "user_id": user_workspace.get("userId"),
+                    "workspace_name": workspace_name,
+                }
+            )
+            count += 1
+        print(f"Successfully prepared for migration - {count}")
+
+        return results
+
+    def get_applet_repro_schema(self, applet: dict) -> dict:
+        applet_format = jsonld_expander.formatLdObject(applet, "applet")
+
         for key, activity in applet_format["activities"].items():
             applet_format["activities"][key] = jsonld_expander.formatLdObject(
                 Activity().findOne({"_id": activity}), "activity"
@@ -182,15 +192,20 @@ class Mongo:
         applet["@context"] = context["@context"]
         applet["@type"] = context["@type"]
 
-        # ld_request_schema = self.get_applet_repro_schema(applet)
-        converter_result = await self.get_converter_result(applet)
+        return applet
+
+    async def get_applets(self) -> list[dict]:
+        # NOTE: All applets have baseParentId 5ea689a286d25a5dbb14e82c
+
+        applet = Applet().findOne(
+            {"_id": ObjectId("62d15a03154fa87efa129760")}
+        )
+        ld_request_schema = self.get_applet_repro_schema(applet)
+        converter_result = await self.get_converter_result(ld_request_schema)
         print(converter_result.dict().keys())
 
-        # print(applet["reprolib:terms/order"][0]["@list"][0]["reprolib:terms/order"][0]["@list"][0].keys())
-
-        # TODO: Remove limit after testing
-
         results: list[Any] = []
+
         # for applet in applets:
         #     ld_request_schema = self.get_applet_repro_schema(applet)
         #     converter_result = await self.get_converter_result(

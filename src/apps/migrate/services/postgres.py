@@ -9,6 +9,10 @@ from apps.applets.service import AppletService
 from infrastructure.database import session_manager
 
 
+def mongoid_to_uuid(id_):
+    return uuid.UUID(str(id_) + "00000000")
+
+
 class Postgres:
     def __init__(self) -> None:
         # Setup PostgreSQL connection
@@ -51,8 +55,8 @@ class Postgres:
         for old_user in users:
             time_now = datetime.now()
             new_user = {
-                "id": uuid.uuid4(),
-                "created_at": time_now,
+                "id": mongoid_to_uuid(old_user["id_"]),
+                "created_at": old_user["created_at"],
                 "updated_at": time_now,
                 "last_seen_at": time_now,
                 "is_deleted": False,
@@ -88,50 +92,52 @@ class Postgres:
         return results
 
     def save_users_workspace(
-        self, users_mapping: dict[str, dict]
+        self, workspaces: list[dict], users_mapping: dict[str, dict]
     ) -> list[dict]:
         cursor = self.connection.cursor()
 
         results: list[dict] = []
         count = 0
 
-        for user in users_mapping.values():
+        for workspace in workspaces:
             time_now = datetime.now()
-
             # Create users workspace
             user_workspace = {
-                "id": uuid.uuid4(),
+                "id": mongoid_to_uuid(workspace["id_"]),
                 "created_at": time_now,
                 "updated_at": time_now,
                 "is_deleted": False,
-                "user_id": user["id"],
-                "workspace_name": f"{user['first_name']} "
-                f"{user['last_name']}",
+                "user_id": users_mapping[workspace["user_id"]]["id"],
+                "workspace_name": workspace["workspace_name"].replace(
+                    "'", "''"
+                )
+                if "'" in workspace["workspace_name"]
+                else workspace["workspace_name"],
                 "is_modified": False,
             }
 
-            with suppress(Exception):
-                cursor.execute(
-                    "INSERT INTO users_workspaces"
-                    "(user_id, id, created_at, updated_at, is_deleted, "
-                    "workspace_name, is_modified)"
-                    "VALUES"
-                    f"((SELECT id FROM users WHERE id = '{user['id']}'), "
-                    f"'{user_workspace['id']}', "
-                    f"'{user_workspace['created_at']}', "
-                    f"'{user_workspace['updated_at']}', "
-                    f"'{user_workspace['is_deleted']}', "
-                    f"'{user_workspace['workspace_name']}', "
-                    f"'{user_workspace['is_modified']}');"
-                )
+            # with suppress(Exception):
+            cursor.execute(
+                "INSERT INTO users_workspaces"
+                "(user_id, id, created_at, updated_at, is_deleted, "
+                "workspace_name, is_modified)"
+                "VALUES"
+                f"((SELECT id FROM users WHERE id = '{user_workspace['user_id']}'), "  # noqa: E501
+                f"'{user_workspace['id']}', "
+                f"'{user_workspace['created_at']}', "
+                f"'{user_workspace['updated_at']}', "
+                f"'{user_workspace['is_deleted']}', "
+                f"'{user_workspace['workspace_name']}', "
+                f"'{user_workspace['is_modified']}');"
+            )
 
-                results.append(user_workspace)
-                count += 1
+            results.append(user_workspace)
+            count += 1
 
         self.connection.commit()
         cursor.close()
 
-        print(f"Errors in {len(users_mapping) - count} users_workspace")
+        print(f"Errors in {len(workspaces) - count} users_workspace")
         print(f"Successfully migrated {count} users_workspace")
 
         return results
