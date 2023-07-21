@@ -9,7 +9,7 @@ from apps.authentication.domain.token import (
     RefreshAccessTokenRequest,
     Token,
 )
-from apps.authentication.errors import InvalidRefreshToken, EmailDoesNotExist
+from apps.authentication.errors import EmailDoesNotExist, InvalidRefreshToken
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.users.domain import PublicUser, User
