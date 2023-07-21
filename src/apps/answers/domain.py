@@ -16,7 +16,7 @@ from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.scores_reports import SubscaleSetting
 from apps.activity_flows.domain.flow_full import FlowFull
 from apps.applets.domain.base import AppletBaseInfo
-from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain import InternalModel, PublicModel, to_camelcase
 
 
 class Text(InternalModel):
@@ -74,6 +74,16 @@ class AnswerAlert(InternalModel):
     message: str
 
 
+class ClientMeta(BaseModel):
+    app_id: str
+    app_version: str
+    width: int
+    height: int
+
+    class Config:
+        alias_generator = to_camelcase
+
+
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
@@ -83,13 +93,13 @@ class AppletAnswerCreate(InternalModel):
     answer: ItemAnswerCreate
     created_at: int | None
     alerts: list[AnswerAlert] = Field(default_factory=list)
+    client: ClientMeta
 
 
 class AssessmentAnswerCreate(InternalModel):
     answer: str
     item_ids: list[uuid.UUID]
     reviewer_public_key: str
-
 
 class AnswerDate(InternalModel):
     created_at: datetime.datetime
