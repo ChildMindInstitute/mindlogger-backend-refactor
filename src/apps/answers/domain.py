@@ -101,6 +101,7 @@ class AssessmentAnswerCreate(InternalModel):
     item_ids: list[uuid.UUID]
     reviewer_public_key: str
 
+
 class AnswerDate(InternalModel):
     created_at: datetime.datetime
     answer_id: uuid.UUID
