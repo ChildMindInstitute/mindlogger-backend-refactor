@@ -4,9 +4,11 @@ import datetime
 import io
 import json
 import logging
+import traceback
 from pprint import pprint
 
 import aio_pika
+import sentry_sdk
 from fastapi import UploadFile
 
 from apps.answers.service import ReportServerService
@@ -26,24 +28,28 @@ async def create_report(message: aio_pika.abc.AbstractIncomingMessage):
     pprint(data)
     session_maker = session_manager.get_session()
     mail_service = MailingService()
-    async with session_maker() as session:
-        service = ReportServerService(session)
-        response = await service.create_report(**data)
-        if not response:
-            return
-        file = UploadFile(
-            response.email.attachment,
-            io.BytesIO(base64.b64decode(response.pdf.encode())),
-            "application/pdf",
-        )
-        await mail_service.send(
-            MessageSchema(
-                recipients=response.email.email_recipients,
-                subject=response.email.subject,
-                body=response.email.body,
-                attachments=[file],
+    try:
+        async with session_maker() as session:
+            service = ReportServerService(session)
+            response = await service.create_report(**data)
+            if not response:
+                return
+            file = UploadFile(
+                response.email.attachment,
+                io.BytesIO(base64.b64decode(response.pdf.encode())),
+                "application/pdf",
             )
-        )
+            await mail_service.send(
+                MessageSchema(
+                    recipients=response.email.email_recipients,
+                    subject=response.email.subject,
+                    body=response.email.body,
+                    attachments=[file],
+                )
+            )
+    except Exception as e:
+        traceback.print_exception(e)
+        sentry_sdk.capture_exception(e)
 
 
 async def main():
