@@ -24,3 +24,11 @@ class AuthenticationError(BaseError):
 
 class PermissionsError(AccessDeniedError):
     message = _("Not enough permissions.")
+
+
+class EmailDoesNotExist(AccessDeniedError):
+    message = _("Incorrect Email.")
+
+
+class PasswordMismatch(AccessDeniedError):
+    message = _("Incorrect Password.")

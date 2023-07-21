@@ -9,7 +9,7 @@ from apps.authentication.domain.token import (
     RefreshAccessTokenRequest,
     Token,
 )
-from apps.authentication.errors import InvalidRefreshToken
+from apps.authentication.errors import InvalidRefreshToken, EmailDoesNotExist
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.users.domain import PublicUser, User
@@ -35,11 +35,7 @@ async def get_token(
                     user_login_schema.device_id
                 )
         except UserNotFound:
-            raise UserNotFound(
-                message=(
-                    "That email is not associated with a MindLogger account."
-                )
-            )
+            raise EmailDoesNotExist()
     access_token = AuthenticationService.create_access_token(
         {"sub": str(user.id)}
     )
