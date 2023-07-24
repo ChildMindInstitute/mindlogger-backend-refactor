@@ -16,16 +16,19 @@ async def main():
     postgres = Postgres()
 
     # Migrate with users
-    users: list[dict] = mongo.get_users()
+    # users: list[dict] = mongo.get_users()
 
-    users_mapping = postgres.save_users(users)
+    # users_mapping = postgres.save_users(users)
     # Migrate with users_workspace
-    workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
+    # workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
 
-    postgres.save_users_workspace(workspaces, users_mapping)
+    # postgres.save_users_workspace(workspaces, users_mapping)
 
     # Migrate applets, activities, items
+
     # applets: list[dict] = await mongo.get_applets()  # noqa: F841
+
+    applets = await mongo.get_applet_versions()  # noqa: F841
     # await postgres.save_applets(applets)
 
     # Close connections

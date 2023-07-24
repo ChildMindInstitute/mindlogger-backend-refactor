@@ -4,6 +4,7 @@ from typing import Any
 
 from bson.objectid import ObjectId
 from Cryptodome.Cipher import AES
+from girderformindlogger.models.folder import Folder as FolderModel
 from pymongo import MongoClient
 
 from apps.girderformindlogger.models.activity import Activity
@@ -13,6 +14,10 @@ from apps.jsonld_converter.dependencies import (
     get_context_resolver,
     get_document_loader,
     get_jsonld_model_converter,
+)
+from apps.migrate.services.applet_versions import (
+    get_versions_from_content,
+    get_versions_from_history,
 )
 from apps.shared.domain.base import InternalModel, PublicModel
 
@@ -215,3 +220,14 @@ class Mongo:
         #     results.append(converter_result)
 
         return results
+
+    async def get_applet_versions(self) -> dict:
+        appletId = ObjectId("647084129a25660f50a7bd48")
+        applet = FolderModel().findOne(query={"_id": appletId})
+        protocolId = applet["meta"]["protocol"].get("_id").split("/").pop()
+        result = get_versions_from_content(protocolId)
+        print(result)
+        result2 = get_versions_from_history(protocolId)
+        print(result2)
+
+        return result

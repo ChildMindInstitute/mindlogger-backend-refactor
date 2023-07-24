@@ -1,6 +1,5 @@
-import uuid
-
 import os
+import uuid
 from contextlib import suppress
 from datetime import datetime
 
@@ -118,23 +117,23 @@ class Postgres:
                 "is_modified": False,
             }
 
-            # with suppress(Exception):
-            cursor.execute(
-                "INSERT INTO users_workspaces"
-                "(user_id, id, created_at, updated_at, is_deleted, "
-                "workspace_name, is_modified)"
-                "VALUES"
-                f"((SELECT id FROM users WHERE id = '{user_workspace['user_id']}'), "  # noqa: E501
-                f"'{user_workspace['id']}', "
-                f"'{user_workspace['created_at']}', "
-                f"'{user_workspace['updated_at']}', "
-                f"'{user_workspace['is_deleted']}', "
-                f"'{user_workspace['workspace_name']}', "
-                f"'{user_workspace['is_modified']}');"
-            )
+            with suppress(Exception):
+                cursor.execute(
+                    "INSERT INTO users_workspaces"
+                    "(user_id, id, created_at, updated_at, is_deleted, "
+                    "workspace_name, is_modified)"
+                    "VALUES"
+                    f"((SELECT id FROM users WHERE id = '{user_workspace['user_id']}'), "  # noqa: E501
+                    f"'{user_workspace['id']}', "
+                    f"'{user_workspace['created_at']}', "
+                    f"'{user_workspace['updated_at']}', "
+                    f"'{user_workspace['is_deleted']}', "
+                    f"'{user_workspace['workspace_name']}', "
+                    f"'{user_workspace['is_modified']}');"
+                )
 
-            results.append(user_workspace)
-            count += 1
+                results.append(user_workspace)
+                count += 1
 
         self.connection.commit()
         cursor.close()
