@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from botocore.exceptions import ClientError
 from fastapi import Body, Depends, File, UploadFile
 from fastapi.responses import StreamingResponse
@@ -21,7 +23,9 @@ async def upload(
 
     cdn_client.upload(key, file.file)
 
-    result = UploadedFile(key=key, url=settings.cdn.url.format(key=key))
+    result = UploadedFile(
+        key=key, url=quote(settings.cdn.url.format(key=key), "/:")
+    )
     return Response(result=result)
 
 
