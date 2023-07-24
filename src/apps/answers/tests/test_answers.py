@@ -83,9 +83,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
                 identifier="encrypted_identifier",
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
             alerts=[
                 dict(
@@ -150,9 +150,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
                 identifier="encrypted_identifier",
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -189,9 +189,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -213,8 +213,8 @@ class TestAnswerActivityItems(BaseTest):
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
             answer=dict(
-                start_time=10,
-                end_time=11,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -259,9 +259,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -307,9 +307,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -330,8 +330,8 @@ class TestAnswerActivityItems(BaseTest):
             version="1.0.0",
             created_at=1681216969,
             answer=dict(
-                start_time=10,
-                end_time=11,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -363,9 +363,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -436,9 +436,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -495,9 +495,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -538,9 +538,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -595,9 +595,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -744,9 +744,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -810,9 +810,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -900,9 +900,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=None,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -985,9 +985,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -1019,9 +1019,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
-                scheduled_time=10,
-                start_time=1687346100,
-                end_time=1687346100,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 
@@ -1079,7 +1079,7 @@ class TestAnswerActivityItems(BaseTest):
             "reviewedAnswerId", "userPublicKey", "version", "submitId",
             "scheduledDatetime", "startDatetime", "endDatetime"
         }
-        assert answer['startDatetime'] == 1687346100
+        assert answer['startDatetime'] == 1690188679657
         # fmt: on
 
         assert set(assessment.keys()) == expected_keys
@@ -1133,9 +1133,9 @@ class TestAnswerActivityItems(BaseTest):
                     "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
                 ],
                 identifier="some identifier",
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
             ),
         )
 

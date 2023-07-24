@@ -63,6 +63,12 @@ class ItemAnswerCreate(InternalModel):
     def convert_item_ids(cls, value: list[uuid.UUID]):
         return list(map(str, value))
 
+    @validator("start_time", "end_time", "scheduled_time")
+    def convert_time_to_unix_timestamp(cls, value: int):
+        if value:
+            return value / 100
+        return value
+
 
 class AnswerItemSchemaAnsweredActivityItem(InternalModel):
     activity_item_history_id: str
@@ -289,7 +295,7 @@ class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
 
     @validator("start_datetime", "end_datetime")
     def convert_to_timestamp(cls, value: datetime.datetime):
-        return int(value.timestamp())
+        return int(value.timestamp() * 100)
 
 
 class AnswerExport(InternalModel):
