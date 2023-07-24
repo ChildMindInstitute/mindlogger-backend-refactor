@@ -5,9 +5,7 @@ from infrastructure.database import rollback
 
 
 class TestAnswerCases(BaseTest):
-    fixtures = [
-        'answers/fixtures/duplicate_activity_in_flow.json'
-    ]
+    fixtures = ["answers/fixtures/duplicate_activity_in_flow.json"]
 
     login_url = "/auth/login"
     answer_url = "/answers"
@@ -41,7 +39,7 @@ class TestAnswerCases(BaseTest):
                 scheduled_time=10,
                 start_time=10,
                 end_time=11,
-            )
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -70,7 +68,7 @@ class TestAnswerCases(BaseTest):
                 scheduled_time=10,
                 start_time=10,
                 end_time=11,
-            )
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)

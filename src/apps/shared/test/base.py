@@ -1,10 +1,8 @@
 import json
 import os
-from collections import defaultdict
 
 import pytest
 from sqlalchemy import text
-from sqlalchemy.cimmutabledict import immutabledict
 
 from apps.mailing.services import TestMail
 from apps.shared.test.client import TestClient
@@ -14,7 +12,6 @@ from infrastructure.database import session_manager
 
 
 class BaseTest:
-    chunk_size = 100
     fixtures: list[str] = []
     client = TestClient()
 
@@ -39,36 +36,17 @@ class BaseTest:
         session = session_manager.get_session()
         file = open(os.path.join(settings.apps_dir, relative_path), "r")
         data = json.load(file)
-
-        table_insertions = defaultdict(lambda: dict(columns="", values=[]))
         for datum in data:
             columns = ",".join(
-                map(
-                    lambda field: f'"{field}"',
-                    datum["fields"].keys(),
-                )
+                map(lambda field: f'"{field}"', datum["fields"].keys())
             )
             values = ",".join(map(_str_caster, datum["fields"].values()))
-            table_insertions[datum["table"]]["columns"] = columns
-            table_insertions[datum["table"]]["values"].append(values)
-        for table, data in table_insertions.items():
-            for i in range(len(data["values"]) // self.chunk_size + 1):
-                start = i * self.chunk_size
-                end = (i + 1) * self.chunk_size
-                if len(data["values"][start:end]) == 0:
-                    continue
-                query = text(
-                    f"""
-                    insert into "{table}"({data['columns']})
-                    values ({'),('.join(data['values'][start:end])})
-                    """
-                )
-                await session.execute(
-                    query,
-                    execution_options=immutabledict(
-                        {"synchronize_session": False}
-                    ),
-                )
+            query = text(
+                f"""
+            insert into "{datum['table']}"({columns}) values ({values})
+            """
+            )
+            await session.execute(query)
         await session.commit()
 
 

@@ -22,7 +22,6 @@ from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
-from apps.activity_flows.crud import FlowItemHistoriesCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
 from apps.alerts.domain import AlertMessage
@@ -52,12 +51,9 @@ from apps.answers.domain import (
     Version,
 )
 from apps.answers.errors import (
-    ActivityDoesNotHaveItem,
     ActivityIsNotAssessment,
     AnswerAccessDeniedError,
     AnswerNoteAccessDeniedError,
-    DuplicateActivityInAnswerGroup,
-    FlowDoesNotHaveActivity,
     NonPublicAppletError,
     ReportServerError,
     UserDoesNotHavePermissionError,
@@ -124,80 +120,18 @@ class AnswerService:
         await self._validate_answer(activity_answer)
 
     async def _validate_answer(self, applet_answer: AppletAnswerCreate):
-        get_pk = self._generate_history_id(applet_answer.version)
-
         existed_answers = await AnswersCRUD(self.session).get_by_submit_id(
             applet_answer.submit_id
         )
 
         if existed_answers:
-            activity_ids = [ea.activity_history_id for ea in existed_answers]
             existed_answer = existed_answers[0]
             if existed_answer.applet_id != applet_answer.applet_id:
                 raise WrongAnswerGroupAppletId()
             elif existed_answer.version != applet_answer.version:
                 raise WrongAnswerGroupVersion()
-            elif get_pk(applet_answer.activity_id) in activity_ids:
-                raise DuplicateActivityInAnswerGroup()
             elif existed_answer.respondent_id != self.user_id:
                 raise WrongRespondentForAnswerGroup()
-
-        activity_flow_map: dict[str, str] = dict()
-        item_activity_map: dict[str, str] = dict()
-        if not applet_answer.answer:
-            return
-        activity_id = applet_answer.activity_id
-        if applet_answer.flow_id:
-            activity_flow_map[get_pk(activity_id)] = get_pk(
-                applet_answer.flow_id
-            )
-
-        for activity_item_id in applet_answer.answer.item_ids or []:
-            activity_id_version = item_activity_map.get(
-                get_pk(activity_item_id)
-            )
-            if activity_id_version and activity_id_version != get_pk(
-                applet_answer.activity_id
-            ):
-                raise ValueError(
-                    "Same activity item can not have several activity"
-                )
-            item_activity_map[get_pk(activity_item_id)] = get_pk(
-                applet_answer.activity_id
-            )
-
-        activity_item_histories = []
-        flow_item_histories = []
-        if item_activity_map:
-            activity_item_histories = await ActivityItemHistoriesCRUD(
-                self.session
-            ).get_by_id_versions(list(item_activity_map.keys()))
-        if activity_flow_map:
-            flow_item_histories = await FlowItemHistoriesCRUD(
-                self.session
-            ).get_by_map(activity_flow_map)
-
-        for activity_item_history in activity_item_histories:
-            activity_id_version = item_activity_map[
-                activity_item_history.id_version
-            ]
-            if activity_id_version != activity_item_history.activity_id:
-                raise ActivityDoesNotHaveItem()
-
-            item_activity_map.pop(activity_item_history.id_version)
-
-        if len(item_activity_map) != 0:
-            raise ValueError("Does not exists")
-
-        for flow_item_history in flow_item_histories:
-            flow_id_version = activity_flow_map[flow_item_history.activity_id]
-            if flow_id_version != flow_item_history.activity_flow_id:
-                raise FlowDoesNotHaveActivity()
-
-            # activity_flow_map.pop(flow_item_history.activity_id)
-
-        # if len(activity_flow_map) != 0:
-        #     raise ValueError("Does not exists")
 
     async def _validate_applet_for_anonymous_response(
         self, applet_id: uuid.UUID, version: str
