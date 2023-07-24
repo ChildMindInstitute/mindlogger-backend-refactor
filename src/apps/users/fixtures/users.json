@@ -11,7 +11,8 @@
       "is_super_admin": true,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": false
     },
     "note": "Password is Test1234!"
   },
@@ -24,9 +25,11 @@
       "last_name": "Gabel",
       "hashed_password": "$2b$12$rq9CeizkJSdjbEeK0.jFYOgSd37rCbu/e7UNCC7YL5ZwTs4wTGuy.",
       "is_deleted": false,
+      "is_super_admin": false,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": false
     },
     "note": "Password is Test123"
   },
@@ -39,9 +42,11 @@
       "last_name": "Martin",
       "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
       "is_deleted": false,
+      "is_super_admin": false,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": false
     },
     "note": "Password is Test1234!"
   },
@@ -54,9 +59,11 @@
       "last_name": "Samuel",
       "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
       "is_deleted": false,
+      "is_super_admin": false,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": false
     },
     "note": "Password is Test1234"
   },
@@ -69,9 +76,11 @@
       "last_name": "Davidson",
       "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
       "is_deleted": false,
+      "is_super_admin": false,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": false
     },
     "note": "Password is Test1234"
   },
@@ -84,9 +93,11 @@
       "last_name": "Davidson",
       "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
       "is_deleted": false,
+      "is_super_admin": false,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": false
     },
     "note": "Password is Test1234"
   },
