@@ -1,8 +1,8 @@
 from bson import json_util
-from girderformindlogger.models.folder import Folder as FolderModel
-from girderformindlogger.models.item import Item as ItemModel
-from girderformindlogger.models.protocol import Protocol
-from girderformindlogger.utility import jsonld_expander
+from apps.girderformindlogger.models.folder import Folder as FolderModel
+from apps.girderformindlogger.models.item import Item as ItemModel
+from apps.girderformindlogger.models.protocol import Protocol
+from apps.girderformindlogger.utility import jsonld_expander
 
 
 def get_versions_from_history(protocolId):

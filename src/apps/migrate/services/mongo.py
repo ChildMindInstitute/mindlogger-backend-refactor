@@ -4,11 +4,11 @@ from typing import Any
 
 from bson.objectid import ObjectId
 from Cryptodome.Cipher import AES
-from girderformindlogger.models.folder import Folder as FolderModel
 from pymongo import MongoClient
 
 from apps.girderformindlogger.models.activity import Activity
 from apps.girderformindlogger.models.applet import Applet
+from apps.girderformindlogger.models.folder import Folder as FolderModel
 from apps.girderformindlogger.utility import jsonld_expander
 from apps.jsonld_converter.dependencies import (
     get_context_resolver,
@@ -45,9 +45,10 @@ class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
         uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        print(uri)
         self.client = MongoClient(
             uri,
-            int(os.getenv("MONGO__PORT", 27017)),
+            # int(os.getenv("MONGO__PORT", 27017)),
         )  # "localhost"
         self.db = self.client[os.getenv("MONGO__DB")]
 

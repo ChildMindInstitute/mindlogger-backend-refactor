@@ -26,7 +26,7 @@ async def main():
 
     # Migrate applets, activities, items
 
-    # applets: list[dict] = await mongo.get_applets()  # noqa: F841
+    applets: list[dict] = await mongo.get_applets()  # noqa: F841
 
     # applets = await mongo.get_applet_versions()  # noqa: F841
     # await postgres.save_applets(applets)
