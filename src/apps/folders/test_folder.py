@@ -225,4 +225,3 @@ class TestFolder(BaseTest):
         )
         assert response.status_code == 200
         assert response.json()["count"] == 1
-
