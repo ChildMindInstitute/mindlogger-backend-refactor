@@ -16,7 +16,7 @@ from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.scores_reports import SubscaleSetting
 from apps.activity_flows.domain.flow_full import FlowFull
 from apps.applets.domain.base import AppletBaseInfo
-from apps.shared.domain import InternalModel, PublicModel, to_camelcase
+from apps.shared.domain import InternalModel, PublicModel
 
 
 class Text(InternalModel):
@@ -74,14 +74,11 @@ class AnswerAlert(InternalModel):
     message: str
 
 
-class ClientMeta(BaseModel):
+class ClientMeta(InternalModel):
     app_id: str
     app_version: str
     width: int
     height: int
-
-    class Config:
-        alias_generator = to_camelcase
 
 
 class AppletAnswerCreate(InternalModel):
