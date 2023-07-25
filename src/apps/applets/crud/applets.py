@@ -766,7 +766,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         await self._execute(query)
 
     async def get_respondents_device_ids(
-        self, applet_id: uuid.UUID
+        self,
+        applet_id: uuid.UUID,
+        respondent_ids: list[uuid.UUID] | None = None,
     ) -> list[str]:
         query: Query = select(UserDeviceSchema.device_id)
         query = query.join(
@@ -776,6 +778,10 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             UserAppletAccessSchema,
             UserAppletAccessSchema.user_id == UserSchema.id,
         )
+        if respondent_ids:
+            query = query.where(
+                UserAppletAccessSchema.user_id.in_(respondent_ids)
+            )
         query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.is_deleted == False)  # noqa
