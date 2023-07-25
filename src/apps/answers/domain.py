@@ -66,7 +66,7 @@ class ItemAnswerCreate(InternalModel):
     @validator("start_time", "end_time", "scheduled_time")
     def convert_time_to_unix_timestamp(cls, value: int):
         if value:
-            return value / 100
+            return value / 1000
         return value
 
 
@@ -295,7 +295,7 @@ class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
 
     @validator("start_datetime", "end_datetime")
     def convert_to_timestamp(cls, value: datetime.datetime):
-        return int(value.timestamp() * 100)
+        return int(value.timestamp() * 1000)
 
 
 class AnswerExport(InternalModel):
