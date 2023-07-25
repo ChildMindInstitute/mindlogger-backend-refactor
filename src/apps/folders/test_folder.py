@@ -1,3 +1,5 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -19,6 +21,7 @@ class TestFolder(BaseTest):
     list_url = f"{workspace_url}/folders"
     detail_url = f"{list_url}/{{id}}"
     pin_url = f"{detail_url}/pin/{{applet_id}}"
+    applet_detail_url = "applets/{pk}"
 
     @rollback
     async def test_folder_list(self):
@@ -200,3 +203,26 @@ class TestFolder(BaseTest):
         )
 
         assert response.status_code == 204, response.json()
+
+    @pytest.mark.main
+    @rollback
+    async def test_applet_delete(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.delete(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+        )
+
+        assert response.status_code == 204, response.json()
+
+        response = await self.client.get(
+            self.workspace_folder_applets_url.format(
+                folder_id="ecf66358-a717-41a7-8027-807374307732"
+            ),
+        )
+        assert response.status_code == 200
+        assert response.json()["count"] == 1
+
