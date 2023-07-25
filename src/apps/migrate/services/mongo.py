@@ -1,3 +1,4 @@
+import hashlib
 import os
 from pprint import pprint as print
 from typing import Any
@@ -47,7 +48,9 @@ class Mongo:
         uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
         print(uri)
         self.client = MongoClient(
-            uri,
+            "localhost",
+            27017
+            # uri,
             # int(os.getenv("MONGO__PORT", 27017)),
         )  # "localhost"
         self.db = self.client[os.getenv("MONGO__DB")]
@@ -76,12 +79,14 @@ class Mongo:
                 "lastName": 1,
                 "salt": 1,
                 "created": 1,
+                "email_encrypted": 1,
             },
         )
 
         count = 0
         total_documents = 0
         results = []
+        email_hashes = []
 
         for user in users:
             first_name = decrypt(user.get("firstName"))
@@ -97,17 +102,33 @@ class Mongo:
                 last_name = last_name[:49]
 
             if user.get("email"):
-                results.append(
-                    {
-                        "id_": user.get("_id"),
-                        "email": user.get("email"),
-                        "hashed_password": user.get("salt"),
-                        "first_name": first_name,
-                        "last_name": last_name,
-                        "created_at": user.get("created"),
-                    }
-                )
-                count += 1
+                if not user.get("email_encrypted"):
+                    email_hash = hashlib.sha224(
+                        user.get("email").encode("utf-8")
+                    ).hexdigest()
+                elif (
+                    user.get("email_encrypted")
+                    and len(user.get("email")) == 56
+                ):
+                    email_hash = user.get("email")
+                else:
+                    total_documents += 1
+                    continue
+
+                if email_hash not in email_hashes:
+                    email_hashes.append(email_hash)
+                    results.append(
+                        {
+                            "id_": user.get("_id"),
+                            "email": user.get("email"),
+                            "email_hash": email_hash,
+                            "hashed_password": user.get("salt"),
+                            "first_name": first_name,
+                            "last_name": last_name,
+                            "created_at": user.get("created"),
+                        }
+                    )
+                    count += 1
             total_documents += 1
         print(
             f"Total Users Documents - {total_documents}, "
