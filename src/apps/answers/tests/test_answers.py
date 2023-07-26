@@ -1,6 +1,7 @@
 import datetime
 import json
 
+import pytest
 from asynctest import CoroutineMock, patch
 
 from apps.shared.test import BaseTest
@@ -57,6 +58,7 @@ class TestAnswerActivityItems(BaseTest):
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
     latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
 
+    @pytest.mark.main
     @rollback
     async def test_answer_activity_items_create_for_respondent(self):
         await self.client.login(
@@ -68,7 +70,7 @@ class TestAnswerActivityItems(BaseTest):
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
-            created_at=1681216969,
+            created_at=1690188731636,
             answer=dict(
                 user_public_key="user key",
                 answer=json.dumps(
@@ -135,7 +137,7 @@ class TestAnswerActivityItems(BaseTest):
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
-            created_at=1681216969,
+            created_at=1690188731636,
             answer=dict(
                 user_public_key="user key",
                 answer=json.dumps(
@@ -175,7 +177,7 @@ class TestAnswerActivityItems(BaseTest):
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-            created_at=1681216969,
+            created_at=1690188731636,
             answer=dict(
                 user_public_key="user key",
                 events=json.dumps(dict(events=["event1", "event2"])),
@@ -291,7 +293,7 @@ class TestAnswerActivityItems(BaseTest):
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            created_at=1681216969,
+            created_at=1690188731636,
             flow_id="3013dfb1-9202-4577-80f2-ba7450fb5831",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             answer=dict(
@@ -328,7 +330,7 @@ class TestAnswerActivityItems(BaseTest):
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
-            created_at=1681216969,
+            created_at=1690188731636,
             answer=dict(
                 start_time=1690188679657,
                 end_time=1690188731636,

@@ -5,13 +5,14 @@ from infrastructure.database import rollback
 
 
 class TestAnswerCases(BaseTest):
-    fixtures = ["answers/fixtures/duplicate_activity_in_flow.json"]
-
     login_url = "/auth/login"
     answer_url = "/answers"
 
     @rollback
     async def test_answer_activity_items_create_for_respondent(self):
+        await self.load_data(
+            "answers/fixtures/duplicate_activity_in_flow.json"
+        )
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
