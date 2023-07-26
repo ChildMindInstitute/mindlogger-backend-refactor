@@ -54,6 +54,7 @@ def validate_audio(value: str) -> str:
         "audio/x-pn-wav",
         "audio/wave",
         "video/mpeg",
+        "video/webm",
     )
     if any(type_.startswith(mime_type) for mime_type in supported):
         return value
