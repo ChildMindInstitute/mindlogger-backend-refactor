@@ -141,6 +141,8 @@ class WorkspaceService:
                     type=folder_or_applet[8],
                     role=folder_or_applet[9],
                     folders_applet_count=folder_or_applet[10],
+                    description=folder_or_applet[12],
+                    activity_count=folder_or_applet[13],
                 )
             )
         return folder_or_applets

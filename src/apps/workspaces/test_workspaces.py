@@ -748,3 +748,21 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
         assert response.json()["result"][0]["displayName"] == "Applet 1"
         assert response.json()["result"][1]["displayName"] == "Applet 2"
+
+    @rollback
+    async def test_applets_with_description(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.workspace_applets_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            )
+        )
+        assert response.status_code == 200
+        applets = response.json()["result"]
+        assert applets[2]["activityCount"] == 2
+        assert applets[2]["description"] == {
+            "en": "Patient Health Questionnaire"
+        }

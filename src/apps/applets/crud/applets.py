@@ -20,6 +20,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count, func
 
+from apps.activities.db.schemas import ActivitySchema
 from apps.applets import errors
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import Role
@@ -392,6 +393,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             str,
             str,
             str,
+            str,
+            dict,
+            int,
         ]
     ]:
         workspace_applets_query: Query = select(
@@ -426,6 +430,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 "folders_applet_count"
             ),
             literal("1").label("ordering"),
+            null().label("description"),
+            null().label("activity_count"),
         )
         folders_query = folders_query.where(FolderSchema.creator_id == user_id)
         folders_query = folders_query.join(
@@ -475,6 +481,12 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             FolderSchema.creator_id == user_id
         )
 
+        activity_subquery = (
+            select([func.count().label("count")])
+            .where(AppletSchema.id == ActivitySchema.applet_id)
+            .as_scalar()
+        )
+
         query: Query = select(
             AppletSchema.id.label("id"),
             AppletSchema.display_name.label("name"),
@@ -488,6 +500,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             access_query.c.role.label("role"),
             literal(0).label("folders_applet_count"),
             literal("2").label("ordering"),
+            AppletSchema.description,
+            activity_subquery,
         )
         query = query.join(
             access_query,
