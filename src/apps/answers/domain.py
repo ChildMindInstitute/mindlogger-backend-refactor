@@ -98,6 +98,12 @@ class AppletAnswerCreate(InternalModel):
     alerts: list[AnswerAlert] = Field(default_factory=list)
     client: ClientMeta
 
+    @validator("created_at")
+    def convert_time_to_unix_timestamp(cls, value: int):
+        if value:
+            return value / 1000
+        return value
+
 
 class AssessmentAnswerCreate(InternalModel):
     answer: str
