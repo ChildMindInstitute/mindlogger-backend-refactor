@@ -10,6 +10,7 @@ class AnswerSchema(Base):
     applet_id = Column(UUID(as_uuid=True))
     version = Column(Text())
     submit_id = Column(UUID(as_uuid=True))
+    client = Column(JSONB())
     applet_history_id = Column(
         ForeignKey("applet_histories.id_version", ondelete="RESTRICT"),
         nullable=False,

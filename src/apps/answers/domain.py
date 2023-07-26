@@ -80,6 +80,13 @@ class AnswerAlert(InternalModel):
     message: str
 
 
+class ClientMeta(InternalModel):
+    app_id: str
+    app_version: str
+    width: int
+    height: int
+
+
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
@@ -89,6 +96,7 @@ class AppletAnswerCreate(InternalModel):
     answer: ItemAnswerCreate
     created_at: int | None
     alerts: list[AnswerAlert] = Field(default_factory=list)
+    client: ClientMeta
 
 
 class AssessmentAnswerCreate(InternalModel):
