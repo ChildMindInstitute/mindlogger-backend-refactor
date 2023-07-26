@@ -1,5 +1,9 @@
+import asyncio
 import json
 import uuid
+from typing import List
+
+from pydantic import parse_obj_as
 
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
@@ -28,6 +32,7 @@ from apps.library.errors import (
     AppletVersionExistsError,
     LibraryItemDoesNotExistError,
 )
+from apps.shared.paging import paging_list
 from apps.shared.query_params import QueryParams
 from apps.workspaces.service.check_access import CheckAccessService
 from config import settings
@@ -316,3 +321,41 @@ class LibraryService:
         return Cart(
             cart_items=json.loads(cart.cart_items) if cart.cart_items else None
         )
+
+    @staticmethod
+    async def _search_in_cart(pattern: str, item: dict) -> bool:
+        pattern = pattern.lower()
+        parsed_item = PublicLibraryItem.parse_obj(item)
+        if pattern in parsed_item.display_name.lower():
+            return True
+
+        if parsed_item.keywords:
+            for keyword in parsed_item.keywords:
+                if pattern in keyword.lower():
+                    return True
+                await asyncio.sleep(0)
+
+        if parsed_item.activities:
+            for activity in parsed_item.activities:
+                if pattern in activity.name.lower():
+                    return True
+                await asyncio.sleep(0)
+        return False
+
+    async def filter_cart_items(
+        self, cart: Cart | None, query_params: QueryParams
+    ) -> List[PublicLibraryItem]:
+        if not cart:
+            return []
+        filtered_items: list[dict] = []
+        if query_params.search and cart.cart_items:
+            for item in cart.cart_items:
+                if await self._search_in_cart(query_params.search, item):
+                    filtered_items.append(item)
+
+        items = paging_list(
+            filtered_items if query_params.search else cart.cart_items,
+            page=query_params.page,
+            limit=query_params.limit,
+        )
+        return parse_obj_as(List[PublicLibraryItem], items)

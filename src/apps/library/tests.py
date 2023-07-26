@@ -1,3 +1,5 @@
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -170,11 +172,22 @@ class TestLibrary(BaseTest):
         create_data = dict(
             cart_items=[
                 dict(
-                    library_id="68aadd6c-eb20-4666-85aa-fd6264825c01",
+                    id="92917a56-d586-4613-b7aa-991f2c4b15b2",
+                    display_name="Applet 2",
+                    description={"en": "Patient Health Questionnaire"},
+                    about={"en": "Patient Health Questionnaire"},
+                    image="",
+                    watermark="",
+                    theme_id="3e31a64e-449f-4788-8516-eca7809f1a42",
+                    version="2.0.1",
                     activities=[
                         dict(
-                            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3612",
+                            key="09e3dbf0-aefb-4d0e-9177-bdb321bf3612",
                             items=None,
+                            name="PHQ8",
+                            description={"en": "PHQ8", "fr": "PHQ8"},
+                            splash_screen="",
+                            image="",
                         )
                     ],
                 ),
@@ -189,8 +202,8 @@ class TestLibrary(BaseTest):
 
         assert len(result["cartItems"]) == 1
         assert (
-            result["cartItems"][0]["library_id"]
-            == "68aadd6c-eb20-4666-85aa-fd6264825c01"
+            result["cartItems"][0]["id"]
+            == "92917a56-d586-4613-b7aa-991f2c4b15b2"
         )
 
         response = await self.client.get(self.library_cart_url)
@@ -198,8 +211,93 @@ class TestLibrary(BaseTest):
         assert response.status_code == 200, response.json()
 
         result = response.json()["result"]
-        assert len(result["cartItems"]) == 1
-        assert (
-            result["cartItems"][0]["library_id"]
-            == "68aadd6c-eb20-4666-85aa-fd6264825c01"
+        assert len(result) == 1
+        assert result[0]["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b2"
+
+    @pytest.mark.parametrize(
+        "search,expected,page,limit",
+        (
+            ("3", "92917a56-d586-4613-b7aa-991f2c4b15b3", 1, 10),
+            ("4", "92917a56-d586-4613-b7aa-991f2c4b15b4", 1, 10),
+            ("One", "92917a56-d586-4613-b7aa-991f2c4b15b3", 1, 10),
+            ("Two", "92917a56-d586-4613-b7aa-991f2c4b15b3", 1, 10),
+            ("Three", "92917a56-d586-4613-b7aa-991f2c4b15b4", 1, 10),
+            ("Four", "92917a56-d586-4613-b7aa-991f2c4b15b4", 1, 10),
+            ("PHQ9", "92917a56-d586-4613-b7aa-991f2c4b15b4", 1, 10),
+            ("AMQ", "92917a56-d586-4613-b7aa-991f2c4b15b3", 1, 10),
+            ("Applet", "92917a56-d586-4613-b7aa-991f2c4b15b3", 1, 1),
+            ("Applet", "92917a56-d586-4613-b7aa-991f2c4b15b4", 2, 1),
+        ),
+    )
+    @rollback
+    async def test_cart_search(self, search, expected, page, limit):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
         )
+
+        create_data = dict(
+            cart_items=[
+                dict(
+                    id="92917a56-d586-4613-b7aa-991f2c4b15b3",
+                    display_name="Applet 3",
+                    description={"en": "Patient Health Questionnaire"},
+                    about={"en": "Patient Health Questionnaire"},
+                    image="",
+                    watermark="",
+                    theme_id=None,
+                    keywords=["One", "Two"],
+                    version="1.0",
+                    activities=[
+                        dict(
+                            key="09e3dbf0-aefb-4d0e-9177-bdb321bf3613",
+                            items=None,
+                            name="AMQ",
+                            description={"en": "PHQ9", "fr": "PHQ9"},
+                            splash_screen="",
+                            image="",
+                        )
+                    ],
+                    activity_flows=None,
+                ),
+                dict(
+                    id="92917a56-d586-4613-b7aa-991f2c4b15b4",
+                    display_name="Applet 4",
+                    description={"en": "Patient Health Questionnaire"},
+                    image="",
+                    watermark="",
+                    theme_id=None,
+                    keywords=["Three", "Four"],
+                    version="1.0",
+                    activities=[
+                        dict(
+                            key="09e3dbf0-aefb-4d0e-9177-bdb321bf3614",
+                            name="PHQ9",
+                            description={"en": "PHQ9", "fr": "PHQ9"},
+                            image="",
+                            splash_screen="",
+                            items=None,
+                        ),
+                        dict(
+                            key="494544c9-e7f1-4d7b-8eea-4ddc840c25fc",
+                            items=None,
+                            name="PHQ9",
+                            description={"en": "PHQ9", "fr": "PHQ9"},
+                            splash_screen="",
+                            image="",
+                        ),
+                    ],
+                    activity_flows=None,
+                ),
+            ]
+        )
+        response = await self.client.post(
+            self.library_cart_url, data=create_data
+        )
+        assert response.status_code == 200
+        response = await self.client.get(
+            self.library_cart_url,
+            query={"search": search, "page": page, "limit": limit},
+        )
+        assert response.status_code == 200
+        assert response.json()["result"][0]["id"] == expected
+        assert len(response.json()["result"]) <= limit

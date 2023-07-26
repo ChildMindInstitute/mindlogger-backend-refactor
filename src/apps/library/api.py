@@ -10,6 +10,7 @@ from apps.library.domain import (
     AppletLibraryInfo,
     AppletLibraryUpdate,
     Cart,
+    CartQueryParams,
     LibraryNameCheck,
     LibraryQueryParams,
     PublicLibraryItem,
@@ -108,10 +109,14 @@ async def library_update(
 async def cart_get(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-) -> Response[Cart]:
+    query_params: QueryParams = Depends(parse_query_params(CartQueryParams)),
+) -> ResponseMulti[PublicLibraryItem]:
     async with atomic(session):
-        cart = await LibraryService(session).get_cart(user.id)
-    return Response(result=cart)
+        service = LibraryService(session)
+        cart = await service.get_cart(user.id)
+        items = await service.filter_cart_items(cart, query_params)
+        count = len(cart.cart_items) if cart and cart.cart_items else 0
+    return ResponseMulti(result=items, count=count)
 
 
 async def cart_add(

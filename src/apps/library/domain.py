@@ -103,3 +103,11 @@ class LibraryQueryParams(InternalModel):
 
 class Cart(PublicModel):
     cart_items: list[dict] | None = None
+
+
+class CartItem(LibraryItem):
+    pass
+
+
+class CartQueryParams(LibraryQueryParams):
+    pass
