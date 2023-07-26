@@ -9,6 +9,7 @@ class AppletQueryParams(BaseQueryParams):
     ordering: str = "-createdAt"
     folder_id: uuid.UUID | None
     limit: int = 10000
+    show_all_without_folders: bool = False
 
 
 class AppletUsersQueryParams(BaseQueryParams):

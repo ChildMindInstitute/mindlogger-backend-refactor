@@ -377,23 +377,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         db_result = await self._execute(query)
         return db_result.all()
 
-    async def get_workspace_applets(
-        self, owner_id: uuid.UUID, user_id: uuid.UUID, filters: QueryParams
-    ) -> list[
-        tuple[
-            uuid.UUID,
-            str,
-            str,
-            bool,
-            dict | None,
-            datetime.datetime,
-            datetime.datetime,
-            str,
-            str,
-            str,
-            str,
-        ]
-    ]:
+    @staticmethod
+    async def _folder_list_query(owner_id: uuid.UUID, user_id: uuid.UUID):
         workspace_applets_query: Query = select(
             func.count(FolderAppletSchema.id).label("applet_count"),
             FolderAppletSchema.folder_id,
@@ -410,7 +395,6 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         workspace_applets_query = workspace_applets_query.alias(
             "workspace_applets"
         )
-
         folders_query: Query = select(
             FolderSchema.id.label("id"),
             FolderSchema.name.label("name"),
@@ -436,7 +420,25 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         folders_query = folders_query.where(
             FolderSchema.workspace_id == owner_id
         )
+        return folders_query
 
+    async def get_workspace_applets(
+        self, owner_id: uuid.UUID, user_id: uuid.UUID, filters: QueryParams
+    ) -> list[
+        tuple[
+            uuid.UUID,
+            str,
+            str,
+            bool,
+            dict | None,
+            datetime.datetime,
+            datetime.datetime,
+            str,
+            str,
+            str,
+            str,
+        ]
+    ]:
         access_subquery: Query = select(
             UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
         )
@@ -497,21 +499,27 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.where(AppletSchema.id.notin_(folder_applets_query))
         query = query.where(access_query.c.role != None)  # noqa
 
-        query_union: Query = folders_query.union(query)
+        if not filters.filters["show_all_without_folders"]:
+            folders_query = await self._folder_list_query(owner_id, user_id)
+            query = folders_query.union(query)
 
-        class _Ordering(Ordering):
-            display_name = query_union.c.name
-            created_at = query_union.c.created_at
+        cte = query.cte("applets")
+        query = select(cte)
 
-        query_union = query_union.order_by(
-            query_union.c.ordering.asc(),
-            *_Ordering().get_clauses(*filters.ordering),
+        orderings = type(
+            "_Ordering",
+            (Ordering,),
+            {"display_name": cte.c.name, "created_at": cte.c.created_at},
+        )()
+
+        query = query.order_by(
+            cte.c.ordering.asc(),
+            *orderings.get_clauses(*filters.ordering),
         )
 
-        query_union = paging(query_union, filters.page, filters.limit)
-
-        db_result = await self._execute(query_union)
-        return db_result.all()
+        query_paged = paging(query, filters.page, filters.limit)
+        db_result = await self._execute(query_paged)
+        return db_result
 
     async def search_workspace_applets(
         self,
