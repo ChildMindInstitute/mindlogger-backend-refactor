@@ -2,7 +2,7 @@
 
 Revision ID: 947d6b1da437
 Revises: bb7daaa5854f
-Create Date: 2023-07-21 19:37:04.182359
+Create Date: 2023-07-26 19:37:04.182359
 
 """
 import sqlalchemy as sa
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "947d6b1da437"
-down_revision = "bb7daaa5854f"
+down_revision = "feebb648bba7"
 branch_labels = None
 depends_on = None
 
