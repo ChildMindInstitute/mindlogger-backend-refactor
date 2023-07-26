@@ -325,16 +325,21 @@ class LibraryService:
     @staticmethod
     async def _search_in_cart(pattern: str, item: dict) -> bool:
         pattern = pattern.lower()
-        if pattern in item.get("displayName", "").lower():
+        parsed_item = PublicLibraryItem.parse_obj(item)
+        if pattern in parsed_item.display_name.lower():
             return True
-        for keyword in item.get("keywords", []):
-            if pattern in keyword.lower():
-                return True
-            await asyncio.sleep(0)
-        for activity in item.get("activities", []):
-            if pattern in activity["name"].lower():
-                return True
-            await asyncio.sleep(0)
+
+        if parsed_item.keywords:
+            for keyword in parsed_item.keywords:
+                if pattern in keyword.lower():
+                    return True
+                await asyncio.sleep(0)
+
+        if parsed_item.activities:
+            for activity in parsed_item.activities:
+                if pattern in activity.name.lower():
+                    return True
+                await asyncio.sleep(0)
         return False
 
     async def filter_cart_items(
