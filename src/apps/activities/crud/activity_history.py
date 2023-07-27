@@ -129,7 +129,6 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
             ActivityItemHistorySchema.activity_id
             == ActivityHistorySchema.id_version
         )
-        activity_types_query = activity_types_query
 
         query: Query = select(
             ActivityHistorySchema,
@@ -151,9 +150,8 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
 
         db_result = await self._execute(query)
         schemas = []
-        for activity_history_schema, response_types in db_result.all():
-            is_performance_task = response_types is not None
-            activity_history_schema.is_performance_task = is_performance_task
+        for activity_history_schema, is_performance in db_result.all():
+            activity_history_schema.is_performance_task = is_performance
             schemas.append(activity_history_schema)
 
         return schemas
