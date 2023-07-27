@@ -385,13 +385,17 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return db_result.first()
 
     async def get_activities_which_has_answer(
-        self, activity_history_ids: list[str]
+        self, activity_ids: list[uuid.UUID], respondent_id: uuid.UUID | None
     ) -> list[str]:
-        query = select(AnswerSchema.activity_history_id)
-        query = query.where(
-            AnswerSchema.activity_history_id.in_(activity_history_ids)
+        query: Query = select(AnswerSchema.activity_history_id)
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == AnswerSchema.activity_history_id,
         )
-        query = query.distinct()
+        query = query.where(ActivityHistorySchema.id.in_(activity_ids))
+        if respondent_id:
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
 
         db_result = await self._execute(query)
         return db_result.scalars().all()
