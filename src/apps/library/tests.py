@@ -301,3 +301,32 @@ class TestLibrary(BaseTest):
         assert response.status_code == 200
         assert response.json()["result"][0]["id"] == expected
         assert len(response.json()["result"]) <= limit
+
+    @rollback
+    async def test_library_list_data_integrity(self):
+        applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        data = dict(
+            applet_id=applet_id,
+            keywords=["test", "test2"],
+            name="PHQ2",
+        )
+        response = await self.client.post(self.library_url, data=data)
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(self.library_url)
+        assert response.status_code == 200, response.json()
+        result = response.json()["result"]
+        assert len(result) == 2
+        applet = next(
+            filter(lambda item: item["displayName"] == "PHQ2", result), None
+        )
+        assert applet
+        assert applet["description"] == {"en": "Patient Health Questionnaire"}
+        assert applet["about"] == {"en": "Patient Health Questionnaire"}
+        assert applet["keywords"] == ["test", "test2"]
+        assert applet["version"] == "1.0.0"
+        assert len(applet["activities"]) == 2
