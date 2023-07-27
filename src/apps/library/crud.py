@@ -65,6 +65,8 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
             AppletHistorySchema.display_name,
             AppletHistorySchema.description,
             AppletHistorySchema.about,
+            AppletHistorySchema.image,
+            AppletHistorySchema.watermark,
         )
         query = query.join(
             AppletHistorySchema,

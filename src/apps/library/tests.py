@@ -329,4 +329,6 @@ class TestLibrary(BaseTest):
         assert applet["about"] == {"en": "Patient Health Questionnaire"}
         assert applet["keywords"] == ["test", "test2"]
         assert applet["version"] == "1.0.0"
+        assert applet["image"] == "image_url"
+        assert applet["watermark"] == "watermark_url"
         assert len(applet["activities"]) == 2
