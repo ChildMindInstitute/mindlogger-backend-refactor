@@ -11,7 +11,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
-from pydantic import parse_obj_as
 
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
@@ -662,7 +661,21 @@ class AnswerService:
         activities = await ActivityHistoriesCRUD(
             self.session
         ).get_by_applet_id_for_summary(applet_id)
-        return parse_obj_as(list[SummaryActivity], activities)
+        activity_ids = [activity.id_version for activity in activities]
+        activity_ids_with_answer = await AnswersCRUD(
+            self.session
+        ).get_activities_which_has_answer(activity_ids)
+        results = []
+        for activity in activities:
+            results.append(
+                SummaryActivity(
+                    id=activity.id,
+                    name=activity.name,
+                    is_performance_task=activity.is_performance_task,
+                    has_answer=activity.id_version in activity_ids_with_answer,
+                )
+            )
+        return results
 
     async def _create_alerts(
         self,
