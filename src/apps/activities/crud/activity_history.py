@@ -1,12 +1,13 @@
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import exists, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
     ActivityItemHistorySchema,
 )
+from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.activities.errors import ActivityHistoryDoeNotExist
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
@@ -113,16 +114,14 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
     async def get_by_applet_id_for_summary(
         self, applet_id: uuid.UUID
     ) -> list[ActivityHistorySchema]:
-        activity_types_query: Query = select(
-            func.string_agg(ActivityItemHistorySchema.response_type, ",")
-        )
+        activity_types_query: Query = select(ActivityItemHistorySchema.id)
         activity_types_query = activity_types_query.where(
             ActivityItemHistorySchema.response_type.in_(
                 [
-                    "flanker",
-                    "stabilityTracker",
-                    "ABTrailsTablet",
-                    "ABTrailsMobile",
+                    PerformanceTaskType.FLANKER,
+                    PerformanceTaskType.GYROSCOPE,
+                    PerformanceTaskType.TOUCH,
+                    PerformanceTaskType.ABTRAILS,
                 ]
             )
         )
@@ -130,10 +129,11 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
             ActivityItemHistorySchema.activity_id
             == ActivityHistorySchema.id_version
         )
-        activity_types_query = activity_types_query.limit(1)
+        activity_types_query = activity_types_query
 
         query: Query = select(
-            ActivityHistorySchema, activity_types_query.label("item_types")
+            ActivityHistorySchema,
+            exists(activity_types_query).label("is_performance"),
         )
         query = query.join(
             AppletHistorySchema,

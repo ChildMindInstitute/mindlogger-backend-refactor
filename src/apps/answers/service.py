@@ -656,15 +656,15 @@ class AnswerService:
         return report
 
     async def get_summary_activities(
-        self, applet_id: uuid.UUID
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
     ) -> list[SummaryActivity]:
         activities = await ActivityHistoriesCRUD(
             self.session
         ).get_by_applet_id_for_summary(applet_id)
-        activity_ids = [activity.id_version for activity in activities]
+        activity_ids = [activity.id for activity in activities]
         activity_ids_with_answer = await AnswersCRUD(
             self.session
-        ).get_activities_which_has_answer(activity_ids)
+        ).get_activities_which_has_answer(activity_ids, respondent_id)
         results = []
         for activity in activities:
             results.append(
