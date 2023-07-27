@@ -713,6 +713,7 @@ class Folder(AccessControlledModel):
         curParentType = folder["parentCollection"]
 
         if curParentType in ("user", "collection"):
+
             curParentObject = ModelImporter.model(curParentType).load(
                 curParentId, user=user, level=level, force=force
             )

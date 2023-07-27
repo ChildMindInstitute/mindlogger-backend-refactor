@@ -117,6 +117,7 @@ class Protocol(FolderModel):
             fields=loadFields,
             exc=exc,
         )
+        print("doc", doc)
         if doc is not None:
             pathFromRoot = FolderModel().parentsToRoot(
                 doc, user=user, force=True

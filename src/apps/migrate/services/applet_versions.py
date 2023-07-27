@@ -97,6 +97,8 @@ def get_applet_with_activities(content):
 
 def get_versions_from_content(protocolId):
     protocol = Protocol().load(protocolId, force=True)
+    # protocol = Protocol().load(id=protocolId, force=True)
+    print(protocol)
     if "contentId" not in protocol.get("meta", {}):
         return None
     references = list(

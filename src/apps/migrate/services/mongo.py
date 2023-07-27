@@ -45,12 +45,13 @@ def decrypt(data):
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        # uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        uri = "mongodb://localhost:27017/mindlogger"
         print(uri)
         self.client = MongoClient(
-            "localhost",
-            27017
-            # uri,
+            # "localhost",
+            # 27017
+            uri,
             # int(os.getenv("MONGO__PORT", 27017)),
         )  # "localhost"
         self.db = self.client[os.getenv("MONGO__DB")]
@@ -244,9 +245,13 @@ class Mongo:
         return results
 
     async def get_applet_versions(self) -> dict:
-        appletId = ObjectId("647084129a25660f50a7bd48")
+        appletId = ObjectId(
+            "5ea689a286d25a5dbb14e82d"
+        )  # 647084129a25660f50a7bd48 5ea689a286d25a5dbb14e82d
         applet = FolderModel().findOne(query={"_id": appletId})
+        print(applet)
         protocolId = applet["meta"]["protocol"].get("_id").split("/").pop()
+        print(f"protocolId = {protocolId}")
         result = get_versions_from_content(protocolId)
         print(result)
         result2 = get_versions_from_history(protocolId)
