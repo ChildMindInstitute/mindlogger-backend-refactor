@@ -41,6 +41,12 @@ class TestAnswerCases(BaseTest):
                 start_time=10,
                 end_time=11,
             ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -69,6 +75,12 @@ class TestAnswerCases(BaseTest):
                 scheduled_time=10,
                 start_time=10,
                 end_time=11,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
             ),
         )
 

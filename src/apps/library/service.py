@@ -233,7 +233,7 @@ class LibraryService:
                 for option in response_values["options"]:
                     option.pop("id", None)
                 return response_values
-        return None
+        return response_values
 
     async def get_applet_url(self, applet_id: uuid.UUID) -> AppletLibraryInfo:
         """Get applet url for library by id."""
