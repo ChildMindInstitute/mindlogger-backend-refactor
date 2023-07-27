@@ -1,6 +1,7 @@
 import datetime
 import json
 
+import pytest
 from asynctest import CoroutineMock, patch
 from sqlalchemy import select
 
@@ -1285,6 +1286,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][1]["version"] == "1.9.9"
         assert response.json()["result"][1]["createdAt"]
 
+    @pytest.mark.main
     @rollback
     async def test_get_summary_activities(self):
         await self.client.login(
@@ -1301,6 +1303,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["name"] == "PHQ2 new"
         assert response.json()["result"][0]["isPerformanceTask"] is False
+        assert response.json()["result"][0]["hasAnswer"] is False
 
     @rollback_with_session
     async def test_store_client_meta(self, **kwargs):
