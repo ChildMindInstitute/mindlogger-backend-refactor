@@ -24,6 +24,12 @@ class TestAnswerCases(BaseTest):
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
             created_at=1681216969,
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
             answer=dict(
                 user_public_key="user key",
                 answer=json.dumps(
@@ -53,6 +59,12 @@ class TestAnswerCases(BaseTest):
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3621",
             version="1.0.0",
             created_at=1681216969,
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
             answer=dict(
                 user_public_key="user key",
                 answer=json.dumps(
