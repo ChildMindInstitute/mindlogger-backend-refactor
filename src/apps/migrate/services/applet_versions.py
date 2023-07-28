@@ -4,6 +4,16 @@ from apps.girderformindlogger.models.item import Item as ItemModel
 from apps.girderformindlogger.models.protocol import Protocol
 from apps.girderformindlogger.utility import jsonld_expander
 
+CONTEXT = {
+    "@context": [
+        {
+            "reprolib": "https://raw.githubusercontent.com/ReproNim/reproschema/master/"  # noqa: E501
+        },
+        "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json",  # noqa: E501
+    ],
+    "@type": "https://raw.githubusercontent.com/ReproNim/reproschema/master/schemas/Protocol",  # noqa: E501
+}
+
 
 def get_versions_from_history(protocolId):
     protocol = Protocol().load(protocolId, force=True)
@@ -108,3 +118,50 @@ def get_versions_from_content(protocolId):
         result[ver] = {"applet": applet, "updated": ref["updated"]}
 
     return result
+
+
+def content_to_jsonld(document):
+    jsonld = jsonld_expander.expandObj(
+        document["contexts"], document["protocol"]["data"]
+    )
+
+    activities_by_id = document["protocol"]["activities"]
+    for activity in jsonld["reprolib:terms/order"][0]["@list"]:
+        a_id = activity["@id"]
+        if a_id in activities_by_id:
+            activity_doc = activities_by_id[a_id]
+            activity_jsonld = jsonld_expander.expandObj(
+                document["contexts"], activity_doc["data"]
+            )
+            activity.update(activity_jsonld)
+
+            items_by_id = activity_doc["items"]
+
+            for item in activity["reprolib:terms/order"][0]["@list"]:
+                i_id = item["@id"]
+                if i_id in items_by_id:
+                    item_doc = items_by_id[i_id]
+                    item_jsonld = jsonld_expander.expandObj(
+                        document["contexts"], item_doc
+                    )
+                    item.update(item_jsonld)
+
+    # check the same for activity flow
+    flows_by_id = document["protocol"]["activityFlows"]
+    new_flow_by_id = {}
+
+    for _, flow in flows_by_id.items():
+        new_flow_by_id[flow["@id"]] = flow
+
+    for flow in jsonld["reprolib:terms/activityFlowOrder"][0]["@list"]:
+        a_id = flow["@id"]
+        if a_id in new_flow_by_id:
+            flow_doc = new_flow_by_id[a_id]
+            flow_jsonld = jsonld_expander.expandObj(
+                document["contexts"], flow_doc
+            )
+            flow.update(flow_jsonld)
+    jsonld["@context"] = CONTEXT["@context"]
+    jsonld["@type"] = CONTEXT["@type"]
+
+    return jsonld

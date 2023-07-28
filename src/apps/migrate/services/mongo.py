@@ -17,7 +17,7 @@ from apps.jsonld_converter.dependencies import (
 )
 from apps.migrate.services.applet_versions import (
     get_versions_from_content,
-    get_versions_from_history,
+    content_to_jsonld,
 )
 from apps.shared.domain.base import InternalModel, PublicModel
 
@@ -46,10 +46,7 @@ class Mongo:
         # Setup MongoDB connection
         uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
         print(uri)
-        self.client = MongoClient(
-            uri,
-            # int(os.getenv("MONGO__PORT", 27017)),
-        )  # "localhost"
+        self.client = MongoClient("mongo", 27017)
         self.db = self.client[os.getenv("MONGO__DB")]
 
     @staticmethod
@@ -223,12 +220,10 @@ class Mongo:
         return results
 
     async def get_applet_versions(self) -> dict:
-        appletId = ObjectId("647084129a25660f50a7bd48")
+        appletId = ObjectId("62d15a03154fa87efa129760")
         applet = FolderModel().findOne(query={"_id": appletId})
         protocolId = applet["meta"]["protocol"].get("_id").split("/").pop()
         result = get_versions_from_content(protocolId)
-        print(result)
-        result2 = get_versions_from_history(protocolId)
-        print(result2)
-
-        return result
+        ld_request_schema = content_to_jsonld(result["1.0.0"]["applet"])
+        converter_result = await self.get_converter_result(ld_request_schema)
+        return converter_result
