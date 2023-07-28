@@ -55,6 +55,7 @@ from apps.answers.errors import (
     AnswerNoteAccessDeniedError,
     NonPublicAppletError,
     ReportServerError,
+    ReportServerIsNotConfigured,
     UserDoesNotHavePermissionError,
     WrongAnswerGroupAppletId,
     WrongAnswerGroupVersion,
@@ -647,6 +648,7 @@ class AnswerService:
         if not answer:
             return None
         service = ReportServerService(self.session)
+        await self._is_report_server_configured(applet_id)
         is_single_flow = await service.is_flows_single_report(answer.id)
         if is_single_flow:
             report = await service.create_report(answer.submit_id)
@@ -654,6 +656,13 @@ class AnswerService:
             report = await service.create_report(answer.submit_id, answer.id)
 
         return report
+
+    async def _is_report_server_configured(self, applet_id: uuid.UUID):
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        if not applet.report_server_ip:
+            raise ReportServerIsNotConfigured()
+        if not applet.report_public_key:
+            raise ReportServerIsNotConfigured()
 
     async def get_summary_activities(
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None

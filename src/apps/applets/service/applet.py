@@ -86,7 +86,7 @@ class AppletService:
             raise AppletNotFoundError(key="link", value=str(applet_id))
 
     async def _create_applet_accesses(
-            self, applet_id: uuid.UUID, manager_id: uuid.UUID | None
+        self, applet_id: uuid.UUID, manager_id: uuid.UUID | None
     ):
         # TODO: move to api level
         await UserAppletAccessService(
@@ -107,8 +107,7 @@ class AppletService:
             ).add_role(manager_id, Role.RESPONDENT)
 
     async def create(
-            self, create_data: AppletCreate,
-            manager_id: uuid.UUID | None = None
+        self, create_data: AppletCreate, manager_id: uuid.UUID | None = None
     ) -> AppletFull:
         applet = await self._create(create_data)
 
@@ -157,7 +156,7 @@ class AppletService:
         return AppletFull.from_orm(schema)
 
     async def update(
-            self, applet_id: uuid.UUID, update_data: AppletUpdate
+        self, applet_id: uuid.UUID, update_data: AppletUpdate
     ) -> AppletFull:
         old_applet_schema = await AppletsCRUD(self.session).get_by_id(
             applet_id
@@ -190,7 +189,7 @@ class AppletService:
         return applet
 
     async def update_encryption(
-            self, applet_id: uuid.UUID, encryption: Encryption
+        self, applet_id: uuid.UUID, encryption: Encryption
     ):
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         if applet.encryption is not None:
@@ -200,10 +199,10 @@ class AppletService:
         await AppletsCRUD(self.session).save(applet)
 
     async def duplicate(
-            self,
-            applet_exist: AppletDuplicate,
-            new_name: str,
-            encryption: Encryption,
+        self,
+        applet_exist: AppletDuplicate,
+        new_name: str,
+        encryption: Encryption,
     ):
         activity_key_id_map = dict()
 
@@ -250,8 +249,7 @@ class AppletService:
 
     @staticmethod
     def _prepare_duplicate(
-            applet_exist: AppletDuplicate, new_name: str,
-            encryption: Encryption
+        applet_exist: AppletDuplicate, new_name: str, encryption: Encryption
     ) -> AppletCreate:
         activities = list()
         for activity in applet_exist.activities:
@@ -303,7 +301,7 @@ class AppletService:
         )
 
     async def _validate_applet_name(
-            self, display_name: str, exclude_by_id: uuid.UUID | None = None
+        self, display_name: str, exclude_by_id: uuid.UUID | None = None
     ):
         applet_ids_query = UserAppletAccessCRUD(
             self.session
@@ -315,7 +313,7 @@ class AppletService:
             raise AppletAlreadyExist()
 
     async def _update(
-            self, applet_id: uuid.UUID, update_data: AppletUpdate, version: str
+        self, applet_id: uuid.UUID, update_data: AppletUpdate, version: str
     ) -> AppletFull:
         await self._validate_applet_name(update_data.display_name, applet_id)
 
@@ -337,10 +335,10 @@ class AppletService:
         return AppletFull.from_orm(schema)
 
     async def get_next_version(
-            self,
-            version: str | None = None,
-            applet_schema: AppletUpdate | None = None,
-            applet_id: uuid.UUID | None = None,
+        self,
+        version: str | None = None,
+        applet_schema: AppletUpdate | None = None,
+        applet_id: uuid.UUID | None = None,
     ):
         if not version:
             return INITIAL_VERSION
@@ -370,7 +368,7 @@ class AppletService:
         return f"{major_version}.{middle_version}.{minor_version}"
 
     async def _get_next_version(
-            self, applet_schema: AppletUpdate, applet_id: uuid.UUID
+        self, applet_schema: AppletUpdate, applet_id: uuid.UUID
     ):
         old_activity_ids = await ActivitiesCRUD(
             self.session
@@ -384,8 +382,8 @@ class AppletService:
         new_flow_ids = [flow.id for flow in applet_schema.activity_flows]
 
         if (
-                new_activity_ids != old_activity_ids
-                or new_flow_ids != old_flow_ids
+            new_activity_ids != old_activity_ids
+            or new_flow_ids != old_flow_ids
         ):
             return VERSION_DIFFERENCE_ACTIVITY
         else:
@@ -404,7 +402,7 @@ class AppletService:
                 return VERSION_DIFFERENCE_MINOR
 
     async def get_list_by_single_language(
-            self, language: str, query_params: QueryParams
+        self, language: str, query_params: QueryParams
     ) -> list[AppletSingleLanguageInfo]:
         roles: str = query_params.filters.pop("roles")
 
@@ -449,7 +447,7 @@ class AppletService:
         return applets
 
     async def get_list_by_single_language_count(
-            self, query_params: QueryParams
+        self, query_params: QueryParams
     ) -> int:
         roles: str = query_params.filters.pop("roles")
         count = await AppletsCRUD(self.session).get_applets_by_roles_count(
@@ -458,7 +456,7 @@ class AppletService:
         return count
 
     async def get_single_language_by_id(
-            self, applet_id: uuid.UUID, language: str
+        self, applet_id: uuid.UUID, language: str
     ) -> AppletSingleLanguageDetail:
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)
         theme = None
@@ -499,7 +497,7 @@ class AppletService:
         return applet
 
     async def get_single_language_by_key(
-            self, key: uuid.UUID, language: str
+        self, key: uuid.UUID, language: str
     ) -> AppletSingleLanguageDetail:
         schema = await AppletsCRUD(self.session).get_by_key(key)
         if not schema:
@@ -541,7 +539,7 @@ class AppletService:
         return applet
 
     async def get_by_id_for_duplicate(
-            self, applet_id: uuid.UUID
+        self, applet_id: uuid.UUID
     ) -> AppletDuplicate:
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)
         theme = None
@@ -594,7 +592,7 @@ class AppletService:
             await self._remove_from_folder(schema.applet_id)
 
     async def _move_to_folder(
-            self, applet_id: uuid.UUID, folder_id: uuid.UUID
+        self, applet_id: uuid.UUID, folder_id: uuid.UUID
     ):
         await AppletsCRUD(self.session).get_by_id(applet_id)
         await self._validate_folder(folder_id)
@@ -662,7 +660,7 @@ class AppletService:
         return 0
 
     async def create_access_link(
-            self, applet_id: uuid.UUID, create_request: CreateAccessLink
+        self, applet_id: uuid.UUID, create_request: CreateAccessLink
     ) -> AppletLink:
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         if applet.link:
@@ -728,7 +726,7 @@ class AppletService:
             return ""
 
     async def set_data_retention(
-            self, applet_id: uuid.UUID, data_retention: AppletDataRetention
+        self, applet_id: uuid.UUID, data_retention: AppletDataRetention
     ):
         await AppletsCRUD(self.session).set_data_retention(
             applet_id, data_retention
@@ -752,19 +750,19 @@ class AppletService:
         await AppletsCRUD(self.session).conceal_by_id(applet_id)
 
     async def set_report_configuration(
-            self, applet_id: uuid.UUID, schema: AppletReportConfiguration
+        self, applet_id: uuid.UUID, schema: AppletReportConfiguration
     ):
         await AppletsCRUD(self.session).set_report_configuration(
             applet_id, schema
         )
 
     async def send_notification_to_applet_respondents(
-            self,
-            applet_id: uuid.UUID,
-            title,
-            body,
-            type_: FirebaseNotificationType,
-            device_ids=None
+        self,
+        applet_id: uuid.UUID,
+        title,
+        body,
+        type_: FirebaseNotificationType,
+        device_ids=None,
     ):
         # TODO: make background task
         if device_ids is None:
@@ -791,7 +789,7 @@ class PublicAppletService:
         self.session = session
 
     async def get_by_link(
-            self, link: uuid.UUID, is_private=False
+        self, link: uuid.UUID, is_private=False
     ) -> Applet | None:
         schema = await AppletsCRUD(self.session).get_by_link(link, is_private)
         if not schema:
