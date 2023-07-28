@@ -672,7 +672,7 @@ class AnswerService:
                     id=activity.id,
                     name=activity.name,
                     is_performance_task=activity.is_performance_task,
-                    has_answer=activity.id_version in activity_ids_with_answer,
+                    has_answer=activity.id in activity_ids_with_answer,
                 )
             )
         return results

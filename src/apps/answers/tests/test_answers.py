@@ -1,6 +1,7 @@
 import datetime
 import json
 
+import pytest
 from asynctest import CoroutineMock, patch
 from sqlalchemy import select
 
