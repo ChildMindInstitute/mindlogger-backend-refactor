@@ -55,7 +55,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-    containeclearr_name: mindlogger_consumer
+    container_name: mindlogger_consumer
     entrypoint: /fastapi-entrypoint
     command: /fastapi-consume-report
     env_file: .env
