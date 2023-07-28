@@ -541,6 +541,18 @@ class AnswerService:
         if not answers:
             return AnswerExport()
 
+        manager_answers = list(filter(lambda a: a.is_manager is True, answers))
+        manager_mapping = (
+            await repository.get_activity_history_ids_by_answers_ids(
+                [a.reviewed_answer_id for a in manager_answers]
+            )
+        )
+
+        for answer_item in answers:
+            activity_id = manager_mapping.get(answer_item.reviewed_answer_id)
+            if activity_id:
+                answer_item.activity_history_id = activity_id
+
         activity_hist_ids = list(
             {answer.activity_history_id for answer in answers}
         )

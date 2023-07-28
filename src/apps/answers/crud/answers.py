@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from typing import Dict, List
 
 from pydantic import parse_obj_as
 from sqlalchemy import (  # true,
@@ -383,3 +384,26 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         db_result = await self._execute(query)
         return db_result.first()
+
+    async def get_activity_history_ids_by_answers_ids(
+        self, answers_ids: List[UUID]
+    ) -> Dict[UUID, UUID]:
+        query = (
+            select(AnswerSchema.id, ActivityHistorySchema.id_version)
+            .select_from(AnswerSchema)
+            .join(
+                AppletHistorySchema,
+                AppletHistorySchema.id == AnswerSchema.applet_id,
+            )
+            .join(
+                ActivityHistorySchema,
+                ActivityHistorySchema.applet_id
+                == AppletHistorySchema.id_version,
+            )
+            .where(
+                AnswerSchema.id.in_(answers_ids),
+                ActivityHistorySchema.is_reviewable.is_(True),
+            )
+        )
+        result = await self._execute(query)
+        return {row[0]: row[1] for row in result.all()}
