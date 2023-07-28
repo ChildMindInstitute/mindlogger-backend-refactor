@@ -359,7 +359,7 @@ async def applet_delete(
             "Applet is deleted.",
             "Applet is deleted.",
             FirebaseNotificationType.APPLET_DELETE,
-            respondents_device_ids
+            respondents_device_ids,
         )
 
 
