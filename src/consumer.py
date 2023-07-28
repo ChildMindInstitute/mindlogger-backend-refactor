@@ -47,6 +47,7 @@ async def create_report(message: aio_pika.abc.AbstractIncomingMessage):
                     attachments=[file],
                 )
             )
+        await message.ack()
     except Exception as e:
         traceback.print_exception(e)
         sentry_sdk.capture_exception(e)
