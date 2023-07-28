@@ -47,6 +47,12 @@ class TestAnswerCases(BaseTest):
                 start_time=10,
                 end_time=11,
             ),
+            client=dict(
+                appId="midlogger-web",
+                appVersion="21.0.1",
+                width=800,
+                height=600,
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -81,6 +87,12 @@ class TestAnswerCases(BaseTest):
                 scheduled_time=10,
                 start_time=10,
                 end_time=11,
+            ),
+            client=dict(
+                appId="midlogger-web",
+                appVersion="21.0.1",
+                width=800,
+                height=600,
             ),
         )
 
