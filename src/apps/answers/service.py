@@ -11,7 +11,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
-from pydantic import parse_obj_as
 
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
@@ -56,6 +55,7 @@ from apps.answers.errors import (
     AnswerNoteAccessDeniedError,
     NonPublicAppletError,
     ReportServerError,
+    ReportServerIsNotConfigured,
     UserDoesNotHavePermissionError,
     WrongAnswerGroupAppletId,
     WrongAnswerGroupVersion,
@@ -648,6 +648,7 @@ class AnswerService:
         if not answer:
             return None
         service = ReportServerService(self.session)
+        await self._is_report_server_configured(applet_id)
         is_single_flow = await service.is_flows_single_report(answer.id)
         if is_single_flow:
             report = await service.create_report(answer.submit_id)
@@ -656,13 +657,34 @@ class AnswerService:
 
         return report
 
+    async def _is_report_server_configured(self, applet_id: uuid.UUID):
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        if not applet.report_server_ip:
+            raise ReportServerIsNotConfigured()
+        if not applet.report_public_key:
+            raise ReportServerIsNotConfigured()
+
     async def get_summary_activities(
-        self, applet_id: uuid.UUID
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
     ) -> list[SummaryActivity]:
         activities = await ActivityHistoriesCRUD(
             self.session
         ).get_by_applet_id_for_summary(applet_id)
-        return parse_obj_as(list[SummaryActivity], activities)
+        activity_ids = [activity.id for activity in activities]
+        activity_ids_with_answer = await AnswersCRUD(
+            self.session
+        ).get_activities_which_has_answer(activity_ids, respondent_id)
+        results = []
+        for activity in activities:
+            results.append(
+                SummaryActivity(
+                    id=activity.id,
+                    name=activity.name,
+                    is_performance_task=activity.is_performance_task,
+                    has_answer=activity.id in activity_ids_with_answer,
+                )
+            )
+        return results
 
     async def _create_alerts(
         self,

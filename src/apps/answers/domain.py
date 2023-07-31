@@ -126,6 +126,7 @@ class SummaryActivity(InternalModel):
     id: uuid.UUID
     name: str
     is_performance_task: bool
+    has_answer: bool
 
 
 class PublicAnswerDate(PublicModel):
@@ -143,6 +144,7 @@ class PublicSummaryActivity(InternalModel):
     id: uuid.UUID
     name: str
     is_performance_task: bool
+    has_answer: bool
 
 
 class PublicAnswerDates(PublicModel):

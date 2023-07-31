@@ -11,6 +11,10 @@ class AnswerNotFoundError(NotFoundError):
     message = _("Answer not found.")
 
 
+class ReportServerIsNotConfigured(ValidationError):
+    message = _("Report server is not configured.")
+
+
 class AnswerNoteNotFoundError(NotFoundError):
     message = _("Note not found.")
 
