@@ -178,7 +178,7 @@ class LibraryService:
                     response_is_editable=activity.response_is_editable,
                     is_hidden=activity.is_hidden,
                     scores_and_reports=activity.scores_and_reports,
-                    subscale_settings=activity.subscale_setting,
+                    subscale_setting=activity.subscale_setting,
                     items=[
                         LibraryItemActivityItem(
                             name=item.name,

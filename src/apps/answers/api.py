@@ -27,6 +27,7 @@ from apps.answers.filters import (
     AppletActivityAnswerFilter,
     AppletActivityFilter,
     AppletSubmitDateFilter,
+    SummaryActivityFilter,
 )
 from apps.answers.service import AnswerService
 from apps.applets.service import AppletService
@@ -99,6 +100,9 @@ async def summary_activity_list(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    query_params: QueryParams = Depends(
+        parse_query_params(SummaryActivityFilter)
+    ),
 ) -> ResponseMulti[PublicSummaryActivity]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
@@ -107,7 +111,9 @@ async def summary_activity_list(
         )
         activities = await AnswerService(
             session, user.id
-        ).get_summary_activities(applet_id)
+        ).get_summary_activities(
+            applet_id, query_params.filters.get("respondent_id")
+        )
     return ResponseMulti(
         result=parse_obj_as(list[PublicSummaryActivity], activities),
         count=len(activities),

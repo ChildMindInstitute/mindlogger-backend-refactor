@@ -579,7 +579,6 @@ class AppletService:
 
     async def delete_applet_by_id(self, applet_id: uuid.UUID):
         await AppletsCRUD(self.session).get_by_id(applet_id)
-
         await AnswersCRUD(self.session).delete_by_applet_user(applet_id)
         await UserAppletAccessCRUD(self.session).delete_all_by_applet_id(
             applet_id
@@ -763,11 +762,15 @@ class AppletService:
         title,
         body,
         type_: FirebaseNotificationType,
+        device_ids=None,
     ):
         # TODO: make background task
+        if device_ids is None:
+            device_ids = []
         respondents_device_ids = await AppletsCRUD(
             self.session
         ).get_respondents_device_ids(applet_id)
+        respondents_device_ids += device_ids
         await FCMNotification().notify(
             respondents_device_ids,
             FirebaseMessage(

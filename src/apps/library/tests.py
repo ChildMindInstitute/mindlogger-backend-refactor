@@ -330,3 +330,26 @@ class TestLibrary(BaseTest):
             filter(lambda i: i["responseType"] == "slider", items), None
         )
         assert slider_responses.get("responseValues")
+
+    async def test_library_check_activity_item_config_fields(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        data = dict(
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            keywords=["test", "test2"],
+            name="PHQ2",
+        )
+        response = await self.client.post(self.library_url, data=data)
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(self.library_url)
+        assert response.status_code == 200, response.json()
+        result = response.json()["result"]
+        config: dict = result[0]["activities"][0]["items"][0]["config"]
+        for key, value in config.items():
+            assert key.find("_") == -1
+            if isinstance(value, dict):
+                for key_inner in value:
+                    assert key_inner.find("_") == -1
