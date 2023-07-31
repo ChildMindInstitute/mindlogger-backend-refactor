@@ -303,6 +303,34 @@ class TestLibrary(BaseTest):
         assert len(response.json()["result"]) <= limit
 
     @rollback
+    async def test_library_slider_values(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.post(
+            self.library_url,
+            data=dict(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                keywords=["MyApplet"],
+                name="MyAppletName",
+            ),
+        )
+        assert response.status_code == 201
+        assert response.json().get("result")
+        result = response.json().get("result")
+        response = await self.client.get(
+            self.library_detail_url.format(library_id=result.get("id"))
+        )
+        assert response.status_code == 200
+        assert response.json().get("result")
+        applet = response.json().get("result")
+
+        items = applet["activities"][0]["items"]
+        slider_responses = next(
+            filter(lambda i: i["responseType"] == "slider", items), None
+        )
+        assert slider_responses.get("responseValues")
+
     async def test_library_check_activity_item_config_fields(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
