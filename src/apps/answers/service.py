@@ -4,6 +4,8 @@ import datetime
 import json
 import uuid
 from collections import defaultdict
+from typing import List
+from uuid import UUID
 
 import aiohttp
 import sentry_sdk
@@ -46,6 +48,7 @@ from apps.answers.domain import (
     AssessmentAnswerCreate,
     Identifier,
     ReportServerResponse,
+    RespondentAnswerData,
     ReviewActivity,
     SummaryActivity,
     Version,
@@ -532,7 +535,9 @@ class AnswerService:
         self, applet_id: uuid.UUID, query_params: QueryParams
     ) -> AnswerExport:
         assert self.user_id is not None
-
+        respondent_ids: List[UUID] = query_params.filters.get(
+            "respondent_ids", []
+        )  # noqa
         repository = AnswersCRUD(self.session)
         answers = await repository.get_applet_answers(
             applet_id, self.user_id, **query_params.filters
@@ -541,17 +546,28 @@ class AnswerService:
         if not answers:
             return AnswerExport()
 
-        manager_answers = list(filter(lambda a: a.is_manager is True, answers))
-        manager_mapping = (
-            await repository.get_activity_history_ids_by_answers_ids(
-                [a.reviewed_answer_id for a in manager_answers]
+        if not respondent_ids:
+            manager_answers = list(
+                filter(lambda a: a.is_manager is True, answers)
             )
-        )
+            manager_mapping = (
+                await repository.get_activity_history_ids_by_answers_ids(
+                    [a.reviewed_answer_id for a in manager_answers]
+                )
+            )
 
-        for answer_item in answers:
-            activity_id = manager_mapping.get(answer_item.reviewed_answer_id)
-            if activity_id:
-                answer_item.activity_history_id = activity_id
+            for answer_item in answers:
+                activity_id = manager_mapping.get(
+                    answer_item.reviewed_answer_id
+                )
+                if activity_id:
+                    answer_item.activity_history_id = activity_id
+        else:
+
+            def __flt(a: RespondentAnswerData):
+                return a.respondent_id in respondent_ids
+
+            answers = list(filter(__flt, answers))
 
         activity_hist_ids = list(
             {answer.activity_history_id for answer in answers}
