@@ -12,6 +12,8 @@ from apps.authentication.domain.token import (
 from apps.authentication.errors import InvalidRefreshToken
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
+from apps.shared.encryption import encrypt
+from apps.users import UsersCRUD
 from apps.users.domain import PublicUser, User
 from apps.users.errors import UserNotFound
 from apps.users.services.user_device import UserDeviceService
@@ -40,6 +42,14 @@ async def get_token(
                     "That email is not associated with a MindLogger account."
                 )
             )
+
+        encrypted_email = encrypt(bytes(user_login_schema.email, "utf-8"))
+
+        if user.email_aes_encrypted != encrypted_email:
+            user = await UsersCRUD(session).update_encrypted_email(
+                user, encrypted_email
+            )
+
     access_token = AuthenticationService.create_access_token(
         {"sub": str(user.id)}
     )
@@ -49,7 +59,7 @@ async def get_token(
     )
 
     token = Token(access_token=access_token, refresh_token=refresh_token)
-    public_user = PublicUser(**user.dict())
+    public_user = PublicUser.from_user(user)
 
     return Response(
         result=UserLogin(

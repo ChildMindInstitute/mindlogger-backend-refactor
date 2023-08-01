@@ -7,6 +7,7 @@ from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import InternalToken
 from apps.authentication.errors import BadCredentials
 from apps.authentication.services.core import TokensService
+from apps.shared.hashing import hash_sha224
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from config import settings
@@ -66,8 +67,9 @@ class AuthenticationService:
         return pwd_context.hash(password)
 
     async def authenticate_user(self, user_login_schema: UserLoginRequest):
+        email_hash = hash_sha224(user_login_schema.email)
         user: User = await UsersCRUD(self.session).get_by_email(
-            email=user_login_schema.email
+            email=email_hash
         )
         self.verify_password(user_login_schema.password, user.hashed_password)
 

@@ -79,6 +79,20 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
         return instance
 
+    async def update_encrypted_email(
+        self, user: User, encrypted_email: bytes
+    ) -> User:
+        # Update user in database
+        instance = await self._update_one(
+            lookup="id",
+            value=user.id,
+            schema=UserSchema(email_aes_encrypted=encrypted_email),
+        )
+        # Create internal data model
+        user = User.from_orm(instance)
+
+        return user
+
     async def delete(self, user: User) -> User:
         # Update user in database
         instance = await self._update_one(
