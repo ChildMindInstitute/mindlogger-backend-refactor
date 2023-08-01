@@ -1,5 +1,3 @@
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -204,7 +202,6 @@ class TestFolder(BaseTest):
 
         assert response.status_code == 204, response.json()
 
-    @pytest.mark.main
     @rollback
     async def test_applet_delete(self):
         await self.client.login(

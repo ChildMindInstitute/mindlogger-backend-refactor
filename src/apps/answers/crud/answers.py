@@ -407,3 +407,22 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
         result = await self._execute(query)
         return {row[0]: row[1] for row in result.all()}
+
+    async def get_activities_which_has_answer(
+        self, activity_ids: list[uuid.UUID], respondent_id: uuid.UUID | None
+    ) -> list[uuid.UUID]:
+        query: Query = select(AnswerSchema.id, ActivityHistorySchema.id)
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == AnswerSchema.activity_history_id,
+        )
+        query = query.where(ActivityHistorySchema.id.in_(activity_ids))
+        if respondent_id:
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
+
+        db_result = await self._execute(query)
+        results = []
+        for answer_id, activity_id in db_result.all():
+            results.append(activity_id)
+        return results
