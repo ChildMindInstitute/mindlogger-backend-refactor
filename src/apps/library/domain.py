@@ -80,8 +80,10 @@ class LibraryItemActivityItem(InternalModel):
                 res.append(cls._keys_to_camel_case(item))
             elif isinstance(item, list):
                 res.append(cls._items_list_to_camel_case(item))
-            else:
+            elif isinstance(item, str):
                 res.append(to_camelcase(item))
+            else:
+                res.append(item)
         return res
 
 
