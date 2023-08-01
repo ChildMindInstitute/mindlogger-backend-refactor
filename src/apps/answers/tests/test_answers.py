@@ -1,6 +1,7 @@
 import datetime
 import json
 
+import pytest
 from asynctest import CoroutineMock, patch
 from sqlalchemy import select
 
@@ -1402,3 +1403,58 @@ class TestAnswerActivityItems(BaseTest):
         assert app_version == res.client["app_version"]
         assert app_width == res.client["width"]
         assert app_height == res.client["height"]
+
+    @pytest.mark.parametrize(
+        "query,expected", (({"identifiers": "encrypted"}, 1), ({}, 0))
+    )
+    @rollback
+    async def test_activity_answers_by_identifier(self, query, expected):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answer=dict(
+                user_public_key="user key",
+                events=json.dumps(dict(events=["event1", "event2"])),
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
+                identifier="encrypted",
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
+        )
+
+        response = await self.client.post(self.answer_url, data=create_data)
+
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.answers_for_activity_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            ),
+            query=query,
+        )
+
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == expected
