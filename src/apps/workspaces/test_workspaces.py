@@ -766,3 +766,16 @@ class TestWorkspaces(BaseTest):
         assert applets[2]["description"] == {
             "en": "Patient Health Questionnaire"
         }
+
+    @rollback
+    async def test_applets_flat_list(self):
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await self.client.get(
+            self.workspace_applets_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2"
+            ),
+            dict(ordering="-displayName,created_at", flatList=True),
+        )
+        assert response.status_code == 200
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0]["type"] == "applet"
