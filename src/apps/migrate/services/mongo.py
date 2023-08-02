@@ -45,12 +45,15 @@ def decrypt(data):
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        # uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        uri = os.getenv(
+            "GIRDER_MONGO_URI", "mongodb://localhost:27017/mindlogger"
+        )
         print(uri)
         self.client = MongoClient(
-            "localhost",
-            27017
-            # uri,
+            # "localhost",
+            # 27017
+            uri,
             # int(os.getenv("MONGO__PORT", 27017)),
         )  # "localhost"
         self.db = self.client[os.getenv("MONGO__DB")]
@@ -120,8 +123,7 @@ class Mongo:
                     results.append(
                         {
                             "id_": user.get("_id"),
-                            "email": user.get("email"),
-                            "email_hash": email_hash,
+                            "email": email_hash,
                             "hashed_password": user.get("salt"),
                             "first_name": first_name,
                             "last_name": last_name,
