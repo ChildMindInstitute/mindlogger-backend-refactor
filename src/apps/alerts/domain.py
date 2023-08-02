@@ -48,3 +48,20 @@ class AlertMessage(InternalModel):
     activity_id: uuid.UUID
     activity_item_id: uuid.UUID
     answer_id: uuid.UUID
+
+
+class AlertHandlerResult(InternalModel):
+    id: uuid.UUID
+    applet_id: uuid.UUID
+    applet_name: str
+    version: str
+    secret_id: str
+    activity_id: uuid.UUID
+    activity_item_id: uuid.UUID
+    message: str
+    created_at: datetime.datetime
+    answer_id: uuid.UUID
+    encryption: dict
+    image: str
+    workspace: str
+    respondent_id: uuid.UUID
