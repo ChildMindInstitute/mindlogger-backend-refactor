@@ -6,12 +6,13 @@ from fastapi import Depends
 from starlette.websockets import WebSocket
 from websockets.exceptions import ConnectionClosed
 
-from apps.alerts.domain import AlertMessage
-from apps.applets.crud import AppletHistoriesCRUD
+from apps.alerts.domain import AlertHandlerResult, AlertMessage
+from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
 from apps.authentication.deps import get_current_user_for_ws
 from apps.shared.exception import ValidationError
 from apps.users import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.domain.constants import Role
 from infrastructure.database.deps import pass_session
 from infrastructure.utility import RedisCache
@@ -55,25 +56,34 @@ async def _handle_websocket(websocket, user_id, session):
             ).retrieve_by_applet_version(
                 f"{alert_message.applet_id}_{alert_message.version}"
             )
+            applet = await AppletsCRUD(session).get_by_id(
+                alert_message.applet_id
+            )
+            workspace = await UserWorkspaceCRUD(session).get_by_user_id(
+                respondent_access.owner_id
+            )
         except Exception as e:
             traceback.print_tb(e.__traceback__)
             continue
         try:
-            await websocket.send_json(
-                dict(
-                    id=str(alert_message.id),
-                    applet_id=str(alert_message.applet_id),
-                    applet_name=applet_history.display_name,
-                    version=alert_message.version,
-                    secret_id=respondent_access.meta.get(
-                        "secretUserId", "Anonymous"
-                    ),
-                    activity_id=str(alert_message.activity_id),
-                    activity_item_id=str(alert_message.activity_item_id),
-                    message=alert_message.message,
-                    created_at=alert_message.created_at.isoformat(),
-                    answer_id=str(alert_message.answer_id),
-                )
+            applet_alert = AlertHandlerResult(
+                id=alert_message.id,
+                applet_id=alert_message.applet_id,
+                applet_name=applet_history.display_name,
+                version=alert_message.version,
+                secret_id=respondent_access.meta.get(
+                    "secretUserId", "Anonymous"
+                ),
+                activity_id=alert_message.activity_id,
+                activity_item_id=alert_message.activity_item_id,
+                message=alert_message.message,
+                created_at=alert_message.created_at.isoformat(),
+                answer_id=alert_message.answer_id,
+                encryption=applet.encryption,
+                image=applet_history.image,
+                workspace=workspace.workspace_name,
+                respondent_id=alert_message.respondent_id,
             )
+            await websocket.send_json(applet_alert.json())
         except ConnectionClosed:
             break
