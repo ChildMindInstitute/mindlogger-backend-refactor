@@ -3,7 +3,7 @@
     "table": "users",
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "email": "tom@mindlogger.com",
+      "email": "089283ca4ba572d41cda39d8016bc4bb96861bbe435b60000aae9008",
       "first_name": "Tom",
       "last_name": "Isaak",
       "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
@@ -11,90 +11,114 @@
       "is_super_admin": true,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "email_aes_encrypted": null
     },
-    "note": "Password is Test1234!"
+    "note": {
+      "Password": "Test1234!",
+      "plain_email": "tom@mindlogger.com"
+    }
   },
   {
     "table": "users",
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
-      "email": "lucy@gmail.com",
+      "email": "5b3850f01777544cebdc9463da6cd0b16028e3c5733aa8664859267e",
       "first_name": "Lucy",
       "last_name": "Gabel",
       "hashed_password": "$2b$12$rq9CeizkJSdjbEeK0.jFYOgSd37rCbu/e7UNCC7YL5ZwTs4wTGuy.",
       "is_deleted": false,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "email_aes_encrypted": null
     },
-    "note": "Password is Test123"
+    "note": {
+      "Password": "Test123",
+      "plain_email": "lucy@gmail.com"
+    }
   },
   {
     "table": "users",
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa3",
-      "email": "bob@gmail.com",
+      "email": "66dae63d75fe799fe7e5c391cdf56a346cb769482a0b4c54262293e3",
       "first_name": "Bob",
       "last_name": "Martin",
       "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
       "is_deleted": false,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "email_aes_encrypted": null
     },
-    "note": "Password is Test1234!"
+    "note": {
+      "Password": "Test1234!",
+      "plain_email": "bob@gmail.com"
+    }
   },
   {
     "table": "users",
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa4",
-      "email": "mike@gmail.com",
+      "email": "a63070c19173e817647e1d7f49181bc919fbe32bc76b7e2960454612",
       "first_name": "Mike",
       "last_name": "Samuel",
       "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
       "is_deleted": false,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "email_aes_encrypted": null
     },
-    "note": "Password is Test1234"
+    "note": {
+      "Password": "Test1234",
+      "plain_email": "mike@gmail.com"
+    }
   },
   {
     "table": "users",
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa5",
-      "email": "patric@gmail.com",
+      "email": "b11bf1419d7434b4b0da08c39a871eee65b614a34fb4830c066dfeed",
       "first_name": "Patric",
       "last_name": "Davidson",
       "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
       "is_deleted": false,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "email_aes_encrypted": null
     },
-    "note": "Password is Test1234"
+    "note": {
+      "Password": "Test1234",
+      "plain_email": "patric@gmail.com"
+    }
   },
   {
     "table": "users",
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa6",
-      "email": "mike2@gmail.com",
+      "email": "d44f4b234437b698b3f54aab0c6a9477f984a90a9b382d6d94f6b488",
       "first_name": "Patric",
       "last_name": "Davidson",
       "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
       "is_deleted": false,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113"
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "email_aes_encrypted": null
     },
-    "note": "Password is Test1234"
+    "note": {
+      "Password": "Test1234",
+      "plain_email": "mike2@gmail.com"
+    }
   },
   {
     "table": "users",
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa7",
-      "email": "anoymous_respondent@mindlogger.com",
+      "email": "a97eaac8af05b6b82d66a67a2ba0e5bbe928844832748c1aa74e3065",
       "first_name": "Anonymous",
       "last_name": "Respondent",
       "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
@@ -103,8 +127,12 @@
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "last_seen_at": "2023-01-05T15:49:51.752113",
-      "is_anonymous_respondent": true
+      "is_anonymous_respondent": true,
+      "email_aes_encrypted": null
     },
-    "note": "Password is Test1234!"
+    "note": {
+      "Password": "Test1234!",
+      "plain_email": "anoymous_respondent@mindlogger.com"
+    }
   }
 ]

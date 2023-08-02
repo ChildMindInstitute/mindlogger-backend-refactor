@@ -137,7 +137,7 @@ async def applet_create(
         except Exception:
             await mail_service.send(
                 MessageSchema(
-                    recipients=[user.email],
+                    recipients=[user.plain_email],
                     subject="Applet upload failed!",
                     body=mail_service.get_template(
                         path="applet_create_success_en",
@@ -149,7 +149,7 @@ async def applet_create(
             raise
         await mail_service.send(
             MessageSchema(
-                recipients=[user.email],
+                recipients=[user.plain_email],
                 subject="Applet upload success!",
                 body=mail_service.get_template(
                     path="applet_create_success_en",
@@ -232,7 +232,7 @@ async def applet_duplicate(
 
         await mail_service.send(
             MessageSchema(
-                recipients=[user.email],
+                recipients=[user.plain_email],
                 subject="Applet duplicate success!",
                 body=mail_service.get_template(
                     path="applet_duplicate_success_en",

@@ -40,11 +40,9 @@ class PasswordRecoveryService:
         self, schema: PasswordRecoveryRequest
     ) -> PublicUser:
 
-        email_hash = hash_sha224(schema.email)
         encrypted_email = encrypt(bytes(schema.email, "utf-8"))
 
-        user: User = await UsersCRUD(self.session).get_by_email(email_hash)
-        print("user", user)
+        user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
         if user.email_aes_encrypted != encrypted_email:
             user = await UsersCRUD(self.session).update_encrypted_email(
@@ -116,10 +114,10 @@ class PasswordRecoveryService:
         except CacheNotFound:
             raise PasswordRecoveryKeyNotFound()
 
-        email_hash = hash_sha224(cache_entry.instance.email)
-
         # Get user from the database
-        user: User = await UsersCRUD(self.session).get_by_email(email_hash)
+        user: User = await UsersCRUD(self.session).get_by_email(
+            cache_entry.instance.email
+        )
 
         # Update password for user
         user_change_password_schema = UserChangePassword(

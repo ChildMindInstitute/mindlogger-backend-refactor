@@ -6,6 +6,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
+from apps.shared.hashing import hash_sha224
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import User, UserChangePassword, UserUpdateRequest
 from apps.users.errors import (
@@ -42,7 +43,8 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         return await self._fetch(key="id", value=id_)
 
     async def get_by_email(self, email: str) -> User:
-        return await self._fetch(key="email", value=email)
+        email_hash = hash_sha224(email)
+        return await self._fetch(key="email", value=email_hash)
 
     async def save(self, schema: UserSchema) -> UserSchema:
         # Save user into the database

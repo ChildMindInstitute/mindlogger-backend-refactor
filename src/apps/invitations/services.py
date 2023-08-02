@@ -555,7 +555,7 @@ class InvitationsService:
 
     async def accept(self, key: uuid.UUID):
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
-            self._user.email, key
+            self._user.plain_email, key  # type: ignore[arg-type]
         )
         if not invitation:
             raise InvitationDoesNotExist()
@@ -571,7 +571,7 @@ class InvitationsService:
 
     async def decline(self, key: uuid.UUID):
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
-            self._user.email, key
+            self._user.plain_email, key  # type: ignore[arg-type]
         )
         if not invitation:
             raise InvitationDoesNotExist()
