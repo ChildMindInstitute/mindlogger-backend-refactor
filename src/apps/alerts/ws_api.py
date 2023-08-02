@@ -51,39 +51,39 @@ async def _handle_websocket(websocket, user_id, session):
                 alert_message.respondent_id,
                 Role.RESPONDENT,
             )
-            applet_history = await AppletHistoriesCRUD(
-                session
-            ).retrieve_by_applet_version(
-                f"{alert_message.applet_id}_{alert_message.version}"
+
+            applet_history, applet, workspace = await asyncio.gather(
+                AppletHistoriesCRUD(session).retrieve_by_applet_version(
+                    f"{alert_message.applet_id}_{alert_message.version}"
+                ),
+                AppletsCRUD(session).get_by_id(alert_message.applet_id),
+                UserWorkspaceCRUD(session).get_by_user_id(
+                    respondent_access.owner_id
+                ),
             )
-            applet = await AppletsCRUD(session).get_by_id(
-                alert_message.applet_id
-            )
-            workspace = await UserWorkspaceCRUD(session).get_by_user_id(
-                respondent_access.owner_id
-            )
+            print(applet)
         except Exception as e:
             traceback.print_tb(e.__traceback__)
             continue
         try:
             applet_alert = AlertHandlerResult(
-                id=alert_message.id,
-                applet_id=alert_message.applet_id,
+                id=str(alert_message.id),
+                applet_id=str(alert_message.applet_id),
                 applet_name=applet_history.display_name,
                 version=alert_message.version,
                 secret_id=respondent_access.meta.get(
                     "secretUserId", "Anonymous"
                 ),
-                activity_id=alert_message.activity_id,
-                activity_item_id=alert_message.activity_item_id,
+                activity_id=str(alert_message.activity_id),
+                activity_item_id=str(alert_message.activity_item_id),
                 message=alert_message.message,
                 created_at=alert_message.created_at.isoformat(),
-                answer_id=alert_message.answer_id,
+                answer_id=str(alert_message.answer_id),
                 encryption=applet.encryption,
                 image=applet_history.image,
                 workspace=workspace.workspace_name,
-                respondent_id=alert_message.respondent_id,
+                respondent_id=str(alert_message.respondent_id),
             )
-            await websocket.send_json(applet_alert.json())
+            await websocket.send_json(applet_alert.dict())
         except ConnectionClosed:
             break
