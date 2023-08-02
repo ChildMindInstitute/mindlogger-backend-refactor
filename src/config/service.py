@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class FrontendUrlsSettings(BaseModel):
@@ -29,6 +29,7 @@ class ServiceSettings(BaseModel):
     name: str = "mindlogger-service"
     port: int = 8000
     urls: ServiceUrlsSettings = ServiceUrlsSettings()
+    result_limit: int = Field(gt=0, default=10000)
 
 
 class JsonLdConverterSettings(BaseModel):

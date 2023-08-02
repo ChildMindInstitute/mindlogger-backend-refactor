@@ -167,7 +167,9 @@ async def workspace_applets(
             owner_id, language, deepcopy(query_params)
         )
 
-        count = await service.get_workspace_applets_count(owner_id)
+        count = await service.get_workspace_applets_count(
+            owner_id, query_params
+        )
 
     return ResponseMulti(
         result=[WorkspaceAppletPublic.from_orm(applet) for applet in applets],
