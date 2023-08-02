@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import InternalToken
-from apps.authentication.errors import BadCredentials
+from apps.authentication.errors import BadCredentials, PasswordMismatch
 from apps.authentication.services.core import TokensService
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
@@ -51,9 +51,13 @@ class AuthenticationService:
         return encoded_jwt
 
     @staticmethod
-    def verify_password(plain_password: str, hashed_password: str):
-        if not pwd_context.verify(plain_password, hashed_password):
+    def verify_password(
+        plain_password: str, hashed_password: str, raise_exception=True
+    ) -> bool:
+        valid = pwd_context.verify(plain_password, hashed_password)
+        if not valid and raise_exception:
             raise BadCredentials()
+        return valid
 
     @staticmethod
     def verify_password_and_hash(
@@ -69,8 +73,10 @@ class AuthenticationService:
         user: User = await UsersCRUD(self.session).get_by_email(
             email=user_login_schema.email
         )
-        self.verify_password(user_login_schema.password, user.hashed_password)
-
+        if not self.verify_password(
+            user_login_schema.password, user.hashed_password, False
+        ):
+            raise PasswordMismatch()
         return user
 
     async def add_access_token_to_blacklist(self, token: InternalToken):

@@ -67,6 +67,12 @@ from apps.workspaces.domain.constants import Role
 
 __all__ = ["ScheduleService"]
 
+from infrastructure.utility import (
+    FCMNotification,
+    FirebaseMessage,
+    FirebaseNotificationType,
+)
+
 
 class ScheduleService:
     def __init__(self, session):
@@ -375,7 +381,7 @@ class ScheduleService:
 
     async def delete_schedule_by_id(
         self, schedule_id: uuid.UUID, applet_id: uuid.UUID
-    ):
+    ) -> uuid.UUID | None:
         # Check if applet exists
         await self._validate_applet(applet_id=applet_id)
 
@@ -434,6 +440,7 @@ class ScheduleService:
                     is_activity=False,
                     respondent_id=respondent_id,
                 )
+        return respondent_id
 
     async def update_schedule(
         self,
@@ -1144,4 +1151,27 @@ class ScheduleService:
         return await self.get_all_schedules(
             applet_id,
             QueryParams(filters={"respondent_id": respondent_id}),
+        )
+
+    async def send_notification_to_respondents(
+        self,
+        applet_id: uuid.UUID,
+        title: str,
+        body: str,
+        type_: FirebaseNotificationType,
+        respondents_ids: list[uuid.UUID] | None = None,
+    ):
+        device_ids = await AppletsCRUD(
+            self.session
+        ).get_respondents_device_ids(applet_id, respondents_ids)
+        await FCMNotification().notify(
+            device_ids,
+            FirebaseMessage(
+                title=title,
+                body=body,
+                data=dict(
+                    type=type_,
+                    applet_id=applet_id,
+                ),
+            ),
         )

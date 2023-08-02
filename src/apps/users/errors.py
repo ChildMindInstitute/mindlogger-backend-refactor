@@ -8,16 +8,11 @@ class UserNotFound(NotFoundError):
 
 
 class UserAlreadyExistError(ValidationError):
-    message = _(
-        "That email address is already associated with a MindLogger account."
-    )
+    message = _("That email is already registered in the system.")
 
 
 class EmailAddressError(ValidationError):
-    message = _(
-        "Email address is not verified. The following "
-        "identities failed the check: {email}."
-    )
+    message = _("Email doesn't exist!")
 
 
 class EmailAddressNotValid(ValidationError):

@@ -184,6 +184,8 @@ class WorkspaceApplet(InternalModel):
     role: Role | None = Role.RESPONDENT
     type: str
     folders_applet_count: int
+    description: dict | None
+    activity_count: int | None
 
 
 class WorkspaceSearchApplet(InternalModel):
@@ -213,6 +215,8 @@ class WorkspaceAppletPublic(PublicModel):
     role: Role | None
     type: str
     folders_applet_count: int
+    description: dict | None
+    activity_count: int | None
 
 
 class WorkspaceSearchAppletPublic(PublicModel):

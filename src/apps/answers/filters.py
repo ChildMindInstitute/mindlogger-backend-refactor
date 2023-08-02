@@ -7,6 +7,10 @@ from pydantic import Field
 from apps.shared.query_params import BaseQueryParams
 
 
+class SummaryActivityFilter(BaseQueryParams):
+    respondent_id: uuid.UUID | None
+
+
 class AppletActivityFilter(BaseQueryParams):
     respondent_id: uuid.UUID
     created_date: datetime.date

@@ -24,6 +24,6 @@ class FolderAppletSchema(Base):
         ForeignKey("folders.id", ondelete="RESTRICT"), nullable=False
     )
     applet_id = Column(
-        ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
+        ForeignKey("applets.id", ondelete="CASCADE"), nullable=False
     )
     pinned_at = Column(DateTime(), nullable=True)

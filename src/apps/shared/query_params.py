@@ -5,6 +5,7 @@ from fastapi import Depends
 from pydantic import Field
 
 from apps.shared.domain import InternalModel
+from config import settings
 
 
 class BaseQueryParams(InternalModel):
@@ -14,7 +15,7 @@ class BaseQueryParams(InternalModel):
 
     search: str | None
     page: int = Field(gt=0, default=1)
-    limit: int = Field(gt=0, default=10)
+    limit: int = Field(gt=0, default=10, le=settings.service.result_limit)
     ordering: str | None
 
 
@@ -26,7 +27,7 @@ class QueryParams(InternalModel):
     filters: dict[str, Any] = Field(default_factory=dict)
     search: str | None
     page: int = Field(gt=0, default=1)
-    limit: int = Field(gt=0, default=10)
+    limit: int = Field(gt=0, default=10, le=settings.service.result_limit)
     ordering: list[str] = Field(default_factory=list)
 
 
