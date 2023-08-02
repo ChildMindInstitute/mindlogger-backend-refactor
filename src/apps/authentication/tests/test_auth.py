@@ -19,7 +19,7 @@ class TestAuthentication(BaseTest):
     refresh_access_token_url = auth_router.url_path_for("refresh_access_token")
 
     create_request_user = UserCreateRequest(
-        email="tom@mindlogger.com",
+        email="tom2@mindlogger.com",
         first_name="Tom",
         last_name="Isaak",
         password="Test1234!",

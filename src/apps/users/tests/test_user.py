@@ -20,7 +20,7 @@ class TestUser(BaseTest):
     user_delete_url = user_router.url_path_for("user_delete")
 
     create_request_user = UserCreateRequest(
-        email="tom@mindlogger.com",
+        email="tom2@mindlogger.com",
         first_name="Tom",
         last_name="Isaak",
         password="Test1234!",
