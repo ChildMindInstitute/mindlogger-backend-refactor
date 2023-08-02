@@ -5,7 +5,6 @@ from apps.authentication.services import AuthenticationService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.encryption import encrypt
-from apps.shared.hashing import hash_sha224
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     PasswordRecoveryApproveRequest,
@@ -51,7 +50,9 @@ class PasswordRecoveryService:
 
         # If already exist password recovery for this user in Redis,
         # delete old password recovery, before generate and send new.
-        await self._cache.delete_all_entries(email=hash_sha224(schema.email))
+        await self._cache.delete_all_entries(
+            email=user.plain_email  # type: ignore[arg-type]
+        )
 
         password_recovery_info = PasswordRecoveryInfo(
             email=user.plain_email,

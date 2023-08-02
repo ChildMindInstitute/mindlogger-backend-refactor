@@ -135,7 +135,7 @@ class TestPassword(BaseTest):
 
         new_keys = await cache.keys()
         assert len(keys) == 1
-        assert keys[0] != new_keys[1]
+        assert keys[0] != new_keys[0]
         assert len(TestMail.mails) == 2
         assert (
             TestMail.mails[0].recipients[0] == password_recovery_request.email
