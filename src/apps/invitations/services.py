@@ -81,7 +81,7 @@ class InvitationsService:
 
     async def get(self, key: uuid.UUID) -> InvitationDetailGeneric | None:
         invitation = await self.invitations_crud.get_by_email_and_key(
-            self._user.email, key
+            self._user.plain_email, key  # type: ignore[arg-type]
         )
         if not invitation:
             raise InvitationDoesNotExist(
