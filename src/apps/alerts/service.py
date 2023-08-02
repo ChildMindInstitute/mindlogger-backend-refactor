@@ -34,11 +34,10 @@ class AlertService:
             )
         return alerts
 
-    async def get_all_alerts_count(self) -> int:
+    async def get_all_alerts_count(self) -> dict:
         count = await AlertCRUD(self.session).get_all_for_user_count(
             self.user_id
         )
-
         return count
 
     async def watch(self, alert_id: uuid.UUID):

@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain import InternalModel, PublicModel, ResponseMulti
 
 __all__ = [
     "Alert",
@@ -48,3 +48,7 @@ class AlertMessage(InternalModel):
     activity_id: uuid.UUID
     activity_item_id: uuid.UUID
     answer_id: uuid.UUID
+
+
+class AlertResponseMulti(ResponseMulti[AlertPublic]):
+    not_watched: int
