@@ -48,7 +48,7 @@ class Mongo:
         uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
         print(uri)
         self.client = MongoClient("mongo", 27017)
-        self.db = self.client[os.getenv("MONGO__DB")]
+        self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
     @staticmethod
     async def get_converter_result(schema) -> InternalModel | PublicModel:
@@ -243,6 +243,16 @@ class Mongo:
         applet = FolderModel().findOne(query={"_id": appletId})
         protocolId = applet["meta"]["protocol"].get("_id").split("/").pop()
         result = get_versions_from_content(protocolId)
-        ld_request_schema = content_to_jsonld(result["1.0.0"]["applet"])
-        converter_result = await self.get_converter_result(ld_request_schema)
-        return converter_result
+        converted_applet_versions = dict()
+        for version, content in result.items():
+            print(version)
+            ld_request_schema = content_to_jsonld(content["applet"])
+            converted_applet_versions[
+                version
+            ] = await self.get_converter_result(ld_request_schema)
+            for flow in converted_applet_versions[version].dict()[
+                "activity_flows"
+            ]:
+                print(flow["name"])
+
+        return converted_applet_versions

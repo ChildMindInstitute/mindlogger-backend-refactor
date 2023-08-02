@@ -153,7 +153,7 @@ def content_to_jsonld(document):
 
     for _, flow in flows_by_id.items():
         new_flow_by_id[flow["@id"]] = flow
-
+    new_flows = []
     for flow in jsonld["reprolib:terms/activityFlowOrder"][0]["@list"]:
         a_id = flow["@id"]
         if a_id in new_flow_by_id:
@@ -161,7 +161,17 @@ def content_to_jsonld(document):
             flow_jsonld = jsonld_expander.expandObj(
                 document["contexts"], flow_doc
             )
-            flow.update(flow_jsonld)
+            new_flows.append(flow_jsonld)
+    jsonld["reprolib:terms/activityFlowOrder"][0]["@list"] = new_flows
+
+    # # check activity flow properties
+    # new_flow_properties = []
+    # for flow in jsonld["reprolib:terms/activityFlowProperties"]:
+    #     if flow["reprolib:terms/variableName"][0]["@value"] in new_flow_by_id:
+    #         new_flow_properties.append(flow)
+
+    # jsonld["reprolib:terms/activityFlowProperties"] = new_flow_properties
+
     jsonld["@context"] = CONTEXT["@context"]
     jsonld["@type"] = CONTEXT["@type"]
 
