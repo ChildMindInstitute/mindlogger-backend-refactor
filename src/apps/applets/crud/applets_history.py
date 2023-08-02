@@ -6,7 +6,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 
 from apps.applets import errors
-from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
+from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.errors import AppletVersionNotFoundError
 from apps.users.db.schemas import UserSchema
 from infrastructure.database.crud import BaseCRUD
@@ -82,14 +82,3 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
         query = query.where(AppletHistorySchema.id == applet_id)
         result = await self._execute(query)
         return [id_version for id_version, in result]
-
-    async def get_full_applet_info(self, id_version: str):
-        query: Query = (
-            select(AppletHistorySchema.image, AppletSchema.encryption).join(
-                AppletSchema, AppletSchema.id == AppletHistorySchema.id
-            )
-            # .select_from(AppletHistorySchema)
-            .where(AppletHistorySchema.id_version == id_version)
-        )
-        result = await self._execute(query)
-        return result.scalars().all()
