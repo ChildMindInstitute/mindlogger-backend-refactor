@@ -1,6 +1,12 @@
 from pydantic import BaseModel, Extra
 
-__all__ = ["InternalModel", "PublicModel", "to_camelcase"]
+__all__ = [
+    "InternalModel",
+    "PublicModel",
+    "to_camelcase",
+    "list_items_to_camel_case",
+    "dict_keys_to_camel_case",
+]
 
 
 def to_camelcase(string: str) -> str:
@@ -9,6 +15,33 @@ def to_camelcase(string: str) -> str:
         for index, word in enumerate(string.split("_"))
     )
     return resp
+
+
+def dict_keys_to_camel_case(items):
+    res = dict()
+    for key, value in items.items():
+        new_key = to_camelcase(key)
+        if isinstance(value, dict):
+            res[new_key] = dict_keys_to_camel_case(value)
+        elif isinstance(value, list):
+            res.update({new_key: list_items_to_camel_case(value)})
+        else:
+            res[new_key] = value
+    return res
+
+
+def list_items_to_camel_case(items):
+    res = []
+    for item in items:
+        if isinstance(item, dict):
+            res.append(list_items_to_camel_case(item))
+        elif isinstance(item, list):
+            res.append(list_items_to_camel_case(item))
+        elif isinstance(item, str):
+            res.append(to_camelcase(item))
+        else:
+            res.append(item)
+    return res
 
 
 class InternalModel(BaseModel):
