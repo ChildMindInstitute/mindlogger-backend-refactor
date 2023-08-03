@@ -9,6 +9,7 @@ class TestAlert(BaseTest):
         "applets/fixtures/applet_histories.json",
         "applets/fixtures/applet_user_accesses.json",
         "alerts/fixtures/alerts.json",
+        "workspaces/fixtures/workspaces.json",
     ]
 
     login_url = "/auth/login"

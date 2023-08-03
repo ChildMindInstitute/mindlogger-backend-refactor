@@ -22,6 +22,10 @@ class Alert(InternalModel):
     message: str
     created_at: datetime.datetime
     answer_id: uuid.UUID
+    encryption: dict
+    image: str
+    workspace: str
+    respondent_id: uuid.UUID
 
 
 class AlertPublic(PublicModel):
@@ -36,6 +40,10 @@ class AlertPublic(PublicModel):
     message: str
     created_at: datetime.datetime
     answer_id: uuid.UUID
+    encryption: dict
+    image: str
+    workspace: str
+    respondent_id: uuid.UUID
 
 
 class AlertMessage(InternalModel):
