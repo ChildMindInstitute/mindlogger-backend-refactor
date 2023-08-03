@@ -17,6 +17,7 @@ from apps.shared.domain import InternalModel, PublicModel
 class AppletFull(AppletFetchBase, InternalModel):
     activities: list[ActivityFull] = Field(default_factory=list)
     activity_flows: list[FlowFull] = Field(default_factory=list)
+    extra_fields: dict = Field(default_factory=dict)
 
 
 class PublicAppletFull(AppletFetchBase, PublicModel):
@@ -27,3 +28,4 @@ class PublicAppletFull(AppletFetchBase, PublicModel):
 class AppletHistoryFull(AppletFetchBase, InternalModel):
     activities: list[ActivityHistoryFull] = Field(default_factory=list)
     activity_flows: list[FlowHistoryFull] = Field(default_factory=list)
+    extra_fields: dict = Field(default_factory=dict)

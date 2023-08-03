@@ -18,6 +18,7 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
 
     ld_combine_reports: bool | None = None
     ld_show_badge: bool | None = None
+    ld_report_include_item: str | None = None
 
     flow_items: list[str] | None = None
     activity_keys: dict[str, uuid.UUID] | None = None
@@ -35,10 +36,10 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
         await super().load(doc, base_url)
 
         processed_doc: dict = deepcopy(self.doc_expanded)
-        self.ld_pref_label = self._get_ld_pref_label(processed_doc)
-        self.ld_alt_label = self._get_ld_alt_label(processed_doc)
+        self.ld_pref_label = self._get_ld_pref_label(processed_doc, drop=True)
+        self.ld_alt_label = self._get_ld_alt_label(processed_doc, drop=True)
         self.ld_name = self.attr_processor.get_translation(
-            processed_doc, "schema:name", lang=self.lang
+            processed_doc, "schema:name", lang=self.lang, drop=True
         )
         self.ld_description = self._get_ld_description(
             processed_doc, drop=True
@@ -46,10 +47,13 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
         self.ld_is_vis = self._is_visible(processed_doc, drop=True)
 
         self.ld_combine_reports = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:combineReports"
+            processed_doc, "reproschema:combineReports", drop=True
         )
         self.ld_show_badge = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:showBadge"
+            processed_doc, "reproschema:showBadge", drop=True
+        )
+        self.ld_report_include_item = self.attr_processor.get_attr_value(
+            processed_doc, "reproschema:reportIncludeItem", drop=True
         )
 
         self.flow_items = self._get_flow_items(processed_doc, drop=True)
@@ -80,4 +84,11 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
             is_hidden=self.ld_is_vis is False,
             extra_fields=self.extra,
         )
+        if self.ld_report_include_item:
+            activity_name, item_name = self.ld_report_include_item.rsplit(
+                "/", 1
+            )
+            flow.report_included_activity_name = activity_name
+            flow.report_included_item_name = item_name
+
         return flow
