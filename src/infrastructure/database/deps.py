@@ -10,8 +10,11 @@ async def get_session():
         #   fix and remove
         yield session_maker
     else:
-        async with session_maker() as session:
-            yield session
+        try:
+            async with session_maker() as session:
+                yield session
+        finally:
+            await session_maker.remove()
 
 
 def pass_session(method):
