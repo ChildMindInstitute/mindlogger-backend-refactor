@@ -36,6 +36,7 @@ class ActivityItemHistoryService:
                     if item.conditional_logic
                     else None,
                     allow_edit=item.allow_edit,
+                    extra_fields=item.extra_fields,
                 )
             )
         await ActivityItemHistoriesCRUD(self.session).create_many(schemas)

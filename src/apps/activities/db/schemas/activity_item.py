@@ -16,6 +16,9 @@ class _BaseActivityItemSchema:
     is_hidden = Column(Boolean(), default=False)
     conditional_logic = Column(JSONB())
     allow_edit = Column(Boolean(), default=False)
+    extra_fields = Column(
+        JSONB(), default=dict, server_default=text("'{}'::jsonb")
+    )
 
 
 class ActivityItemSchema(_BaseActivityItemSchema, Base):
@@ -23,9 +26,6 @@ class ActivityItemSchema(_BaseActivityItemSchema, Base):
 
     activity_id = Column(
         ForeignKey("activities.id", ondelete="CASCADE"), nullable=False
-    )
-    extra_fields = Column(
-        JSONB(), default=dict, server_default=text("'{}'::jsonb")
     )
 
 

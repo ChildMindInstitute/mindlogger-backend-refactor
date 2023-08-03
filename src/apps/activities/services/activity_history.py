@@ -52,6 +52,8 @@ class ActivityHistoryService:
                     subscale_setting=activity.subscale_setting.dict()
                     if activity.subscale_setting
                     else None,
+                    report_included_item_name=activity.report_included_item_name,  # noqa: E501
+                    extra_fields=activity.extra_fields,
                 )
             )
 

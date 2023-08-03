@@ -80,6 +80,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     ld_is_vis: str | bool | None = None
     ld_is_reviewer: bool | None = None
     ld_is_one_page: bool | None = None
+    ld_report_include_item: str | None = None
 
     properties: dict
     nested_by_order: list[LdDocumentBase] | None = None
@@ -172,6 +173,10 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         self.is_back_disabled = self._is_back_disabled(allow_list)
         self.is_export_allowed = self._is_export_allowed(allow_list)
         self.is_summary_disabled = self._is_summary_disabled(allow_list)
+
+        self.ld_report_include_item = self.attr_processor.get_attr_value(
+            processed_doc, "reproschema:reportIncludeItem"
+        )
 
         self.properties = self._get_ld_properties_formatted(
             processed_doc, drop=True
@@ -515,6 +520,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                 **reports,
             ),
             subscale_setting=subscales,
+            report_included_item_name=self.ld_report_include_item or None,
         )
 
 

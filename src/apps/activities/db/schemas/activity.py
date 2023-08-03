@@ -19,6 +19,10 @@ class _BaseActivitySchema:
     is_hidden = Column(Boolean(), default=False)
     scores_and_reports = Column(JSONB())
     subscale_setting = Column(JSONB())
+    report_included_item_name = Column(Text(), nullable=True)
+    extra_fields = Column(
+        JSONB(), default=dict, server_default=text("'{}'::jsonb")
+    )
 
 
 class ActivitySchema(Base, _BaseActivitySchema):
@@ -26,9 +30,6 @@ class ActivitySchema(Base, _BaseActivitySchema):
 
     applet_id = Column(
         ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
-    )
-    extra_fields = Column(
-        JSONB(), default=dict, server_default=text("'{}'::jsonb")
     )
 
 

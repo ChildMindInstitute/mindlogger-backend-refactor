@@ -418,9 +418,9 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
             self.extra[key] = val
 
     def _load_extra(self, doc: dict):
+        self._to_extra("doc", self.doc)
         doc.pop(LdKeyword.id)
         doc.pop(LdKeyword.type)
-        self._to_extra("doc", self.doc)
         if self.ld_version:
             self._to_extra("version", self.ld_version, "fields")
         if self.ld_schema_version:

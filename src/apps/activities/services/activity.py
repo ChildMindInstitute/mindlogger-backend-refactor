@@ -64,6 +64,8 @@ class ActivityService:
                     if activity_data.subscale_setting
                     else None,
                     order=index + 1,
+                    report_included_item_name=activity_data.report_included_item_name,  # noqa: E501
+                    extra_fields=activity_data.extra_fields,
                 )
             )
 
@@ -83,6 +85,7 @@ class ActivityService:
                         if item.conditional_logic
                         else None,
                         allow_edit=item.allow_edit,
+                        extra_fields=item.extra_fields,
                     )
                 )
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
@@ -257,6 +260,7 @@ class ActivityService:
                     scores_and_reports=schema.scores_and_reports,
                     subscale_setting=schema.subscale_setting,
                     created_at=schema.created_at,
+                    report_included_item_name=schema.report_included_item_name,
                 )
             )
         return activities
