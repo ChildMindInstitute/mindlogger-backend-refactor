@@ -16,13 +16,13 @@ class AlertService:
             self.user_id, filters.page, filters.limit
         )
 
-        for alert, applet, access in schemas:
+        for alert, applet_history, access, applet, workspace in schemas:
             alerts.append(
                 Alert(
                     id=alert.id,
                     is_watched=alert.is_watched,
                     applet_id=alert.applet_id,
-                    applet_name=applet.display_name,
+                    applet_name=applet_history.display_name,
                     version=alert.version,
                     secret_id=access.meta.get("secretUserId", "Anonymous"),
                     activity_id=alert.activity_id,
@@ -30,6 +30,10 @@ class AlertService:
                     message=alert.alert_message,
                     created_at=alert.created_at,
                     answer_id=alert.answer_id,
+                    encryption=applet.encryption,
+                    image=applet_history.image,
+                    workspace=workspace.workspace_name,
+                    respondent_id=alert.respondent_id,
                 )
             )
         return alerts

@@ -61,7 +61,6 @@ async def _handle_websocket(websocket, user_id, session):
                     respondent_access.owner_id
                 ),
             )
-            print(applet)
         except Exception as e:
             traceback.print_tb(e.__traceback__)
             continue

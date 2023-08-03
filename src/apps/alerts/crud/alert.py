@@ -4,11 +4,14 @@ from sqlalchemy import and_, func, select, update
 from sqlalchemy.orm import Query
 
 from apps.alerts.db.schemas import AlertSchema
-from apps.applets.db.schemas import AppletHistorySchema
+from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.searching import Searching
-from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.db.schemas import (
+    UserAppletAccessSchema,
+    UserWorkspaceSchema,
+)
 from apps.workspaces.domain.constants import Role
 from infrastructure.database.crud import BaseCRUD
 
@@ -39,9 +42,21 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
 
     async def get_all_for_user(
         self, user_id: uuid.UUID, page: int, limit: int
-    ) -> list[tuple[AlertSchema, AppletHistorySchema, UserAppletAccessSchema]]:
+    ) -> list[
+        tuple[
+            AlertSchema,
+            AppletHistorySchema,
+            UserAppletAccessSchema,
+            AppletSchema,
+            UserWorkspaceSchema,
+        ]
+    ]:
         query: Query = select(
-            AlertSchema, AppletHistorySchema, UserAppletAccessSchema
+            AlertSchema,
+            AppletHistorySchema,
+            UserAppletAccessSchema,
+            AppletSchema,
+            UserWorkspaceSchema,
         )
         query = query.join(
             UserAppletAccessSchema,
@@ -57,6 +72,16 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
                 AppletHistorySchema.id == AlertSchema.applet_id,
                 AppletHistorySchema.version == AlertSchema.version,
             ),
+        )
+        query = query.join(
+            AppletSchema,
+            AppletSchema.id == AppletHistorySchema.id,
+            isouter=True,
+        )
+        query = query.join(
+            UserWorkspaceSchema,
+            UserWorkspaceSchema.user_id == UserAppletAccessSchema.owner_id,
+            isouter=True,
         )
         query = query.where(AlertSchema.user_id == user_id)
         query = query.order_by(AlertSchema.created_at.desc())
