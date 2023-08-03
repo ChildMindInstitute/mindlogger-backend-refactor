@@ -66,13 +66,20 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
 
         return db_result.all()
 
-    async def get_all_for_user_count(self, user_id: uuid.UUID) -> int:
-        query: Query = select(AlertSchema.id)
+    async def get_all_for_user_count(self, user_id: uuid.UUID) -> dict:
+        query: Query = select(
+            AlertSchema.is_watched, func.count(AlertSchema.id).label("count")
+        )
         query = query.where(AlertSchema.user_id == user_id)
-
-        db_result = await self._execute(select(func.count(query.c.id)))
-
-        return db_result.scalars().first() or 0
+        query = query.group_by(AlertSchema.is_watched)
+        db_result = await self._execute(query)
+        db_result = db_result.all()
+        result = dict(alerts_not_watched=0, alerts_all=0)
+        for row in db_result:
+            if row[0] is False:
+                result["alerts_not_watched"] = row[1]
+            result["alerts_all"] += row[1]
+        return result
 
     async def watch(self, user_id: uuid.UUID, alert_id: uuid.UUID):
         query: Query = update(AlertSchema)

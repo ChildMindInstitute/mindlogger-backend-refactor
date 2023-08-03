@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain import InternalModel, PublicModel, ResponseMulti
 
 __all__ = [
     "Alert",
@@ -65,3 +65,7 @@ class AlertHandlerResult(InternalModel):
     image: str
     workspace: str
     respondent_id: str
+
+
+class AlertResponseMulti(ResponseMulti[AlertPublic]):
+    not_watched: int
