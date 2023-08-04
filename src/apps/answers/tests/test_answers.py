@@ -1406,7 +1406,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @pytest.mark.parametrize(
         "query,expected",
-        (({"identifiers": "encrypted"}, 1), ({"emptyIdentifiers": True}, 0)),
+        (({"identifiers": "encrypted"}, 1), ({"emptyIdentifiers": True}, 1)),
     )
     @rollback
     async def test_activity_answers_by_identifier(self, query, expected):

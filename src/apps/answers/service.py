@@ -602,12 +602,11 @@ class AnswerService:
     ) -> list[AppletActivityAnswer]:
         versions = filters.filters.get("versions")
         identifiers = filters.filters.get("identifiers")
-        empty_identifiers = filters.filters.get("empty_identifiers")
 
         if versions and isinstance(versions, str):
             versions = versions.split(",")
 
-        if not identifiers or empty_identifiers:
+        if not identifiers:
             filters.filters.pop("identifiers")
 
         activities = await ActivityHistoriesCRUD(self.session).get_activities(

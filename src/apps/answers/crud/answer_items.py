@@ -1,7 +1,6 @@
 import uuid
-from typing import Tuple
 
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, delete, or_, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivityHistorySchema
@@ -157,19 +156,16 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         activity_id: uuid.UUID,
         filters: QueryParams,
     ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
-        answer_items_clause: Tuple = (
-            AnswerItemSchema.answer_id == AnswerSchema.id,
-            AnswerItemSchema.is_assessment == False,  # noqa
-        )
-        if filters.filters.get("empty_identifiers"):
-            answer_items_clause += (
-                AnswerItemSchema.identifier == None,  # noqa
-            )
+        identifiers = filters.filters.get("identifiers")
+        empty_identifiers = filters.filters.get("empty_identifiers")
 
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
             AnswerItemSchema,
-            and_(*answer_items_clause),
+            and_(
+                AnswerItemSchema.answer_id == AnswerSchema.id,
+                AnswerItemSchema.is_assessment == False,  # noqa
+            ),
             isouter=True,
         )
         query = query.join(
@@ -180,6 +176,17 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(ActivityHistorySchema.id == activity_id)
         query = query.order_by(AnswerSchema.created_at.asc())
+
+        if identifiers and empty_identifiers:
+            identifiers = identifiers.split(",")
+            filters.filters.pop("identifiers")
+            query = query.where(
+                or_(
+                    AnswerItemSchema.identifier.in_(identifiers),
+                    AnswerItemSchema.identifier.is_(None),
+                )
+            )
+
         if filters.filters:
             query = query.where(
                 *_ActivityAnswerFilter().get_clauses(**filters.filters)
