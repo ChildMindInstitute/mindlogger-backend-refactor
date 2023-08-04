@@ -15,6 +15,7 @@ __all__ = [
     "PublicWorkspaceManager",
     "WorkspaceInfo",
     "PublicWorkspaceInfo",
+    "WorkspaceArbitrary",
 ]
 
 from apps.workspaces.domain.constants import Role
@@ -241,3 +242,15 @@ class WorkspacePrioritizedRole(PublicModel):
 class AppletRoles(InternalModel):
     applet_id: uuid.UUID
     roles: list[Role]
+
+
+class WorkspaceArbitrary(InternalModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    workspace_name: str
+    is_modified: bool
+    database_uri: str
+    storage_access_key: str
+    storage_secret_key: str
+    storage_region: str
+    use_arbitrary: bool
