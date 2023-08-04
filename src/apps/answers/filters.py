@@ -22,7 +22,7 @@ class AppletActivityAnswerFilter(BaseQueryParams):
     to_datetime: datetime.datetime | None
     identifiers: str | None = ""
     versions: str | None
-    empty_identifiers: bool = False
+    more_filters: bool = False
 
 
 class AppletSubmitDateFilter(BaseQueryParams):

@@ -601,13 +601,9 @@ class AnswerService:
         filters: QueryParams,
     ) -> list[AppletActivityAnswer]:
         versions = filters.filters.get("versions")
-        identifiers = filters.filters.get("identifiers")
 
         if versions and isinstance(versions, str):
             versions = versions.split(",")
-
-        if not identifiers:
-            filters.filters.pop("identifiers")
 
         activities = await ActivityHistoriesCRUD(self.session).get_activities(
             activity_id, versions

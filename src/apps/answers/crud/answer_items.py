@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import and_, delete, or_, select
+from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivityHistorySchema
@@ -157,7 +157,8 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         filters: QueryParams,
     ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
         identifiers = filters.filters.get("identifiers")
-        empty_identifiers = filters.filters.get("empty_identifiers")
+        more_filters_enabled = filters.filters.get("more_filters")
+        versions = filters.filters.get("versions")
 
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
@@ -177,15 +178,11 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.where(ActivityHistorySchema.id == activity_id)
         query = query.order_by(AnswerSchema.created_at.asc())
 
-        if identifiers and empty_identifiers:
-            identifiers = identifiers.split(",")
+        if not identifiers and more_filters_enabled:
             filters.filters.pop("identifiers")
-            query = query.where(
-                or_(
-                    AnswerItemSchema.identifier.in_(identifiers),
-                    AnswerItemSchema.identifier.is_(None),
-                )
-            )
+            query = query.where(AnswerItemSchema.identifier.is_(None))
+        if not versions and more_filters_enabled:
+            filters.filters.pop("versions")
 
         if filters.filters:
             query = query.where(
