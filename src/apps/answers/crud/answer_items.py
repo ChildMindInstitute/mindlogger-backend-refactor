@@ -158,7 +158,6 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
     ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
         identifiers = filters.filters.get("identifiers")
         more_filters_enabled = filters.filters.get("more_filters")
-        versions = filters.filters.get("versions")
 
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
@@ -179,10 +178,9 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.order_by(AnswerSchema.created_at.asc())
 
         if not identifiers and more_filters_enabled:
-            filters.filters.pop("identifiers")
+            if "identifiers" in filters.filters:
+                filters.filters.pop("identifiers")
             query = query.where(AnswerItemSchema.identifier.is_(None))
-        if not versions and more_filters_enabled:
-            filters.filters.pop("versions")
 
         if filters.filters:
             query = query.where(
