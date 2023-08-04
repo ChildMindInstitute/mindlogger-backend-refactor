@@ -1,3 +1,4 @@
+import json
 import uuid
 from copy import deepcopy
 
@@ -16,7 +17,7 @@ from apps.library.domain import (
     PublicLibraryItem,
 )
 from apps.library.service import LibraryService
-from apps.shared.domain import Response, ResponseMulti
+from apps.shared.domain import Response, ResponseMulti, to_camelcase
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users import User
 from apps.workspaces.service.check_access import CheckAccessService
@@ -116,7 +117,17 @@ async def cart_get(
         cart = await service.get_cart(user.id)
         items = await service.filter_cart_items(cart, query_params)
         count = len(cart.cart_items) if cart and cart.cart_items else 0
-    return ResponseMulti(result=items, count=count)
+        items_to_camel = []
+        for item in items:
+            items_to_camel.append(
+                PublicLibraryItem(
+                    **json.loads(
+                        json.loads(to_camelcase(json.dumps(item.json())))
+                    )
+                )
+            )
+
+    return ResponseMulti(result=items_to_camel, count=count)
 
 
 async def cart_add(
@@ -126,4 +137,7 @@ async def cart_add(
 ) -> Response[Cart]:
     async with atomic(session):
         cart = await LibraryService(session).add_to_cart(user.id, schema)
-    return Response(result=cart)
+        cart_to_camel = Cart(
+            **json.loads(to_camelcase(json.dumps(cart.dict())))
+        )
+    return Response(result=cart_to_camel)
