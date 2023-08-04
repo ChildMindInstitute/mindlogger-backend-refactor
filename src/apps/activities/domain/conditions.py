@@ -6,36 +6,36 @@ from apps.shared.domain import PublicModel
 
 
 class ConditionType(str, Enum):
-    INCLUDES_OPTION = "includesOption"
-    NOT_INCLUDES_OPTION = "notIncludesOption"
-    EQUAL_TO_OPTION = "equalToOption"
-    NOT_EQUAL_TO_OPTION = "notEqualToOption"
-    GREATER_THAN = "greaterThan"
-    LESS_THAN = "lessThan"
-    EQUAL = "equal"
-    NOT_EQUAL = "notEqual"
-    BETWEEN = "between"
-    OUTSIDE_OF = "outsideOf"
-    EQUAL_TO_SCORE = "equalToScore"
+    INCLUDES_OPTION = "INCLUDES_OPTION"
+    NOT_INCLUDES_OPTION = "NOT_INCLUDES_OPTION"
+    EQUAL_TO_OPTION = "EQUAL_TO_OPTION"
+    NOT_EQUAL_TO_OPTION = "NOT_EQUAL_TO_OPTION"
+    GREATER_THAN = "GREATER_THAN"
+    LESS_THAN = "LESS_THAN"
+    EQUAL = "EQUAL"
+    NOT_EQUAL = "NOT_EQUAL"
+    BETWEEN = "BETWEEN"
+    OUTSIDE_OF = "OUTSIDE_OF"
+    EQUAL_TO_SCORE = "EQUAL_TO_SCORE"
 
 
 class MultiSelectConditionType(str, Enum):
-    INCLUDES_OPTION = "includesOption"
-    NOT_INCLUDES_OPTION = "notIncludesOption"
+    INCLUDES_OPTION = "INCLUDES_OPTION"
+    NOT_INCLUDES_OPTION = "NOT_INCLUDES_OPTION"
 
 
 class SingleSelectConditionType(str, Enum):
-    EQUAL_TO_OPTION = "equalToOption"
-    NOT_EQUAL_TO_OPTION = "notEqualToOption"
+    EQUAL_TO_OPTION = "EQUAL_TO_OPTION"
+    NOT_EQUAL_TO_OPTION = "NOT_EQUAL_TO_OPTION"
 
 
 class SliderConditionType(str, Enum):
-    GREATER_THAN = "greaterThan"
-    LESS_THAN = "lessThan"
-    EQUAL = "equal"
-    NOT_EQUAL = "notEqual"
-    BETWEEN = "between"
-    OUTSIDE_OF = "outsideOf"
+    GREATER_THAN = "GREATER_THAN"
+    LESS_THAN = "LESS_THAN"
+    EQUAL = "EQUAL"
+    NOT_EQUAL = "NOT_EQUAL"
+    BETWEEN = "BETWEEN"
+    OUTSIDE_OF = "OUTSIDE_OF"
 
 
 class OptionPayload(PublicModel):
