@@ -1405,7 +1405,8 @@ class TestAnswerActivityItems(BaseTest):
         assert app_height == res.client["height"]
 
     @pytest.mark.parametrize(
-        "query,expected", (({"identifiers": "encrypted"}, 1), ({}, 0))
+        "query,expected",
+        (({"identifiers": "encrypted"}, 1), ({"emptyIdentifiers": True}, 0)),
     )
     @rollback
     async def test_activity_answers_by_identifier(self, query, expected):

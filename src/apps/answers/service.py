@@ -601,8 +601,15 @@ class AnswerService:
         filters: QueryParams,
     ) -> list[AppletActivityAnswer]:
         versions = filters.filters.get("versions")
+        identifiers = filters.filters.get("identifiers")
+        empty_identifiers = filters.filters.get("empty_identifiers")
+
         if versions and isinstance(versions, str):
             versions = versions.split(",")
+
+        if not identifiers or empty_identifiers:
+            filters.filters.pop("identifiers")
+
         activities = await ActivityHistoriesCRUD(self.session).get_activities(
             activity_id, versions
         )
@@ -622,11 +629,10 @@ class AnswerService:
         for activity in activities:
             activity_map[activity.id_version] = activity
 
-        idents_str = filters.filters.get("identifiers")
-        idents = ",".join(idents_str.split(",")) if idents_str else []
-
         activity_answers = list()
         for answer, answer_item in answers:
+            if not answer_item:
+                continue
             answer_item.items = activity_item_map.get(
                 answer.activity_history_id, []
             )
@@ -635,12 +641,7 @@ class AnswerService:
                 activity = activity_map[answer_item.items[0].activity_id]
                 activity_answer.subscale_setting = activity.subscale_setting
             activity_answer.version = answer.version
-
-            if answer_item.identifier:
-                if answer_item.identifier in idents:
-                    activity_answers.append(activity_answer)
-            else:
-                activity_answers.append(activity_answer)
+            activity_answers.append(activity_answer)
         return activity_answers
 
     async def get_summary_latest_report(

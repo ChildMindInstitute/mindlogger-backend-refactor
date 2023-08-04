@@ -1,4 +1,5 @@
 import uuid
+from typing import Tuple
 
 from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import Query
@@ -156,13 +157,19 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         activity_id: uuid.UUID,
         filters: QueryParams,
     ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
+        answer_items_clause: Tuple = (
+            AnswerItemSchema.answer_id == AnswerSchema.id,
+            AnswerItemSchema.is_assessment == False,  # noqa
+        )
+        if filters.filters.get("empty_identifiers"):
+            answer_items_clause += (
+                AnswerItemSchema.identifier == None,  # noqa
+            )
+
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
             AnswerItemSchema,
-            and_(
-                AnswerItemSchema.answer_id == AnswerSchema.id,
-                AnswerItemSchema.is_assessment == False,  # noqa
-            ),
+            and_(*answer_items_clause),
             isouter=True,
         )
         query = query.join(
@@ -178,5 +185,4 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
                 *_ActivityAnswerFilter().get_clauses(**filters.filters)
             )
         db_result = await self._execute(query)
-
         return db_result.all()
