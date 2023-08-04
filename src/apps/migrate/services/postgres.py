@@ -8,9 +8,13 @@ import psycopg2
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.service import AppletService
 from infrastructure.database import session_manager
+from infrastructure.database import atomic
 
 
 def mongoid_to_uuid(id_):
+    print(id_)
+    if isinstance(id_, str) and "/" in id_:
+        id_ = id_.split("/").pop()
     return uuid.UUID(str(id_) + "00000000")
 
 
@@ -151,28 +155,53 @@ class Postgres:
     # ):
     #     pass
 
-    async def save_applets(self, applets: list[dict]):
-        owner_id: uuid.UUID = uuid.UUID("65656a7b-887c-4e66-b44e-f452b98d198d")
+    async def save_applets(self, applets: dict, owner_id: str):
+        owner_id = mongoid_to_uuid(owner_id)
+        applet = applets["1.0.0"]
+        session = session_manager.get_session()
 
-        for applet in applets:
-            applet_dict = dict(applet)
+        applet.extra_fields["id"] = mongoid_to_uuid(
+            applet.extra_fields["extra"]["_:id"][0]["@value"]
+        )
+        print("mongo uuid", applet.extra_fields["id"])
 
-            # NOTE: Not finished ...
-            session = session_manager.get_session()
+        # TODO: Lookup the owner_id for the applet workspace
 
-            applet_created = await AppletService(session, owner_id).create(
-                AppletCreate(
-                    activities=applet_dict.get("activities"),
-                    activity_flows=applet_dict.get("activity_flows"),
-                    display_name=applet_dict.get("display_name"),
-                    encryption={
-                        "public_key": "",
-                        "prime": "",
-                        "base": "",
-                        "account_id": "",
-                    },
-                    # NOTE: extra_fields=applet_dict.get("activities"),
-                ),
-                owner_id,
+        async with atomic(session):
+            applet_create = await AppletService(session, owner_id).create(
+                applet, owner_id, False
             )
-            print(applet_created)
+
+        # print(applet_create)
+
+        # for applet in applets:
+        #     applet_dict = dict(applet)
+
+        #     # NOTE: Not finished ...
+        #     session = session_manager.get_session()
+
+        #     applet_created = await AppletService(session, owner_id).create(
+        #         AppletCreate(
+        #             activities=applet_dict.get("activities"),
+        #             activity_flows=applet_dict.get("activity_flows"),
+        #             display_name=applet_dict.get("display_name"),
+        #             encryption={
+        #                 "public_key": "",
+        #                 "prime": "",
+        #                 "base": "",
+        #                 "account_id": "",
+        #             },
+        #             # NOTE: extra_fields=applet_dict.get("activities"),
+        #         ),
+        #         owner_id,
+        #     )
+        #     print(applet_created)
+
+        # {
+        #     "applet_uuid": [
+        #         {
+        #             "mongo_version": "1.0.0",
+        #             "postgres_version": "1.1.0",
+        #         }
+        #     ]
+        # }

@@ -11,6 +11,7 @@ CONTEXT = {
             "reprolib": "https://raw.githubusercontent.com/ReproNim/reproschema/master/"  # noqa: E501
         },
         "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json",  # noqa: E501
+        {"_id": {"@id": "_:id", "@type": "schema:text"}},
     ],
     "@type": "https://raw.githubusercontent.com/ReproNim/reproschema/master/schemas/Protocol",  # noqa: E501
 }
@@ -125,15 +126,18 @@ def content_to_jsonld(document):
     jsonld = jsonld_expander.expandObj(
         document["contexts"], document["protocol"]["data"]
     )
+    jsonld["_id"] = str(document["protocol"]["data"]["_id"])
 
     activities_by_id = document["protocol"]["activities"]
     for activity in jsonld["reprolib:terms/order"][0]["@list"]:
         a_id = activity["@id"]
         if a_id in activities_by_id:
             activity_doc = activities_by_id[a_id]
+
             activity_jsonld = jsonld_expander.expandObj(
                 document["contexts"], activity_doc["data"]
             )
+            activity_jsonld["_id"] = str(activity_doc["data"]["_id"])
             activity.update(activity_jsonld)
 
             items_by_id = activity_doc["items"]
@@ -145,32 +149,26 @@ def content_to_jsonld(document):
                     item_jsonld = jsonld_expander.expandObj(
                         document["contexts"], item_doc
                     )
+                    item_jsonld["_id"] = str(item_doc["_id"])
                     item.update(item_jsonld)
 
-    # check the same for activity flow
-    flows_by_id = document["protocol"]["activityFlows"]
-    new_flow_by_id = {}
+    # # check the same for activity flow
+    # flows_by_id = document["protocol"]["activityFlows"]
+    # new_flow_by_id = {}
 
-    for _, flow in flows_by_id.items():
-        new_flow_by_id[flow["@id"]] = flow
-    new_flows = []
-    for flow in jsonld["reprolib:terms/activityFlowOrder"][0]["@list"]:
-        a_id = flow["@id"]
-        if a_id in new_flow_by_id:
-            flow_doc = new_flow_by_id[a_id]
-            flow_jsonld = jsonld_expander.expandObj(
-                document["contexts"], flow_doc
-            )
-            new_flows.append(flow_jsonld)
-    jsonld["reprolib:terms/activityFlowOrder"][0]["@list"] = new_flows
-
-    # # check activity flow properties
-    # new_flow_properties = []
-    # for flow in jsonld["reprolib:terms/activityFlowProperties"]:
-    #     if flow["reprolib:terms/variableName"][0]["@value"] in new_flow_by_id:
-    #         new_flow_properties.append(flow)
-
-    # jsonld["reprolib:terms/activityFlowProperties"] = new_flow_properties
+    # for _, flow in flows_by_id.items():
+    #     new_flow_by_id[flow["@id"]] = flow
+    # new_flows = []
+    # for flow in jsonld["reprolib:terms/activityFlowOrder"][0]["@list"]:
+    #     a_id = flow["@id"]
+    #     if a_id in new_flow_by_id:
+    #         flow_doc = new_flow_by_id[a_id]
+    #         flow_jsonld = jsonld_expander.expandObj(
+    #             document["contexts"], flow_doc
+    #         )
+    #         flow_jsonld["_id"] = str(flow_doc["_id"])
+    #         new_flows.append(flow_jsonld)
+    jsonld["reprolib:terms/activityFlowOrder"][0]["@list"] = []
 
     jsonld["@context"] = CONTEXT["@context"]
     jsonld["@type"] = CONTEXT["@type"]

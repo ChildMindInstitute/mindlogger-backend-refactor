@@ -28,8 +28,11 @@ async def main():
 
     # applets: list[dict] = await mongo.get_applets()  # noqa: F841
 
-    applets = await mongo.get_applet_versions()  # noqa: F841
-    # await postgres.save_applets(applets)
+    applets, owner_id = await mongo.get_applet_versions(
+        "62d15a03154fa87efa129760"
+    )
+
+    await postgres.save_applets(applets, owner_id)
 
     # Close connections
     mongo.close_connection()

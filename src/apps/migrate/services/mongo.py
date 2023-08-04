@@ -238,9 +238,9 @@ class Mongo:
 
         return results
 
-    async def get_applet_versions(self) -> dict:
-        appletId = ObjectId("62d15a03154fa87efa129760")
-        applet = FolderModel().findOne(query={"_id": appletId})
+    async def get_applet_versions(self, applet_id: str) -> [dict, str]:
+        applet = FolderModel().findOne(query={"_id": ObjectId(applet_id)})
+        owner_id = str(applet["creatorId"])
         protocolId = applet["meta"]["protocol"].get("_id").split("/").pop()
         result = get_versions_from_content(protocolId)
         converted_applet_versions = dict()
@@ -250,9 +250,5 @@ class Mongo:
             converted_applet_versions[
                 version
             ] = await self.get_converter_result(ld_request_schema)
-            for flow in converted_applet_versions[version].dict()[
-                "activity_flows"
-            ]:
-                print(flow["name"])
 
-        return converted_applet_versions
+        return converted_applet_versions, owner_id
