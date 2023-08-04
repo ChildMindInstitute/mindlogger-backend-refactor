@@ -1,7 +1,14 @@
 import datetime
 import uuid
 
-from apps.shared.domain import InternalModel, PublicModel, ResponseMulti
+from pydantic import validator
+
+from apps.shared.domain import (
+    InternalModel,
+    PublicModel,
+    ResponseMulti,
+    dict_keys_to_camel_case,
+)
 
 __all__ = [
     "Alert",
@@ -44,6 +51,12 @@ class AlertPublic(PublicModel):
     image: str
     workspace: str
     respondent_id: uuid.UUID
+
+    @validator("encryption", pre=True)
+    def convert_response_values_keys(cls, response_values):
+        if response_values and isinstance(response_values, dict):
+            return dict_keys_to_camel_case(response_values)
+        return response_values
 
 
 class AlertMessage(InternalModel):
