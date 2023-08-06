@@ -77,6 +77,7 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
+    response_model_by_alias=True,
 )(library_get_all)
 
 router.get(
