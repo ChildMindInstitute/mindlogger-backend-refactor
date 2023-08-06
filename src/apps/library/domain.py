@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import Field, validator
+from pydantic import BaseModel, Field, validator
 
 from apps.shared.domain import (
     InternalModel,
@@ -49,21 +49,6 @@ class LibraryItemActivityItem(InternalModel):
     conditional_logic: dict | None = None
     allow_edit: bool | None = None
 
-    @validator("config", pre=True)
-    def convert_config_keys(cls, config):
-        if config is not None:
-            return dict_keys_to_camel_case(config)
-        return config
-
-    @validator("response_values", pre=True)
-    def convert_response_values_keys(cls, response_values):
-        if response_values:
-            if isinstance(response_values, dict):
-                return dict_keys_to_camel_case(response_values)
-            elif isinstance(response_values, list):
-                return [to_camelcase(value) for value in response_values]
-        return response_values
-
 
 class LibraryItemActivity(InternalModel):
     key: uuid.UUID
@@ -94,7 +79,7 @@ class LibraryItemFlow(InternalModel):
     items: list[LibraryItemFlowItem]
 
 
-class _LibraryItem(InternalModel):
+class _LibraryItem(BaseModel):
     id: uuid.UUID
     display_name: str
     description: dict[str, str] | None = None
@@ -107,11 +92,11 @@ class _LibraryItem(InternalModel):
     activity_flows: list[LibraryItemFlow] | None = None
 
 
-class LibraryItem(_LibraryItem):
+class LibraryItem(InternalModel, _LibraryItem):
     applet_id_version: str
 
 
-class PublicLibraryItem(_LibraryItem):
+class PublicLibraryItem(PublicModel, _LibraryItem):
     version: str
 
 
