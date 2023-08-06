@@ -1,4 +1,3 @@
-import json
 from typing import TypeVar
 
 from pydantic import BaseModel, Extra
@@ -43,7 +42,9 @@ def convert_dict_to_camel_case(input_dict):
 
 
 def model_as_camel_case(model: _BaseModel) -> _BaseModel:
-    """Returns the model but with field names and nested keys converted to camel case."""
+    """Returns the model but with field names and nested
+    keys converted to camel case.
+    """
     model_dict = model.dict()
     camel_case_dict = convert_dict_to_camel_case(model_dict)
     return model.__class__(**camel_case_dict)
