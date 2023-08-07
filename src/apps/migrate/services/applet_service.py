@@ -1,9 +1,7 @@
-import re
 import uuid
 
 from apps.applets.service import AppletService
-from apps.activities.services.activity import ActivityService
-from apps.activity_flows.service.flow import FlowService
+from apps.migrate.services.activity_service import ActivityMigrationService
 from apps.applets.crud import AppletsCRUD
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import (
@@ -13,8 +11,9 @@ from apps.applets.domain.applet_create_update import (
     AppletCreate,
     AppletUpdate,
 )
-from apps.applets.domain.applet_full import AppletFull
-from apps.applets.service.applet_history_service import AppletHistoryService
+from apps.migrate.domain.applet_full import AppletMigratedFull
+from apps.migrate.services.applet_history_service import AppletMigrationHistoryService
+from apps.migrate.services.flow_service import FlowMigrationService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 import datetime
@@ -55,30 +54,28 @@ class AppletMigrationService:
         self,
         create_data: AppletCreate,
         manager_id: uuid.UUID | None = None
-    ) -> AppletFull:
+    ) -> AppletMigratedFull:
         applet = await self._create(create_data)
 
         await self.decorated._create_applet_accesses(applet.id, manager_id)
 
-        applet.activities = await ActivityService(
+        applet.activities = await ActivityMigrationService(
             self.session, self.user_id
-        ).create(applet.id, create_data.activities)
+        ).create(applet, create_data.activities)
         activity_key_id_map = dict()
         for activity in applet.activities:
             activity_key_id_map[activity.key] = activity.id
-        applet.activity_flows = await FlowService(self.session).create(
-            applet.id, create_data.activity_flows, activity_key_id_map
+        applet.activity_flows = await FlowMigrationService(self.session).create(
+            applet, create_data.activity_flows, activity_key_id_map
         )
 
-        await AppletHistoryService(
-            self.session, applet.id, applet.version
-        ).add_history(manager_id or self.user_id, applet)
+        await AppletMigrationHistoryService(self.session).add_history(manager_id or self.user_id, applet)
 
         return applet
 
     async def _create(
         self, create_data: AppletCreate
-    ) -> AppletFull:
+    ) -> AppletMigratedFull:
         applet_id = create_data.extra_fields["id"]
         await self.decorated._validate_applet_name(create_data.display_name)
         schema = await AppletsCRUD(self.session).save(
@@ -106,11 +103,11 @@ class AppletMigrationService:
                 migrated_updated=datetime.datetime.now()
             )
         )
-        return AppletFull.from_orm(schema)
+        return AppletMigratedFull.from_orm(schema)
 
     async def update(
         self, applet_id: uuid.UUID, update_data: AppletUpdate
-    ) -> AppletFull:
+    ) -> AppletMigratedFull:
         old_applet_schema = await AppletsCRUD(self.session).get_by_id(
             applet_id
         )
@@ -118,32 +115,30 @@ class AppletMigrationService:
         next_version = await self.decorated.get_next_version(
             old_applet_schema.version, update_data, applet_id
         )
-
-        await FlowService(self.session).remove_applet_flows(applet_id)
-        await ActivityService(
+        await FlowMigrationService(self.session).remove_applet_flows(applet_id)
+        await ActivityMigrationService(
             self.session, self.user_id
         ).remove_applet_activities(applet_id)
         applet = await self._update(applet_id, update_data, next_version)
 
-        applet.activities = await ActivityService(
+        applet.activities = await ActivityMigrationService(
             self.session, self.user_id
-        ).update_create(applet_id, update_data.activities)
+        ).update_create(applet, update_data.activities)
         activity_key_id_map = dict()
         for activity in applet.activities:
             activity_key_id_map[activity.key] = activity.id
-        applet.activity_flows = await FlowService(self.session).update_create(
-            applet_id, update_data.activity_flows, activity_key_id_map
+
+        applet.activity_flows = await FlowMigrationService(self.session).update_create(
+            applet, update_data.activity_flows, activity_key_id_map
         )
 
-        await AppletHistoryService(
-            self.session, applet.id, applet.version
-        ).add_history(self.user_id, applet)
+        await AppletMigrationHistoryService(self.session).add_history(self.user_id, applet)
 
         return applet
 
     async def _update(
         self, applet_id: uuid.UUID, update_data: AppletUpdate, version: str
-    ) -> AppletFull:
+    ) -> AppletMigratedFull:
         await self.decorated._validate_applet_name(update_data.display_name, applet_id)
 
         schema = await AppletsCRUD(self.session).update_by_id(
@@ -161,4 +156,4 @@ class AppletMigrationService:
                 version=version,
             ),
         )
-        return AppletFull.from_orm(schema)
+        return AppletMigratedFull.from_orm(schema)

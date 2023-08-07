@@ -20,6 +20,7 @@ from apps.migrate.services.applet_versions import (
     get_versions_from_content,
     content_to_jsonld,
 )
+from apps.migrate.utilities import mongoid_to_uuid
 from apps.shared.domain.base import InternalModel, PublicModel
 
 # from apps.applets.domain.applet_create_update import AppletCreate
@@ -250,7 +251,12 @@ class Mongo:
             converted = await self.get_converter_result(ld_request_schema)
             converted.extra_fields['updated'] = content['updated']
             converted.extra_fields['version'] = version
-            converted.extra_fields['id'] = converted.extra_fields["extra"]["_:id"][0]["@value"]
+            converted.extra_fields['id'] = mongoid_to_uuid(converted.extra_fields["extra"]["_:id"][0]["@value"])
+            for activity in converted.activities:
+                activity.extra_fields["id"] = mongoid_to_uuid(activity.extra_fields["extra"]["_:id"][0]["@value"])
+                for item in activity.items:
+                    item.extra_fields["id"] = mongoid_to_uuid(item.extra_fields["extra"]["_:id"][0]["@value"])
+
             converted_applet_versions[version] = converted
 
         return converted_applet_versions, owner_id

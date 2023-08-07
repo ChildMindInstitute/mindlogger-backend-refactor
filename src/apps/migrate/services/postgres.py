@@ -1,21 +1,14 @@
 import os
-import uuid
 from contextlib import suppress
 from datetime import datetime
 
 import psycopg2
 
-from apps.applets.domain.applet_create_update import AppletCreate
-from apps.migrate.services.applet import AppletMigrationService
+from apps.migrate.services.applet_service import AppletMigrationService
+from apps.migrate.utilities import mongoid_to_uuid
 from infrastructure.database import session_manager
 from infrastructure.database import atomic
 
-
-def mongoid_to_uuid(id_):
-    print(id_)
-    if isinstance(id_, str) and "/" in id_:
-        id_ = id_.split("/").pop()
-    return uuid.UUID(str(id_) + "00000000")
 
 
 class Postgres:
@@ -162,9 +155,6 @@ class Postgres:
         applet = applets[version]
         session = session_manager.get_session()
 
-        applet.extra_fields["id"] = mongoid_to_uuid(
-            applet.extra_fields["id"]
-        )
         print("mongo uuid", applet.extra_fields["id"])
 
         # TODO: Lookup the owner_id for the applet workspace
