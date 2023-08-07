@@ -24,12 +24,14 @@ async def main():
 
     # Migrate applets, activities, items
 
-    # applets: list[dict] = await mongo.get_applets()  # noqa: F841
+    applet: dict = await mongo.get_applet(
+        "62d15a03154fa87efa129760"
+    )  # noqa: F841
 
     applets, owner_id = await mongo.get_applet_versions(
         "62d15a03154fa87efa129760"
     )
-    await postgres.save_applets(applets, owner_id)
+    await postgres.save_applets(applets, owner_id, applet)
 
     # Close connections
     mongo.close_connection()

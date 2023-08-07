@@ -48,7 +48,7 @@ class Mongo:
         # Setup MongoDB connection
         uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
         print(uri)
-        self.client = MongoClient(uri, 27017) #uri
+        self.client = MongoClient(uri, 27017)  # uri
         self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
     @staticmethod
@@ -217,27 +217,23 @@ class Mongo:
 
         return applet
 
-    async def get_applets(self) -> list[dict]:
-        # NOTE: All applets have baseParentId 5ea689a286d25a5dbb14e82c
-
-        applet = Applet().findOne(
-            {"_id": ObjectId("62d15a03154fa87efa129760")}
-        )
+    async def get_applet(self, applet_id: str) -> dict:
+        applet = Applet().findOne({"_id": ObjectId(applet_id)})
         ld_request_schema = self.get_applet_repro_schema(applet)
-        converter_result = await self.get_converter_result(ld_request_schema)
-        print(converter_result.dict().keys())
+        converted = await self.get_converter_result(ld_request_schema)
 
-        results: list[Any] = []
-
-        # for applet in applets:
-        #     ld_request_schema = self.get_applet_repro_schema(applet)
-        #     converter_result = await self.get_converter_result(
-        #         ld_request_schema
-        #     )
-
-        #     results.append(converter_result)
-
-        return results
+        converted.extra_fields["id"] = mongoid_to_uuid(
+            converted.extra_fields["extra"]["_:id"][0]["@value"]
+        )
+        for activity in converted.activities:
+            activity.extra_fields["id"] = mongoid_to_uuid(
+                activity.extra_fields["extra"]["_:id"][0]["@value"]
+            )
+            for item in activity.items:
+                item.extra_fields["id"] = mongoid_to_uuid(
+                    item.extra_fields["extra"]["_:id"][0]["@value"]
+                )
+        return converted
 
     async def get_applet_versions(self, applet_id: str) -> [dict, str]:
         applet = FolderModel().findOne(query={"_id": ObjectId(applet_id)})
@@ -249,13 +245,19 @@ class Mongo:
             print(version)
             ld_request_schema = content_to_jsonld(content["applet"])
             converted = await self.get_converter_result(ld_request_schema)
-            converted.extra_fields['updated'] = content['updated']
-            converted.extra_fields['version'] = version
-            converted.extra_fields['id'] = mongoid_to_uuid(converted.extra_fields["extra"]["_:id"][0]["@value"])
+            converted.extra_fields["updated"] = content["updated"]
+            converted.extra_fields["version"] = version
+            converted.extra_fields["id"] = mongoid_to_uuid(
+                converted.extra_fields["extra"]["_:id"][0]["@value"]
+            )
             for activity in converted.activities:
-                activity.extra_fields["id"] = mongoid_to_uuid(activity.extra_fields["extra"]["_:id"][0]["@value"])
+                activity.extra_fields["id"] = mongoid_to_uuid(
+                    activity.extra_fields["extra"]["_:id"][0]["@value"]
+                )
                 for item in activity.items:
-                    item.extra_fields["id"] = mongoid_to_uuid(item.extra_fields["extra"]["_:id"][0]["@value"])
+                    item.extra_fields["id"] = mongoid_to_uuid(
+                        item.extra_fields["extra"]["_:id"][0]["@value"]
+                    )
 
             converted_applet_versions[version] = converted
 

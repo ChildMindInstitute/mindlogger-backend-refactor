@@ -29,7 +29,7 @@ class FlowMigrationService:
         schemas = list()
         prepared_flow_items = list()
         for index, flow_create in enumerate(flows_create):
-            flow_id = flow_create.extra_fields['id']
+            flow_id = flow_create.extra_fields["id"]
             schemas.append(
                 ActivityFlowSchema(
                     id=flow_id,
@@ -56,9 +56,9 @@ class FlowMigrationService:
                     )
                 )
         flow_schemas = await FlowsCRUD(self.session).create_many(schemas)
-        flow_items = await FlowItemMigrationService(self.session, applet).create(
-            prepared_flow_items
-        )
+        flow_items = await FlowItemMigrationService(
+            self.session, applet
+        ).create(prepared_flow_items)
         flows = list()
 
         flow_id_map = dict()
@@ -84,7 +84,7 @@ class FlowMigrationService:
 
         # Save new flow ids
         for index, flow_update in enumerate(flows_update):
-            flow_id = flow_update.extra_fields['id']
+            flow_id = flow_update.extra_fields["id"]
 
             schemas.append(
                 ActivityFlowSchema(
@@ -113,9 +113,9 @@ class FlowMigrationService:
                     )
                 )
         flow_schemas = await FlowsCRUD(self.session).create_many(schemas)
-        flow_items = await FlowItemMigrationService(self.session, applet).create_update(
-            prepared_flow_items
-        )
+        flow_items = await FlowItemMigrationService(
+            self.session, applet
+        ).create_update(prepared_flow_items)
         flows = list()
 
         flow_id_map = dict()
@@ -130,6 +130,8 @@ class FlowMigrationService:
 
         return flows
 
-    async def remove_applet_flows(self, applet_id: uuid.UUID):
-        await FlowItemService(self.session).remove_applet_flow_items(applet_id)
-        await FlowsCRUD(self.session).delete_by_applet_id(applet_id)
+    async def remove_applet_flows(self, applet: AppletMigratedFull):
+        await FlowItemMigrationService(
+            self.session, applet
+        ).remove_applet_flow_items(applet.id)
+        await FlowsCRUD(self.session).delete_by_applet_id(applet.id)

@@ -23,7 +23,9 @@ class ActivityMigrationService:
         self.session = session
 
     async def create(
-        self, applet: AppletMigratedFull, activities_create: list[ActivityCreate]
+        self,
+        applet: AppletMigratedFull,
+        activities_create: list[ActivityCreate],
     ) -> list[ActivityFull]:
         schemas = []
         activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()
@@ -31,7 +33,7 @@ class ActivityMigrationService:
         prepared_activity_items = list()
 
         for index, activity_data in enumerate(activities_create):
-            activity_id = activity_data.extra_fields['id']
+            activity_id = activity_data.extra_fields["id"]
             activity_key_id_map[activity_data.key] = activity_id
             activity_id_key_map[activity_id] = activity_data.key
 
@@ -65,7 +67,7 @@ class ActivityMigrationService:
             for item in activity_data.items:
                 prepared_activity_items.append(
                     ActivityItemMigratedCreate(
-                        id=item.extra_fields['id'],
+                        id=item.extra_fields["id"],
                         activity_id=activity_id,
                         question=item.question,
                         response_type=item.response_type,
@@ -109,16 +111,17 @@ class ActivityMigrationService:
         return activities
 
     async def update_create(
-        self, applet: AppletMigratedFull, activities_create: list[ActivityUpdate]
+        self,
+        applet: AppletMigratedFull,
+        activities_create: list[ActivityUpdate],
     ) -> list[ActivityFull]:
         schemas = []
         activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()
         activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
         prepared_activity_items = list()
 
-
         for index, activity_data in enumerate(activities_create):
-            activity_id = activity_data.extra_fields['id']
+            activity_id = activity_data.extra_fields["id"]
             activity_key_id_map[activity_data.key] = activity_id
             activity_id_key_map[activity_id] = activity_data.key
 
@@ -151,8 +154,8 @@ class ActivityMigrationService:
 
             for item in activity_data.items:
                 prepared_activity_items.append(
-                    PreparedActivityItemUpdate(
-                        id=item.id or uuid.uuid4(),
+                    ActivityItemMigratedCreate(
+                        id=item.extra_fields["id"],
                         name=item.name,
                         activity_id=activity_id,
                         question=item.question,
@@ -165,6 +168,10 @@ class ActivityMigrationService:
                         if item.conditional_logic
                         else None,
                         allow_edit=item.allow_edit,
+                        created_at=applet.created_at,
+                        updated_at=applet.updated_at,
+                        migrated_date=applet.migrated_date,
+                        migrated_updated=applet.migrated_updated,
                     )
                 )
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
@@ -189,7 +196,6 @@ class ActivityMigrationService:
             )
 
         return activities
-
 
     async def remove_applet_activities(self, applet_id: uuid.UUID):
         await ActivityItemService(self.session).remove_applet_activity_items(

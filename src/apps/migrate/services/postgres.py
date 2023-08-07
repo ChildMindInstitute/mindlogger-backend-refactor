@@ -10,7 +10,6 @@ from infrastructure.database import session_manager
 from infrastructure.database import atomic
 
 
-
 class Postgres:
     def __init__(self) -> None:
         # Setup PostgreSQL connection
@@ -149,20 +148,36 @@ class Postgres:
     # ):
     #     pass
 
-    async def save_applets(self, applets: dict, owner_id: str):
+    async def save_applets(
+        self,
+        applets_by_versions: dict,
+        owner_id: str,
+        applet_last_version: dict,
+    ):
         owner_id = mongoid_to_uuid(owner_id)
-        version = "1.0.0"
-        applet = applets[version]
+        initail_version = "1.0.0"
+        # applet = applets_by_versions[version]
         session = session_manager.get_session()
 
-        print("mongo uuid", applet.extra_fields["id"])
+        applets_by_versions.pop(list(applets_by_versions.keys())[-1])
+
+        # print(applets_by_versions)
+
+        # print("mongo uuid", applet.extra_fields["id"])
 
         # TODO: Lookup the owner_id for the applet workspace
 
         async with atomic(session):
-            applet_create = await AppletMigrationService(session, owner_id).create(
-                applet, owner_id
-            )
+            for version, applet in applets_by_versions.items():
+                if version == initail_version:
+                    applet_create = await AppletMigrationService(
+                        session, owner_id
+                    ).create(applet, owner_id)
+                else:
+                    applet_create = await AppletMigrationService(
+                        session, owner_id
+                    ).update(applet)
+                    # break
 
         # print(applet_create)
 
