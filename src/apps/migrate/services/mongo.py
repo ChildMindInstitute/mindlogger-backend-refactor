@@ -47,7 +47,7 @@ class Mongo:
         # Setup MongoDB connection
         uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
         print(uri)
-        self.client = MongoClient("mongo", 27017)
+        self.client = MongoClient(uri, 27017) #uri
         self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
     @staticmethod
@@ -247,8 +247,10 @@ class Mongo:
         for version, content in result.items():
             print(version)
             ld_request_schema = content_to_jsonld(content["applet"])
-            converted_applet_versions[
-                version
-            ] = await self.get_converter_result(ld_request_schema)
+            converted = await self.get_converter_result(ld_request_schema)
+            converted.extra_fields['updated'] = content['updated']
+            converted.extra_fields['version'] = version
+            converted.extra_fields['id'] = converted.extra_fields["extra"]["_:id"][0]["@value"]
+            converted_applet_versions[version] = converted
 
         return converted_applet_versions, owner_id

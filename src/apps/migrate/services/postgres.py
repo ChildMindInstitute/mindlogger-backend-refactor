@@ -6,7 +6,7 @@ from datetime import datetime
 import psycopg2
 
 from apps.applets.domain.applet_create_update import AppletCreate
-from apps.applets.service import AppletService
+from apps.migrate.services.applet import AppletMigrationService
 from infrastructure.database import session_manager
 from infrastructure.database import atomic
 
@@ -23,6 +23,7 @@ class Postgres:
         # Setup PostgreSQL connection
         self.connection = psycopg2.connect(
             host=os.getenv("DATABASE__HOST", "postgres"),
+            port=os.getenv("DATABASE__PORT", "5432"),
             dbname=os.getenv("DATABASE__DB", "mindlogger_backend"),
             user=os.getenv("DATABASE__USER", "postgres"),
             password=os.getenv("DATABASE__PASSWORD", "postgres"),
@@ -157,19 +158,20 @@ class Postgres:
 
     async def save_applets(self, applets: dict, owner_id: str):
         owner_id = mongoid_to_uuid(owner_id)
-        applet = applets["1.0.0"]
+        version = "1.0.0"
+        applet = applets[version]
         session = session_manager.get_session()
 
         applet.extra_fields["id"] = mongoid_to_uuid(
-            applet.extra_fields["extra"]["_:id"][0]["@value"]
+            applet.extra_fields["id"]
         )
         print("mongo uuid", applet.extra_fields["id"])
 
         # TODO: Lookup the owner_id for the applet workspace
 
         async with atomic(session):
-            applet_create = await AppletService(session, owner_id).create(
-                applet, owner_id, False
+            applet_create = await AppletMigrationService(session, owner_id).create(
+                applet, owner_id
             )
 
         # print(applet_create)

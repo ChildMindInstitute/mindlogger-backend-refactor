@@ -107,12 +107,9 @@ class AppletService:
             ).add_role(manager_id, Role.RESPONDENT)
 
     async def create(
-        self,
-        create_data: AppletCreate,
-        manager_id: uuid.UUID | None = None,
-        ignore_id: bool = True,
+        self, create_data: AppletCreate, manager_id: uuid.UUID | None = None
     ) -> AppletFull:
-        applet = await self._create(create_data, ignore_id)
+        applet = await self._create(create_data)
 
         await self._create_applet_accesses(applet.id, manager_id)
 
@@ -132,12 +129,8 @@ class AppletService:
 
         return applet
 
-    async def _create(
-        self, create_data: AppletCreate, ignore_id: bool = True
-    ) -> AppletFull:
-        applet_id = (
-            uuid.uuid4() if ignore_id else create_data.extra_fields["id"]
-        )
+    async def _create(self, create_data: AppletCreate) -> AppletFull:
+        applet_id = uuid.uuid4()
         await self._validate_applet_name(create_data.display_name)
         schema = await AppletsCRUD(self.session).save(
             AppletSchema(
