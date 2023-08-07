@@ -1407,8 +1407,8 @@ class TestAnswerActivityItems(BaseTest):
     @pytest.mark.parametrize(
         "query,expected",
         (
-            ({"identifiers": "encrypted", "many_filters": True}, 1),
-            ({"many_filters": True}, 0),
+            ({"identifiers": "encrypted"}, 1),
+            ({"emptyIdentifiers": True}, 0),
         ),
     )
     @rollback
@@ -1461,4 +1461,5 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == expected
+        response = response.json()
+        assert response["count"] == expected

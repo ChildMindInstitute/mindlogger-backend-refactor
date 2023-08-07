@@ -157,7 +157,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         filters: QueryParams,
     ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
         identifiers = filters.filters.get("identifiers")
-        more_filters_enabled = filters.filters.get("more_filters")
+        empty_identifiers = filters.filters.get("empty_identifiers")
 
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
@@ -177,10 +177,11 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.where(ActivityHistorySchema.id == activity_id)
         query = query.order_by(AnswerSchema.created_at.asc())
 
-        if not identifiers and more_filters_enabled:
+        if not identifiers:
             if "identifiers" in filters.filters:
                 filters.filters.pop("identifiers")
-            query = query.where(AnswerItemSchema.identifier.is_(None))
+            if empty_identifiers:
+                query = query.where(AnswerItemSchema.identifier.is_(None))
 
         if filters.filters:
             query = query.where(
