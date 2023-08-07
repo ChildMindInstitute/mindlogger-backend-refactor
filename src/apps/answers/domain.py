@@ -364,3 +364,39 @@ class ReportServerEmail(InternalModel):
 class ReportServerResponse(InternalModel):
     pdf: str
     email: ReportServerEmail
+
+
+class AnalyticsResponseType(InternalModel):
+    pass
+
+
+class DataValue(InternalModel):
+    date: str
+    value: int
+
+
+class ResponseConfigOptions(InternalModel):
+    name: str
+    value: int
+
+
+class ResponseConfig(InternalModel):
+    options: list[ResponseConfigOptions]
+
+
+class Response(InternalModel):
+    name: str
+    type: AnalyticsResponseType
+    data: list[DataValue]
+    response_config: ResponseConfig
+
+
+class ActivitiesResponses(InternalModel):
+    id: uuid.UUID
+    name: str
+    responses: list[Response]
+
+
+class AnswerMobileData(InternalModel):
+    applet_id: uuid.UUID
+    activities_responses: list[ActivitiesResponses] | None

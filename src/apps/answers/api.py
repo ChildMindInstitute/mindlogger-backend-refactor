@@ -405,3 +405,27 @@ async def applet_answers_export(
             )
 
     return Response(result=PublicAnswerExport.from_orm(data))
+
+
+async def applet_answers_mobile_data(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(
+        parse_query_params(AnswerExportFilters)
+    ),
+    session=Depends(get_session),
+):
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answers_mobile_data_access(
+        applet_id
+    )
+    data: AnswerMobileData = await AnswerService(session, user.id).get_answer_mobile_data(
+        applet_id, query_params
+    )
+    # for answer in data.answers:
+    #     if answer.is_manager:
+    #         answer.respondent_secret_id = (
+    #             f"[admin account]({answer.respondent_email})"
+    #         )
+
+    return Response(result=PublicAnswerExport.from_orm(data))

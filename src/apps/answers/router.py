@@ -19,7 +19,7 @@ from apps.answers.api import (
     note_list,
     review_activity_list,
     summary_activity_list,
-    summary_latest_report_retrieve,
+    summary_latest_report_retrieve, applet_answers_mobile_data,
 )
 from apps.answers.domain import (
     ActivityAnswerPublic,
@@ -223,3 +223,13 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_answers_export)
+
+router.get(
+    "/applet/{applet_id}/data/mobile",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicAnswerExport]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_answers_mobile_data)
