@@ -19,6 +19,7 @@ from apps.jsonld_converter.dependencies import (
 from apps.migrate.services.applet_versions import (
     get_versions_from_content,
     content_to_jsonld,
+    CONTEXT,
 )
 from apps.migrate.utilities import mongoid_to_uuid
 from apps.shared.domain.base import InternalModel, PublicModel
@@ -47,7 +48,6 @@ class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
         uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        print(uri)
         self.client = MongoClient(uri, 27017)  # uri
         self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
@@ -202,18 +202,8 @@ class Mongo:
         ] = activity_flow_objects
         # add context
 
-        context = {
-            "@context": [
-                {
-                    "reprolib": "https://raw.githubusercontent.com/ReproNim/reproschema/master/"  # noqa: E501
-                },
-                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json",  # noqa: E501
-            ],
-            "@type": "https://raw.githubusercontent.com/ReproNim/reproschema/master/schemas/Protocol",  # noqa: E501
-        }
-
-        applet["@context"] = context["@context"]
-        applet["@type"] = context["@type"]
+        applet["@context"] = CONTEXT["@context"]
+        applet["@type"] = CONTEXT["@type"]
 
         return applet
 
@@ -222,17 +212,11 @@ class Mongo:
         ld_request_schema = self.get_applet_repro_schema(applet)
         converted = await self.get_converter_result(ld_request_schema)
 
-        converted.extra_fields["id"] = mongoid_to_uuid(
-            converted.extra_fields["extra"]["_:id"][0]["@value"]
-        )
-        for activity in converted.activities:
-            activity.extra_fields["id"] = mongoid_to_uuid(
-                activity.extra_fields["extra"]["_:id"][0]["@value"]
-            )
-            for item in activity.items:
-                item.extra_fields["id"] = mongoid_to_uuid(
-                    item.extra_fields["extra"]["_:id"][0]["@value"]
-                )
+        converted.extra_fields["created"] = applet['created']
+        converted.extra_fields["updated"] = applet['updated']
+        converted.extra_fields["version"] = applet['meta']['applet']['version']
+        converted = self._extract_ids(converted, applet_id)
+
         return converted
 
     async def get_applet_versions(self, applet_id: str) -> [dict, str]:
@@ -245,20 +229,29 @@ class Mongo:
             print(version)
             ld_request_schema = content_to_jsonld(content["applet"])
             converted = await self.get_converter_result(ld_request_schema)
+            converted.extra_fields["created"] = content["updated"]
             converted.extra_fields["updated"] = content["updated"]
             converted.extra_fields["version"] = version
-            converted.extra_fields["id"] = mongoid_to_uuid(
-                converted.extra_fields["extra"]["_:id"][0]["@value"]
-            )
-            for activity in converted.activities:
-                activity.extra_fields["id"] = mongoid_to_uuid(
-                    activity.extra_fields["extra"]["_:id"][0]["@value"]
-                )
-                for item in activity.items:
-                    item.extra_fields["id"] = mongoid_to_uuid(
-                        item.extra_fields["extra"]["_:id"][0]["@value"]
-                    )
+            converted = self._extract_ids(converted, applet_id)
 
             converted_applet_versions[version] = converted
 
         return converted_applet_versions, owner_id
+
+    def _extract_ids(self, converted: dict, applet_id: str = None) -> dict:
+        converted.extra_fields["id"] = mongoid_to_uuid(
+            applet_id if applet_id is not None else converted.extra_fields["extra"]["_:id"][0]["@value"]
+        )
+        for activity in converted.activities:
+            activity.extra_fields["id"] = mongoid_to_uuid(
+                activity.extra_fields["extra"]["_:id"][0]["@value"]
+            )
+            for item in activity.items:
+                item.extra_fields["id"] = mongoid_to_uuid(
+                    item.extra_fields["extra"]["_:id"][0]["@value"]
+                )
+        for flow in converted.activity_flows:
+            flow.extra_fields["id"] = mongoid_to_uuid(
+                flow.extra_fields["extra"]["_:id"][0]["@value"]
+            )
+        return converted

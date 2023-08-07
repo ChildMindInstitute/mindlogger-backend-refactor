@@ -97,7 +97,7 @@ class AppletMigrationService:
                 encryption=create_data.encryption.dict()
                 if create_data.encryption
                 else None,
-                created_at=create_data.extra_fields["updated"],
+                created_at=create_data.extra_fields['created'],
                 updated_at=create_data.extra_fields["updated"],
                 migrated_date=datetime.datetime.now(),
                 migrated_updated=datetime.datetime.now(),
@@ -165,7 +165,7 @@ class AppletMigrationService:
                 report_include_user_id=update_data.report_include_user_id,
                 report_include_case_id=update_data.report_include_case_id,
                 report_email_body=update_data.report_email_body,
-                created_at=update_data.extra_fields["updated"],
+                created_at=update_data.extra_fields["created"],
                 updated_at=update_data.extra_fields["updated"],
                 migrated_date=datetime.datetime.now(),
                 migrated_updated=datetime.datetime.now(),

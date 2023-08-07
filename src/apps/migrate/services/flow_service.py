@@ -105,7 +105,7 @@ class FlowMigrationService:
             for flow_item_update in flow_update.items:
                 prepared_flow_items.append(
                     PreparedFlowItemUpdate(
-                        id=flow_item_update.id or uuid.uuid4(),
+                        id=uuid.uuid4(),
                         activity_flow_id=flow_id,
                         activity_id=activity_key_id_map[
                             flow_item_update.activity_key

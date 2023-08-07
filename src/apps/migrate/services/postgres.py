@@ -152,14 +152,11 @@ class Postgres:
         self,
         applets_by_versions: dict,
         owner_id: str,
-        applet_last_version: dict,
     ):
         owner_id = mongoid_to_uuid(owner_id)
-        initail_version = "1.0.0"
+        initail_version = list(applets_by_versions.keys())[0]
         # applet = applets_by_versions[version]
         session = session_manager.get_session()
-
-        applets_by_versions.pop(list(applets_by_versions.keys())[-1])
 
         # print(applets_by_versions)
 
