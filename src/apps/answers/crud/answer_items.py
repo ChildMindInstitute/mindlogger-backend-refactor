@@ -1,6 +1,7 @@
 import uuid
+from typing import Tuple
 
-from sqlalchemy import and_, delete, or_, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivityHistorySchema
@@ -99,17 +100,29 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_assessment(
+    async def get_last_assessment(
         self, answer_id: uuid.UUID, user_id: uuid.UUID
-    ) -> AnswerItemSchema | None:
-        query: Query = select(AnswerItemSchema)
+    ) -> Tuple[AnswerItemSchema | None, int]:
+        """
+        Get last user assessment with assessments count
+        """
+        query: Query = select(
+            AnswerItemSchema,
+            func.count(AnswerItemSchema.id).over().label("count"),
+        )
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(AnswerItemSchema.respondent_id == user_id)
-        query = query.where(AnswerItemSchema.is_assessment == True)  # noqa
+        query = query.where(AnswerItemSchema.is_assessment.is_(True))
+        query = query.order_by(AnswerItemSchema.created_at.desc())
+        query = query.limit(1)
 
         db_result = await self._execute(query)
 
-        return db_result.scalars().first()
+        res = db_result.first()
+        if not res:
+            return None, 0
+
+        return res[0], res[1]
 
     async def get_reviews_by_answer_id(
         self, answer_id: uuid.UUID, activity_items: list
@@ -118,23 +131,31 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
             AnswerItemSchema,
             UserSchema.first_name,
             UserSchema.last_name,
+            func.count(AnswerItemSchema.id)
+            .over(partition_by=AnswerItemSchema.respondent_id)
+            .label("count"),
         )
         query = query.join(
             UserSchema, UserSchema.id == AnswerItemSchema.respondent_id
         )
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(AnswerItemSchema.is_assessment == True)  # noqa
+        query = query.order_by(
+            AnswerItemSchema.respondent_id,
+            AnswerItemSchema.created_at.desc(),
+        )
+        query = query.distinct(AnswerItemSchema.respondent_id)
 
         db_result = await self._execute(query)
         results = []
-        for schema, first_name, last_name in db_result.all():
+        for schema, first_name, last_name, count in db_result.all():
             results.append(
                 AnswerReview(
                     reviewer_public_key=schema.user_public_key,
                     answer=schema.answer,
                     item_ids=schema.item_ids,
                     items=activity_items,
-                    is_edited=schema.created_at != schema.updated_at,
+                    is_edited=count > 1,
                     reviewer=dict(first_name=first_name, last_name=last_name),
                 )
             )

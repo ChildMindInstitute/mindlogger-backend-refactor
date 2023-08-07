@@ -437,23 +437,20 @@ class AnswerService:
         if len(activity_items) == 0:
             return AssessmentAnswer(items=activity_items)
 
-        assessment_answer = await AnswerItemsCRUD(self.session).get_assessment(
-            answer_id, self.user_id
-        )
+        assessment_answer, count = await AnswerItemsCRUD(
+            self.session
+        ).get_last_assessment(answer_id, self.user_id)
 
-        answer = AssessmentAnswer(
-            reviewer_public_key=assessment_answer.user_public_key
-            if assessment_answer
-            else None,
-            answer=assessment_answer.answer if assessment_answer else None,
-            item_ids=assessment_answer.item_ids if assessment_answer else [],
+        if not assessment_answer:
+            return AssessmentAnswer(items=activity_items)
+
+        return AssessmentAnswer(
+            reviewer_public_key=assessment_answer.user_public_key,
+            answer=assessment_answer.answer,
+            item_ids=assessment_answer.item_ids,
             items=activity_items,
-            is_edited=assessment_answer.created_at
-            != assessment_answer.updated_at  # noqa
-            if assessment_answer
-            else False,
+            is_edited=count > 1,
         )
-        return answer
 
     async def get_reviews_by_answer_id(
         self, applet_id: uuid.UUID, answer_id: uuid.UUID
@@ -482,41 +479,21 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        assessment = await AnswerItemsCRUD(self.session).get_assessment(
-            answer_id, self.user_id
+        now = datetime.datetime.now()
+        await AnswerItemsCRUD(self.session).create(
+            AnswerItemSchema(
+                answer_id=answer_id,
+                respondent_id=self.user_id,
+                answer=schema.answer,
+                item_ids=list(map(str, schema.item_ids)),
+                user_public_key=schema.reviewer_public_key,
+                is_assessment=True,
+                start_datetime=now,
+                end_datetime=now,
+                created_at=now,
+                updated_at=now,
+            )
         )
-        if assessment:
-            await AnswerItemsCRUD(self.session).update(
-                AnswerItemSchema(
-                    id=assessment.id,
-                    created_at=assessment.created_at,
-                    updated_at=datetime.datetime.now(),
-                    answer_id=answer_id,
-                    respondent_id=self.user_id,
-                    answer=schema.answer,
-                    item_ids=list(map(str, schema.item_ids)),
-                    user_public_key=schema.reviewer_public_key,
-                    is_assessment=True,
-                    start_datetime=datetime.datetime.now(),
-                    end_datetime=datetime.datetime.now(),
-                )
-            )
-        else:
-            now = datetime.datetime.now()
-            await AnswerItemsCRUD(self.session).create(
-                AnswerItemSchema(
-                    answer_id=answer_id,
-                    respondent_id=self.user_id,
-                    answer=schema.answer,
-                    item_ids=list(map(str, schema.item_ids)),
-                    user_public_key=schema.reviewer_public_key,
-                    is_assessment=True,
-                    start_datetime=now,
-                    end_datetime=now,
-                    created_at=now,
-                    updated_at=now,
-                )
-            )
 
     async def _validate_activity_for_assessment(
         self, activity_history_id: str
