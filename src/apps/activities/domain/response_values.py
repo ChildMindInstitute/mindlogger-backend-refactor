@@ -151,7 +151,7 @@ class SliderValues(PublicModel):
 
     @root_validator
     def validate_scores(cls, values):
-        if values.get("scores") is not None:
+        if values.get("scores") is not None and values.get("scores") != []:
             if (
                 len(values.get("scores"))
                 != values.get("max_value") - values.get("min_value") + 1

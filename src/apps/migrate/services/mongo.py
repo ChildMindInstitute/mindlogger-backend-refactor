@@ -252,7 +252,7 @@ class Mongo:
 
             converted_applet_versions[version] = converted
 
-        return converted_applet_versions, owner_id
+        return dict(sorted(converted_applet_versions.items())), owner_id
 
     def _extract_ids(self, converted: dict, applet_id: str = None) -> dict:
         converted.extra_fields["id"] = mongoid_to_uuid(

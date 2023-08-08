@@ -1,6 +1,8 @@
 import mimetypes
 import uuid
 from gettext import gettext as _
+from urllib.parse import urlparse
+import requests
 
 from pydantic.color import Color
 
@@ -33,10 +35,31 @@ class InvalidUUIDError(ValidationError):
 
 
 def validate_image(value: str) -> str:
+    if value.startswith('http'):
+        type = _get_mimetype_from_url_without_download(value) or _get_mimetype_from_url(value) or ""
+        if type.startswith("image/"):
+            return value
+
     if (mimetypes.guess_type(value)[0] or "").startswith("image/"):
         return value
     raise InvalidImageError()
 
+
+def _get_mimetype_from_url_without_download(value: str) ->  str | None:
+    try:
+        res = urlparse(value)
+        path = res.path
+        return mimetypes.guess_type(path)[0] or None
+    except:
+        return None
+
+
+def _get_mimetype_from_url(value: str) ->  str | None:
+    try:
+        r = requests.head(value)
+        return r.headers.get('content-type')
+    except:
+        return None
 
 def validate_color(value: str | Color) -> str:
     if type(value) is Color:
