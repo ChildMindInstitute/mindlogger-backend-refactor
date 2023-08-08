@@ -747,6 +747,9 @@ class AnswerService:
                 sentry_sdk.capture_exception(e)
                 break
 
+    async def get_answer_mobile_data(self, applet_id: uuid.UUID):
+        pass
+
 
 class ReportServerService:
     def __init__(self, session):

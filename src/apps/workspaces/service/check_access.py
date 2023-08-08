@@ -215,9 +215,7 @@ class CheckAccessService:
     async def check_applet_share_library_access(self, applet_id: uuid.UUID):
         await self._check_applet_roles(applet_id, [Role.OWNER])
 
-    async def check_answers_mobile_data_access(
-        self, applet_id: uuid.UUID
-    ):
+    async def check_answers_mobile_data_access(self, applet_id: uuid.UUID):
         has_access = await AppletAccessCRUD(self.session).has_role(
             applet_id, self.user_id, Role.RESPONDENT
         )

@@ -10,6 +10,7 @@ from apps.answers.api import (
     applet_activity_versions_retrieve,
     applet_answer_reviews_retrieve,
     applet_answers_export,
+    applet_answers_mobile_data,
     applet_submit_date_list,
     create_anonymous_answer,
     create_answer,
@@ -19,7 +20,7 @@ from apps.answers.api import (
     note_list,
     review_activity_list,
     summary_activity_list,
-    summary_latest_report_retrieve, applet_answers_mobile_data,
+    summary_latest_report_retrieve,
 )
 from apps.answers.domain import (
     ActivityAnswerPublic,

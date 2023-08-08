@@ -22,6 +22,7 @@ from apps.answers.domain import (
     PublicSummaryActivity,
     VersionPublic,
 )
+from apps.answers.domain.analytics import AnswersMobileData
 from apps.answers.filters import (
     AnswerExportFilters,
     AppletActivityAnswerFilter,
@@ -410,18 +411,18 @@ async def applet_answers_export(
 async def applet_answers_mobile_data(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    query_params: QueryParams = Depends(
-        parse_query_params(AnswerExportFilters)
-    ),
+    # query_params: QueryParams = Depends(
+    #     parse_query_params(AnswerExportFilters)
+    # ),
     session=Depends(get_session),
 ):
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answers_mobile_data_access(
-        applet_id
-    )
-    data: AnswerMobileData = await AnswerService(session, user.id).get_answer_mobile_data(
-        applet_id, query_params
-    )
+    await CheckAccessService(
+        session, user.id
+    ).check_answers_mobile_data_access(applet_id)
+    data: AnswersMobileData = await AnswerService(
+        session, user.id
+    ).get_answer_mobile_data(applet_id)
     # for answer in data.answers:
     #     if answer.is_manager:
     #         answer.respondent_secret_id = (
