@@ -1,3 +1,5 @@
+import json
+import re
 from typing import TypeVar
 
 from pydantic import BaseModel, Extra
@@ -24,29 +26,28 @@ def to_camelcase(payload: str) -> str:
     )
 
 
-def convert_value_to_camel_case(value):
-    if isinstance(value, dict):
-        return convert_dict_to_camel_case(value)
-    elif isinstance(value, list):
-        return [convert_value_to_camel_case(item) for item in value]
-    else:
-        return value
+def camel_case(match_obj):
+    return match_obj.group(1) + match_obj.group(2).upper()
 
 
-def convert_dict_to_camel_case(input_dict):
-    camel_case_dict = {}
-    for key, value in input_dict.items():
-        camel_case_key = to_camelcase(key)
-        camel_case_dict[camel_case_key] = convert_value_to_camel_case(value)
-    return camel_case_dict
+def convert_to_camel(match_obj):
+    if match_obj.group() is not None:
+        res_str = re.sub(r"(.*?)_([a-zA-Z])", camel_case, match_obj.group())
+        return res_str
+
+
+def convert_str_to_camel_case(input_str: str):
+    res_str = re.sub(r'"(\w+)":', convert_to_camel, input_str)
+    string_as_dict = json.loads(res_str)
+    return string_as_dict
 
 
 def model_as_camel_case(model: _BaseModel) -> _BaseModel:
     """Returns the model but with field names and nested
     keys converted to camel case.
     """
-    model_dict = model.dict()
-    camel_case_dict = convert_dict_to_camel_case(model_dict)
+    model_json = model.json()
+    camel_case_dict = convert_str_to_camel_case(model_json)
     return model.__class__(**camel_case_dict)
 
 
