@@ -1,7 +1,5 @@
 import hashlib
 import os
-from pprint import pprint as print
-from typing import Any
 
 from bson.objectid import ObjectId
 from Cryptodome.Cipher import AES
@@ -16,6 +14,7 @@ from apps.jsonld_converter.dependencies import (
     get_document_loader,
     get_jsonld_model_converter,
 )
+from apps.migrate.exception.exception import FormatldException, EmptyAppletException
 from apps.migrate.services.applet_versions import (
     get_versions_from_content,
     content_to_jsonld,
@@ -161,21 +160,36 @@ class Mongo:
         return results
 
     def get_applet_repro_schema(self, applet: dict) -> dict:
-        applet_format = jsonld_expander.formatLdObject(applet, "applet")
+        applet_format = jsonld_expander.formatLdObject(applet, "applet", refreshCache=False, reimportFromUrl=False)
+
+        if applet_format is None or applet_format == {}:
+            raise FormatldException(message='formatLdObject returned empty object')
+
+        if applet_format['activities'] == {}:
+            raise FormatldException(message='formatLdObject returned empty activities')
 
         for key, activity in applet_format["activities"].items():
             applet_format["activities"][key] = jsonld_expander.formatLdObject(
-                Activity().findOne({"_id": activity}), "activity"
+                Activity().findOne({"_id": activity}), "activity", refreshCache=False, reimportFromUrl=False
             )
 
         activities = applet_format["activities"]
         # setup activity items
         for key, value in activities.items():
-            activity_items = value["items"]
+            activity_items = value["items"].copy() if 'items' in value else {}
+            for _key, _item in activity_items.copy().items():
+                if 'url' in _item:
+                    activity_items[_item['url']] = _item
+
             activity_object = value["activity"]
             activity_items_objects = []
             for item in activity_object["reprolib:terms/order"][0]["@list"]:
-                activity_items_objects.append(activity_items[item["@id"]])
+                item_key = item["@id"]
+                if item_key in activity_items:
+                    activity_items_objects.append(activity_items[item_key])
+                else:
+                    activity_items_objects.append(item)
+                    print('Warning: item ', item_key, 'presents in order but absent in activity items. activityId:', str(activity_object['_id']))
 
             activities[key]["activity"]["reprolib:terms/order"][0][
                 "@list"
@@ -208,6 +222,9 @@ class Mongo:
 
     async def get_applet(self, applet_id: str) -> dict:
         applet = Applet().findOne({"_id": ObjectId(applet_id)})
+        if 'applet' not in applet['meta'] or applet['meta']['applet'] == {}:
+            raise EmptyAppletException()
+
         ld_request_schema = self.get_applet_repro_schema(applet)
         converted = await self.get_converter_result(ld_request_schema)
 
