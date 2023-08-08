@@ -4,6 +4,7 @@ import datetime
 import json
 import uuid
 from collections import defaultdict
+from functools import wraps
 
 import aiohttp
 import sentry_sdk
@@ -73,10 +74,26 @@ from infrastructure.utility import RedisCache
 from infrastructure.utility.rabbitmq_queue import RabbitMqQueue
 
 
+def session_selector(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        session = (
+            self.arbitrary_session if self.arbitrary_session else self.session
+        )
+        args += (session,)
+        result = func(self, *args, **kwargs)
+        return result
+
+    return wrapper
+
+
 class AnswerService:
-    def __init__(self, session, user_id: uuid.UUID | None = None):
+    def __init__(
+        self, session, user_id: uuid.UUID | None = None, arbitrary_session=None
+    ):
         self.user_id = user_id
         self.session = session
+        self.arbitrary_session = arbitrary_session
 
     @staticmethod
     def _generate_history_id(version: str):
@@ -151,14 +168,15 @@ class AnswerService:
         if not roles:
             raise UserDoesNotHavePermissionError()
 
-    async def _create_answer(self, applet_answer: AppletAnswerCreate):
+    @session_selector
+    async def _create_answer(self, applet_answer: AppletAnswerCreate, session):
         pk = self._generate_history_id(applet_answer.version)
         created_at = datetime.datetime.now()
         if applet_answer.created_at:
             created_at = datetime.datetime.fromtimestamp(
                 applet_answer.created_at
             )
-        answer = await AnswersCRUD(self.session).create(
+        answer = await AnswersCRUD(session).create(
             AnswerSchema(
                 submit_id=applet_answer.submit_id,
                 created_at=created_at,
@@ -195,8 +213,8 @@ class AnswerService:
             is_assessment=False,
         )
 
-        await AnswerItemsCRUD(self.session).create(item_answer)
-        await self._create_report_from_answer(answer.submit_id, answer.id)
+        await AnswerItemsCRUD(session).create(item_answer)
+        await self._create_report_from_answer(answer)
         await self._create_alerts(
             answer.id,
             answer.applet_id,
@@ -205,27 +223,25 @@ class AnswerService:
             applet_answer.alerts,
         )
 
-    async def _create_report_from_answer(
-        self, submit_id: uuid.UUID, answer_id: uuid.UUID
-    ):
+    async def _create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(self.session)
-        is_reportable = await service.is_reportable(answer_id)
+        is_reportable = await service.is_reportable(answer)
         if not is_reportable:
             return
 
         queue = RabbitMqQueue()
         await queue.connect()
-        is_flow_single = await service.is_flows_single_report(answer_id)
+        is_flow_single = await service.is_flows_single_report(answer.answer_id)
         try:
             if not is_flow_single:
                 await queue.publish(
-                    data=dict(submit_id=submit_id, answer_id=answer_id)
+                    data=dict(submit_id=answer.submit_id, answer_id=answer.id)
                 )
             else:
                 # TODO: check whether the flow is finished
                 is_single_report = True
                 if is_single_report:
-                    await queue.publish(data=dict(submit_id=submit_id))
+                    await queue.publish(data=dict(submit_id=answer.submit_id))
         finally:
             await queue.close()
 
@@ -752,10 +768,10 @@ class ReportServerService:
     def __init__(self, session):
         self.session = session
 
-    async def is_reportable(self, answer_id: uuid.UUID):
-        answer, applet, activity = await AnswersCRUD(
+    async def is_reportable(self, answer: AnswerSchema):
+        applet, activity = await AnswersCRUD(
             self.session
-        ).get_applet_info_by_answer_id(answer_id)
+        ).get_applet_info_by_answer_id(answer)
         if not applet.report_server_ip:
             return False
         elif not applet.report_public_key:

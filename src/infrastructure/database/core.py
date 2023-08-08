@@ -126,7 +126,6 @@ def rollback_with_session(func):
 
 async def get_specific_session(url: str):
     session_maker = session_manager.get_session(url)
-
     if settings.env == "testing":
         yield session_maker
     else:

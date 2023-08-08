@@ -41,7 +41,11 @@ from apps.shared.query_params import (
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
+from apps.workspaces.service.workspace_arbitrary import (
+    WorkspaceArbitraryService,
+)
 from infrastructure.database import atomic
+from infrastructure.database.core import get_specific_session
 from infrastructure.database.deps import get_session
 
 
@@ -54,8 +58,20 @@ async def create_answer(
         await CheckAccessService(session, user.id).check_answer_create_access(
             schema.applet_id
         )
-        await AnswerService(session, user.id).create_answer(schema)
-    return
+        arbitrary_server = await WorkspaceArbitraryService(
+            session
+        ).read_by_applet(schema.applet_id)
+        if arbitrary_server:
+            spec_session = await anext(
+                get_specific_session(arbitrary_server.database_uri)
+            )
+            async with atomic(spec_session):
+                answer = await AnswerService(
+                    session, user.id, spec_session
+                ).create_answer(schema)
+                await spec_session.commit()
+                return answer
+    return await AnswerService(session, user.id).create_answer(schema)
 
 
 async def create_anonymous_answer(

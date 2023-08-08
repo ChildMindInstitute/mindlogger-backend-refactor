@@ -360,29 +360,25 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return flow_history_schema.is_single_report
 
     async def get_applet_info_by_answer_id(
-        self, answer_id: uuid.UUID
-    ) -> tuple[AnswerSchema, AppletHistorySchema, ActivityHistorySchema]:
+        self, answer: AnswerSchema
+    ) -> tuple[AppletHistorySchema, ActivityHistorySchema]:
         query: Query = select(
-            AnswerSchema,
             AppletSchema,
             ActivityHistorySchema,
         )
         query = query.join(
-            AppletSchema,
-            AppletSchema.id == AnswerSchema.applet_id,
+            AppletHistorySchema,
+            AppletHistorySchema.id == AppletSchema.id,
             isouter=True,
         )
         query = query.join(
             ActivityHistorySchema,
-            ActivityHistorySchema.id_version
-            == AnswerSchema.activity_history_id,
+            ActivityHistorySchema.applet_id == AppletHistorySchema.id_version,
             isouter=True,
         )
-        query = query.where(AnswerItemSchema.is_assessment == False)  # noqa
-        query = query.where(AnswerSchema.id == answer_id)
-
         db_result = await self._execute(query)
-        return db_result.first()
+        res = db_result.first()
+        return res
 
     async def get_activities_which_has_answer(
         self, activity_ids: list[uuid.UUID], respondent_id: uuid.UUID | None

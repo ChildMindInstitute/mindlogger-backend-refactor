@@ -246,11 +246,10 @@ class AppletRoles(InternalModel):
 
 class WorkspaceArbitrary(InternalModel):
     id: uuid.UUID
-    user_id: uuid.UUID
-    workspace_name: str
-    is_modified: bool
     database_uri: str
     storage_access_key: str
     storage_secret_key: str
     storage_region: str
+    storage_url: str
     use_arbitrary: bool
+    user_workspace_id: uuid.UUID
