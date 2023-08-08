@@ -126,7 +126,7 @@ class ReproFieldBase(
 
     @property
     def name(self):
-        name = self.ld_pref_label or self.ld_alt_label
+        name = self.ld_pref_label or self.ld_alt_label or self.name or self.ld_id # TODO: discuss
         return str_to_id(name, r"\s")
 
     def _get_ld_question(self, doc: dict, drop=False):
