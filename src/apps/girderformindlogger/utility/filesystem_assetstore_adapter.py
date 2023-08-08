@@ -159,7 +159,9 @@ class FilesystemAssetstoreAdapter(AbstractAssetstoreAdapter):
             chunk = BytesIO(chunk)
 
         # Restore the internal state of the streaming SHA-512 checksum
-        checksum = '' #_hash_state.restoreHex(upload["sha512state"], "sha512")
+        checksum = (
+            ""  # _hash_state.restoreHex(upload["sha512state"], "sha512")
+        )
 
         if self.requestOffset(upload) > upload["received"]:
             # This probably means the server died midway through writing last
@@ -207,7 +209,7 @@ class FilesystemAssetstoreAdapter(AbstractAssetstoreAdapter):
         Moves the file into its permanent content-addressed location within the
         assetstore. Directory hierarchy yields 256^2 buckets.
         """
-        hash = '' #_hash_state.restoreHex(upload["sha512state"], "sha512").hexdigest()
+        hash = ""  # _hash_state.restoreHex(upload["sha512state"], "sha512").hexdigest()
         dir = os.path.join(hash[0:2], hash[2:4])
         absdir = os.path.join(self.assetstore["root"], dir)
 

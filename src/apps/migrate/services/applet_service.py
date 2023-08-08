@@ -97,7 +97,7 @@ class AppletMigrationService:
                 encryption=create_data.encryption.dict()
                 if create_data.encryption
                 else None,
-                created_at=create_data.extra_fields['created'],
+                created_at=create_data.extra_fields["created"],
                 updated_at=create_data.extra_fields["updated"],
                 migrated_date=datetime.datetime.now(),
                 migrated_updated=datetime.datetime.now(),

@@ -6,15 +6,21 @@ from apps.migrate.domain.applet_full import AppletMigratedFull
 
 __all__ = ["AppletMigrationHistoryService"]
 
-from apps.migrate.services.activity_history_service import ActivityHistoryMigrationService
-from apps.migrate.services.flow_history_service import FlowHistoryMigrationService
+from apps.migrate.services.activity_history_service import (
+    ActivityHistoryMigrationService,
+)
+from apps.migrate.services.flow_history_service import (
+    FlowHistoryMigrationService,
+)
 
 
 class AppletMigrationHistoryService:
     def __init__(self, session):
         self.session = session
 
-    async def add_history(self, performer_id: uuid.UUID, applet: AppletMigratedFull):
+    async def add_history(
+        self, performer_id: uuid.UUID, applet: AppletMigratedFull
+    ):
         await AppletHistoriesCRUD(self.session).save(
             AppletHistorySchema(
                 id=applet.id,
@@ -42,6 +48,6 @@ class AppletMigrationHistoryService:
         await ActivityHistoryMigrationService(
             self.session, applet, applet.version
         ).add(applet.activities)
-        await FlowHistoryMigrationService(self.session, applet, applet.version).add(
-            applet.activity_flows
-        )
+        await FlowHistoryMigrationService(
+            self.session, applet, applet.version
+        ).add(applet.activity_flows)

@@ -4,7 +4,9 @@ from apps.activities.crud import ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activities.domain.activity_full import ActivityFull
 from apps.migrate.domain.applet_full import AppletMigratedFull
-from apps.migrate.services.activity_item_history_service import ActivityItemHistoryMigrationService
+from apps.migrate.services.activity_item_history_service import (
+    ActivityItemHistoryMigrationService,
+)
 
 __all__ = ["ActivityHistoryMigrationService"]
 

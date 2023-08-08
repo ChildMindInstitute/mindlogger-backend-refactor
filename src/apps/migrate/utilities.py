@@ -1,5 +1,6 @@
 import uuid
 
+
 def mongoid_to_uuid(id_):
     if isinstance(id_, str) and "/" in id_:
         id_ = id_.split("/").pop()

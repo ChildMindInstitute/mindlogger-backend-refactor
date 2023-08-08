@@ -4,7 +4,9 @@ from apps.activity_flows.crud import FlowsHistoryCRUD
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.activity_flows.domain.flow_full import FlowFull
 from apps.migrate.domain.applet_full import AppletMigratedFull
-from apps.migrate.services.flow_item_history_service import FlowItemHistoryMigrationService
+from apps.migrate.services.flow_item_history_service import (
+    FlowItemHistoryMigrationService,
+)
 
 
 class FlowHistoryMigrationService:
