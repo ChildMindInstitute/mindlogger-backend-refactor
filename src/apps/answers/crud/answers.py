@@ -204,10 +204,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
             )
             .outerjoin(
-                AnswerItemSchema.is_assessment.isnot(True),
                 ActivityFlowHistoriesSchema,
-                ActivityFlowHistoriesSchema.id_version
-                == AnswerSchema.flow_history_id,
+                and_(
+                    AnswerItemSchema.is_assessment.isnot(True),
+                    ActivityFlowHistoriesSchema.id_version
+                    == AnswerSchema.flow_history_id,
+                ),
             )
             .outerjoin(
                 UserSchema, UserSchema.id == AnswerItemSchema.respondent_id
