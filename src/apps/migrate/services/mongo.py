@@ -115,8 +115,7 @@ class Mongo:
                     results.append(
                         {
                             "id_": user.get("_id"),
-                            "email": user.get("email"),
-                            "email_hash": email_hash,
+                            "email": email_hash,
                             "hashed_password": user.get("salt"),
                             "first_name": first_name,
                             "last_name": last_name,
@@ -229,9 +228,9 @@ class Mongo:
         ld_request_schema = self.get_applet_repro_schema(applet)
         converted = await self.get_converter_result(ld_request_schema)
 
-        converted.extra_fields["created"] = applet['created']
-        converted.extra_fields["updated"] = applet['updated']
-        converted.extra_fields["version"] = applet['meta']['applet']['version']
+        converted.extra_fields["created"] = applet["created"]
+        converted.extra_fields["updated"] = applet["updated"]
+        converted.extra_fields["version"] = applet["meta"]["applet"]["version"]
         converted = self._extract_ids(converted, applet_id)
 
         return converted
@@ -257,7 +256,9 @@ class Mongo:
 
     def _extract_ids(self, converted: dict, applet_id: str = None) -> dict:
         converted.extra_fields["id"] = mongoid_to_uuid(
-            applet_id if applet_id is not None else converted.extra_fields["extra"]["_:id"][0]["@value"]
+            applet_id
+            if applet_id is not None
+            else converted.extra_fields["extra"]["_:id"][0]["@value"]
         )
         for activity in converted.activities:
             activity.extra_fields["id"] = mongoid_to_uuid(

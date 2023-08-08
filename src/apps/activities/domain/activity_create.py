@@ -19,6 +19,7 @@ class ActivityItemCreate(BaseActivityItem, InternalModel):
 
 class PreparedActivityItemCreate(BaseActivityItem, InternalModel):
     activity_id: uuid.UUID
+    extra_fields: dict = Field(default_factory=dict)
 
 
 class ActivityCreate(ActivityBase, InternalModel):

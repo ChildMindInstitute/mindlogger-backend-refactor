@@ -3,7 +3,6 @@ from datetime import datetime
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi.security.utils import get_authorization_scheme_param
 from fastapi.websockets import WebSocket
 from jose import JWTError, jwt
 from pydantic import EmailStr, ValidationError
@@ -28,8 +27,13 @@ async def get_current_user_for_ws(
     websocket: WebSocket, session=Depends(get_session)
 ):
     authorization = websocket.headers.get("sec-websocket-protocol")
-    scheme, token = get_authorization_scheme_param(authorization)
-    if not authorization or scheme.lower() != "bearer":
+    try:
+        if not authorization:
+            raise ValueError
+        scheme, token = authorization.split("|")
+        if scheme.lower() != "bearer":
+            raise ValueError
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",

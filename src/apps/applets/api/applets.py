@@ -3,6 +3,7 @@ from copy import deepcopy
 
 from fastapi import Body, Depends
 
+from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import (
     AppletFolder,
     AppletName,
@@ -137,7 +138,7 @@ async def applet_create(
         except Exception:
             await mail_service.send(
                 MessageSchema(
-                    recipients=[user.email],
+                    recipients=[user.plain_email],
                     subject="Applet upload failed!",
                     body=mail_service.get_template(
                         path="applet_create_success_en",
@@ -149,7 +150,7 @@ async def applet_create(
             raise
         await mail_service.send(
             MessageSchema(
-                recipients=[user.email],
+                recipients=[user.plain_email],
                 subject="Applet upload success!",
                 body=mail_service.get_template(
                     path="applet_create_success_en",
@@ -232,7 +233,7 @@ async def applet_duplicate(
 
         await mail_service.send(
             MessageSchema(
-                recipients=[user.email],
+                recipients=[user.plain_email],
                 subject="Applet duplicate success!",
                 body=mail_service.get_template(
                     path="applet_duplicate_success_en",
@@ -349,12 +350,16 @@ async def applet_delete(
         await CheckAccessService(session, user.id).check_applet_delete_access(
             applet_id
         )
+        respondents_device_ids = await AppletsCRUD(
+            session
+        ).get_respondents_device_ids(applet_id)
         await service.delete_applet_by_id(applet_id)
         await service.send_notification_to_applet_respondents(
             applet_id,
             "Applet is deleted.",
             "Applet is deleted.",
             FirebaseNotificationType.APPLET_DELETE,
+            respondents_device_ids,
         )
 
 

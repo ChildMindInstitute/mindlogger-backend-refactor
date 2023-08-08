@@ -8,6 +8,7 @@ class AppletQueryParams(BaseQueryParams):
     roles: str = ",".join(Role.as_list())
     ordering: str = "-createdAt"
     folder_id: uuid.UUID | None
+    flat_list: bool = False
 
 
 class AppletUsersQueryParams(BaseQueryParams):

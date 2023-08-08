@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -57,7 +57,7 @@ class LibraryItemActivity(InternalModel):
     response_is_editable: bool = False
     is_hidden: bool | None = False
     scores_and_reports: dict | None = None
-    subscale_settings: dict | None = None
+    subscale_setting: dict | None = None
     items: list[LibraryItemActivityItem] | None = None
 
 
@@ -74,7 +74,7 @@ class LibraryItemFlow(InternalModel):
     items: list[LibraryItemFlowItem]
 
 
-class _LibraryItem(InternalModel):
+class _LibraryItem(BaseModel):
     id: uuid.UUID
     display_name: str
     description: dict[str, str] | None = None
@@ -87,11 +87,11 @@ class _LibraryItem(InternalModel):
     activity_flows: list[LibraryItemFlow] | None = None
 
 
-class LibraryItem(_LibraryItem):
+class LibraryItem(InternalModel, _LibraryItem):
     applet_id_version: str
 
 
-class PublicLibraryItem(_LibraryItem):
+class PublicLibraryItem(PublicModel, _LibraryItem):
     version: str
 
 
@@ -103,3 +103,11 @@ class LibraryQueryParams(InternalModel):
 
 class Cart(PublicModel):
     cart_items: list[dict] | None = None
+
+
+class CartItem(LibraryItem):
+    pass
+
+
+class CartQueryParams(LibraryQueryParams):
+    pass

@@ -48,9 +48,9 @@ router.post(
 router.get(
     "/cart",
     status_code=status.HTTP_200_OK,
-    response_model=Response[Cart],
+    response_model=ResponseMulti[PublicLibraryItem],
     responses={
-        status.HTTP_200_OK: {"model": Response[Cart]},
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicLibraryItem]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -77,6 +77,7 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
+    response_model_by_alias=True,
 )(library_get_all)
 
 router.get(

@@ -11,17 +11,19 @@ class _BaseActivityFlowSchema:
     description = Column(JSONB())
     is_single_report = Column(Boolean(), default=False)
     hide_badge = Column(Boolean(), default=False)
+    report_included_activity_name = Column(Text(), nullable=True)
+    report_included_item_name = Column(Text(), nullable=True)
     order = Column(REAL())
     is_hidden = Column(Boolean(), default=False)
+    extra_fields = Column(
+        JSONB(), default=dict, server_default=text("'{}'::jsonb")
+    )
 
 
 class ActivityFlowSchema(_BaseActivityFlowSchema, Base):
     __tablename__ = "flows"
 
     applet_id = Column(ForeignKey("applets.id", ondelete="RESTRICT"))
-    extra_fields = Column(
-        JSONB(), default=dict, server_default=text("'{}'::jsonb")
-    )
 
 
 class ActivityFlowHistoriesSchema(_BaseActivityFlowSchema, Base):
