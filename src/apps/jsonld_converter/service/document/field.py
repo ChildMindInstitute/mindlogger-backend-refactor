@@ -126,7 +126,7 @@ class ReproFieldBase(
 
     @property
     def name(self):
-        name = self.ld_pref_label or self.ld_alt_label or self.name or self.ld_id # TODO: discuss
+        name = self.ld_pref_label or self.ld_alt_label or self.ld_id # TODO: discuss
         return str_to_id(name, r"\s")
 
     def _get_ld_question(self, doc: dict, drop=False):
@@ -566,6 +566,11 @@ class ReproFieldRadioStacked(ReproFieldBase):
         items = self.ld_item_list or []
         choices = self.ld_options or []
         item_options = self.ld_item_options or []
+
+        if item_options == []:
+            for choice in choices:
+                for item in items:
+                    item_options.append({'name': None, 'value': None, 'image': None, 'is_vis': None, 'alert': None, 'color': None, 'tooltip': None, 'score': None})
 
         if len(item_options) != len(items) * len(choices):
             raise Exception(

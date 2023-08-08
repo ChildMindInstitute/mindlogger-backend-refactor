@@ -170,7 +170,7 @@ class Mongo:
 
         for key, activity in applet_format["activities"].items():
             applet_format["activities"][key] = jsonld_expander.formatLdObject(
-                Activity().findOne({"_id": activity}), "activity", refreshCache=False, reimportFromUrl=False
+                Activity().findOne({"_id": ObjectId(activity)}), "activity", refreshCache=False, reimportFromUrl=False
             )
 
         activities = applet_format["activities"]
@@ -230,7 +230,7 @@ class Mongo:
 
         converted.extra_fields["created"] = applet["created"]
         converted.extra_fields["updated"] = applet["updated"]
-        converted.extra_fields["version"] = applet["meta"]["applet"]["version"]
+        converted.extra_fields["version"] = applet["meta"]["applet"].get("version", '0.0.1')
         converted = self._extract_ids(converted, applet_id)
 
         return converted

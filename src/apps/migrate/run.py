@@ -19,11 +19,11 @@ from apps.girderformindlogger.models.applet import Applet
 
 
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
-    # applets = Applet().find(query={'_id': ObjectId('63bbd033aba6fd499bda0781')}, fields={"_id": 1})
+    applets = Applet().find(query={'_id': ObjectId('63bbf311aba6fd499bda0c0d')}, fields={"_id": 1})
     # applets = Applet().find(query={'_id': ObjectId('64d0de7e5e3d9e04c28a1720')}, fields={"_id": 1}) # TODO: 6.2.6 6.2.7 ???
     # applets = Applet().find(query={'_id': ObjectId('62d15a03154fa87efa129760')}, fields={"_id": 1})
     applets = Applet().find(query={'meta.applet.displayName': {'$exists': True}, 'meta.applet.deleted': {'$ne': True}, 'created': {'$gte': datetime.datetime(2023, 1, 1, 0, 0, 0, 0)}}, fields={"_id": 1})
-    skipUntil = None # '5ee669e79ad71c275d322719'
+    skipUntil = '63bbf311aba6fd499bda0c0d'
     appletsCount = applets.count()
     print('total', appletsCount)
     for index, applet_id in enumerate(applets, start=1):
@@ -40,7 +40,11 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
             for version, _applet in applets.items():
                 _applet.extra_fields['created'] = applet.extra_fields['created']
 
-            applets[list(applets.keys())[-1]] = applet
+            if applets != {}:
+                applets[list(applets.keys())[-1]] = applet
+            else:
+                applets[applet.extra_fields["version"]] = applet
+
             await postgres.save_applets(applets, owner_id)
         except (FormatldException, EmptyAppletException) as e:
             print('Skipped because: ', e.message)
