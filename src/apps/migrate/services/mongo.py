@@ -173,34 +173,47 @@ class Mongo:
                 Activity().findOne({"_id": ObjectId(activity)}), "activity", refreshCache=False, reimportFromUrl=False
             )
 
-        activities = applet_format["activities"]
+        activities_by_id = applet_format["activities"].copy()
+        for _key, _activity in activities_by_id.copy().items():
+            activity_id = _activity['activity']['@id']
+            if activity_id not in activities_by_id:
+                activities_by_id[activity_id] = _activity.copy()
+
         # setup activity items
-        for key, value in activities.items():
-            activity_items = value["items"].copy() if 'items' in value else {}
-            for _key, _item in activity_items.copy().items():
+        for key, value in activities_by_id.items():
+            if 'items' not in value:
+                print('Warning: activity  ', key, ' has no items')
+                continue
+
+            activity_items_by_id = value["items"].copy()
+            for _key, _item in activity_items_by_id.copy().items():
                 if 'url' in _item:
-                    activity_items[_item['url']] = _item
+                    activity_items_by_id[_item['url']] = _item.copy()
 
             activity_object = value["activity"]
             activity_items_objects = []
             for item in activity_object["reprolib:terms/order"][0]["@list"]:
                 item_key = item["@id"]
-                if item_key in activity_items:
-                    activity_items_objects.append(activity_items[item_key])
+                if item_key in activity_items_by_id:
+                    activity_items_objects.append(activity_items_by_id[item_key])
                 else:
                     activity_items_objects.append(item)
                     print('Warning: item ', item_key, 'presents in order but absent in activity items. activityId:', str(activity_object['_id']))
 
-            activities[key]["activity"]["reprolib:terms/order"][0][
+            activities_by_id[key]["activity"]["reprolib:terms/order"][0][
                 "@list"
             ] = activity_items_objects
-            activities[key].pop("items")
+            activities_by_id[key].pop("items")
 
         applet = applet_format["applet"]
         activity_objects = []
         # setup activities
         for activity in applet["reprolib:terms/order"][0]["@list"]:
-            activity_objects.append(activities[activity["@id"]]["activity"])
+            activity_id = activity["@id"]
+            if activity_id in activities_by_id:
+                activity_objects.append(activities_by_id[activity_id]["activity"])
+            else:
+                print('Warning: activity ', activity_id, ' presents in order but absent in applet activities.')
 
         applet["reprolib:terms/order"][0]["@list"] = activity_objects
 
