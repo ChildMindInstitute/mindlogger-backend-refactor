@@ -376,6 +376,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             ActivityHistorySchema.applet_id == AppletHistorySchema.id_version,
             isouter=True,
         )
+        query.where(AppletHistorySchema.id_version == answer.applet_id)
         db_result = await self._execute(query)
         res = db_result.first()
         return res

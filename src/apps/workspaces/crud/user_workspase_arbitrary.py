@@ -50,6 +50,9 @@ class UserWorkspaceArbitraryCRUD(BaseCRUD[UserWorkspaceArbitrary]):
             UserWorkspaceArbitrary,
             UserWorkspaceArbitrary.user_workspace_id == UserWorkspaceSchema.id,
         )
-        query = query.where(AppletSchema.id == applet_id)
+        query = query.where(
+            AppletSchema.id == applet_id,
+            UserWorkspaceArbitrary.use_arbitrary.is_(True),
+        )
         res = await self._execute(query)
         return res.scalars().first()

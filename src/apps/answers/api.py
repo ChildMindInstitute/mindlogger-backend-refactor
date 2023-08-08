@@ -5,6 +5,10 @@ from fastapi import Body, Depends
 from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
+from apps.answers.deps.preprocess_arbitrary import (
+    preprocess_arbitrary_by_applet_id,
+    preprocess_arbitrary_by_applet_schema,
+)
 from apps.answers.domain import (
     ActivityAnswerPublic,
     AnswerExport,
@@ -41,11 +45,7 @@ from apps.shared.query_params import (
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
-from apps.workspaces.service.workspace_arbitrary import (
-    WorkspaceArbitraryService,
-)
 from infrastructure.database import atomic
-from infrastructure.database.core import get_specific_session
 from infrastructure.database.deps import get_session
 
 
@@ -53,37 +53,33 @@ async def create_answer(
     user: User = Depends(get_current_user),
     schema: AppletAnswerCreate = Body(...),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_schema),
 ) -> None:
     async with atomic(session):
         await CheckAccessService(session, user.id).check_answer_create_access(
             schema.applet_id
         )
-        arbitrary_server = await WorkspaceArbitraryService(
-            session
-        ).read_by_applet(schema.applet_id)
-        if arbitrary_server:
-            spec_session = await anext(
-                get_specific_session(arbitrary_server.database_uri)
-            )
-            async with atomic(spec_session):
-                answer = await AnswerService(
-                    session, user.id, spec_session
-                ).create_answer(schema)
-                await spec_session.commit()
-                return answer
+        if arbitrary_session:
+            answer = await AnswerService(
+                session, user.id, arbitrary_session
+            ).create_answer(schema)
+            return answer
     return await AnswerService(session, user.id).create_answer(schema)
 
 
 async def create_anonymous_answer(
     schema: AppletAnswerCreate = Body(...),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_schema),
 ) -> None:
     async with atomic(session):
         anonymous_respondent = await UsersCRUD(
             session
         ).get_anonymous_respondent()
         await AnswerService(
-            session, anonymous_respondent.id  # type: ignore
+            session=session,
+            user_id=anonymous_respondent.id,  # type: ignore
+            arbitrary_session=arbitrary_session,
         ).create_answer(schema)
     return
 
@@ -95,15 +91,21 @@ async def review_activity_list(
     query_params: QueryParams = Depends(
         parse_query_params(AppletActivityFilter)
     ),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ) -> ResponseMulti[PublicReviewActivity]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
+
         activities = await AnswerService(
-            session, user.id
-        ).get_review_activities(applet_id, **query_params.filters)
+            session, user.id, arbitrary_session
+        ).get_review_activities(
+            applet_id,
+            query_params.filters.get("respondent_id"),
+            query_params.filters.get("created_date"),
+        )
     return ResponseMulti(
         result=[
             PublicReviewActivity.from_orm(activity) for activity in activities

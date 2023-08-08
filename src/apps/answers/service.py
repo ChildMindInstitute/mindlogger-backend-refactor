@@ -12,6 +12,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
@@ -77,10 +78,10 @@ from infrastructure.utility.rabbitmq_queue import RabbitMqQueue
 def session_selector(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        session = (
+        _session = (
             self.arbitrary_session if self.arbitrary_session else self.session
         )
-        args += (session,)
+        args += (_session,)
         result = func(self, *args, **kwargs)
         return result
 
@@ -169,14 +170,16 @@ class AnswerService:
             raise UserDoesNotHavePermissionError()
 
     @session_selector
-    async def _create_answer(self, applet_answer: AppletAnswerCreate, session):
+    async def _create_answer(
+        self, applet_answer: AppletAnswerCreate, selected_session: AsyncSession
+    ):
         pk = self._generate_history_id(applet_answer.version)
         created_at = datetime.datetime.now()
         if applet_answer.created_at:
             created_at = datetime.datetime.fromtimestamp(
                 applet_answer.created_at
             )
-        answer = await AnswersCRUD(session).create(
+        answer = await AnswersCRUD(selected_session).create(
             AnswerSchema(
                 submit_id=applet_answer.submit_id,
                 created_at=created_at,
@@ -213,7 +216,7 @@ class AnswerService:
             is_assessment=False,
         )
 
-        await AnswerItemsCRUD(session).create(item_answer)
+        await AnswerItemsCRUD(selected_session).create(item_answer)
         await self._create_report_from_answer(answer)
         await self._create_alerts(
             answer.id,
@@ -231,7 +234,7 @@ class AnswerService:
 
         queue = RabbitMqQueue()
         await queue.connect()
-        is_flow_single = await service.is_flows_single_report(answer.answer_id)
+        is_flow_single = await service.is_flows_single_report(answer.id)
         try:
             if not is_flow_single:
                 await queue.publish(
@@ -245,15 +248,17 @@ class AnswerService:
         finally:
             await queue.close()
 
+    @session_selector
     async def get_review_activities(
         self,
         applet_id: uuid.UUID,
         respondent_id: uuid.UUID,
         created_date: datetime.date,
+        selected_session: AsyncSession,
     ) -> list[ReviewActivity]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
         answers = await AnswersCRUD(
-            self.session
+            selected_session
         ).get_respondents_answered_activities_by_applet_id(
             respondent_id, applet_id, created_date
         )
