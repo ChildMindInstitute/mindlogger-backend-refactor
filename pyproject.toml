@@ -27,7 +27,7 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 79
-skip = '.venv,venv,env'
+skip = '.venv,venv,env,migrate'
 src_paths = ["src"]
 
 [tool.pytest.ini_options]
