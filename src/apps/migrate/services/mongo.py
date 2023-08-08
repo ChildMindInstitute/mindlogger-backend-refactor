@@ -18,8 +18,10 @@ from apps.jsonld_converter.dependencies import (
 )
 from apps.migrate.services.applet_versions import (
     get_versions_from_content,
-    get_versions_from_history,
+    content_to_jsonld,
+    CONTEXT,
 )
+from apps.migrate.utilities import mongoid_to_uuid
 from apps.shared.domain.base import InternalModel, PublicModel
 
 # from apps.applets.domain.applet_create_update import AppletCreate
@@ -45,18 +47,9 @@ def decrypt(data):
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        # uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        uri = os.getenv(
-            "GIRDER_MONGO_URI", "mongodb://localhost:27017/mindlogger"
-        )
-        print(uri)
-        self.client = MongoClient(
-            # "localhost",
-            # 27017
-            uri,
-            # int(os.getenv("MONGO__PORT", 27017)),
-        )  # "localhost"
-        self.db = self.client[os.getenv("MONGO__DB")]
+        uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        self.client = MongoClient(uri, 27017)  # uri
+        self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
     @staticmethod
     async def get_converter_result(schema) -> InternalModel | PublicModel:
@@ -208,50 +201,56 @@ class Mongo:
         ] = activity_flow_objects
         # add context
 
-        context = {
-            "@context": [
-                {
-                    "reprolib": "https://raw.githubusercontent.com/ReproNim/reproschema/master/"  # noqa: E501
-                },
-                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json",  # noqa: E501
-            ],
-            "@type": "https://raw.githubusercontent.com/ReproNim/reproschema/master/schemas/Protocol",  # noqa: E501
-        }
-
-        applet["@context"] = context["@context"]
-        applet["@type"] = context["@type"]
+        applet["@context"] = CONTEXT["@context"]
+        applet["@type"] = CONTEXT["@type"]
 
         return applet
 
-    async def get_applets(self) -> list[dict]:
-        # NOTE: All applets have baseParentId 5ea689a286d25a5dbb14e82c
-
-        applet = Applet().findOne(
-            {"_id": ObjectId("62d15a03154fa87efa129760")}
-        )
+    async def get_applet(self, applet_id: str) -> dict:
+        applet = Applet().findOne({"_id": ObjectId(applet_id)})
         ld_request_schema = self.get_applet_repro_schema(applet)
-        converter_result = await self.get_converter_result(ld_request_schema)
-        print(converter_result.dict().keys())
+        converted = await self.get_converter_result(ld_request_schema)
 
-        results: list[Any] = []
+        converted.extra_fields["created"] = applet['created']
+        converted.extra_fields["updated"] = applet['updated']
+        converted.extra_fields["version"] = applet['meta']['applet']['version']
+        converted = self._extract_ids(converted, applet_id)
 
-        # for applet in applets:
-        #     ld_request_schema = self.get_applet_repro_schema(applet)
-        #     converter_result = await self.get_converter_result(
-        #         ld_request_schema
-        #     )
+        return converted
 
-        #     results.append(converter_result)
-
-        return results
-
-    async def get_applet_versions(self) -> dict:
-        appletId = ObjectId("647084129a25660f50a7bd48")
-        applet = FolderModel().findOne(query={"_id": appletId})
+    async def get_applet_versions(self, applet_id: str) -> [dict, str]:
+        applet = FolderModel().findOne(query={"_id": ObjectId(applet_id)})
+        owner_id = str(applet["creatorId"])
         protocolId = applet["meta"]["protocol"].get("_id").split("/").pop()
         result = get_versions_from_content(protocolId)
-        print(result)
-        result2 = get_versions_from_history(protocolId)
-        print(result2)
+        converted_applet_versions = dict()
+        for version, content in result.items():
+            print(version)
+            ld_request_schema = content_to_jsonld(content["applet"])
+            converted = await self.get_converter_result(ld_request_schema)
+            converted.extra_fields["created"] = content["updated"]
+            converted.extra_fields["updated"] = content["updated"]
+            converted.extra_fields["version"] = version
+            converted = self._extract_ids(converted, applet_id)
 
-        return result
+            converted_applet_versions[version] = converted
+
+        return converted_applet_versions, owner_id
+
+    def _extract_ids(self, converted: dict, applet_id: str = None) -> dict:
+        converted.extra_fields["id"] = mongoid_to_uuid(
+            applet_id if applet_id is not None else converted.extra_fields["extra"]["_:id"][0]["@value"]
+        )
+        for activity in converted.activities:
+            activity.extra_fields["id"] = mongoid_to_uuid(
+                activity.extra_fields["extra"]["_:id"][0]["@value"]
+            )
+            for item in activity.items:
+                item.extra_fields["id"] = mongoid_to_uuid(
+                    item.extra_fields["extra"]["_:id"][0]["@value"]
+                )
+        for flow in converted.activity_flows:
+            flow.extra_fields["id"] = mongoid_to_uuid(
+                flow.extra_fields["extra"]["_:id"][0]["@value"]
+            )
+        return converted

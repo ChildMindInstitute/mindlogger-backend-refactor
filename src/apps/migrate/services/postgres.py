@@ -1,17 +1,13 @@
 import os
-import uuid
 from contextlib import suppress
 from datetime import datetime
 
 import psycopg2
 
-from apps.applets.domain.applet_create_update import AppletCreate
-from apps.applets.service import AppletService
+from apps.migrate.services.applet_service import AppletMigrationService
+from apps.migrate.utilities import mongoid_to_uuid
 from infrastructure.database import session_manager
-
-
-def mongoid_to_uuid(id_):
-    return uuid.UUID(str(id_) + "00000000")
+from infrastructure.database import atomic
 
 
 class Postgres:
@@ -19,6 +15,7 @@ class Postgres:
         # Setup PostgreSQL connection
         self.connection = psycopg2.connect(
             host=os.getenv("DATABASE__HOST", "postgres"),
+            port=os.getenv("DATABASE__PORT", "5432"),
             dbname=os.getenv("DATABASE__DB", "mindlogger_backend"),
             user=os.getenv("DATABASE__USER", "postgres"),
             password=os.getenv("DATABASE__PASSWORD", "postgres"),
@@ -149,28 +146,64 @@ class Postgres:
     # ):
     #     pass
 
-    async def save_applets(self, applets: list[dict]):
-        owner_id: uuid.UUID = uuid.UUID("65656a7b-887c-4e66-b44e-f452b98d198d")
+    async def save_applets(
+        self,
+        applets_by_versions: dict,
+        owner_id: str,
+    ):
+        owner_id = mongoid_to_uuid(owner_id)
+        initail_version = list(applets_by_versions.keys())[0]
+        # applet = applets_by_versions[version]
+        session = session_manager.get_session()
 
-        for applet in applets:
-            applet_dict = dict(applet)
+        # print(applets_by_versions)
 
-            # NOTE: Not finished ...
-            session = session_manager.get_session()
+        # print("mongo uuid", applet.extra_fields["id"])
 
-            applet_created = await AppletService(session, owner_id).create(
-                AppletCreate(
-                    activities=applet_dict.get("activities"),
-                    activity_flows=applet_dict.get("activity_flows"),
-                    display_name=applet_dict.get("display_name"),
-                    encryption={
-                        "public_key": "",
-                        "prime": "",
-                        "base": "",
-                        "account_id": "",
-                    },
-                    # NOTE: extra_fields=applet_dict.get("activities"),
-                ),
-                owner_id,
-            )
-            print(applet_created)
+        # TODO: Lookup the owner_id for the applet workspace
+
+        async with atomic(session):
+            for version, applet in applets_by_versions.items():
+                if version == initail_version:
+                    applet_create = await AppletMigrationService(
+                        session, owner_id
+                    ).create(applet, owner_id)
+                else:
+                    applet_create = await AppletMigrationService(
+                        session, owner_id
+                    ).update(applet)
+                    # break
+
+        # print(applet_create)
+
+        # for applet in applets:
+        #     applet_dict = dict(applet)
+
+        #     # NOTE: Not finished ...
+        #     session = session_manager.get_session()
+
+        #     applet_created = await AppletService(session, owner_id).create(
+        #         AppletCreate(
+        #             activities=applet_dict.get("activities"),
+        #             activity_flows=applet_dict.get("activity_flows"),
+        #             display_name=applet_dict.get("display_name"),
+        #             encryption={
+        #                 "public_key": "",
+        #                 "prime": "",
+        #                 "base": "",
+        #                 "account_id": "",
+        #             },
+        #             # NOTE: extra_fields=applet_dict.get("activities"),
+        #         ),
+        #         owner_id,
+        #     )
+        #     print(applet_created)
+
+        # {
+        #     "applet_uuid": [
+        #         {
+        #             "mongo_version": "1.0.0",
+        #             "postgres_version": "1.1.0",
+        #         }
+        #     ]
+        # }
