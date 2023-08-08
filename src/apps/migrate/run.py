@@ -19,18 +19,21 @@ from apps.girderformindlogger.models.applet import Applet
 
 
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
-    applets = Applet().find(query={'_id': ObjectId('63bbf311aba6fd499bda0c0d')}, fields={"_id": 1})
+    toSkip = [
+        '63bd5736aba6fd499bda0fee' # subscales refer to name (question: Put your name)
+    ]
+    # applets = Applet().find(query={'_id': ObjectId('63bd2e3aaba6fd499bda0f65')}, fields={"_id": 1})
     # applets = Applet().find(query={'_id': ObjectId('64d0de7e5e3d9e04c28a1720')}, fields={"_id": 1}) # TODO: 6.2.6 6.2.7 ???
     # applets = Applet().find(query={'_id': ObjectId('62d15a03154fa87efa129760')}, fields={"_id": 1})
     applets = Applet().find(query={'meta.applet.displayName': {'$exists': True}, 'meta.applet.deleted': {'$ne': True}, 'created': {'$gte': datetime.datetime(2023, 1, 1, 0, 0, 0, 0)}}, fields={"_id": 1})
-    skipUntil = '63bbf311aba6fd499bda0c0d'
+    skipUntil = '63bd5d68aba6fd499bda1460'
     appletsCount = applets.count()
     print('total', appletsCount)
     for index, applet_id in enumerate(applets, start=1):
         applet_id = str(applet_id['_id'])
         if skipUntil == applet_id:
             skipUntil = None
-        if skipUntil is not None:
+        if skipUntil is not None or applet_id in toSkip:
             continue
         print('processing', applet_id, index, '/', appletsCount)
         try:

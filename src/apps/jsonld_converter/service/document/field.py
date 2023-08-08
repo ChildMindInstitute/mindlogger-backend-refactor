@@ -153,6 +153,10 @@ class ReproFieldBase(
 
         return res
 
+    def _value_or_none(self, doc: dict, key: str):
+        value = self.attr_processor.get_attr_value(doc, key)
+        return value if value != 'false' else None
+
     def _format_choice(self, doc: dict):
         choice = {
             "name": self.attr_processor.get_translation(
@@ -164,10 +168,8 @@ class ReproFieldBase(
             "alert": self.attr_processor.get_translation(
                 doc, "schema:alert", self.lang
             ),
-            "color": self.attr_processor.get_attr_value(doc, "schema:color"),
-            "tooltip": self.attr_processor.get_attr_value(
-                doc, "schema:description"
-            ),
+            "color": self._value_or_none(doc, "schema:color"),
+            "tooltip": self._value_or_none(doc, "schema:description"),
             "score": self.attr_processor.get_attr_value(doc, "schema:score"),
         }
         return choice
