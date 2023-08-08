@@ -151,6 +151,7 @@ class AppletService:
                 encryption=create_data.encryption.dict()
                 if create_data.encryption
                 else None,
+                extra_fields=create_data.extra_fields,
             )
         )
         return AppletFull.from_orm(schema)
@@ -269,6 +270,7 @@ class AppletService:
                         for item in activity.items
                     ],
                     is_hidden=activity.is_hidden,
+                    report_included_item_name=activity.report_included_item_name,  # noqa: E501
                 )
             )
 
@@ -285,6 +287,8 @@ class AppletService:
                         FlowItemCreate(activity_key=item)
                         for item in activity_flow.activity_ids
                     ],
+                    report_included_activity_name=activity_flow.report_included_activity_name,  # noqa: E501
+                    report_included_item_name=activity_flow.report_included_item_name,  # noqa: E501
                 )
             )
 

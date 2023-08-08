@@ -231,6 +231,7 @@ class TestApplet(BaseTest):
                     "isReviewable": True,
                     "image": "image.jpg",
                     "splashScreen": "image.jpg",
+                    "reportIncludedItemName": "AT_single_select",
                 }
             ],
             "activityFlows": [
@@ -240,6 +241,8 @@ class TestApplet(BaseTest):
                     "items": [
                         {"activityKey": "19a78ace-5fe5-4a98-8c66-454f973f7f9a"}
                     ],
+                    "reportIncludedActivityName": "white",
+                    "reportIncludedItemName": "AT_single_select",
                     "isHidden": False,
                 }
             ],

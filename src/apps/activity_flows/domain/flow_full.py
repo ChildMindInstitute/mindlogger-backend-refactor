@@ -25,6 +25,7 @@ class FlowFull(FlowBase, InternalModel):
     items: list[ActivityFlowItemFull] = Field(default_factory=list)
     order: int
     created_at: datetime
+    extra_fields: dict = Field(default_factory=dict)
 
 
 class FlowHistoryFull(FlowBase, InternalModel):
@@ -33,6 +34,7 @@ class FlowHistoryFull(FlowBase, InternalModel):
     items: list[FlowItemHistoryFull] = Field(default_factory=list)
     order: int
     created_at: datetime
+    extra_fields: dict = Field(default_factory=dict)
 
 
 class PublicActivityFlowItemFull(FlowItemBase, PublicModel):

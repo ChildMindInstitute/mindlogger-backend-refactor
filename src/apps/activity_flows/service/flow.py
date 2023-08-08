@@ -43,6 +43,9 @@ class FlowService:
                     is_single_report=flow_create.is_single_report,
                     hide_badge=flow_create.hide_badge,
                     is_hidden=flow_create.is_hidden,
+                    report_included_activity_name=flow_create.report_included_activity_name,  # noqa: E501
+                    report_included_item_name=flow_create.report_included_item_name,  # noqa: E501
+                    extra_fields=flow_create.extra_fields,
                     order=index + 1,
                 )
             )
@@ -188,6 +191,8 @@ class FlowService:
                 order=schema.order,
                 is_hidden=schema.is_hidden,
                 created_at=schema.created_at,
+                report_included_activity_name=schema.report_included_activity_name,  # noqa: E501
+                report_included_item_name=schema.report_included_item_name,
             )
             flow_map[flow.id] = flow
             flows.append(flow)

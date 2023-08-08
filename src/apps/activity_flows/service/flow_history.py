@@ -31,6 +31,9 @@ class FlowHistoryService:
                     is_single_report=flow.is_single_report,
                     hide_badge=flow.hide_badge,
                     order=flow.order,
+                    report_included_activity_name=flow.report_included_activity_name,  # noqa: E501
+                    report_included_item_name=flow.report_included_item_name,
+                    extra_fields=flow.extra_fields,
                 )
             )
 

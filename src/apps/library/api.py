@@ -1,3 +1,4 @@
+import json
 import uuid
 from copy import deepcopy
 
@@ -16,7 +17,12 @@ from apps.library.domain import (
     PublicLibraryItem,
 )
 from apps.library.service import LibraryService
-from apps.shared.domain import Response, ResponseMulti
+from apps.shared.domain import (
+    Response,
+    ResponseMulti,
+    model_as_camel_case,
+    to_camelcase,
+)
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users import User
 from apps.workspaces.service.check_access import CheckAccessService
@@ -37,6 +43,7 @@ async def library_share_applet(
         library_item: AppletLibraryFull = await LibraryService(
             session
         ).share_applet(schema)
+
     return Response(result=library_item)
 
 
@@ -56,17 +63,18 @@ async def library_get_all(
     session=Depends(get_session),
 ) -> ResponseMulti[PublicLibraryItem]:
     async with atomic(session):
-        applets = await LibraryService(session).get_all_applets(
-            deepcopy(query_params)
-        )
+        items: list[PublicLibraryItem] = await LibraryService(
+            session
+        ).get_all_applets(deepcopy(query_params))
         count = await LibraryService(session).get_applets_count(
             deepcopy(query_params)
         )
 
-    return ResponseMulti(
-        result=applets,
-        count=count,
-    )
+    items_as_camel: list[PublicLibraryItem] = [
+        model_as_camel_case(item) for item in items
+    ]
+
+    return ResponseMulti(result=items_as_camel, count=count)
 
 
 async def library_get_by_id(
@@ -103,6 +111,7 @@ async def library_update(
         library_item: AppletLibraryFull = await LibraryService(
             session
         ).update_shared_applet(library_id, schema, user.id)
+
     return Response(result=library_item)
 
 
@@ -116,7 +125,17 @@ async def cart_get(
         cart = await service.get_cart(user.id)
         items = await service.filter_cart_items(cart, query_params)
         count = len(cart.cart_items) if cart and cart.cart_items else 0
-    return ResponseMulti(result=items, count=count)
+        items_to_camel = []
+        for item in items:
+            items_to_camel.append(
+                PublicLibraryItem(
+                    **json.loads(
+                        json.loads(to_camelcase(json.dumps(item.json())))
+                    )
+                )
+            )
+
+    return ResponseMulti(result=items_to_camel, count=count)
 
 
 async def cart_add(
@@ -126,4 +145,8 @@ async def cart_add(
 ) -> Response[Cart]:
     async with atomic(session):
         cart = await LibraryService(session).add_to_cart(user.id, schema)
-    return Response(result=cart)
+        cart_to_camel = Cart(
+            **json.loads(json.loads(to_camelcase(json.dumps(cart.json()))))
+        )
+
+    return Response(result=cart_to_camel)

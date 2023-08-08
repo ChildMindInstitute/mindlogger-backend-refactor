@@ -156,6 +156,9 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         activity_id: uuid.UUID,
         filters: QueryParams,
     ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
+        identifiers = filters.filters.get("identifiers")
+        empty_identifiers = filters.filters.get("empty_identifiers")
+
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
             AnswerItemSchema,
@@ -173,10 +176,16 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(ActivityHistorySchema.id == activity_id)
         query = query.order_by(AnswerSchema.created_at.asc())
+
+        if not identifiers:
+            if "identifiers" in filters.filters:
+                filters.filters.pop("identifiers")
+            if empty_identifiers:
+                query = query.where(AnswerItemSchema.identifier.is_(None))
+
         if filters.filters:
             query = query.where(
                 *_ActivityAnswerFilter().get_clauses(**filters.filters)
             )
         db_result = await self._execute(query)
-
         return db_result.all()

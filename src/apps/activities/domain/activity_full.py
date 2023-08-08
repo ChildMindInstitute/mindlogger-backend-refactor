@@ -17,6 +17,7 @@ class ActivityItemFull(BaseActivityItem, InternalModel):
     id: uuid.UUID
     activity_id: uuid.UUID
     order: int
+    extra_fields: dict = Field(default_factory=dict)
 
 
 class ActivityItemHistoryFull(BaseActivityItem, InternalModel):
@@ -24,6 +25,7 @@ class ActivityItemHistoryFull(BaseActivityItem, InternalModel):
     id_version: str
     activity_id: str
     order: int
+    extra_fields: dict = Field(default_factory=dict)
 
 
 class ActivityFull(ActivityBase, InternalModel):
@@ -32,6 +34,7 @@ class ActivityFull(ActivityBase, InternalModel):
     items: list[ActivityItemFull] = Field(default_factory=list)
     order: int
     created_at: datetime
+    extra_fields: dict = Field(default_factory=dict)
 
 
 class PublicActivityItemFull(BaseActivityItem, PublicModel):

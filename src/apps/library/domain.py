@@ -1,8 +1,8 @@
 import uuid
 
-from pydantic import Field, validator
+from pydantic import BaseModel, Field
 
-from apps.shared.domain import InternalModel, PublicModel, to_camelcase
+from apps.shared.domain import InternalModel, PublicModel
 
 
 class AppletLibrary(InternalModel):
@@ -44,48 +44,6 @@ class LibraryItemActivityItem(InternalModel):
     conditional_logic: dict | None = None
     allow_edit: bool | None = None
 
-    @validator("config", pre=True)
-    def convert_config_keys(cls, config):
-        if config is not None:
-            return cls._keys_to_camel_case(config)
-        return config
-
-    @validator("response_values", pre=True)
-    def convert_response_values_keys(cls, response_values):
-        if response_values:
-            if isinstance(response_values, dict):
-                return cls._keys_to_camel_case(response_values)
-            elif isinstance(response_values, list):
-                return [to_camelcase(value) for value in response_values]
-        return response_values
-
-    @classmethod
-    def _keys_to_camel_case(cls, items):
-        res = dict()
-        for key, value in items.items():
-            new_key = to_camelcase(key)
-            if isinstance(value, dict):
-                res[new_key] = cls._keys_to_camel_case(value)
-            elif isinstance(value, list):
-                res.update({new_key: cls._items_list_to_camel_case(value)})
-            else:
-                res[new_key] = value
-        return res
-
-    @classmethod
-    def _items_list_to_camel_case(cls, items):
-        res = []
-        for item in items:
-            if isinstance(item, dict):
-                res.append(cls._keys_to_camel_case(item))
-            elif isinstance(item, list):
-                res.append(cls._items_list_to_camel_case(item))
-            elif isinstance(item, str):
-                res.append(to_camelcase(item))
-            else:
-                res.append(item)
-        return res
-
 
 class LibraryItemActivity(InternalModel):
     key: uuid.UUID
@@ -116,7 +74,7 @@ class LibraryItemFlow(InternalModel):
     items: list[LibraryItemFlowItem]
 
 
-class _LibraryItem(InternalModel):
+class _LibraryItem(BaseModel):
     id: uuid.UUID
     display_name: str
     description: dict[str, str] | None = None
@@ -129,11 +87,11 @@ class _LibraryItem(InternalModel):
     activity_flows: list[LibraryItemFlow] | None = None
 
 
-class LibraryItem(_LibraryItem):
+class LibraryItem(InternalModel, _LibraryItem):
     applet_id_version: str
 
 
-class PublicLibraryItem(_LibraryItem):
+class PublicLibraryItem(PublicModel, _LibraryItem):
     version: str
 
 
