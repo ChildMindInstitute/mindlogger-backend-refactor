@@ -423,10 +423,5 @@ async def applet_answers_mobile_data(
     data: AnswersMobileData = await AnswerService(
         session, user.id
     ).get_answer_mobile_data(applet_id)
-    # for answer in data.answers:
-    #     if answer.is_manager:
-    #         answer.respondent_secret_id = (
-    #             f"[admin account]({answer.respondent_email})"
-    #         )
 
     return Response(result=PublicAnswerExport.from_orm(data))

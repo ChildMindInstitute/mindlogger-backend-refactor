@@ -47,7 +47,7 @@ from apps.answers.domain import (
     ReportServerResponse,
     ReviewActivity,
     SummaryActivity,
-    Version,
+    Version, AnswerForMobile,
 )
 from apps.answers.errors import (
     ActivityIsNotAssessment,
@@ -748,7 +748,21 @@ class AnswerService:
                 break
 
     async def get_answer_mobile_data(self, applet_id: uuid.UUID):
-        pass
+        answers = await AnswersCRUD(self.session).get_answers_ids_by_applet_respondent(self.user_id, applet_id)
+        answers_new = []
+        for answer in answers:
+            answer_a = AnswerForMobile.from_orm(answer)
+            answer_item = await AnswerItemsCRUD(self.session).get_respondent_answer(answer_a.id)
+            answer_item_ids = answer_item.item_ids
+            for answer_item_id in answer_item_ids:
+                activity_item_history = await ActivityItemHistoriesCRUD(self.session).retrieve_by_id(answer_item_id)
+                options = activity_item_history.response_values["options"]
+                for option in options:
+                    if option["id"] == answer_item.answer:
+                        print(option["text"], option["value"])
+                        print(applet_id, activity_item_history.activity_id, )
+
+        return answers
 
 
 class ReportServerService:

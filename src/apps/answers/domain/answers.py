@@ -364,3 +364,13 @@ class ReportServerEmail(InternalModel):
 class ReportServerResponse(InternalModel):
     pdf: str
     email: ReportServerEmail
+
+
+class AnswerForMobile(PublicModel):
+    id: uuid.UUID
+    activity_history_id: str
+    created_at: datetime.datetime
+
+
+class AnswerItemForMobile(PublicModel):
+    answer: str
