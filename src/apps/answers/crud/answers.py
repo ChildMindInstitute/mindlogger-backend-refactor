@@ -87,7 +87,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         return db_result.scalars().all()
 
-    async def get_answers_ids_by_applet_respondent(
+    async def get_answers_by_applet_respondent(
         self,
         respondent_id: uuid.UUID,
         applet_id: uuid.UUID,

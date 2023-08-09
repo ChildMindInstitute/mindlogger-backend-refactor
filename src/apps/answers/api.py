@@ -423,5 +423,6 @@ async def applet_answers_mobile_data(
     data: AnswersMobileData = await AnswerService(
         session, user.id
     ).get_answer_mobile_data(applet_id)
+    print("data", data)
 
     return Response(result=PublicAnswerExport.from_orm(data))

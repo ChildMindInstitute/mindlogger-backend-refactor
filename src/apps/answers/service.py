@@ -47,7 +47,7 @@ from apps.answers.domain import (
     ReportServerResponse,
     ReviewActivity,
     SummaryActivity,
-    Version, AnswerForMobile,
+    Version,
 )
 from apps.answers.errors import (
     ActivityIsNotAssessment,
@@ -748,21 +748,78 @@ class AnswerService:
                 break
 
     async def get_answer_mobile_data(self, applet_id: uuid.UUID):
-        answers = await AnswersCRUD(self.session).get_answers_ids_by_applet_respondent(self.user_id, applet_id)
-        answers_new = []
+        answers = await AnswersCRUD(self.session).get_answers_by_applet_respondent(self.user_id, applet_id)
+
+        answer_item_id_list = []
+
+        response = {}
+        response_config = {}
+        activities_responses = []
+        activity_response = {}
+        applet_analytics = {}
+        data = []
         for answer in answers:
-            answer_a = AnswerForMobile.from_orm(answer)
-            answer_item = await AnswerItemsCRUD(self.session).get_respondent_answer(answer_a.id)
+            applet_analytics["applet_id"] = applet_id
+            answer_item = await AnswerItemsCRUD(self.session).get_respondent_answer(answer.id)
             answer_item_ids = answer_item.item_ids
             for answer_item_id in answer_item_ids:
-                activity_item_history = await ActivityItemHistoriesCRUD(self.session).retrieve_by_id(answer_item_id)
-                options = activity_item_history.response_values["options"]
-                for option in options:
-                    if option["id"] == answer_item.answer:
-                        print(option["text"], option["value"])
-                        print(applet_id, activity_item_history.activity_id, )
+                if answer_item_id not in answer_item_id_list:
+                    activity_item_history = await ActivityItemHistoriesCRUD(self.session).retrieve_by_id(answer_item_id)
+                    activity_history = await ActivityHistoriesCRUD(self.session).get_by_id(activity_item_history.activity_id)
 
-        return answers
+                    activity_id = activity_history.id
+                    activity_name = activity_history.name
+
+                    if activity_item_history.response_type in ["singleSelect", "multiSelect", "slider"]:
+                        response["type"] = activity_item_history.response_type
+                        response["name"] = activity_item_history.name
+
+                        options_full_list = activity_item_history.response_values["options"]
+                        options = []
+                        for option in options_full_list:
+                            option_new = {"name": option["text"], "value": option["value"]}
+                            options.append(option_new)
+
+                            if answer_item.answer == option["id"]:
+                                data.append({
+                                    "date": activity_item_history.created_at,
+                                    "value": option["value"]
+                                })
+
+                        response_config['options'] = options
+                        activity_response["id"] = activity_id
+                        activity_response["name"] = activity_name
+
+                        response["response_config"] = response_config
+                        response["data"] = data
+
+                        activity_response["responses"] = [
+                            response
+                        ]
+
+                        activities_responses.append(activity_response)
+                        applet_analytics["activities_responses"] = activities_responses
+
+                        answer_item_id_list.append(answer_item_id)
+                else:
+                    activity_item_history = await ActivityItemHistoriesCRUD(self.session).retrieve_by_id(answer_item_id)
+                    if activity_item_history.response_type in ["singleSelect", "multiSelect", "slider"]:
+                        options_full_list = activity_item_history.response_values["options"]
+                        for option in options_full_list:
+                            if answer_item.answer == option["id"]:
+                                data.append({
+                                    "date": activity_item_history.created_at,
+                                    "value": option["value"]
+                                })
+                        response["data"] = data
+                        activity_response["responses"] = [
+                            response
+                        ]
+                        applet_analytics["activities_responses"] = activities_responses
+
+        print("applet_analytics", applet_analytics)
+
+        return applet_analytics
 
 
 class ReportServerService:
