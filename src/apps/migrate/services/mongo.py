@@ -25,6 +25,8 @@ from apps.migrate.services.applet_versions import (
 )
 from apps.migrate.utilities import mongoid_to_uuid
 from apps.shared.domain.base import InternalModel, PublicModel
+from apps.shared.encryption import encrypt
+
 
 # from apps.applets.domain.applet_create_update import AppletCreate
 
@@ -84,6 +86,7 @@ class Mongo:
 
         count = 0
         total_documents = 0
+        encrypted_count = 0
         results = []
         email_hashes = []
 
@@ -105,11 +108,19 @@ class Mongo:
                     email_hash = hashlib.sha224(
                         user.get("email").encode("utf-8")
                     ).hexdigest()
+                    if "@" in user.get("email"):
+                        email_aes_encrypted = encrypt(
+                            bytes(user.get("email"), 'utf-8')
+                        ).hex()
+                        encrypted_count += 1
+                    else:
+                        email_aes_encrypted = None
                 elif (
                     user.get("email_encrypted")
                     and len(user.get("email")) == 56
                 ):
                     email_hash = user.get("email")
+                    email_aes_encrypted = None
                 else:
                     total_documents += 1
                     continue
@@ -124,13 +135,15 @@ class Mongo:
                             "first_name": first_name,
                             "last_name": last_name,
                             "created_at": user.get("created"),
+                            "email_aes_encrypted": email_aes_encrypted,
                         }
                     )
                     count += 1
             total_documents += 1
         print(
             f"Total Users Documents - {total_documents}, "
-            f"Successfully prepared for migration - {count}"
+            f"Successfully prepared for migration - {count}, "
+            f"Users with email_aes_encrypted - {encrypted_count}"
         )
 
         return results
