@@ -14,7 +14,10 @@ from apps.jsonld_converter.dependencies import (
     get_document_loader,
     get_jsonld_model_converter,
 )
-from apps.migrate.exception.exception import FormatldException, EmptyAppletException
+from apps.migrate.exception.exception import (
+    FormatldException,
+    EmptyAppletException,
+)
 from apps.migrate.services.applet_versions import (
     get_versions_from_content,
     content_to_jsonld,
@@ -46,7 +49,8 @@ def decrypt(data):
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        # uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        uri = f"mongodb://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
         self.client = MongoClient(uri, 27017)  # uri
         self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
@@ -160,45 +164,61 @@ class Mongo:
         return results
 
     def get_applet_repro_schema(self, applet: dict) -> dict:
-        applet_format = jsonld_expander.formatLdObject(applet, "applet", refreshCache=False, reimportFromUrl=False)
+        applet_format = jsonld_expander.formatLdObject(
+            applet, "applet", refreshCache=False, reimportFromUrl=False
+        )
 
         if applet_format is None or applet_format == {}:
-            raise FormatldException(message='formatLdObject returned empty object')
+            raise FormatldException(
+                message="formatLdObject returned empty object"
+            )
 
-        if applet_format['activities'] == {}:
-            raise FormatldException(message='formatLdObject returned empty activities')
+        if applet_format["activities"] == {}:
+            raise FormatldException(
+                message="formatLdObject returned empty activities"
+            )
 
         for key, activity in applet_format["activities"].items():
             applet_format["activities"][key] = jsonld_expander.formatLdObject(
-                Activity().findOne({"_id": ObjectId(activity)}), "activity", refreshCache=False, reimportFromUrl=False
+                Activity().findOne({"_id": ObjectId(activity)}),
+                "activity",
+                refreshCache=False,
+                reimportFromUrl=False,
             )
 
         activities_by_id = applet_format["activities"].copy()
         for _key, _activity in activities_by_id.copy().items():
-            activity_id = _activity['activity']['@id']
+            activity_id = _activity["activity"]["@id"]
             if activity_id not in activities_by_id:
                 activities_by_id[activity_id] = _activity.copy()
 
         # setup activity items
         for key, value in activities_by_id.items():
-            if 'items' not in value:
-                print('Warning: activity  ', key, ' has no items')
+            if "items" not in value:
+                print("Warning: activity  ", key, " has no items")
                 continue
 
             activity_items_by_id = value["items"].copy()
             for _key, _item in activity_items_by_id.copy().items():
-                if 'url' in _item:
-                    activity_items_by_id[_item['url']] = _item.copy()
+                if "url" in _item:
+                    activity_items_by_id[_item["url"]] = _item.copy()
 
             activity_object = value["activity"]
             activity_items_objects = []
             for item in activity_object["reprolib:terms/order"][0]["@list"]:
                 item_key = item["@id"]
                 if item_key in activity_items_by_id:
-                    activity_items_objects.append(activity_items_by_id[item_key])
+                    activity_items_objects.append(
+                        activity_items_by_id[item_key]
+                    )
                 else:
                     activity_items_objects.append(item)
-                    print('Warning: item ', item_key, 'presents in order but absent in activity items. activityId:', str(activity_object['_id']))
+                    print(
+                        "Warning: item ",
+                        item_key,
+                        "presents in order but absent in activity items. activityId:",
+                        str(activity_object["_id"]),
+                    )
 
             activities_by_id[key]["activity"]["reprolib:terms/order"][0][
                 "@list"
@@ -211,21 +231,29 @@ class Mongo:
         for activity in applet["reprolib:terms/order"][0]["@list"]:
             activity_id = activity["@id"]
             if activity_id in activities_by_id:
-                activity_objects.append(activities_by_id[activity_id]["activity"])
+                activity_objects.append(
+                    activities_by_id[activity_id]["activity"]
+                )
             else:
-                print('Warning: activity ', activity_id, ' presents in order but absent in applet activities.')
+                print(
+                    "Warning: activity ",
+                    activity_id,
+                    " presents in order but absent in applet activities.",
+                )
 
         applet["reprolib:terms/order"][0]["@list"] = activity_objects
 
-        activity_flows = applet_format["activityFlows"]
-        activity_flow_objects = []
-        # setup activity flows
-        for flow in applet["reprolib:terms/activityFlowOrder"][0]["@list"]:
-            activity_flow_objects.append(activity_flows[flow["@id"]])
+        if applet.get("reprolib:terms/activityFlowOrder"):
+            activity_flows = applet_format["activityFlows"]
+            activity_flow_objects = []
 
-        applet["reprolib:terms/activityFlowOrder"][0][
-            "@list"
-        ] = activity_flow_objects
+            # setup activity flows
+            for flow in applet["reprolib:terms/activityFlowOrder"][0]["@list"]:
+                activity_flow_objects.append(activity_flows[flow["@id"]])
+
+            applet["reprolib:terms/activityFlowOrder"][0][
+                "@list"
+            ] = activity_flow_objects
         # add context
 
         applet["@context"] = CONTEXT["@context"]
@@ -235,7 +263,7 @@ class Mongo:
 
     async def get_applet(self, applet_id: str) -> dict:
         applet = Applet().findOne({"_id": ObjectId(applet_id)})
-        if 'applet' not in applet['meta'] or applet['meta']['applet'] == {}:
+        if "applet" not in applet["meta"] or applet["meta"]["applet"] == {}:
             raise EmptyAppletException()
 
         ld_request_schema = self.get_applet_repro_schema(applet)
@@ -243,7 +271,9 @@ class Mongo:
 
         converted.extra_fields["created"] = applet["created"]
         converted.extra_fields["updated"] = applet["updated"]
-        converted.extra_fields["version"] = applet["meta"]["applet"].get("version", '0.0.1')
+        converted.extra_fields["version"] = applet["meta"]["applet"].get(
+            "version", "0.0.1"
+        )
         converted = self._extract_ids(converted, applet_id)
 
         return converted

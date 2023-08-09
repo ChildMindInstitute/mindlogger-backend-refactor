@@ -192,7 +192,7 @@ class BaseActivityItem(BaseModel):
                 ResponseType.SLIDER,
                 ResponseType.TEXT,
                 ResponseType.TIME,
-                ResponseType.TIMERANGE, # TODO add support???
+                ResponseType.TIMERANGE,  # TODO add support???
             ]:
                 raise IncorrectConditionLogicItemTypeError()
 

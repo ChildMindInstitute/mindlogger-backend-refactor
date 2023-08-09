@@ -3,11 +3,13 @@ import datetime
 
 from bson.objectid import ObjectId
 
-from apps.migrate.exception.exception import FormatldException, EmptyAppletException
+from apps.migrate.exception.exception import (
+    FormatldException,
+    EmptyAppletException,
+)
 from apps.migrate.services.mongo import Mongo
 from apps.migrate.services.postgres import Postgres
 from apps.girderformindlogger.models.applet import Applet
-
 
 
 # class Convertor:
@@ -20,28 +22,42 @@ from apps.girderformindlogger.models.applet import Applet
 
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
     toSkip = [
-        '63bd5736aba6fd499bda0fee' # subscales refer to name (question: Put your name)
+        "63bd5736aba6fd499bda0fee",  # subscales refer to name (question: Put your name)
+        "63be5c97aba6fd499bda1960",  # Totalscoretable incorrect raw score '~10~0'
+        "63bd5736aba6fd499bda0fee",  # subscale text item
+        # "63bdaff0aba6fd499bda17d5",  # numberselect item conditional logic
     ]
     # applets = Applet().find(query={'_id': ObjectId('63bd2e3aaba6fd499bda0f65')}, fields={"_id": 1})
     # applets = Applet().find(query={'_id': ObjectId('64d0de7e5e3d9e04c28a1720')}, fields={"_id": 1}) # TODO: 6.2.6 6.2.7 ???
     # applets = Applet().find(query={'_id': ObjectId('62d15a03154fa87efa129760')}, fields={"_id": 1})
-    applets = Applet().find(query={'meta.applet.displayName': {'$exists': True}, 'meta.applet.deleted': {'$ne': True}, 'created': {'$gte': datetime.datetime(2023, 1, 1, 0, 0, 0, 0)}}, fields={"_id": 1})
-    skipUntil = '63bd5d68aba6fd499bda1460'
+    applets = Applet().find(
+        query={
+            "meta.applet.displayName": {"$exists": True},
+            "meta.applet.deleted": {"$ne": True},
+            "created": {"$gte": datetime.datetime(2023, 1, 1, 0, 0, 0, 0)},
+        },
+        fields={"_id": 1},
+    )
+    skipUntil = "63bdaff0aba6fd499bda17d5"
     appletsCount = applets.count()
-    print('total', appletsCount)
+    print("total", appletsCount)
     for index, applet_id in enumerate(applets, start=1):
-        applet_id = str(applet_id['_id'])
+        applet_id = str(applet_id["_id"])
         if skipUntil == applet_id:
             skipUntil = None
         if skipUntil is not None or applet_id in toSkip:
             continue
-        print('processing', applet_id, index, '/', appletsCount)
+        print("processing", applet_id, index, "/", appletsCount)
         try:
-            applet: dict | None = await mongo.get_applet(applet_id)  # noqa: F841
+            applet: dict | None = await mongo.get_applet(
+                applet_id
+            )  # noqa: F841
 
             applets, owner_id = await mongo.get_applet_versions(applet_id)
             for version, _applet in applets.items():
-                _applet.extra_fields['created'] = applet.extra_fields['created']
+                _applet.extra_fields["created"] = applet.extra_fields[
+                    "created"
+                ]
 
             if applets != {}:
                 applets[list(applets.keys())[-1]] = applet
@@ -50,7 +66,8 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
 
             await postgres.save_applets(applets, owner_id)
         except (FormatldException, EmptyAppletException) as e:
-            print('Skipped because: ', e.message)
+            print("Skipped because: ", e.message)
+
 
 async def main():
     mongo = Mongo()
@@ -69,6 +86,7 @@ async def main():
     # Close connections
     mongo.close_connection()
     postgres.close_connection()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
