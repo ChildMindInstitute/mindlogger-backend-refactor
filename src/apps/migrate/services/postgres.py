@@ -65,24 +65,24 @@ class Postgres:
                 "last_name": old_user["last_name"],
                 "email_aes_encrypted": old_user["email_aes_encrypted"],
             }
-            # with suppress(Exception):
-            cursor.execute(
-                "INSERT INTO users"
-                "(created_at, updated_at, is_deleted, email, "
-                "hashed_password, id, first_name, last_name, "
-                "last_seen_at, email_aes_encrypted)"
-                "VALUES"
-                f"('{new_user['created_at']}', "
-                f"'{new_user['updated_at']}', "
-                f"'{new_user['is_deleted']}', '{new_user['email']}', "
-                f"'{new_user['hashed_password']}', '{new_user['id']}', "
-                f"'{new_user['first_name']}', '{new_user['last_name']}', "
-                f"'{new_user['last_seen_at']}', "
-                f"'{new_user['email_aes_encrypted']}');"
-            )
+            with suppress(Exception):
+                cursor.execute(
+                    "INSERT INTO users"
+                    "(created_at, updated_at, is_deleted, email, "
+                    "hashed_password, id, first_name, last_name, "
+                    "last_seen_at, email_aes_encrypted)"
+                    "VALUES"
+                    f"('{new_user['created_at']}', "
+                    f"'{new_user['updated_at']}', "
+                    f"'{new_user['is_deleted']}', '{new_user['email']}', "
+                    f"'{new_user['hashed_password']}', '{new_user['id']}', "
+                    f"'{new_user['first_name']}', '{new_user['last_name']}', "
+                    f"'{new_user['last_seen_at']}', "
+                    f"'{new_user['email_aes_encrypted']}');"
+                )
 
-            results[old_user["id_"]] = new_user
-            count += 1
+                results[old_user["id_"]] = new_user
+                count += 1
 
         self.connection.commit()
         cursor.close()
