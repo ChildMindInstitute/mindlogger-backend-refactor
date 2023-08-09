@@ -49,6 +49,7 @@ class Activity(PublicModel):
     subscale_setting: SubscaleSetting | None = None
     is_performance_task: bool = False
     performance_task_type: PerformanceTaskType | None = None
+    report_included_item_name: str | None = None
 
     @validator("is_performance_task", always=True)
     def validate_is_performance_task(cls, value, values):
@@ -75,6 +76,8 @@ class ActivityFlow(PublicModel):
     hide_badge: bool = False
     order: int
     items: list[ActivityFlowItem] = Field(default_factory=list)
+    report_included_activity_name: str | None = None
+    report_included_item_name: str | None = None
 
 
 class Encryption(PublicModel):

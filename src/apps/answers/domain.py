@@ -80,6 +80,13 @@ class AnswerAlert(InternalModel):
     message: str
 
 
+class ClientMeta(InternalModel):
+    app_id: str
+    app_version: str
+    width: int
+    height: int
+
+
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
@@ -89,6 +96,13 @@ class AppletAnswerCreate(InternalModel):
     answer: ItemAnswerCreate
     created_at: int | None
     alerts: list[AnswerAlert] = Field(default_factory=list)
+    client: ClientMeta
+
+    @validator("created_at")
+    def convert_time_to_unix_timestamp(cls, value: int):
+        if value:
+            return value / 1000
+        return value
 
 
 class AssessmentAnswerCreate(InternalModel):
@@ -112,6 +126,7 @@ class SummaryActivity(InternalModel):
     id: uuid.UUID
     name: str
     is_performance_task: bool
+    has_answer: bool
 
 
 class PublicAnswerDate(PublicModel):
@@ -129,6 +144,7 @@ class PublicSummaryActivity(InternalModel):
     id: uuid.UUID
     name: str
     is_performance_task: bool
+    has_answer: bool
 
 
 class PublicAnswerDates(PublicModel):

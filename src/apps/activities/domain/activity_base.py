@@ -19,3 +19,4 @@ class ActivityBase(BaseModel):
     is_hidden: bool | None = False
     scores_and_reports: ScoresAndReports | None = None
     subscale_setting: SubscaleSetting | None = None
+    report_included_item_name: str | None = None

@@ -17,7 +17,7 @@ from sqlalchemy import (  # true,
     true,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, aliased
 
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
@@ -169,6 +169,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         if filters:
             filter_clauses = _AnswersExportFilter().get_clauses(**filters)
 
+        reviewer_activity_hist = aliased(
+            ActivityHistorySchema, name="reviewer_activity_hist"
+        )
+
         query: Query = (
             select(
                 record_id.label("id"),
@@ -186,7 +190,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.start_datetime,
                 AnswerItemSchema.end_datetime,
                 AnswerSchema.applet_history_id,
-                AnswerSchema.activity_history_id,
+                func.coalesce(
+                    reviewer_activity_hist.id_version,
+                    AnswerSchema.activity_history_id,
+                ).label("activity_history_id"),
                 AnswerSchema.flow_history_id,
                 ActivityFlowHistoriesSchema.name.label("flow_name"),
                 AnswerItemSchema.created_at,
@@ -198,10 +205,15 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
             .outerjoin(
                 ActivityFlowHistoriesSchema,
-                ActivityFlowHistoriesSchema.id_version
-                == AnswerSchema.flow_history_id,
+                and_(
+                    AnswerItemSchema.is_assessment.isnot(True),
+                    ActivityFlowHistoriesSchema.id_version
+                    == AnswerSchema.flow_history_id,
+                ),
             )
-            .outerjoin(UserSchema, UserSchema.id == AnswerSchema.respondent_id)
+            .outerjoin(
+                UserSchema, UserSchema.id == AnswerItemSchema.respondent_id
+            )
             .outerjoin(
                 UserAppletAccessSchema,
                 and_(
@@ -210,6 +222,15 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                     UserAppletAccessSchema.user_id
                     == AnswerItemSchema.respondent_id,
                     UserAppletAccessSchema.role == Role.RESPONDENT,
+                ),
+            )
+            .outerjoin(
+                reviewer_activity_hist,
+                and_(
+                    AnswerItemSchema.is_assessment.is_(True),
+                    reviewer_activity_hist.applet_id
+                    == AnswerSchema.applet_history_id,
+                    reviewer_activity_hist.is_reviewable.is_(True),
                 ),
             )
             .where(
@@ -383,3 +404,22 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         db_result = await self._execute(query)
         return db_result.first()
+
+    async def get_activities_which_has_answer(
+        self, activity_ids: list[uuid.UUID], respondent_id: uuid.UUID | None
+    ) -> list[uuid.UUID]:
+        query: Query = select(AnswerSchema.id, ActivityHistorySchema.id)
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == AnswerSchema.activity_history_id,
+        )
+        query = query.where(ActivityHistorySchema.id.in_(activity_ids))
+        if respondent_id:
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
+
+        db_result = await self._execute(query)
+        results = []
+        for answer_id, activity_id in db_result.all():
+            results.append(activity_id)
+        return results

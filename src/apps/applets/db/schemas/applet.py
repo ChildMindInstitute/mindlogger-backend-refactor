@@ -31,6 +31,9 @@ class _BaseAppletSchema:
     report_include_user_id = Column(Boolean(), default=False)
     report_include_case_id = Column(Boolean(), default=False)
     report_email_body = Column(Text())
+    extra_fields = Column(
+        JSONB(), default=dict, server_default=text("'{}'::jsonb")
+    )
 
 
 class AppletSchema(_BaseAppletSchema, Base):
@@ -43,9 +46,6 @@ class AppletSchema(_BaseAppletSchema, Base):
     retention_period = Column(Integer(), nullable=True)
     retention_type = Column(String(20), nullable=True)
     is_published = Column(Boolean(), default=False)
-    extra_fields = Column(
-        JSONB(), default=dict, server_default=text("'{}'::jsonb")
-    )
 
 
 class AppletHistorySchema(_BaseAppletSchema, Base):

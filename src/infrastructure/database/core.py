@@ -12,7 +12,13 @@ from sqlalchemy.pool import NullPool
 
 from config import settings
 
-__all__ = ["engine", "session_manager", "rollback", "atomic"]
+__all__ = [
+    "engine",
+    "session_manager",
+    "rollback",
+    "atomic",
+    "rollback_with_session",
+]
 
 engine = create_async_engine(
     settings.database.url,
@@ -87,6 +93,21 @@ def rollback(func):
     @wraps(func)
     async def _wrap(*args, **kwargs):
         session = session_manager.get_session()
+        try:
+            await func(*args, **kwargs)
+        except Exception:
+            raise
+        finally:
+            await session.rollback()
+
+    return _wrap
+
+
+def rollback_with_session(func):
+    @wraps(func)
+    async def _wrap(*args, **kwargs):
+        session = session_manager.get_session()
+        kwargs["session"] = session
         try:
             await func(*args, **kwargs)
         except Exception:

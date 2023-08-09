@@ -1,10 +1,13 @@
 import datetime
 import json
 
+import pytest
 from asynctest import CoroutineMock, patch
+from sqlalchemy import select
 
+from apps.answers.db.schemas import AnswerSchema
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback
+from infrastructure.database import rollback, rollback_with_session
 from infrastructure.utility import RedisCacheTest
 from infrastructure.utility.rabbitmq_queue import RabbitMqQueueTest
 
@@ -68,7 +71,7 @@ class TestAnswerActivityItems(BaseTest):
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
-            created_at=1681216969,
+            created_at=1690188731636,
             answer=dict(
                 user_public_key="user key",
                 answer=json.dumps(
@@ -93,6 +96,12 @@ class TestAnswerActivityItems(BaseTest):
                     message="hello world",
                 )
             ],
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -135,7 +144,7 @@ class TestAnswerActivityItems(BaseTest):
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
-            created_at=1681216969,
+            created_at=1690188731636,
             answer=dict(
                 user_public_key="user key",
                 answer=json.dumps(
@@ -153,6 +162,12 @@ class TestAnswerActivityItems(BaseTest):
                 scheduled_time=1690188679657,
                 start_time=1690188679657,
                 end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
             ),
         )
 
@@ -175,7 +190,7 @@ class TestAnswerActivityItems(BaseTest):
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-            created_at=1681216969,
+            created_at=1690188731636,
             answer=dict(
                 user_public_key="user key",
                 events=json.dumps(dict(events=["event1", "event2"])),
@@ -192,6 +207,12 @@ class TestAnswerActivityItems(BaseTest):
                 scheduled_time=1690188679657,
                 start_time=1690188679657,
                 end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
             ),
         )
 
@@ -215,6 +236,12 @@ class TestAnswerActivityItems(BaseTest):
             answer=dict(
                 start_time=1690188679657,
                 end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
             ),
         )
 
@@ -263,6 +290,12 @@ class TestAnswerActivityItems(BaseTest):
                 start_time=1690188679657,
                 end_time=1690188731636,
             ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -291,7 +324,7 @@ class TestAnswerActivityItems(BaseTest):
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             version="1.0.0",
-            created_at=1681216969,
+            created_at=1690188731636,
             flow_id="3013dfb1-9202-4577-80f2-ba7450fb5831",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             answer=dict(
@@ -311,6 +344,12 @@ class TestAnswerActivityItems(BaseTest):
                 start_time=1690188679657,
                 end_time=1690188731636,
             ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -328,10 +367,16 @@ class TestAnswerActivityItems(BaseTest):
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
-            created_at=1681216969,
+            created_at=1690188731636,
             answer=dict(
                 start_time=1690188679657,
                 end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
             ),
         )
 
@@ -366,6 +411,12 @@ class TestAnswerActivityItems(BaseTest):
                 scheduled_time=1690188679657,
                 start_time=1690188679657,
                 end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
             ),
         )
 
@@ -440,6 +491,12 @@ class TestAnswerActivityItems(BaseTest):
                 start_time=1690188679657,
                 end_time=1690188731636,
             ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -499,6 +556,12 @@ class TestAnswerActivityItems(BaseTest):
                 start_time=1690188679657,
                 end_time=1690188731636,
             ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -541,6 +604,12 @@ class TestAnswerActivityItems(BaseTest):
                 scheduled_time=1690188679657,
                 start_time=1690188679657,
                 end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
             ),
         )
 
@@ -598,6 +667,12 @@ class TestAnswerActivityItems(BaseTest):
                 scheduled_time=1690188679657,
                 start_time=1690188679657,
                 end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
             ),
         )
 
@@ -748,6 +823,12 @@ class TestAnswerActivityItems(BaseTest):
                 start_time=1690188679657,
                 end_time=1690188731636,
             ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -813,6 +894,12 @@ class TestAnswerActivityItems(BaseTest):
                 scheduled_time=1690188679657,
                 start_time=1690188679657,
                 end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
             ),
         )
 
@@ -904,6 +991,12 @@ class TestAnswerActivityItems(BaseTest):
                 start_time=1690188679657,
                 end_time=1690188731636,
             ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -989,6 +1082,12 @@ class TestAnswerActivityItems(BaseTest):
                 start_time=1690188679657,
                 end_time=1690188731636,
             ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -1022,6 +1121,12 @@ class TestAnswerActivityItems(BaseTest):
                 scheduled_time=1690188679657,
                 start_time=1690188679657,
                 end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
             ),
         )
 
@@ -1137,6 +1242,12 @@ class TestAnswerActivityItems(BaseTest):
                 start_time=1690188679657,
                 end_time=1690188731636,
             ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
@@ -1190,4 +1301,165 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["name"] == "PHQ2 new"
-        assert response.json()["result"][0]["isPerformanceTask"] is False
+        assert response.json()["result"][0]["isPerformanceTask"] is True
+        assert response.json()["result"][0]["hasAnswer"] is False
+
+    @rollback
+    async def test_get_summary_activities_after_submitted_answer(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.9.9",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answer=dict(
+                user_public_key="user key",
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                identifier="some identifier",
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
+        )
+
+        response = await self.client.post(self.answer_url, data=create_data)
+        assert response.status_code == 201
+
+        response = await self.client.get(
+            self.summary_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            )
+        )
+
+        assert response.status_code == 200
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0]["name"] == "PHQ2 new"
+        assert response.json()["result"][0]["isPerformanceTask"] is True
+        assert response.json()["result"][0]["hasAnswer"] is True
+
+    @rollback_with_session
+    async def test_store_client_meta(self, **kwargs):
+        session = kwargs["session"]
+        app_id = "mindlogger-mobile"
+        app_version = "0.21.48"
+        app_width = 819
+        app_height = 1080
+
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answer=dict(
+                user_public_key="user key",
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                identifier="some identifier",
+                scheduled_time=10,
+                start_time=10,
+                end_time=11,
+            ),
+            client=dict(
+                appId=app_id,
+                appVersion=app_version,
+                width=app_width,
+                height=app_height,
+            ),
+        )
+        response = await self.client.post(self.answer_url, data=create_data)
+        assert response.status_code == 201
+        res = await session.execute(select(AnswerSchema))
+        res: AnswerSchema = res.scalars().first()
+        assert app_id == res.client["app_id"]
+        assert app_version == res.client["app_version"]
+        assert app_width == res.client["width"]
+        assert app_height == res.client["height"]
+
+    @pytest.mark.parametrize(
+        "query,expected",
+        (
+            ({"identifiers": "encrypted"}, 1),
+            ({"emptyIdentifiers": True}, 0),
+        ),
+    )
+    @rollback
+    async def test_activity_answers_by_identifier(self, query, expected):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answer=dict(
+                user_public_key="user key",
+                events=json.dumps(dict(events=["event1", "event2"])),
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
+                identifier="encrypted",
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
+        )
+
+        response = await self.client.post(self.answer_url, data=create_data)
+
+        assert response.status_code == 201, response.json()
+
+        response = await self.client.get(
+            self.answers_for_activity_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            ),
+            query=query,
+        )
+
+        assert response.status_code == 200, response.json()
+        response = response.json()
+        assert response["count"] == expected

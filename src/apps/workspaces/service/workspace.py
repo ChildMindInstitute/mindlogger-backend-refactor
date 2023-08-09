@@ -124,9 +124,15 @@ class WorkspaceService:
         self, owner_id: uuid.UUID, language: str, query_params: QueryParams
     ) -> list[WorkspaceApplet]:
         folder_or_applets = []
-        workspace_applets = await AppletsCRUD(
-            self.session
-        ).get_workspace_applets(owner_id, self._user_id, query_params)
+        applets_crud = AppletsCRUD(self.session)
+        if query_params.filters.get("flat_list"):
+            workspace_applets = await applets_crud.get_applets_flat_list(
+                owner_id, self._user_id, query_params
+            )
+        else:
+            workspace_applets = await applets_crud.get_workspace_applets(
+                owner_id, self._user_id, query_params
+            )
         for folder_or_applet in workspace_applets:
             folder_or_applets.append(
                 WorkspaceApplet(
@@ -141,6 +147,8 @@ class WorkspaceService:
                     type=folder_or_applet[8],
                     role=folder_or_applet[9],
                     folders_applet_count=folder_or_applet[10],
+                    description=folder_or_applet[12],
+                    activity_count=folder_or_applet[13],
                 )
             )
         return folder_or_applets
@@ -188,10 +196,18 @@ class WorkspaceService:
 
         return count
 
-    async def get_workspace_applets_count(self, owner_id: uuid.UUID) -> int:
-        count = await AppletsCRUD(self.session).get_workspace_applets_count(
-            owner_id, self._user_id
-        )
+    async def get_workspace_applets_count(
+        self, owner_id: uuid.UUID, query: QueryParams
+    ) -> int:
+        applet_crud = AppletsCRUD(self.session)
+        if query.filters["flat_list"]:
+            count = await applet_crud.get_workspace_applets_flat_list_count(
+                owner_id, self._user_id
+            )
+        else:
+            count = await applet_crud.get_workspace_applets_count(
+                owner_id, self._user_id
+            )
         return count
 
     async def get_workspace_folder_applets(

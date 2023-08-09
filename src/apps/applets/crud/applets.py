@@ -20,6 +20,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count, func
 
+from apps.activities.db.schemas import ActivitySchema
 from apps.applets import errors
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import Role
@@ -410,6 +411,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 "folders_applet_count"
             ),
             literal("1").label("ordering"),
+            null().label("description"),
+            null().label("activity_count"),
         )
         folders_query = folders_query.where(FolderSchema.creator_id == user_id)
         folders_query = folders_query.join(
@@ -476,7 +479,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         folder_applets_query = folder_applets_query.where(
             FolderSchema.creator_id == user_id
         )
-
+        activity_subquery = self._get_activity_subquery()
         query: Query = select(
             AppletSchema.id.label("id"),
             AppletSchema.display_name.label("name"),
@@ -490,6 +493,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             access_query.c.role.label("role"),
             literal(0).label("folders_applet_count"),
             literal("2").label("ordering"),
+            AppletSchema.description,
+            activity_subquery,
         )
         query = query.join(
             access_query,
@@ -499,9 +504,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.where(AppletSchema.id.notin_(folder_applets_query))
         query = query.where(access_query.c.role != None)  # noqa
 
-        if not filters.filters["show_all_without_folders"]:
-            folders_query = await self._folder_list_query(owner_id, user_id)
-            query = folders_query.union(query)
+        folders_query = await self._folder_list_query(owner_id, user_id)
+        query = folders_query.union(query)
 
         cte = query.cte("applets")
         query = select(cte)
@@ -796,3 +800,102 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    @staticmethod
+    def _get_activity_subquery() -> Query:
+        return (
+            select([func.count().label("count")])
+            .where(AppletSchema.id == ActivitySchema.applet_id)
+            .as_scalar()
+        )
+
+    @staticmethod
+    def _get_access_subquery(owner_id: uuid.UUID, user_id: uuid.UUID) -> Query:
+        access_subquery: Query = select(
+            UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
+        )
+        access_subquery = access_subquery.where(
+            UserAppletAccessSchema.is_deleted == False  # noqa
+        )
+        access_subquery = access_subquery.order_by(
+            UserAppletAccessSchema.applet_id.asc(),
+            case(
+                (UserAppletAccessSchema.role == Role.OWNER, 1),
+                (UserAppletAccessSchema.role == Role.MANAGER, 2),
+                (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
+                (UserAppletAccessSchema.role == Role.EDITOR, 4),
+                (UserAppletAccessSchema.role == Role.REVIEWER, 5),
+                (UserAppletAccessSchema.role == Role.RESPONDENT, 6),
+                else_=10,
+            ).asc(),
+        )
+        access_subquery = access_subquery.where(
+            UserAppletAccessSchema.owner_id == owner_id
+        )
+        access_subquery = access_subquery.where(
+            UserAppletAccessSchema.user_id == user_id
+        )
+        access_subquery = access_subquery.subquery().alias("access_sub_query")
+
+        access_query: Query = select(access_subquery)
+        access_query = access_query.distinct(access_subquery.c.applet_id)
+        access_query = access_query.alias("access_query")
+        return access_query
+
+    async def get_applets_flat_list(
+        self, owner_id: uuid.UUID, user_id: uuid.UUID, filters: QueryParams
+    ):
+        access_query = self._get_access_subquery(owner_id, user_id)
+        activity_subquery = self._get_activity_subquery()
+        query: Query = select(
+            AppletSchema.id.label("id"),
+            AppletSchema.display_name.label("name"),
+            AppletSchema.image.label("image"),
+            false().label("is_pinned"),
+            AppletSchema.encryption.label("encryption"),
+            AppletSchema.created_at.label("created_at"),
+            AppletSchema.updated_at.label("updated_at"),
+            AppletSchema.version.label("version"),
+            literal("applet").label("type"),
+            access_query.c.role.label("role"),
+            literal(0).label("folders_applet_count"),
+            literal("2").label("ordering"),
+            AppletSchema.description,
+            access_query,
+            activity_subquery,
+        )
+        query = query.join(
+            access_query,
+            access_query.c.applet_id == AppletSchema.id,
+            isouter=True,
+        )
+        query = query.where(access_query.c.role != None)  # noqa
+        query_cte = query.cte("applets")
+        query = select(query_cte)
+
+        class _Ordering(Ordering):
+            display_name = query_cte.c.name
+            created_at = query_cte.c.created_at
+
+        query = query.order_by(
+            query_cte.c.ordering.asc(),
+            *_Ordering().get_clauses(*filters.ordering),
+        )
+
+        query = paging(query, filters.page, filters.limit)
+        db_result = await self._execute(query)
+        return db_result.all()
+
+    async def get_workspace_applets_flat_list_count(
+        self, owner_id: uuid.UUID, user_id: uuid.UUID
+    ) -> int:
+        access_query = self._get_access_subquery(owner_id, user_id)
+        query: Query = select(AppletSchema.id.label("id"))
+        query = query.join(
+            access_query,
+            access_query.c.applet_id == AppletSchema.id,
+            isouter=True,
+        )
+        query = query.where(access_query.c.role != None)  # noqa
+        db_result = await self._execute(select(func.count(query.c.id)))
+        return db_result.scalars().first() or 0

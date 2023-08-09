@@ -11,7 +11,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
-from pydantic import parse_obj_as
 
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
@@ -56,6 +55,7 @@ from apps.answers.errors import (
     AnswerNoteAccessDeniedError,
     NonPublicAppletError,
     ReportServerError,
+    ReportServerIsNotConfigured,
     UserDoesNotHavePermissionError,
     WrongAnswerGroupAppletId,
     WrongAnswerGroupVersion,
@@ -170,6 +170,7 @@ class AnswerService:
                 else None,
                 activity_history_id=pk(applet_answer.activity_id),
                 respondent_id=self.user_id,
+                client=applet_answer.client.dict(),
             )
         )
         item_answer = applet_answer.answer
@@ -600,8 +601,10 @@ class AnswerService:
         filters: QueryParams,
     ) -> list[AppletActivityAnswer]:
         versions = filters.filters.get("versions")
-        if isinstance(versions, str):
+
+        if versions and isinstance(versions, str):
             versions = versions.split(",")
+
         activities = await ActivityHistoriesCRUD(self.session).get_activities(
             activity_id, versions
         )
@@ -623,8 +626,10 @@ class AnswerService:
 
         activity_answers = list()
         for answer, answer_item in answers:
+            if not answer_item:
+                continue
             answer_item.items = activity_item_map.get(
-                answer.activity_history_id
+                answer.activity_history_id, []
             )
             activity_answer = AppletActivityAnswer.from_orm(answer_item)
             if answer_item.items:
@@ -632,7 +637,6 @@ class AnswerService:
                 activity_answer.subscale_setting = activity.subscale_setting
             activity_answer.version = answer.version
             activity_answers.append(activity_answer)
-
         return activity_answers
 
     async def get_summary_latest_report(
@@ -647,6 +651,7 @@ class AnswerService:
         if not answer:
             return None
         service = ReportServerService(self.session)
+        await self._is_report_server_configured(applet_id)
         is_single_flow = await service.is_flows_single_report(answer.id)
         if is_single_flow:
             report = await service.create_report(answer.submit_id)
@@ -655,13 +660,34 @@ class AnswerService:
 
         return report
 
+    async def _is_report_server_configured(self, applet_id: uuid.UUID):
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        if not applet.report_server_ip:
+            raise ReportServerIsNotConfigured()
+        if not applet.report_public_key:
+            raise ReportServerIsNotConfigured()
+
     async def get_summary_activities(
-        self, applet_id: uuid.UUID
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
     ) -> list[SummaryActivity]:
         activities = await ActivityHistoriesCRUD(
             self.session
         ).get_by_applet_id_for_summary(applet_id)
-        return parse_obj_as(list[SummaryActivity], activities)
+        activity_ids = [activity.id for activity in activities]
+        activity_ids_with_answer = await AnswersCRUD(
+            self.session
+        ).get_activities_which_has_answer(activity_ids, respondent_id)
+        results = []
+        for activity in activities:
+            results.append(
+                SummaryActivity(
+                    id=activity.id,
+                    name=activity.name,
+                    is_performance_task=activity.is_performance_task,
+                    has_answer=activity.id in activity_ids_with_answer,
+                )
+            )
+        return results
 
     async def _create_alerts(
         self,

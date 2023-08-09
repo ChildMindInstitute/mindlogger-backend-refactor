@@ -167,7 +167,9 @@ async def workspace_applets(
             owner_id, language, deepcopy(query_params)
         )
 
-        count = await service.get_workspace_applets_count(owner_id)
+        count = await service.get_workspace_applets_count(
+            owner_id, query_params
+        )
 
     return ResponseMulti(
         result=[WorkspaceAppletPublic.from_orm(applet) for applet in applets],
@@ -214,9 +216,9 @@ async def workspace_applet_detail(
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(
-            applet_id
-        )
+        await CheckAccessService(
+            session, user.id
+        ).check_workspace_applet_detail_access(applet_id)
         applet = await AppletService(session, user.id).get_full_applet(
             applet_id
         )

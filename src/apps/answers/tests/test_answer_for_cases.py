@@ -5,13 +5,14 @@ from infrastructure.database import rollback
 
 
 class TestAnswerCases(BaseTest):
-    fixtures = ["answers/fixtures/duplicate_activity_in_flow.json"]
-
     login_url = "/auth/login"
     answer_url = "/answers"
 
     @rollback
     async def test_answer_activity_items_create_for_respondent(self):
+        await self.load_data(
+            "answers/fixtures/duplicate_activity_in_flow.json"
+        )
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -23,6 +24,12 @@ class TestAnswerCases(BaseTest):
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             version="1.0.0",
             created_at=1681216969,
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
             answer=dict(
                 user_public_key="user key",
                 answer=json.dumps(
@@ -52,6 +59,12 @@ class TestAnswerCases(BaseTest):
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3621",
             version="1.0.0",
             created_at=1681216969,
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
             answer=dict(
                 user_public_key="user key",
                 answer=json.dumps(

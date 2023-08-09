@@ -151,6 +151,7 @@ class AppletService:
                 encryption=create_data.encryption.dict()
                 if create_data.encryption
                 else None,
+                extra_fields=create_data.extra_fields,
             )
         )
         return AppletFull.from_orm(schema)
@@ -269,6 +270,7 @@ class AppletService:
                         for item in activity.items
                     ],
                     is_hidden=activity.is_hidden,
+                    report_included_item_name=activity.report_included_item_name,  # noqa: E501
                 )
             )
 
@@ -285,6 +287,8 @@ class AppletService:
                         FlowItemCreate(activity_key=item)
                         for item in activity_flow.activity_ids
                     ],
+                    report_included_activity_name=activity_flow.report_included_activity_name,  # noqa: E501
+                    report_included_item_name=activity_flow.report_included_item_name,  # noqa: E501
                 )
             )
 
@@ -579,7 +583,6 @@ class AppletService:
 
     async def delete_applet_by_id(self, applet_id: uuid.UUID):
         await AppletsCRUD(self.session).get_by_id(applet_id)
-
         await AnswersCRUD(self.session).delete_by_applet_user(applet_id)
         await UserAppletAccessCRUD(self.session).delete_all_by_applet_id(
             applet_id
@@ -763,11 +766,15 @@ class AppletService:
         title,
         body,
         type_: FirebaseNotificationType,
+        device_ids=None,
     ):
         # TODO: make background task
+        if device_ids is None:
+            device_ids = []
         respondents_device_ids = await AppletsCRUD(
             self.session
         ).get_respondents_device_ids(applet_id)
+        respondents_device_ids += device_ids
         await FCMNotification().notify(
             respondents_device_ids,
             FirebaseMessage(

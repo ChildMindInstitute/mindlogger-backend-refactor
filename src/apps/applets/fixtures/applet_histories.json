@@ -11,8 +11,8 @@
       "about": {
         "en": "Patient Health Questionnaire"
       },
-      "image": "",
-      "watermark": "",
+      "image": "image_url",
+      "watermark": "watermark_url",
       "theme_id": null,
       "version": "1.0.0",
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
