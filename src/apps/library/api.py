@@ -77,8 +77,9 @@ async def library_get_by_id(
 ) -> Response[PublicLibraryItem]:
     async with atomic(session):
         applet = await LibraryService(session).get_applet_by_id(library_id)
-
-    return Response(result=PublicLibraryItem(**applet.dict()))
+    return Response(
+        result=model_as_camel_case(PublicLibraryItem(**applet.dict()))
+    )
 
 
 async def library_get_url(
