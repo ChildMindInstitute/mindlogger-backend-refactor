@@ -104,7 +104,6 @@ class ConditionalItem(ResolvesConditionalLogic):
         ld_is_vis: str | bool | None,
         ld_print_items: list[str] | None,
     ):
-
         self.ld_id = ld_id
         self.ld_pref_label = ld_pref_label
         self.ld_alt_label = ld_alt_label
@@ -217,7 +216,6 @@ class ReproActivityScore(ReportBase, ResolvesConditionalLogic):
 
 
 class ReproActivitySection(ReportBase):
-
     ld_is_vis: str | bool | None = None
 
     @classmethod

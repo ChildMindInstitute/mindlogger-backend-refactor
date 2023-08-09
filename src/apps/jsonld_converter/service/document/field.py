@@ -126,7 +126,9 @@ class ReproFieldBase(
 
     @property
     def name(self):
-        name = self.ld_pref_label or self.ld_alt_label or self.ld_id # TODO: discuss
+        name = (
+            self.ld_pref_label or self.ld_alt_label or self.ld_id
+        )  # TODO: discuss
         return str_to_id(name, r"\s")
 
     def _get_ld_question(self, doc: dict, drop=False):
@@ -155,7 +157,7 @@ class ReproFieldBase(
 
     def _value_or_none(self, doc: dict, key: str):
         value = self.attr_processor.get_attr_value(doc, key)
-        return value if value != 'false' else None
+        return value if value != "false" else None
 
     def _format_choice(self, doc: dict):
         choice = {
@@ -334,6 +336,7 @@ class ReproFieldText(ReproFieldBase):
     ld_is_response_identifier: bool | None = None
     ld_max_length: int | None = None
     ld_value_type: str | None = None
+    ld_required_value: bool | None = None
 
     is_multiple: bool = False
     choices: list[dict] | None = None
@@ -572,7 +575,18 @@ class ReproFieldRadioStacked(ReproFieldBase):
         if item_options == []:
             for choice in choices:
                 for item in items:
-                    item_options.append({'name': None, 'value': None, 'image': None, 'is_vis': None, 'alert': None, 'color': None, 'tooltip': None, 'score': None})
+                    item_options.append(
+                        {
+                            "name": None,
+                            "value": None,
+                            "image": None,
+                            "is_vis": None,
+                            "alert": None,
+                            "color": None,
+                            "tooltip": None,
+                            "score": None,
+                        }
+                    )
 
         if len(item_options) != len(items) * len(choices):
             raise Exception(
