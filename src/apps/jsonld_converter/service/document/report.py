@@ -181,7 +181,7 @@ class ReproActivityScore(ReportBase, ResolvesConditionalLogic):
         if not expression:
             return []
 
-        pattern = r"[a-zA-Z][\w\_\+\s]*"
+        pattern = r"[a-z0-9A-Z][\w\_\+\s]*"
         if not re.match(pattern, expression):
             raise ConditionalLogicError(expression)
         parts = expression.split("+")
