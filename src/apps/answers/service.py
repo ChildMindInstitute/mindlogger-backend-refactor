@@ -803,7 +803,7 @@ class AnswerService:
                             if answer_item.answer == option["id"]:
                                 data.append(
                                     {
-                                        "date": activity_item_history.created_at,
+                                        "date": activity_item_history.created_at,  # noqa
                                         "value": option["value"],
                                     }
                                 )
@@ -839,7 +839,7 @@ class AnswerService:
                             if answer_item.answer == option["id"]:
                                 data.append(
                                     {
-                                        "date": activity_item_history.created_at,
+                                        "date": activity_item_history.created_at,  # noqa
                                         "value": option["value"],
                                     }
                                 )
