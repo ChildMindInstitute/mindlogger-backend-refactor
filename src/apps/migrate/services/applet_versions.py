@@ -111,7 +111,10 @@ def get_versions_from_content(protocolId):
     if "contentId" not in protocol.get("meta", {}):
         return None
     references = list(
-        ItemModel().find({"folderId": protocol["meta"]["contentId"]})
+        ItemModel().find(
+            query={"folderId": protocol["meta"]["contentId"]},
+            sort=[("created", 1)],
+        )
     )
     result = {}
     for ref in references:
