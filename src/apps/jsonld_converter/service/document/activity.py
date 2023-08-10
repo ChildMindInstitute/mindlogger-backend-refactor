@@ -304,7 +304,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                         )
                     if (
                         resolved_conditions
-                    ):  # if conditions are empty, leave conditional logic as None
+                    ):  # if conditions are empty, thenconditional logic = None
                         model.conditional_logic = ConditionalLogic(
                             match=match, conditions=resolved_conditions
                         )

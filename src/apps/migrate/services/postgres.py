@@ -35,7 +35,7 @@ class Postgres:
                 'updated_at': datetime(2023, 4, 20, 2, 51, 9, 860665),
                 'is_deleted': False,
                 'email': '3400...031d',
-                'email_aes_encrypted': '3400...031d' | null
+                'email_aes_encrypted': 'b'6X\xb4\x12...\xf6\xed'' | null
                 'hashed_password': '$2b$12$Y.../PO',
                 'first_name': 'firstname',
                 'last_name': '-',
@@ -63,20 +63,22 @@ class Postgres:
                 "hashed_password": old_user["hashed_password"],
                 "first_name": old_user["first_name"],
                 "last_name": old_user["last_name"],
+                "email_aes_encrypted": old_user["email_aes_encrypted"],
             }
             with suppress(Exception):
                 cursor.execute(
                     "INSERT INTO users"
                     "(created_at, updated_at, is_deleted, email, "
                     "hashed_password, id, first_name, last_name, "
-                    "last_seen_at)"
+                    "last_seen_at, email_aes_encrypted)"
                     "VALUES"
                     f"('{new_user['created_at']}', "
                     f"'{new_user['updated_at']}', "
                     f"'{new_user['is_deleted']}', '{new_user['email']}', "
                     f"'{new_user['hashed_password']}', '{new_user['id']}', "
                     f"'{new_user['first_name']}', '{new_user['last_name']}', "
-                    f"'{new_user['last_seen_at']}');"
+                    f"'{new_user['last_seen_at']}', "
+                    f"'{new_user['email_aes_encrypted']}');"
                 )
 
                 results[old_user["id_"]] = new_user
