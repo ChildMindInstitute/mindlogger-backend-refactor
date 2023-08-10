@@ -411,18 +411,15 @@ async def applet_answers_export(
 async def applet_answers_mobile_data(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    # query_params: QueryParams = Depends(
-    #     parse_query_params(AnswerExportFilters)
-    # ),
     session=Depends(get_session),
 ):
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(
         session, user.id
     ).check_answers_mobile_data_access(applet_id)
+
     data: AnswersMobileData = await AnswerService(
         session, user.id
     ).get_answer_mobile_data(applet_id)
-    print("data", data)
 
-    return Response(result=PublicAnswerExport.from_orm(data))
+    return Response(result=data)

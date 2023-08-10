@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from enum import Enum
 
 from apps.shared.domain import InternalModel
@@ -11,7 +12,7 @@ class AnalyticsResponseType(str, Enum):
 
 
 class DataValue(InternalModel):
-    date: str
+    date: datetime
     value: int
 
 
