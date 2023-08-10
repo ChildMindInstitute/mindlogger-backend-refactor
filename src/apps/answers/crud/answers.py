@@ -27,7 +27,12 @@ from apps.activities.domain import ActivityHistory
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
-from apps.answers.domain import RespondentAnswerData, Version
+from apps.answers.domain import (
+    AppletCompletedEntities,
+    CompletedEntity,
+    RespondentAnswerData,
+    Version,
+)
 from apps.answers.errors import AnswerNotFoundError
 from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.shared.filtering import Comparisons, FilterField, Filtering
@@ -437,3 +442,65 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         for answer_id, activity_id in db_result.all():
             results.append(activity_id)
         return results
+
+    async def get_completed_answers_data(
+        self,
+        applet_id: uuid.UUID,
+        version: str,
+        respondent_id: uuid.UUID,
+        date: datetime.date,
+    ) -> AppletCompletedEntities:
+        is_completed = or_(
+            AnswerSchema.is_flow_completed,
+            AnswerSchema.flow_history_id.is_(None),
+        )
+
+        query: Query = (
+            select(
+                AnswerSchema.id.label("answer_id"),
+                AnswerSchema.submit_id,
+                AnswerSchema.activity_history_id,
+                AnswerSchema.flow_history_id,
+                AnswerItemSchema.scheduled_event_id,
+                AnswerItemSchema.local_end_date,
+                AnswerItemSchema.local_end_time,
+            )
+            .join(
+                AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
+            )
+            .where(
+                AnswerSchema.applet_id == applet_id,
+                AnswerSchema.version == version,
+                AnswerSchema.respondent_id == respondent_id,
+                AnswerItemSchema.local_end_date == date,
+                is_completed,
+            )
+            .order_by(
+                AnswerSchema.activity_history_id,
+                AnswerSchema.flow_history_id,
+                AnswerItemSchema.local_end_time.desc(),
+            )
+            .distinct(
+                AnswerSchema.activity_history_id, AnswerSchema.flow_history_id
+            )
+        )
+
+        db_result = await self._execute(query)
+        data = db_result.all()
+
+        activities = []
+        flows = []
+        for row in data:
+            if row.flow_history_id:
+                flows.append(CompletedEntity(**row, id=row.flow_history_id))
+            else:
+                activities.append(
+                    CompletedEntity(**row, id=row.activity_history_id)
+                )
+
+        return AppletCompletedEntities(
+            id=applet_id,
+            version=version,
+            activities=activities,
+            activity_flows=flows,
+        )

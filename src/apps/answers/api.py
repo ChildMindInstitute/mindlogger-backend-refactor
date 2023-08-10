@@ -1,4 +1,5 @@
 import base64
+import datetime
 import uuid
 
 from fastapi import Body, Depends
@@ -421,5 +422,23 @@ async def applet_answers_mobile_data(
     data: AnswersMobileData = await AnswerService(
         session, user.id
     ).get_answer_mobile_data(applet_id)
+
+    return Response(result=data)
+
+
+async def applet_completed_entities(
+    applet_id: uuid.UUID,
+    version: str,
+    date: datetime.date,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_create_access(
+        applet_id
+    )
+    data = await AnswerService(session, user.id).get_completed_answers_data(
+        applet_id, version, date
+    )
 
     return Response(result=data)
