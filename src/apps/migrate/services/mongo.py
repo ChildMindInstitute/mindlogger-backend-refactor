@@ -110,7 +110,7 @@ class Mongo:
                     ).hexdigest()
                     if "@" in user.get("email"):
                         email_aes_encrypted = encrypt(
-                            bytes(user.get("email"), 'utf-8')
+                            bytes(user.get("email"), "utf-8")
                         ).hex()
                         encrypted_count += 1
                     else:
