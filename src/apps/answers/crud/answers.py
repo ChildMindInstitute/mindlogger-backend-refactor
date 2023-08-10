@@ -87,6 +87,20 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         return db_result.scalars().all()
 
+    async def get_answers_by_applet_respondent(
+        self,
+        respondent_id: uuid.UUID,
+        applet_id: uuid.UUID,
+    ) -> list[AnswerSchema]:
+        query: Query = select(AnswerSchema)
+        query = query.where(AnswerSchema.respondent_id == respondent_id)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.order_by(AnswerSchema.created_at.asc())
+
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
     async def get_by_id(self, id_: uuid.UUID) -> AnswerSchema:
         schema = await self._get("id", id_)
         if not schema:

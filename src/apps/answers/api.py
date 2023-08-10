@@ -22,6 +22,7 @@ from apps.answers.domain import (
     PublicSummaryActivity,
     VersionPublic,
 )
+from apps.answers.domain.analytics import AnswersMobileData
 from apps.answers.filters import (
     AnswerExportFilters,
     AppletActivityAnswerFilter,
@@ -405,3 +406,20 @@ async def applet_answers_export(
             )
 
     return Response(result=PublicAnswerExport.from_orm(data))
+
+
+async def applet_answers_mobile_data(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(
+        session, user.id
+    ).check_answers_mobile_data_access(applet_id)
+
+    data: AnswersMobileData = await AnswerService(
+        session, user.id
+    ).get_answer_mobile_data(applet_id)
+
+    return Response(result=data)
