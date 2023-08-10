@@ -187,6 +187,7 @@ class ActivityService:
                         if item.conditional_logic
                         else None,
                         allow_edit=item.allow_edit,
+                        is_hidden=item.is_hidden,
                     )
                 )
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
