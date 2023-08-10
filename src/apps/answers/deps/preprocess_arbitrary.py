@@ -4,44 +4,42 @@ from fastapi import Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.domain import AppletAnswerCreate
-from apps.workspaces.service.workspace_arbitrary import (
-    WorkspaceArbitraryService,
-)
+from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic
 from infrastructure.database.core import get_specific_session
 from infrastructure.database.deps import get_session
 
 __all__ = [
+    "get_arbitrary_session",
     "preprocess_arbitrary_by_applet_id",
     "preprocess_arbitrary_by_applet_schema",
 ]
 
 
-async def __get_arbitrary_session_or_none(
-    applet_id: uuid.UUID, session: AsyncSession
-) -> AsyncSession | None:
-    arbitrary_server = await WorkspaceArbitraryService(session).read_by_applet(
-        applet_id
-    )
-    if arbitrary_server:
-        spec_session = await anext(
-            get_specific_session(arbitrary_server.database_uri)
-        )
-        async with atomic(spec_session):
-            yield spec_session
-            await spec_session.commit()
+async def get_arbitrary_session(applet_id: uuid.UUID, session: AsyncSession):
+    if applet_id:
+        service = WorkspaceService(session, uuid.uuid4())
+        server_info = await service.get_arbitrary_info(applet_id)
+        if server_info and server_info.use_arbitrary:
+            spec_session = get_specific_session(server_info.database_uri)
+            session_ = await anext(spec_session)
+            async with atomic(session_):
+                yield session_
+        else:
+            yield None
     else:
         yield None
 
 
 async def preprocess_arbitrary_by_applet_schema(
-    schema: AppletAnswerCreate = Body(...),
-    session=Depends(get_session),
-) -> AsyncSession | None:
-    yield __get_arbitrary_session_or_none(schema.applet_id, session)
+    schema: AppletAnswerCreate = Body(...), session=Depends(get_session)
+):
+    session_ = await anext(get_arbitrary_session(schema.applet_id, session))
+    yield session_
 
 
 async def preprocess_arbitrary_by_applet_id(
-    applet_id: uuid.UUID, session: AsyncSession
+    applet_id: uuid.UUID, session=Depends(get_session)
 ):
-    yield __get_arbitrary_session_or_none(applet_id, session)
+    session_ = await anext(get_arbitrary_session(applet_id, session))
+    yield session_

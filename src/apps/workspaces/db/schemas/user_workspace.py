@@ -14,10 +14,6 @@ class UserWorkspaceSchema(Base):
     )
     workspace_name = Column(String(length=100), nullable=False, index=True)
     is_modified = Column(Boolean(), default=False)
-
-
-class UserWorkspaceArbitrary(Base):
-    __tablename__ = "user_workspace_arbitrary"
     database_uri = Column(String())
     storage_type = Column(String())
     storage_access_key = Column(String())
@@ -25,9 +21,3 @@ class UserWorkspaceArbitrary(Base):
     storage_region = Column(String())
     storage_url = Column(String(), nullable=True, default=None)
     use_arbitrary = Column(Boolean(), default=False)
-    user_workspace_id = Column(
-        ForeignKey("users_workspaces.id", ondelete="RESTRICT"),
-        nullable=False,
-        unique=True,
-        index=True,
-    )

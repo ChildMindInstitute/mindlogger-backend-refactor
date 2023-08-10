@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import Any
+from typing import Any, Collection, List
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
@@ -129,3 +129,9 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         )
         db_result = await self._execute(query)
         return db_result.scalars().one_or_none()
+
+    async def get_by_ids(self, ids: Collection[uuid.UUID]) -> List[UserSchema]:
+        query: Query = select(UserSchema)
+        query.where(UserSchema.id.in_(ids))
+        db_result = await self._execute(query)
+        return db_result.scalars().all()  # noqa

@@ -1,6 +1,8 @@
 import uuid
 from typing import Tuple
 
+from pydantic import ValidationError
+
 from apps.applets.crud import AppletsCRUD
 from apps.shared.query_params import QueryParams
 from apps.users import User, UsersCRUD
@@ -279,7 +281,14 @@ class WorkspaceService:
         )
 
     async def get_arbitrary_info(
-        self, user_id: uuid.UUID
+        self, applet_id: uuid.UUID
     ) -> WorkspaceArbitrary | None:
-        schema = await UserWorkspaceCRUD(self.session).get_by_user_id(user_id)
-        return WorkspaceArbitrary.from_orm(schema) if schema else None
+        schema = await UserWorkspaceCRUD(self.session).get_by_applet_id(
+            applet_id
+        )
+        if not schema:
+            return None
+        try:
+            return WorkspaceArbitrary.from_orm(schema) if schema else None
+        except ValidationError:
+            return None

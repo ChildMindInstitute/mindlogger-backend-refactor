@@ -1,11 +1,15 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
 from apps.users import User
-from apps.workspaces.db.schemas import UserWorkspaceSchema
+from apps.workspaces.db.schemas import (
+    UserAppletAccessSchema,
+    UserWorkspaceSchema,
+)
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import UserWorkspace
 from infrastructure.database.crud import BaseCRUD
 
@@ -68,3 +72,21 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
             schema=schema,
         )
         return instance
+
+    async def get_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> UserWorkspaceSchema | None:
+        query: Query = select(UserWorkspaceSchema)
+        query.join(
+            UserAppletAccessSchema,
+            and_(
+                UserAppletAccessSchema.owner_id == UserWorkspaceSchema.user_id,
+                and_(
+                    UserAppletAccessSchema.role == Role.OWNER,
+                    UserAppletAccessSchema.applet_id == applet_id,
+                ),
+            ),
+        )
+        db_result = await self._execute(query)
+        res = db_result.scalars().first()
+        return res

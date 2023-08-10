@@ -59,12 +59,9 @@ async def create_answer(
         await CheckAccessService(session, user.id).check_answer_create_access(
             schema.applet_id
         )
-        if arbitrary_session:
-            answer = await AnswerService(
-                session, user.id, arbitrary_session
-            ).create_answer(schema)
-            return answer
-    return await AnswerService(session, user.id).create_answer(schema)
+        return await AnswerService(
+            session, user.id, arbitrary_session
+        ).create_answer(schema)
 
 
 async def create_anonymous_answer(
@@ -98,7 +95,6 @@ async def review_activity_list(
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
-
         activities = await AnswerService(
             session, user.id, arbitrary_session
         ).get_review_activities(
@@ -121,6 +117,7 @@ async def summary_activity_list(
     query_params: QueryParams = Depends(
         parse_query_params(SummaryActivityFilter)
     ),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ) -> ResponseMulti[PublicSummaryActivity]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
@@ -128,7 +125,7 @@ async def summary_activity_list(
             applet_id
         )
         activities = await AnswerService(
-            session, user.id
+            session, user.id, arbitrary_session
         ).get_summary_activities(
             applet_id, query_params.filters.get("respondent_id")
         )
@@ -146,15 +143,16 @@ async def applet_activity_answers_list(
     query_params: QueryParams = Depends(
         parse_query_params(AppletActivityAnswerFilter)
     ),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ) -> ResponseMulti[AppletActivityAnswerPublic]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
-        answers = await AnswerService(session, user.id).get_activity_answers(
-            applet_id, activity_id, query_params
-        )
+        answers = await AnswerService(
+            session, user.id, arbitrary_session
+        ).get_activity_answers(applet_id, activity_id, query_params)
     return ResponseMulti(
         result=parse_obj_as(list[AppletActivityAnswerPublic], answers),
         count=len(answers),
@@ -167,6 +165,7 @@ async def summary_latest_report_retrieve(
     respondent_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ) -> FastApiResponse:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
@@ -174,7 +173,7 @@ async def summary_latest_report_retrieve(
             applet_id
         )
         report = await AnswerService(
-            session, user.id
+            session, user.id, arbitrary_session
         ).get_summary_latest_report(applet_id, activity_id, respondent_id)
     if report:
         return FastApiResponse(
@@ -193,14 +192,20 @@ async def applet_submit_date_list(
     query_params: QueryParams = Depends(
         parse_query_params(AppletSubmitDateFilter)
     ),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ) -> Response[PublicAnswerDates]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
-        dates = await AnswerService(session, user.id).get_applet_submit_dates(
-            applet_id, **query_params.filters
+        dates = await AnswerService(
+            session, user.id, arbitrary_session
+        ).get_applet_submit_dates(
+            applet_id,
+            query_params.filters.get("respondent_id"),
+            query_params.filters.get("from_date"),
+            query_params.filters.get("to_date"),
         )
     return Response(result=PublicAnswerDates(dates=list(sorted(set(dates)))))
 
@@ -211,15 +216,16 @@ async def applet_activity_answer_retrieve(
     activity_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ) -> Response[ActivityAnswerPublic]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
-        answer = await AnswerService(session, user.id).get_by_id(
-            applet_id, answer_id, activity_id
-        )
+        answer = await AnswerService(
+            session, user.id, arbitrary_session
+        ).get_by_id(applet_id, answer_id, activity_id)
     return Response(
         result=ActivityAnswerPublic.from_orm(answer),
     )
@@ -230,6 +236,7 @@ async def applet_answer_reviews_retrieve(
     answer_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ) -> ResponseMulti[AnswerReviewPublic]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
@@ -237,7 +244,7 @@ async def applet_answer_reviews_retrieve(
             applet_id
         )
         reviews = await AnswerService(
-            session, user.id
+            session, user.id, arbitrary_session
         ).get_reviews_by_answer_id(applet_id, answer_id)
     return ResponseMulti(
         result=[AnswerReviewPublic.from_orm(review) for review in reviews],
@@ -250,6 +257,7 @@ async def applet_activity_assessment_retrieve(
     answer_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ) -> Response[AssessmentAnswerPublic]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
@@ -257,7 +265,7 @@ async def applet_activity_assessment_retrieve(
             applet_id
         )
         answer = await AnswerService(
-            session, user.id
+            session, user.id, arbitrary_session
         ).get_assessment_by_answer_id(applet_id, answer_id)
     return Response(
         result=AssessmentAnswerPublic.from_orm(answer),
@@ -269,6 +277,7 @@ async def applet_activity_identifiers_retrieve(
     activity_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ) -> ResponseMulti[IdentifierPublic]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
@@ -276,7 +285,7 @@ async def applet_activity_identifiers_retrieve(
             applet_id
         )
         identifiers = await AnswerService(
-            session, user.id
+            session, user.id, arbitrary_session
         ).get_activity_identifiers(activity_id)
     return ResponseMulti(result=identifiers, count=len(identifiers))
 
@@ -286,15 +295,16 @@ async def applet_activity_versions_retrieve(
     activity_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ) -> ResponseMulti[VersionPublic]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
-        versions = await AnswerService(session, user.id).get_activity_versions(
-            activity_id
-        )
+        versions = await AnswerService(
+            session, user.id, arbitrary_session=arbitrary_session
+        ).get_activity_versions(activity_id)
     return ResponseMulti(
         result=parse_obj_as(list[VersionPublic], versions), count=len(versions)
     )
@@ -306,15 +316,16 @@ async def applet_activity_assessment_create(
     schema: AssessmentAnswerCreate = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ):
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(
             applet_id
         )
-        await AnswerService(session, user.id).create_assessment_answer(
-            applet_id, answer_id, schema
-        )
+        await AnswerService(
+            session, user.id, arbitrary_session
+        ).create_assessment_answer(applet_id, answer_id, schema)
     return
 
 
@@ -325,13 +336,14 @@ async def note_add(
     schema: AnswerNote = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ):
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(
             applet_id
         )
-        await AnswerService(session, user.id).add_note(
+        await AnswerService(session, user.id, arbitrary_session).add_note(
             applet_id, answer_id, activity_id, schema.note
         )
     return
@@ -344,18 +356,19 @@ async def note_list(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     query_params: QueryParams = Depends(parse_query_params(BaseQueryParams)),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ) -> ResponseMulti[AnswerNoteDetailPublic]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(
             applet_id
         )
-        notes = await AnswerService(session, user.id).get_note_list(
-            applet_id, answer_id, activity_id, query_params
-        )
-        count = await AnswerService(session, user.id).get_notes_count(
-            answer_id, activity_id
-        )
+        notes = await AnswerService(
+            session, user.id, arbitrary_session
+        ).get_note_list(applet_id, answer_id, activity_id, query_params)
+        count = await AnswerService(
+            session, user.id, arbitrary_session
+        ).get_notes_count(answer_id, activity_id)
     return ResponseMulti(
         result=[AnswerNoteDetailPublic.from_orm(note) for note in notes],
         count=count,
@@ -370,13 +383,14 @@ async def note_edit(
     schema: AnswerNote = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ):
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(
             applet_id
         )
-        await AnswerService(session, user.id).edit_note(
+        await AnswerService(session, user.id, arbitrary_session).edit_note(
             applet_id, answer_id, activity_id, note_id, schema.note
         )
     return
@@ -389,13 +403,14 @@ async def note_delete(
     note_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ):
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(
             applet_id
         )
-        await AnswerService(session, user.id).delete_note(
+        await AnswerService(session, user.id, arbitrary_session).delete_note(
             applet_id, answer_id, activity_id, note_id
         )
     return
@@ -408,14 +423,15 @@ async def applet_answers_export(
         parse_query_params(AnswerExportFilters)
     ),
     session=Depends(get_session),
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ):
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answers_export_access(
         applet_id
     )
-    data: AnswerExport = await AnswerService(session, user.id).get_export_data(
-        applet_id, query_params
-    )
+    data: AnswerExport = await AnswerService(
+        session, user.id, arbitrary_session
+    ).get_export_data(applet_id, query_params)
     for answer in data.answers:
         if answer.is_manager:
             answer.respondent_secret_id = (

@@ -252,4 +252,3 @@ class WorkspaceArbitrary(InternalModel):
     storage_region: str
     storage_url: str
     use_arbitrary: bool
-    user_workspace_id: uuid.UUID
