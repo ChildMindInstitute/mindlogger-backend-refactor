@@ -23,22 +23,31 @@ from apps.girderformindlogger.models.applet import Applet
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
     toSkip = [
         "63bd5736aba6fd499bda0fee",  # subscales refer to name (question: Put your name)
-        "63be5c97aba6fd499bda1960",  # Totalscoretable incorrect raw score '~10~0'
-        "63bd5736aba6fd499bda0fee",  # subscale text item
-        # "63bdaff0aba6fd499bda17d5",  # numberselect item conditional logic
+        # "63be5c97aba6fd499bda1960",  # Totalscoretable incorrect raw score '~10~0' - fixed
+        "63be9739aba6fd499bda1eea",  # subscale refer to text item, instead of single,multi, slider
+        "63c00872aba6fd499bda2990",  # subscale refer to text item, instead of single,multi, slider
+        "63be9916aba6fd499bda1fd5",  # incorrect github url
+        "63be6ce5aba6fd499bda1b43",  # js expression error TODO check jsexpression and whole doc
+        "63bd5734aba6fd499bda0fe3",  # flow has activity that is being duplicated from another applet.
+        "63c52d2aaba6fd499bda35e1",  # converter not parsing score conditions
+        "63e4efd41d3f3e0f89b488bd",  # wrong context file in activity for 2-version
+        "63f722ed1d3f3e0f89b488d8",  # applet name duplicates
     ]
-    # applets = Applet().find(query={'_id': ObjectId('63bd2e3aaba6fd499bda0f65')}, fields={"_id": 1})
+    # applets = Applet().find(
+    #     query={"_id": ObjectId("63be5c97aba6fd499bda1960")}, fields={"_id": 1}
+    # )
     # applets = Applet().find(query={'_id': ObjectId('64d0de7e5e3d9e04c28a1720')}, fields={"_id": 1}) # TODO: 6.2.6 6.2.7 ???
     # applets = Applet().find(query={'_id': ObjectId('62d15a03154fa87efa129760')}, fields={"_id": 1})
     applets = Applet().find(
         query={
             "meta.applet.displayName": {"$exists": True},
             "meta.applet.deleted": {"$ne": True},
+            "meta.applet.editing": {"$ne": True},
             "created": {"$gte": datetime.datetime(2023, 1, 1, 0, 0, 0, 0)},
         },
         fields={"_id": 1},
     )
-    skipUntil = "63bdaff0aba6fd499bda17d5"
+    skipUntil = "6411c4dbeddaf60f21c3a04c"
     appletsCount = applets.count()
     print("total", appletsCount)
     for index, applet_id in enumerate(applets, start=1):
