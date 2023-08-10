@@ -789,7 +789,12 @@ class ReproFieldSlider(ReproFieldSliderBase):
 
             for choice in self.slider_option.choices:
                 scores.append(choice.get("score"))  # type: ignore[union-attr]
-                if self.ld_response_alert and not self.ld_continuous_slider:
+
+                if (
+                    self.ld_response_alert
+                    and not self.ld_continuous_slider
+                    and choice.get("alert")
+                ):
                     alerts.append(  # type: ignore[union-attr]
                         SliderValueAlert(
                             alert=choice.get("alert"),
