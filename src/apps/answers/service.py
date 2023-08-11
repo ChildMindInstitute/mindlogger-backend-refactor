@@ -21,6 +21,7 @@ from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
+from apps.activity_flows.crud import FlowItemsCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
 from apps.alerts.domain import AlertMessage
@@ -921,6 +922,9 @@ class ReportServerService:
         if initial_answer.flow_history_id:
             flow_id, version = initial_answer.flow_history_id.split("_")
 
+        if flow_id and not (await self._is_activity_last_in_flow(activity_id, flow_id)):
+            return
+
         url = "{}/send-pdf-report?activityId={}&activityFlowId={}".format(
             applet.report_server_ip, activity_id, flow_id
         )
@@ -935,6 +939,10 @@ class ReportServerService:
                     return ReportServerResponse(**response_data)
                 else:
                     raise ReportServerError(message=str(response_data))
+
+    async def _is_activity_last_in_flow(self, activity_id: str, flow_id: str) -> bool:
+        flow_items = await FlowItemsCRUD(self.session).get_by_activity_flow_id(flow_id)
+        return len(flow_items) > 0 and activity_id == str(flow_items[-1].activity_id)
 
     async def _prepare_applet_data(
         self, applet_id: uuid.UUID, version: str, encryption: dict
