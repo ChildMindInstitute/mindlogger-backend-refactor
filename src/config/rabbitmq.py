@@ -7,7 +7,9 @@ class RabbitMQSettings(BaseModel):
     password: str = "guest"
     default_routing_key: str = "mindlogger"
     port: int = 5672
+    use_ssl: bool = True
 
     @property
     def url(self):
-        return f"amqps://{self.user}:{self.password}@{self.host}:{self.port}/"
+        protocol = "amqps" if self.use_ssl else "amqp"
+        return f"{protocol}://{self.user}:{self.password}@{self.host}:{self.port}/"  # noqa: E501

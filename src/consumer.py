@@ -21,36 +21,36 @@ logger = logging.getLogger("mindlogger_backend")
 
 
 async def create_report(message: aio_pika.abc.AbstractIncomingMessage):
-    data = json.loads(message.body.decode())
-    logger.info(
-        f"---Received message at {datetime.datetime.now().isoformat()}---"
-    )
-    pprint(data)
-    session_maker = session_manager.get_session()
-    mail_service = MailingService()
-    try:
-        async with session_maker() as session:
-            service = ReportServerService(session)
-            response = await service.create_report(**data)
-            if not response:
-                return
-            file = UploadFile(
-                response.email.attachment,
-                io.BytesIO(base64.b64decode(response.pdf.encode())),
-                "application/pdf",
-            )
-            await mail_service.send(
-                MessageSchema(
-                    recipients=response.email.email_recipients,
-                    subject=response.email.subject,
-                    body=response.email.body,
-                    attachments=[file],
+    async with message.process():
+        logger.info(
+            f"---Received message at {datetime.datetime.now().isoformat()}---"
+        )
+        try:
+            data = json.loads(message.body.decode())
+            pprint(data)
+            session_maker = session_manager.get_session()
+            mail_service = MailingService()
+            async with session_maker() as session:
+                service = ReportServerService(session)
+                response = await service.create_report(**data)
+                if not response:
+                    return
+                file = UploadFile(
+                    response.email.attachment,
+                    io.BytesIO(base64.b64decode(response.pdf.encode())),
+                    "application/pdf",
                 )
-            )
-        await message.ack()
-    except Exception as e:
-        traceback.print_exception(e)
-        sentry_sdk.capture_exception(e)
+                await mail_service.send(
+                    MessageSchema(
+                        recipients=response.email.email_recipients,
+                        subject=response.email.subject,
+                        body=response.email.body,
+                        attachments=[file],
+                    )
+                )
+        except Exception as e:
+            traceback.print_exception(e)
+            sentry_sdk.capture_exception(e)
 
 
 async def main():

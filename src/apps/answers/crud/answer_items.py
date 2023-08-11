@@ -156,6 +156,9 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         activity_ver_ids: Collection[str],
         filters: QueryParams,
     ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
+        identifiers = filters.filters.get("identifiers")
+        empty_identifiers = filters.filters.get("empty_identifiers")
+
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
             AnswerItemSchema,
@@ -205,6 +208,13 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
             )
         )
         query = query.order_by(AnswerSchema.created_at.asc())
+
+        if not identifiers:
+            if "identifiers" in filters.filters:
+                filters.filters.pop("identifiers")
+            if empty_identifiers:
+                query = query.where(AnswerItemSchema.identifier.is_(None))
+
         if filters.filters:
             query = query.where(
                 *_ActivityAnswerFilter().get_clauses(**filters.filters)

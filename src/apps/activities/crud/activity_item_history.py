@@ -52,6 +52,15 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         result = await self._execute(query)
         return result.scalars().one_or_none()
 
+    async def retrieve_by_id(
+        self, _id: uuid.UUID
+    ) -> ActivityItemHistorySchema:
+
+        query: Query = select(ActivityItemHistorySchema)
+        query = query.where(ActivityItemHistorySchema.id == _id)
+        result = await self._execute(query)
+        return result.scalars().one_or_none()
+
     async def get_by_activity_id_version(
         self, activity_id: str
     ) -> list[ActivityItemHistorySchema]:

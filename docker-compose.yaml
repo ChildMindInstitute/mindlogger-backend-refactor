@@ -21,7 +21,7 @@ services:
     container_name: mindlogger_rabbitmq
     ports:
       - 5672:5672
-      - 8080:15672
+      - 15672:15672
 
   redis:
     image: redis

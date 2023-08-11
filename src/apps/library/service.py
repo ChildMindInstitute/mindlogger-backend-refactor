@@ -89,6 +89,7 @@ class LibraryService:
             search_keywords=search_keywords,
         )
         library_item = await LibraryCRUD(self.session).save(library_item)
+
         return AppletLibraryFull.from_orm(library_item)
 
     async def _get_search_keywords(self, applet, applet_version):
@@ -124,6 +125,7 @@ class LibraryService:
         self, query_params: QueryParams
     ) -> list[PublicLibraryItem]:
         """Get all applets for library."""
+
         library_items = await LibraryCRUD(self.session).get_all_library_items(
             query_params
         )
