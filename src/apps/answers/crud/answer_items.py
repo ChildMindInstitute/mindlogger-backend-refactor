@@ -168,16 +168,15 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
             ),
             isouter=True,
         )
-        # query = query.join(
-        #     ActivityHistorySchema,
-        #     ActivityHistorySchema.id_version
-        #     == AnswerSchema.activity_history_id,
-        # )
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(
             AnswerSchema.activity_history_id.in_(activity_ver_ids)
         )
-        # query = query.where(ActivityHistorySchema.id == activity_id)
+        if not identifiers and empty_identifiers:
+            if "identifiers" in filters.filters:
+                filters.filters.pop("identifiers")
+            query = query.where(AnswerItemSchema.identifier.is_(None))
+
         query = query.order_by(AnswerSchema.created_at.asc())
         if filters.filters:
             query = query.where(

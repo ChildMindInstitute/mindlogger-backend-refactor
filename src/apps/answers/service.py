@@ -12,7 +12,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
@@ -77,32 +76,18 @@ from infrastructure.utility import RedisCache
 from infrastructure.utility.rabbitmq_queue import RabbitMqQueue
 
 
-def session_selector(func):
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        _session = (
-            self.arbitrary_session if self.arbitrary_session else self.session
-        )
-
-        args += (_session,)
-        result = func(self, *args, **kwargs)
-        return result
-
-    return wrapper
-
-
 class AnswerService:
     def __init__(
         self, session, user_id: uuid.UUID | None = None, arbitrary_session=None
     ):
         self.user_id = user_id
         self.session = session
-        self.arbitrary_session = arbitrary_session
+        self._answer_session = arbitrary_session
 
     @property
-    def answer_db_session(self):
+    def answer_session(self):
         return (
-            self.arbitrary_session if self.arbitrary_session else self.session
+            self._answer_session if self._answer_session else self.session
         )
 
     @staticmethod
@@ -178,17 +163,14 @@ class AnswerService:
         if not roles:
             raise UserDoesNotHavePermissionError()
 
-    @session_selector
-    async def _create_answer(
-        self, applet_answer: AppletAnswerCreate, selected_session: AsyncSession
-    ):
+    async def _create_answer(self, applet_answer: AppletAnswerCreate):
         pk = self._generate_history_id(applet_answer.version)
         created_at = datetime.datetime.now()
         if applet_answer.created_at:
             created_at = datetime.datetime.fromtimestamp(
                 applet_answer.created_at
             )
-        answer = await AnswersCRUD(selected_session).create(
+        answer = await AnswersCRUD(self.answer_session).create(
             AnswerSchema(
                 submit_id=applet_answer.submit_id,
                 created_at=created_at,
@@ -225,7 +207,7 @@ class AnswerService:
             is_assessment=False,
         )
 
-        await AnswerItemsCRUD(selected_session).create(item_answer)
+        await AnswerItemsCRUD(self.answer_session).create(item_answer)
         await self._create_report_from_answer(answer)
         await self._create_alerts(
             answer.id,
@@ -257,17 +239,15 @@ class AnswerService:
         finally:
             await queue.close()
 
-    @session_selector
     async def get_review_activities(
         self,
         applet_id: uuid.UUID,
         respondent_id: uuid.UUID,
-        created_date: datetime.date,
-        selected_session: AsyncSession,
+        created_date: datetime.date
     ) -> list[ReviewActivity]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
         answers = await AnswersCRUD(
-            selected_session
+            self.answer_session
         ).get_respondents_answered_activities_by_applet_id(
             respondent_id, applet_id, created_date
         )
@@ -294,7 +274,7 @@ class AnswerService:
                     )
 
             answer_items = await AnswerItemsCRUD(
-                selected_session
+                self.answer_session
             ).get_answer_ids(list(answer_map.keys()))
 
             answer_item_duplicate = set()
@@ -312,18 +292,16 @@ class AnswerService:
                 )
         return list(activity_map.values())
 
-    @session_selector
     async def get_applet_submit_dates(
         self,
         applet_id: uuid.UUID,
         respondent_id: uuid.UUID,
         from_date: datetime.date,
-        to_date: datetime.date,
-        selected_session: AsyncSession,
+        to_date: datetime.date
     ) -> list[datetime.date]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
         return await AnswersCRUD(
-            selected_session
+            self.answer_session
         ).get_respondents_submit_dates(
             respondent_id, applet_id, from_date, to_date
         )
@@ -345,20 +323,18 @@ class AnswerService:
             if str(respondent_id) not in access.meta.get("respondents", []):
                 raise AnswerAccessDeniedError()
 
-    @session_selector
     async def get_by_id(
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
-        activity_id: uuid.UUID,
-        selected_session: AsyncSession,
+        activity_id: uuid.UUID
     ) -> ActivityAnswer:
         await self._validate_answer_access(applet_id, answer_id, activity_id)
 
-        schema = await AnswersCRUD(selected_session).get_by_id(answer_id)
+        schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
         pk = self._generate_history_id(schema.version)
         answer_items = await AnswerItemsCRUD(
-            selected_session
+            self.answer_session
         ).get_by_answer_and_activity(answer_id, [pk(activity_id)])
         answer_item = answer_items[0]
 
@@ -382,7 +358,7 @@ class AnswerService:
         answer_id: uuid.UUID,
         activity_id: uuid.UUID | None = None,
     ):
-        answer_schema = await AnswersCRUD(self.answer_db_session).get_by_id(
+        answer_schema = await AnswersCRUD(self.answer_session).get_by_id(
             answer_id
         )
         await self._validate_applet_activity_access(
@@ -394,14 +370,12 @@ class AnswerService:
                 pk(activity_id)
             )
 
-    @session_selector
     async def add_note(
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
         activity_id: uuid.UUID,
-        note: str,
-        selected_session: AsyncSession,
+        note: str
     ):
         await self._validate_answer_access(applet_id, answer_id, activity_id)
         schema = AnswerNoteSchema(
@@ -410,7 +384,7 @@ class AnswerService:
             user_id=self.user_id,
             activity_id=activity_id,
         )
-        await AnswerNotesCRUD(selected_session).save(schema)
+        await AnswerNotesCRUD(self.answer_session).save(schema)
 
     async def get_note_list(
         self,
@@ -420,7 +394,7 @@ class AnswerService:
         query_params: QueryParams,
     ) -> list[AnswerNoteDetail]:
         await self._validate_answer_access(applet_id, answer_id, activity_id)
-        notes_crud = AnswerNotesCRUD(self.answer_db_session)
+        notes_crud = AnswerNotesCRUD(self.answer_session)
         note_schemas = await notes_crud.get_by_answer_id(
             answer_id, activity_id, query_params
         )
@@ -430,62 +404,58 @@ class AnswerService:
         notes = await notes_crud.map_users_and_notes(note_schemas, users)
         return notes
 
-    @session_selector
     async def get_notes_count(
         self,
         answer_id: uuid.UUID,
-        activity_id: uuid.UUID,
-        selected_session: AsyncSession,
+        activity_id: uuid.UUID
     ) -> int:
-        return await AnswerNotesCRUD(selected_session).get_count_by_answer_id(
+        return await AnswerNotesCRUD(
+            self.answer_session
+        ).get_count_by_answer_id(
             answer_id, activity_id
         )
 
-    @session_selector
     async def edit_note(
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
         activity_id: uuid.UUID,
         note_id: uuid.UUID,
-        note: str,
-        selected_session: AsyncSession,
+        note: str
     ):
         await self._validate_answer_access(applet_id, answer_id, activity_id)
         await self._validate_note_access(note_id)
-        await AnswerNotesCRUD(selected_session).update_note_by_id(
+        await AnswerNotesCRUD(self.answer_session).update_note_by_id(
             note_id, note
         )
 
-    @session_selector
     async def delete_note(
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
         activity_id: uuid.UUID,
-        note_id: uuid.UUID,
-        selected_session: AsyncSession,
+        note_id: uuid.UUID
     ):
         await self._validate_answer_access(applet_id, answer_id, activity_id)
         await self._validate_note_access(note_id)
-        await AnswerNotesCRUD(selected_session).delete_note_by_id(note_id)
+        await AnswerNotesCRUD(
+            self.answer_session
+        ).delete_note_by_id(note_id)
 
     async def _validate_note_access(self, note_id: uuid.UUID):
         note = await AnswerNotesCRUD(self.session).get_by_id(note_id)
         if note.user_id != self.user_id:
             raise AnswerNoteAccessDeniedError()
 
-    @session_selector
     async def get_assessment_by_answer_id(
         self,
         applet_id: uuid.UUID,
-        answer_id: uuid.UUID,
-        selected_session: AsyncSession,
+        answer_id: uuid.UUID
     ) -> AssessmentAnswer:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        schema = await AnswersCRUD(selected_session).get_by_id(answer_id)
+        schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
         pk = self._generate_history_id(schema.version)
 
         activity_items = await ActivityItemHistoriesCRUD(
@@ -495,7 +465,7 @@ class AnswerService:
             return AssessmentAnswer(items=activity_items)
 
         assessment_answer = await AnswerItemsCRUD(
-            selected_session
+            self.answer_session
         ).get_assessment(answer_id, self.user_id)
 
         answer = AssessmentAnswer(
@@ -512,17 +482,15 @@ class AnswerService:
         )
         return answer
 
-    @session_selector
     async def get_reviews_by_answer_id(
         self,
         applet_id: uuid.UUID,
-        answer_id: uuid.UUID,
-        selected_session: AsyncSession,
+        answer_id: uuid.UUID
     ) -> list[AnswerReview]:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        schema = await AnswersCRUD(selected_session).get_by_id(answer_id)
+        schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
         pk = self._generate_history_id(schema.version)
 
         activity_items = await ActivityItemHistoriesCRUD(
@@ -530,26 +498,26 @@ class AnswerService:
         ).get_applets_assessments(pk(applet_id))
 
         reviews = await AnswerItemsCRUD(
-            selected_session
+            self.answer_session
         ).get_reviews_by_answer_id(answer_id, activity_items)
         return reviews
 
-    @session_selector
     async def create_assessment_answer(
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
         schema: AssessmentAnswerCreate,
-        selected_session: AsyncSession,
     ):
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        assessment = await AnswerItemsCRUD(selected_session).get_assessment(
+        assessment = await AnswerItemsCRUD(
+            self.answer_session
+        ).get_assessment(
             answer_id, self.user_id
         )
         if assessment:
-            await AnswerItemsCRUD(selected_session).update(
+            await AnswerItemsCRUD(self.answer_session).update(
                 AnswerItemSchema(
                     id=assessment.id,
                     created_at=assessment.created_at,
@@ -566,7 +534,7 @@ class AnswerService:
             )
         else:
             now = datetime.datetime.now()
-            await AnswerItemsCRUD(selected_session).create(
+            await AnswerItemsCRUD(self.answer_session).create(
                 AnswerItemSchema(
                     answer_id=answer_id,
                     respondent_id=self.user_id,
@@ -591,16 +559,14 @@ class AnswerService:
         if not schema.is_reviewable:
             raise ActivityIsNotAssessment()
 
-    @session_selector
     async def get_export_data(
         self,
         applet_id: uuid.UUID,
-        query_params: QueryParams,
-        selected_session: AsyncSession,
+        query_params: QueryParams
     ) -> AnswerExport:
         assert self.user_id is not None
 
-        repository = AnswersCRUD(selected_session)
+        repository = AnswersCRUD(self.answer_session)
         answers = await repository.get_applet_answers(
             applet_id, self.user_id, **query_params.filters
         )
@@ -630,9 +596,8 @@ class AnswerService:
             answers=answers, activities=list(activity_map.values())
         )
 
-    @session_selector
     async def get_activity_identifiers(
-        self, activity_id: uuid.UUID, selected_session: AsyncSession
+        self, activity_id: uuid.UUID
     ) -> list[Identifier]:
         act_hst_crud = ActivityHistoriesCRUD(
             self.session
@@ -640,7 +605,7 @@ class AnswerService:
         act_hst_list = await act_hst_crud.get_activities(activity_id, None)
         ids = set(map(lambda a: a.id_version, act_hst_list))
         identifiers = await AnswersCRUD(
-            selected_session
+            self.answer_session
         ).get_identifiers_by_activity_id(ids)
         results = []
         for identifier, key in identifiers:
@@ -663,13 +628,11 @@ class AnswerService:
             activity_id
         )
 
-    @session_selector
     async def get_activity_answers(
         self,
         applet_id: uuid.UUID,
         activity_id: uuid.UUID,
-        filters: QueryParams,
-        selected_session: AsyncSession,
+        filters: QueryParams
     ) -> list[AppletActivityAnswer]:
         versions = filters.filters.get("versions")
 
@@ -685,7 +648,7 @@ class AnswerService:
         ).get_activity_items(activity_id, versions)
         id_versions = set(map(lambda act_hst: act_hst.id_version, activities))
         answers = await AnswerItemsCRUD(
-            selected_session
+            self.answer_session
         ).get_applet_answers_by_activity_id(applet_id, id_versions, filters)
 
         activity_item_map = defaultdict(list)
@@ -711,20 +674,18 @@ class AnswerService:
             activity_answers.append(activity_answer)
         return activity_answers
 
-    @session_selector
     async def get_summary_latest_report(
         self,
         applet_id: uuid.UUID,
         activity_id: uuid.UUID,
-        respondent_id: uuid.UUID,
-        selected_session: AsyncSession,
+        respondent_id: uuid.UUID
     ) -> ReportServerResponse | None:
         act_crud = ActivityHistoriesCRUD(self.session)
         activity_hsts = await act_crud.get_activities(activity_id, None)
         act_versions = set(
             map(lambda act_hst: act_hst.id_version, activity_hsts)
         )
-        answer = await AnswersCRUD(selected_session).get_latest_answer(
+        answer = await AnswersCRUD(self.answer_session).get_latest_answer(
             applet_id, act_versions, respondent_id
         )
         if not answer:
@@ -746,18 +707,16 @@ class AnswerService:
         if not applet.report_public_key:
             raise ReportServerIsNotConfigured()
 
-    @session_selector
     async def get_summary_activities(
         self,
         applet_id: uuid.UUID,
-        respondent_id: uuid.UUID | None,
-        selected_session: AsyncSession,
+        respondent_id: uuid.UUID | None
     ) -> list[SummaryActivity]:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_by_applet_id_for_summary(applet_id)
         activity_ver_ids = [activity.id_version for activity in activities]
         activity_ids_with_answer = await AnswersCRUD(
-            selected_session
+            self.answer_session
         ).get_activities_which_has_answer(activity_ver_ids, respondent_id)
 
         results = []
@@ -828,7 +787,7 @@ class AnswerService:
 
     async def get_answer_mobile_data(self, applet_id: uuid.UUID):
         answers = await AnswersCRUD(
-            self.session
+            self.answer_session
         ).get_answers_by_applet_respondent(self.user_id, applet_id)
 
         answer_item_id_list = []
@@ -931,12 +890,19 @@ class AnswerService:
 
 
 class ReportServerService:
-    def __init__(self, session):
+    def __init__(self, session, arbitrary_session=None):
         self.session = session
+        self._answers_session = arbitrary_session
+
+    @property
+    def answers_session(self):
+        return (
+            self._answers_session if self._answers_session else self.session
+        )
 
     async def is_reportable(self, answer: AnswerSchema):
         applet, activity = await AnswersCRUD(
-            self.session
+            self.answers_session
         ).get_applet_info_by_answer_id(answer)
         if not applet.report_server_ip:
             return False
@@ -960,14 +926,14 @@ class ReportServerService:
         Whether check to send flow reports in a single or multiple request
         """
         result = await AnswersCRUD(
-            self.session
+            self.answers_session
         ).get_activity_flow_by_answer_id(answer_id)
         return result
 
     async def create_report(
         self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
     ) -> ReportServerResponse | None:
-        answers = await AnswersCRUD(self.session).get_by_submit_id(
+        answers = await AnswersCRUD(self.answers_session).get_by_submit_id(
             submit_id, answer_id
         )
         if not answers:
@@ -1045,7 +1011,7 @@ class ReportServerService:
         self, answers_map: dict[uuid.UUID, AnswerSchema]
     ) -> tuple[list[dict], list[str]]:
         answer_items = await AnswerItemsCRUD(
-            self.session
+            self.answers_session
         ).get_respondent_submits_by_answer_ids(list(answers_map.keys()))
 
         responses = list()

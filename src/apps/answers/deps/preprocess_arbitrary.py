@@ -16,30 +16,36 @@ __all__ = [
 ]
 
 
-async def get_arbitrary_session(applet_id: uuid.UUID, session: AsyncSession):
+async def get_arbitrary_info(
+        applet_id: uuid.UUID, session: AsyncSession
+) -> str | None:
     if applet_id:
         service = WorkspaceService(session, uuid.uuid4())
         server_info = await service.get_arbitrary_info(applet_id)
         if server_info and server_info.use_arbitrary:
-            spec_session = get_specific_session(server_info.database_uri)
-            session_ = await anext(spec_session)
-            async with atomic(session_):
-                yield session_
-        else:
-            yield None
-    else:
-        yield None
+            return server_info.database_uri
+    return None
 
 
 async def preprocess_arbitrary_by_applet_schema(
     schema: AppletAnswerCreate = Body(...), session=Depends(get_session)
 ):
-    session_ = await anext(get_arbitrary_session(schema.applet_id, session))
-    yield session_
+    db_uri = await get_arbitrary_info(schema.applet_id, session)
+    if db_uri:
+        session_ = await anext(get_specific_session(db_uri))
+        async with atomic(session_):
+            yield session_
+    else:
+        yield None
 
 
 async def preprocess_arbitrary_by_applet_id(
     applet_id: uuid.UUID, session=Depends(get_session)
 ):
-    session_ = await anext(get_arbitrary_session(applet_id, session))
-    yield session_
+    db_uri = await get_arbitrary_info(applet_id, session)
+    if db_uri:
+        session_ = await anext(get_specific_session(db_uri))
+        async with atomic(session_):
+            yield session_
+    else:
+        yield None

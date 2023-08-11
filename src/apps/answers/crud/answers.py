@@ -412,15 +412,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_activities_which_has_answer(
         self, activity_hist_ids: list[str], respondent_id: uuid.UUID | None
     ) -> list[uuid.UUID]:
-        query: Query = select(
-            # AnswerSchema.id,
-            AnswerSchema.activity_history_id
-        )
-        # query = query.join(
-        #     ActivityHistorySchema,
-        #     ActivityHistorySchema.id_version
-        #     == AnswerSchema.activity_history_id,
-        # )
+        query: Query = select(AnswerSchema.activity_history_id)
         query = query.where(
             AnswerSchema.activity_history_id.in_(activity_hist_ids)
         )
