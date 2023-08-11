@@ -446,7 +446,7 @@ async def applet_answers_mobile_data(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id)
+    arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ):
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(

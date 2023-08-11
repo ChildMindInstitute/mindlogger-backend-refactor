@@ -82,7 +82,7 @@ class AnswerAlert(InternalModel):
 
 class ClientMeta(InternalModel):
     app_id: str
-    app_version: str
+    app_version: str = ""
     width: int
     height: int
 

@@ -4,7 +4,6 @@ import datetime
 import json
 import uuid
 from collections import defaultdict
-from functools import wraps
 
 import aiohttp
 import sentry_sdk
@@ -86,9 +85,7 @@ class AnswerService:
 
     @property
     def answer_session(self):
-        return (
-            self._answer_session if self._answer_session else self.session
-        )
+        return self._answer_session if self._answer_session else self.session
 
     @staticmethod
     def _generate_history_id(version: str):
@@ -243,7 +240,7 @@ class AnswerService:
         self,
         applet_id: uuid.UUID,
         respondent_id: uuid.UUID,
-        created_date: datetime.date
+        created_date: datetime.date,
     ) -> list[ReviewActivity]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
         answers = await AnswersCRUD(
@@ -297,7 +294,7 @@ class AnswerService:
         applet_id: uuid.UUID,
         respondent_id: uuid.UUID,
         from_date: datetime.date,
-        to_date: datetime.date
+        to_date: datetime.date,
     ) -> list[datetime.date]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
         return await AnswersCRUD(
@@ -327,7 +324,7 @@ class AnswerService:
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
-        activity_id: uuid.UUID
+        activity_id: uuid.UUID,
     ) -> ActivityAnswer:
         await self._validate_answer_access(applet_id, answer_id, activity_id)
 
@@ -375,7 +372,7 @@ class AnswerService:
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
         activity_id: uuid.UUID,
-        note: str
+        note: str,
     ):
         await self._validate_answer_access(applet_id, answer_id, activity_id)
         schema = AnswerNoteSchema(
@@ -405,15 +402,11 @@ class AnswerService:
         return notes
 
     async def get_notes_count(
-        self,
-        answer_id: uuid.UUID,
-        activity_id: uuid.UUID
+        self, answer_id: uuid.UUID, activity_id: uuid.UUID
     ) -> int:
         return await AnswerNotesCRUD(
             self.answer_session
-        ).get_count_by_answer_id(
-            answer_id, activity_id
-        )
+        ).get_count_by_answer_id(answer_id, activity_id)
 
     async def edit_note(
         self,
@@ -421,7 +414,7 @@ class AnswerService:
         answer_id: uuid.UUID,
         activity_id: uuid.UUID,
         note_id: uuid.UUID,
-        note: str
+        note: str,
     ):
         await self._validate_answer_access(applet_id, answer_id, activity_id)
         await self._validate_note_access(note_id)
@@ -434,13 +427,11 @@ class AnswerService:
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
         activity_id: uuid.UUID,
-        note_id: uuid.UUID
+        note_id: uuid.UUID,
     ):
         await self._validate_answer_access(applet_id, answer_id, activity_id)
         await self._validate_note_access(note_id)
-        await AnswerNotesCRUD(
-            self.answer_session
-        ).delete_note_by_id(note_id)
+        await AnswerNotesCRUD(self.answer_session).delete_note_by_id(note_id)
 
     async def _validate_note_access(self, note_id: uuid.UUID):
         note = await AnswerNotesCRUD(self.session).get_by_id(note_id)
@@ -448,9 +439,7 @@ class AnswerService:
             raise AnswerNoteAccessDeniedError()
 
     async def get_assessment_by_answer_id(
-        self,
-        applet_id: uuid.UUID,
-        answer_id: uuid.UUID
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID
     ) -> AssessmentAnswer:
         assert self.user_id
 
@@ -483,9 +472,7 @@ class AnswerService:
         return answer
 
     async def get_reviews_by_answer_id(
-        self,
-        applet_id: uuid.UUID,
-        answer_id: uuid.UUID
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID
     ) -> list[AnswerReview]:
         assert self.user_id
 
@@ -511,9 +498,7 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        assessment = await AnswerItemsCRUD(
-            self.answer_session
-        ).get_assessment(
+        assessment = await AnswerItemsCRUD(self.answer_session).get_assessment(
             answer_id, self.user_id
         )
         if assessment:
@@ -560,9 +545,7 @@ class AnswerService:
             raise ActivityIsNotAssessment()
 
     async def get_export_data(
-        self,
-        applet_id: uuid.UUID,
-        query_params: QueryParams
+        self, applet_id: uuid.UUID, query_params: QueryParams
     ) -> AnswerExport:
         assert self.user_id is not None
 
@@ -632,7 +615,7 @@ class AnswerService:
         self,
         applet_id: uuid.UUID,
         activity_id: uuid.UUID,
-        filters: QueryParams
+        filters: QueryParams,
     ) -> list[AppletActivityAnswer]:
         versions = filters.filters.get("versions")
 
@@ -678,7 +661,7 @@ class AnswerService:
         self,
         applet_id: uuid.UUID,
         activity_id: uuid.UUID,
-        respondent_id: uuid.UUID
+        respondent_id: uuid.UUID,
     ) -> ReportServerResponse | None:
         act_crud = ActivityHistoriesCRUD(self.session)
         activity_hsts = await act_crud.get_activities(activity_id, None)
@@ -708,9 +691,7 @@ class AnswerService:
             raise ReportServerIsNotConfigured()
 
     async def get_summary_activities(
-        self,
-        applet_id: uuid.UUID,
-        respondent_id: uuid.UUID | None
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
     ) -> list[SummaryActivity]:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_by_applet_id_for_summary(applet_id)
@@ -896,9 +877,7 @@ class ReportServerService:
 
     @property
     def answers_session(self):
-        return (
-            self._answers_session if self._answers_session else self.session
-        )
+        return self._answers_session if self._answers_session else self.session
 
     async def is_reportable(self, answer: AnswerSchema):
         applet, activity = await AnswersCRUD(

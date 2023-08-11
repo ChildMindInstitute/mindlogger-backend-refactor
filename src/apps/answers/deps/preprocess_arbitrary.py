@@ -10,14 +10,13 @@ from infrastructure.database.core import get_specific_session
 from infrastructure.database.deps import get_session
 
 __all__ = [
-    "get_arbitrary_session",
     "preprocess_arbitrary_by_applet_id",
     "preprocess_arbitrary_by_applet_schema",
 ]
 
 
 async def get_arbitrary_info(
-        applet_id: uuid.UUID, session: AsyncSession
+    applet_id: uuid.UUID, session: AsyncSession
 ) -> str | None:
     if applet_id:
         service = WorkspaceService(session, uuid.uuid4())

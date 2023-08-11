@@ -191,6 +191,8 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         activity_history_id: Union[Set[str], List[str]],
         filters: QueryParams,
     ):
+        identifiers = filters.filters.get("identifiers")
+        empty_identifiers = filters.filters.get("empty_identifiers")
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
             AnswerItemSchema,

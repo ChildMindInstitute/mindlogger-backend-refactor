@@ -90,9 +90,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_answers_by_applet_respondent(
         self,
-        respondent_id: uuid.UUID,
+        respondent_id: uuid.UUID | None,
         applet_id: uuid.UUID,
     ) -> list[AnswerSchema]:
+        if not respondent_id:
+            return []
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.respondent_id == respondent_id)
         query = query.where(AnswerSchema.applet_id == applet_id)
