@@ -42,6 +42,7 @@ from apps.answers.domain import (
     AnswerReview,
     AppletActivityAnswer,
     AppletAnswerCreate,
+    AppletCompletedEntities,
     AssessmentAnswer,
     AssessmentAnswerCreate,
     Identifier,
@@ -173,6 +174,9 @@ class AnswerService:
                 activity_history_id=pk(applet_answer.activity_id),
                 respondent_id=self.user_id,
                 client=applet_answer.client.dict(),
+                is_flow_completed=bool(applet_answer.is_flow_completed)
+                if applet_answer.flow_id
+                else None,
             )
         )
         item_answer = applet_answer.answer
@@ -195,6 +199,9 @@ class AnswerService:
             ),
             end_datetime=datetime.datetime.fromtimestamp(item_answer.end_time),
             is_assessment=False,
+            scheduled_event_id=item_answer.scheduled_event_id,
+            local_end_date=item_answer.local_end_date,
+            local_end_time=item_answer.local_end_time,
         )
 
         await AnswerItemsCRUD(self.session).create(item_answer)
@@ -847,6 +854,15 @@ class AnswerService:
                         ] = activities_responses
 
         return AnswersMobileData(**applet_analytics)
+
+    async def get_completed_answers_data(
+        self, applet_id: uuid.UUID, version: str, date: datetime.date
+    ) -> AppletCompletedEntities:
+        assert self.user_id
+        result = await AnswersCRUD(self.session).get_completed_answers_data(
+            applet_id, version, self.user_id, date
+        )
+        return result
 
 
 class ReportServerService:
