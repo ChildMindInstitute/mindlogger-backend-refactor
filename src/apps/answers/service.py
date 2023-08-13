@@ -230,9 +230,8 @@ class AnswerService:
                     data=dict(submit_id=submit_id, answer_id=answer_id)
                 )
             else:
-                # TODO: check whether the flow is finished
-                is_single_report = True
-                if is_single_report:
+                is_flow_finished = await service.is_flow_finished(submit_id, answer_id)
+                if is_flow_finished:
                     await queue.publish(data=dict(submit_id=submit_id))
         finally:
             await queue.close()
@@ -898,6 +897,27 @@ class ReportServerService:
         ).get_activity_flow_by_answer_id(answer_id)
         return result
 
+    async def is_flow_finished(self, submit_id: uuid.UUID, answer_id: uuid.UUID) -> bool:
+        answers = await AnswersCRUD(self.session).get_by_submit_id(
+            submit_id, answer_id
+        )
+        if not answers:
+            return False
+        initial_answer = answers[0]
+
+        applet = await AppletsCRUD(self.session).get_by_id(
+            initial_answer.applet_id
+        )
+        applet_full = await self._prepare_applet_data(
+            initial_answer.applet_id, initial_answer.version, applet.encryption
+        )
+        activity_id, version = initial_answer.activity_history_id.split("_")
+        flow_id, version = "", ""
+        if initial_answer.flow_history_id:
+            flow_id, version = initial_answer.flow_history_id.split("_")
+
+        return self._is_activity_last_in_flow(applet_full, activity_id, flow_id)
+
     async def create_report(
         self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
     ) -> ReportServerResponse | None:
@@ -951,6 +971,23 @@ class ReportServerService:
                     return ReportServerResponse(**response_data)
                 else:
                     raise ReportServerError(message=str(response_data))
+
+    def _is_activity_last_in_flow(self, applet_full: dict, activity_id: str | None, flow_id: str | None) -> bool:
+        if 'activityFlows' not in applet_full or 'activities' not in applet_full or not activity_id or not flow_id:
+            return False
+
+        flows = applet_full['activityFlows']
+        flow = next((f for f in flows if str(f['id']) == flow_id), None)
+        if not flow or 'items' not in flow or len(flow['items']) == 0:
+            return False
+
+        allowed_activities = [a for a in applet_full['activities'] if
+                              'scoresAndReports' in a and a['scoresAndReports']['generateReport']]
+        activity = next((a for a in allowed_activities if str(a['id']) == activity_id), None)
+        if not activity or 'idVersion' not in activity:
+            return False
+
+        return activity['idVersion'] == str(flow['items'][-1]['activityId'])
 
     async def _prepare_applet_data(
         self, applet_id: uuid.UUID, version: str, encryption: dict
