@@ -188,6 +188,39 @@ class TestFolder(BaseTest):
         assert response.json()["result"][1]["isPinned"] is True
 
     @rollback
+    async def test_pin_applet_by_role_manager(self):
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+
+        response = await self.client.post(
+            self.pin_url.format(
+                id="ecf66358-a717-41a7-8027-807374307735",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+
+    @rollback
+    async def test_unpin_applet_by_role_manager(self):
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+
+        await self.client.post(
+            self.pin_url.format(
+                id="ecf66358-a717-41a7-8027-807374307735",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
+            )
+        )
+
+        response = await self.client.delete(
+            self.pin_url.format(
+                id="ecf66358-a717-41a7-8027-807374307735",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
+            )
+        )
+
+        assert response.status_code == 204, response.json()
+
+    @rollback
     async def test_unpin_applet(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
