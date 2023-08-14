@@ -18,6 +18,7 @@ __all__ = [
     "rollback",
     "atomic",
     "rollback_with_session",
+    "get_specific_session",
 ]
 
 

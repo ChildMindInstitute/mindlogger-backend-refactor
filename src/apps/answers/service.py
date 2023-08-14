@@ -381,7 +381,7 @@ class AnswerService:
             user_id=self.user_id,
             activity_id=activity_id,
         )
-        await AnswerNotesCRUD(self.answer_session).save(schema)
+        await AnswerNotesCRUD(self.session).save(schema)
 
     async def get_note_list(
         self,
@@ -391,7 +391,7 @@ class AnswerService:
         query_params: QueryParams,
     ) -> list[AnswerNoteDetail]:
         await self._validate_answer_access(applet_id, answer_id, activity_id)
-        notes_crud = AnswerNotesCRUD(self.answer_session)
+        notes_crud = AnswerNotesCRUD(self.session)
         note_schemas = await notes_crud.get_by_answer_id(
             answer_id, activity_id, query_params
         )
@@ -404,9 +404,9 @@ class AnswerService:
     async def get_notes_count(
         self, answer_id: uuid.UUID, activity_id: uuid.UUID
     ) -> int:
-        return await AnswerNotesCRUD(
-            self.answer_session
-        ).get_count_by_answer_id(answer_id, activity_id)
+        return await AnswerNotesCRUD(self.session).get_count_by_answer_id(
+            answer_id, activity_id
+        )
 
     async def edit_note(
         self,
@@ -418,9 +418,7 @@ class AnswerService:
     ):
         await self._validate_answer_access(applet_id, answer_id, activity_id)
         await self._validate_note_access(note_id)
-        await AnswerNotesCRUD(self.answer_session).update_note_by_id(
-            note_id, note
-        )
+        await AnswerNotesCRUD(self.session).update_note_by_id(note_id, note)
 
     async def delete_note(
         self,
@@ -431,7 +429,7 @@ class AnswerService:
     ):
         await self._validate_answer_access(applet_id, answer_id, activity_id)
         await self._validate_note_access(note_id)
-        await AnswerNotesCRUD(self.answer_session).delete_note_by_id(note_id)
+        await AnswerNotesCRUD(self.session).delete_note_by_id(note_id)
 
     async def _validate_note_access(self, note_id: uuid.UUID):
         note = await AnswerNotesCRUD(self.session).get_by_id(note_id)
