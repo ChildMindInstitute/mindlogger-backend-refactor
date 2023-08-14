@@ -2,7 +2,7 @@ import datetime
 import uuid
 
 from pydantic import parse_obj_as
-from sqlalchemy import case, delete, func, null, or_, select  # true,
+from sqlalchemy import and_, case, delete, func, null, or_, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
@@ -28,8 +28,14 @@ from infrastructure.database.crud import BaseCRUD
 
 class _AnswersExportFilter(Filtering):
     respondent_ids = FilterField(
-        AnswerItemSchema.respondent_id, Comparisons.IN
+        AnswerItemSchema.respondent_id, method_name="filter_respondent_ids"
     )
+
+    def filter_respondent_ids(self, field, value):
+        return and_(
+            field.in_(value), AnswerItemSchema.is_assessment.isnot(True)
+        )
+
     activity_history_ids = FilterField(
         AnswerSchema.activity_history_id, Comparisons.IN
     )
@@ -77,20 +83,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query = query.where(AnswerSchema.respondent_id == respondent_id)
         query = query.where(func.date(AnswerSchema.created_at) >= from_date)
         query = query.where(func.date(AnswerSchema.created_at) <= to_date)
-        query = query.where(AnswerSchema.applet_id == applet_id)
-        query = query.order_by(AnswerSchema.created_at.asc())
-
-        db_result = await self._execute(query)
-
-        return db_result.scalars().all()
-
-    async def get_answers_by_applet_respondent(
-        self,
-        respondent_id: uuid.UUID,
-        applet_id: uuid.UUID,
-    ) -> list[AnswerSchema]:
-        query: Query = select(AnswerSchema)
-        query = query.where(AnswerSchema.respondent_id == respondent_id)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.order_by(AnswerSchema.created_at.asc())
 

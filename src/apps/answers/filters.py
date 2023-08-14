@@ -34,7 +34,7 @@ class AppletSubmitDateFilter(BaseQueryParams):
 class AnswerExportFilters(BaseQueryParams):
     respondent_ids: list[uuid.UUID] | None = Field(Query(None))
     from_date: datetime.date | None = None
-    limit: int | None = 10000
+    limit: int = 10000
 
 
 class AnswerIdentifierVersionFilter(BaseQueryParams):
