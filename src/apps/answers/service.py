@@ -981,8 +981,12 @@ class ReportServerService:
         if not flow or 'items' not in flow or len(flow['items']) == 0:
             return False
 
-        allowed_activities = [a for a in applet_full['activities'] if
-                              'scoresAndReports' in a and a['scoresAndReports']['generateReport']]
+        allowed_activities = []
+        for a in applet_full['activities']:
+            if 'scoresAndReports' in a and isinstance(a['scoresAndReports'], dict):
+                if a['scoresAndReports'].get('generateReport', False):
+                    allowed_activities.append(a)
+
         activity = next((a for a in allowed_activities if str(a['id']) == activity_id), None)
         if not activity or 'idVersion' not in activity:
             return False
