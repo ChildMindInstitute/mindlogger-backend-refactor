@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import (
     Boolean,
     Column,
@@ -5,6 +7,8 @@ from sqlalchemy import (
     ForeignKey,
     String,
     UniqueConstraint,
+    case,
+    func,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -52,6 +56,22 @@ class UserAppletAccessSchema(Base):
     @respondent_secret_id.expression  # type: ignore[no-redef]
     def respondent_secret_id(cls):
         return cls.meta[text("'secretUserId'")].astext
+
+    @hybrid_property
+    def reviewer_respondents(self):
+        items = self.meta.get("respondents") or []
+        return [uuid.UUID(itm) for itm in items]
+
+    @reviewer_respondents.expression  # type: ignore[no-redef]
+    def reviewer_respondents(cls):
+        _field = cls.meta[text("'respondents'")]
+        return case(
+            (
+                func.jsonb_typeof(_field) == text("'array'"),
+                _field,
+            ),
+            else_=text("'[]'::jsonb"),
+        )
 
 
 class UserPinSchema(Base):

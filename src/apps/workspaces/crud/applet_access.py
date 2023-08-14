@@ -1,10 +1,12 @@
 import uuid
 
-from sqlalchemy import JSON, and_, case, func, or_, select, text
+from sqlalchemy import JSON, and_, case, exists, func, or_, select, text
 from sqlalchemy.orm import Query
 
+from apps.users import UserSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.user_applet_access import RespondentExportData
 from infrastructure.database import BaseCRUD
 
 
@@ -259,3 +261,42 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         db_result = await self._execute(select(query))
         return db_result.scalars().first()
+
+    async def get_respondent_export_data(
+        self, applet_id: uuid.UUID, respondent_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, RespondentExportData]:
+        if not respondent_ids:
+            return {}
+
+        has_manager_role = (
+            exists()
+            .where(
+                UserAppletAccessSchema.user_id == UserSchema.id,
+                UserAppletAccessSchema.applet_id == applet_id,
+                UserAppletAccessSchema.role != Role.RESPONDENT,
+            )
+            .correlate(UserSchema)
+        )
+
+        query = (
+            select(
+                UserSchema.id,
+                UserSchema.email,
+                UserAppletAccessSchema.respondent_secret_id.label("secret_id"),  # type: ignore[attr-defined] # noqa: E501
+                has_manager_role.label("is_manager"),
+            )
+            .outerjoin(
+                UserAppletAccessSchema,
+                and_(
+                    UserAppletAccessSchema.user_id == UserSchema.id,
+                    UserAppletAccessSchema.applet_id == applet_id,
+                    UserAppletAccessSchema.role == Role.RESPONDENT,
+                ),
+            )
+            .where(UserSchema.id.in_(respondent_ids))
+        )
+
+        db_result = await self._execute(query)
+        data = db_result.all()
+
+        return {row.id: RespondentExportData.from_orm(row) for row in data}

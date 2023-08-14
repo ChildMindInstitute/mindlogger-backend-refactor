@@ -2,22 +2,8 @@ import datetime
 import uuid
 
 from pydantic import parse_obj_as
-from sqlalchemy import (  # true,
-    and_,
-    any_,
-    case,
-    delete,
-    exists,
-    func,
-    literal_column,
-    null,
-    or_,
-    select,
-    text,
-    true,
-)
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Query, aliased
+from sqlalchemy import case, delete, func, null, or_, select  # true,
+from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
@@ -36,14 +22,20 @@ from apps.answers.domain import (
 from apps.answers.errors import AnswerNotFoundError
 from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.shared.filtering import Comparisons, FilterField, Filtering
-from apps.users import UserSchema
-from apps.workspaces.db.schemas import UserAppletAccessSchema
-from apps.workspaces.domain.constants import Role
+from apps.shared.paging import paging
 from infrastructure.database.crud import BaseCRUD
 
 
 class _AnswersExportFilter(Filtering):
-    respondent_ids = FilterField(AnswerSchema.respondent_id, Comparisons.IN)
+    respondent_ids = FilterField(
+        AnswerItemSchema.respondent_id, Comparisons.IN
+    )
+    activity_history_ids = FilterField(
+        AnswerSchema.activity_history_id, Comparisons.IN
+    )
+    from_date = FilterField(
+        AnswerItemSchema.created_at, Comparisons.GREAT_OR_EQUAL
+    )
 
 
 class AnswersCRUD(BaseCRUD[AnswerSchema]):
@@ -122,57 +114,14 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         await self._execute(query)
 
     async def get_applet_answers(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID, **filters
+        self,
+        applet_id: uuid.UUID,
+        *,
+        include_assessments: bool = True,
+        page=None,
+        limit=None,
+        **filters,
     ) -> list[RespondentAnswerData]:
-        assigned_respondents = select(
-            literal_column("val").cast(UUID)
-        ).select_from(
-            func.jsonb_array_elements_text(
-                case(
-                    (
-                        func.jsonb_typeof(
-                            UserAppletAccessSchema.meta[text("'respondents'")]
-                        )
-                        == text("'array'"),
-                        UserAppletAccessSchema.meta[text("'respondents'")],
-                    ),
-                    else_=text("'[]'::jsonb"),
-                )
-            ).alias("val")
-        )
-
-        has_access = (
-            exists()
-            .where(
-                UserAppletAccessSchema.user_id == user_id,
-                UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
-                or_(
-                    UserAppletAccessSchema.role.in_(
-                        [Role.OWNER, Role.MANAGER]
-                    ),
-                    and_(
-                        AnswerItemSchema.is_assessment.isnot(True),
-                        UserAppletAccessSchema.role == Role.REVIEWER,
-                        AnswerSchema.respondent_id
-                        == any_(assigned_respondents.scalar_subquery()),
-                    ),
-                ),
-            )
-            .correlate(AnswerSchema, AnswerItemSchema)
-        )
-
-        is_manager = case(
-            (AnswerItemSchema.is_assessment.is_(True), true()),
-            else_=(
-                exists()
-                .where(
-                    UserAppletAccessSchema.user_id == UserSchema.id,
-                    UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
-                    UserAppletAccessSchema.role != Role.RESPONDENT,
-                )
-                .correlate(AnswerSchema, UserSchema)
-            ),
-        )
 
         reviewed_answer_id = case(
             (AnswerItemSchema.is_assessment.is_(True), AnswerSchema.id),
@@ -184,13 +133,19 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             else_=AnswerSchema.id,
         )
 
+        activity_history_id = case(
+            (AnswerItemSchema.is_assessment.is_(True), null()),
+            else_=AnswerSchema.activity_history_id,
+        )
+
+        flow_history_id = case(
+            (AnswerItemSchema.is_assessment.is_(True), null()),
+            else_=AnswerSchema.flow_history_id,
+        )
+
         filter_clauses = []
         if filters:
             filter_clauses = _AnswersExportFilter().get_clauses(**filters)
-
-        reviewer_activity_hist = aliased(
-            ActivityHistorySchema, name="reviewer_activity_hist"
-        )
 
         query: Query = (
             select(
@@ -199,9 +154,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.version,
                 AnswerItemSchema.user_public_key,
                 AnswerItemSchema.respondent_id,
-                UserAppletAccessSchema.respondent_secret_id,
-                UserSchema.email.label("respondent_email"),
-                is_manager.label("is_manager"),
                 AnswerItemSchema.answer,
                 AnswerItemSchema.events,
                 AnswerItemSchema.item_ids,
@@ -209,12 +161,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.start_datetime,
                 AnswerItemSchema.end_datetime,
                 AnswerSchema.applet_history_id,
-                func.coalesce(
-                    reviewer_activity_hist.id_version,
-                    AnswerSchema.activity_history_id,
-                ).label("activity_history_id"),
-                AnswerSchema.flow_history_id,
-                ActivityFlowHistoriesSchema.name.label("flow_name"),
+                activity_history_id.label("activity_history_id"),
+                flow_history_id.label("flow_history_id"),
                 AnswerItemSchema.created_at,
                 reviewed_answer_id.label("reviewed_answer_id"),
             )
@@ -222,43 +170,16 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .join(
                 AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
             )
-            .outerjoin(
-                ActivityFlowHistoriesSchema,
-                and_(
-                    AnswerItemSchema.is_assessment.isnot(True),
-                    ActivityFlowHistoriesSchema.id_version
-                    == AnswerSchema.flow_history_id,
-                ),
-            )
-            .outerjoin(
-                UserSchema, UserSchema.id == AnswerItemSchema.respondent_id
-            )
-            .outerjoin(
-                UserAppletAccessSchema,
-                and_(
-                    AnswerItemSchema.is_assessment.isnot(True),
-                    UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
-                    UserAppletAccessSchema.user_id
-                    == AnswerItemSchema.respondent_id,
-                    UserAppletAccessSchema.role == Role.RESPONDENT,
-                ),
-            )
-            .outerjoin(
-                reviewer_activity_hist,
-                and_(
-                    AnswerItemSchema.is_assessment.is_(True),
-                    reviewer_activity_hist.applet_id
-                    == AnswerSchema.applet_history_id,
-                    reviewer_activity_hist.is_reviewable.is_(True),
-                ),
-            )
             .where(
                 AnswerSchema.applet_id == applet_id,
-                has_access,
                 *filter_clauses,
             )
             .order_by(AnswerItemSchema.created_at.desc())
         )
+        query = paging(query, page, limit)
+
+        if not include_assessments:
+            query = query.where(AnswerItemSchema.is_assessment.isnot(True))
 
         res = await self._execute(query)
         answers = res.all()

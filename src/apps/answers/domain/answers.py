@@ -283,7 +283,7 @@ class UserAnswerDataBase(BaseModel):
     start_datetime: datetime.datetime | None = None
     end_datetime: datetime.datetime | None = None
     applet_history_id: str
-    activity_history_id: str
+    activity_history_id: str | None
     flow_history_id: str | None
     flow_name: str | None
     reviewed_answer_id: uuid.UUID | str | None
