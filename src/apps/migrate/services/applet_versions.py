@@ -137,6 +137,13 @@ def content_to_jsonld(document):
         if a_id in activities_by_id:
             activity_doc = activities_by_id[a_id]
 
+            for context_key in activity_doc["data"]["@context"]:
+                initial_context = document["contexts"][
+                    list(document["contexts"].keys())[0]
+                ]
+                if context_key not in document["contexts"]:
+                    document["contexts"][context_key] = initial_context
+
             activity_jsonld = jsonld_expander.expandObj(
                 document["contexts"], activity_doc["data"]
             )
