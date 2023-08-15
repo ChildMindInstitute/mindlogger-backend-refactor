@@ -394,7 +394,13 @@ class AppletCompletedEntities(InternalModel):
 class AnswersCheck(InternalModel):
     applet_id: uuid.UUID
     created_at: int
-    activity_id: str
+    activity_id: uuid.UUID
+
+    @validator("created_at")
+    def convert_time_to_unix_timestamp(cls, value: int):
+        if value:
+            return value / 1000
+        return value
 
 
 class IsAnswersUploaded(InternalModel):

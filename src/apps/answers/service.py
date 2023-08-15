@@ -846,7 +846,7 @@ class AnswerService:
         return result
 
     async def is_answers_uploaded(
-        self, applet_id: uuid.UUID, activity_id: str, created_at: int
+        self, applet_id: uuid.UUID, activity_id: uuid.UUID, created_at: int
     ) -> bool:
         answers = await AnswersCRUD(
             self.session
