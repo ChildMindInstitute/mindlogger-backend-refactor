@@ -391,7 +391,7 @@ class AppletCompletedEntities(InternalModel):
     activity_flows: list[CompletedEntity]
 
 
-class AnswersCheck(InternalModel):
+class AnswersCheck(PublicModel):
     applet_id: uuid.UUID
     created_at: int
     activity_id: uuid.UUID
@@ -403,5 +403,5 @@ class AnswersCheck(InternalModel):
         return value
 
 
-class IsAnswersUploaded(InternalModel):
+class IsAnswersUploaded(PublicModel):
     is_uploaded: bool
