@@ -119,6 +119,8 @@ def get_versions_from_content(protocolId):
     result = {}
     for ref in references:
         ver = ref["version"]
+        if ref.get("content") is None:
+            continue
         applet = get_applet_with_activities(ref["content"])
         result[ver] = {"applet": applet, "updated": ref["updated"]}
 
@@ -137,6 +139,7 @@ def content_to_jsonld(document):
         if a_id in activities_by_id:
             activity_doc = activities_by_id[a_id]
 
+            # fix missing contexts
             for context_key in activity_doc["data"]["@context"]:
                 initial_context = document["contexts"][
                     list(document["contexts"].keys())[0]
@@ -156,6 +159,15 @@ def content_to_jsonld(document):
                 i_id = item["@id"]
                 if i_id in items_by_id:
                     item_doc = items_by_id[i_id]
+
+                    # fix missing contexts
+                    for context_key in item_doc["@context"]:
+                        initial_context = document["contexts"][
+                            list(document["contexts"].keys())[0]
+                        ]
+                        if context_key not in document["contexts"]:
+                            document["contexts"][context_key] = initial_context
+
                     item_jsonld = jsonld_expander.expandObj(
                         document["contexts"], item_doc
                     )
@@ -178,7 +190,8 @@ def content_to_jsonld(document):
     #         )
     #         flow_jsonld["_id"] = str(flow_doc["_id"])
     #         new_flows.append(flow_jsonld)
-    jsonld["reprolib:terms/activityFlowOrder"][0]["@list"] = []
+    if jsonld.get("reprolib:terms/activityFlowOrder"):
+        jsonld["reprolib:terms/activityFlowOrder"][0]["@list"] = []
 
     jsonld["@context"] = CONTEXT["@context"]
     jsonld["@type"] = CONTEXT["@type"]
