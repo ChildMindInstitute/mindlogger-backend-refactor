@@ -7,7 +7,7 @@ from infrastructure.database.base import Base
 class AnswerSchema(Base):
     __tablename__ = "answers"
 
-    applet_id = Column(UUID(as_uuid=True))
+    applet_id = Column(UUID(as_uuid=True), index=True)
     version = Column(Text())
     submit_id = Column(UUID(as_uuid=True))
     client = Column(JSONB())
@@ -20,9 +20,7 @@ class AnswerSchema(Base):
 class AnswerNoteSchema(Base):
     __tablename__ = "answer_notes"
 
-    answer_id = Column(
-        ForeignKey("answers.id", ondelete="CASCADE"),
-    )
+    answer_id = Column(UUID(as_uuid=True), index=True)
     activity_id = Column(UUID(as_uuid=True))
     note = Column(Text())
     user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
