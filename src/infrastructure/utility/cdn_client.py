@@ -4,7 +4,9 @@ import uuid
 from typing import BinaryIO
 
 import boto3
+from botocore.exceptions import ClientError
 
+from apps.shared.exception import NotFoundError
 from config.cdn import CDNSettings
 
 
@@ -15,13 +17,9 @@ class CDNClient:
         self.env = env
 
         try:
-
             assert config, "set CDN"
 
-            self.client = boto3.client(
-                "s3",
-                region_name=config.region,
-            )
+            self.client = boto3.client("s3", region_name=config.region)
             self.bucket = config.bucket
         except KeyError:
             print("CDN configuration is not full")
@@ -42,6 +40,12 @@ class CDNClient:
     @staticmethod
     def generate_key(unique, filename):
         return f"mindlogger/{unique}/{uuid.uuid4()}/{filename}"
+
+    def check_existence(self, key: str):
+        try:
+            return self.client.head_object(Bucket=self.bucket, Key=key)
+        except ClientError:
+            raise NotFoundError
 
     def download(self, key):
         file = io.BytesIO()
