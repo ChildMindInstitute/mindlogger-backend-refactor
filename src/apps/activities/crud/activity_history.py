@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import exists, select
+from sqlalchemy import any_, exists, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
@@ -107,6 +107,27 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
 
         db_result = await self._execute(query)
         return db_result.scalars().first()
+
+    async def get_reviewable_activities(
+        self, applet_id_versions: list[str]
+    ) -> list[ActivityHistorySchema]:
+        if not applet_id_versions:
+            return []
+
+        query: Query = (
+            select(ActivityHistorySchema)
+            .where(
+                ActivityHistorySchema.applet_id == any_(applet_id_versions),
+                ActivityHistorySchema.is_reviewable.is_(True),
+            )
+            .order_by(
+                ActivityHistorySchema.applet_id, ActivityHistorySchema.order
+            )
+            .distinct(ActivityHistorySchema.applet_id)
+        )  # single activity per applet version
+
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
 
     async def get_by_applet_id_for_summary(
         self, applet_id: uuid.UUID

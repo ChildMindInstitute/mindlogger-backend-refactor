@@ -1,4 +1,5 @@
 import base64
+import datetime
 import uuid
 
 from fastapi import Body, Depends
@@ -26,7 +27,6 @@ from apps.answers.domain import (
     PublicSummaryActivity,
     VersionPublic,
 )
-from apps.answers.domain.analytics import AnswersMobileData
 from apps.answers.filters import (
     AnswerExportFilters,
     AppletActivityAnswerFilter,
@@ -442,19 +442,20 @@ async def applet_answers_export(
     return Response(result=PublicAnswerExport.from_orm(data))
 
 
-async def applet_answers_mobile_data(
+async def applet_completed_entities(
     applet_id: uuid.UUID,
+    version: str,
+    date: datetime.date,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
 ):
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(
-        session, user.id
-    ).check_answers_mobile_data_access(applet_id)
-
-    data: AnswersMobileData = await AnswerService(
-        session, user.id, arbitrary_session
-    ).get_answer_mobile_data(applet_id)
+    await CheckAccessService(session, user.id).check_answer_create_access(
+        applet_id
+    )
+    data = await AnswerService(session, user.id, arbitrary_session).get_completed_answers_data(
+        applet_id, version, date
+    )
 
     return Response(result=data)

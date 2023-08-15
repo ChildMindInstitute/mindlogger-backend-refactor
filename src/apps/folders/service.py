@@ -90,10 +90,10 @@ class FolderService:
         await self._validate_folder(folder_id)
 
         # check if applet is in folder
-        applets_folder_id = await FolderCRUD(
+        applets_folders_ids: list[uuid.UUID] = await FolderCRUD(
             self.session
         ).get_applets_folder_id_in_workspace(self._workspace_id, applet_id)
-        if applets_folder_id != folder_id:
+        if folder_id not in applets_folders_ids:
             raise AppletNotInFolder()
 
     async def _validate_folder(self, folder_id: uuid.UUID):
