@@ -1246,3 +1246,115 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         response = response.json()
         assert response["count"] == expected
+
+    @rollback
+    async def test_answers_export(self):
+        await self.client.login(
+            self.login_url, "ivan@mindlogger.com", "Test1234!"
+        )
+
+        # create answer
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce012222",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8",
+            version="1.1.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
+            answer=dict(
+                user_public_key="user key",
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
+        )
+
+        response = await self.client.post(self.answer_url, data=create_data)
+        assert response.status_code == 201
+        await assert_answer_exist_on_arbitrary(
+            "270d86e0-2158-4d18-befd-86b3ce012222"
+        )
+
+        # get answer id
+        response = await self.client.get(
+            self.review_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8"
+            ),
+            dict(
+                respondentId="6cde911e-8a57-47c0-b6b2-685b3664f418",
+                createdDate=datetime.date.today(),
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
+
+        # create assessment
+        response = await self.client.post(
+            self.assessment_answers_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8",
+                answer_id=answer_id,
+            ),
+            dict(
+                answer="some answer",
+                item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
+                reviewer_public_key="some public key",
+            ),
+        )
+
+        assert response.status_code == 201
+
+        # test export
+        response = await self.client.get(
+            self.applet_answers_export_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8",
+            )
+        )
+
+        assert response.status_code == 200, response.json()
+        data = response.json()["result"]
+        assert set(data.keys()) == {"answers", "activities"}
+        assert len(data["answers"]) == 2
+
+        assessment, answer = data["answers"][0], data["answers"][1]
+        # fmt: off
+        expected_keys = {
+            "activityHistoryId", "activityId", "answer", "appletHistoryId",
+            "appletId", "createdAt", "events", "flowHistoryId", "flowId",
+            "flowName", "id", "itemIds", "respondentId", "respondentSecretId",
+            "reviewedAnswerId", "userPublicKey", "version", "submitId",
+            "scheduledDatetime", "startDatetime", "endDatetime"
+        }
+        assert answer['startDatetime'] == 1690188679657
+        # fmt: on
+
+        assert set(assessment.keys()) == expected_keys
+        assert assessment["reviewedAnswerId"] == answer["id"]
+
+        # test filters
+        response = await self.client.get(
+            self.applet_answers_export_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8",
+            ),
+            dict(
+                respondentIds="7484f34a-3acc-4ee6-8a94-000000000000",
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        data = response.json()["result"]
+        assert not data["answers"]
