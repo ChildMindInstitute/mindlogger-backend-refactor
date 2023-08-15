@@ -292,7 +292,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query: Query = select(AnswerSchema, ActivityHistorySchema)
         query = query.join(
             ActivityHistorySchema,
-            AnswerSchema.activity_history_id == ActivityHistorySchema.id_version
+            AnswerSchema.activity_history_id
+            == ActivityHistorySchema.id_version,
         )
         query = query.filter(AnswerSchema.created_at == created_time)
         query = query.filter(AnswerSchema.applet_id == applet_id)
