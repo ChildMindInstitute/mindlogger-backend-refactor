@@ -10,7 +10,6 @@ from apps.answers.api import (
     applet_activity_versions_retrieve,
     applet_answer_reviews_retrieve,
     applet_answers_export,
-    applet_answers_mobile_data,
     applet_completed_entities,
     applet_submit_date_list,
     create_anonymous_answer,
@@ -226,16 +225,6 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_answers_export)
-
-router.get(
-    "/applet/{applet_id}/data/mobile",
-    status_code=status.HTTP_200_OK,
-    responses={
-        status.HTTP_200_OK: {"model": Response[PublicAnswerExport]},
-        **DEFAULT_OPENAPI_RESPONSE,
-        **AUTHENTICATION_ERROR_RESPONSES,
-    },
-)(applet_answers_mobile_data)
 
 router.get(
     "/applet/{applet_id}/completions",
