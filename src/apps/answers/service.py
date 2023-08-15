@@ -649,9 +649,10 @@ class AnswerService:
                 ):
                     answer.activity_history_id = activity.id_version
 
+        repo_local = AnswersCRUD(self.session)
         activities, items = await asyncio.gather(
-            repository.get_activity_history_by_ids(list(activity_hist_ids)),
-            repository.get_item_history_by_activity_history(
+            repo_local.get_activity_history_by_ids(list(activity_hist_ids)),
+            repo_local.get_item_history_by_activity_history(
                 list(activity_hist_ids)
             ),
         )

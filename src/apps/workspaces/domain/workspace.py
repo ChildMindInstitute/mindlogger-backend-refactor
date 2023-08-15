@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from typing import Optional
 
 from pydantic import Field, validator
 
@@ -250,5 +251,6 @@ class WorkspaceArbitrary(InternalModel):
     storage_access_key: str
     storage_secret_key: str
     storage_region: str
-    storage_url: str
+    storage_url: Optional[str] = None
+    storage_bucket: Optional[str] = None
     use_arbitrary: bool
