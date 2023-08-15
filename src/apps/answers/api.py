@@ -36,6 +36,7 @@ from apps.answers.service import AnswerService
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.exception import NotFoundError
 from apps.shared.query_params import (
     BaseQueryParams,
     QueryParams,
@@ -428,17 +429,22 @@ async def applet_completed_entities(
     return Response(result=data)
 
 
-async def is_answers_uploaded(
+async def answers_existence_check(
     schema: AnswersCheck = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-):
+) -> None:
+    """Provides the information if the anwer is existed in the database.
+    HTTP 200 OK means that yes.
+    HTTP 404 NOT FOUND means that it is not.
+    """
     await AppletService(session, user.id).exist_by_id(schema.applet_id)
     await CheckAccessService(session, user.id).check_answer_check_access(
         schema.applet_id
     )
-    is_uploaded = await AnswerService(session, user.id).is_answers_uploaded(
-        schema.applet_id, schema.activity_id, schema.created_at
-    )
-
-    return Response(result=IsAnswersUploaded(is_uploaded=is_uploaded))
+    if (
+        await AnswerService(session, user.id).is_answers_uploaded(
+            schema.applet_id, schema.activity_id, schema.created_at
+        )
+    ) is False:
+        raise NotFoundError

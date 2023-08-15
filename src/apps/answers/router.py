@@ -14,7 +14,7 @@ from apps.answers.api import (
     applet_submit_date_list,
     create_anonymous_answer,
     create_answer,
-    is_answers_uploaded,
+    answers_existence_check,
     note_add,
     note_delete,
     note_edit,
@@ -239,11 +239,11 @@ router.get(
 )(applet_completed_entities)
 
 router.get(
-    "/check",
+    "/check-existence",
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": Response[IsAnswersUploaded]},
+        status.HTTP_200_OK: {},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(is_answers_uploaded)
+)(answers_existence_check)
