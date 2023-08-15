@@ -14,6 +14,7 @@ from apps.answers.api import (
     applet_submit_date_list,
     create_anonymous_answer,
     create_answer,
+    is_answers_uploaded,
     note_add,
     note_delete,
     note_edit,
@@ -29,6 +30,7 @@ from apps.answers.domain import (
     AppletActivityAnswerPublic,
     AppletCompletedEntities,
     AssessmentAnswerPublic,
+    IsAnswersUploaded,
     PublicAnswerDates,
     PublicAnswerExport,
     PublicReviewActivity,
@@ -235,3 +237,13 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_completed_entities)
+
+router.get(
+    "/check",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[IsAnswersUploaded]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(is_answers_uploaded)

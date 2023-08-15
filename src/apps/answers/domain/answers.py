@@ -389,3 +389,13 @@ class AppletCompletedEntities(InternalModel):
 
     activities: list[CompletedEntity]
     activity_flows: list[CompletedEntity]
+
+
+class AnswersCheck(InternalModel):
+    applet_id: uuid.UUID
+    created_at: int
+    activity_id: str
+
+
+class IsAnswersUploaded(InternalModel):
+    is_uploaded: bool

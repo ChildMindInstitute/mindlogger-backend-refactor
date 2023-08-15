@@ -12,11 +12,13 @@ from apps.answers.domain import (
     AnswerNote,
     AnswerNoteDetailPublic,
     AnswerReviewPublic,
+    AnswersCheck,
     AppletActivityAnswerPublic,
     AppletAnswerCreate,
     AssessmentAnswerCreate,
     AssessmentAnswerPublic,
     IdentifierPublic,
+    IsAnswersUploaded,
     PublicAnswerDates,
     PublicAnswerExport,
     PublicReviewActivity,
@@ -424,3 +426,19 @@ async def applet_completed_entities(
     )
 
     return Response(result=data)
+
+
+async def is_answers_uploaded(
+    schema: AnswersCheck = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    await AppletService(session, user.id).exist_by_id(schema.applet_id)
+    await CheckAccessService(session, user.id).check_answer_check_access(
+        schema.applet_id
+    )
+    is_uploaded = await AnswerService(session, user.id).is_answers_uploaded(
+        schema.applet_id, schema.activity_id, schema.created_at
+    )
+
+    return Response(result=IsAnswersUploaded(is_uploaded=is_uploaded))
