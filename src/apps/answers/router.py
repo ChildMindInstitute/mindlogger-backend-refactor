@@ -2,6 +2,7 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.answers.api import (
+    answers_existence_check,
     applet_activity_answer_retrieve,
     applet_activity_answers_list,
     applet_activity_assessment_create,
@@ -14,7 +15,6 @@ from apps.answers.api import (
     applet_submit_date_list,
     create_anonymous_answer,
     create_answer,
-    answers_existence_check,
     note_add,
     note_delete,
     note_edit,
@@ -30,7 +30,6 @@ from apps.answers.domain import (
     AppletActivityAnswerPublic,
     AppletCompletedEntities,
     AssessmentAnswerPublic,
-    IsAnswersUploaded,
     PublicAnswerDates,
     PublicAnswerExport,
     PublicReviewActivity,

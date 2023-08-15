@@ -18,7 +18,6 @@ from apps.answers.domain import (
     AssessmentAnswerCreate,
     AssessmentAnswerPublic,
     IdentifierPublic,
-    IsAnswersUploaded,
     PublicAnswerDates,
     PublicAnswerExport,
     PublicReviewActivity,
