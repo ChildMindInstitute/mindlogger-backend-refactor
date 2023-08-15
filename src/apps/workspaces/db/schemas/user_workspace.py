@@ -20,4 +20,5 @@ class UserWorkspaceSchema(Base):
     storage_secret_key = Column(String())
     storage_region = Column(String())
     storage_url = Column(String(), nullable=True, default=None)
+    storage_bucket = Column(String(), nullable=True, default=None)
     use_arbitrary = Column(Boolean(), default=False)
