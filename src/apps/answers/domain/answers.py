@@ -394,7 +394,7 @@ class AppletCompletedEntities(InternalModel):
 class AnswersCheck(PublicModel):
     applet_id: uuid.UUID
     created_at: int
-    activity_id: uuid.UUID
+    activity_id: str
 
     @validator("created_at")
     def convert_time_to_unix_timestamp(cls, value: int):
