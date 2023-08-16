@@ -2,6 +2,7 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.answers.api import (
+    answers_existence_check,
     applet_activity_answer_retrieve,
     applet_activity_answers_list,
     applet_activity_assessment_create,
@@ -235,3 +236,13 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_completed_entities)
+
+router.get(
+    "/check-existence",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(answers_existence_check)

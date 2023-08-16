@@ -389,3 +389,19 @@ class AppletCompletedEntities(InternalModel):
 
     activities: list[CompletedEntity]
     activity_flows: list[CompletedEntity]
+
+
+class AnswersCheck(PublicModel):
+    applet_id: uuid.UUID
+    created_at: int
+    activity_id: str
+
+    @validator("created_at")
+    def convert_time_to_unix_timestamp(cls, value: int):
+        if value:
+            return value / 1000
+        return value
+
+
+class IsAnswersUploaded(PublicModel):
+    is_uploaded: bool

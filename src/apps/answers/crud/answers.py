@@ -285,6 +285,19 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
+    async def get_by_applet_activity_created_at(
+        self, applet_id: uuid.UUID, activity_id: str, created_at: int
+    ) -> list[AnswerSchema] | None:
+        created_time = datetime.datetime.fromtimestamp(created_at)
+        query: Query = select(AnswerSchema)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(AnswerSchema.created_at == created_time)
+        query = query.filter(
+            AnswerSchema.activity_history_id.startswith(activity_id)
+        )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
     async def get_activity_flow_by_answer_id(
         self, answer_id: uuid.UUID
     ) -> bool:
