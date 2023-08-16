@@ -90,3 +90,23 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         db_result = await self._execute(query)
         res = db_result.scalars().first()
         return res
+
+    async def get_bucket_info(self, applet_id: uuid.UUID):
+        query: Query = select(
+            UserWorkspaceSchema.storage_access_key,
+            UserWorkspaceSchema.storage_secret_key,
+            UserWorkspaceSchema.storage_bucket,
+            UserWorkspaceSchema.database_uri,
+        )
+        query.join(
+            UserAppletAccessSchema,
+            UserAppletAccessSchema.owner_id == UserWorkspaceSchema.user_id,
+        )
+        query.where(
+            UserAppletAccessSchema.applet_id == applet_id,
+            UserWorkspaceSchema.use_arbitrary.is_(True),
+        )
+        query.limit(1)
+        db_result = await self._execute(query)
+        res = db_result.scalars().first()
+        return res

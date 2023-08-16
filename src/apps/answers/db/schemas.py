@@ -16,7 +16,7 @@ class AnswerSchema(Base):
     activity_history_id = Column(Text(), nullable=False, index=True)
     respondent_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     is_flow_completed = Column(Boolean(), nullable=True)
-    
+
 
 class AnswerNoteSchema(Base):
     __tablename__ = "answer_notes"

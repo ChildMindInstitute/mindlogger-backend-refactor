@@ -13,16 +13,13 @@ class CDNClient:
         self.bucket = None
         self.endpoint = None
         self.env = env
+        self.bucket = config.bucket
+        self.client = self.configure_client(config)
 
+    def configure_client(self, config):
         try:
-
             assert config, "set CDN"
-
-            self.client = boto3.client(
-                "s3",
-                region_name=config.region,
-            )
-            self.bucket = config.bucket
+            return boto3.client("s3", region_name=config.region)
         except KeyError:
             print("CDN configuration is not full")
 

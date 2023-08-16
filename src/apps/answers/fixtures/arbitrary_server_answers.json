@@ -63,7 +63,7 @@
       "database_uri": "postgresql+asyncpg://postgres:postgres@localhost:5432/test_arbitrary",
       "storage_type": "key",
       "storage_access_key": "key",
-      "storage_secret_key": "key",
+      "storage_secret_key": "DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=youraccountkey;EndpointSuffix=core.windows.net",
       "storage_region": "region",
       "storage_url": "url",
       "use_arbitrary": true

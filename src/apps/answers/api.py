@@ -98,11 +98,7 @@ async def review_activity_list(
         )
         activities = await AnswerService(
             session, user.id, arbitrary_session
-        ).get_review_activities(
-            applet_id,
-            query_params.filters.get("respondent_id"),
-            query_params.filters.get("created_date"),
-        )
+        ).get_review_activities(applet_id, **query_params.filters)
     return ResponseMulti(
         result=[
             PublicReviewActivity.from_orm(activity) for activity in activities
@@ -202,12 +198,7 @@ async def applet_submit_date_list(
         )
         dates = await AnswerService(
             session, user.id, arbitrary_session
-        ).get_applet_submit_dates(
-            applet_id,
-            query_params.filters.get("respondent_id"),
-            query_params.filters.get("from_date"),
-            query_params.filters.get("to_date"),
-        )
+        ).get_applet_submit_dates(applet_id, **query_params.filters)
     return Response(result=PublicAnswerDates(dates=list(sorted(set(dates)))))
 
 
@@ -454,8 +445,8 @@ async def applet_completed_entities(
     await CheckAccessService(session, user.id).check_answer_create_access(
         applet_id
     )
-    data = await AnswerService(session, user.id, arbitrary_session).get_completed_answers_data(
-        applet_id, version, date
-    )
+    data = await AnswerService(
+        session, user.id, arbitrary_session
+    ).get_completed_answers_data(applet_id, version, date)
 
     return Response(result=data)

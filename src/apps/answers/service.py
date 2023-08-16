@@ -237,7 +237,7 @@ class AnswerService:
                 )
             else:
                 is_flow_finished = await service.is_flow_finished(
-                    submit_id, answer_id
+                    answer.submit_id, answer.id
                 )
                 if is_flow_finished:
                     await queue.publish(data=dict(submit_id=answer.submit_id))
@@ -861,9 +861,9 @@ class AnswerService:
         self, applet_id: uuid.UUID, version: str, date: datetime.date
     ) -> AppletCompletedEntities:
         assert self.user_id
-        result = await AnswersCRUD(self.answer_session).get_completed_answers_data(
-            applet_id, version, self.user_id, date
-        )
+        result = await AnswersCRUD(
+            self.answer_session
+        ).get_completed_answers_data(applet_id, version, self.user_id, date)
         return result
 
 

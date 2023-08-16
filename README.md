@@ -202,6 +202,9 @@ psql -U postgres postgres
 # Create user's database
 psql# create database test;
 
+# Create arbitrary database
+psql# create database test_arbitrary; 
+
 # Create user test
 psql# create user test;
 

@@ -251,6 +251,7 @@ class WorkspaceArbitrary(InternalModel):
     storage_access_key: str
     storage_secret_key: str
     storage_region: str
+    storage_type: str
     storage_url: Optional[str] = None
     storage_bucket: Optional[str] = None
     use_arbitrary: bool

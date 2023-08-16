@@ -1,5 +1,7 @@
 import json
 import urllib.parse
+from io import BytesIO
+from typing import Mapping
 
 from httpx import AsyncClient, Response
 
@@ -34,6 +36,7 @@ class TestClient:
         data: dict | None = None,
         query: dict | None = None,
         headers: dict | None = None,
+        files: Mapping[str, BytesIO] | None = None,
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
@@ -41,6 +44,7 @@ class TestClient:
             url,
             content=self._get_body(data),
             headers=self._get_updated_headers(headers),
+            files=files,
         )
         return response
 
