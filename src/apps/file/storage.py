@@ -22,6 +22,7 @@ async def select_storage(applet_id: uuid.UUID, session: AsyncSession):
         case StorageType.GCP:
             return CdnClientS3(
                 region=info.storage_region,
+                bucket=info.storage_bucket,
                 domain="https://storage.googleapis.com",
                 acc_key=info.storage_access_key,
                 sec_key=info.storage_secret_key,
