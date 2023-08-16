@@ -357,7 +357,12 @@ alembic downgrade 0e43c346b90d
 delete from alembic_version;
 ```
 
-### 5. Database relation structure
+### 5. Upgrade arbitrary servers
+``` bash
+alembic -c alembic_arbitrary.ini upgrade head
+```
+
+### 6. Database relation structure
 ```mermaid
 
 erDiagram
