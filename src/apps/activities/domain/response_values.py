@@ -9,7 +9,6 @@ from apps.activities.errors import (
 )
 from apps.shared.domain import (
     PublicModel,
-    validate_audio,
     validate_color,
     validate_image,
     validate_uuid,
