@@ -21,6 +21,7 @@ from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
+from apps.activity_flows.crud import FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
 from apps.alerts.domain import AlertMessage
@@ -41,6 +42,7 @@ from apps.answers.domain import (
     AnswerReview,
     AppletActivityAnswer,
     AppletAnswerCreate,
+    AppletCompletedEntities,
     AssessmentAnswer,
     AssessmentAnswerCreate,
     Identifier,
@@ -171,6 +173,9 @@ class AnswerService:
                 activity_history_id=pk(applet_answer.activity_id),
                 respondent_id=self.user_id,
                 client=applet_answer.client.dict(),
+                is_flow_completed=bool(applet_answer.is_flow_completed)
+                if applet_answer.flow_id
+                else None,
             )
         )
         item_answer = applet_answer.answer
@@ -193,6 +198,9 @@ class AnswerService:
             ),
             end_datetime=datetime.datetime.fromtimestamp(item_answer.end_time),
             is_assessment=False,
+            scheduled_event_id=item_answer.scheduled_event_id,
+            local_end_date=item_answer.local_end_date,
+            local_end_time=item_answer.local_end_time,
         )
 
         await AnswerItemsCRUD(self.session).create(item_answer)
@@ -222,9 +230,10 @@ class AnswerService:
                     data=dict(submit_id=submit_id, answer_id=answer_id)
                 )
             else:
-                # TODO: check whether the flow is finished
-                is_single_report = True
-                if is_single_report:
+                is_flow_finished = await service.is_flow_finished(
+                    submit_id, answer_id
+                )
+                if is_flow_finished:
                     await queue.publish(data=dict(submit_id=submit_id))
         finally:
             await queue.close()
@@ -533,21 +542,105 @@ class AnswerService:
     ) -> AnswerExport:
         assert self.user_id is not None
 
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(
+            self.user_id,
+            applet_id,
+            [Role.OWNER, Role.MANAGER, Role.REVIEWER],
+        )
+        assessments_allowed = False
+        allowed_respondents = None
+        if not access:
+            allowed_respondents = [self.user_id]
+        elif access.role == Role.REVIEWER:
+            allowed_respondents = access.reviewer_respondents  # type: ignore[assignment] # noqa: E501
+        else:  # [Role.OWNER, Role.MANAGER]
+            assessments_allowed = True
+
+        filters = query_params.filters
+        if allowed_respondents:
+            if _respondents := filters.get("respondent_ids"):
+                filters["respondent_ids"] = list(
+                    set(allowed_respondents).intersection(_respondents)
+                )
+            else:
+                filters["respondent_ids"] = allowed_respondents
+
         repository = AnswersCRUD(self.session)
         answers = await repository.get_applet_answers(
-            applet_id, self.user_id, **query_params.filters
+            applet_id,
+            page=query_params.page,
+            limit=query_params.limit,
+            include_assessments=assessments_allowed,
+            **filters,
         )
 
         if not answers:
             return AnswerExport()
 
-        activity_hist_ids = list(
-            {answer.activity_history_id for answer in answers}
+        respondent_ids: set[uuid.UUID] = set()
+        applet_assessment_ids = set()
+        activity_hist_ids = set()
+        flow_hist_ids = set()
+        for answer in answers:
+            respondent_ids.add(answer.respondent_id)  # type: ignore[arg-type]
+            if answer.reviewed_answer_id:
+                applet_assessment_ids.add(answer.applet_history_id)
+            if answer.flow_history_id:
+                flow_hist_ids.add(answer.flow_history_id)
+            if answer.activity_history_id:
+                activity_hist_ids.add(answer.activity_history_id)
+
+        reviewer_activities_coro = ActivityHistoriesCRUD(
+            self.session
+        ).get_reviewable_activities(list(applet_assessment_ids))
+        flows_coro = FlowsHistoryCRUD(self.session).get_by_id_versions(
+            list(flow_hist_ids)
         )
+        user_map_coro = AppletAccessCRUD(
+            self.session
+        ).get_respondent_export_data(applet_id, list(respondent_ids))
+
+        coros_result = await asyncio.gather(
+            reviewer_activities_coro,
+            flows_coro,
+            user_map_coro,
+            return_exceptions=True,
+        )
+        for res in coros_result:
+            if isinstance(res, BaseException):
+                raise res
+
+        reviewer_activities, flows, user_map = coros_result
+
+        reviewer_activity_map = {}
+        for activity in reviewer_activities:  # type: ignore
+            reviewer_activity_map[activity.applet_id] = activity
+            activity_hist_ids.add(activity.id_version)
+
+        flow_map = {flow.id_version: flow for flow in flows}  # type: ignore
+
+        for answer in answers:
+            # respondent data
+            respondent = user_map[answer.respondent_id]  # type: ignore
+            answer.respondent_secret_id = respondent.secret_id
+            answer.respondent_email = respondent.email
+            answer.is_manager = respondent.is_manager
+            # flow data
+            if flow_id := answer.flow_history_id:
+                if flow := flow_map.get(flow_id):
+                    answer.flow_name = flow.name
+            # assessment data
+            if answer.reviewed_answer_id:
+                if activity := reviewer_activity_map.get(
+                    answer.applet_history_id
+                ):
+                    answer.activity_history_id = activity.id_version
 
         activities, items = await asyncio.gather(
-            repository.get_activity_history_by_ids(activity_hist_ids),
-            repository.get_item_history_by_activity_history(activity_hist_ids),
+            repository.get_activity_history_by_ids(list(activity_hist_ids)),
+            repository.get_item_history_by_activity_history(
+                list(activity_hist_ids)
+            ),
         )
 
         activity_map = {
@@ -743,6 +836,26 @@ class AnswerService:
                 sentry_sdk.capture_exception(e)
                 break
 
+    async def get_completed_answers_data(
+        self, applet_id: uuid.UUID, version: str, date: datetime.date
+    ) -> AppletCompletedEntities:
+        assert self.user_id
+        result = await AnswersCRUD(self.session).get_completed_answers_data(
+            applet_id, version, self.user_id, date
+        )
+        return result
+
+    async def is_answers_uploaded(
+        self, applet_id: uuid.UUID, activity_id: str, created_at: int
+    ) -> bool:
+        answers = await AnswersCRUD(
+            self.session
+        ).get_by_applet_activity_created_at(applet_id, activity_id, created_at)
+        if not answers:
+            return False
+
+        return True
+
 
 class ReportServerService:
     def __init__(self, session):
@@ -777,6 +890,31 @@ class ReportServerService:
             self.session
         ).get_activity_flow_by_answer_id(answer_id)
         return result
+
+    async def is_flow_finished(
+        self, submit_id: uuid.UUID, answer_id: uuid.UUID
+    ) -> bool:
+        answers = await AnswersCRUD(self.session).get_by_submit_id(
+            submit_id, answer_id
+        )
+        if not answers:
+            return False
+        initial_answer = answers[0]
+
+        applet = await AppletsCRUD(self.session).get_by_id(
+            initial_answer.applet_id
+        )
+        applet_full = await self._prepare_applet_data(
+            initial_answer.applet_id, initial_answer.version, applet.encryption
+        )
+        activity_id, version = initial_answer.activity_history_id.split("_")
+        flow_id, version = "", ""
+        if initial_answer.flow_history_id:
+            flow_id, version = initial_answer.flow_history_id.split("_")
+
+        return self._is_activity_last_in_flow(
+            applet_full, activity_id, flow_id
+        )
 
     async def create_report(
         self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
@@ -831,6 +969,39 @@ class ReportServerService:
                     return ReportServerResponse(**response_data)
                 else:
                     raise ReportServerError(message=str(response_data))
+
+    def _is_activity_last_in_flow(
+        self, applet_full: dict, activity_id: str | None, flow_id: str | None
+    ) -> bool:
+        if (
+            "activityFlows" not in applet_full
+            or "activities" not in applet_full
+            or not activity_id
+            or not flow_id
+        ):
+            return False
+
+        flows = applet_full["activityFlows"]
+        flow = next((f for f in flows if str(f["id"]) == flow_id), None)
+        if not flow or "items" not in flow or len(flow["items"]) == 0:
+            return False
+
+        allowed_activities = []
+        for a in applet_full["activities"]:
+            if "scoresAndReports" in a and isinstance(
+                a["scoresAndReports"], dict
+            ):
+                if a["scoresAndReports"].get("generateReport", False):
+                    allowed_activities.append(a)
+
+        activity = next(
+            (a for a in allowed_activities if str(a["id"]) == activity_id),
+            None,
+        )
+        if not activity or "idVersion" not in activity:
+            return False
+
+        return activity["idVersion"] == str(flow["items"][-1]["activityId"])
 
     async def _prepare_applet_data(
         self, applet_id: uuid.UUID, version: str, encryption: dict

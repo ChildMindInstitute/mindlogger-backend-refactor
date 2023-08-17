@@ -17,12 +17,7 @@ from apps.library.domain import (
     PublicLibraryItem,
 )
 from apps.library.service import LibraryService
-from apps.shared.domain import (
-    Response,
-    ResponseMulti,
-    model_as_camel_case,
-    to_camelcase,
-)
+from apps.shared.domain import Response, ResponseMulti, model_as_camel_case
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users import User
 from apps.workspaces.service.check_access import CheckAccessService
@@ -83,8 +78,9 @@ async def library_get_by_id(
 ) -> Response[PublicLibraryItem]:
     async with atomic(session):
         applet = await LibraryService(session).get_applet_by_id(library_id)
-
-    return Response(result=PublicLibraryItem(**applet.dict()))
+    return Response(
+        result=model_as_camel_case(PublicLibraryItem(**applet.dict()))
+    )
 
 
 async def library_get_url(
@@ -125,17 +121,12 @@ async def cart_get(
         cart = await service.get_cart(user.id)
         items = await service.filter_cart_items(cart, query_params)
         count = len(cart.cart_items) if cart and cart.cart_items else 0
-        items_to_camel = []
-        for item in items:
-            items_to_camel.append(
-                PublicLibraryItem(
-                    **json.loads(
-                        json.loads(to_camelcase(json.dumps(item.json())))
-                    )
-                )
-            )
 
-    return ResponseMulti(result=items_to_camel, count=count)
+        items_as_camel: list[PublicLibraryItem] = [
+            model_as_camel_case(item) for item in items
+        ]
+
+    return ResponseMulti(result=items_as_camel, count=count)
 
 
 async def cart_add(
@@ -144,9 +135,7 @@ async def cart_add(
     session=Depends(get_session),
 ) -> Response[Cart]:
     async with atomic(session):
-        cart = await LibraryService(session).add_to_cart(user.id, schema)
-        cart_to_camel = Cart(
-            **json.loads(json.loads(to_camelcase(json.dumps(cart.json()))))
-        )
+        cart: Cart = await LibraryService(session).add_to_cart(user.id, schema)
+        cart_as_camel = model_as_camel_case(cart)
 
-    return Response(result=cart_to_camel)
+    return Response(result=cart_as_camel)

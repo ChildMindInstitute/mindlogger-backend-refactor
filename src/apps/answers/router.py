@@ -2,6 +2,7 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.answers.api import (
+    answers_existence_check,
     applet_activity_answer_retrieve,
     applet_activity_answers_list,
     applet_activity_assessment_create,
@@ -10,6 +11,7 @@ from apps.answers.api import (
     applet_activity_versions_retrieve,
     applet_answer_reviews_retrieve,
     applet_answers_export,
+    applet_completed_entities,
     applet_submit_date_list,
     create_anonymous_answer,
     create_answer,
@@ -26,6 +28,7 @@ from apps.answers.domain import (
     AnswerNoteDetailPublic,
     AnswerReviewPublic,
     AppletActivityAnswerPublic,
+    AppletCompletedEntities,
     AssessmentAnswerPublic,
     PublicAnswerDates,
     PublicAnswerExport,
@@ -223,3 +226,23 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_answers_export)
+
+router.get(
+    "/applet/{applet_id}/completions",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[AppletCompletedEntities]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_completed_entities)
+
+router.get(
+    "/check-existence",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(answers_existence_check)

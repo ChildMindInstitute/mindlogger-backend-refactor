@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import any_, select
 from sqlalchemy.orm import Query
 
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
@@ -24,6 +24,19 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
             ActivityFlowHistoriesSchema.applet_id == id_version
         )
         query = query.order_by(ActivityFlowHistoriesSchema.order.asc())
+        result = await self._execute(query)
+        return result.scalars().all()
+
+    async def get_by_id_versions(
+        self, id_versions: list[str]
+    ) -> list[ActivityFlowHistoriesSchema]:
+        if not id_versions:
+            return []
+
+        query: Query = select(ActivityFlowHistoriesSchema)
+        query = query.where(
+            ActivityFlowHistoriesSchema.id_version == any_(id_versions)
+        )
         result = await self._execute(query)
         return result.scalars().all()
 

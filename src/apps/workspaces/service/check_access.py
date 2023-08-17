@@ -3,6 +3,7 @@ import uuid
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import (
+    AnswerCheckAccessDenied,
     AnswerCreateAccessDenied,
     AnswerNoteCRUDAccessDenied,
     AnswerViewAccessDenied,
@@ -214,3 +215,19 @@ class CheckAccessService:
 
     async def check_applet_share_library_access(self, applet_id: uuid.UUID):
         await self._check_applet_roles(applet_id, [Role.OWNER])
+
+    async def check_answers_mobile_data_access(self, applet_id: uuid.UUID):
+        has_access = await AppletAccessCRUD(self.session).has_role(
+            applet_id, self.user_id, Role.RESPONDENT
+        )
+
+        if not has_access:
+            raise AppletAccessDenied()
+
+    async def check_answer_check_access(self, applet_id: uuid.UUID):
+        has_access = await AppletAccessCRUD(self.session).has_role(
+            applet_id, self.user_id, Role.RESPONDENT
+        )
+
+        if not has_access:
+            raise AnswerCheckAccessDenied()

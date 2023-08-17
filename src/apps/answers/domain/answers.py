@@ -58,6 +58,9 @@ class ItemAnswerCreate(InternalModel):
     start_time: int
     end_time: int
     user_public_key: str | None
+    scheduled_event_id: str | None = None
+    local_end_date: datetime.date | None = None
+    local_end_time: datetime.time | None = None
 
     @validator("item_ids")
     def convert_item_ids(cls, value: list[uuid.UUID]):
@@ -92,6 +95,7 @@ class AppletAnswerCreate(InternalModel):
     version: str
     submit_id: uuid.UUID
     flow_id: uuid.UUID | None = None
+    is_flow_completed: bool | None = None
     activity_id: uuid.UUID
     answer: ItemAnswerCreate
     created_at: int | None
@@ -279,7 +283,7 @@ class UserAnswerDataBase(BaseModel):
     start_datetime: datetime.datetime | None = None
     end_datetime: datetime.datetime | None = None
     applet_history_id: str
-    activity_history_id: str
+    activity_history_id: str | None
     flow_history_id: str | None
     flow_name: str | None
     reviewed_answer_id: uuid.UUID | str | None
@@ -364,3 +368,40 @@ class ReportServerEmail(InternalModel):
 class ReportServerResponse(InternalModel):
     pdf: str
     email: ReportServerEmail
+
+
+class CompletedEntity(PublicModel):
+    id: uuid.UUID
+    answer_id: uuid.UUID
+    submit_id: uuid.UUID
+    scheduled_event_id: str | None = None
+    local_end_date: datetime.date
+    local_end_time: datetime.time
+
+    @validator("id", pre=True)
+    def id_from_history_id(cls, value):
+        return uuid.UUID(str(value)[:36])
+
+
+class AppletCompletedEntities(InternalModel):
+    id: uuid.UUID
+    version: str
+
+    activities: list[CompletedEntity]
+    activity_flows: list[CompletedEntity]
+
+
+class AnswersCheck(PublicModel):
+    applet_id: uuid.UUID
+    created_at: int
+    activity_id: str
+
+    @validator("created_at")
+    def convert_time_to_unix_timestamp(cls, value: int):
+        if value:
+            return value / 1000
+        return value
+
+
+class IsAnswersUploaded(PublicModel):
+    is_uploaded: bool

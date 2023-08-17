@@ -2,21 +2,7 @@ import datetime
 import uuid
 
 from pydantic import parse_obj_as
-from sqlalchemy import (  # true,
-    and_,
-    any_,
-    case,
-    delete,
-    exists,
-    func,
-    literal_column,
-    null,
-    or_,
-    select,
-    text,
-    true,
-)
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import and_, case, delete, func, null, or_, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
@@ -27,18 +13,35 @@ from apps.activities.domain import ActivityHistory
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
-from apps.answers.domain import RespondentAnswerData, Version
+from apps.answers.domain import (
+    AppletCompletedEntities,
+    CompletedEntity,
+    RespondentAnswerData,
+    Version,
+)
 from apps.answers.errors import AnswerNotFoundError
 from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.shared.filtering import Comparisons, FilterField, Filtering
-from apps.users import UserSchema
-from apps.workspaces.db.schemas import UserAppletAccessSchema
-from apps.workspaces.domain.constants import Role
+from apps.shared.paging import paging
 from infrastructure.database.crud import BaseCRUD
 
 
 class _AnswersExportFilter(Filtering):
-    respondent_ids = FilterField(AnswerSchema.respondent_id, Comparisons.IN)
+    respondent_ids = FilterField(
+        AnswerItemSchema.respondent_id, method_name="filter_respondent_ids"
+    )
+
+    def filter_respondent_ids(self, field, value):
+        return and_(
+            field.in_(value), AnswerItemSchema.is_assessment.isnot(True)
+        )
+
+    activity_history_ids = FilterField(
+        AnswerSchema.activity_history_id, Comparisons.IN
+    )
+    from_date = FilterField(
+        AnswerItemSchema.created_at, Comparisons.GREAT_OR_EQUAL
+    )
 
 
 class AnswersCRUD(BaseCRUD[AnswerSchema]):
@@ -103,57 +106,14 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         await self._execute(query)
 
     async def get_applet_answers(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID, **filters
+        self,
+        applet_id: uuid.UUID,
+        *,
+        include_assessments: bool = True,
+        page=None,
+        limit=None,
+        **filters,
     ) -> list[RespondentAnswerData]:
-        assigned_respondents = select(
-            literal_column("val").cast(UUID)
-        ).select_from(
-            func.jsonb_array_elements_text(
-                case(
-                    (
-                        func.jsonb_typeof(
-                            UserAppletAccessSchema.meta[text("'respondents'")]
-                        )
-                        == text("'array'"),
-                        UserAppletAccessSchema.meta[text("'respondents'")],
-                    ),
-                    else_=text("'[]'::jsonb"),
-                )
-            ).alias("val")
-        )
-
-        has_access = (
-            exists()
-            .where(
-                UserAppletAccessSchema.user_id == user_id,
-                UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
-                or_(
-                    UserAppletAccessSchema.role.in_(
-                        [Role.OWNER, Role.MANAGER]
-                    ),
-                    and_(
-                        AnswerItemSchema.is_assessment.isnot(True),
-                        UserAppletAccessSchema.role == Role.REVIEWER,
-                        AnswerSchema.respondent_id
-                        == any_(assigned_respondents.scalar_subquery()),
-                    ),
-                ),
-            )
-            .correlate(AnswerSchema, AnswerItemSchema)
-        )
-
-        is_manager = case(
-            (AnswerItemSchema.is_assessment.is_(True), true()),
-            else_=(
-                exists()
-                .where(
-                    UserAppletAccessSchema.user_id == UserSchema.id,
-                    UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
-                    UserAppletAccessSchema.role != Role.RESPONDENT,
-                )
-                .correlate(AnswerSchema, UserSchema)
-            ),
-        )
 
         reviewed_answer_id = case(
             (AnswerItemSchema.is_assessment.is_(True), AnswerSchema.id),
@@ -163,6 +123,16 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         record_id = case(
             (AnswerItemSchema.is_assessment.is_(True), AnswerItemSchema.id),
             else_=AnswerSchema.id,
+        )
+
+        activity_history_id = case(
+            (AnswerItemSchema.is_assessment.is_(True), null()),
+            else_=AnswerSchema.activity_history_id,
+        )
+
+        flow_history_id = case(
+            (AnswerItemSchema.is_assessment.is_(True), null()),
+            else_=AnswerSchema.flow_history_id,
         )
 
         filter_clauses = []
@@ -176,9 +146,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.version,
                 AnswerItemSchema.user_public_key,
                 AnswerItemSchema.respondent_id,
-                UserAppletAccessSchema.respondent_secret_id,
-                UserSchema.email.label("respondent_email"),
-                is_manager.label("is_manager"),
                 AnswerItemSchema.answer,
                 AnswerItemSchema.events,
                 AnswerItemSchema.item_ids,
@@ -186,9 +153,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.start_datetime,
                 AnswerItemSchema.end_datetime,
                 AnswerSchema.applet_history_id,
-                AnswerSchema.activity_history_id,
-                AnswerSchema.flow_history_id,
-                ActivityFlowHistoriesSchema.name.label("flow_name"),
+                activity_history_id.label("activity_history_id"),
+                flow_history_id.label("flow_history_id"),
                 AnswerItemSchema.created_at,
                 reviewed_answer_id.label("reviewed_answer_id"),
             )
@@ -196,29 +162,16 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .join(
                 AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
             )
-            .outerjoin(
-                ActivityFlowHistoriesSchema,
-                ActivityFlowHistoriesSchema.id_version
-                == AnswerSchema.flow_history_id,
-            )
-            .outerjoin(UserSchema, UserSchema.id == AnswerSchema.respondent_id)
-            .outerjoin(
-                UserAppletAccessSchema,
-                and_(
-                    AnswerItemSchema.is_assessment.isnot(True),
-                    UserAppletAccessSchema.applet_id == AnswerSchema.applet_id,
-                    UserAppletAccessSchema.user_id
-                    == AnswerItemSchema.respondent_id,
-                    UserAppletAccessSchema.role == Role.RESPONDENT,
-                ),
-            )
             .where(
                 AnswerSchema.applet_id == applet_id,
-                has_access,
                 *filter_clauses,
             )
             .order_by(AnswerItemSchema.created_at.desc())
         )
+        query = paging(query, page, limit)
+
+        if not include_assessments:
+            query = query.where(AnswerItemSchema.is_assessment.isnot(True))
 
         res = await self._execute(query)
         answers = res.all()
@@ -332,6 +285,19 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
+    async def get_by_applet_activity_created_at(
+        self, applet_id: uuid.UUID, activity_id: str, created_at: int
+    ) -> list[AnswerSchema] | None:
+        created_time = datetime.datetime.fromtimestamp(created_at)
+        query: Query = select(AnswerSchema)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(AnswerSchema.created_at == created_time)
+        query = query.filter(
+            AnswerSchema.activity_history_id.startswith(activity_id)
+        )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
     async def get_activity_flow_by_answer_id(
         self, answer_id: uuid.UUID
     ) -> bool:
@@ -402,3 +368,65 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         for answer_id, activity_id in db_result.all():
             results.append(activity_id)
         return results
+
+    async def get_completed_answers_data(
+        self,
+        applet_id: uuid.UUID,
+        version: str,
+        respondent_id: uuid.UUID,
+        date: datetime.date,
+    ) -> AppletCompletedEntities:
+        is_completed = or_(
+            AnswerSchema.is_flow_completed,
+            AnswerSchema.flow_history_id.is_(None),
+        )
+
+        query: Query = (
+            select(
+                AnswerSchema.id.label("answer_id"),
+                AnswerSchema.submit_id,
+                AnswerSchema.activity_history_id,
+                AnswerSchema.flow_history_id,
+                AnswerItemSchema.scheduled_event_id,
+                AnswerItemSchema.local_end_date,
+                AnswerItemSchema.local_end_time,
+            )
+            .join(
+                AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
+            )
+            .where(
+                AnswerSchema.applet_id == applet_id,
+                AnswerSchema.version == version,
+                AnswerSchema.respondent_id == respondent_id,
+                AnswerItemSchema.local_end_date == date,
+                is_completed,
+            )
+            .order_by(
+                AnswerSchema.activity_history_id,
+                AnswerSchema.flow_history_id,
+                AnswerItemSchema.local_end_time.desc(),
+            )
+            .distinct(
+                AnswerSchema.activity_history_id, AnswerSchema.flow_history_id
+            )
+        )
+
+        db_result = await self._execute(query)
+        data = db_result.all()
+
+        activities = []
+        flows = []
+        for row in data:
+            if row.flow_history_id:
+                flows.append(CompletedEntity(**row, id=row.flow_history_id))
+            else:
+                activities.append(
+                    CompletedEntity(**row, id=row.activity_history_id)
+                )
+
+        return AppletCompletedEntities(
+            id=applet_id,
+            version=version,
+            activities=activities,
+            activity_flows=flows,
+        )
