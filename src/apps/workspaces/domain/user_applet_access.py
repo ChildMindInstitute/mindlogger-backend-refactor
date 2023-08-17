@@ -124,3 +124,10 @@ class ManagerAccesses(InternalModel):
 class RespondentInfo(InternalModel):
     nickname: str
     secret_user_id: str
+
+
+class RespondentExportData(InternalModel):
+    id: uuid.UUID
+    email: str
+    secret_id: str | None
+    is_manager: bool

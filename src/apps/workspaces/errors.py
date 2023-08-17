@@ -116,3 +116,7 @@ class UserSecretIdAlreadyExists(ValidationError):
 
 class UserSecretIdAlreadyExistsInInvitation(ValidationError):
     message = _("Secret id already exists in pending invitation.")
+
+
+class AnswerCheckAccessDenied(AccessDeniedError):
+    message = _("Access denied to check answer to applet.")

@@ -1704,6 +1704,33 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
+                            name="activity_item_time_range",
+                            question={"en": "What is your name?"},
+                            response_type="timeRange",
+                            response_values=None,
+                            config=dict(
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                                remove_back_button=False,
+                                skippable_item=False,
+                                timer=1,
+                            ),
+                            conditional_logic=dict(
+                                match="all",
+                                conditions=[
+                                    dict(
+                                        item_name="activity_item_singleselect",
+                                        type="EQUAL_TO_OPTION",
+                                        payload=dict(
+                                            option_value="1"  # noqa E501
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        dict(
                             name="activity_item_time_range_2",
                             question={"en": "What is your name?"},
                             response_type="time",

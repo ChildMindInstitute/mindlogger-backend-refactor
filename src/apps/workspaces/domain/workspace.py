@@ -70,6 +70,7 @@ class WorkspaceRespondent(InternalModel):
     id: uuid.UUID
     nicknames: list[str] | None = None
     secret_ids: list[str] | None = None
+    is_anonymous_respondent: bool
     last_seen: datetime.datetime
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None
@@ -146,6 +147,7 @@ class PublicWorkspaceRespondent(PublicModel):
     id: uuid.UUID
     nicknames: list[str] | None
     secret_ids: list[str] | None
+    is_anonymous_respondent: bool
     last_seen: datetime.datetime
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None

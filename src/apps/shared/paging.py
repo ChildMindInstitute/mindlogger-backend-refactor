@@ -19,6 +19,13 @@ def check_limitation(func):
 
 @check_limitation
 def paging(query: Query, page=1, limit=10) -> Query:
+    if limit is None:
+        limit = settings.service.result_limit
+    else:
+        limit = min(limit, settings.service.result_limit)
+    if page is None:
+        page = 1
+
     query = query.limit(limit)
     query = query.offset((page - 1) * limit)
     return query

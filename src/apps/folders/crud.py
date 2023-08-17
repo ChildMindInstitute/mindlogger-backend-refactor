@@ -119,7 +119,7 @@ class FolderCRUD(BaseCRUD):
 
     async def get_applets_folder_id_in_workspace(
         self, workspace_id: uuid.UUID, applet_id: uuid.UUID
-    ) -> uuid.UUID | None:
+    ) -> list[uuid.UUID] | None:
         query: Query = select(FolderAppletSchema.folder_id)
         query = query.join(
             FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
@@ -128,7 +128,7 @@ class FolderCRUD(BaseCRUD):
         query = query.where(FolderAppletSchema.applet_id == applet_id)
 
         db_result = await self._execute(query)
-        return db_result.scalars().first()
+        return db_result.scalars().all()
 
     async def set_applet_folder(
         self,

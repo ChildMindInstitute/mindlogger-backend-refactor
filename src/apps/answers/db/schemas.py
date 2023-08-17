@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Text, Time
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
@@ -27,6 +27,7 @@ class AnswerSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=True,
     )
+    is_flow_completed = Column(Boolean(), nullable=True)
 
 
 class AnswerNoteSchema(Base):
@@ -62,4 +63,7 @@ class AnswerItemSchema(Base):
     scheduled_datetime = Column(DateTime())
     start_datetime = Column(DateTime(), nullable=False)
     end_datetime = Column(DateTime(), nullable=False)
+    scheduled_event_id = Column(Text(), nullable=True)
+    local_end_date = Column(Date(), nullable=True, index=True)
+    local_end_time = Column(Time, nullable=True)
     is_assessment = Column(Boolean())
