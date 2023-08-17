@@ -66,6 +66,8 @@ class ContextResolverAwareMixin:
 
 
 def str_to_id(name: str, to_underscore=r"\s") -> str:
+    if name is None:
+        return ""
     name = re.sub(r"[^0-9a-zA-Z\s_-]+", "", name)
     if to_underscore:
         name = re.sub(rf"[_{to_underscore}]+", "_", name)

@@ -3,6 +3,7 @@ import uuid
 from pydantic import BaseModel, EmailStr, Field
 
 from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.encryption import decrypt
 
 __all__ = [
     "PublicUser",
@@ -20,7 +21,7 @@ __all__ = [
 
 
 class _UserBase(BaseModel):
-    email: EmailStr
+    email: str
 
     def __str__(self) -> str:
         return self.email
@@ -59,14 +60,31 @@ class UserUpdateRequest(InternalModel):
 class User(UserCreate):
     id: uuid.UUID
     is_super_admin: bool
+    email_aes_encrypted: bytes | None
+
+    @property
+    def plain_email(self) -> str | None:
+        if self.email_aes_encrypted:
+            return decrypt(self.email_aes_encrypted).decode("utf-8")
+        return None
 
 
-class PublicUser(_UserBase, PublicModel):
+class PublicUser(PublicModel):
     """Public user data model."""
 
+    email: EmailStr | None
     first_name: str
     last_name: str
     id: uuid.UUID
+
+    @classmethod
+    def from_user(cls, user: User) -> "PublicUser":
+        return cls(
+            email=user.plain_email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            id=user.id,
+        )
 
 
 class ChangePasswordRequest(InternalModel):
@@ -95,7 +113,7 @@ class PasswordRecoveryInfo(InternalModel):
     for internal needs.
     """
 
-    email: EmailStr
+    email: str
     user_id: uuid.UUID
     key: uuid.UUID
 

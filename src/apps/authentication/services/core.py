@@ -37,7 +37,7 @@ class TokensService:
             )
 
             token_info = TokenInfo(
-                email=user.email,
+                email=user.plain_email,
                 token_purpose=TokenPurpose.ACCESS,
                 raw_token=schema.raw_token,
                 user_id=schema.payload.sub,

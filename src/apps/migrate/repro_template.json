@@ -1,0 +1,681 @@
+{
+  "@context": [
+    "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+  ],
+  "@type": "reproschema:Protocol",
+  "@id": "all_fields_schema",
+  "skos:prefLabel": "all_fields",
+  "schema:description": "applet description",
+  "schema:image": "https://mindlogger-applet-contents.s3.amazonaws.com/image/ju41bpfN83WHPaSD11gSHB.png",
+  "schema:watermark": "https://mindlogger-applet-contents.s3.amazonaws.com/image/7e3vHHKpHBamh9wSuquBDy.png",
+  "schema:schemaVersion": "6.2.2",
+  "schema:version": "6.2.2",
+  "streamEnabled": true,
+  "landingPageContent": "https://mindlogger-applet-contents.s3.amazonaws.com/image/8wahkmBmncHKcTmmjeU1AT.png",
+  "landingPageType": "image",
+  "landingPage": "",
+  "ui": {
+    "addProperties": [
+      {
+        "variableName": "act_inputs",
+        "isAbout": "act_inputs",
+        "prefLabel": "act_inputs",
+        "isVis": true
+      },
+      {
+        "variableName": "act2",
+        "isAbout": "act2",
+        "prefLabel": "act2",
+        "isVis": true
+      },
+      {
+        "variableName": "act_stacked",
+        "isAbout": "act_stacked",
+        "prefLabel": "act_stacked",
+        "isVis": true
+      },
+      {
+        "variableName": "act3",
+        "isAbout": "act3",
+        "prefLabel": "act3",
+        "isVis": true
+      },
+      {
+        "variableName": "Trails_iPad",
+        "isAbout": "Trails_iPad",
+        "prefLabel": "Trails_iPad",
+        "isVis": true
+      },
+      {
+        "variableName": "Trails_Mobile",
+        "isAbout": "Trails_Mobile",
+        "prefLabel": "Trails_Mobile",
+        "isVis": true
+      },
+      {
+        "variableName": "act_flanker",
+        "isAbout": "act_flanker",
+        "prefLabel": "act_flanker",
+        "isVis": true
+      }
+    ],
+    "order": [
+      {
+        "@context": [
+          "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+        ],
+        "@id": "act_inputs",
+        "@type": "reproschema:Activity",
+        "activityType": "NORMAL",
+        "skos:prefLabel": "act_inputs",
+        "skos:altLabel": "act_inputs",
+        "schema:description": "act with allow skip",
+        "schema:splash": "https://mindlogger-applet-contents.s3.amazonaws.com/video_or_image/s1oKbGz242cN9jdJFzZGxX.png",
+        "schema:image": "https://mindlogger-applet-contents.s3.amazonaws.com/image/eMNTPte1sjTBijRjXjfoec.png",
+        "schema:schemaVersion": "0.0.1",
+        "schema:version": "0.0.1",
+        "preamble": "",
+        "isReviewerActivity": false,
+        "isOnePageAssessment": false,
+        "reportIncludeItem": "",
+        "scoringLogic": {},
+        "repronim:timeUnit": "yearmonthdate",
+        "isPrize": false,
+        "isVis": false,
+        "ui": {
+          "order": [
+            {
+              "name": "input_radio",
+              "question": "\r\n\r\n![''](https://mindlogger-applet-contents.s3.amazonaws.com/image/5K2bpUaoBQFNDgTdqPHHbs.png   =250x250)\r\n\r\nradio options with header img: randomize options, alerts, score, remove go back, color, text input, text input required, timer",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": true,
+              "timer": 15000,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_radio",
+              "skos:prefLabel": "input_radio",
+              "skos:altLabel": "input_radio",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "radio",
+                "allow": ["autoAdvance"]
+              },
+              "responseOptions": {
+                "valueType": "xsd:anyURI",
+                "enableNegativeTokens": false,
+                "scoring": true,
+                "responseAlert": true,
+                "randomizeOptions": true,
+                "removeBackOption": true,
+                "colorPalette": true,
+                "multipleChoice": false,
+                "schema:minValue": 1,
+                "schema:maxValue": 3,
+                "isOptionalTextRequired": true,
+                "choices": [
+                  {
+                    "@type": "schema:option",
+                    "schema:name": "Option 1 with score, alert, image, color, tooltip",
+                    "schema:value": 0,
+                    "reprolib:terms/isVis": false,
+                    "schema:color": "#F44336",
+                    "schema:description": "opt1 tooltip",
+                    "schema:score": 10,
+                    "schema:image": "https://mindlogger-applet-contents.s3.amazonaws.com/image/tVfPpbxVGuL277xH8st1qD.png",
+                    "schema:alert": "opt1 alert"
+                  },
+                  {
+                    "@type": "schema:option",
+                    "schema:name": "Option 2",
+                    "schema:value": 1,
+                    "reprolib:terms/isVis": false,
+                    "schema:color": "",
+                    "schema:description": "opt2 tooltip",
+                    "schema:score": 20,
+                    "schema:alert": "opt2 alert"
+                  },
+                  {
+                    "@type": "schema:option",
+                    "schema:name": "Option 3 hidden no img, color, tooltip",
+                    "schema:value": 2,
+                    "reprolib:terms/isVis": true,
+                    "schema:color": "",
+                    "schema:description": "",
+                    "schema:score": 30,
+                    "schema:alert": "opt3 alert"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "input_checkbox",
+              "question": "checkbox no header img, skippable, text option",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": true,
+              "timer": 16000,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_checkbox",
+              "skos:prefLabel": "input_checkbox",
+              "skos:altLabel": "input_checkbox",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "radio",
+                "allow": ["dontKnow"]
+              },
+              "responseOptions": {
+                "valueType": "xsd:anyURI",
+                "enableNegativeTokens": false,
+                "scoring": false,
+                "responseAlert": false,
+                "randomizeOptions": false,
+                "removeBackOption": false,
+                "colorPalette": false,
+                "multipleChoice": true,
+                "schema:minValue": 1,
+                "schema:maxValue": 2,
+                "choices": [
+                  {
+                    "@type": "schema:option",
+                    "schema:name": "Option 1",
+                    "schema:value": 0,
+                    "reprolib:terms/isVis": false,
+                    "schema:color": "",
+                    "schema:description": ""
+                  },
+                  {
+                    "@type": "schema:option",
+                    "schema:name": "Option 2",
+                    "schema:value": 1,
+                    "reprolib:terms/isVis": false,
+                    "schema:color": "",
+                    "schema:description": ""
+                  }
+                ]
+              }
+            },
+            {
+              "name": "input_text",
+              "question": "\r\n\r\n![''](https://mindlogger-applet-contents.s3.amazonaws.com/image/asx3Bkr3mGocAmBFuQTD7C.png  =250x250)\r\n\r\ntext with header image, correct answer required, response required",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": false,
+              "timer": 0,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_text",
+              "skos:prefLabel": "input_text",
+              "skos:altLabel": "input_text",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "text"
+              },
+              "responseOptions": {
+                "valueType": "http://www.w3.org/2001/XMLSchema#string",
+                "removeBackOption": false,
+                "requiredValue": true,
+                "isResponseIdentifier": false,
+                "maxLength": 50
+              },
+              "correctAnswer": ""
+            },
+            {
+              "name": "input_text_num",
+              "question": "text number, no header image, skippable, remove go back",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": false,
+              "timer": 0,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_text_num",
+              "skos:prefLabel": "input_text_num",
+              "skos:altLabel": "input_text_num",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "text",
+                "allow": ["dontKnow"]
+              },
+              "responseOptions": {
+                "valueType": "http://www.w3.org/2001/XMLSchema#integer",
+                "removeBackOption": true,
+                "requiredValue": false,
+                "isResponseIdentifier": false,
+                "maxLength": 50
+              },
+              "correctAnswer": ""
+            },
+            {
+              "name": "input_slider",
+              "question": "\r\n\r\n![''](https://mindlogger-applet-contents.s3.amazonaws.com/image/x7LEvWBTKc49JBbaPctXL2.png  =250x250)\r\n\r\nslider with header img, tick marks, tick labels, text anchors, score x 10, alerts, no alert3, continuous, no go back, text input NOT required, timer, skippable",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": true,
+              "timer": 17000,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_slider",
+              "skos:prefLabel": "input_slider",
+              "skos:altLabel": "input_slider",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "slider",
+                "allow": ["dontKnow"]
+              },
+              "responseOptions": {
+                "valueType": "xsd:integer",
+                "scoring": true,
+                "removeBackOption": true,
+                "responseAlert": true,
+                "continousSlider": true,
+                "tickLabel": true,
+                "textAnchors": true,
+                "tickMark": true,
+                "schema:minValue": "minlbl with img",
+                "schema:maxValue": "maxlbl no img",
+                "schema:minValueImg": "https://mindlogger-applet-contents.s3.amazonaws.com/image/gq55tL5uXT7355XXTpbVWf.png",
+                "schema:maxValueImg": "",
+                "isOptionalTextRequired": false,
+                "choices": [
+                  {
+                    "schema:name": "1",
+                    "schema:value": 1,
+                    "schema:score": 10,
+                    "schema:alert": false,
+                    "schema:image": "https://mindlogger-applet-contents.s3.amazonaws.com/image/gq55tL5uXT7355XXTpbVWf.png"
+                  },
+                  {
+                    "schema:name": "2",
+                    "schema:value": 2,
+                    "schema:score": 20,
+                    "schema:alert": false
+                  },
+                  {
+                    "schema:name": "3",
+                    "schema:value": 3,
+                    "schema:score": 30,
+                    "schema:alert": false
+                  }
+                ],
+                "minAlertValue": 0,
+                "maxAlertValue": 0,
+                "responseAlertMessage": ""
+              }
+            },
+            {
+              "name": "input_photo",
+              "question": "\r\n\r\n![''](https://mindlogger-applet-contents.s3.amazonaws.com/image/xiuche7JbpU8BrV94WbcQt.png  =250x250)\r\n\r\nphoto with header img, skippable, no go back, timer, text input",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": true,
+              "timer": 18000,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_photo",
+              "skos:prefLabel": "input_photo",
+              "skos:altLabel": "input_photo",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "photo",
+                "allow": ["dontKnow"]
+              }
+            },
+            {
+              "name": "input_video",
+              "question": "\r\n\r\n![''](https://mindlogger-applet-contents.s3.amazonaws.com/image/ba15Q8Chr9wKSrqFJP8wLo.png  =250x250)\r\n\r\nvideo header img, skippable, no go back, text input not req, timer",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": true,
+              "timer": 19000,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_video",
+              "skos:prefLabel": "input_video",
+              "skos:altLabel": "input_video",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "video",
+                "allow": ["dontKnow"]
+              }
+            },
+            {
+              "name": "input_date",
+              "question": "\r\n\r\n![''](https://mindlogger-applet-contents.s3.amazonaws.com/image/3AN3EnLDxjzGinEQDP7bYQ.png  =250x250)\r\n\r\ndate with header img, no go back, skippable, timer, text opt",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": true,
+              "timer": 20000,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_date",
+              "skos:prefLabel": "input_date",
+              "skos:altLabel": "input_date",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "date",
+                "allow": ["dontKnow"]
+              },
+              "responseOptions": {
+                "valueType": "xsd:date",
+                "requiredValue": true,
+                "schema:maxValue": "new Date()",
+                "removeBackOption": false
+              }
+            },
+            {
+              "name": "input_audio",
+              "question": "\r\n\r\n![''](https://mindlogger-applet-contents.s3.amazonaws.com/image/sjm6drLMc4o4P2Q6HhN3Jt.png  =250x250)\r\n\r\naudio with headerimg, nogoback, text opt req, timer, length ms",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": true,
+              "timer": 21000,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_audio",
+              "skos:prefLabel": "input_audio",
+              "skos:altLabel": "input_audio",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "audioRecord"
+              },
+              "responseOptions": {
+                "removeBackOption": true,
+                "schema:maxValue": "1221",
+                "schema:minValue": 0,
+                "isOptionalTextRequired": true
+              }
+            },
+            {
+              "name": "input_audio_img",
+              "question": "\r\n\r\n![''](https://mindlogger-applet-contents.s3.amazonaws.com/image/2At6HDt9G8vM3Pp7RbFVto.png  =250x250)\r\n\r\naudioimg with headerimg, skippable, nogoback",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": false,
+              "timer": 0,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_audio_img",
+              "skos:prefLabel": "input_audio_img",
+              "skos:altLabel": "input_audio_img",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "audioImageRecord",
+                "allow": ["dontKnow"]
+              },
+              "responseOptions": {
+                "schema:image": "https://example.com/audioimage.png"
+              }
+            },
+            {
+              "name": "input_age",
+              "question": "\r\n\r\n![''](https://mindlogger-applet-contents.s3.amazonaws.com/image/3bzDGJaDozYFKvu9cwP5fu.png  =250x250)\r\n\r\nage with headerimg, 10-105, text opt req, nogoback",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": true,
+              "timer": 0,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_age",
+              "skos:prefLabel": "input_age",
+              "skos:altLabel": "input_age",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "ageSelector"
+              },
+              "responseOptions": {
+                "schema:minAge": 10,
+                "schema:maxAge": 105,
+                "removeBackOption": true
+              }
+            },
+            {
+              "name": "input_message",
+              "question": "message with timer, no headerimg (not supp), timer, no go back",
+              "description": "",
+              "isVis": false,
+              "isOptionalText": false,
+              "timer": 22000,
+              "allowEdit": true,
+              "@context": [
+                "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"
+              ],
+              "@type": "reproschema:Field",
+              "@id": "input_message",
+              "skos:prefLabel": "input_message",
+              "skos:altLabel": "input_message",
+              "schema:description": "",
+              "schema:schemaVersion": "0.0.1",
+              "schema:version": "0.0.1",
+              "header": "",
+              "section": "",
+              "ui": {
+                "inputType": "markdownMessage"
+              }
+            }
+          ],
+          "shuffle": false,
+          "addProperties": [
+            {
+              "variableName": "input_radio",
+              "isAbout": "input_radio",
+              "isVis": true
+            },
+            {
+              "variableName": "input_checkbox",
+              "isAbout": "input_checkbox",
+              "isVis": "input_radio == 1 || input_radio == 2"
+            },
+            {
+              "variableName": "input_text",
+              "isAbout": "input_text",
+              "isVis": "input_checkbox.includes(1)"
+            },
+            {
+              "variableName": "input_text_num",
+              "isAbout": "input_text_num",
+              "isVis": true
+            },
+            {
+              "variableName": "input_slider",
+              "isAbout": "input_slider",
+              "isVis": "input_slider > 1 && input_slider < 3 && (input_slider>1 && input_slider <3) && (input_slider <2 || input_slider >3)"
+            },
+            {
+              "variableName": "input_photo",
+              "isAbout": "input_photo",
+              "isVis": true
+            },
+            {
+              "variableName": "input_video",
+              "isAbout": "input_video",
+              "isVis": true
+            },
+            {
+              "variableName": "input_date",
+              "isAbout": "input_date",
+              "isVis": true
+            },
+            {
+              "variableName": "input_audio",
+              "isAbout": "input_audio",
+              "isVis": true
+            },
+            {
+              "variableName": "input_audio_img",
+              "isAbout": "input_audio_img",
+              "isVis": true
+            },
+            {
+              "variableName": "input_age",
+              "isAbout": "input_age",
+              "isVis": true
+            },
+            {
+              "variableName": "input_message",
+              "isAbout": "input_message",
+              "isVis": true
+            }
+          ],
+          "allow": ["skipped", "allowExport"]
+        },
+        "subScales": [],
+        "reports": [
+          {
+            "prefLabel": "radio_plus_slider",
+            "@id": "sumScore_radio_plus_slider",
+            "dataType": "score",
+            "message": "<h3 style=\"color:#0067a0\"> radio_plus_slider </h3> \nThe subject’s score on the <strong>radio_plus_slider</strong> subscale was [[sumScore_radio_plus_slider]].",
+            "printItems": ["input_checkbox", "input_text", "input_text_num"],
+            "outputType": "cumulative",
+            "jsExpression": "input_radio + input_slider",
+            "conditionals": [
+              {
+                "prefLabel": "scoresum_condition1",
+                "@id": "something/sumScore_radio_plus_slider_scoresum_condition1",
+                "message": "message to show here",
+                "printItems": ["input_radio", "input_text_num", "input_slider"],
+                "flagScore": true,
+                "isVis": "sumScore_radio_plus_slider > 1 || sumScore_radio_plus_slider < 10 || sumScore_radio_plus_slider == 5 || sumScore_radio_plus_slider != 6 || (sumScore_radio_plus_slider > 2 && sumScore_radio_plus_slider < 7) || (sumScore_radio_plus_slider < 4 || sumScore_radio_plus_slider > 5)"
+              },
+              {
+                "prefLabel": "scoresum_cond2",
+                "@id": "sumScore_radio_plus_slider_scoresum_cond2",
+                "message": "",
+                "printItems": [],
+                "flagScore": true,
+                "isVis": "sumScore_radio_plus_slider > 1"
+              }
+            ]
+          },
+          {
+            "prefLabel": "avgscore_name",
+            "@id": "averageScore_avgscore_name",
+            "dataType": "score",
+            "message": "<h3 style=\"color:#0067a0\"> avgscore_name </h3> \nThe subject’s score on the <strong>avgscore_name</strong> subscale was [[averageScore_avgscore_name]].",
+            "printItems": [],
+            "outputType": "average",
+            "jsExpression": "input_radio + input_slider",
+            "conditionals": []
+          },
+          {
+            "prefLabel": "percscore1",
+            "@id": "percentScore_percscore1",
+            "dataType": "score",
+            "message": "",
+            "printItems": ["input_text"],
+            "outputType": "percentage",
+            "jsExpression": "input_slider",
+            "conditionals": [
+              {
+                "prefLabel": "percscorecond1",
+                "@id": "percentScore_percscore1_percscorecond1",
+                "message": "",
+                "printItems": [],
+                "flagScore": false,
+                "isVis": "percentScore_percscore1 == 2"
+              }
+            ]
+          },
+          {
+            "prefLabel": "section1",
+            "@id": "section_section1",
+            "dataType": "section",
+            "message": "radio equal 1",
+            "printItems": ["input_radio", "input_checkbox"],
+            "isVis": "input_radio == 0"
+          },
+          {
+            "prefLabel": "section2",
+            "@id": "section_section2",
+            "dataType": "section",
+            "message": "section2 sumscore equal to 3",
+            "printItems": [],
+            "isVis": "sumScore_radio_plus_slider_scoresum_condition1 == true"
+          }
+        ],
+        "finalSubScale": [],
+        "hasResponseIdentifier": false
+      }
+    ],
+    "shuffle": false
+  }
+}

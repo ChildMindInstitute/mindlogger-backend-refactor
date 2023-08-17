@@ -7,8 +7,8 @@ from apps.authentication.services import AuthenticationService
 from apps.authentication.tests.factories import UserLogoutRequestFactory
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
+from apps.users.domain import UserCreateRequest
 from apps.users.router import router as user_router
-from apps.users.tests import UserCreateRequestFactory
 from infrastructure.database import rollback, session_manager
 
 
@@ -18,7 +18,12 @@ class TestAuthentication(BaseTest):
     delete_token_url = auth_router.url_path_for("delete_access_token")
     refresh_access_token_url = auth_router.url_path_for("refresh_access_token")
 
-    create_request_user = UserCreateRequestFactory.build()
+    create_request_user = UserCreateRequest(
+        email="tom2@mindlogger.com",
+        first_name="Tom",
+        last_name="Isaak",
+        password="Test1234!",
+    )
     create_request_logout_user = UserLogoutRequestFactory.build()
 
     @rollback
