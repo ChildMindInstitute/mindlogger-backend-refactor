@@ -272,11 +272,11 @@ class AudioValues(PublicModel):
 
 
 class AudioPlayerValues(PublicModel):
-    file: str
+    file: str | None = Field(default=None)
 
-    @validator("file")
-    def validate_file(cls, value):
-        return validate_audio(value)
+    # @validator("file")
+    # def validate_file(cls, value):
+    #     return validate_audio(value)
 
 
 ResponseValueConfigOptions = [
