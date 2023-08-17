@@ -11,7 +11,11 @@ from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.service.flow import FlowService
 from apps.answers.crud.answers import AnswersCRUD
-from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.applets.crud import (
+    AppletHistoriesCRUD,
+    AppletsCRUD,
+    UserAppletAccessCRUD,
+)
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import (
     AppletFolder,
@@ -756,8 +760,11 @@ class AppletService:
     async def set_report_configuration(
         self, applet_id: uuid.UUID, schema: AppletReportConfiguration
     ):
-        await AppletsCRUD(self.session).set_report_configuration(
-            applet_id, schema
+        repository = AppletsCRUD(self.session)
+        applet = await repository.get_by_id(applet_id)
+        await repository.set_report_configuration(applet_id, schema)
+        await AppletHistoriesCRUD(self.session).set_report_configuration(
+            applet.id, applet.version, schema
         )
 
     async def send_notification_to_applet_respondents(
