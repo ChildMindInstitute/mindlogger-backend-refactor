@@ -2,41 +2,64 @@
 import os
 
 import cherrypy
+import six
+
+from apps import girderformindlogger
+from apps.girderformindlogger.constants import PACKAGE_DIR
+
+
+def _mergeConfig(filename):
+    """
+    Load `filename` into the cherrypy config.
+    Also, handle global options by putting them in the root.
+    """
+    cherrypy._cpconfig.merge(cherrypy.config, filename)
+    # When in Sphinx, cherrypy may be mocked and returning None
+    global_config = cherrypy.config.pop("global", {}) or {}
+
+    for option, value in six.viewitems(global_config):
+        cherrypy.config[option] = value
+
+
+def _loadConfigsByPrecedent():
+    """
+    Load configuration in reverse order of precedent.
+    """
+    # TODO: Deprecated, remove in a later version
+    def _printConfigurationWarning():
+        girderformindlogger.logprint.warning(
+            "Detected girderformindlogger.local.cfg, this location is no longer supported.\n"
+            "For supported locations, see "
+            "https://girderformindlogger.readthedocs.io/en/stable/configuration.html#configuration"
+        )
+
+    if os.path.exists(
+        os.path.join(PACKAGE_DIR, "conf", "girderformindlogger.local.cfg")
+    ):
+        # This can't use logprint since configuration is loaded before initialization.
+        # Note this also won't be displayed when starting other services that don't start a CherryPy
+        # server such as girderformindlogger mount or girderformindlogger sftpd.
+        cherrypy.engine.subscribe("start", _printConfigurationWarning)
+
+    configPaths = [
+        os.path.join(PACKAGE_DIR, "conf", "girder.dist.cfg"),
+        os.path.join("/etc", "girder.cfg"),
+        os.path.join(
+            os.path.expanduser("~"), ".girderformindlogger", "girder.cfg"
+        ),
+    ]
+
+    if "GIRDER_CONFIG" in os.environ:
+        configPaths.append(os.environ["GIRDER_CONFIG"])
+
+    for curConfigPath in configPaths:
+        if os.path.exists(curConfigPath):
+            _mergeConfig(curConfigPath)
 
 
 def loadConfig():
-    cherrypy.config["global"] = {
-        "server.socket_host": "127.0.0.1",
-        "server.socket_port": 8080,
-        "server.thread_pool": 100,
-        "server.max_request_body_size": 209715200,
-    }
-    cherrypy.config["database"] = {
-        # "uri": f"mongodb://{os.getenv('MONGO__HOST')}:{int(os.getenv('MONGO__PORT'))}/{os.getenv('MONGO__DB')}",
-        "uri": f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}/{os.getenv('MONGO__DB')}",
-        "replica_set": None,
-    }
-    cherrypy.config["server"] = {
-        "mode": "development",
-        "api_root": "api/v1",
-        "static_public_path": "/static",
-        "disable_event_daemon": False,
-    }
-    cherrypy.config["logging"] = {}
-    cherrypy.config["users"] = {
-        "password_regex": ".{6}.*",
-        "password_description": "Password must be at least 6 characters.",
-    }
-    cherrypy.config["cache"] = {
-        "enabled": False,
-        "cache.global.backend": "dogpile.cache.memory",
-        "cache.request.backend": "cherrypy_request",
-    }
-    cherrypy.config["sentry"] = {
-        "backend_dsn": "https://f63bc109e2ea4e618e036a9a0eb6dece@o414302.ingest.sentry.io/5313180",
-    }
 
-    # _loadConfigsByPrecedent()
+    _loadConfigsByPrecedent()
 
     if "GIRDER_PORT" in os.environ:
         port = int(os.environ["GIRDER_PORT"])

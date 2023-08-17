@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 
-import pytest
 from httpx import Response as HttpResponse
 from starlette import status
 
@@ -10,16 +9,13 @@ from apps.authentication.router import router as auth_router
 from apps.mailing.services import TestMail
 from apps.shared.domain import Response
 from apps.shared.test import BaseTest
-from apps.users.domain import (
-    PasswordRecoveryRequest,
-    PublicUser,
-    UserCreateRequest,
-)
+from apps.users.domain import PasswordRecoveryRequest, PublicUser
 from apps.users.router import router as user_router
 from apps.users.tests.factories import (
     CacheEntryFactory,
     PasswordRecoveryInfoFactory,
     PasswordUpdateRequestFactory,
+    UserCreateRequestFactory,
 )
 from config import settings
 from infrastructure.database import rollback
@@ -35,12 +31,7 @@ class TestPassword(BaseTest):
         "password_recovery_approve"
     )
 
-    create_request_user = UserCreateRequest(
-        email="tom2@mindlogger.com",
-        first_name="Tom",
-        last_name="Isaak",
-        password="Test1234!",
-    )
+    create_request_user = UserCreateRequestFactory.build()
 
     cache_entry = CacheEntryFactory.build(
         instance=PasswordRecoveryInfoFactory.build(
@@ -89,7 +80,6 @@ class TestPassword(BaseTest):
         assert response.status_code == status.HTTP_200_OK
         assert internal_response.status_code == status.HTTP_200_OK
 
-    @pytest.mark.skip
     @rollback
     async def test_password_recovery(
         self,
@@ -143,7 +133,6 @@ class TestPassword(BaseTest):
             TestMail.mails[0].recipients[0] == password_recovery_request.email
         )
 
-    @pytest.mark.skip
     @rollback
     async def test_password_recovery_approve(
         self,
@@ -190,7 +179,6 @@ class TestPassword(BaseTest):
         assert len(keys) == 0
         assert len(keys) == 0
 
-    @pytest.mark.skip
     @rollback
     async def test_password_recovery_approve_expired(
         self,

@@ -1,7 +1,5 @@
 from uuid import uuid4
 
-import pytest
-
 from apps.shared.test import BaseTest
 from apps.workspaces.domain.constants import Role
 from infrastructure.database import rollback
@@ -382,7 +380,6 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 1
 
-    @pytest.mark.skip
     @rollback
     async def test_get_workspace_managers(self):
         await self.client.login(
@@ -424,7 +421,6 @@ class TestWorkspaces(BaseTest):
                 assert len(result) == 1
                 assert result[0]["id"] == id_
 
-    @pytest.mark.skip
     @rollback
     async def test_get_workspace_applet_managers(self):
         await self.client.login(
@@ -499,7 +495,6 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         # TODO: check from database results
 
-    @pytest.mark.skip
     @rollback
     async def test_pin_workspace_respondents(self):
         await self.client.login(
@@ -573,7 +568,6 @@ class TestWorkspaces(BaseTest):
         )
         assert response.json()["result"][-1]["id"] == user_id
 
-    @pytest.mark.skip
     @rollback
     async def test_pin_workspace_managers(self):
         await self.client.login(

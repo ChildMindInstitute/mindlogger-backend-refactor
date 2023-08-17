@@ -17,7 +17,6 @@ except DistributionNotFound:
 
 __license__ = "Apache 2.0"
 
-import functools
 import logging
 import logging.handlers
 import os
@@ -40,12 +39,8 @@ from apps.girderformindlogger.utility._cache import (
     requestCache,
 )
 
-_quiet = False
-_originalStdOut = sys.stdout
-_originalStdErr = sys.stderr
 logger = logging.getLogger("girderformindlogger")
 auditLogger = logging.getLogger("girder_audit")
-config.loadConfig()  # Populate the config info at import time
 
 
 class LogLevelFilter(object):
@@ -324,23 +319,3 @@ def _setupCache():
     rateLimitBuffer.configure(
         backend="dogpile.cache.memory", replace_existing_backend=True
     )
-
-
-# Expose common logging levels and colors as methods of logprint.
-logprint.info = functools.partial(logprint, level=logging.INFO, color="info")
-logprint.warning = functools.partial(
-    logprint, level=logging.WARNING, color="warning"
-)
-logprint.error = functools.partial(
-    logprint, level=logging.ERROR, color="error"
-)
-logprint.success = functools.partial(
-    logprint, level=logging.INFO, color="success"
-)
-logprint.critical = functools.partial(
-    logprint, level=logging.CRITICAL, color="error"
-)
-logprint.debug = logprint
-logprint.exception = functools.partial(
-    logprint, level=logging.ERROR, color="error", exc_info=True
-)

@@ -1,13 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    ForeignKey,
-    LargeBinary,
-    String,
-)
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String
 
 from infrastructure.database.base import Base
 
@@ -15,8 +8,7 @@ from infrastructure.database.base import Base
 class UserSchema(Base):
     __tablename__ = "users"
 
-    email = Column(String(length=56), unique=True)
-    email_aes_encrypted = Column(LargeBinary(length=100), default=None)
+    email = Column(String(length=100), unique=True)
     first_name = Column(String(length=50))
     last_name = Column(String(length=50))
     hashed_password = Column(String(length=100))

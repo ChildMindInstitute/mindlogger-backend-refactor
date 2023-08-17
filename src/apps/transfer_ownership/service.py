@@ -84,7 +84,7 @@ class TransferService:
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
         if (
-            transfer.email != self._user.plain_email
+            transfer.email != self._user.email
             or applet_id != transfer.applet_id
         ):
             raise PermissionsError()
@@ -140,7 +140,7 @@ class TransferService:
         await AppletsCRUD(self.session).get_by_id(applet_id)
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
-        if transfer.email != self._user.plain_email:
+        if transfer.email != self._user.email:
             raise PermissionsError()
 
         # delete transfer

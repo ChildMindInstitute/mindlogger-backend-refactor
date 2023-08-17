@@ -1,4 +1,4 @@
 [flake8]
 max-line-length = 79
-exclude = .venv,env,venv,src/infrastructure/database/migrations/versions,src/apps/girderformindlogger,src/apps/migrate
+exclude = .venv,env,venv,src/infrastructure/database/migrations/versions,src/apps/girderformindlogger
 

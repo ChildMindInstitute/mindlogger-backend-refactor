@@ -170,7 +170,7 @@ class Phase(str, Enum):
 class StabilityTrackerConfig(PublicModel):
     user_input_type: InputType
     phase: Phase
-    trials_number: int = 0
+    trials_number: int
     duration_minutes: float
     lambda_slope: float
     max_off_target_time: int = 10

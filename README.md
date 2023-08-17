@@ -159,7 +159,7 @@ pre-commit install
 ### 4. Running the application ▶️
 
 
-> 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable, e.g: export PYTHONPATH=src/
+> 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable.
 
 In project we use simplified version of imports: `from apps.application_name import class_name, function_name, module_nanme`.
 

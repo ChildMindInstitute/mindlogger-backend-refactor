@@ -5,10 +5,12 @@ from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.router import router as auth_router
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
-from apps.users.domain import UserCreateRequest
 from apps.users.errors import UserIsDeletedError
 from apps.users.router import router as user_router
-from apps.users.tests.factories import UserUpdateRequestFactory
+from apps.users.tests.factories import (
+    UserCreateRequestFactory,
+    UserUpdateRequestFactory,
+)
 from infrastructure.database import rollback, session_manager
 
 
@@ -19,12 +21,7 @@ class TestUser(BaseTest):
     user_update_url = user_router.url_path_for("user_update")
     user_delete_url = user_router.url_path_for("user_delete")
 
-    create_request_user = UserCreateRequest(
-        email="tom2@mindlogger.com",
-        first_name="Tom",
-        last_name="Isaak",
-        password="Test1234!",
-    )
+    create_request_user = UserCreateRequestFactory.build()
     user_update_request = UserUpdateRequestFactory.build()
 
     @rollback

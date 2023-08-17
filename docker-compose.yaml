@@ -72,18 +72,6 @@ services:
     ports:
       - 8025:8025
       - 1025:1025
-  
-  mongo:
-    image: mongo
-    ports:
-      - '27017:27017'
-    container_name: mindlogger_mongo
-    volumes:
-      - db_data:/data/db
-    
-    
 
 volumes:
   pg_data: {}
-  db_data: {}
-  

@@ -302,12 +302,9 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                         resolved_conditions.append(
                             condition_item.resolve_condition(condition)
                         )
-                    if (
-                        resolved_conditions
-                    ):  # if conditions are empty, thenconditional logic = None
-                        model.conditional_logic = ConditionalLogic(
-                            match=match, conditions=resolved_conditions
-                        )
+                    model.conditional_logic = ConditionalLogic(
+                        match=match, conditions=resolved_conditions
+                    )
 
                 except ConditionalLogicError:
                     raise  # TODO

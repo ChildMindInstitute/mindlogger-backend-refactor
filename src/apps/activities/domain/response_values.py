@@ -151,7 +151,7 @@ class SliderValues(PublicModel):
 
     @root_validator
     def validate_scores(cls, values):
-        if values.get("scores") is not None and values.get("scores") != []:
+        if values.get("scores") is not None:
             if (
                 len(values.get("scores"))
                 != values.get("max_value") - values.get("min_value") + 1
@@ -272,11 +272,11 @@ class AudioValues(PublicModel):
 
 
 class AudioPlayerValues(PublicModel):
-    file: str | None = Field(default=None)
+    file: str
 
-    # @validator("file")
-    # def validate_file(cls, value):
-    #     return validate_audio(value)
+    @validator("file")
+    def validate_file(cls, value):
+        return validate_audio(value)
 
 
 ResponseValueConfigOptions = [

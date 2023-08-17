@@ -7,3 +7,4 @@ docker-compose.yaml
 *.md
 *.rst
 venv*/
+Makefile

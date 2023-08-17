@@ -440,9 +440,6 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             str,
             str,
             str,
-            str,
-            dict,
-            int,
         ]
     ]:
         access_subquery: Query = select(

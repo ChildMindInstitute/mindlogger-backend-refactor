@@ -29,5 +29,4 @@ class Searching:
             clauses.append(
                 search_field.cast(Unicode()).ilike(f"%{search_term}%")
             )
-
         return reduce(or_, clauses)

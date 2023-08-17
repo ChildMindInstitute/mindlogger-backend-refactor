@@ -126,9 +126,7 @@ class ReproFieldBase(
 
     @property
     def name(self):
-        name = (
-            self.ld_pref_label or self.ld_alt_label or self.ld_id
-        )  # TODO: discuss
+        name = self.ld_pref_label or self.ld_alt_label
         return str_to_id(name, r"\s")
 
     def _get_ld_question(self, doc: dict, drop=False):
@@ -155,10 +153,6 @@ class ReproFieldBase(
 
         return res
 
-    def _value_or_none(self, doc: dict, key: str):
-        value = self.attr_processor.get_attr_value(doc, key)
-        return value if value != "false" else None
-
     def _format_choice(self, doc: dict):
         choice = {
             "name": self.attr_processor.get_translation(
@@ -170,8 +164,10 @@ class ReproFieldBase(
             "alert": self.attr_processor.get_translation(
                 doc, "schema:alert", self.lang
             ),
-            "color": self._value_or_none(doc, "schema:color"),
-            "tooltip": self._value_or_none(doc, "schema:description"),
+            "color": self.attr_processor.get_attr_value(doc, "schema:color"),
+            "tooltip": self.attr_processor.get_attr_value(
+                doc, "schema:description"
+            ),
             "score": self.attr_processor.get_attr_value(doc, "schema:score"),
         }
         return choice
@@ -329,6 +325,7 @@ class ReproFieldBase(
 
 
 class ReproFieldText(ReproFieldBase):
+
     INPUT_TYPE = "text"
     RESPONSE_TYPE = ResponseType.TEXT
 
@@ -336,7 +333,6 @@ class ReproFieldText(ReproFieldBase):
     ld_is_response_identifier: bool | None = None
     ld_max_length: int | None = None
     ld_value_type: str | None = None
-    ld_required_value: bool | None = None
 
     is_multiple: bool = False
     choices: list[dict] | None = None
@@ -396,6 +392,7 @@ class ReproFieldText(ReproFieldBase):
 
 
 class ReproFieldRadio(ReproFieldBase):
+
     INPUT_TYPE = "radio"
     RESPONSE_TYPE = ResponseType.SINGLESELECT
 
@@ -506,6 +503,7 @@ class ReproFieldRadio(ReproFieldBase):
 
 
 class ReproFieldRadioStacked(ReproFieldBase):
+
     INPUT_TYPE = "stackedRadio"
     RESPONSE_TYPE = ResponseType.SINGLESELECTROWS
 
@@ -571,22 +569,6 @@ class ReproFieldRadioStacked(ReproFieldBase):
         items = self.ld_item_list or []
         choices = self.ld_options or []
         item_options = self.ld_item_options or []
-
-        if item_options == []:
-            for choice in choices:
-                for item in items:
-                    item_options.append(
-                        {
-                            "name": None,
-                            "value": None,
-                            "image": None,
-                            "is_vis": None,
-                            "alert": None,
-                            "color": None,
-                            "tooltip": None,
-                            "score": None,
-                        }
-                    )
 
         if len(item_options) != len(items) * len(choices):
             raise Exception(
@@ -721,6 +703,7 @@ class ReproFieldSliderBase(ReproFieldBase, ABC):
 
 
 class ReproFieldSlider(ReproFieldSliderBase):
+
     INPUT_TYPE = "slider"
     RESPONSE_TYPE = ResponseType.SLIDER
     CFG_TYPE = SliderConfig
@@ -789,12 +772,7 @@ class ReproFieldSlider(ReproFieldSliderBase):
 
             for choice in self.slider_option.choices:
                 scores.append(choice.get("score"))  # type: ignore[union-attr]
-
-                if (
-                    self.ld_response_alert
-                    and not self.ld_continuous_slider
-                    and choice.get("alert")
-                ):
+                if self.ld_response_alert and not self.ld_continuous_slider:
                     alerts.append(  # type: ignore[union-attr]
                         SliderValueAlert(
                             alert=choice.get("alert"),
@@ -827,6 +805,7 @@ class ReproFieldSlider(ReproFieldSliderBase):
 
 
 class ReproFieldSliderStacked(ReproFieldSliderBase):
+
     INPUT_TYPE = "stackedSlider"
     RESPONSE_TYPE = ResponseType.SLIDERROWS
 
@@ -905,6 +884,7 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
 
 
 class ReproFieldPhoto(ReproFieldBase):
+
     INPUT_TYPE = "photo"
     RESPONSE_TYPE = ResponseType.PHOTO
     CFG_TYPE = PhotoConfig
@@ -915,6 +895,7 @@ class ReproFieldPhoto(ReproFieldBase):
 
 
 class ReproFieldVideo(ReproFieldBase):
+
     INPUT_TYPE = "video"
     RESPONSE_TYPE = ResponseType.VIDEO
     CFG_TYPE = VideoConfig
@@ -962,6 +943,7 @@ class ReproFieldAudio(ReproFieldBase):
 
 
 class ReproFieldDrawing(ReproFieldBase):
+
     INPUT_TYPE = "drawing"
     RESPONSE_TYPE = ResponseType.DRAWING
     CFG_TYPE = DrawingConfig

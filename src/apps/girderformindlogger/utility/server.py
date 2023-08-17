@@ -3,6 +3,7 @@ import mimetypes
 import os
 
 import cherrypy
+import girderformindlogger.events
 import mako
 import six
 
@@ -10,7 +11,6 @@ from apps.girderformindlogger import (
     __version__,
     _setupCache,
     constants,
-    events,
     logprint,
     logStdoutStderr,
     plugin,
@@ -90,7 +90,7 @@ def configureServer(mode=None, plugins=None, curConfig=None):
     root = webroot.Webroot()
     api_main.addApiToNode(root)
 
-    events.setupDaemon()
+    girderformindlogger.events.setupDaemon()
 
     routeTable = loadRouteTable()
     info = {

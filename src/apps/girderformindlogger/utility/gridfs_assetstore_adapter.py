@@ -15,7 +15,7 @@ from apps.girderformindlogger.external.mongodb_proxy import MongoProxy
 from apps.girderformindlogger.models import getDbConnection
 from apps.girderformindlogger.models.file import File
 
-# from . import _hash_state
+from . import _hash_state
 from .abstract_assetstore_adapter import AbstractAssetstoreAdapter
 
 # 2MB chunks. Clients must not send any chunks that are smaller than this
@@ -135,7 +135,7 @@ class GridFsAssetstoreAdapter(AbstractAssetstoreAdapter):
         Creates a UUID that will be used to uniquely link each chunk to
         """
         upload["chunkUuid"] = uuid.uuid4().hex
-        upload["sha512state"] = ""  # _hash_state.serializeHex(sha512())
+        upload["sha512state"] = _hash_state.serializeHex(sha512())
         return upload
 
     def uploadChunk(self, upload, chunk):
@@ -153,9 +153,7 @@ class GridFsAssetstoreAdapter(AbstractAssetstoreAdapter):
             chunk = BytesIO(chunk)
 
         # Restore the internal state of the streaming SHA-512 checksum
-        checksum = (
-            ""  # _hash_state.restoreHex(upload["sha512state"], "sha512")
-        )
+        checksum = _hash_state.restoreHex(upload["sha512state"], "sha512")
 
         # TODO: when saving uploads is optional, we can conditionally try to
         # fetch the last chunk.  Add these line before `lastChunk = ...`:
@@ -229,7 +227,7 @@ class GridFsAssetstoreAdapter(AbstractAssetstoreAdapter):
             raise
 
         # Persist the internal state of the checksum
-        upload["sha512state"] = ""  # _hash_state.serializeHex(checksum)
+        upload["sha512state"] = _hash_state.serializeHex(checksum)
         upload["received"] += size
         return upload
 
@@ -257,7 +255,9 @@ class GridFsAssetstoreAdapter(AbstractAssetstoreAdapter):
         Grab the final state of the checksum and set it on the file object,
         and write the generated UUID into the file itself.
         """
-        hash = ""  # _hash_state.restoreHex(upload["sha512state"], "sha512").hexdigest()
+        hash = _hash_state.restoreHex(
+            upload["sha512state"], "sha512"
+        ).hexdigest()
 
         file["sha512"] = hash
         file["chunkUuid"] = upload["chunkUuid"]
