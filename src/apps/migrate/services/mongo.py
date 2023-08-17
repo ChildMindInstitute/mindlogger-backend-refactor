@@ -51,9 +51,9 @@ def decrypt(data):
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        # uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
         # uri = f"mongodb://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        self.client = MongoClient(uri, 27017)  # uri
+        self.client = MongoClient("mongo", 27017)  # uri
         self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
     @staticmethod
@@ -256,13 +256,36 @@ class Mongo:
 
         applet["reprolib:terms/order"][0]["@list"] = activity_objects
 
+        activity_ids_inside_applet = []
+        for activity in activity_objects:
+            activity_ids_inside_applet.append(activity["@id"])
+
         if applet.get("reprolib:terms/activityFlowOrder"):
             activity_flows = applet_format["activityFlows"]
+            activity_flows_fixed = {}
+            # setup activity flow items
+            for key, activity_flow in activity_flows.items():
+                activity_flow_order = []
+                for item in activity_flow["reprolib:terms/order"][0]["@list"]:
+                    if item["@id"] in activity_ids_inside_applet:
+                        activity_flow_order.append(item)
+                    else:
+                        print(
+                            "Warning: item ",
+                            item["@id"],
+                            "presents in flow order but absent in applet activities. activityFlowId:",
+                            str(key),
+                        )
+                activity_flow["reprolib:terms/order"][0][
+                    "@list"
+                ] = activity_flow_order
+                activity_flows_fixed[key] = activity_flow
+
             activity_flow_objects = []
 
             # setup activity flows
             for flow in applet["reprolib:terms/activityFlowOrder"][0]["@list"]:
-                activity_flow_objects.append(activity_flows[flow["@id"]])
+                activity_flow_objects.append(activity_flows_fixed[flow["@id"]])
 
             applet["reprolib:terms/activityFlowOrder"][0][
                 "@list"

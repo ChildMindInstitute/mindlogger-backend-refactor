@@ -119,7 +119,7 @@ def get_versions_from_content(protocolId):
     result = {}
     for ref in references:
         ver = ref["version"]
-        if ref.get("content") is None:
+        if ref.get("content") is None or ver in result:
             continue
         applet = get_applet_with_activities(ref["content"])
         result[ver] = {"applet": applet, "updated": ref["updated"]}
@@ -195,5 +195,10 @@ def content_to_jsonld(document):
 
     jsonld["@context"] = CONTEXT["@context"]
     jsonld["@type"] = CONTEXT["@type"]
+    for act in jsonld["reprolib:terms/order"][0]["@list"]:
+        act["reprolib:terms/finalSubscale"] = []
+        act["reprolib:terms/subScales"] = []
+
+    # print(jsonld)
 
     return jsonld
