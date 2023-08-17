@@ -5,6 +5,7 @@ from sqlalchemy import (
     Column,
     Enum,
     ForeignKey,
+    Index,
     String,
     UniqueConstraint,
     case,
@@ -40,6 +41,15 @@ class UserAppletAccessSchema(Base):
     )
     meta = Column(JSONB())
     is_pinned = Column(Boolean(), default=False)
+    __table_args__ = (
+        Index(
+            "unique_user_applet_role",
+            "user_id",
+            "applet_id",
+            "role",
+            unique=True,
+        ),
+    )
 
     @hybrid_property
     def respondent_nickname(self):
