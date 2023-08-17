@@ -413,7 +413,7 @@ async def applet_answers_export(
 async def applet_completed_entities(
     applet_id: uuid.UUID,
     version: str,
-    date: datetime.date,
+    from_date: datetime.date,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
@@ -422,7 +422,7 @@ async def applet_completed_entities(
         applet_id
     )
     data = await AnswerService(session, user.id).get_completed_answers_data(
-        applet_id, version, date
+        applet_id, version, from_date
     )
 
     return Response(result=data)

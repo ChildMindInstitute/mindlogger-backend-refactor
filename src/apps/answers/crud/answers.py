@@ -374,7 +374,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         applet_id: uuid.UUID,
         version: str,
         respondent_id: uuid.UUID,
-        date: datetime.date,
+        from_date: datetime.date,
     ) -> AppletCompletedEntities:
         is_completed = or_(
             AnswerSchema.is_flow_completed,
@@ -398,12 +398,13 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.applet_id == applet_id,
                 AnswerSchema.version == version,
                 AnswerSchema.respondent_id == respondent_id,
-                AnswerItemSchema.local_end_date == date,
+                AnswerItemSchema.local_end_date >= from_date,
                 is_completed,
             )
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerItemSchema.local_end_date.desc(),
                 AnswerItemSchema.local_end_time.desc(),
             )
             .distinct(
