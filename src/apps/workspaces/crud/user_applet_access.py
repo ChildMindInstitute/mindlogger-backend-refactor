@@ -752,10 +752,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         applet_ids: list[uuid.UUID],
         roles: list[Role],
     ):
-        query: Query = delete(UserAppletAccessSchema)
+        query: Query = update(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(roles))
         query = query.where(UserAppletAccessSchema.applet_id.in_(applet_ids))
+        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def check_access_by_user_and_owner(
