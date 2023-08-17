@@ -646,6 +646,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                         UserAppletAccessSchema.role
                     )
                 ).label("roles"),
+                func.max(
+                    UserAppletAccessSchema.reviewer_respondents,
+                    where=(
+                            UserAppletAccessSchema.role == Role.REVIEWER
+                    )
+                ).label("reviewer_respondents"),
 
                 func.array_agg(
                     aggregate_order_by(
