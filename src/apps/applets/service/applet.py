@@ -78,6 +78,13 @@ class AppletService:
         if not exists:
             raise AppletNotFoundError(key="id", value=str(applet_id))
 
+    async def get(self, applet_id: uuid.UUID):
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        if not applet:
+            raise AppletNotFoundError(key="id", value=str(applet_id))
+
+        return applet
+
     async def exist_by_key(self, applet_id: uuid.UUID):
         exists = await AppletsCRUD(self.session).exist_by_key(
             "link", applet_id
