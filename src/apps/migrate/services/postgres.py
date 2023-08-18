@@ -153,7 +153,7 @@ class Postgres:
         applets_by_versions: dict,
         owner_id: str,
     ):
-        owner_id = mongoid_to_uuid(owner_id)
+        owner_uuid = mongoid_to_uuid(owner_id)
         initail_version = list(applets_by_versions.keys())[0]
         # applet = applets_by_versions[version]
         session = session_manager.get_session()
@@ -162,17 +162,17 @@ class Postgres:
 
         # print("mongo uuid", applet.extra_fields["id"])
 
-        # TODO: Lookup the owner_id for the applet workspace
+        # TODO: Lookup the owner_uuid for the applet workspace
 
         async with atomic(session):
             for version, applet in applets_by_versions.items():
                 if version == initail_version:
                     applet_create = await AppletMigrationService(
-                        session, owner_id
-                    ).create(applet, owner_id)
+                        session, owner_uuid
+                    ).create(applet, owner_uuid)
                 else:
                     applet_create = await AppletMigrationService(
-                        session, owner_id
+                        session, owner_uuid
                     ).update(applet)
                     # break
 
@@ -184,7 +184,7 @@ class Postgres:
         #     # NOTE: Not finished ...
         #     session = session_manager.get_session()
 
-        #     applet_created = await AppletService(session, owner_id).create(
+        #     applet_created = await AppletService(session, owner_uuid).create(
         #         AppletCreate(
         #             activities=applet_dict.get("activities"),
         #             activity_flows=applet_dict.get("activity_flows"),
@@ -197,7 +197,7 @@ class Postgres:
         #             },
         #             # NOTE: extra_fields=applet_dict.get("activities"),
         #         ),
-        #         owner_id,
+        #         owner_uuid,
         #     )
         #     print(applet_created)
 
