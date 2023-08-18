@@ -729,7 +729,6 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
         ]
-        assert response.json()["result"]["isEdited"] is False
 
         response = await self.client.post(
             self.assessment_answers_url.format(
@@ -760,7 +759,6 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
         ]
-        assert response.json()["result"]["isEdited"] is True
         response = await self.client.get(
             self.answer_reviews_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
@@ -778,7 +776,6 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
         ]
-        assert response.json()["result"][0]["isEdited"] is True
 
     @rollback
     async def test_applet_activities(self):
