@@ -1530,7 +1530,7 @@ class TestAnswerActivityItems(BaseTest):
             self.applet_answers_completions_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             ),
-            {"from_date": "2022-10-01", "version": "1.0.0"},
+            {"fromDate": "2022-10-01", "version": "1.0.0"},
         )
 
         assert response.status_code == 200, response.json()
