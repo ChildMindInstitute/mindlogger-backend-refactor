@@ -17,6 +17,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
     ) -> bool:
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role == role)
@@ -34,6 +35,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         if roles is None:
             roles = Role.as_list()
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(roles))
@@ -48,6 +50,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         user_id: uuid.UUID,
     ) -> bool:
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(
@@ -79,6 +82,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         if roles is None:
             roles = Role.managers()
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.owner_id == owner_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(roles))
@@ -93,6 +97,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         user_id: uuid.UUID,
     ) -> Role | None:
         query: Query = select(UserAppletAccessSchema.role)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.owner_id == owner_id)
         query = query.order_by(
@@ -118,6 +123,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         user_id: uuid.UUID,
     ) -> Role | None:
         query: Query = select(UserAppletAccessSchema.role)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.order_by(
@@ -142,6 +148,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         1. Create an applet
         """
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.owner_id == owner_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(Role.editors()))
@@ -157,6 +164,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         3. Edit, save or delete applet
         """
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(Role.editors()))
@@ -172,6 +180,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         1. Set retention of an applet
         """
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(
@@ -192,6 +201,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         3. change organizers role/permission where lower role
         """
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(Role.inviters()))
@@ -208,6 +218,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         4. invite new reviewer
         """
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(Role.inviters()))
@@ -223,6 +234,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         1. set schedule and notifications to respondents
         """
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(Role.schedulers()))
@@ -238,6 +250,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         2. export any users data
         """
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(
@@ -254,6 +267,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         2. export assigned users data
         """
         query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(Role.reviewers()))
@@ -271,6 +285,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         has_manager_role = (
             exists()
             .where(
+                UserAppletAccessSchema.soft_exists(),
                 UserAppletAccessSchema.user_id == UserSchema.id,
                 UserAppletAccessSchema.applet_id == applet_id,
                 UserAppletAccessSchema.role != Role.RESPONDENT,
