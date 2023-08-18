@@ -134,7 +134,6 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
                     answer=schema.answer,
                     item_ids=schema.item_ids,
                     items=activity_items,
-                    is_edited=schema.created_at != schema.updated_at,
                     reviewer=dict(first_name=first_name, last_name=last_name),
                 )
             )

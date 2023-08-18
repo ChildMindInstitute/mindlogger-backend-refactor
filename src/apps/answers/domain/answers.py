@@ -194,7 +194,6 @@ class AnswerReview(InternalModel):
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    is_edited: bool = False
     reviewer: Reviewer
 
 
@@ -229,7 +228,6 @@ class AnswerReviewPublic(PublicModel):
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    is_edited: bool = False
     reviewer: ReviewerPublic
 
 
@@ -238,7 +236,6 @@ class AssessmentAnswerPublic(PublicModel):
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    is_edited: bool = False
 
 
 class AnswerNote(InternalModel):
