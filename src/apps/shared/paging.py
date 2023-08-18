@@ -5,6 +5,19 @@ from sqlalchemy.orm import Query
 from config import settings
 
 
+def check_limitation(func):
+    def inner(query: Query, page=1, limit=10):
+        lim = (
+            limit
+            if limit <= settings.service.result_limit
+            else settings.service.result_limit
+        )
+        return func(query, page, lim)
+
+    return inner
+
+
+@check_limitation
 def paging(query: Query, page=1, limit=10) -> Query:
     if limit is None:
         limit = settings.service.result_limit

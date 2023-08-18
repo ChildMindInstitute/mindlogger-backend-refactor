@@ -15,6 +15,10 @@ class EmailAddressError(ValidationError):
     message = _("Email doesn't exist!")
 
 
+class EmailAddressNotValid(ValidationError):
+    message = _("Email address: {email} is not valid.")
+
+
 class PasswordRecoveryKeyNotFound(NotFoundError):
     message = _("Password recovery key not found.")
 

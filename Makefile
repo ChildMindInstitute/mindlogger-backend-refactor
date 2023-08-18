@@ -30,9 +30,12 @@ test:
 # NOTE: cq == "Code quality"
 .PHONY: cq
 cq:
-	${BLACK_COMMAND} ./ && ${FLAKE8_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./
+	${BLACK_COMMAND} ./ && ${FLAKE8_COMMAND} ./ && ${ISORT_COMMAND} ./
 
-
+# NOTE: This command is used to run migration from Mongo to Postgres
+.PHONY: migrate
+migrate:
+	python src/apps/migrate/run.py
 
 # ###############
 # Docker

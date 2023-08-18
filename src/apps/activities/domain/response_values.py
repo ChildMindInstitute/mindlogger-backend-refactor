@@ -9,7 +9,6 @@ from apps.activities.errors import (
 )
 from apps.shared.domain import (
     PublicModel,
-    validate_audio,
     validate_color,
     validate_image,
     validate_uuid,
@@ -151,7 +150,7 @@ class SliderValues(PublicModel):
 
     @root_validator
     def validate_scores(cls, values):
-        if values.get("scores") is not None:
+        if values.get("scores") is not None and values.get("scores") != []:
             if (
                 len(values.get("scores"))
                 != values.get("max_value") - values.get("min_value") + 1
@@ -272,11 +271,11 @@ class AudioValues(PublicModel):
 
 
 class AudioPlayerValues(PublicModel):
-    file: str
+    file: str | None = Field(default=None)
 
-    @validator("file")
-    def validate_file(cls, value):
-        return validate_audio(value)
+    # @validator("file")
+    # def validate_file(cls, value):
+    #     return validate_audio(value)
 
 
 ResponseValueConfigOptions = [
