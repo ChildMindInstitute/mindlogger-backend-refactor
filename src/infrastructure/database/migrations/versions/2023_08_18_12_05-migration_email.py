@@ -1,16 +1,17 @@
 """migration email
 
-Revision ID: 6e20542f7c86
-Revises: f41d934e88f9
-Create Date: 2023-08-08 15:35:42.410142
+Revision ID: 94558f04015a
+Revises: 071cca4a1aa4
+Create Date: 2023-08-18 12:05:23.880760
 
 """
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
+
 
 # revision identifiers, used by Alembic.
-revision = "6e20542f7c86"
-down_revision = "f41d934e88f9"
+revision = "94558f04015a"
+down_revision = "071cca4a1aa4"
 branch_labels = None
 depends_on = None
 
