@@ -37,6 +37,12 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
         "5fc6a5a2c47c585b7c731fc6",  # broken document
         "5fc702ccc47c585b7c73223e",  # broken document
         "5fce3d3ac47c585b7c733070",  # broken document
+        "5fd26d9dc47c585b7c7334fa",  # broken document
+        "5fd94ee9aadcee56e6ad6599",  # broken document
+        "6099792a42545caea069cf8f",  # broken document
+        "609f0d8a42545caea069dbb8",  # broken document
+        "60b7d06b5fa6a85768b61fa3",  # broken document
+        "60ddb7645fa6a85768b6621d",  # broken document
     ]
     # applets = Applet().find(
     #     query={"_id": ObjectId("63be5c97aba6fd499bda1960")}, fields={"_id": 1}
@@ -83,7 +89,8 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
     appletsCount = applets.count()
     print("total", appletsCount)
 
-    skipUntil = "5fce3d3ac47c585b7c733070"
+    skipUntil = "614cacbcefa8adf9de3875ae"
+    skipped_applets = []
     for index, applet_id in enumerate(applets, start=1):
         applet_id = str(applet_id["_id"])
         if skipUntil == applet_id:
@@ -111,6 +118,11 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
             await postgres.save_applets(applets, owner_id)
         except (FormatldException, EmptyAppletException) as e:
             print("Skipped because: ", e.message)
+        except Exception as e:
+            skipped_applets.append(applet_id)
+            print("error: ", applet_id)
+
+        print("error in", len(skipped_applets), "applets")
 
 
 async def main():
