@@ -266,7 +266,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
     def user_applet_ids_query(self, user_id: uuid.UUID) -> Query:
         query: Query = select(UserAppletAccessSchema.applet_id)
-        query = query.where(UserAppletAccessSchema.soft_exists)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(
             UserAppletAccessSchema.role.in_(
