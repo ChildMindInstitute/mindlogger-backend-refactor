@@ -44,9 +44,7 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
         # "60b7d06b5fa6a85768b61fa3",  # broken document
         # "60ddb7645fa6a85768b6621d",  # broken document
     ]
-    # applets = Applet().find(
-    #     query={"_id": ObjectId("63be5c97aba6fd499bda1960")}, fields={"_id": 1}
-    # )
+
     # applets = Applet().find(query={'_id': ObjectId('64d0de7e5e3d9e04c28a1720')}, fields={"_id": 1}) # TODO: 6.2.6 6.2.7 ???
     # applets = Applet().find(
     #     query={"_id": ObjectId("64243279eddaf60f21c3a5e7")}, fields={"_id": 1}
@@ -129,11 +127,11 @@ async def main():
     mongo = Mongo()
     postgres = Postgres()
 
-    # Migrate with users
+    # # Migrate with users
     # users: list[dict] = mongo.get_users()
     # users_mapping = postgres.save_users(users)
-
-    # Migrate with users_workspace
+    #
+    # # Migrate with users_workspace
     # workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
     # postgres.save_users_workspace(workspaces, users_mapping)
 

@@ -28,6 +28,7 @@ class AnswerSchema(Base):
         nullable=True,
     )
     is_flow_completed = Column(Boolean(), nullable=True)
+    migrated_data = Column(JSONB())
 
 
 class AnswerNoteSchema(Base):
@@ -67,3 +68,4 @@ class AnswerItemSchema(Base):
     local_end_date = Column(Date(), nullable=True, index=True)
     local_end_time = Column(Time, nullable=True)
     is_assessment = Column(Boolean())
+    migrated_data = Column(JSONB())

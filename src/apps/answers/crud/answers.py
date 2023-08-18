@@ -144,6 +144,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 record_id.label("id"),
                 AnswerSchema.submit_id,
                 AnswerSchema.version,
+                AnswerSchema.migrated_data,
                 AnswerItemSchema.user_public_key,
                 AnswerItemSchema.respondent_id,
                 AnswerItemSchema.answer,
@@ -213,9 +214,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_identifiers_by_activity_id(
         self, activity_id: uuid.UUID
-    ) -> list[tuple[str, str]]:
+    ) -> list[tuple[str, str, dict]]:
         query: Query = select(
-            AnswerItemSchema.identifier, AnswerItemSchema.user_public_key
+            AnswerItemSchema.identifier,
+            AnswerItemSchema.user_public_key,
+            AnswerItemSchema.migrated_data,
         )
         query = query.distinct(AnswerItemSchema.identifier)
         query = query.where(AnswerItemSchema.identifier != None)  # noqa: E711

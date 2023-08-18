@@ -1061,7 +1061,7 @@ class Applet(FolderModel):
             is_success = False
             message = str(e)
 
-        cache.create()
+        cache.create_item()
         cache.set(
             request_guid,
             dict(is_success=is_success, applet_id=applet_id, message=message),
