@@ -15,34 +15,34 @@ from apps.girderformindlogger.models.item import Item
 
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
     toSkip = [
-        "63bd5736aba6fd499bda0fee",  # subscales refer to name (question: Put your name)
-        # "63be5c97aba6fd499bda1960",  # Totalscoretable incorrect raw score '~10~0' - fixed
-        "63be9739aba6fd499bda1eea",  # subscale refer to text item, instead of single,multi, slider
-        "63c00872aba6fd499bda2990",  # subscale refer to text item, instead of single,multi, slider
-        # "63be9916aba6fd499bda1fd5",  # incorrect github url
-        # "63be6ce5aba6fd499bda1b43",  # js expression error TODO check jsexpression and whole doc
-        # "63bd5734aba6fd499bda0fe3",  # flow has activity that is being duplicated from another applet.
-        # "63c52d2aaba6fd499bda35e1",  # converter not parsing score conditions
-        # "63e4efd41d3f3e0f89b488bd",  # wrong context file in activity for 2-version
-        # "63f722ed1d3f3e0f89b488d8",  # applet name duplicates
-        # "6411c4dbeddaf60f21c3a04c",  # score conditional names are same
-        # "64243279eddaf60f21c3a5e7",  # duplicate name as 64243253eddaf60f21c3a5c5 proposal: set first versions name as last ones
-        # "62ece4c8154fa81f3efe729b",  # wrong context file in activity for 2-version
-        "6111da9bfef711e5392f2efc",  # broken test applet
-        "640978be601cdc5212d621c4",  # broken CL logic for items , Alena
-        # prod
-        "5fa5a276bdec546ce77b298b",  # broken subscale in history
-        "5fadb305bdec546ce77b2f4e",  # NP
-        "5fc51f0fc47c585b7c731bb1",  # broken document
-        "5fc6a5a2c47c585b7c731fc6",  # broken document
-        "5fc702ccc47c585b7c73223e",  # broken document
-        "5fce3d3ac47c585b7c733070",  # broken document
-        "5fd26d9dc47c585b7c7334fa",  # broken document
-        "5fd94ee9aadcee56e6ad6599",  # broken document
-        "6099792a42545caea069cf8f",  # broken document
-        "609f0d8a42545caea069dbb8",  # broken document
-        "60b7d06b5fa6a85768b61fa3",  # broken document
-        "60ddb7645fa6a85768b6621d",  # broken document
+        # "63bd5736aba6fd499bda0fee",  # subscales refer to name (question: Put your name)
+        # # "63be5c97aba6fd499bda1960",  # Totalscoretable incorrect raw score '~10~0' - fixed
+        # "63be9739aba6fd499bda1eea",  # subscale refer to text item, instead of single,multi, slider
+        # "63c00872aba6fd499bda2990",  # subscale refer to text item, instead of single,multi, slider
+        # # "63be9916aba6fd499bda1fd5",  # incorrect github url
+        # # "63be6ce5aba6fd499bda1b43",  # js expression error TODO check jsexpression and whole doc
+        # # "63bd5734aba6fd499bda0fe3",  # flow has activity that is being duplicated from another applet.
+        # # "63c52d2aaba6fd499bda35e1",  # converter not parsing score conditions
+        # # "63e4efd41d3f3e0f89b488bd",  # wrong context file in activity for 2-version
+        # # "63f722ed1d3f3e0f89b488d8",  # applet name duplicates
+        # # "6411c4dbeddaf60f21c3a04c",  # score conditional names are same
+        # # "64243279eddaf60f21c3a5e7",  # duplicate name as 64243253eddaf60f21c3a5c5 proposal: set first versions name as last ones
+        # # "62ece4c8154fa81f3efe729b",  # wrong context file in activity for 2-version
+        # "6111da9bfef711e5392f2efc",  # broken test applet
+        # "640978be601cdc5212d621c4",  # broken CL logic for items , Alena
+        # # prod
+        # "5fa5a276bdec546ce77b298b",  # broken subscale in history
+        # "5fadb305bdec546ce77b2f4e",  # NP
+        # "5fc51f0fc47c585b7c731bb1",  # broken document
+        # "5fc6a5a2c47c585b7c731fc6",  # broken document
+        # "5fc702ccc47c585b7c73223e",  # broken document
+        # "5fce3d3ac47c585b7c733070",  # broken document
+        # "5fd26d9dc47c585b7c7334fa",  # broken document
+        # "5fd94ee9aadcee56e6ad6599",  # broken document
+        # "6099792a42545caea069cf8f",  # broken document
+        # "609f0d8a42545caea069dbb8",  # broken document
+        # "60b7d06b5fa6a85768b61fa3",  # broken document
+        # "60ddb7645fa6a85768b6621d",  # broken document
     ]
     # applets = Applet().find(
     #     query={"_id": ObjectId("63be5c97aba6fd499bda1960")}, fields={"_id": 1}
@@ -89,7 +89,7 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
     appletsCount = applets.count()
     print("total", appletsCount)
 
-    skipUntil = "614cacbcefa8adf9de3875ae"
+    skipUntil = None
     skipped_applets = []
     for index, applet_id in enumerate(applets, start=1):
         applet_id = str(applet_id["_id"])
