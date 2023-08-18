@@ -2,7 +2,7 @@ import base64
 import datetime
 import uuid
 
-from fastapi import Body, Depends
+from fastapi import Body, Depends, Query
 from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
@@ -413,7 +413,7 @@ async def applet_answers_export(
 async def applet_completed_entities(
     applet_id: uuid.UUID,
     version: str,
-    from_date: datetime.date,
+    from_date: datetime.date = Query(..., alias="fromDate"),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
