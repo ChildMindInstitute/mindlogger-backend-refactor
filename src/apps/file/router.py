@@ -16,4 +16,4 @@ router.post(
                 Receives key as a path to S3 Bucket, returns file object.""",
 )(download)
 
-router.get("/upload/check")(check_file_uploaded)
+router.post("/upload/check")(check_file_uploaded)
