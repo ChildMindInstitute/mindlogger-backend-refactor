@@ -493,9 +493,11 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                         if item.name in subscale_names:
                             item.type = SubscaleItemType.SUBSCALE
                         else:
-                            raise SubscaleParsingError(
-                                f'Item name "{item.name}" not found'
-                            )
+                            # remove item from subscale
+                            subscale.items.remove(item)
+                            # raise SubscaleParsingError(
+                            #     f'Item name "{item.name}" not found'
+                            # )
 
         return SubscaleSetting(**settings) if settings else None
 
