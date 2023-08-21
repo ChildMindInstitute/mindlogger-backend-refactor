@@ -125,25 +125,6 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
         print("error in", len(skipped_applets), "applets")
 
 
-async def migrate_roles(mongo: Mongo, postgres: Postgres):
-    applet_ids = postgres.get_migrated_applets()
-    roles = mongo.get_user_applet_role_mapping(applet_ids)
-    await postgres.save_user_access_workspace(roles)
-
-
-async def migrate_user_pins(mongo: Mongo, postgres: Postgres):
-    users = postgres.get_migrated_users_ids()
-    user_id = next(users, None)
-    ids = []
-    while user_id:
-        print(user_id)
-        ids.append(user_id)
-        pins = mongo.get_user_pin_mapping(user_id)
-        user_id = next(users, None)
-        # todo add sql inserting
-    print(len(ids), len(set(ids)))
-
-
 async def main():
     mongo = Mongo()
     postgres = Postgres()
@@ -157,9 +138,8 @@ async def main():
     # postgres.save_users_workspace(workspaces, users_mapping)
 
     # Migrate applets, activities, items
-    # await migrate_applets(mongo, postgres)
-    # await migrate_roles(mongo, postgres)
-    await migrate_user_pins(mongo, postgres)
+    await migrate_applets(mongo, postgres)
+
     # Close connections
     mongo.close_connection()
     postgres.close_connection()

@@ -1,24 +1,19 @@
-import datetime
 import hashlib
 import os
-from typing import List
 
-from Cryptodome.Cipher import AES
 from bson.objectid import ObjectId
+from Cryptodome.Cipher import AES
 from pymongo import MongoClient
 
 from apps.girderformindlogger.models.activity import Activity
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.folder import Folder as FolderModel
-from apps.girderformindlogger.models.user import User
 from apps.girderformindlogger.utility import jsonld_expander
 from apps.jsonld_converter.dependencies import (
     get_context_resolver,
     get_document_loader,
     get_jsonld_model_converter,
 )
-from apps.migrate.data_description.applet_user_access import AppletUserDAO
-from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.migrate.exception.exception import (
     FormatldException,
     EmptyAppletException,
@@ -31,7 +26,6 @@ from apps.migrate.services.applet_versions import (
 from apps.migrate.utilities import mongoid_to_uuid
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt
-from apps.workspaces.domain.constants import Role
 
 
 # from apps.applets.domain.applet_create_update import AppletCreate
@@ -58,8 +52,8 @@ class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
         # uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        uri = f"mongodb://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        self.client = MongoClient(uri, 27017)  # uri
+        # uri = f"mongodb://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        self.client = MongoClient("mongo", 27017)  # uri
         self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
     @staticmethod
@@ -359,146 +353,3 @@ class Mongo:
                 flow.extra_fields["extra"]["_:id"][0]["@value"]
             )
         return converted
-
-    def docs_by_ids(
-        self, collection: str, doc_ids: List[ObjectId]
-    ) -> List[dict]:
-        return self.db[collection].find({"_id": {"$in": doc_ids}})
-
-    def get_user_nickname(self, user) -> str:
-        first_name = decrypt(user.get("firstName"))
-        if not first_name:
-            first_name = "-"
-        elif len(first_name) >= 50:
-            first_name = first_name[:49]
-
-        last_name = decrypt(user.get("lastName"))
-        if not last_name:
-            last_name = "-"
-        elif len(last_name) >= 50:
-            last_name = last_name[:49]
-        return f"{first_name} {last_name}"
-
-    def reviewer_meta(self, applet_id: ObjectId) -> List[str]:
-        applet_docs = self.db["accountProfile"].find(
-            {"applets.user": applet_id}
-        )
-        return list(
-            map(lambda doc: str(mongoid_to_uuid(doc["userId"])), applet_docs)
-        )
-
-    def respondent_metadata(self, user: dict, applet_id: ObjectId):
-        doc_cur = (
-            self.db["appletProfile"]
-            .find({"userId": user["_id"], "appletId": applet_id})
-            .limit(1)
-        )
-        doc = next(doc_cur, None)
-        if not doc:
-            return {}
-        return {
-            "nick": self.get_user_nickname(user),
-            "secret": doc.get("MRN", ""),
-        }
-
-    def inviter_id(self, user_id, applet_id):
-        doc_invite = self.db["invitation"].find(
-            {"userId": user_id, "appletId": applet_id}
-        )
-        doc_invite = next(doc_invite, {})
-        invitor = doc_invite.get("invitedBy", {})
-        invitor_profile_id = invitor.get("_id")
-        ap_doc = self.db["appletProfile"].find_one({"_id": invitor_profile_id})
-        return mongoid_to_uuid(ap_doc["userId"]) if ap_doc else None
-
-    def is_pinned(self, user_id):
-        res = self.db["appletProfile"].find_one(
-            {"userId": user_id, "pinnedBy": {"$exists": 1}}
-        )
-        return bool(res)
-
-    def get_user_applet_role_mapping(
-        self, migrated_applet_ids: List[ObjectId]
-    ) -> List[AppletUserDAO]:
-        account_profile_collection = self.db["accountProfile"]
-        not_found_users = []
-        access_result = []
-        account_profile_docs = account_profile_collection.find()
-        for doc in account_profile_docs:
-            if doc["userId"] in not_found_users:
-                continue
-
-            user = User().findOne({"_id": doc["userId"]})
-            if not user:
-                msg = (
-                    f"Skip AppletProfile({doc['_id']}), "
-                    f"User({doc['userId']}) does not exist (field: userId)"
-                )
-                print(msg)
-                not_found_users.append(doc["userId"])
-                continue
-            role_applets_mapping = doc.get("applets")
-
-            for role_name, applet_ids in role_applets_mapping.items():
-                applet_docs = self.docs_by_ids("folder", applet_ids)
-                for applet_id in applet_ids:
-                    if applet_id not in migrated_applet_ids:
-                        print(
-                            f"Skip: Applet({applet_id}) "
-                            f"doesnt represent in PostgreSQL"
-                        )
-                        continue
-                    applet = next(
-                        filter(
-                            lambda item: item["_id"] == applet_id, applet_docs
-                        ),
-                        None,
-                    )
-                    if not applet:
-                        continue
-                    meta = {}
-                    if role_name == Role.REVIEWER:
-                        meta["respondents"] = self.reviewer_meta(applet_id)
-                    elif role_name == "user":
-                        data = self.respondent_metadata(user, applet_id)
-                        if data:
-                            meta["nickname"] = data["nick"]
-                            meta["secretUserId"] = data["secret"]
-
-                    owner_id = (
-                        mongoid_to_uuid(applet.get("creatorId"))
-                        if applet.get("creatorId")
-                        else None
-                    )
-                    access = AppletUserDAO(
-                        applet_id=mongoid_to_uuid(applet_id),
-                        user_id=mongoid_to_uuid(doc["userId"]),
-                        owner_id=owner_id,
-                        inviter_id=self.inviter_id(doc["userId"], applet_id),
-                        role=role_name,
-                        created_at=datetime.datetime.now(),
-                        updated_at=datetime.datetime.now(),
-                        meta=meta,
-                        is_pinned=self.is_pinned(doc["userId"]),
-                        is_deleted=False,
-                    )
-                    access_result.append(access)
-        print("Prepared for migrations", len(access_result))
-        return access_result
-
-    def get_user_pin_mapping(self, user_id: ObjectId):
-        pin_profiles = self.db["appletProfile"].find({"pinnedBy": user_id})
-        if not pin_profiles:
-            return None
-        pin_dao_list = []
-        for profile in pin_profiles:
-            dao = UserPinsDAO(
-                user_id=mongoid_to_uuid(profile["userId"]),
-                pinned_user_id=mongoid_to_uuid(user_id),
-                owner_id=mongoid_to_uuid(profile["user"]),
-                role="role",
-                created_at=datetime.datetime.now(),
-                updated_at=datetime.datetime.now(),
-            )
-            pin_dao_list.append(dao)
-        return pin_dao_list

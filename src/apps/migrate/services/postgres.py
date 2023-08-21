@@ -1,17 +1,13 @@
 import os
-import uuid
 from contextlib import suppress
 from datetime import datetime
-from typing import List
 
 import psycopg2
-from bson import ObjectId
 
 from apps.migrate.services.applet_service import AppletMigrationService
-from apps.migrate.utilities import mongoid_to_uuid, uuid_to_mongoid
+from apps.migrate.utilities import mongoid_to_uuid
 from infrastructure.database import session_manager
 from infrastructure.database import atomic
-from apps.migrate.data_description.applet_user_access import AppletUserDAO
 
 
 class Postgres:
@@ -141,8 +137,10 @@ class Postgres:
 
         self.connection.commit()
         cursor.close()
+
         print(f"Errors in {len(workspaces) - count} users_workspace")
         print(f"Successfully migrated {count} users_workspace")
+
         return results
 
     # def save_applets(
@@ -211,64 +209,3 @@ class Postgres:
         #         }
         #     ]
         # }
-
-    def get_migrated_applets(self) -> list[ObjectId]:
-        sql = 'SELECT id FROM "applets"'
-        cursor = self.connection.cursor()
-        cursor.execute(sql)
-        results = cursor.fetchall()
-        cursor.close()
-        app_map = map(lambda t: uuid_to_mongoid(uuid.UUID(t[0])), results)
-        return list(filter(lambda app: app is not None, app_map))
-
-    def get_migrated_users_ids(self):
-        sql = 'SELECT id FROM "users"'
-        cursor = self.connection.cursor()
-        cursor.execute(sql)
-        user = cursor.fetchone()
-        while user:
-            yield uuid_to_mongoid(uuid.UUID(user[0]))
-            user = cursor.fetchone()
-        cursor.close()
-
-    async def save_user_access_workspace(
-        self, access_mapping: List[AppletUserDAO]
-    ):
-        page = 1
-        size = 100
-        cursor = self.connection.cursor()
-        start = (page - 1) * size
-        end = page * size
-        chunk = access_mapping[start:end]
-
-        while chunk:
-            values = [str(c) for c in chunk]
-            values = ",".join(values)
-            sql = f"""
-            INSERT INTO user_applet_accesses
-            (
-                "id", 
-                "created_at", 
-                "updated_at", 
-                "is_deleted", 
-                "role", 
-                "user_id", 
-                "applet_id",
-                "owner_id",
-                "invitor_id",
-                "meta",
-                "is_pinned",
-                "migrated_date",
-                "migrated_updated"
-            )
-            VALUES {values}
-            """
-
-            cursor.execute(sql)
-            page += 1
-            start = (page - 1) * size
-            end = page * size
-            chunk = access_mapping[start:end]
-            print("Migrated", page * size)
-        self.connection.commit()
-        cursor.close()

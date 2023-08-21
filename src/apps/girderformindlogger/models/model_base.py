@@ -2,14 +2,12 @@
 import copy
 import functools
 import itertools
-import os
 import re
 
 import pymongo
 import six
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
-from pymongo import MongoClient
 from pymongo.errors import WriteError
 
 from apps.girderformindlogger import auditLogger, events, logger, logprint
@@ -150,12 +148,11 @@ class Model(object):
         Reconnect to the database and rebuild indices if necessary. Users should
         typically not have to call this method.
         """
-        uri = f"mongodb://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"
-        db_connection = MongoClient(uri, 27017)
+        db_connection = getDbConnection(self.db_uri)
         self._dbserver_version = tuple(
             db_connection.server_info()["versionArray"]
         )
-        self.database = db_connection[os.getenv("MONGO__DB", "mindlogger")]
+        self.database = db_connection.get_database()
         self.collection = MongoProxy(self.database[self.name])
 
         for index in self._indices:
