@@ -321,9 +321,12 @@ class Mongo:
         result = get_versions_from_content(protocolId)
         converted_applet_versions = dict()
         if result is not None:
+            old_activities_by_id = {}
             for version, content in result.items():
                 print(version)
-                ld_request_schema = content_to_jsonld(content["applet"])
+                ld_request_schema, old_activities_by_id = content_to_jsonld(
+                    content["applet"], old_activities_by_id
+                )
                 converted = await self.get_converter_result(ld_request_schema)
                 converted.extra_fields["created"] = content["updated"]
                 converted.extra_fields["updated"] = content["updated"]
