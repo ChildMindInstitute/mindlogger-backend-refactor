@@ -1,16 +1,16 @@
 """Add unique constraint applet user role
 
-Revision ID: 6bdd8ee7cbe6
-Revises: 071cca4a1aa4
-Create Date: 2023-08-17 12:06:23.425315
+Revision ID: 956eafa172cb
+Revises: 94558f04015a
+Create Date: 2023-08-21 18:08:47.780027
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "6bdd8ee7cbe6"
-down_revision = "071cca4a1aa4"
+revision = "956eafa172cb"
+down_revision = "94558f04015a"
 branch_labels = None
 depends_on = None
 
