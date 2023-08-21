@@ -70,6 +70,8 @@ def str_to_id(name: str, to_underscore=r"\s") -> str:
         return ""
     name = re.sub(r"[^0-9a-zA-Z\s_-]+", "", name)
     if to_underscore:
-        name = re.sub(rf"[_{to_underscore}]+", "_", name)
-
+        name = re.sub(rf"_{to_underscore}+", "_", name)
+        name = re.sub(
+            rf"{to_underscore}+_", "_", name
+        )  #  we need to preserve (__) in names
     return name
