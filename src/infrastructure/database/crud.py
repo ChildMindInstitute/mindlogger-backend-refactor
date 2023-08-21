@@ -133,9 +133,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         field = getattr(self.schema_class, key)
         query: Query = select(field)
         query = query.where(field == val)
-        query = query.where(
-            self.schema_class.is_deleted == False  # noqa: E712
-        )
+        query = query.where(self.schema_class.soft_exists())
         query = query.exists()
         db_result = await self._execute(select(query))
         return db_result.scalars().first() or False
