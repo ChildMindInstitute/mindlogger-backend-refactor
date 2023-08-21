@@ -486,19 +486,29 @@ class Mongo:
         print("Prepared for migrations", len(access_result))
         return access_result
 
-    def get_user_pin_mapping(self, user_id: ObjectId):
-        pin_profiles = self.db["appletProfile"].find({"pinnedBy": user_id})
-        if not pin_profiles:
-            return None
+    def get_pinned_users(self):
+        return self.db["appletProfile"].find({
+            "pinnedBy": {"$exists": 1}, "userId": {"$exists": 1, "$ne": None}
+        })
+
+    def get_applet_profiles_by_ids(self, ids):
+        return self.db["appletProfile"].find({"_id": {"$in": ids}})
+
+    def get_user_pin_mapping(self):
+        pin_profiles = self.get_pinned_users()
         pin_dao_list = []
         for profile in pin_profiles:
-            dao = UserPinsDAO(
-                user_id=mongoid_to_uuid(profile["userId"]),
-                pinned_user_id=mongoid_to_uuid(user_id),
-                owner_id=mongoid_to_uuid(profile["user"]),
-                role="role",
-                created_at=datetime.datetime.now(),
-                updated_at=datetime.datetime.now(),
-            )
-            pin_dao_list.append(dao)
+            if not profile["pinnedBy"]:
+                continue
+            pinned_by = self.get_applet_profiles_by_ids(profile["pinnedBy"])
+            for manager_profile in pinned_by:
+                dao = UserPinsDAO(
+                    user_id=mongoid_to_uuid(profile["userId"]),
+                    pinned_user_id=mongoid_to_uuid(manager_profile["userId"]),
+                    owner_id=mongoid_to_uuid(profile["userId"]),
+                    role="role",
+                    created_at=datetime.datetime.now(),
+                    updated_at=datetime.datetime.now(),
+                )
+                pin_dao_list.append(dao)
         return pin_dao_list

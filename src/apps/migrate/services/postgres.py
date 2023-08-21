@@ -212,24 +212,19 @@ class Postgres:
         #     ]
         # }
 
-    def get_migrated_applets(self) -> list[ObjectId]:
-        sql = 'SELECT id FROM "applets"'
+    def get_uuid_array(self, sql):
         cursor = self.connection.cursor()
         cursor.execute(sql)
         results = cursor.fetchall()
         cursor.close()
-        app_map = map(lambda t: uuid_to_mongoid(uuid.UUID(t[0])), results)
-        return list(filter(lambda app: app is not None, app_map))
+        m = map(lambda t: uuid_to_mongoid(uuid.UUID(t[0])), results)
+        return list(filter(lambda i: i is not None, m))
+
+    def get_migrated_applets(self) -> list[ObjectId]:
+        return self.get_uuid_array('SELECT id FROM "applets"')
 
     def get_migrated_users_ids(self):
-        sql = 'SELECT id FROM "users"'
-        cursor = self.connection.cursor()
-        cursor.execute(sql)
-        user = cursor.fetchone()
-        while user:
-            yield uuid_to_mongoid(uuid.UUID(user[0]))
-            user = cursor.fetchone()
-        cursor.close()
+        return self.get_uuid_array('SELECT id FROM "users"')
 
     async def save_user_access_workspace(
         self, access_mapping: List[AppletUserDAO]

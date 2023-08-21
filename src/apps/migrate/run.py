@@ -132,16 +132,13 @@ async def migrate_roles(mongo: Mongo, postgres: Postgres):
 
 
 async def migrate_user_pins(mongo: Mongo, postgres: Postgres):
-    users = postgres.get_migrated_users_ids()
-    user_id = next(users, None)
-    ids = []
-    while user_id:
-        print(user_id)
-        ids.append(user_id)
-        pins = mongo.get_user_pin_mapping(user_id)
-        user_id = next(users, None)
-        # todo add sql inserting
-    print(len(ids), len(set(ids)))
+    pinned_dao = mongo.get_user_pin_mapping()
+    migrated_ids = postgres.get_migrated_users_ids()
+    count = 0
+    for profile in pinned_dao:
+        if profile.user_id in migrated_ids:
+            count += 1
+    print(count)
 
 
 async def main():
