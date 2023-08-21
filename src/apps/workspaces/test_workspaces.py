@@ -55,8 +55,8 @@ class TestWorkspaces(BaseTest):
     workspace_manager_accesses_url = (
         f"{workspace_managers_url}/{{manager_id}}/accesses"
     )
-    remove_manager_access = f"{workspaces_list_url}/removeAccess"
-    remove_respondent_access = "/applets/removeAccess"
+    remove_manager_access = f"{workspaces_list_url}/managers/removeAccess"
+    remove_respondent_access = "/applets/respondent/removeAccess"
     workspace_respondents_pin = (
         "/workspaces/{owner_id}/respondents/{user_id}/pin"
     )
@@ -664,7 +664,7 @@ class TestWorkspaces(BaseTest):
             # "role": Role.MANAGER,
         }
 
-        response = await self.client.post(
+        response = await self.client.delete(
             self.remove_manager_access, data=data
         )
 
@@ -692,7 +692,7 @@ class TestWorkspaces(BaseTest):
             "delete_responses": True,
         }
 
-        response = await self.client.post(
+        response = await self.client.delete(
             self.remove_respondent_access, data=data
         )
         assert response.status_code == 200
@@ -710,7 +710,7 @@ class TestWorkspaces(BaseTest):
             "delete_responses": True,
         }
 
-        response = await self.client.post(
+        response = await self.client.delete(
             self.remove_respondent_access, data=data
         )
         assert response.status_code == 200
@@ -728,7 +728,7 @@ class TestWorkspaces(BaseTest):
             "delete_responses": True,
         }
 
-        response = await self.client.post(
+        response = await self.client.delete(
             self.remove_respondent_access, data=data
         )
         assert response.status_code == 403

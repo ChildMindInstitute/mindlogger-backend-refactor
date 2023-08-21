@@ -155,16 +155,19 @@ class UserAppletAccessService:
                 meta = await self._get_default_role_meta(
                     Role.RESPONDENT, self._user_id
                 )
-                await UserAppletAccessCRUD(self.session).save(
-                    UserAppletAccessSchema(
-                        user_id=self._user_id,
-                        applet_id=invitation.applet_id,
-                        role=Role.RESPONDENT,
-                        owner_id=owner_access.user_id,
-                        invitor_id=invitation.invitor_id,
-                        meta=meta,
-                    )
+                schema = UserAppletAccessSchema(
+                    user_id=self._user_id,
+                    applet_id=invitation.applet_id,
+                    role=Role.RESPONDENT,
+                    owner_id=owner_access.user_id,
+                    invitor_id=invitation.invitor_id,
+                    meta=meta,
+                    is_deleted=False,
                 )
+
+                await UserAppletAccessCRUD(
+                    self.session
+                ).upsert_user_applet_access(schema)
 
         return UserAppletAccess.from_orm(access_schema)
 

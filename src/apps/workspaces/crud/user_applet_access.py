@@ -18,7 +18,7 @@ from sqlalchemy import (
     true,
     update,
 )
-from sqlalchemy.dialects.postgresql import UUID, aggregate_order_by
+from sqlalchemy.dialects.postgresql import UUID, aggregate_order_by, insert
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
@@ -342,6 +342,88 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, schemas: list[UserAppletAccessSchema]
     ) -> list[UserAppletAccessSchema]:
         return await self._create_many(schemas)
+
+    async def upsert_user_applet_access(self, schema: UserAppletAccessSchema):
+        values = {
+            "invitor_id": schema.invitor_id,
+            "owner_id": schema.owner_id,
+            "user_id": schema.user_id,
+            "applet_id": schema.applet_id,
+            "role": schema.role,
+            "is_deleted": schema.is_deleted,
+            "meta": schema.meta,
+        }
+        stmt = insert(UserAppletAccessSchema).values(values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[
+                UserAppletAccessSchema.user_id,
+                UserAppletAccessSchema.applet_id,
+                UserAppletAccessSchema.role,
+            ],
+            set_={
+                "invitor_id": schema.invitor_id,
+                "owner_id": schema.owner_id,
+                "user_id": stmt.excluded.user_id,
+                "applet_id": stmt.excluded.applet_id,
+                "role": stmt.excluded.role,
+                "is_deleted": stmt.excluded.is_deleted,
+                "meta": stmt.excluded.meta,
+            },
+        )
+
+        await self._execute(stmt)
+
+    async def upsert_user_applet_access_list(
+        self, schemas: list[UserAppletAccessSchema]
+    ):
+        values_list = [
+            {
+                "invitor_id": schema.invitor_id,
+                "owner_id": schema.owner_id,
+                "user_id": schema.user_id,
+                "applet_id": schema.applet_id,
+                "role": schema.role,
+                "is_deleted": schema.is_deleted,
+                "meta": schema.meta,
+            }
+            for schema in schemas
+        ]
+
+        stmt = insert(UserAppletAccessSchema).values(values_list)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[
+                UserAppletAccessSchema.user_id,
+                UserAppletAccessSchema.applet_id,
+                UserAppletAccessSchema.role,
+            ],
+            set_={
+                "user_id": stmt.excluded.user_id,
+                "applet_id": stmt.excluded.applet_id,
+                "role": stmt.excluded.role,
+                "is_deleted": stmt.excluded.is_deleted,
+                "meta": stmt.excluded.meta,
+            },
+        )
+
+        await self._execute(stmt)
+
+        return await self.get_user_applet_access_list(schemas)
+
+    async def get_user_applet_access_list(
+        self, schemas: list[UserAppletAccessSchema]
+    ):
+        user_ids = [schema.user_id for schema in schemas]
+        applet_ids = [schema.applet_id for schema in schemas]
+        roles = [schema.role for schema in schemas]
+
+        query = select(UserAppletAccessSchema).where(
+            (UserAppletAccessSchema.user_id.in_(user_ids))
+            & (UserAppletAccessSchema.applet_id.in_(applet_ids))
+            & (UserAppletAccessSchema.role.in_(roles))
+        )
+
+        result = await self._execute(query)
+        return result.fetchall()
 
     async def get(
         self, user_id: uuid.UUID, applet_id: uuid.UUID, role: str

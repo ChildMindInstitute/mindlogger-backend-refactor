@@ -248,7 +248,7 @@ router.post(
 
 # Remove manager access from a specific user
 router.delete(
-    "/removeAccess",
+    "/managers/removeAccess",
     response_model=None,
     responses={
         status.HTTP_200_OK: {"model": None},
