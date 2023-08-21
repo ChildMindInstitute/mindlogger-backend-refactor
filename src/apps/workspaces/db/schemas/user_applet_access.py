@@ -1,6 +1,7 @@
 import uuid
 
 from sqlalchemy import (
+    ARRAY,
     Boolean,
     Column,
     Enum,
@@ -9,9 +10,10 @@ from sqlalchemy import (
     UniqueConstraint,
     case,
     func,
+    select,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from apps.workspaces.domain.constants import UserPinRole
@@ -65,13 +67,18 @@ class UserAppletAccessSchema(Base):
     @reviewer_respondents.expression  # type: ignore[no-redef]
     def reviewer_respondents(cls):
         _field = cls.meta[text("'respondents'")]
-        return case(
+        _respondents_jsonb = case(
             (
                 func.jsonb_typeof(_field) == text("'array'"),
                 _field,
             ),
             else_=text("'[]'::jsonb"),
         )
+        return func.array(
+            select(func.jsonb_array_elements_text(_respondents_jsonb))
+            .correlate(UserAppletAccessSchema)
+            .scalar_subquery()
+        ).cast(ARRAY(UUID))
 
 
 class UserPinSchema(Base):

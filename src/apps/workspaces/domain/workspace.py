@@ -114,6 +114,7 @@ class WorkspaceManager(InternalModel):
     last_name: str
     email: str
     roles: list[Role]
+    reviewer_respondents: list[uuid.UUID]
     last_seen: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
@@ -159,6 +160,7 @@ class PublicWorkspaceManager(PublicModel):
     last_name: str
     email: str
     roles: list[Role]
+    reviewer_respondents: list[uuid.UUID]
     last_seen: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
