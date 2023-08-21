@@ -142,6 +142,15 @@ def content_to_jsonld(document, old_activities_by_id):
         ):
             activities_by_id[a_id] = old_activities_by_id[a_id]
 
+        if activities_by_id[a_id]['items'] == {}:
+            for _a_name,_a_value in activities_by_id.items():
+                if (_a_value['data']['_id'] == activities_by_id[a_id]['data']['_id']
+                        and _a_name != a_id
+                        and _a_value.get('items', {}) != {}
+                ):
+                    activities_by_id[a_id]['items'] = _a_value['items'].copy()
+                    break
+
         if a_id in activities_by_id and (
             "items" in activities_by_id[a_id]
             and activities_by_id[a_id]["items"] != {}
