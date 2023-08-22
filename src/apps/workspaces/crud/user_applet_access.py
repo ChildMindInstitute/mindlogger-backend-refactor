@@ -742,12 +742,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                         UserAppletAccessSchema.role
                     )
                 ).label("roles"),
-                func.max(
-                    UserAppletAccessSchema.reviewer_respondents,
-                    where=(
-                            UserAppletAccessSchema.role == Role.REVIEWER
-                    )
-                ).label("reviewer_respondents"),
 
                 func.array_agg(
                     aggregate_order_by(
@@ -757,9 +751,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                             AppletSchema.display_name,  # noqa: E501
                             text("'applet_image'"), AppletSchema.image,
                             text("'access_id'"), UserAppletAccessSchema.id,
-                            # noqa: E501
                             text("'role'"), UserAppletAccessSchema.role,
-                            text("'encryption'"), AppletSchema.encryption
+                            text("'encryption'"), AppletSchema.encryption,
+                            text("'reviewer_respondents'"), UserAppletAccessSchema.reviewer_respondents,  # noqa: E501
                         ),
                         AppletSchema.id
                     )

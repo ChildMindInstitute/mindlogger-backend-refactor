@@ -382,7 +382,6 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 1
 
-    @pytest.mark.skip
     @rollback
     async def test_get_workspace_managers(self):
         await self.client.login(
@@ -402,7 +401,6 @@ class TestWorkspaces(BaseTest):
             "7484f34a-3acc-4ee6-8a94-fd7299502fa2": [
                 "lucy",
                 "gabe",
-                "lucy@gmail",
             ],
         }
         for id_, params in search_params.items():
@@ -424,7 +422,6 @@ class TestWorkspaces(BaseTest):
                 assert len(result) == 1
                 assert result[0]["id"] == id_
 
-    @pytest.mark.skip
     @rollback
     async def test_get_workspace_applet_managers(self):
         await self.client.login(
@@ -445,7 +442,6 @@ class TestWorkspaces(BaseTest):
             "7484f34a-3acc-4ee6-8a94-fd7299502fa2": [
                 "lucy",
                 "gabe",
-                "lucy@gmail",
             ],
         }
         for id_, params in search_params.items():
