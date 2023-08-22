@@ -22,6 +22,9 @@ class AppletUserDAO:
     def __hash__(self):
         return hash(str(self.user_id) + str(self.applet_id) + str(self.role))
 
+    def __eq__(self, other):
+        return hash(other) == hash(self)
+
     def __str__(self):
         values = (
             f"'{uuid.uuid4()}'::UUID",
