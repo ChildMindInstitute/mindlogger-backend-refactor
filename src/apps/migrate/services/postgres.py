@@ -1,3 +1,4 @@
+import math
 import os
 import uuid
 from contextlib import suppress
@@ -229,41 +230,37 @@ class Postgres:
     async def save_user_access_workspace(
         self, access_mapping: List[AppletUserDAO]
     ):
-        page = 1
-        size = 100
+        size = 1000
         cursor = self.connection.cursor()
-        start = (page - 1) * size
-        end = page * size
-        chunk = access_mapping[start:end]
-
-        while chunk:
-            values = [str(c) for c in chunk]
+        chunk_count = math.ceil(len(access_mapping) / size)
+        inserted_count = 0
+        for chunk_num in range(chunk_count):
+            start = chunk_num * size
+            end = (chunk_num + 1) * size
+            chunk_values = access_mapping[start:end]
+            values = [str(item) for item in chunk_values]
             values = ",".join(values)
             sql = f"""
-            INSERT INTO user_applet_accesses
-            (
-                "id", 
-                "created_at", 
-                "updated_at", 
-                "is_deleted", 
-                "role", 
-                "user_id", 
-                "applet_id",
-                "owner_id",
-                "invitor_id",
-                "meta",
-                "is_pinned",
-                "migrated_date",
-                "migrated_updated"
-            )
-            VALUES {values}
+                INSERT INTO user_applet_accesses
+                (
+                    "id", 
+                    "created_at", 
+                    "updated_at", 
+                    "is_deleted", 
+                    "role", 
+                    "user_id", 
+                    "applet_id",
+                    "owner_id",
+                    "invitor_id",
+                    "meta",
+                    "is_pinned",
+                    "migrated_date",
+                    "migrated_updated"
+                )
+                VALUES {values}
             """
-
             cursor.execute(sql)
-            page += 1
-            start = (page - 1) * size
-            end = page * size
-            chunk = access_mapping[start:end]
-            print("Migrated", page * size)
+            inserted_count += cursor.rowcount
         self.connection.commit()
         cursor.close()
+        print("[Roles] Inserted rows:", inserted_count)

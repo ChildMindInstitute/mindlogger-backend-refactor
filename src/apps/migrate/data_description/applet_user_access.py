@@ -19,6 +19,9 @@ class AppletUserDAO:
     is_pinned: bool
     is_deleted: bool
 
+    def __hash__(self):
+        return hash(str(self.user_id) + str(self.applet_id) + str(self.role))
+
     def __str__(self):
         values = (
             f"'{uuid.uuid4()}'::UUID",

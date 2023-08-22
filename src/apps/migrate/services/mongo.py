@@ -438,7 +438,6 @@ class Mongo:
                 not_found_users.append(doc["userId"])
                 continue
             role_applets_mapping = doc.get("applets")
-
             for role_name, applet_ids in role_applets_mapping.items():
                 applet_docs = self.docs_by_ids("folder", applet_ids)
                 for applet_id in applet_ids:
@@ -484,7 +483,7 @@ class Mongo:
                     )
                     access_result.append(access)
         print("Prepared for migrations", len(access_result))
-        return access_result
+        return list(set(access_result))
 
     def get_pinned_users(self):
         return self.db["appletProfile"].find({

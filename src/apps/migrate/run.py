@@ -155,8 +155,8 @@ async def main():
 
     # Migrate applets, activities, items
     # await migrate_applets(mongo, postgres)
-    # await migrate_roles(mongo, postgres)
-    await migrate_user_pins(mongo, postgres)
+    await migrate_roles(mongo, postgres)
+    # await migrate_user_pins(mongo, postgres)
     # Close connections
     mongo.close_connection()
     postgres.close_connection()
