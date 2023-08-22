@@ -493,6 +493,10 @@ class Mongo:
     def get_applet_profiles_by_ids(self, ids):
         return self.db["appletProfile"].find({"_id": {"$in": ids}})
 
+    def get_pinned_role(self, applet_profile):
+        applet_id = applet_profile["appletId"]
+
+
     def get_user_pin_mapping(self):
         pin_profiles = self.get_pinned_users()
         pin_dao_list = []
@@ -505,7 +509,7 @@ class Mongo:
                     user_id=mongoid_to_uuid(profile["userId"]),
                     pinned_user_id=mongoid_to_uuid(manager_profile["userId"]),
                     owner_id=mongoid_to_uuid(profile["userId"]),
-                    role="role",
+                    role="manager",
                     created_at=datetime.datetime.now(),
                     updated_at=datetime.datetime.now(),
                 )

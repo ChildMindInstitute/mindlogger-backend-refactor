@@ -12,6 +12,8 @@ from apps.migrate.services.postgres import Postgres
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.item import Item
 
+import logging
+
 
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
     toSkip = [
@@ -132,13 +134,28 @@ async def migrate_roles(mongo: Mongo, postgres: Postgres):
 
 
 async def migrate_user_pins(mongo: Mongo, postgres: Postgres):
+    logger = logging.getLogger("[UserPins]")
     pinned_dao = mongo.get_user_pin_mapping()
     migrated_ids = postgres.get_migrated_users_ids()
-    count = 0
+    to_migrate = []
     for profile in pinned_dao:
-        if profile.user_id in migrated_ids:
-            count += 1
-    print(count)
+        if profile.user_id not in migrated_ids:
+            logger.warning(
+                f"user_id {profile.user_id} not presented in PostgreSQL"
+            )
+            continue
+        if profile.pinned_user_id not in migrated_ids:
+            logger.warning(
+                f"pinned_user_id {profile.user_id} not presented in PostgreSQL"
+            )
+            continue
+        if profile.owner_id not in migrated_ids:
+            logger.warning(
+                f"owner_id {profile.owner_id} not presented in PostgreSQL"
+            )
+            continue
+        to_migrate.append(profile)
+    postgres.save_user_pins(to_migrate)
 
 
 async def main():
@@ -155,8 +172,8 @@ async def main():
 
     # Migrate applets, activities, items
     # await migrate_applets(mongo, postgres)
-    await migrate_roles(mongo, postgres)
-    # await migrate_user_pins(mongo, postgres)
+    # await migrate_roles(mongo, postgres)
+    await migrate_user_pins(mongo, postgres)
     # Close connections
     mongo.close_connection()
     postgres.close_connection()

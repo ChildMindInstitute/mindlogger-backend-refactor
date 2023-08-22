@@ -14,13 +14,16 @@ class UserPinsDAO:
 
     def __str__(self):
         values = (
+            f"'{uuid.uuid4()}'::UUID",
+            f"FALSE",
             f"'{self.user_id}'::UUID",
             f"'{self.pinned_user_id}'::UUID",
             f"'{self.owner_id}'::UUID",
-            self.role,
+            f"'{self.role}'",
             f"'{self.created_at}'::TIMESTAMP",
             f"'{self.updated_at}'::TIMESTAMP",
             f"'{datetime.datetime.now()}'::TIMESTAMP",
             f"'{datetime.datetime.now()}'::TIMESTAMP",
         )
-        return ",".join(values)
+        values = ",".join(values)
+        return f"({values})"
