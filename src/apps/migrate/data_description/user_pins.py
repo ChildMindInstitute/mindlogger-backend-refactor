@@ -12,6 +12,14 @@ class UserPinsDAO:
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
+    def __hash__(self):
+        return hash(
+            (self.user_id, self.pinned_user_id, self.owner_id, self.role)
+        )
+
+    def __eq__(self, other):
+        return hash(other) == hash(self)
+
     def __str__(self):
         values = (
             f"'{uuid.uuid4()}'::UUID",

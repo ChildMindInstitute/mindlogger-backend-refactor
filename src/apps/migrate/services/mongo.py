@@ -486,32 +486,48 @@ class Mongo:
         return list(set(access_result))
 
     def get_pinned_users(self):
-        return self.db["appletProfile"].find({
-            "pinnedBy": {"$exists": 1}, "userId": {"$exists": 1, "$ne": None}
-        })
+        return self.db["appletProfile"].find(
+            {"pinnedBy": {"$exists": 1}, "userId": {"$exists": 1, "$ne": None}}
+        )
 
     def get_applet_profiles_by_ids(self, ids):
         return self.db["appletProfile"].find({"_id": {"$in": ids}})
 
     def get_pinned_role(self, applet_profile):
-        applet_id = applet_profile["appletId"]
+        system_roles = Role.as_list().copy()
+        system_roles.remove(Role.RESPONDENT)
+        system_roles = set(system_roles)
+        applet_roles = set(applet_profile.get("roles", []))
+        if system_roles.intersection(applet_roles):
+            return Role.MANAGER
+        else:
+            return Role.RESPONDENT
 
+    def get_owner_by_applet_profile(self, applet_profile):
+        profiles = self.db["accountProfile"].find(
+            {"userId": applet_profile["userId"]}
+        )
+        it = filter(lambda p: p["_id"] == p["accountId"], profiles)
+        profile = next(it, None)
+        return profile["userId"] if profiles else None
 
     def get_user_pin_mapping(self):
         pin_profiles = self.get_pinned_users()
-        pin_dao_list = []
+        pin_dao_list = set()
         for profile in pin_profiles:
             if not profile["pinnedBy"]:
                 continue
             pinned_by = self.get_applet_profiles_by_ids(profile["pinnedBy"])
             for manager_profile in pinned_by:
+                role = self.get_pinned_role(manager_profile)
+                owner_id = self.get_owner_by_applet_profile(manager_profile)
                 dao = UserPinsDAO(
                     user_id=mongoid_to_uuid(profile["userId"]),
                     pinned_user_id=mongoid_to_uuid(manager_profile["userId"]),
-                    owner_id=mongoid_to_uuid(profile["userId"]),
-                    role="manager",
+                    owner_id=mongoid_to_uuid(owner_id),
+                    role=role,
                     created_at=datetime.datetime.now(),
                     updated_at=datetime.datetime.now(),
                 )
-                pin_dao_list.append(dao)
+                pin_dao_list.add(dao)
         return pin_dao_list

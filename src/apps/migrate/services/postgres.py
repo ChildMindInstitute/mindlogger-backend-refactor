@@ -233,7 +233,7 @@ class Postgres:
     def get_migrated_users_ids(self):
         return self.get_pk_array('SELECT id FROM "users"', as_bson=False)
 
-    def insert_dao_collection(self, sql, dao_collection: Collection[Any]):
+    def insert_dao_collection(self, sql, dao_collection: List[Any]):
         size = 1000
         cursor = self.connection.cursor()
         chunk_count = math.ceil(len(dao_collection) / size)
@@ -251,9 +251,7 @@ class Postgres:
         cursor.close()
         return inserted_count
 
-    async def save_user_access_workspace(
-        self, access_mapping: List[AppletUserDAO]
-    ):
+    def save_user_access_workspace(self, access_mapping: List[AppletUserDAO]):
         log = get_logger("[Roles]")
         sql = """
             INSERT INTO user_applet_accesses
@@ -295,5 +293,5 @@ class Postgres:
             )
             VALUES {values}
         """
-        rows_count = self.insert_dao_collection(sql, user_pin_dao)
+        rows_count = self.insert_dao_collection(sql, list(user_pin_dao))
         log.info(f"Inserted {rows_count} rows")
