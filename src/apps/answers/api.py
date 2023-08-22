@@ -6,6 +6,7 @@ from fastapi import Body, Depends, Query
 from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
+from apps.activities.services import ActivityHistoryService
 from apps.answers.domain import (
     ActivityAnswerPublic,
     AnswerExport,
@@ -406,6 +407,13 @@ async def applet_answers_export(
             answer.respondent_secret_id = (
                 f"[admin account]({answer.respondent_email})"
             )
+
+    if not data.activities:
+        applet = await AppletService(session, user.id).get(applet_id)
+        activities = await ActivityHistoryService(
+            session, applet.id, applet.version
+        ).get_full()
+        data.activities = activities
 
     return Response(result=PublicAnswerExport.from_orm(data))
 
