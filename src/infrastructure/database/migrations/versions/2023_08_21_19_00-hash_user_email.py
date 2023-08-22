@@ -16,7 +16,8 @@ depends_on = None
 
 def upgrade() -> None:
     op.execute("""
-        update users set email=encode(sha224('email'::bytea), 'hex') where email like '%@%';
+        update users set email=concat(email, '_duplication') where email not like '%@%' and email in (select encode(sha224(email::bytea), 'hex') as email from users where email like '%@%');  
+        update users set email=encode(sha224(email::bytea), 'hex') where email like '%@%';
     """)
 
 
