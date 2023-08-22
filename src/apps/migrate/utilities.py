@@ -29,3 +29,6 @@ class EncUUID(json.JSONEncoder):
         if isinstance(t, uuid.UUID):
             return str(t)
         return super().default(t)
+
+
+migration_log = get_logger("Migration")

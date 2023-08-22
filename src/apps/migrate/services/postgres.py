@@ -11,7 +11,11 @@ import psycopg2
 from bson import ObjectId
 
 from apps.migrate.services.applet_service import AppletMigrationService
-from apps.migrate.utilities import mongoid_to_uuid, uuid_to_mongoid, get_logger
+from apps.migrate.utilities import (
+    mongoid_to_uuid,
+    uuid_to_mongoid,
+    migration_log,
+)
 from infrastructure.database import session_manager
 from infrastructure.database import atomic
 from apps.migrate.data_description.applet_user_access import AppletUserDAO
@@ -252,7 +256,6 @@ class Postgres:
         return inserted_count
 
     def save_user_access_workspace(self, access_mapping: List[AppletUserDAO]):
-        log = get_logger("[Roles]")
         sql = """
             INSERT INTO user_applet_accesses
             (
@@ -273,10 +276,9 @@ class Postgres:
             VALUES {values}
         """
         rows_count = self.insert_dao_collection(sql, access_mapping)
-        log.info(f"Inserted {rows_count} rows")
+        migration_log.warning(f"Inserted {rows_count} rows")
 
     def save_user_pins(self, user_pin_dao):
-        log = get_logger("[UserPins]")
         sql = """
             INSERT INTO user_pins
             (
@@ -294,4 +296,4 @@ class Postgres:
             VALUES {values}
         """
         rows_count = self.insert_dao_collection(sql, list(user_pin_dao))
-        log.info(f"Inserted {rows_count} rows")
+        migration_log.warning(f"Inserted {rows_count} rows")

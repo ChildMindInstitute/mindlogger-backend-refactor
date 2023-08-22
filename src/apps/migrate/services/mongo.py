@@ -28,7 +28,7 @@ from apps.migrate.services.applet_versions import (
     content_to_jsonld,
     CONTEXT,
 )
-from apps.migrate.utilities import mongoid_to_uuid
+from apps.migrate.utilities import mongoid_to_uuid, migration_log
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt
 from apps.workspaces.domain.constants import Role
@@ -413,7 +413,7 @@ class Mongo:
 
     def is_pinned(self, user_id):
         res = self.db["appletProfile"].find_one(
-            {"userId": user_id, "pinnedBy": {"$exists": 1}}
+            {"userId": user_id, "pinnedBy": {"$exists": 1, "$ne": []}}
         )
         return bool(res)
 
@@ -422,6 +422,7 @@ class Mongo:
     ) -> List[AppletUserDAO]:
         account_profile_collection = self.db["accountProfile"]
         not_found_users = []
+        not_found_applets = []
         access_result = []
         account_profile_docs = account_profile_collection.find()
         for doc in account_profile_docs:
@@ -434,18 +435,25 @@ class Mongo:
                     f"Skip AppletProfile({doc['_id']}), "
                     f"User({doc['userId']}) does not exist (field: userId)"
                 )
-                print(msg)
+                migration_log.warning(msg)
                 not_found_users.append(doc["userId"])
                 continue
             role_applets_mapping = doc.get("applets")
             for role_name, applet_ids in role_applets_mapping.items():
                 applet_docs = self.docs_by_ids("folder", applet_ids)
                 for applet_id in applet_ids:
+                    # Check maybe we already check this id in past
+                    if applet_id in not_found_applets:
+                        continue
+
                     if applet_id not in migrated_applet_ids:
-                        print(
+                        # Applet doesn't exist in postgresql, just skip it
+                        # ant put id to cache
+                        migration_log.warning(
                             f"Skip: Applet({applet_id}) "
                             f"doesnt represent in PostgreSQL"
                         )
+                        not_found_applets.append(applet_id)
                         continue
                     applet = next(
                         filter(
@@ -482,7 +490,9 @@ class Mongo:
                         is_deleted=False,
                     )
                     access_result.append(access)
-        print("Prepared for migrations", len(access_result))
+        migration_log.warning(
+            f"[Role] Prepared for migrations {len(access_result)} items"
+        )
         return list(set(access_result))
 
     def get_pinned_users(self):
