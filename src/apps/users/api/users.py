@@ -29,11 +29,18 @@ async def user_create(
         email_hash = hash_sha224(user_create_schema.email)
         email_aes_encrypted = encrypt(bytes(user_create_schema.email, "utf-8"))
 
+        first_name: bytes = encrypt(
+            bytes(user_create_schema.first_name, "utf-8")
+        )
+        last_name: bytes = encrypt(
+            bytes(user_create_schema.last_name, "utf-8")
+        )
+
         user_schema = await UsersCRUD(session).save(
             UserSchema(
                 email=email_hash,
-                first_name=user_create_schema.first_name,
-                last_name=user_create_schema.last_name,
+                first_name=first_name,
+                last_name=last_name,
                 hashed_password=AuthenticationService.get_password_hash(
                     user_create_schema.password
                 ),

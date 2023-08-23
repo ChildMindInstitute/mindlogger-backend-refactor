@@ -45,8 +45,8 @@ class UserCreateRequest(_UserBase, PublicModel):
 
 
 class UserCreate(_UserBase, InternalModel):
-    first_name: str
-    last_name: str
+    first_name: bytes | None
+    last_name: bytes | None
     hashed_password: str
 
 
@@ -68,6 +68,18 @@ class User(UserCreate):
             return decrypt(self.email_aes_encrypted).decode("utf-8")
         return None
 
+    @property
+    def plain_first_name(self) -> str | None:
+        if self.first_name:
+            return decrypt(self.first_name).decode("utf-8")
+        return None
+
+    @property
+    def plain_last_name(self) -> str | None:
+        if self.last_name:
+            return decrypt(self.last_name).decode("utf-8")
+        return None
+
 
 class PublicUser(PublicModel):
     """Public user data model."""
@@ -81,8 +93,8 @@ class PublicUser(PublicModel):
     def from_user(cls, user: User) -> "PublicUser":
         return cls(
             email=user.plain_email,
-            first_name=user.first_name,
-            last_name=user.last_name,
+            first_name=user.plain_first_name,
+            last_name=user.plain_last_name,
             id=user.id,
         )
 
