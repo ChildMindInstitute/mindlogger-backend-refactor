@@ -61,6 +61,7 @@ class BaseActivityItem(BaseModel):
     @validator("name")
     def validate_name(cls, value):
         # name must contain only alphanumeric symbols or underscore
+        value = value.replace(" ", "")  # TODO: remove after migration
         if not value.replace("_", "").replace("-", "").isalnum():
             raise IncorrectNameCharactersError()
         return value
