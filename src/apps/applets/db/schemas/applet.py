@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import (
     Boolean,
     Column,
@@ -48,7 +50,21 @@ class AppletSchema(_BaseAppletSchema, Base):
     is_published = Column(Boolean(), default=False)
 
 
-class AppletHistorySchema(_BaseAppletSchema, Base):
+class HistoryMixin:
+    @classmethod
+    def generate_id_version(cls, id_: str | uuid.UUID, version: str) -> str:
+        return f"{id_}_{version}"
+
+    @classmethod
+    def split_id_version(cls, id_version: str) -> tuple[uuid.UUID, str]:
+        parts = id_version.split("_", maxsplit=1)
+        if len(parts) != 2:
+            raise Exception(f"Wrong id_version format: {id_version}")
+
+        return uuid.UUID(parts[0]), parts[1]
+
+
+class AppletHistorySchema(_BaseAppletSchema, HistoryMixin, Base):
     __tablename__ = "applet_histories"
 
     id_version = Column(String(), primary_key=True)
