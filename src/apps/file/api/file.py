@@ -60,7 +60,7 @@ async def check_file_uploaded(
     schema: FileCheckRequest,
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[FileExistenceResponse]:
-    """Provides the information if the file is uploaded."""
+    """Provides the information if the files is uploaded."""
 
     cdn_client = CDNClient(settings.cdn, env=settings.env)
     results: list[FileExistenceResponse] = []
