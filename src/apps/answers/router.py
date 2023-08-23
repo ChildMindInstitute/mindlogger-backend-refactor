@@ -237,7 +237,7 @@ router.get(
     },
 )(applet_completed_entities)
 
-router.get(
+router.post(
     "/check-existence",
     status_code=status.HTTP_200_OK,
     responses={
