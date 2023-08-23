@@ -285,7 +285,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         has_manager_role = (
             exists()
             .where(
-                UserAppletAccessSchema.soft_exists(),
+                # no soft_exists check here
                 UserAppletAccessSchema.user_id == UserSchema.id,
                 UserAppletAccessSchema.applet_id == applet_id,
                 UserAppletAccessSchema.role != Role.RESPONDENT,
