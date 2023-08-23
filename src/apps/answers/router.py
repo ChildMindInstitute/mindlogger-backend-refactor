@@ -25,6 +25,7 @@ from apps.answers.api import (
 )
 from apps.answers.domain import (
     ActivityAnswerPublic,
+    AnswerExistenceResponse,
     AnswerNoteDetailPublic,
     AnswerReviewPublic,
     AppletActivityAnswerPublic,
@@ -241,7 +242,7 @@ router.post(
     "/check-existence",
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {},
+        status.HTTP_200_OK: {"model": Response[AnswerExistenceResponse]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
