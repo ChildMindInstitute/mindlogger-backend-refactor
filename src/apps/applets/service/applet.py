@@ -316,7 +316,6 @@ class AppletService:
             report_public_key=applet_exist.report_public_key,
             report_include_user_id=applet_exist.report_include_user_id,
             report_include_case_id=applet_exist.report_include_case_id,
-            report_email_body=applet_exist.report_email_body,
         )
 
     async def _validate_applet_name(
