@@ -7,6 +7,9 @@ from pymongo import MongoClient
 
 from apps.girderformindlogger.models.activity import Activity
 from apps.girderformindlogger.models.applet import Applet
+from apps.girderformindlogger.models.account_profile import AccountProfile
+from apps.girderformindlogger.models.user import User
+
 from apps.girderformindlogger.models.folder import Folder as FolderModel
 from apps.girderformindlogger.utility import jsonld_expander
 from apps.jsonld_converter.dependencies import (
@@ -261,7 +264,12 @@ class Mongo:
             activity_ids_inside_applet.append(activity["@id"])
 
         if applet.get("reprolib:terms/activityFlowOrder"):
-            activity_flows = applet_format["activityFlows"]
+            activity_flows = applet_format["activityFlows"].copy()
+            for _key, _flow in activity_flows.copy().items():
+                flow_id = _flow["@id"]
+                if flow_id not in activity_flows:
+                    activity_flows[flow_id] = _flow.copy()
+
             activity_flows_fixed = {}
             # setup activity flow items
             for key, activity_flow in activity_flows.items():
@@ -285,7 +293,10 @@ class Mongo:
 
             # setup activity flows
             for flow in applet["reprolib:terms/activityFlowOrder"][0]["@list"]:
-                activity_flow_objects.append(activity_flows_fixed[flow["@id"]])
+                if activity_flows_fixed.get(flow["@id"]):
+                    activity_flow_objects.append(
+                        activity_flows_fixed[flow["@id"]]
+                    )
 
             applet["reprolib:terms/activityFlowOrder"][0][
                 "@list"
@@ -356,3 +367,18 @@ class Mongo:
                 flow.extra_fields["extra"]["_:id"][0]["@value"]
             )
         return converted
+
+    def get_applet_info(self, applet_id: str) -> dict:
+        info = {}
+        applet = Applet().findOne({"_id": ObjectId(applet_id)})
+        account = AccountProfile().findOne({"_id": applet["accountId"]})
+        owner = User().findOne({"_id": applet["creatorId"]})
+        info["applet_id"] = applet_id
+        info["applet_name"] = applet["meta"]["applet"].get(
+            "displayName", "Untitled"
+        )
+        info["account_name"] = account["accountName"]
+        info["owner_email"] = owner["email"]
+        info["updated"] = applet["updated"]
+
+        return info
