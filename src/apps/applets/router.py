@@ -2,6 +2,7 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.applets.api.applets import (
+    activity_report_config_update,
     applet_conceal,
     applet_delete,
     applet_duplicate,
@@ -21,6 +22,7 @@ from apps.applets.api.applets import (
     applet_version_changes_retrieve,
     applet_version_retrieve,
     applet_versions_retrieve,
+    flow_report_config_update,
 )
 from apps.applets.domain import (
     AppletUniqueName,
@@ -237,6 +239,26 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_set_data_retention)
+
+
+router.put(
+    "/{applet_id}/activities/{activity_id}/report_configuration",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(activity_report_config_update)
+
+
+router.put(
+    "/{applet_id}/flows/{flow_id}/report_configuration",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(flow_report_config_update)
 
 public_router.get(
     "/{key}",

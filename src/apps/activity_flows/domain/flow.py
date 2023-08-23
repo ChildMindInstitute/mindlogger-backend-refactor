@@ -9,7 +9,9 @@ from apps.shared.domain import InternalModel, PublicModel
 
 class Flow(FlowBase, InternalModel):
     id: uuid.UUID
+    applet_id: uuid.UUID
     order: int
+    extra_fields: dict | None = Field(default_factory=dict)
 
 
 class FlowPublic(FlowBase, PublicModel):

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivitySchema
@@ -11,6 +11,13 @@ __all__ = ["ActivitiesCRUD"]
 
 class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
     schema_class = ActivitySchema
+
+    async def update_by_id(self, id_, **values):
+        query = update(self.schema_class)
+        query = query.where(self.schema_class.id == id_)
+        query = query.values(**values)
+        query = query.returning(self.schema_class)
+        await self._execute(query)
 
     async def create_many(
         self,

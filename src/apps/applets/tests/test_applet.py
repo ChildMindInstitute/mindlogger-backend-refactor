@@ -28,6 +28,12 @@ class TestApplet(BaseTest):
     applet_detail_url = f"{applet_list_url}/{{pk}}"
     applet_duplicate_url = f"{applet_detail_url}/duplicate"
     applet_report_config_url = f"{applet_detail_url}/report_configuration"
+    activity_report_config_url = (
+        f"{applet_detail_url}/activities/{{activity_id}}/report_configuration"
+    )
+    flow_report_config_url = (
+        f"{applet_detail_url}/flows/{{flow_id}}/report_configuration"
+    )
     applet_publish_url = f"{applet_detail_url}/publish"
     applet_conceal_url = f"{applet_detail_url}/conceal"
     applet_set_encryption_url = f"{applet_detail_url}/encryption"
@@ -918,6 +924,28 @@ class TestApplet(BaseTest):
         # assert len(TestMail.mails) == 1
         # assert TestMail.mails[0].subject == "Applet edit success!"
         assert len(FCMNotificationTest.notifications) > 0
+
+        data = response.json()
+        response = await self.client.put(
+            self.activity_report_config_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            ),
+            data=dict(report_included_item_name="evening_activity_item3"),
+        )
+        assert response.status_code == 200
+
+        flow_id = data["result"]["activityFlows"][0]["id"]
+        response = await self.client.put(
+            self.flow_report_config_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1", flow_id=flow_id
+            ),
+            data=dict(
+                report_included_activity_name="Morning activity",
+                report_included_item_name="evening_activity_item3",
+            ),
+        )
+        assert response.status_code == 200
 
     @rollback
     async def test_duplicate_applet(self):
