@@ -24,7 +24,7 @@ router.post(
 )(download)
 
 # router.post("/upload/check")(check_file_uploaded)
-router.get(
+router.post(
     "/upload/check",
     status_code=status.HTTP_200_OK,
     responses={
