@@ -134,6 +134,7 @@ def content_to_jsonld(document, old_activities_by_id):
     jsonld["_id"] = str(document["protocol"]["data"]["_id"])
 
     activities_by_id = document["protocol"]["activities"]
+    empty_activities = []
     for activity in jsonld["reprolib:terms/order"][0]["@list"]:
         a_id = activity["@id"]
         if a_id in old_activities_by_id and (
@@ -142,13 +143,15 @@ def content_to_jsonld(document, old_activities_by_id):
         ):
             activities_by_id[a_id] = old_activities_by_id[a_id]
 
-        if activities_by_id[a_id]['items'] == {}:
-            for _a_name,_a_value in activities_by_id.items():
-                if (_a_value['data']['_id'] == activities_by_id[a_id]['data']['_id']
-                        and _a_name != a_id
-                        and _a_value.get('items', {}) != {}
+        if activities_by_id[a_id]["items"] == {}:
+            for _a_name, _a_value in activities_by_id.items():
+                if (
+                    _a_value["data"]["_id"]
+                    == activities_by_id[a_id]["data"]["_id"]
+                    and _a_name != a_id
+                    and _a_value.get("items", {}) != {}
                 ):
-                    activities_by_id[a_id]['items'] = _a_value['items'].copy()
+                    activities_by_id[a_id]["items"] = _a_value["items"].copy()
                     break
 
         if a_id in activities_by_id and (
@@ -170,13 +173,18 @@ def content_to_jsonld(document, old_activities_by_id):
                 document["contexts"], activity_doc["data"]
             )
             activity_jsonld["_id"] = str(activity_doc["data"]["_id"])
+            activity_jsonld[
+                "reprolib:terms/reports"
+            ] = []  # remove reports conditional logic for history
             activity.update(activity_jsonld)
 
             items_by_id = activity_doc["items"]
             old_items_by_id = old_activity_doc.get("items", {})
 
+            empty_items = []
             for item in activity["reprolib:terms/order"][0]["@list"]:
                 i_id = item["@id"]
+
                 if i_id in old_items_by_id and (i_id not in items_by_id):
                     items_by_id[i_id] = old_items_by_id[i_id]
                 if i_id in items_by_id:
@@ -195,6 +203,17 @@ def content_to_jsonld(document, old_activities_by_id):
                     )
                     item_jsonld["_id"] = str(item_doc["_id"])
                     item.update(item_jsonld)
+                else:
+                    empty_items.append(item)
+
+            for item in empty_items:
+                activity["reprolib:terms/order"][0]["@list"].remove(item)
+        else:
+            empty_activities.append(activity)
+
+    if empty_activities:
+        for activity in empty_activities:
+            jsonld["reprolib:terms/order"][0]["@list"].remove(activity)
 
     if jsonld.get("reprolib:terms/activityFlowOrder"):
         jsonld["reprolib:terms/activityFlowOrder"][0]["@list"] = []
