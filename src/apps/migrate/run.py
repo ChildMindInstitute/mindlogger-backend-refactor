@@ -32,7 +32,7 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
     ]
 
     # applets = Applet().find(
-    #     query={"_id": ObjectId("5fa5a276bdec546ce77b298b")}, fields={"_id": 1}
+    #     query={"_id": ObjectId("64e612db5e3d9e2889a92db3")}, fields={"_id": 1}
     # )
 
     answers = Item().find(
