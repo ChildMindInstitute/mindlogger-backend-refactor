@@ -6,6 +6,7 @@ from starlette import status
 from apps.applets.api import applet_create
 from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.domain.applets import public_detail
+from apps.applets.router import router as applet_router
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -246,8 +247,8 @@ router.post(
 )(workspace_managers_applet_access_set)
 
 # Remove manager access from a specific user
-router.post(
-    "/removeAccess",
+router.delete(
+    "/managers/removeAccess",
     response_model=None,
     responses={
         status.HTTP_200_OK: {"model": None},
@@ -255,10 +256,9 @@ router.post(
     },
 )(workspace_remove_manager_access)
 
-applet_router = APIRouter(prefix="/applets", tags=["Applets"])
-
-applet_router.post(
-    "/removeAccess",
+# Remove respondent access from a specific user
+applet_router.delete(
+    "/respondent/removeAccess",
     status_code=status.HTTP_200_OK,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,

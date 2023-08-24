@@ -1,5 +1,13 @@
 from fastapi.routing import APIRouter
+from starlette import status
 
+from apps.file.api.file import check_file_uploaded, download, upload
+from apps.file.domain import FileExistenceResponse
+from apps.shared.domain import (
+    AUTHENTICATION_ERROR_RESPONSES,
+    DEFAULT_OPENAPI_RESPONSE,
+    ResponseMulti,
+)
 from apps.file.api.file import answer_download, answer_upload, download, upload
 
 router = APIRouter(prefix="/file", tags=["File"])
@@ -33,3 +41,14 @@ router.post(
         "File stored in S3 account or arbitrary storage(S3, AzureBlob)"
     ),
 )(answer_download)
+
+# router.post("/upload/check")(check_file_uploaded)
+router.post(
+    "/upload/check",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[FileExistenceResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(check_file_uploaded)

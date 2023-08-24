@@ -2,7 +2,15 @@ import uuid
 from copy import deepcopy
 
 from fastapi import Body, Depends
+from starlette.responses import Response as HTTPResponse
 
+from apps.activities.crud import ActivitiesCRUD
+from apps.activities.domain.activity_update import ActivityReportConfiguration
+from apps.activities.services.activity import ActivityService
+from apps.activity_flows.domain.flow_update import (
+    ActivityFlowReportConfiguration,
+)
+from apps.activity_flows.service.flow import FlowService
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain import (
     AppletFolder,
@@ -36,6 +44,7 @@ from apps.authentication.deps import get_current_user
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.domain.response import Response, ResponseMulti
+from apps.shared.exception import NotFoundError
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
@@ -138,7 +147,7 @@ async def applet_create(
         except Exception:
             await mail_service.send(
                 MessageSchema(
-                    recipients=[user.email],
+                    recipients=[user.plain_email],
                     subject="Applet upload failed!",
                     body=mail_service.get_template(
                         path="applet_create_success_en",
@@ -150,7 +159,7 @@ async def applet_create(
             raise
         await mail_service.send(
             MessageSchema(
-                recipients=[user.email],
+                recipients=[user.plain_email],
                 subject="Applet upload success!",
                 body=mail_service.get_template(
                     path="applet_create_success_en",
@@ -233,7 +242,7 @@ async def applet_duplicate(
 
         await mail_service.send(
             MessageSchema(
-                recipients=[user.email],
+                recipients=[user.plain_email],
                 subject="Applet duplicate success!",
                 body=mail_service.get_template(
                     path="applet_duplicate_success_en",
@@ -258,6 +267,52 @@ async def applet_set_report_configuration(
             applet_id
         )
         await service.set_report_configuration(applet_id, schema)
+
+
+async def flow_report_config_update(
+    applet_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    schema: ActivityFlowReportConfiguration = Body(...),
+    session=Depends(get_session),
+):
+    service = FlowService(session)
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_applet_edit_access(
+        applet_id
+    )
+    flow = await service.get_by_id(flow_id)
+    if not flow or flow.applet_id != applet_id:
+        raise NotFoundError()
+
+    async with atomic(session):
+        await service.update_report_config(flow_id, schema)
+
+    return HTTPResponse()
+
+
+async def activity_report_config_update(
+    applet_id: uuid.UUID,
+    activity_id: uuid.UUID,
+    schema: ActivityReportConfiguration = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_applet_edit_access(
+        applet_id
+    )
+
+    activity = await ActivitiesCRUD(session).get_by_id(activity_id)
+    if not activity or activity.applet_id != applet_id:
+        raise NotFoundError()
+
+    async with atomic(session):
+        await ActivityService(session, user.id).update_report(
+            activity_id, schema
+        )
+
+    return HTTPResponse()
 
 
 async def applet_publish(

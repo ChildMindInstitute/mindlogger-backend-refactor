@@ -10,7 +10,6 @@ from backports.datetime_fromisoformat import MonkeyPatch
 from bson import json_util
 from bson.codec_options import CodecOptions
 from bson.objectid import ObjectId
-from pandas.api.types import is_numeric_dtype
 from pymongo import ASCENDING, DESCENDING
 
 from apps.girderformindlogger.models.account_profile import AccountProfile
@@ -283,28 +282,6 @@ def _responseIRIs(definedRange):
             )
         )
     )
-
-
-def _flattenDF(df, columnName):
-    if isinstance(columnName, list):
-        for c in columnName:
-            df = _flattenDF(df, c)
-        return df
-    prefix = columnName if columnName not in ["meta", "responses"] else ""
-    newDf = pd.concat(
-        [df[columnName].apply(pd.Series), df.drop(columnName, axis=1)], axis=1
-    )
-    return (
-        newDf.rename(
-            {
-                col: "{}-{}".format(prefix, col)
-                for col in list(df[columnName][0].keys())
-            },
-            axis="columns",
-        )
-        if len(prefix)
-        else newDf
-    ).dropna("columns", "all")
 
 
 def delocalize(dt):

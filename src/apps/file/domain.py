@@ -8,3 +8,13 @@ class UploadedFile(PublicModel):
 
 class FileDownloadRequest(PublicModel):
     key: str
+
+
+class FileCheckRequest(PublicModel):
+    files: list[str]
+
+
+class FileExistenceResponse(PublicModel):
+    file_id: str
+    uploaded: bool
+    remote_url: str | None = None

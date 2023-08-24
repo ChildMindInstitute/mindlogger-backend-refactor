@@ -72,6 +72,7 @@ class WorkspaceRespondent(InternalModel):
     id: uuid.UUID
     nicknames: list[str] | None = None
     secret_ids: list[str] | None = None
+    is_anonymous_respondent: bool
     last_seen: datetime.datetime
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None
@@ -80,6 +81,7 @@ class WorkspaceRespondent(InternalModel):
 class AppletRole(InternalModel):
     access_id: uuid.UUID
     role: Role
+    reviewer_respondents: list[str] | None = None
 
 
 class WorkspaceManagerApplet(InternalModel):
@@ -88,25 +90,6 @@ class WorkspaceManagerApplet(InternalModel):
     image: str | None
     roles: list[AppletRole]
     encryption: WorkspaceAppletEncryption
-
-
-def group_applet_roles(value):
-    applets = {}
-    for applet_role in value:
-        applet_id = applet_role["applet_id"]
-        applet = applets.get(applet_id)
-        if not applet:
-            applet = {
-                "id": applet_id,
-                "display_name": applet_role["applet_display_name"],
-                "roles": [],
-            }
-        applet["roles"].append(
-            dict(access_id=applet_role["access_id"], role=applet_role["role"])
-        )
-        applets[applet_id] = applet
-
-    return list(applets.values())
 
 
 class WorkspaceManager(InternalModel):
@@ -133,10 +116,16 @@ class WorkspaceManager(InternalModel):
                     "roles": [],
                     "encryption": applet_role["encryption"],
                 }
+
+            respondents = []
+            if applet_role["role"] == Role.REVIEWER:
+                respondents = applet_role["reviewer_respondents"]
+
             applet["roles"].append(
                 dict(
                     access_id=applet_role["access_id"],
                     role=applet_role["role"],
+                    reviewer_respondents=respondents,
                 )
             )
             applets[applet_id] = applet
@@ -148,6 +137,7 @@ class PublicWorkspaceRespondent(PublicModel):
     id: uuid.UUID
     nicknames: list[str] | None
     secret_ids: list[str] | None
+    is_anonymous_respondent: bool
     last_seen: datetime.datetime
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None

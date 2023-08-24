@@ -1,3 +1,4 @@
+from functools import partial
 import uuid
 from urllib.parse import quote
 
@@ -7,10 +8,17 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.authentication.deps import get_current_user
-from apps.file.domain import FileDownloadRequest, UploadedFile
+from apps.file.domain import (
+    FileCheckRequest,
+    FileDownloadRequest,
+    FileExistenceResponse,
+    UploadedFile,
+)
 from apps.file.errors import FileNotFoundError
 from apps.file.storage import select_storage
 from apps.shared.domain.response import Response
+from apps.shared.domain.response import Response, ResponseMulti
+from apps.shared.exception import NotFoundError
 from apps.users.domain import User
 from config import settings
 from infrastructure.database.deps import get_session
@@ -20,10 +28,10 @@ from infrastructure.utility.cdn_client import CDNClient
 async def upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
+    fileId: str | None = None,
 ) -> Response[UploadedFile]:
     cdn_client = CDNClient(settings.cdn, env=settings.env)
-
-    key = CDNClient.generate_key(hash(user.id), file.filename)
+    key = fileId or CDNClient.generate_key(hash(user.id), file.filename)
 
     cdn_client.upload(key, file.file)
 
@@ -83,3 +91,35 @@ async def answer_download(
         else:
             raise e
     return StreamingResponse(file, media_type=media_type)
+
+async def check_file_uploaded(
+    schema: FileCheckRequest,
+    user: User = Depends(get_current_user),
+) -> ResponseMulti[FileExistenceResponse]:
+    """Provides the information if the files is uploaded."""
+
+    cdn_client = CDNClient(settings.cdn, env=settings.env)
+    results: list[FileExistenceResponse] = []
+
+    for file_key in schema.files:
+        cleaned_file_key = file_key.strip()
+        file_existence_factory = partial(
+            FileExistenceResponse,
+            file_id=cleaned_file_key,
+        )
+
+        try:
+            cdn_client.check_existence(cleaned_file_key)
+            results.append(
+                file_existence_factory(
+                    uploaded=True,
+                    remote_url=f"{cdn_client.client._endpoint.host}"
+                    f"/{file_key}",
+                )
+            )
+        except NotFoundError:
+            results.append(file_existence_factory(uploaded=False))
+
+    return ResponseMulti[FileExistenceResponse](
+        result=results, count=len(results)
+    )

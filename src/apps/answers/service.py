@@ -858,13 +858,25 @@ class AnswerService:
                 break
 
     async def get_completed_answers_data(
-        self, applet_id: uuid.UUID, version: str, date: datetime.date
+        self, applet_id: uuid.UUID, version: str, from_date: datetime.date
     ) -> AppletCompletedEntities:
         assert self.user_id
         result = await AnswersCRUD(
             self.answer_session
-        ).get_completed_answers_data(applet_id, version, self.user_id, date)
+        ).get_completed_answers_data(applet_id, version, self.user_id,             applet_id, version, self.user_id, from_date
+)
         return result
+
+    async def is_answers_uploaded(
+        self, applet_id: uuid.UUID, activity_id: str, created_at: int
+    ) -> bool:
+        answers = await AnswersCRUD(
+            self.session
+        ).get_by_applet_activity_created_at(applet_id, activity_id, created_at)
+        if not answers:
+            return False
+
+        return True
 
 
 class ReportServerService:

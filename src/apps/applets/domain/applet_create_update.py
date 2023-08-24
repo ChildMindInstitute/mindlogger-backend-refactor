@@ -38,8 +38,8 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
             activity_names.add(activity.name)
             assessments_count += int(activity.is_reviewable)
 
-        if assessments_count > 1:
-            raise AssessmentLimitExceed()
+        # if assessments_count > 1:
+        #     raise AssessmentLimitExceed()
 
         for flow in flows:  # type:FlowCreate
             if flow.name in flow_names:

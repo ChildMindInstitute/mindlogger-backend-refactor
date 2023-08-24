@@ -129,4 +129,5 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(private_invitation_retrieve)
+
 router.post("/private/{key}/accept")(private_invitation_accept)

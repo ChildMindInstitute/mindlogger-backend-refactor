@@ -2,7 +2,7 @@ import base64
 import datetime
 import uuid
 
-from fastapi import Body, Depends
+from fastapi import Body, Depends, Query
 from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
@@ -10,12 +10,15 @@ from apps.answers.deps.preprocess_arbitrary import (
     preprocess_arbitrary_by_applet_id,
     preprocess_arbitrary_by_applet_schema,
 )
+from apps.activities.services import ActivityHistoryService
 from apps.answers.domain import (
     ActivityAnswerPublic,
+    AnswerExistenceResponse,
     AnswerExport,
     AnswerNote,
     AnswerNoteDetailPublic,
     AnswerReviewPublic,
+    AnswersCheck,
     AppletActivityAnswerPublic,
     AppletAnswerCreate,
     AssessmentAnswerCreate,
@@ -430,13 +433,20 @@ async def applet_answers_export(
                 f"[admin account]({answer.respondent_email})"
             )
 
+    if not data.activities:
+        applet = await AppletService(session, user.id).get(applet_id)
+        activities = await ActivityHistoryService(
+            session, applet.id, applet.version
+        ).get_full()
+        data.activities = activities
+
     return Response(result=PublicAnswerExport.from_orm(data))
 
 
 async def applet_completed_entities(
     applet_id: uuid.UUID,
     version: str,
-    date: datetime.date,
+    from_date: datetime.date = Query(..., alias="fromDate"),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     arbitrary_session=Depends(preprocess_arbitrary_by_applet_id),
@@ -447,6 +457,25 @@ async def applet_completed_entities(
     )
     data = await AnswerService(
         session, user.id, arbitrary_session
-    ).get_completed_answers_data(applet_id, version, date)
+    ).get_completed_answers_data(applet_id, version, from_date)
 
     return Response(result=data)
+
+
+async def answers_existence_check(
+    schema: AnswersCheck = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[AnswerExistenceResponse]:
+    """Provides information whether the answer exists"""
+    await AppletService(session, user.id).exist_by_id(schema.applet_id)
+    await CheckAccessService(session, user.id).check_answer_check_access(
+        schema.applet_id
+    )
+    is_exist = await AnswerService(session, user.id).is_answers_uploaded(
+        schema.applet_id, schema.activity_id, schema.created_at
+    )
+
+    return Response[AnswerExistenceResponse](
+        result=AnswerExistenceResponse(exists=is_exist)
+    )

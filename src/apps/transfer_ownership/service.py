@@ -84,7 +84,7 @@ class TransferService:
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
         if (
-            transfer.email != self._user.email
+            transfer.email != self._user.plain_email
             or applet_id != transfer.applet_id
         ):
             raise PermissionsError()
@@ -110,6 +110,7 @@ class TransferService:
             applet_id=transfer.applet_id,
             owner_id=self._user.id,
             invitor_id=self._user.id,
+            is_deleted=False,
         )
 
         roles_to_add = [
@@ -123,7 +124,9 @@ class TransferService:
                 **roles_data,
             ),
         ]
-        await UserAppletAccessCRUD(self.session).create_many(roles_to_add)
+        await UserAppletAccessCRUD(
+            self.session
+        ).upsert_user_applet_access_list(roles_to_add)
 
     def _generate_transfer_url(self) -> str:
         domain = settings.service.urls.frontend.web_base
@@ -140,7 +143,7 @@ class TransferService:
         await AppletsCRUD(self.session).get_by_id(applet_id)
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
-        if transfer.email != self._user.email:
+        if transfer.email != self._user.plain_email:
             raise PermissionsError()
 
         # delete transfer

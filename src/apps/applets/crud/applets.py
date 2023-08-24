@@ -338,9 +338,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         access_query = access_query.where(
             UserAppletAccessSchema.user_id == user_id
         )
-        access_query = access_query.where(
-            UserAppletAccessSchema.is_deleted == False  # noqa
-        )
+        access_query = access_query.where(UserAppletAccessSchema.soft_exists())
         access_query = access_query.alias("access_query")
 
         query: Query = select(
@@ -440,14 +438,21 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             str,
             str,
             str,
+            str,
+            dict,
+            int,
         ]
     ]:
         access_subquery: Query = select(
             UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
         )
         access_subquery = access_subquery.where(
-            UserAppletAccessSchema.is_deleted == False  # noqa
+            and_(
+                UserAppletAccessSchema.soft_exists(),
+                UserAppletAccessSchema.role != Role.RESPONDENT,
+            )
         )
+
         access_subquery = access_subquery.order_by(
             UserAppletAccessSchema.applet_id.asc(),
             case(
@@ -499,11 +504,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.join(
             access_query,
             access_query.c.applet_id == AppletSchema.id,
-            isouter=True,
+            isouter=False,
         )
         query = query.where(AppletSchema.id.notin_(folder_applets_query))
-        query = query.where(access_query.c.role != None)  # noqa
-
         folders_query = await self._folder_list_query(owner_id, user_id)
         query = folders_query.union(query)
 
@@ -562,7 +565,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
         )
         access_subquery = access_subquery.where(
-            UserAppletAccessSchema.is_deleted == False  # noqa
+            UserAppletAccessSchema.soft_exists()
         )
         access_subquery = access_subquery.order_by(
             case(
@@ -607,7 +610,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.join(
             access_query,
             access_query.c.applet_id == AppletSchema.id,
-            isouter=True,
+            isouter=False,
         )
         query = query.where(_AppletSearching().get_clauses(search_text))
         query = query.where(access_query.c.role != None)  # noqa
@@ -645,7 +648,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
         )
         access_subquery = access_subquery.where(
-            UserAppletAccessSchema.is_deleted == False  # noqa
+            UserAppletAccessSchema.soft_exists()
         )
         access_subquery = access_subquery.order_by(
             case(
@@ -815,7 +818,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
         )
         access_subquery = access_subquery.where(
-            UserAppletAccessSchema.is_deleted == False  # noqa
+            UserAppletAccessSchema.soft_exists()
         )
         access_subquery = access_subquery.order_by(
             UserAppletAccessSchema.applet_id.asc(),

@@ -61,7 +61,7 @@ class BaseActivityItem(BaseModel):
     @validator("name")
     def validate_name(cls, value):
         # name must contain only alphanumeric symbols or underscore
-        if not value.replace("_", "").isalnum():
+        if not value.replace("_", "").replace("-", "").isalnum():
             raise IncorrectNameCharactersError()
         return value
 
@@ -192,7 +192,7 @@ class BaseActivityItem(BaseModel):
                 ResponseType.SLIDER,
                 ResponseType.TEXT,
                 ResponseType.TIME,
-                ResponseType.TIMERANGE,
+                ResponseType.TIMERANGE,  # TODO add support???
             ]:
                 raise IncorrectConditionLogicItemTypeError()
 

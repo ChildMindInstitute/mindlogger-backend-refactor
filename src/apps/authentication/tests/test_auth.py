@@ -7,8 +7,8 @@ from apps.authentication.services import AuthenticationService
 from apps.authentication.tests.factories import UserLogoutRequestFactory
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
+from apps.users.domain import UserCreateRequest
 from apps.users.router import router as user_router
-from apps.users.tests import UserCreateRequestFactory
 from infrastructure.database import rollback, session_manager
 
 
@@ -18,7 +18,12 @@ class TestAuthentication(BaseTest):
     delete_token_url = auth_router.url_path_for("delete_access_token")
     refresh_access_token_url = auth_router.url_path_for("refresh_access_token")
 
-    create_request_user = UserCreateRequestFactory.build()
+    create_request_user = UserCreateRequest(
+        email="tom2@mindlogger.com",
+        first_name="Tom",
+        last_name="Isaak",
+        password="Test1234!",
+    )
     create_request_logout_user = UserLogoutRequestFactory.build()
 
     @rollback
@@ -41,22 +46,10 @@ class TestAuthentication(BaseTest):
             email=self.create_request_user.dict()["email"]
         )
 
-        access_token = AuthenticationService.create_access_token(
-            {"sub": str(user.id)}
-        )
-
-        refresh_token = AuthenticationService.create_refresh_token(
-            {"sub": str(user.id)}
-        )
-
         assert response.status_code == 200
-        assert (
-            response.json()["result"]["token"]["accessToken"] == access_token
-        )
-        assert (
-            response.json()["result"]["token"]["refreshToken"] == refresh_token
-        )
-        assert response.json()["result"]["user"]["id"] == str(user.id)
+        data = response.json()["result"]
+        assert set(data.keys()) == {"user", "token"}
+        assert data["user"]["id"] == str(user.id)
 
     @rollback
     async def test_delete_access_token(self):
@@ -90,7 +83,10 @@ class TestAuthentication(BaseTest):
         # Creating Refresh access token
         refresh_access_token_request = RefreshAccessTokenRequest(
             refresh_token=AuthenticationService.create_refresh_token(
-                {"sub": str(internal_response.json()["result"]["id"])}
+                {
+                    "sub": str(internal_response.json()["result"]["id"]),
+                    "jti": str(uuid.uuid4()),
+                }
             )
         )
 

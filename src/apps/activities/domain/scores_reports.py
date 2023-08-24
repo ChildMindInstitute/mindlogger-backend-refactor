@@ -101,9 +101,9 @@ class ScoresAndReports(PublicModel):
             if len(scores_ids) != len(set(scores_ids)):
                 raise DuplicateScoreIdError()
             # check if there are duplicate score condition names and ids
-            score_condition_names = []
             score_condition_ids = []
             for score in value:
+                score_condition_names = []
                 if score.conditional_logic:
                     score_condition_names += [
                         logic.name for logic in score.conditional_logic
@@ -111,8 +111,10 @@ class ScoresAndReports(PublicModel):
                     score_condition_ids += [
                         logic.id for logic in score.conditional_logic
                     ]
-            if len(score_condition_names) != len(set(score_condition_names)):
-                raise DuplicateScoreConditionNameError()
+                if len(score_condition_names) != len(
+                    set(score_condition_names)
+                ):
+                    raise DuplicateScoreConditionNameError()
             if len(score_condition_ids) != len(set(score_condition_ids)):
                 raise DuplicateScoreConditionIdError()
 

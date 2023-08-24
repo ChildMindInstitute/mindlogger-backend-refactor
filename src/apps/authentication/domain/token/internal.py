@@ -13,9 +13,18 @@ class TokenPurpose(str, Enum):
     REFRESH = "refresh"
 
 
+class JWTClaim(str, Enum):
+    sub = "sub"
+    jti = "jti"
+    exp = "exp"
+    rjti = "rjti"
+
+
 class TokenPayload(InternalModel):
     sub: uuid.UUID
     exp: int
+    jti: str
+    rjti: str | None = None
 
 
 class InternalToken(InternalModel):
@@ -24,7 +33,7 @@ class InternalToken(InternalModel):
     """
 
     payload: TokenPayload
-    raw_token: str
+    raw_token: str | None = None
 
 
 class TokenInfo(InternalModel):

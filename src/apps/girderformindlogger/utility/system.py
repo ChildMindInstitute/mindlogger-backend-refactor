@@ -5,10 +5,10 @@ import threading
 import time
 
 import cherrypy
-import girderformindlogger
 import psutil
 import six
 
+from apps import girderformindlogger
 from apps.girderformindlogger import logger
 from apps.girderformindlogger.models import getDbConnection
 

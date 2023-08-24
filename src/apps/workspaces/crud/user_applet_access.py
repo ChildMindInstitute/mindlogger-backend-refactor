@@ -7,7 +7,6 @@ from sqlalchemy import (
     and_,
     any_,
     case,
-    delete,
     distinct,
     exists,
     false,
@@ -19,7 +18,7 @@ from sqlalchemy import (
     true,
     update,
 )
-from sqlalchemy.dialects.postgresql import UUID, aggregate_order_by
+from sqlalchemy.dialects.postgresql import UUID, aggregate_order_by, insert
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
@@ -181,8 +180,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserAppletAccessSchema,
             UserAppletAccessSchema.applet_id == AppletSchema.id,
         )
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
+        query = query.where(AppletSchema.soft_exists())
 
         if query_params.filters:
             query = query.where(
@@ -217,12 +217,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserAppletAccessSchema,
             UserAppletAccessSchema.applet_id == AppletSchema.id,
         )
+        applet_ids = applet_ids.where(UserAppletAccessSchema.soft_exists())
         applet_ids = applet_ids.where(
             UserAppletAccessSchema.user_id == user_id
         )
-        applet_ids = applet_ids.where(
-            AppletSchema.is_deleted == False  # noqa: E712
-        )
+        applet_ids = applet_ids.where(AppletSchema.soft_exists())
         if folder_id:
             applet_ids = applet_ids.where(
                 AppletSchema.id.in_(folder_applet_query)
@@ -257,6 +256,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
     ) -> UserAppletAccessSchema | None:
         query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role == role)
@@ -266,6 +266,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
     def user_applet_ids_query(self, user_id: uuid.UUID) -> Query:
         query: Query = select(UserAppletAccessSchema.applet_id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(
             UserAppletAccessSchema.role.in_(
@@ -278,6 +279,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, applet_id: uuid.UUID
     ) -> UserAppletAccessSchema:
         query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.role == Role.OWNER)
         db_result = await self._execute(query)
@@ -305,6 +307,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).where(
             self.schema_class.user_id == user_id_,
+            self.schema_class.soft_exists(),
             exists().where(
                 AppletSchema.id == self.schema_class.applet_id,
                 AppletSchema.soft_exists(),
@@ -340,10 +343,93 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     ) -> list[UserAppletAccessSchema]:
         return await self._create_many(schemas)
 
+    async def upsert_user_applet_access(self, schema: UserAppletAccessSchema):
+        values = {
+            "invitor_id": schema.invitor_id,
+            "owner_id": schema.owner_id,
+            "user_id": schema.user_id,
+            "applet_id": schema.applet_id,
+            "role": schema.role,
+            "is_deleted": schema.is_deleted,
+            "meta": schema.meta,
+        }
+        stmt = insert(UserAppletAccessSchema).values(values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[
+                UserAppletAccessSchema.user_id,
+                UserAppletAccessSchema.applet_id,
+                UserAppletAccessSchema.role,
+            ],
+            set_={
+                "invitor_id": schema.invitor_id,
+                "owner_id": schema.owner_id,
+                "user_id": stmt.excluded.user_id,
+                "applet_id": stmt.excluded.applet_id,
+                "role": stmt.excluded.role,
+                "is_deleted": stmt.excluded.is_deleted,
+                "meta": stmt.excluded.meta,
+            },
+        )
+
+        await self._execute(stmt)
+
+    async def upsert_user_applet_access_list(
+        self, schemas: list[UserAppletAccessSchema]
+    ):
+        values_list = [
+            {
+                "invitor_id": schema.invitor_id,
+                "owner_id": schema.owner_id,
+                "user_id": schema.user_id,
+                "applet_id": schema.applet_id,
+                "role": schema.role,
+                "is_deleted": schema.is_deleted,
+                "meta": schema.meta,
+            }
+            for schema in schemas
+        ]
+
+        stmt = insert(UserAppletAccessSchema).values(values_list)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[
+                UserAppletAccessSchema.user_id,
+                UserAppletAccessSchema.applet_id,
+                UserAppletAccessSchema.role,
+            ],
+            set_={
+                "user_id": stmt.excluded.user_id,
+                "applet_id": stmt.excluded.applet_id,
+                "role": stmt.excluded.role,
+                "is_deleted": stmt.excluded.is_deleted,
+                "meta": stmt.excluded.meta,
+            },
+        )
+
+        await self._execute(stmt)
+
+        return await self.get_user_applet_access_list(schemas)
+
+    async def get_user_applet_access_list(
+        self, schemas: list[UserAppletAccessSchema]
+    ):
+        user_ids = [schema.user_id for schema in schemas]
+        applet_ids = [schema.applet_id for schema in schemas]
+        roles = [schema.role for schema in schemas]
+
+        query = select(UserAppletAccessSchema).where(
+            (UserAppletAccessSchema.user_id.in_(user_ids))
+            & (UserAppletAccessSchema.applet_id.in_(applet_ids))
+            & (UserAppletAccessSchema.role.in_(roles))
+        )
+
+        result = await self._execute(query)
+        return result.fetchall()
+
     async def get(
         self, user_id: uuid.UUID, applet_id: uuid.UUID, role: str
     ) -> UserAppletAccessSchema | None:
         query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.role == role)
@@ -362,6 +448,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         """
 
         query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.role.in_(ordered_roles))
@@ -377,6 +464,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, applet_id: uuid.UUID, user_id: uuid.UUID
     ) -> UserAppletAccessSchema:
         query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
@@ -387,6 +475,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, user_id: uuid.UUID, applet_id: uuid.UUID
     ) -> list[str]:
         query: Query = select(distinct(UserAppletAccessSchema.role))
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         db_result = await self._execute(query)
@@ -397,6 +486,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
     ) -> list[str]:
         query: Query = select(distinct(UserAppletAccessSchema.role))
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(roles))
@@ -411,6 +501,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         exclude_id: uuid.UUID | None = None,
     ) -> UserAppletAccessSchema | None:
         query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         if exclude_id:
             query = query.where(UserAppletAccessSchema.id != exclude_id)
@@ -426,6 +517,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, applet_id: uuid.UUID, role: Role
     ) -> list[str]:
         query: Query = select(distinct(UserAppletAccessSchema.user_id))
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.role == role)
         db_result = await self._execute(query)
@@ -433,8 +525,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return db_result.scalars().all()
 
     async def delete_all_by_applet_id(self, applet_id: uuid.UUID):
-        query: Query = delete(UserAppletAccessSchema)
+        query: Query = update(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def get_workspace_respondents(
@@ -486,9 +579,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         has_access = (
             exists()
             .where(
+                UserAppletAccessSchema.soft_exists(),
                 UserAppletAccessSchema.user_id == user_id,
                 UserAppletAccessSchema.applet_id == AppletSchema.id,
                 or_(
+                    UserAppletAccessSchema.soft_exists(),
                     UserAppletAccessSchema.role.in_(
                         [Role.OWNER, Role.MANAGER, Role.COORDINATOR]
                     ),
@@ -510,6 +605,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserSchema.id,
                 UserSchema.first_name,
                 UserSchema.last_name,
+                UserSchema.is_anonymous_respondent,
 
                 func.coalesce(
                     UserSchema.last_seen_at, UserSchema.created_at
@@ -618,6 +714,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         has_access = (
             exists()
             .where(
+                UserAppletAccessSchema.soft_exists(),
                 UserAppletAccessSchema.user_id == user_id,
                 UserAppletAccessSchema.applet_id == AppletSchema.id,
                 UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER]),
@@ -654,9 +751,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                             AppletSchema.display_name,  # noqa: E501
                             text("'applet_image'"), AppletSchema.image,
                             text("'access_id'"), UserAppletAccessSchema.id,
-                            # noqa: E501
                             text("'role'"), UserAppletAccessSchema.role,
-                            text("'encryption'"), AppletSchema.encryption
+                            text("'encryption'"), AppletSchema.encryption,
+                            text("'reviewer_respondents'"), UserAppletAccessSchema.reviewer_respondents,  # noqa: E501
                         ),
                         AppletSchema.id
                     )
@@ -675,6 +772,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserSchema.id == UserAppletAccessSchema.user_id,
             )
             .where(
+                UserAppletAccessSchema.soft_exists(),
                 UserAppletAccessSchema.owner_id == owner_id,
                 UserAppletAccessSchema.role != Role.RESPONDENT,
                 has_access,
@@ -717,6 +815,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, user_id_: uuid.UUID, roles: list[Role]
     ) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).filter(
+            self.schema_class.soft_exists(),
             self.schema_class.user_id == user_id_,
             self.schema_class.role.in_(roles),
         )
@@ -736,6 +835,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         invitor_id: uuid.UUID | None = None,
     ) -> list[UserAppletAccessSchema]:
         query: Query = select(self.schema_class)
+        query = query.where(self.schema_class.soft_exists())
         query = query.where(self.schema_class.user_id == user_id)
         query = query.where(self.schema_class.applet_id.in_(applet_ids))
         query = query.where(self.schema_class.role.in_(roles))
@@ -751,10 +851,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         applet_ids: list[uuid.UUID],
         roles: list[Role],
     ):
-        query: Query = delete(UserAppletAccessSchema)
+        query: Query = update(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(roles))
         query = query.where(UserAppletAccessSchema.applet_id.in_(applet_ids))
+        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def check_access_by_user_and_owner(
@@ -764,6 +865,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         roles: list[Role] | None = None,
     ) -> bool:
         query: Query = select(self.schema_class.id)
+        query = query.where(self.schema_class.soft_exists())
         query = query.where(self.schema_class.user_id == user_id)
         query = query.where(self.schema_class.owner_id == owner_id)
         if roles:
@@ -810,6 +912,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, applet_id: uuid.UUID, roles: list[Role]
     ) -> list[uuid.UUID]:
         query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.role.in_(roles))
         db_result = await self._execute(query)
@@ -819,6 +922,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
     async def has_managers(self, user_id: uuid.UUID) -> bool:
         query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.owner_id == user_id)
         query = query.where(
             UserAppletAccessSchema.role.in_(
@@ -835,6 +939,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, user_id: uuid.UUID, owner_id: uuid.UUID, roles: list[Role]
     ) -> bool:
         query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.owner_id == owner_id)
         query = query.where(UserAppletAccessSchema.role.in_(roles))
@@ -873,6 +978,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.join(
             AppletSchema, AppletSchema.id == UserAppletAccessSchema.applet_id
         )
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
         query = query.where(UserAppletAccessSchema.user_id == respondent_id)
         query = query.where(UserAppletAccessSchema.owner_id == owner_id)
@@ -912,6 +1018,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query: Query = select(
             count(UserAppletAccessSchema.id),
         )
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
         query = query.where(UserAppletAccessSchema.user_id == respondent_id)
         query = query.where(UserAppletAccessSchema.owner_id == owner_id)
@@ -922,16 +1029,19 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     async def delete_user_roles(
         self, applet_id: uuid.UUID, user_id: uuid.UUID, roles: list[Role]
     ):
-        query: Query = delete(UserAppletAccessSchema)
+        query: Query = update(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.role.in_(roles))
+        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def has_role(
         self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
     ) -> bool:
         query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role == role)
@@ -944,6 +1054,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, applet_ids: list[uuid.UUID], user_id: uuid.UUID
     ) -> dict[uuid.UUID, Role]:
         from_query: Query = select(UserAppletAccessSchema)
+        from_query = from_query.where(UserAppletAccessSchema.soft_exists())
         from_query = from_query.where(
             UserAppletAccessSchema.user_id == user_id
         )
@@ -976,6 +1087,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         applet_ids: list[uuid.UUID],
     ) -> str | None:
         from_query: Query = select(UserAppletAccessSchema.role)
+        from_query = from_query.where(UserAppletAccessSchema.soft_exists())
         from_query = from_query.where(
             UserAppletAccessSchema.owner_id == owner_id
         )
@@ -1010,7 +1122,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     async def remove_manager_accesses_by_user_id_in_workspace(
         self, owner_id: uuid.UUID, user_id: uuid.UUID
     ):
-        query: Query = delete(UserAppletAccessSchema)
+        query: Query = update(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.owner_id == owner_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(
@@ -1018,11 +1131,13 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 [Role.MANAGER, Role.COORDINATOR, Role.EDITOR, Role.REVIEWER]
             )
         )
+        query = query.values(is_deleted=True)
 
         await self._execute(query)
 
     async def update_meta_by_access_id(self, access_id: uuid.UUID, meta: dict):
         query: Query = update(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.id == access_id)
         query = query.values(meta=meta)
 
@@ -1053,6 +1168,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 )
             ).label("roles"),
         ).where(
+            UserAppletAccessSchema.soft_exists(),
             UserAppletAccessSchema.owner_id == owner_id,
             UserAppletAccessSchema.user_id == user_id,
         )
@@ -1074,6 +1190,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
     ) -> list[uuid.UUID]:
         query: Query = select(UserAppletAccessSchema.user_id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         if respondent_id:
             query = query.where(

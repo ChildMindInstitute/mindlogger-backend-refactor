@@ -3,7 +3,7 @@ import uuid
 from typing import Collection
 
 from pydantic import parse_obj_as
-from sqlalchemy import and_, case, delete, func, null, or_, select
+from sqlalchemy import and_, case, func, null, or_, select, update
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
@@ -116,10 +116,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def delete_by_applet_user(
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None = None
     ):
-        query: Query = delete(AnswerSchema)
+        query: Query = update(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         if respondent_id:
             query = query.where(AnswerSchema.respondent_id == respondent_id)
+        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def get_applet_answers(
@@ -294,6 +295,19 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
+    async def get_by_applet_activity_created_at(
+        self, applet_id: uuid.UUID, activity_id: str, created_at: int
+    ) -> list[AnswerSchema] | None:
+        created_time = datetime.datetime.fromtimestamp(created_at)
+        query: Query = select(AnswerSchema)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(AnswerSchema.created_at == created_time)
+        query = query.filter(
+            AnswerSchema.activity_history_id.startswith(activity_id)
+        )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
     async def get_activity_flow_by_answer_id(
         self, answer_id: uuid.UUID
     ) -> bool:
@@ -363,7 +377,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         applet_id: uuid.UUID,
         version: str,
         respondent_id: uuid.UUID,
-        date: datetime.date,
+        from_date: datetime.date,
     ) -> AppletCompletedEntities:
         is_completed = or_(
             AnswerSchema.is_flow_completed,
@@ -387,12 +401,13 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.applet_id == applet_id,
                 AnswerSchema.version == version,
                 AnswerSchema.respondent_id == respondent_id,
-                AnswerItemSchema.local_end_date == date,
+                AnswerItemSchema.local_end_date >= from_date,
                 is_completed,
             )
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerItemSchema.local_end_date.desc(),
                 AnswerItemSchema.local_end_time.desc(),
             )
             .distinct(
