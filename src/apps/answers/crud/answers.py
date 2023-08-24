@@ -405,11 +405,14 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date.desc(),
                 AnswerItemSchema.local_end_time.desc(),
             )
             .distinct(
-                AnswerSchema.activity_history_id, AnswerSchema.flow_history_id
+                AnswerSchema.activity_history_id,
+                AnswerSchema.flow_history_id,
+                AnswerItemSchema.scheduled_event_id,
             )
         )
 
