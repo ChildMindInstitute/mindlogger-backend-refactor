@@ -283,6 +283,7 @@ class AppletService:
                     is_hidden=activity.is_hidden,
                     report_included_item_name=activity.report_included_item_name,  # noqa: E501
                     subscale_setting=activity.subscale_setting,
+                    scores_and_reports=activity.scores_and_reports,
                 )
             )
 
