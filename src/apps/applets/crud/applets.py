@@ -503,7 +503,12 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             isouter=True,
         )
         query = query.where(AppletSchema.id.notin_(folder_applets_query))
-        query = query.where(access_query.c.role != None)  # noqa
+        query = query.where(
+            and_(
+                access_query.c.role != None,  # noqa
+                access_query.c.role != Role.RESPONDENT,
+            ),
+        )
 
         folders_query = await self._folder_list_query(owner_id, user_id)
         query = folders_query.union(query)

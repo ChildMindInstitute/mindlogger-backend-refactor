@@ -945,7 +945,7 @@ class TestApplet(BaseTest):
         assert TestMail.mails[0].subject == "Applet duplicate success!"
 
         response = await self.client.get(self.applet_list_url)
-        assert len(response.json()["result"]) == 4
+        assert len(response.json()["result"]) == 5
         assert response.json()["result"][0]["displayName"] == "New name"
 
         response = await self.client.post(
@@ -1092,17 +1092,21 @@ class TestApplet(BaseTest):
         response = await self.client.get(self.applet_list_url)
 
         assert response.status_code == 200, response.json()
-        assert len(response.json()["result"]) == 3
+        assert len(response.json()["result"]) == 4
         assert (
             response.json()["result"][0]["id"]
             == "92917a56-d586-4613-b7aa-991f2c4b15b4"
         )
         assert (
             response.json()["result"][1]["id"]
-            == "92917a56-d586-4613-b7aa-991f2c4b15b2"
+            == "92917a56-d586-4613-b7aa-991f2c4b15b5"
         )
         assert (
             response.json()["result"][2]["id"]
+            == "92917a56-d586-4613-b7aa-991f2c4b15b2"
+        )
+        assert (
+            response.json()["result"][3]["id"]
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 

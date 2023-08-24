@@ -202,7 +202,7 @@ class TestWorkspaces(BaseTest):
             ),
         )
         assert response.status_code == 200
-        assert response.json()["count"] == 3
+        assert response.json()["count"] == 4
 
     @rollback
     async def test_workspace_applets_detail(self):
@@ -764,7 +764,7 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == 200
         applets = response.json()["result"]
-        assert applets[2]["activityCount"] == 2
+        assert applets[2]["activityCount"] == 1
         assert applets[2]["description"] == {
             "en": "Patient Health Questionnaire"
         }
