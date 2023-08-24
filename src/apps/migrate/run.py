@@ -35,43 +35,43 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
     #     query={"_id": ObjectId("5fa5a276bdec546ce77b298b")}, fields={"_id": 1}
     # )
 
-    # answers = Item().find(
-    #     query={
-    #         "meta.dataSource": {"$exists": True},
-    #         "created": {
-    #             "$gte": datetime.datetime(2022, 8, 1, 0, 0, 0, 0),
-    #         },
-    #     },
-    #     fields={"meta.applet.@id": 1},
-    # )
-    # applet_ids = []
-    # for answer in answers:
-    #     applet_ids.append(answer["meta"]["applet"]["@id"])
+    answers = Item().find(
+        query={
+            "meta.dataSource": {"$exists": True},
+            "created": {
+                "$gte": datetime.datetime(2022, 8, 1, 0, 0, 0, 0),
+            },
+        },
+        fields={"meta.applet.@id": 1},
+    )
+    applet_ids = []
+    for answer in answers:
+        applet_ids.append(answer["meta"]["applet"]["@id"])
 
-    # applets = Applet().find(
-    #     query={
-    #         "meta.applet.displayName": {"$exists": True},
-    #         "meta.applet.deleted": {"$ne": True},
-    #         "meta.applet.editing": {"$ne": True},
-    #         "$or": [
-    #             {
-    #                 "created": {
-    #                     "$gte": datetime.datetime(2023, 2, 1, 0, 0, 0, 0),
-    #                 }
-    #             },
-    #             {
-    #                 "updated": {
-    #                     "$gte": datetime.datetime(2023, 2, 1, 0, 0, 0, 0),
-    #                 }
-    #             },
-    #             {"_id": {"$in": applet_ids}},
-    #         ],
-    #     },
-    #     fields={"_id": 1},
-    # )
+    applets = Applet().find(
+        query={
+            "meta.applet.displayName": {"$exists": True},
+            "meta.applet.deleted": {"$ne": True},
+            "meta.applet.editing": {"$ne": True},
+            "$or": [
+                {
+                    "created": {
+                        "$gte": datetime.datetime(2023, 2, 1, 0, 0, 0, 0),
+                    }
+                },
+                {
+                    "updated": {
+                        "$gte": datetime.datetime(2023, 2, 1, 0, 0, 0, 0),
+                    }
+                },
+                {"_id": {"$in": applet_ids}},
+            ],
+        },
+        fields={"_id": 1},
+    )
     migrating_applets = []
-    # for applet in applets:
-    #     migrating_applets.append(str(applet["_id"]))
+    for applet in applets:
+        migrating_applets.append(str(applet["_id"]))
 
     appletsCount = len(migrating_applets)
     print("total", appletsCount)
@@ -79,7 +79,6 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
     skipUntil = None
     skipped_applets = []
     for index, applet_id in enumerate(migrating_applets, start=1):
-        # applet_id = str(applet_id["_id"])
         if skipUntil == applet_id:
             skipUntil = None
         if skipUntil is not None or applet_id in toSkip:
@@ -94,6 +93,7 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
                     "created"
                 ]
                 _applet.display_name = applet.display_name
+                _applet.encryption = applet.encryption
 
             if applets != {}:
                 applets[list(applets.keys())[-1]] = applet
@@ -103,9 +103,9 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
             await postgres.save_applets(applets, owner_id)
         except (FormatldException, EmptyAppletException) as e:
             print("Skipped because: ", e.message)
-        # except Exception as e:
-        #     skipped_applets.append(applet_id)
-        #     print("error: ", applet_id)
+        except Exception as e:
+            skipped_applets.append(applet_id)
+            print("error: ", applet_id)
 
     print("error in", len(skipped_applets), "applets:")
     print(skipped_applets)
