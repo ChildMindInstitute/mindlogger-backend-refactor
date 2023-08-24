@@ -1,15 +1,26 @@
+import uuid
+from datetime import datetime
+
 from fastapi import Body, Depends
 from jose import JWTError, jwt
+from pydantic import ValidationError
 
 from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.login import UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest
 from apps.authentication.domain.token import (
     InternalToken,
+    JWTClaim,
     RefreshAccessTokenRequest,
     Token,
+    TokenPayload,
+    TokenPurpose,
 )
-from apps.authentication.errors import EmailDoesNotExist, InvalidRefreshToken
+from apps.authentication.errors import (
+    AuthenticationError,
+    EmailDoesNotExist,
+    InvalidRefreshToken,
+)
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.encryption import encrypt
@@ -46,12 +57,16 @@ async def get_token(
                 user, encrypted_email
             )
 
-    access_token = AuthenticationService.create_access_token(
-        {"sub": str(user.id)}
+    rjti = str(uuid.uuid4())
+    refresh_token = AuthenticationService.create_refresh_token(
+        {JWTClaim.sub: str(user.id), JWTClaim.jti: rjti}
     )
 
-    refresh_token = AuthenticationService.create_refresh_token(
-        {"sub": str(user.id)}
+    access_token = AuthenticationService.create_access_token(
+        {
+            JWTClaim.sub: str(user.id),
+            JWTClaim.rjti: rjti,
+        }
     )
 
     token = Token(access_token=access_token, refresh_token=refresh_token)
@@ -77,15 +92,29 @@ async def refresh_access_token(
                 settings.authentication.refresh_token.secret_key,
                 algorithms=[settings.authentication.algorithm],
             )
+            token_data = TokenPayload(**payload)
 
-            if not (user_id := payload.get("sub")):
+            if datetime.fromtimestamp(token_data.exp) < datetime.now():
+                raise AuthenticationError
+
+            if not (user_id := payload[JWTClaim.sub]):
                 raise InvalidRefreshToken()
 
-        except JWTError:
-            raise InvalidRefreshToken()
+        except (JWTError, ValidationError) as e:
+            raise InvalidRefreshToken() from e
 
-        access_token = AuthenticationService(session).create_access_token(
-            {"sub": str(user_id)}
+        # Check if the token is in the blacklist
+        revoked = await AuthenticationService(session).is_revoked(
+            InternalToken(payload=token_data)
+        )
+        if revoked:
+            raise AuthenticationError
+
+        access_token = AuthenticationService.create_access_token(
+            {
+                JWTClaim.sub: str(user_id),
+                JWTClaim.rjti: token_data.jti,
+            }
         )
 
     return Response(
@@ -97,17 +126,36 @@ async def refresh_access_token(
 
 async def delete_access_token(
     schema: UserLogoutRequest | None = Body(default=None),
-    token: InternalToken = Depends(get_current_token),
+    token: InternalToken = Depends(get_current_token()),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
     """Add token to the blacklist."""
     async with atomic(session):
-        await AuthenticationService(session).add_access_token_to_blacklist(
-            token
+        await AuthenticationService(session).revoke_token(
+            token, TokenPurpose.ACCESS
         )
+    async with atomic(session):
         if schema and schema.device_id:
             await UserDeviceService(session, user.id).remove_device(
+                schema.device_id
+            )
+    return ""
+
+
+async def delete_refresh_token(
+    schema: UserLogoutRequest | None = Body(default=None),
+    token: InternalToken = Depends(get_current_token(TokenPurpose.REFRESH)),
+    session=Depends(get_session),
+):
+    """Add token to the blacklist."""
+    async with atomic(session):
+        await AuthenticationService(session).revoke_token(
+            token, TokenPurpose.REFRESH
+        )
+    if schema and schema.device_id:
+        async with atomic(session):
+            await UserDeviceService(session, token.payload.sub).remove_device(
                 schema.device_id
             )
     return ""

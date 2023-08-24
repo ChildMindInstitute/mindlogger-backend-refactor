@@ -3,6 +3,7 @@ from starlette import status
 
 from apps.authentication.api.auth import (
     delete_access_token,
+    delete_refresh_token,
     get_token,
     refresh_access_token,
 )
@@ -38,6 +39,15 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(delete_access_token)
+
+router.post(
+    "/logout2",
+    responses={
+        status.HTTP_200_OK: {"model": str},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(delete_refresh_token)
 
 # Refresh access token
 router.post(
