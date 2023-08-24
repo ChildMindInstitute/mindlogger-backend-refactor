@@ -763,6 +763,18 @@ class AnswerService:
     async def get_summary_activities(
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
     ) -> list[SummaryActivity]:
+        assert self.user_id
+        role = await AppletAccessCRUD(self.session).get_applets_priority_role(
+            applet_id, self.user_id
+        )
+        if role == Role.REVIEWER:
+            access = await UserAppletAccessService(
+                self.session, self.user_id, applet_id
+            ).get_access(Role.REVIEWER)
+            respondents = access.meta.get("respondents", []) if access else []
+            if str(respondent_id) not in respondents:
+                raise AnswerAccessDeniedError()
+
         activities = await ActivityHistoriesCRUD(
             self.session
         ).get_by_applet_id_for_summary(applet_id)
