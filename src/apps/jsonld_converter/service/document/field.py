@@ -885,7 +885,7 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
                                 max_value=None,
                             )
                         )
-            if (scores and scores[0] is None) or None in scores:
+            if (scores and scores[0] is None) or (scores and None in scores):
                 scores = []
 
             response_value = SliderRowsValue(

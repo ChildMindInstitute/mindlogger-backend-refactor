@@ -491,7 +491,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                             continue
                         if item.name in subscale_names:
                             item.type = SubscaleItemType.SUBSCALE
-                        else:
+                        elif subscale.items is not None:
                             # remove item from subscale
                             subscale.items.remove(item)
                             # raise SubscaleParsingError(
