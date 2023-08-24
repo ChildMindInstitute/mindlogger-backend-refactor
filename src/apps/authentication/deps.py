@@ -1,4 +1,3 @@
-from contextlib import suppress
 from datetime import datetime
 
 from fastapi import Depends, HTTPException, status
@@ -8,13 +7,17 @@ from jose import JWTError, jwt
 from pydantic import EmailStr, ValidationError
 
 from apps.authentication.domain.login import UserLoginRequest
-from apps.authentication.domain.token import InternalToken, TokenPayload
+from apps.authentication.domain.token import (
+    InternalToken,
+    JWTClaim,
+    TokenPayload,
+    TokenPurpose,
+)
 from apps.authentication.errors import AuthenticationError
 from apps.authentication.services import AuthenticationService
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from config import settings
-from infrastructure.cache import CacheNotFound
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 
@@ -54,74 +57,58 @@ async def get_current_user_for_ws(
         except (JWTError, ValidationError):
             raise AuthenticationError
 
-        user = await UsersCRUD(session).get_by_id(id_=token_data.sub)
-        await UsersCRUD(session).update_last_seen_by_id(token_data.sub)
-
         # Check if the token is in the blacklist
-        with suppress(CacheNotFound):
-            cache_entries = await AuthenticationService(
-                session
-            ).fetch_all_tokens(user.email)
+        revoked = await AuthenticationService(session).is_revoked(
+            InternalToken(payload=token_data, raw_token=token)
+        )
+        if revoked:
+            raise AuthenticationError
 
-            for entry in cache_entries:
-                if entry.raw_token == token:
-                    raise AuthenticationError
+        user = await UsersCRUD(session).get_by_id(id_=token_data.sub)
 
     return user
 
 
-async def get_current_user(
-    token: str = Depends(oauth2_oauth),
-    session=Depends(get_session),
-) -> User:
-    async with atomic(session):
+def get_current_token(type_: TokenPurpose = TokenPurpose.ACCESS):
+    async def _get_current_token(
+        token: str = Depends(oauth2_oauth),
+    ) -> InternalToken:
         try:
+            key = settings.authentication.access_token.secret_key
+            if type_ == TokenPurpose.REFRESH:
+                key = settings.authentication.refresh_token.secret_key
             payload = jwt.decode(
                 token,
-                settings.authentication.access_token.secret_key,
+                key,
                 algorithms=[settings.authentication.algorithm],
             )
-            token_data = TokenPayload(**payload)
 
-            if datetime.fromtimestamp(token_data.exp) < datetime.now():
+            token_payload = TokenPayload(**payload)
+
+            if datetime.fromtimestamp(token_payload.exp) < datetime.now():
                 raise AuthenticationError
         except (JWTError, ValidationError):
             raise AuthenticationError
 
-        user = await UsersCRUD(session).get_by_id(id_=token_data.sub)
-        await UsersCRUD(session).update_last_seen_by_id(token_data.sub)
+        return InternalToken(payload=token_payload, raw_token=token)
 
+    return _get_current_token
+
+
+async def get_current_user(
+    token: InternalToken = Depends(get_current_token()),
+    session=Depends(get_session),
+) -> User:
+    async with atomic(session):
         # Check if the token is in the blacklist
-        with suppress(CacheNotFound):
-            cache_entries = await AuthenticationService(
-                session
-            ).fetch_all_tokens(user.email)
+        revoked = await AuthenticationService(session).is_revoked(token)
+        if revoked:
+            raise AuthenticationError
 
-            for entry in cache_entries:
-                if entry.raw_token == token:
-                    raise AuthenticationError
+        user = await UsersCRUD(session).get_by_id(id_=token.payload.sub)
+        await UsersCRUD(session).update_last_seen_by_id(token.payload.sub)
 
     return user
-
-
-async def get_current_token(
-    token: str = Depends(oauth2_oauth),
-) -> InternalToken:
-    try:
-        payload = jwt.decode(
-            token,
-            settings.authentication.access_token.secret_key,
-            algorithms=[settings.authentication.algorithm],
-        )
-
-        token_payload = TokenPayload(**payload)
-
-        if datetime.fromtimestamp(token_payload.exp) < datetime.now():
-            raise AuthenticationError
-    except (JWTError, ValidationError):
-        raise AuthenticationError
-
-    return InternalToken(payload=token_payload, raw_token=token)
 
 
 async def openapi_auth(
@@ -142,7 +129,7 @@ async def openapi_auth(
             user_login_schema
         )
         access_token = AuthenticationService.create_access_token(
-            {"sub": str(user.id)}
+            {JWTClaim.sub: str(user.id)}
         )
 
     return {
