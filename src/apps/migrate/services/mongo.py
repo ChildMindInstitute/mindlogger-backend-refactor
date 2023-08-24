@@ -1,5 +1,6 @@
 import hashlib
 import os
+import json
 
 from bson.objectid import ObjectId
 from Cryptodome.Cipher import AES
@@ -29,6 +30,7 @@ from apps.migrate.services.applet_versions import (
 from apps.migrate.utilities import mongoid_to_uuid
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt
+from apps.applets.domain.base import Encryption
 
 
 # from apps.applets.domain.applet_create_update import AppletCreate
@@ -320,6 +322,14 @@ class Mongo:
         converted.extra_fields["updated"] = applet["updated"]
         converted.extra_fields["version"] = applet["meta"]["applet"].get(
             "version", "0.0.1"
+        )
+        converted.encryption = Encryption(
+            public_key=json.dumps(
+                applet["meta"]["encryption"]["appletPublicKey"]
+            ),
+            prime=json.dumps(applet["meta"]["encryption"]["appletPrime"]),
+            base=json.dumps(applet["meta"]["encryption"]["base"]),
+            account_id=str(applet["accountId"]),
         )
         converted = self._extract_ids(converted, applet_id)
 
