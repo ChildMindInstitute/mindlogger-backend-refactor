@@ -114,25 +114,26 @@ class UserAccessService:
 
     async def remove_manager_access(self, schema: RemoveManagerAccess):
         """Remove manager access from a specific user."""
-        # check if user is owner of all applets
-        await self._validate_ownership(
-            schema.applet_ids, [Role.OWNER, Role.MANAGER]
-        )
+        # TODO rework logic: query to remove all managers less by rang
         if self._user_id == schema.user_id:
             raise RemoveOwnPermissionAccessDenied()
+
         manager_roles = [
             Role.COORDINATOR,
-            Role.MANAGER,
             Role.EDITOR,
             Role.REVIEWER,
         ]
+        try:
+            await self._validate_ownership(schema.applet_ids, [Role.OWNER])
+            manager_roles.append(Role.MANAGER)
+        except AppletAccessDenied:
+            await self._validate_ownership(schema.applet_ids, [Role.MANAGER])
 
         # check if schema.user_id is manager of all applets
         await self._validate_access(
             user_id=schema.user_id,
             removing_applets=schema.applet_ids,
             roles=manager_roles,
-            invitor_id=self._user_id,
         )
         # remove manager access
         await UserAppletAccessCRUD(

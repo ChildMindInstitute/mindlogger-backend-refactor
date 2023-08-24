@@ -103,5 +103,6 @@ settings = Settings(
         "transfer_ownership",
         "alerts",
         "library",
+        "authentication",
     ],
 )
