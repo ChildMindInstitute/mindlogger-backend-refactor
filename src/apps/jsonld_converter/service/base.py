@@ -73,5 +73,5 @@ def str_to_id(name: str, to_underscore=r"\s") -> str:
         name = re.sub(rf"_{to_underscore}+", "_", name)
         name = re.sub(
             rf"{to_underscore}+_", "_", name
-        )  #  we need to preserve (__) in names
+        )  # we need to preserve (__) in names
     return name
