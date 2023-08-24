@@ -394,7 +394,7 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 5
+        assert response.json()["count"] == 6
 
         # test search
         search_params = {
@@ -435,7 +435,7 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 5
+        assert response.json()["count"] == 6
 
         # test search
         search_params = {
