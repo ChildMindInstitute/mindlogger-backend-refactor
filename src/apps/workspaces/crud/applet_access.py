@@ -120,7 +120,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     async def get_applets_priority_role(
         self,
         applet_id: uuid.UUID,
-        user_id: uuid.UUID,
+        user_id: uuid.UUID | None,
     ) -> Role | None:
         query: Query = select(UserAppletAccessSchema.role)
         query = query.where(UserAppletAccessSchema.soft_exists())
@@ -266,7 +266,9 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         1. view assigned users data
         2. export assigned users data
         """
-        query: Query = select(UserAppletAccessSchema.id)
+        query: Query = select(
+            UserAppletAccessSchema.role, UserAppletAccessSchema.meta
+        )
         query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
