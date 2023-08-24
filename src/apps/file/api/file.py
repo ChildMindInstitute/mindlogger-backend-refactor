@@ -1,5 +1,5 @@
-from functools import partial
 import uuid
+from functools import partial
 from urllib.parse import quote
 
 from botocore.exceptions import ClientError
@@ -16,7 +16,6 @@ from apps.file.domain import (
 )
 from apps.file.errors import FileNotFoundError
 from apps.file.storage import select_storage
-from apps.shared.domain.response import Response
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.users.domain import User
@@ -91,6 +90,7 @@ async def answer_download(
         else:
             raise e
     return StreamingResponse(file, media_type=media_type)
+
 
 async def check_file_uploaded(
     schema: FileCheckRequest,

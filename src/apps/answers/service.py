@@ -863,8 +863,12 @@ class AnswerService:
         assert self.user_id
         result = await AnswersCRUD(
             self.answer_session
-        ).get_completed_answers_data(applet_id, version, self.user_id,             applet_id, version, self.user_id, from_date
-)
+        ).get_completed_answers_data(
+            applet_id,
+            version,
+            self.user_id,
+            from_date,
+        )
         return result
 
     async def is_answers_uploaded(

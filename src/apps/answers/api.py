@@ -6,11 +6,11 @@ from fastapi import Body, Depends, Query
 from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
+from apps.activities.services import ActivityHistoryService
 from apps.answers.deps.preprocess_arbitrary import (
     preprocess_arbitrary_by_applet_id,
     preprocess_arbitrary_by_applet_schema,
 )
-from apps.activities.services import ActivityHistoryService
 from apps.answers.domain import (
     ActivityAnswerPublic,
     AnswerExistenceResponse,

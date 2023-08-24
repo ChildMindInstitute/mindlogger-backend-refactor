@@ -3,7 +3,7 @@
   "table": "users",
   "fields": {
     "id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
-    "email": "ivan@mindlogger.com",
+    "email": "5c88e00db1ec7020e8a0fd0f1dd225ff93e9088821d554d5fc437216",
     "first_name": "Ivan",
     "last_name": "K",
     "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
@@ -14,13 +14,14 @@
     "last_seen_at": "2023-08-11T10:32:41.602",
     "is_anonymous_respondent": false
   },
-  "note": "Password is Test1234!"
+    "note": "Password is Test1234!",
+    "email": "ivan@mindlogger.com"
   },
   {
     "table": "users",
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa8",
-      "email": "anoymous_respondent@mindlogger.com",
+      "email": "a97eaac8af05b6b82d66a67a2ba0e5bbe928844832748c1aa74e3065",
       "first_name": "Anonymous",
       "last_name": "Respondent",
       "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
@@ -31,13 +32,14 @@
       "last_seen_at": "2023-01-05T15:49:51.752113",
       "is_anonymous_respondent": true
     },
-    "note": "Password is Test1234!"
+    "note": "Password is Test1234!",
+    "email": "anoymous_respondent@mindlogger.com"
   },
   {
     "table": "users",
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa5",
-      "email": "patric@gmail.com",
+      "email": "b11bf1419d7434b4b0da08c39a871eee65b614a34fb4830c066dfeed",
       "first_name": "Patric",
       "last_name": "Davidson",
       "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
@@ -48,7 +50,8 @@
       "last_seen_at": "2023-01-05T15:49:51.752113",
       "is_anonymous_respondent": false
     },
-    "note": "Password is Test1234"
+      "note": "Password is Test1234",
+      "email": "patric@gmail.com"
   },
   {
     "table": "users_workspaces",

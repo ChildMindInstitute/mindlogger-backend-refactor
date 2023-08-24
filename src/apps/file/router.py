@@ -1,14 +1,19 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.file.api.file import check_file_uploaded, download, upload
+from apps.file.api.file import (
+    answer_download,
+    answer_upload,
+    check_file_uploaded,
+    download,
+    upload,
+)
 from apps.file.domain import FileExistenceResponse
 from apps.shared.domain import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
     ResponseMulti,
 )
-from apps.file.api.file import answer_download, answer_upload, download, upload
 
 router = APIRouter(prefix="/file", tags=["File"])
 
