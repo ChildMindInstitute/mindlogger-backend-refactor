@@ -311,11 +311,6 @@ class AppletService:
             activities=activities,
             activity_flows=activity_flows,
             encryption=encryption,
-            # Legacy logic support
-            report_server_ip=applet_exist.report_server_ip,
-            report_public_key=applet_exist.report_public_key,
-            report_include_user_id=applet_exist.report_include_user_id,
-            report_include_case_id=applet_exist.report_include_case_id,
         )
 
     async def _validate_applet_name(
