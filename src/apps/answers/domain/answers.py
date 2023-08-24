@@ -400,5 +400,5 @@ class AnswersCheck(PublicModel):
         return value
 
 
-class IsAnswersUploaded(PublicModel):
-    is_uploaded: bool
+class AnswerExistenceResponse(PublicModel):
+    exists: bool

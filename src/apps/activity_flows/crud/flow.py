@@ -1,9 +1,10 @@
 import uuid
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Query
 
 from apps.activity_flows.db.schemas import ActivityFlowSchema
+from apps.activity_flows.domain.flow import Flow
 from infrastructure.database import BaseCRUD
 
 __all__ = ["FlowsCRUD"]
@@ -11,6 +12,19 @@ __all__ = ["FlowsCRUD"]
 
 class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
     schema_class = ActivityFlowSchema
+
+    async def get_by_id(self, id_: uuid.UUID) -> Flow | None:
+        flow = await self._get("id", id_)
+        if flow:
+            return Flow.from_orm(flow)
+        return None
+
+    async def update_by_id(self, id_, **values):
+        query = update(self.schema_class)
+        query = query.where(self.schema_class.id == id_)
+        query = query.values(**values)
+        query = query.returning(self.schema_class)
+        await self._execute(query)
 
     async def create_many(
         self,
