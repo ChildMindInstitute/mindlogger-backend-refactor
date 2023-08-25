@@ -84,6 +84,8 @@ class atomic:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.session is None:
+            return
         if settings.env != "testing":
             if not exc_type:
                 await self.session.commit()

@@ -42,13 +42,11 @@ async def preprocess_arbitrary_url(
 
 
 async def get_answer_session(url=Depends(preprocess_arbitrary_url)):
-    if url:
-        session_maker = session_manager.get_session(url)
-    else:
-        session_maker = session_manager.get_session()
-
+    session_maker = session_manager.get_session(url) if url else None
     if settings.env == "testing":
         yield session_maker
-    else:
+    elif session_maker:
         async with session_maker() as session:
             yield session
+    else:
+        yield None
