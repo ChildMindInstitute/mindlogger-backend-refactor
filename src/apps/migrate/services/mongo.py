@@ -68,6 +68,8 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
         "6202738aace55b10691c101d",
         "620eb401b0b0a55f680dd5f5",
         "6210202db0b0a55f680de1a5",
+        "63ebcec2601cdc0fee1f3d42",
+        "63ec1498601cdc0fee1f47d2",
     ]
     if applet_id in broken_applet_versions:
         for activity in applet["reprolib:terms/order"][0]["@list"]:
@@ -77,7 +79,9 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
     return applet
 
 
-def patch_broken_applets(applet_id: str, applet: dict) -> dict:
+def patch_broken_applets(
+    applet_id: str, applet_ld: dict, applet_mongo: dict
+) -> tuple[dict, dict]:
     broken_applets = [
         # broken conditional logic [object object]  in main applet
         "6202738aace55b10691c101d",
@@ -85,7 +89,7 @@ def patch_broken_applets(applet_id: str, applet: dict) -> dict:
         "6210202db0b0a55f680de1a5",
     ]
     if applet_id in broken_applets:
-        for activity in applet["reprolib:terms/order"][0]["@list"]:
+        for activity in applet_ld["reprolib:terms/order"][0]["@list"]:
             for property in activity["reprolib:terms/addProperties"]:
                 if type(
                     property["reprolib:terms/isVis"][0]["@value"]
@@ -95,14 +99,40 @@ def patch_broken_applets(applet_id: str, applet: dict) -> dict:
                 ):
                     property["reprolib:terms/isVis"] = [{"@value": True}]
 
-    return applet
+    # "623ce52a5197b9338bdaf4b6",  # needs to be renamed in cache,version as well
+    broken_applet_name = [
+        "623ce52a5197b9338bdaf4b6",
+        "64934a618819c1120b4f8e34",
+    ]
+    if applet_id in broken_applet_name:
+        applet_ld["displayName"] = str(applet_ld["displayName"]) + str("(1)")
+        applet_ld["http://www.w3.org/2004/02/skos/core#prefLabel"] = applet_ld[
+            "displayName"
+        ]
+    broken_applet_version = "623ce52a5197b9338bdaf4b6"
+    if applet_id == broken_applet_version:
+        applet_mongo["meta"]["applet"]["version"] = str("2.6.40")
+
+    broken_conditional_logic = [
+        "63ebcec2601cdc0fee1f3d42",
+        "63ec1498601cdc0fee1f47d2",
+    ]
+    if applet_id in broken_conditional_logic:
+        for activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            for property in activity["reprolib:terms/addProperties"]:
+                if (
+                    property["reprolib:terms/isAbout"][0]["@id"]
+                    == "IUQ_Wd_Social_Device"
+                ):
+                    property["reprolib:terms/isVis"] = [{"@value": True}]
+    return applet_ld, applet_mongo
 
 
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        # uri = f"mongodb://{os.getenv('MONGO__HOST')}"  # noqa: E501  {os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@
+        # uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        uri = f"mongodb://{os.getenv('MONGO__HOST')}"  # noqa: E501  {os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@
         self.client = MongoClient(uri, 27017)  # uri
         self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
@@ -361,7 +391,9 @@ class Mongo:
             raise EmptyAppletException()
 
         ld_request_schema = self.get_applet_repro_schema(applet)
-        ld_request_schema = patch_broken_applets(applet_id, ld_request_schema)
+        ld_request_schema, applet = patch_broken_applets(
+            applet_id, ld_request_schema, applet
+        )
         converted = await self.get_converter_result(ld_request_schema)
 
         converted.extra_fields["created"] = applet["created"]
