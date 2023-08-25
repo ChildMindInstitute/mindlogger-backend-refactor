@@ -32,8 +32,12 @@ def upgrade() -> None:
         sa.Column(
             "respondent_id", postgresql.UUID(as_uuid=True), nullable=True
         ),
+        sa.Column("migrated_date", sa.DateTime(), nullable=True),
+        sa.Column("migrated_updated", sa.DateTime(), nullable=True),
+        sa.Column("is_flow_completed", sa.Boolean(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
+
     op.create_index(
         op.f("ix_answers_applet_history_id"),
         "answers",
@@ -72,6 +76,11 @@ def upgrade() -> None:
         sa.Column("start_datetime", sa.DateTime(), nullable=False),
         sa.Column("end_datetime", sa.DateTime(), nullable=False),
         sa.Column("is_assessment", sa.Boolean(), nullable=True),
+        sa.Column("scheduled_event_id", sa.Text(), nullable=True),
+        sa.Column("local_end_date", sa.Date(), nullable=True),
+        sa.Column("local_end_time", sa.Time(), nullable=True),
+        sa.Column("migrated_date", sa.DateTime(), nullable=True),
+        sa.Column("migrated_updated", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(
             ["answer_id"],
             ["answers.id"],
@@ -90,6 +99,12 @@ def upgrade() -> None:
         op.f("ix_answers_items_respondent_id"),
         "answers_items",
         ["respondent_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_answers_items_local_end_date"),
+        "answers_items",
+        ["local_end_date"],
         unique=False,
     )
 

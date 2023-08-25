@@ -1,22 +1,24 @@
 import uuid
+from typing import Optional
 
-from fastapi import Body, Depends
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.answers.domain import AppletAnswerCreate
+from apps.answers.domain import ArbitraryPreprocessor
 from apps.workspaces.service.workspace import WorkspaceService
-from infrastructure.database import atomic
-from infrastructure.database.core import get_specific_session
+from config import settings
+from infrastructure.database.core import session_manager
 from infrastructure.database.deps import get_session
 
 __all__ = [
-    "preprocess_arbitrary_by_applet_id",
-    "preprocess_arbitrary_by_applet_schema",
+    "get_arbitrary_info",
+    "preprocess_arbitrary_url",
+    "get_answer_session",
 ]
 
 
 async def get_arbitrary_info(
-    applet_id: uuid.UUID, session: AsyncSession
+    applet_id: uuid.UUID | None, session: AsyncSession
 ) -> str | None:
     if applet_id:
         service = WorkspaceService(session, uuid.uuid4())
@@ -26,25 +28,27 @@ async def get_arbitrary_info(
     return None
 
 
-async def preprocess_arbitrary_by_applet_schema(
-    schema: AppletAnswerCreate = Body(...), session=Depends(get_session)
-):
-    db_uri = await get_arbitrary_info(schema.applet_id, session)
-    if db_uri:
-        session_ = await anext(get_specific_session(db_uri))
-        async with atomic(session_):
-            yield session_
+async def preprocess_arbitrary_url(
+    applet_id: uuid.UUID | None = None,
+    schema: ArbitraryPreprocessor | None = None,
+    session=Depends(get_session),
+) -> Optional[str]:
+    if schema:
+        return await get_arbitrary_info(schema.applet_id, session)
+    elif applet_id:
+        return await get_arbitrary_info(applet_id, session)
     else:
-        yield None
+        return None
 
 
-async def preprocess_arbitrary_by_applet_id(
-    applet_id: uuid.UUID, session=Depends(get_session)
-):
-    db_uri = await get_arbitrary_info(applet_id, session)
-    if db_uri:
-        session_ = await anext(get_specific_session(db_uri))
-        async with atomic(session_):
-            yield session_
+async def get_answer_session(url=Depends(preprocess_arbitrary_url)):
+    if url:
+        session_maker = session_manager.get_session(url)
     else:
-        yield None
+        session_maker = session_manager.get_session()
+
+    if settings.env == "testing":
+        yield session_maker
+    else:
+        async with session_maker() as session:
+            yield session

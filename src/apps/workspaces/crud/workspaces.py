@@ -76,17 +76,17 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
     async def get_by_applet_id(
         self, applet_id: uuid.UUID
     ) -> UserWorkspaceSchema | None:
-        query: Query = select(UserWorkspaceSchema)
-        query.join(
-            UserAppletAccessSchema,
+        access_subquery: Query = select(UserAppletAccessSchema.owner_id)
+        access_subquery = access_subquery.where(
             and_(
-                UserAppletAccessSchema.owner_id == UserWorkspaceSchema.user_id,
-                and_(
-                    UserAppletAccessSchema.role == Role.OWNER,
-                    UserAppletAccessSchema.applet_id == applet_id,
-                ),
-            ),
+                UserAppletAccessSchema.role == Role.OWNER,
+                UserAppletAccessSchema.applet_id == applet_id,
+            )
         )
+        access_subquery = access_subquery.subquery()
+
+        query: Query = select(UserWorkspaceSchema)
+        query = query.where(UserWorkspaceSchema.user_id.in_(access_subquery))
         db_result = await self._execute(query)
         res = db_result.scalars().first()
         return res
