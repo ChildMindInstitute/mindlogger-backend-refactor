@@ -16,17 +16,10 @@ from apps.girderformindlogger.models.item import Item
 
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
     toSkip = [
-        # "6202738aace55b10691c101d",  # broken conditional logic [object object]  in main applet
-        # "620eb401b0b0a55f680dd5f5",  # broken conditional logic [object object]  in main applet
-        # "6210202db0b0a55f680de1a5",  # broken conditional logic [object object]  in main applet
-        "623ce52a5197b9338bdaf4b6",  # needs to be renamed in cache,version as well
         "62768ff20a62aa1056078093",  # broken flanker
         "627be2e30a62aa47962268c7",  # broken stability
         "62d06045acd35a1054f106f6",  # broken stability
         "635d04365cb700431121f8a1",  # chinese texts
-        "63ebcec2601cdc0fee1f3d42",  # broken conditional logic in main applet
-        "63ec1498601cdc0fee1f47d2",  # broken conditional logic in main applet
-        "64934a618819c1120b4f8e34",  # duplicate name, needs to be renamed in cache
         "649465528819c1120b4f91cf",  # broken js expression in subscales in main applet
         "64946e208819c1120b4f9271",  # broken stimulus
     ]
