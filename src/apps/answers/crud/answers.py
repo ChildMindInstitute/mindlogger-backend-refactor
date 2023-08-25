@@ -2,7 +2,7 @@ import datetime
 import uuid
 
 from pydantic import parse_obj_as
-from sqlalchemy import and_, case, func, null, or_, select, update
+from sqlalchemy import and_, case, delete, func, null, or_, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
@@ -99,11 +99,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def delete_by_applet_user(
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None = None
     ):
-        query: Query = update(AnswerSchema)
+        query: Query = delete(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         if respondent_id:
             query = query.where(AnswerSchema.respondent_id == respondent_id)
-        query = query.values(is_deleted=True)
         await self._execute(query)
 
     async def get_applet_answers(
