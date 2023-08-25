@@ -1,3 +1,4 @@
+import enum
 from enum import Enum
 
 from pydantic import Field, PositiveInt, validator
@@ -37,7 +38,13 @@ class ScoreConditionalLogic(PublicModel):
     conditions: list[ScoreCondition]
 
 
+class ReportType(str, enum.Enum):
+    score = "score"
+    section = "section"
+
+
 class Score(PublicModel):
+    type: str = Field(ReportType.score, const=True)
     name: str
     id: str
     calculation_type: CalculationType
@@ -78,6 +85,7 @@ class SectionConditionalLogic(PublicModel):
 
 
 class Section(PublicModel):
+    type: str = Field(ReportType.section, const=True)
     name: str
     message: str | None = None
     items_print: list[str] | None = Field(default_factory=list)
@@ -87,8 +95,7 @@ class Section(PublicModel):
 class ScoresAndReports(PublicModel):
     generate_report: bool = False
     show_score_summary: bool = False
-    scores: list[Score] | None = Field(default_factory=list)
-    sections: list[Section] | None = Field(default_factory=list)
+    reports: list[Score | Section] | None = Field(default_factory=list)
 
     @validator("scores")
     def validate_scores(cls, value):

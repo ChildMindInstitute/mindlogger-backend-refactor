@@ -20,5 +20,4 @@ class TokenBlacklistCRUD(BaseCRUD):
         )
 
     async def exists(self, token: InternalToken) -> bool:
-        existing = await self._get("jti", token.payload.jti)
-        return existing is not None
+        return await self.exist_by_key("jti", token.payload.jti)
