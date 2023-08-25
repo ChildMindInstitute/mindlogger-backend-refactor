@@ -579,11 +579,10 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         has_access = (
             exists()
             .where(
-                UserAppletAccessSchema.soft_exists(),
-                UserAppletAccessSchema.user_id == user_id,
                 UserAppletAccessSchema.applet_id == AppletSchema.id,
+                UserAppletAccessSchema.user_id == user_id,
+                UserAppletAccessSchema.soft_exists(),
                 or_(
-                    UserAppletAccessSchema.soft_exists(),
                     UserAppletAccessSchema.role.in_(
                         [Role.OWNER, Role.MANAGER, Role.COORDINATOR]
                     ),
