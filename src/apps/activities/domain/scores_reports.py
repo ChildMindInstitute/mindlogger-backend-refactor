@@ -97,7 +97,7 @@ class ScoresAndReports(PublicModel):
     show_score_summary: bool = False
     reports: list[Score | Section] | None = Field(default_factory=list)
 
-    @validator("scores")
+    @validator("scores")  # TODO validation of reports
     def validate_scores(cls, value):
         if value:
             # check if there are duplicate score names and ids
@@ -127,7 +127,7 @@ class ScoresAndReports(PublicModel):
 
         return value
 
-    @validator("sections")
+    @validator("sections")  # TODO validation of reports
     def validate_sections(cls, value, values):
         if value:
             # check if there are duplicate section names
