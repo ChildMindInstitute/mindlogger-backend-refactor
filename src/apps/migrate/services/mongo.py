@@ -53,12 +53,57 @@ def decrypt(data):
     return txt[:length]
 
 
+def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
+    broken_applet_versions = [
+        "6201cc26ace55b10691c0814",
+        "6202734eace55b10691c0fc4",
+        "623b757b5197b9338bdae930",
+        "623cd7ee5197b9338bdaf218",
+        "623e26175197b9338bdafbf0",
+        "627be9f60a62aa47962269b7",
+        "62f2ce4facd35a39e99b5e92",
+        "634715115cb70043112196ba",
+        "63ca78b7b71996780cdf1f16",
+        "63dd2d4eb7199623ac5002e4",
+        "6202738aace55b10691c101d",
+        "620eb401b0b0a55f680dd5f5",
+        "6210202db0b0a55f680de1a5",
+    ]
+    if applet_id in broken_applet_versions:
+        for activity in applet["reprolib:terms/order"][0]["@list"]:
+            for property in activity["reprolib:terms/addProperties"]:
+                property["reprolib:terms/isVis"] = [{"@value": True}]
+
+    return applet
+
+
+def patch_broken_applets(applet_id: str, applet: dict) -> dict:
+    broken_applets = [
+        # broken conditional logic [object object]  in main applet
+        "6202738aace55b10691c101d",
+        "620eb401b0b0a55f680dd5f5",
+        "6210202db0b0a55f680de1a5",
+    ]
+    if applet_id in broken_applets:
+        for activity in applet["reprolib:terms/order"][0]["@list"]:
+            for property in activity["reprolib:terms/addProperties"]:
+                if type(
+                    property["reprolib:terms/isVis"][0]["@value"]
+                ) == str and (
+                    "[object object]"
+                    in property["reprolib:terms/isVis"][0]["@value"]
+                ):
+                    property["reprolib:terms/isVis"] = [{"@value": True}]
+
+    return applet
+
+
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        # uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        # uri = f"mongodb://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        self.client = MongoClient("mongo", 27017)  # uri
+        uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        # uri = f"mongodb://{os.getenv('MONGO__HOST')}"  # noqa: E501  {os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@
+        self.client = MongoClient(uri, 27017)  # uri
         self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
     @staticmethod
@@ -316,6 +361,7 @@ class Mongo:
             raise EmptyAppletException()
 
         ld_request_schema = self.get_applet_repro_schema(applet)
+        ld_request_schema = patch_broken_applets(applet_id, ld_request_schema)
         converted = await self.get_converter_result(ld_request_schema)
 
         converted.extra_fields["created"] = applet["created"]
@@ -347,6 +393,9 @@ class Mongo:
                 print(version)
                 ld_request_schema, old_activities_by_id = content_to_jsonld(
                     content["applet"], old_activities_by_id
+                )
+                ld_request_schema = patch_broken_applet_versions(
+                    applet_id, ld_request_schema
                 )
                 converted = await self.get_converter_result(ld_request_schema)
                 converted.extra_fields["created"] = content["updated"]

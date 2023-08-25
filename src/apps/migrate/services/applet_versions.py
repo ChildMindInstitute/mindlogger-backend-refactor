@@ -180,9 +180,6 @@ def content_to_jsonld(document, old_activities_by_id):
             activity_jsonld[
                 "reprolib:terms/reports"
             ] = []  # remove reports conditional logic for history
-            # remove item_flow conditional logic for history
-            for property in activity_jsonld["reprolib:terms/addProperties"]:
-                property["reprolib:terms/isVis"] = [{"@value": True}]
 
             activity.update(activity_jsonld)
 
