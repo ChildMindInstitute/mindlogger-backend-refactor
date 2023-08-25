@@ -352,7 +352,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             ActivityHistorySchema.applet_id == AppletHistorySchema.id_version,
             isouter=True,
         )
-        query.where(AppletHistorySchema.id_version == answer.applet_id)
+        query = query.where(
+            and_(
+                AppletSchema.id == answer.applet_id,
+                AppletHistorySchema.version == answer.version,
+            )
+        )
         db_result = await self._execute(query)
         res = db_result.first()
         return res
