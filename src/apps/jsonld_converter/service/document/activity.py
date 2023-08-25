@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from copy import deepcopy
 from typing import Type
 from uuid import uuid4
@@ -476,6 +477,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             }
             subscale_names = [subscale.name for subscale in subscales]
             for subscale in subscales:
+                non_existent_items = []
                 for item in subscale.items or []:
                     if item.type == SubscaleItemType.SUBSCALE:
                         if item.name in subscale_names:
@@ -491,12 +493,18 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                             continue
                         if item.name in subscale_names:
                             item.type = SubscaleItemType.SUBSCALE
-                        elif subscale.items is not None:
+                        else:
                             # remove item from subscale
-                            subscale.items.remove(item)
+                            non_existent_items.append(item)
+                            logging.error(
+                                f'Item name "{item.name}" inside subscale "{subscale.name}" not found.'  # noqa: E501
+                            )
                             # raise SubscaleParsingError(
                             #     f'Item name "{item.name}" not found'
                             # )
+                if subscale.items:
+                    for item in non_existent_items:
+                        subscale.items.remove(item)
 
         return SubscaleSetting(**settings) if settings else None
 
