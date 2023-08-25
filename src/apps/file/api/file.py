@@ -69,7 +69,7 @@ async def check_file_uploaded(
         cleaned_file_key = file_key.strip()
         file_existence_factory = partial(
             FileExistenceResponse,
-            file_id=cleaned_file_key,
+            key=cleaned_file_key,
         )
 
         try:
@@ -77,8 +77,7 @@ async def check_file_uploaded(
             results.append(
                 file_existence_factory(
                     uploaded=True,
-                    remote_url=f"{cdn_client.client._endpoint.host}"
-                    f"/{file_key}",
+                    url=quote(settings.cdn.url.format(key=file_key), "/:"),
                 )
             )
         except NotFoundError:
