@@ -16,9 +16,9 @@ from apps.girderformindlogger.models.item import Item
 
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
     toSkip = [
-        "6202738aace55b10691c101d",  # broken conditional logic [object object]  in main applet
-        "620eb401b0b0a55f680dd5f5",  # broken conditional logic [object object]  in main applet
-        "6210202db0b0a55f680de1a5",  # broken conditional logic [object object]  in main applet
+        # "6202738aace55b10691c101d",  # broken conditional logic [object object]  in main applet
+        # "620eb401b0b0a55f680dd5f5",  # broken conditional logic [object object]  in main applet
+        # "6210202db0b0a55f680de1a5",  # broken conditional logic [object object]  in main applet
         "623ce52a5197b9338bdaf4b6",  # needs to be renamed in cache,version as well
         "62768ff20a62aa1056078093",  # broken flanker
         "627be2e30a62aa47962268c7",  # broken stability
@@ -32,7 +32,7 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
     ]
 
     # applets = Applet().find(
-    #     query={"_id": ObjectId("64e612db5e3d9e2889a92db3")}, fields={"_id": 1}
+    #     query={"_id": ObjectId("6201cc26ace55b10691c0814")}, fields={"_id": 1}
     # )
 
     answers = Item().find(
@@ -72,6 +72,11 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
     migrating_applets = []
     for applet in applets:
         migrating_applets.append(str(applet["_id"]))
+    # migrating_applets = [
+    #     "6202738aace55b10691c101d",  # broken conditional logic [object object]  in main applet
+    #     "620eb401b0b0a55f680dd5f5",  # broken conditional logic [object object]  in main applet
+    #     "6210202db0b0a55f680de1a5",  # broken conditional logic [object object]  in main applet
+    # ]
 
     appletsCount = len(migrating_applets)
     print("total", appletsCount)
