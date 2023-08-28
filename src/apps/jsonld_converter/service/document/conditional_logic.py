@@ -103,9 +103,9 @@ class ConditionalLogicParser:
         return self.marker_processed
 
     def _process_operator(self, match_obj):
-        var: str | None = None
-        operator: str | None = None
-        value: str | bool | None = None
+        var: str | None = None  # type: ignore[annotation-unchecked]
+        operator: str | None = None  # type: ignore[annotation-unchecked]
+        value: str | bool | None = None  # type: ignore[annotation-unchecked]
         if match_obj.group(1) is not None:
             var = match_obj.group(1)
             operator = match_obj.group(2)

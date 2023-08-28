@@ -26,7 +26,7 @@ class LdSubscaleBase(CommonFieldsMixin, ABC):
 
     attr_processor: LdAttributeProcessor = LdAttributeProcessor()
 
-    def __init__(self, doc):
+    def __init__(self, doc: dict):
         self.doc = copy.deepcopy(doc)
         self.ld_variable_name: str = self.attr_processor.get_attr_value(
             doc, "reproschema:variableName"
