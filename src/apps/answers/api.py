@@ -6,8 +6,10 @@ from fastapi import Body, Depends, Query
 from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
+from apps.activities.services import ActivityHistoryService
 from apps.answers.domain import (
     ActivityAnswerPublic,
+    AnswerExistenceResponse,
     AnswerExport,
     AnswerNote,
     AnswerNoteDetailPublic,
@@ -35,7 +37,6 @@ from apps.answers.service import AnswerService
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.exception import NotFoundError
 from apps.shared.query_params import (
     BaseQueryParams,
     QueryParams,
@@ -407,6 +408,13 @@ async def applet_answers_export(
                 f"[admin account]({answer.respondent_email})"
             )
 
+    if not data.activities:
+        applet = await AppletService(session, user.id).get(applet_id)
+        activities = await ActivityHistoryService(
+            session, applet.id, applet.version
+        ).get_full()
+        data.activities = activities
+
     return Response(result=PublicAnswerExport.from_orm(data))
 
 
@@ -432,18 +440,16 @@ async def answers_existence_check(
     schema: AnswersCheck = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-) -> None:
-    """Provides the information if the anwer is existed in the database.
-    HTTP 200 OK means that yes.
-    HTTP 404 NOT FOUND means that it is not.
-    """
+) -> Response[AnswerExistenceResponse]:
+    """Provides information whether the answer exists"""
     await AppletService(session, user.id).exist_by_id(schema.applet_id)
     await CheckAccessService(session, user.id).check_answer_check_access(
         schema.applet_id
     )
-    if (
-        await AnswerService(session, user.id).is_answers_uploaded(
-            schema.applet_id, schema.activity_id, schema.created_at
-        )
-    ) is False:
-        raise NotFoundError
+    is_exist = await AnswerService(session, user.id).is_answers_uploaded(
+        schema.applet_id, schema.activity_id, schema.created_at
+    )
+
+    return Response[AnswerExistenceResponse](
+        result=AnswerExistenceResponse(exists=is_exist)
+    )

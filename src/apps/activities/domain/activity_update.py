@@ -10,7 +10,7 @@ from apps.activities.domain.custom_validation import (
     validate_subscales,
 )
 from apps.activities.errors import DuplicateActivityItemNameNameError
-from apps.shared.domain import InternalModel
+from apps.shared.domain import InternalModel, PublicModel
 
 
 class ActivityItemUpdate(BaseActivityItem, InternalModel):
@@ -49,3 +49,7 @@ class ActivityUpdate(ActivityBase, InternalModel):
     @root_validator()
     def validate_subscales(cls, values):
         return validate_subscales(values)
+
+
+class ActivityReportConfiguration(PublicModel):
+    report_included_item_name: str | None

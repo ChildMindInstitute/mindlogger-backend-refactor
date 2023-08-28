@@ -60,7 +60,7 @@ async def check_file_uploaded(
     schema: FileCheckRequest,
     user: User = Depends(get_current_user),
 ) -> ResponseMulti[FileExistenceResponse]:
-    """Provides the information if the file is uploaded."""
+    """Provides the information if the files is uploaded."""
 
     cdn_client = CDNClient(settings.cdn, env=settings.env)
     results: list[FileExistenceResponse] = []
@@ -69,7 +69,7 @@ async def check_file_uploaded(
         cleaned_file_key = file_key.strip()
         file_existence_factory = partial(
             FileExistenceResponse,
-            file_id=cleaned_file_key,
+            key=cleaned_file_key,
         )
 
         try:
@@ -77,8 +77,7 @@ async def check_file_uploaded(
             results.append(
                 file_existence_factory(
                     uploaded=True,
-                    remote_url=f"{cdn_client.client._endpoint.host}"
-                    f"/{file_key}",
+                    url=quote(settings.cdn.url.format(key=file_key), "/:"),
                 )
             )
         except NotFoundError:

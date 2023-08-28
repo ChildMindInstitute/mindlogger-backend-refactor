@@ -172,6 +172,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         accessible_applets_query = accessible_applets_query.where(
             UserAppletAccessSchema.role.in_(roles)
         )
+        accessible_applets_query = accessible_applets_query.where(
+            UserAppletAccessSchema.soft_exists()
+        )
 
         query = select(AppletSchema)
         if query_params.filters:
@@ -201,6 +204,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         )
         accessible_applets_query = accessible_applets_query.where(
             UserAppletAccessSchema.role.in_(roles)
+        )
+        accessible_applets_query = accessible_applets_query.where(
+            UserAppletAccessSchema.soft_exists()
         )
 
         query = select(count(AppletSchema.id))
@@ -447,8 +453,12 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
         )
         access_subquery = access_subquery.where(
-            UserAppletAccessSchema.soft_exists()
+            and_(
+                UserAppletAccessSchema.soft_exists(),
+                UserAppletAccessSchema.role != Role.RESPONDENT,
+            )
         )
+
         access_subquery = access_subquery.order_by(
             UserAppletAccessSchema.applet_id.asc(),
             case(
@@ -500,11 +510,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.join(
             access_query,
             access_query.c.applet_id == AppletSchema.id,
-            isouter=True,
+            isouter=False,
         )
         query = query.where(AppletSchema.id.notin_(folder_applets_query))
-        query = query.where(access_query.c.role != None)  # noqa
-
         folders_query = await self._folder_list_query(owner_id, user_id)
         query = folders_query.union(query)
 
@@ -608,7 +616,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.join(
             access_query,
             access_query.c.applet_id == AppletSchema.id,
-            isouter=True,
+            isouter=False,
         )
         query = query.where(_AppletSearching().get_clauses(search_text))
         query = query.where(access_query.c.role != None)  # noqa

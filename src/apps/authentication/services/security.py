@@ -1,10 +1,16 @@
+import uuid
 from datetime import datetime, timedelta
 
 from jose import jwt
 from passlib.context import CryptContext
 
 from apps.authentication.domain.login import UserLoginRequest
-from apps.authentication.domain.token import InternalToken
+from apps.authentication.domain.token import (
+    InternalToken,
+    JWTClaim,
+    TokenPayload,
+    TokenPurpose,
+)
 from apps.authentication.errors import BadCredentials, PasswordMismatch
 from apps.authentication.services.core import TokensService
 from apps.users.cruds.user import UsersCRUD
@@ -27,7 +33,8 @@ class AuthenticationService:
             minutes=settings.authentication.access_token.expiration
         )
         expire = datetime.utcnow() + expires_delta
-        to_encode.update({"exp": expire})
+        to_encode.setdefault(JWTClaim.exp, expire)
+        to_encode.setdefault(JWTClaim.jti, str(uuid.uuid4()))
         encoded_jwt = jwt.encode(
             to_encode,
             settings.authentication.access_token.secret_key,
@@ -42,7 +49,8 @@ class AuthenticationService:
             minutes=settings.authentication.refresh_token.expiration
         )
         expire = datetime.utcnow() + expires_delta
-        to_encode.update({"exp": expire})
+        to_encode.setdefault(JWTClaim.exp, expire)
+        to_encode.setdefault(JWTClaim.jti, str(uuid.uuid4()))
         encoded_jwt = jwt.encode(
             to_encode,
             settings.authentication.refresh_token.secret_key,
@@ -79,10 +87,37 @@ class AuthenticationService:
             raise PasswordMismatch()
         return user
 
-    async def add_access_token_to_blacklist(self, token: InternalToken):
-        """Add access token to blacklist in Redis."""
-        await TokensService(self.session).add_access_token_to_blacklist(token)
+    def _get_refresh_token_by_access(
+        self, token: InternalToken
+    ) -> InternalToken | None:
+        if not token.payload.rjti:
+            return None
 
-    async def fetch_all_tokens(self, email: str):
-        """Finds all records for the specified Email."""
-        return await TokensService(self.session).fetch_all(email)
+        access_exp = datetime.fromtimestamp(token.payload.exp)
+        refresh_expires_delta = timedelta(
+            minutes=settings.authentication.refresh_token.expiration
+        )
+        access_expires_delta = timedelta(
+            minutes=settings.authentication.access_token.expiration
+        )
+        expire = access_exp - access_expires_delta + refresh_expires_delta
+        refresh_token = InternalToken(
+            payload=TokenPayload(
+                sub=token.payload.sub,
+                exp=expire.timestamp(),
+                jti=token.payload.rjti,
+            )
+        )
+        return refresh_token
+
+    async def revoke_token(self, token: InternalToken, type_: TokenPurpose):
+        """Add token to blacklist in Redis."""
+        await TokensService(self.session).revoke(token, type_)
+        if type_ == TokenPurpose.ACCESS:
+            if refresh_token := self._get_refresh_token_by_access(token):
+                await TokensService(self.session).revoke(
+                    refresh_token, TokenPurpose.REFRESH
+                )
+
+    async def is_revoked(self, token: InternalToken):
+        return await TokensService(self.session).is_revoked(token)

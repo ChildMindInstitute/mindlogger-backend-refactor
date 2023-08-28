@@ -77,6 +77,7 @@ class ActivityItemService:
                     name=schema.name,
                     conditional_logic=schema.conditional_logic,
                     allow_edit=schema.allow_edit,
+                    is_hidden=schema.is_hidden,
                 )
             )
         return items
