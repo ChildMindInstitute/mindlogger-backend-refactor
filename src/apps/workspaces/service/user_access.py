@@ -345,6 +345,7 @@ class UserAccessService:
                         applet_id=access.applet_id,
                         owner_id=owner_id,
                         invitor_id=self._user_id,
+                        is_deleted=False,
                         meta=meta,
                     )
                 )
@@ -378,15 +379,21 @@ class UserAccessService:
                             applet_id=access.applet_id,
                             owner_id=owner_id,
                             invitor_id=self._user_id,
+                            is_deleted=False,
                             meta=meta,
                         )
                     )
 
-        await UserAppletAccessCRUD(
-            self.session
-        ).remove_manager_accesses_by_user_id_in_workspace(owner_id, manager_id)
+            await UserAppletAccessCRUD(
+                self.session
+            ).remove_manager_accesses_by_user_id_in_workspace(
+                owner_id, manager_id
+            )
 
-        await UserAppletAccessCRUD(self.session).create_many(schemas)
+        for schema in schemas:
+            await UserAppletAccessCRUD(self.session).upsert_user_applet_access(
+                schema
+            )
 
     async def get_workspace_applet_roles(
         self,

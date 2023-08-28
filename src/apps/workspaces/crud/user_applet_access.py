@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+from datetime import datetime
 from typing import Tuple
 
 from pydantic import parse_obj_as
@@ -367,6 +368,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "applet_id": stmt.excluded.applet_id,
                 "role": stmt.excluded.role,
                 "is_deleted": stmt.excluded.is_deleted,
+                "created_at": datetime.now(),
+                "updated_at": datetime.now(),
                 "meta": stmt.excluded.meta,
             },
         )
