@@ -14,6 +14,7 @@ __all__ = [
     "UserAppletAccessesDenied",
     "AccessDeniedToUpdateOwnAccesses",
     "RemoveOwnPermissionAccessDenied",
+    "UserAccessAlreadyExists",
 ]
 
 

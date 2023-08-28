@@ -397,12 +397,16 @@ class UserAccessService:
             ).get_by_user_applet_accesses(
                 schema.user_id, schema.applet_id, schema.role
             )
-            if user_access and not user_access.is_deleted:
-                raise UserAccessAlreadyExists()
-            else:
+            if not user_access:
                 await UserAppletAccessCRUD(
                     self.session
                 ).upsert_user_applet_access(schema)
+            elif user_access.is_deleted:
+                await UserAppletAccessCRUD(
+                    self.session
+                ).upsert_user_applet_access(schema)
+            else:
+                raise UserAccessAlreadyExists()
 
     async def get_workspace_applet_roles(
         self,
