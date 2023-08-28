@@ -847,6 +847,20 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
+    async def get_by_user_applet_accesses(
+        self,
+        user_id: uuid.UUID,
+        applet_id: uuid.UUID,
+        role: Role,
+    ) -> UserAppletAccessSchema:
+        query: Query = select(self.schema_class)
+        query = query.where(self.schema_class.user_id == user_id)
+        query = query.where(self.schema_class.applet_id == applet_id)
+        query = query.where(self.schema_class.role == role)
+
+        db_result = await self._execute(query)
+        return db_result.scalars().one_or_none()
+
     async def remove_access_by_user_and_applet_to_role(
         self,
         user_id: uuid.UUID,

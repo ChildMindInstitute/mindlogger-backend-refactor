@@ -21,6 +21,7 @@ from apps.workspaces.errors import (
     AccessDeniedToUpdateOwnAccesses,
     AppletAccessDenied,
     RemoveOwnPermissionAccessDenied,
+    UserAccessAlreadyExists,
     UserAppletAccessesDenied,
     WorkspaceDoesNotExistError,
 )
@@ -391,9 +392,17 @@ class UserAccessService:
             )
 
         for schema in schemas:
-            await UserAppletAccessCRUD(self.session).upsert_user_applet_access(
-                schema
+            user_access = await UserAppletAccessCRUD(
+                self.session
+            ).get_by_user_applet_accesses(
+                schema.user_id, schema.applet_id, schema.role
             )
+            if user_access and not user_access.is_deleted:
+                raise UserAccessAlreadyExists()
+            else:
+                await UserAppletAccessCRUD(
+                    self.session
+                ).upsert_user_applet_access(schema)
 
     async def get_workspace_applet_roles(
         self,
