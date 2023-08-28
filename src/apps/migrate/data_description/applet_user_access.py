@@ -20,7 +20,7 @@ class AppletUserDAO:
     is_deleted: bool
 
     def __hash__(self):
-        return hash(str(self.user_id) + str(self.applet_id) + str(self.role))
+        return hash((self.user_id, self.applet_id, self.role))
 
     def __eq__(self, other):
         return hash(other) == hash(self)
