@@ -854,6 +854,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         role: Role,
     ) -> UserAppletAccessSchema:
         query: Query = select(self.schema_class)
+        query = query.where(self.schema_class.soft_exists())
         query = query.where(self.schema_class.user_id == user_id)
         query = query.where(self.schema_class.applet_id == applet_id)
         query = query.where(self.schema_class.role == role)
