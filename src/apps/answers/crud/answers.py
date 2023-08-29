@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from typing import Collection
 
 from pydantic import parse_obj_as
 from sqlalchemy import and_, case, delete, func, null, or_, select
@@ -83,6 +84,22 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query = query.where(AnswerSchema.respondent_id == respondent_id)
         query = query.where(func.date(AnswerSchema.created_at) >= from_date)
         query = query.where(func.date(AnswerSchema.created_at) <= to_date)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.order_by(AnswerSchema.created_at.asc())
+
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
+    async def get_answers_by_applet_respondent(
+        self,
+        respondent_id: uuid.UUID | None,
+        applet_id: uuid.UUID,
+    ) -> list[AnswerSchema]:
+        if not respondent_id:
+            return []
+        query: Query = select(AnswerSchema)
+        query = query.where(AnswerSchema.respondent_id == respondent_id)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.order_by(AnswerSchema.created_at.asc())
 
@@ -212,22 +229,19 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return parse_obj_as(list[ActivityItemHistoryFull], items)
 
     async def get_identifiers_by_activity_id(
-        self, activity_id: uuid.UUID
+        self, activity_hist_ids: Collection[str]
     ) -> list[tuple[str, str]]:
         query: Query = select(
             AnswerItemSchema.identifier, AnswerItemSchema.user_public_key
         )
         query = query.distinct(AnswerItemSchema.identifier)
-        query = query.where(AnswerItemSchema.identifier != None)  # noqa: E711
+        query = query.where(
+            AnswerItemSchema.identifier.isnot(None),
+            AnswerSchema.activity_history_id.in_(activity_hist_ids),
+        )
         query = query.join(
             AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
         )
-        query = query.join(
-            ActivityHistorySchema,
-            ActivityHistorySchema.id_version
-            == AnswerSchema.activity_history_id,
-        )
-        query = query.where(ActivityHistorySchema.id == activity_id)
         db_result = await self._execute(query)
 
         return db_result.all()
@@ -256,17 +270,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_latest_answer(
         self,
         applet_id: uuid.UUID,
-        activity_id: uuid.UUID,
+        activity_id: Collection[str],
         respond_id: uuid.UUID,
     ) -> AnswerSchema | None:
         query: Query = select(AnswerSchema)
-        query = query.join(
-            ActivityHistorySchema,
-            ActivityHistorySchema.id_version
-            == AnswerSchema.activity_history_id,
-        )
         query = query.where(AnswerSchema.applet_id == applet_id)
-        query = query.where(ActivityHistorySchema.id == activity_id)
+        query = query.where(AnswerSchema.activity_history_id.in_(activity_id))
         query = query.where(AnswerItemSchema.respondent_id == respond_id)
         query = query.order_by(AnswerSchema.created_at.desc())
         query = query.limit(1)
@@ -326,48 +335,46 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return flow_history_schema.is_single_report
 
     async def get_applet_info_by_answer_id(
-        self, answer_id: uuid.UUID
-    ) -> tuple[AnswerSchema, AppletHistorySchema, ActivityHistorySchema]:
+        self, answer: AnswerSchema
+    ) -> tuple[AppletHistorySchema, ActivityHistorySchema]:
         query: Query = select(
-            AnswerSchema,
             AppletSchema,
             ActivityHistorySchema,
         )
         query = query.join(
-            AppletSchema,
-            AppletSchema.id == AnswerSchema.applet_id,
+            AppletHistorySchema,
+            AppletHistorySchema.id == AppletSchema.id,
             isouter=True,
         )
         query = query.join(
             ActivityHistorySchema,
-            ActivityHistorySchema.id_version
-            == AnswerSchema.activity_history_id,
+            ActivityHistorySchema.applet_id == AppletHistorySchema.id_version,
             isouter=True,
         )
-        query = query.where(AnswerItemSchema.is_assessment == False)  # noqa
-        query = query.where(AnswerSchema.id == answer_id)
-
+        query = query.where(
+            and_(
+                AppletSchema.id == answer.applet_id,
+                AppletHistorySchema.version == answer.version,
+            )
+        )
         db_result = await self._execute(query)
-        return db_result.first()
+        res = db_result.first()
+        return res
 
     async def get_activities_which_has_answer(
-        self, activity_ids: list[uuid.UUID], respondent_id: uuid.UUID | None
+        self, activity_hist_ids: list[str], respondent_id: uuid.UUID | None
     ) -> list[uuid.UUID]:
-        query: Query = select(AnswerSchema.id, ActivityHistorySchema.id)
-        query = query.join(
-            ActivityHistorySchema,
-            ActivityHistorySchema.id_version
-            == AnswerSchema.activity_history_id,
+        query: Query = select(AnswerSchema.activity_history_id)
+        query = query.where(
+            AnswerSchema.activity_history_id.in_(activity_hist_ids)
         )
-        query = query.where(ActivityHistorySchema.id.in_(activity_ids))
         if respondent_id:
-            query = query.where(AnswerSchema.respondent_id == respondent_id)
-
+            query.where(AnswerSchema.respondent_id == respondent_id)
         db_result = await self._execute(query)
         results = []
-        for answer_id, activity_id in db_result.all():
+        for activity_id in db_result.all():
             results.append(activity_id)
-        return results
+        return [row[0] for row in results]
 
     async def get_completed_answers_data(
         self,
