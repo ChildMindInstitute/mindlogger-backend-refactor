@@ -918,9 +918,7 @@ class ReportServerService:
         elif not activity.scores_and_reports.get("generate_report", False):
             return False
 
-        scores = activity.scores_and_reports.get("scores", [])
-        sections = activity.scores_and_reports.get("sections", [])
-        if not any([scores, sections]):
+        if not activity.scores_and_reports.get("reports"):
             return False
         return True
 
