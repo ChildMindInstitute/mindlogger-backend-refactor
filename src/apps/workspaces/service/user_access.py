@@ -385,12 +385,6 @@ class UserAccessService:
                         )
                     )
 
-            await UserAppletAccessCRUD(
-                self.session
-            ).remove_manager_accesses_by_user_id_in_workspace(
-                owner_id, manager_id
-            )
-
         for schema in schemas:
             user_access = await UserAppletAccessCRUD(
                 self.session
