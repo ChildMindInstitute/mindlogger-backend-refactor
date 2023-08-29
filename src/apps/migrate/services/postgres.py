@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import List, Collection, Any
 
 import psycopg2
+from psycopg2.errorcodes import UNIQUE_VIOLATION
 from bson import ObjectId
 
 from apps.migrate.services.applet_service import AppletMigrationService
@@ -247,8 +248,8 @@ class Postgres:
             end = (chunk_num + 1) * size
             chunk_values = dao_collection[start:end]
             values = [str(item) for item in chunk_values]
-            values = ",".join(values)
-            sql_literals = sql.format(values=values)
+            values_rows = ",".join(values)
+            sql_literals = sql.format(values=values_rows)
             cursor.execute(sql_literals)
             inserted_count += cursor.rowcount
         self.connection.commit()
@@ -275,8 +276,20 @@ class Postgres:
             )
             VALUES {values}
         """
-        rows_count = self.insert_dao_collection(sql, access_mapping)
-        migration_log.warning(f"Inserted {rows_count} rows")
+        for row in access_mapping:
+            cursor = self.connection.cursor()
+            query = sql.format(values=str(row))
+            try:
+                cursor.execute(query)
+            except Exception as ex:
+                if not hasattr(ex, "pgcode"):
+                    # not pg error
+                    raise ex
+                if getattr(ex, "pgcode") == UNIQUE_VIOLATION:
+                    migration_log.warning(f"Role already exist {row=}")
+                else:
+                    raise ex
+            self.connection.commit()
 
     def save_user_pins(self, user_pin_dao):
         sql = """
