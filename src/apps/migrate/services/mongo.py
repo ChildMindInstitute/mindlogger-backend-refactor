@@ -28,7 +28,7 @@ from apps.migrate.services.applet_versions import (
     content_to_jsonld,
     CONTEXT,
 )
-from apps.migrate.utilities import mongoid_to_uuid, migration_log
+from apps.migrate.utilities import mongoid_to_uuid, migration_log, convert_role
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt
 from apps.workspaces.domain.constants import Role
@@ -482,7 +482,7 @@ class Mongo:
                         user_id=mongoid_to_uuid(doc["userId"]),
                         owner_id=owner_id,
                         inviter_id=self.inviter_id(doc["userId"], applet_id),
-                        role=role_name,
+                        role=convert_role(role_name),
                         created_at=datetime.datetime.now(),
                         updated_at=datetime.datetime.now(),
                         meta=meta,
@@ -535,7 +535,7 @@ class Mongo:
                     user_id=mongoid_to_uuid(profile["userId"]),
                     pinned_user_id=mongoid_to_uuid(manager_profile["userId"]),
                     owner_id=mongoid_to_uuid(owner_id),
-                    role=role,
+                    role=convert_role(role),
                     created_at=datetime.datetime.now(),
                     updated_at=datetime.datetime.now(),
                 )

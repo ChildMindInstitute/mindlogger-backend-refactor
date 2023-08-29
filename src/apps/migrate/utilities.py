@@ -1,7 +1,7 @@
 import json
 import uuid
 import logging
-
+from apps.workspaces.domain.constants import Role
 from bson import ObjectId
 
 
@@ -13,6 +13,14 @@ def mongoid_to_uuid(id_):
 
 def uuid_to_mongoid(uid: uuid.UUID) -> None | ObjectId:
     return ObjectId(uid.hex[:-8]) if uid.hex[-8:] == "0" * 8 else None
+
+
+def convert_role(role: str) -> str:
+    match role:
+        case "user":
+            return Role.RESPONDENT
+        case _:
+            return role
 
 
 def get_logger(name) -> logging.Logger:
