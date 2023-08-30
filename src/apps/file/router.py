@@ -1,7 +1,13 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.file.api.file import check_file_uploaded, download, upload
+from apps.file.api.file import (
+    answer_download,
+    answer_upload,
+    check_file_uploaded,
+    download,
+    upload,
+)
 from apps.file.domain import FileExistenceResponse
 from apps.shared.domain import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -22,6 +28,24 @@ router.post(
     description="""Used for downloading images and files related to applets.
                 Receives key as a path to S3 Bucket, returns file object.""",
 )(download)
+
+
+router.post(
+    "/{applet_id}/upload",
+    description=(
+        "Used for uploading images and files related to applets."
+        "File stored in S3 account or arbitrary storage(S3, AzureBlob)"
+    ),
+)(answer_upload)
+
+
+router.post(
+    "/{applet_id}/download",
+    description=(
+        "Used for downloading images and files related to applets."
+        "File stored in S3 account or arbitrary storage(S3, AzureBlob)"
+    ),
+)(answer_download)
 
 # router.post("/upload/check")(check_file_uploaded)
 router.post(

@@ -1,9 +1,9 @@
 import uuid
+from typing import Collection, List, Set, Union
 
 from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import Query
 
-from apps.activities.db.schemas import ActivityHistorySchema
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import AnswerReview
 from apps.shared.filtering import Comparisons, FilterField, Filtering
@@ -67,7 +67,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         await self._execute(query)
 
     async def get_by_answer_and_activity(
-        self, answer_id: uuid.UUID, activity_history_id: str
+        self, answer_id: uuid.UUID, activity_history_ids: List[str]
     ) -> list[AnswerItemSchema]:
         query: Query = select(AnswerItemSchema)
         query = query.join(
@@ -75,7 +75,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         )
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(
-            AnswerSchema.activity_history_id == activity_history_id
+            AnswerSchema.activity_history_id.in_(activity_history_ids)
         )
 
         db_result = await self._execute(query)
@@ -152,7 +152,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
     async def get_applet_answers_by_activity_id(
         self,
         applet_id: uuid.UUID,
-        activity_id: uuid.UUID,
+        activity_ver_ids: Collection[str],
         filters: QueryParams,
     ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
         identifiers = filters.filters.get("identifiers")
@@ -167,13 +167,46 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
             ),
             isouter=True,
         )
-        query = query.join(
-            ActivityHistorySchema,
-            ActivityHistorySchema.id_version
-            == AnswerSchema.activity_history_id,
-        )
         query = query.where(AnswerSchema.applet_id == applet_id)
-        query = query.where(ActivityHistorySchema.id == activity_id)
+        query = query.where(
+            AnswerSchema.activity_history_id.in_(activity_ver_ids)
+        )
+        if not identifiers and empty_identifiers:
+            if "identifiers" in filters.filters:
+                filters.filters.pop("identifiers")
+            query = query.where(AnswerItemSchema.identifier.is_(None))
+
+        query = query.order_by(AnswerSchema.created_at.asc())
+        if filters.filters:
+            query = query.where(
+                *_ActivityAnswerFilter().get_clauses(**filters.filters)
+            )
+        db_result = await self._execute(query)
+        return db_result.all()
+
+    async def get_applet_answers_by_activity_history_ids(
+        self,
+        applet_id: uuid.UUID,
+        activity_history_id: Union[Set[str], List[str]],
+        filters: QueryParams,
+    ):
+        identifiers = filters.filters.get("identifiers")
+        empty_identifiers = filters.filters.get("empty_identifiers")
+        query: Query = select(AnswerSchema, AnswerItemSchema)
+        query = query.join(
+            AnswerItemSchema,
+            and_(
+                AnswerItemSchema.answer_id == AnswerSchema.id,
+                AnswerItemSchema.is_assessment == False,  # noqa
+            ),
+            isouter=True,
+        )
+        query.where(
+            and_(
+                AnswerSchema.activity_history_id.is_(activity_history_id),
+                AnswerSchema.applet_id == applet_id,
+            )
+        )
         query = query.order_by(AnswerSchema.created_at.asc())
 
         if not identifiers:

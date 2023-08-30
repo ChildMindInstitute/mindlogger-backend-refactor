@@ -1,9 +1,13 @@
+import asyncio
+import uuid
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from urllib.parse import quote
 
 from botocore.exceptions import ClientError
 from fastapi import Body, Depends, File, UploadFile
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.authentication.deps import get_current_user
 from apps.file.domain import (
@@ -13,10 +17,12 @@ from apps.file.domain import (
     UploadedFile,
 )
 from apps.file.errors import FileNotFoundError
+from apps.file.storage import select_storage
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.users.domain import User
 from config import settings
+from infrastructure.database.deps import get_session
 from infrastructure.utility.cdn_client import CDNClient
 
 
@@ -28,8 +34,9 @@ async def upload(
     cdn_client = CDNClient(settings.cdn, env=settings.env)
     key = fileId or CDNClient.generate_key(hash(user.id), file.filename)
 
-    cdn_client.upload(key, file.file)
-
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(cdn_client.upload, key, file.file)
+    await asyncio.wrap_future(future)
     result = UploadedFile(
         key=key, url=quote(settings.cdn.url.format(key=key), "/:")
     )
@@ -53,6 +60,40 @@ async def download(
         else:
             raise e
 
+    return StreamingResponse(file, media_type=media_type)
+
+
+async def answer_upload(
+    applet_id: uuid.UUID,
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    cdn_client = await select_storage(applet_id, session)
+    key = cdn_client.generate_key(hash(user.id), file.filename)
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(cdn_client.upload, key, file.file)
+    await asyncio.wrap_future(future)
+    result = UploadedFile(
+        key=key, url=quote(settings.cdn.url.format(key=key), "/:")
+    )
+    return Response(result=result)
+
+
+async def answer_download(
+    applet_id: uuid.UUID,
+    request: FileDownloadRequest = Body(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    cdn_client = await select_storage(applet_id, session)
+    try:
+        file, media_type = cdn_client.download(request.key)
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "404":
+            raise FileNotFoundError
+        else:
+            raise e
     return StreamingResponse(file, media_type=media_type)
 
 
