@@ -1,10 +1,12 @@
+import datetime
 import hashlib
 import os
 import json
+from typing import List
 from functools import partial
 
-from bson.objectid import ObjectId
 from Cryptodome.Cipher import AES
+from bson.objectid import ObjectId
 from pymongo import MongoClient, ASCENDING
 
 from apps.girderformindlogger.models.activity import Activity
@@ -13,12 +15,15 @@ from apps.girderformindlogger.models.account_profile import AccountProfile
 from apps.girderformindlogger.models.user import User
 
 from apps.girderformindlogger.models.folder import Folder as FolderModel
+from apps.girderformindlogger.models.user import User
 from apps.girderformindlogger.utility import jsonld_expander
 from apps.jsonld_converter.dependencies import (
     get_context_resolver,
     get_document_loader,
     get_jsonld_model_converter,
 )
+from apps.migrate.data_description.applet_user_access import AppletUserDAO
+from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.migrate.exception.exception import (
     FormatldException,
     EmptyAppletException,
@@ -28,9 +33,10 @@ from apps.migrate.services.applet_versions import (
     content_to_jsonld,
     CONTEXT,
 )
-from apps.migrate.utilities import mongoid_to_uuid
+from apps.migrate.utilities import mongoid_to_uuid, migration_log, convert_role
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt
+from apps.workspaces.domain.constants import Role
 from apps.applets.domain.base import Encryption
 
 
@@ -531,3 +537,185 @@ class Mongo:
         info["updated"] = applet["updated"]
 
         return info
+
+    def docs_by_ids(
+        self, collection: str, doc_ids: List[ObjectId]
+    ) -> List[dict]:
+        return self.db[collection].find({"_id": {"$in": doc_ids}})
+
+    def get_user_nickname(self, user) -> str:
+        first_name = decrypt(user.get("firstName"))
+        if not first_name:
+            first_name = "-"
+        elif len(first_name) >= 50:
+            first_name = first_name[:49]
+
+        last_name = decrypt(user.get("lastName"))
+        if not last_name:
+            last_name = "-"
+        elif len(last_name) >= 50:
+            last_name = last_name[:49]
+        return f"{first_name} {last_name}"
+
+    def reviewer_meta(self, applet_id: ObjectId) -> List[str]:
+        applet_docs = self.db["accountProfile"].find(
+            {"applets.user": applet_id}
+        )
+        return list(
+            map(lambda doc: str(mongoid_to_uuid(doc["userId"])), applet_docs)
+        )
+
+    def respondent_metadata(self, user: dict, applet_id: ObjectId):
+        doc_cur = (
+            self.db["appletProfile"]
+            .find({"userId": user["_id"], "appletId": applet_id})
+            .limit(1)
+        )
+        doc = next(doc_cur, None)
+        if not doc:
+            return {}
+        return {
+            "nick": self.get_user_nickname(user),
+            "secret": doc.get("MRN", ""),
+        }
+
+    def inviter_id(self, user_id, applet_id):
+        doc_invite = self.db["invitation"].find(
+            {"userId": user_id, "appletId": applet_id}
+        )
+        doc_invite = next(doc_invite, {})
+        invitor = doc_invite.get("invitedBy", {})
+        invitor_profile_id = invitor.get("_id")
+        ap_doc = self.db["appletProfile"].find_one({"_id": invitor_profile_id})
+        return mongoid_to_uuid(ap_doc["userId"]) if ap_doc else None
+
+    def is_pinned(self, user_id):
+        res = self.db["appletProfile"].find_one(
+            {"userId": user_id, "pinnedBy": {"$exists": 1, "$ne": []}}
+        )
+        return bool(res)
+
+    def get_user_applet_role_mapping(
+        self, migrated_applet_ids: List[ObjectId]
+    ) -> List[AppletUserDAO]:
+        account_profile_collection = self.db["accountProfile"]
+        not_found_users = []
+        not_found_applets = []
+        access_result = []
+        account_profile_docs = account_profile_collection.find()
+        for doc in account_profile_docs:
+            if doc["userId"] in not_found_users:
+                continue
+
+            user = User().findOne({"_id": doc["userId"]})
+            if not user:
+                msg = (
+                    f"Skip AppletProfile({doc['_id']}), "
+                    f"User({doc['userId']}) does not exist (field: userId)"
+                )
+                migration_log.warning(msg)
+                not_found_users.append(doc["userId"])
+                continue
+            role_applets_mapping = doc.get("applets")
+            for role_name, applet_ids in role_applets_mapping.items():
+                applet_docs = self.docs_by_ids("folder", applet_ids)
+                for applet_id in applet_ids:
+                    # Check maybe we already check this id in past
+                    if applet_id in not_found_applets:
+                        continue
+
+                    if applet_id not in migrated_applet_ids:
+                        # Applet doesn't exist in postgresql, just skip it
+                        # ant put id to cache
+                        migration_log.warning(
+                            f"Skip: Applet({applet_id}) "
+                            f"doesnt represent in PostgreSQL"
+                        )
+                        not_found_applets.append(applet_id)
+                        continue
+                    applet = next(
+                        filter(
+                            lambda item: item["_id"] == applet_id, applet_docs
+                        ),
+                        None,
+                    )
+                    if not applet:
+                        continue
+                    meta = {}
+                    if role_name == Role.REVIEWER:
+                        meta["respondents"] = self.reviewer_meta(applet_id)
+                    elif role_name == "user":
+                        data = self.respondent_metadata(user, applet_id)
+                        if data:
+                            meta["nickname"] = data["nick"]
+                            meta["secretUserId"] = data["secret"]
+
+                    owner_id = (
+                        mongoid_to_uuid(applet.get("creatorId"))
+                        if applet.get("creatorId")
+                        else None
+                    )
+                    access = AppletUserDAO(
+                        applet_id=mongoid_to_uuid(applet_id),
+                        user_id=mongoid_to_uuid(doc["userId"]),
+                        owner_id=owner_id,
+                        inviter_id=self.inviter_id(doc["userId"], applet_id),
+                        role=convert_role(role_name),
+                        created_at=datetime.datetime.now(),
+                        updated_at=datetime.datetime.now(),
+                        meta=meta,
+                        is_pinned=self.is_pinned(doc["userId"]),
+                        is_deleted=False,
+                    )
+                    access_result.append(access)
+        migration_log.warning(
+            f"[Role] Prepared for migrations {len(access_result)} items"
+        )
+        return list(set(access_result))
+
+    def get_pinned_users(self):
+        return self.db["appletProfile"].find(
+            {"pinnedBy": {"$exists": 1}, "userId": {"$exists": 1, "$ne": None}}
+        )
+
+    def get_applet_profiles_by_ids(self, ids):
+        return self.db["appletProfile"].find({"_id": {"$in": ids}})
+
+    def get_pinned_role(self, applet_profile):
+        system_roles = Role.as_list().copy()
+        system_roles.remove(Role.RESPONDENT)
+        system_roles = set(system_roles)
+        applet_roles = set(applet_profile.get("roles", []))
+        if system_roles.intersection(applet_roles):
+            return Role.MANAGER
+        else:
+            return Role.RESPONDENT
+
+    def get_owner_by_applet_profile(self, applet_profile):
+        profiles = self.db["accountProfile"].find(
+            {"userId": applet_profile["userId"]}
+        )
+        it = filter(lambda p: p["_id"] == p["accountId"], profiles)
+        profile = next(it, None)
+        return profile["userId"] if profiles else None
+
+    def get_user_pin_mapping(self):
+        pin_profiles = self.get_pinned_users()
+        pin_dao_list = set()
+        for profile in pin_profiles:
+            if not profile["pinnedBy"]:
+                continue
+            pinned_by = self.get_applet_profiles_by_ids(profile["pinnedBy"])
+            for manager_profile in pinned_by:
+                role = self.get_pinned_role(manager_profile)
+                owner_id = self.get_owner_by_applet_profile(manager_profile)
+                dao = UserPinsDAO(
+                    user_id=mongoid_to_uuid(profile["userId"]),
+                    pinned_user_id=mongoid_to_uuid(manager_profile["userId"]),
+                    owner_id=mongoid_to_uuid(owner_id),
+                    role=convert_role(role),
+                    created_at=datetime.datetime.now(),
+                    updated_at=datetime.datetime.now(),
+                )
+                pin_dao_list.add(dao)
+        return pin_dao_list

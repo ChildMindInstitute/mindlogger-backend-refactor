@@ -1,7 +1,9 @@
+import json
 import logging
 import sys
 import uuid
-
+import logging
+from apps.workspaces.domain.constants import Role
 from bson import ObjectId
 
 
@@ -15,6 +17,14 @@ def uuid_to_mongoid(uid: uuid.UUID) -> None | ObjectId:
     return ObjectId(uid.hex[:-8]) if uid.hex[-8:] == "0" * 8 else None
 
 
+def convert_role(role: str) -> str:
+    match role:
+        case "user":
+            return Role.RESPONDENT
+        case _:
+            return role
+
+
 def get_logger(name) -> logging.Logger:
     formatter = logging.Formatter(f"[{name}] %(levelname)s - %(message)s")
     handler = logging.StreamHandler(stream=sys.stdout)
@@ -22,3 +32,13 @@ def get_logger(name) -> logging.Logger:
     log = logging.getLogger()
     log.addHandler(handler)
     return log
+
+
+class EncUUID(json.JSONEncoder):
+    def default(self, t):
+        if isinstance(t, uuid.UUID):
+            return str(t)
+        return super().default(t)
+
+
+migration_log = get_logger("Migration")

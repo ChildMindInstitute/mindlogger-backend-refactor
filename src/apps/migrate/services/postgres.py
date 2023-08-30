@@ -1,13 +1,26 @@
+import logging
+
+import math
 import os
+import uuid
 from contextlib import suppress
 from datetime import datetime
+from typing import List, Collection, Any
 
 import psycopg2
+from psycopg2.errorcodes import UNIQUE_VIOLATION
+from bson import ObjectId
 
 from apps.migrate.services.applet_service import AppletMigrationService
-from apps.migrate.utilities import mongoid_to_uuid
+from apps.migrate.utilities import (
+    mongoid_to_uuid,
+    uuid_to_mongoid,
+    migration_log,
+)
 from infrastructure.database import session_manager
 from infrastructure.database import atomic
+from apps.migrate.data_description.applet_user_access import AppletUserDAO
+from apps.migrate.data_description.user_pins import UserPinsDAO
 
 
 class Postgres:
@@ -137,10 +150,8 @@ class Postgres:
 
         self.connection.commit()
         cursor.close()
-
         print(f"Errors in {len(workspaces) - count} users_workspace")
         print(f"Successfully migrated {count} users_workspace")
-
         return results
 
     # def save_applets(
@@ -209,3 +220,93 @@ class Postgres:
         #         }
         #     ]
         # }
+
+    def get_pk_array(self, sql, as_bson=True):
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        cursor.close()
+        if as_bson:
+            m = map(lambda t: uuid_to_mongoid(uuid.UUID(t[0])), results)
+        else:
+            m = map(lambda t: uuid.UUID(t[0]), results)
+        return list(filter(lambda i: i is not None, m))
+
+    def get_migrated_applets(self) -> list[ObjectId]:
+        return self.get_pk_array('SELECT id FROM "applets"')
+
+    def get_migrated_users_ids(self):
+        return self.get_pk_array('SELECT id FROM "users"', as_bson=False)
+
+    def insert_dao_collection(self, sql, dao_collection: List[Any]):
+        size = 1000
+        cursor = self.connection.cursor()
+        chunk_count = math.ceil(len(dao_collection) / size)
+        inserted_count = 0
+        for chunk_num in range(chunk_count):
+            start = chunk_num * size
+            end = (chunk_num + 1) * size
+            chunk_values = dao_collection[start:end]
+            values = [str(item) for item in chunk_values]
+            values_rows = ",".join(values)
+            sql_literals = sql.format(values=values_rows)
+            cursor.execute(sql_literals)
+            inserted_count += cursor.rowcount
+        self.connection.commit()
+        cursor.close()
+        return inserted_count
+
+    def save_user_access_workspace(self, access_mapping: List[AppletUserDAO]):
+        sql = """
+            INSERT INTO user_applet_accesses
+            (
+                "id", 
+                "created_at", 
+                "updated_at", 
+                "is_deleted", 
+                "role", 
+                "user_id", 
+                "applet_id",
+                "owner_id",
+                "invitor_id",
+                "meta",
+                "is_pinned",
+                "migrated_date",
+                "migrated_updated"
+            )
+            VALUES {values}
+        """
+        for row in access_mapping:
+            cursor = self.connection.cursor()
+            query = sql.format(values=str(row))
+            try:
+                cursor.execute(query)
+            except Exception as ex:
+                if not hasattr(ex, "pgcode"):
+                    # not pg error
+                    raise ex
+                if getattr(ex, "pgcode") == UNIQUE_VIOLATION:
+                    migration_log.warning(f"Role already exist {row=}")
+                else:
+                    raise ex
+            self.connection.commit()
+
+    def save_user_pins(self, user_pin_dao):
+        sql = """
+            INSERT INTO user_pins
+            (
+                id, 
+                is_deleted, 
+                user_id, 
+                pinned_user_id, 
+                owner_id, 
+                "role", 
+                created_at, 
+                updated_at, 
+                migrated_date, 
+                migrated_updated
+            )
+            VALUES {values}
+        """
+        rows_count = self.insert_dao_collection(sql, list(user_pin_dao))
+        migration_log.warning(f"Inserted {rows_count} rows")
