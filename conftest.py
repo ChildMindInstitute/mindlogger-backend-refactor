@@ -1,18 +1,23 @@
 import asyncio
+import os
 
 import pytest
 from alembic import command
 from alembic.config import Config
 
-alembic_cfg = Config("alembic.ini")
+alembic_configs = [Config("alembic.ini"), Config("alembic_arbitrary.ini")]
 
 
 def before():
-    command.upgrade(alembic_cfg, "head")
+    os.environ["PYTEST_APP_TESTING"] = "1"
+    for alembic_cfg in alembic_configs:
+        command.upgrade(alembic_cfg, "head")
 
 
 def after():
-    command.downgrade(alembic_cfg, "base")
+    for alembic_cfg in alembic_configs:
+        command.downgrade(alembic_cfg, "base")
+    os.environ.pop("PYTEST_APP_TESTING")
 
 
 @pytest.fixture(scope="session")

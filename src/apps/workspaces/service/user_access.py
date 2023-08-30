@@ -21,6 +21,7 @@ from apps.workspaces.errors import (
     AccessDeniedToUpdateOwnAccesses,
     AppletAccessDenied,
     RemoveOwnPermissionAccessDenied,
+    UserAccessAlreadyExists,
     UserAppletAccessesDenied,
     WorkspaceDoesNotExistError,
 )
@@ -114,25 +115,26 @@ class UserAccessService:
 
     async def remove_manager_access(self, schema: RemoveManagerAccess):
         """Remove manager access from a specific user."""
-        # check if user is owner of all applets
-        await self._validate_ownership(
-            schema.applet_ids, [Role.OWNER, Role.MANAGER]
-        )
+        # TODO rework logic: query to remove all managers less by rang
         if self._user_id == schema.user_id:
             raise RemoveOwnPermissionAccessDenied()
+
         manager_roles = [
             Role.COORDINATOR,
-            Role.MANAGER,
             Role.EDITOR,
             Role.REVIEWER,
         ]
+        try:
+            await self._validate_ownership(schema.applet_ids, [Role.OWNER])
+            manager_roles.append(Role.MANAGER)
+        except AppletAccessDenied:
+            await self._validate_ownership(schema.applet_ids, [Role.MANAGER])
 
         # check if schema.user_id is manager of all applets
         await self._validate_access(
             user_id=schema.user_id,
             removing_applets=schema.applet_ids,
             roles=manager_roles,
-            invitor_id=self._user_id,
         )
         # remove manager access
         await UserAppletAccessCRUD(
@@ -344,6 +346,7 @@ class UserAccessService:
                         applet_id=access.applet_id,
                         owner_id=owner_id,
                         invitor_id=self._user_id,
+                        is_deleted=False,
                         meta=meta,
                     )
                 )
@@ -377,15 +380,23 @@ class UserAccessService:
                             applet_id=access.applet_id,
                             owner_id=owner_id,
                             invitor_id=self._user_id,
+                            is_deleted=False,
                             meta=meta,
                         )
                     )
 
-        await UserAppletAccessCRUD(
-            self.session
-        ).remove_manager_accesses_by_user_id_in_workspace(owner_id, manager_id)
-
-        await UserAppletAccessCRUD(self.session).create_many(schemas)
+        for schema in schemas:
+            user_access = await UserAppletAccessCRUD(
+                self.session
+            ).get_by_user_applet_accesses(
+                schema.user_id, schema.applet_id, schema.role
+            )
+            if user_access:
+                raise UserAccessAlreadyExists()
+            else:
+                await UserAppletAccessCRUD(
+                    self.session
+                ).upsert_user_applet_access(schema)
 
     async def get_workspace_applet_roles(
         self,

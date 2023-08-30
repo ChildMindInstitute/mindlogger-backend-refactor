@@ -172,6 +172,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         accessible_applets_query = accessible_applets_query.where(
             UserAppletAccessSchema.role.in_(roles)
         )
+        accessible_applets_query = accessible_applets_query.where(
+            UserAppletAccessSchema.soft_exists()
+        )
 
         query = select(AppletSchema)
         if query_params.filters:
@@ -201,6 +204,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         )
         accessible_applets_query = accessible_applets_query.where(
             UserAppletAccessSchema.role.in_(roles)
+        )
+        accessible_applets_query = accessible_applets_query.where(
+            UserAppletAccessSchema.soft_exists()
         )
 
         query = select(count(AppletSchema.id))

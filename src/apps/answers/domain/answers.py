@@ -69,7 +69,7 @@ class ItemAnswerCreate(InternalModel):
     @validator("start_time", "end_time", "scheduled_time")
     def convert_time_to_unix_timestamp(cls, value: int):
         if value:
-            return value / 1000
+            return value / 1000  # wtf, rework this
         return value
 
 
@@ -105,7 +105,7 @@ class AppletAnswerCreate(InternalModel):
     @validator("created_at")
     def convert_time_to_unix_timestamp(cls, value: int):
         if value:
-            return value / 1000
+            return value / 1000  # wtf, rework this
         return value
 
 
@@ -310,9 +310,11 @@ class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
         if val := values.get("flow_history_id"):
             return val[:36]
 
-    @validator("start_datetime", "end_datetime")
+    @validator("start_datetime", "end_datetime", "scheduled_datetime")
     def convert_to_timestamp(cls, value: datetime.datetime):
-        return int(value.timestamp() * 1000)
+        if value:
+            return int(value.timestamp() * 1000)  # wtf, rework this
+        return None
 
 
 class AnswerExport(InternalModel):
@@ -396,9 +398,13 @@ class AnswersCheck(PublicModel):
     @validator("created_at")
     def convert_time_to_unix_timestamp(cls, value: int):
         if value:
-            return value / 1000
+            return value / 1000  # wtf, rework this
         return value
 
 
 class AnswerExistenceResponse(PublicModel):
     exists: bool
+
+
+class ArbitraryPreprocessor(PublicModel):
+    applet_id: uuid.UUID | None = None
