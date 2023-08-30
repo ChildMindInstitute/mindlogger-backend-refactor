@@ -94,6 +94,12 @@ class AnswersMigrateFacade:
                             "answer_id": answer_id,
                             "is_assessment": is_assessment,
                         }
+
+                        # await self.answer_item_migrate_service.create_item(
+                        #     session=session,
+                        #     **answer_item_data,
+                        # )
+
                         answer_items_data.append(answer_item_data)
 
                         for note in Note().find(
@@ -116,11 +122,9 @@ class AnswersMigrateFacade:
                     successfully_answers_migrated += 1
                 except Exception as e:
                     error_answers_migration.append(
-                        (query, f"mongo answer id {mongo_answer_id}", f"{e}")
+                        (query, f"mongo answer id {mongo_answer_id}", str(e))
                     )
                     continue
-
-        self.mongo.close_connection()
 
         for i, answer_item_data in enumerate(answer_items_data):
             print(f"Migrating {i} answer_item of {len(answer_items_data)}")
@@ -131,8 +135,7 @@ class AnswersMigrateFacade:
                         **answer_item_data,
                     )
             except Exception as e:
-                print(answer_item_data)
-                print(e)
+                error_answers_migration.append((answer_item_data, str(e)))
                 continue
 
         print(f"Total answers count: {total_answers}")
@@ -147,6 +150,8 @@ class AnswersMigrateFacade:
             )
             for s in error_answers_migration:
                 print(s)
+
+        self.mongo.close_connection()
 
 
 if __name__ == "__main__":
