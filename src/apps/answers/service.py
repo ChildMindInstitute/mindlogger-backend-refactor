@@ -1132,3 +1132,19 @@ class ReportServerEncryption:
             algorithm=hashes.SHA1(),
             label=None,
         )
+
+
+async def get_user_migrated_answer_file_urls(
+    *, session, applet_id: uuid.UUID
+) -> list[str]:
+    answers = await AnswersCRUD(session).get_answers_by_applet_id(
+        applet_id=applet_id
+    )
+    file_urls = []
+    for answer in answers:
+        if not answer.migrated_data:
+            continue
+        decrypted_file_answers = answer.migrated_data["decryptedFileAnswers"]
+        for dfa in decrypted_file_answers:
+            file_urls.append(dfa["fileUrl"])
+    return file_urls

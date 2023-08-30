@@ -6,6 +6,7 @@ from apps.file.api.file import (
     answer_upload,
     check_file_uploaded,
     download,
+    presign,
     upload,
 )
 from apps.file.domain import FileExistenceResponse
@@ -49,7 +50,7 @@ router.post(
 
 # router.post("/upload/check")(check_file_uploaded)
 router.post(
-    "/upload/check",
+    "/{applet_id}/upload/check",
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": ResponseMulti[FileExistenceResponse]},
@@ -57,3 +58,12 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(check_file_uploaded)
+
+
+router.post(
+    "/{applet_id}/presign/",
+    description=(
+        "Used for generating temporary public urls for files"
+        "File stored in S3 account or arbitrary storage(S3, AzureBlob)"
+    ),
+)(presign)

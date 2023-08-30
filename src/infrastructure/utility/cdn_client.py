@@ -12,15 +12,22 @@ from config.cdn import CDNSettings
 
 class CDNClient:
     def __init__(self, config: CDNSettings, env: str):
-        self.bucket = None
-        self.endpoint = None
+        self.config = config
         self.env = env
-        self.bucket = config.bucket
+        self.ttl_signed_urls = config.ttl_signed_urls
         self.client = self.configure_client(config)
 
     def configure_client(self, config):
+        assert config, "set CDN"
+
+        if self.env == "dev":
+            return boto3.client(
+                "s3",
+                region_name=config.region,
+                aws_access_key_id=config.access_key,
+                aws_secret_access_key=config.secret_key,
+            )
         try:
-            assert config, "set CDN"
             return boto3.client("s3", region_name=config.region)
         except KeyError:
             print("CDN configuration is not full")
@@ -35,16 +42,16 @@ class CDNClient:
         self.client.upload_fileobj(
             body,
             Key=path,
-            Bucket=self.bucket,
+            Bucket=self.config.bucket,
         )
 
     @staticmethod
-    def generate_key(unique, filename):
-        return f"mindlogger/{unique}/{uuid.uuid4()}/{filename}"
+    def generate_key(scope, unique, filename):
+        return f"mindlogger/{scope}/{unique}/{uuid.uuid4()}/{filename}"
 
     def check_existence(self, key: str):
         try:
-            return self.client.head_object(Bucket=self.bucket, Key=key)
+            return self.client.head_object(Bucket=self.config.bucket, Key=key)
         except ClientError:
             raise NotFoundError
 
@@ -55,7 +62,7 @@ class CDNClient:
             local_file = open(key, "rb")
             file.write(local_file.read())
         else:
-            self.client.download_fileobj(self.bucket, key, file)
+            self.client.download_fileobj(self.config.bucket, key, file)
         file.seek(0)
         media_type = (
             mimetypes.guess_type(key)[0]
@@ -63,3 +70,14 @@ class CDNClient:
             else "application/octet-stream"
         )
         return file, media_type
+
+    def generate_presigned_url(self, private_url):
+        url = self.client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": self.config.bucket,
+                "Key": private_url,
+            },
+            ExpiresIn=self.ttl_signed_urls,
+        )
+        return url

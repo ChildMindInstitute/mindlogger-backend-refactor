@@ -35,3 +35,12 @@ async def select_storage(applet_id: uuid.UUID, session: AsyncSession):
                 acc_key=info.storage_access_key,
                 sec_key=info.storage_secret_key,
             )
+
+
+def get_legacy_storage():
+    return CdnClientS3(
+        region=settings.cdn.legacy_region,
+        bucket=settings.cdn.legacy_bucket,
+        acc_key=settings.cdn.legacy_access_key,
+        sec_key=settings.cdn.legacy_secret_key,
+    )
