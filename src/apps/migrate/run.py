@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import uuid
 import csv
 
 from bson.objectid import ObjectId
@@ -14,7 +15,7 @@ from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.item import Item
 
 
-from apps.migrate.utilities import get_logger, migration_log
+from apps.migrate.utilities import migration_log
 
 
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
@@ -210,6 +211,21 @@ def migrate_user_pins(mongo: Mongo, postgres: Postgres):
     migration_log.warning("UserPins has been migrated")
 
 
+def migrate_folders(mongo, postgres):
+    migration_log.warning("[FOLDERS] In progress")
+    workspaces_ids = postgres.get_migrated_workspaces()
+    folders_dao, applet_dao = mongo.get_folder_mapping(workspaces_ids)
+    migrated, skipped = postgres.execute_in_transact(
+        folders_dao, err_prefix="FOLDERS"
+    )
+    migration_log.warning(f"[FOLDERS] {migrated=}, {skipped=}")
+    migration_log.warning("[FOLDER_APPLETS] In progress")
+    migrated, skipped = postgres.execute_in_transact(
+        applet_dao, err_prefix="APPLET_FOLDERS"
+    )
+    migration_log.warning(f"[FOLDER_APPLETS] {migrated=}, {skipped=}")
+
+
 async def main():
     mongo = Mongo()
     postgres = Postgres()
@@ -237,6 +253,7 @@ async def main():
     # Migrate user pins
     migrate_user_pins(mongo, postgres)
     # Close connections
+    migrate_folders(mongo, postgres)
     mongo.close_connection()
     postgres.close_connection()
 

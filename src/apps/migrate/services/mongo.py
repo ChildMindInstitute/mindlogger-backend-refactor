@@ -1,8 +1,9 @@
 import datetime
 import hashlib
 import os
+import uuid
+from typing import List, Set, Tuple
 import json
-from typing import List
 
 from Cryptodome.Cipher import AES
 from bson.objectid import ObjectId
@@ -23,6 +24,7 @@ from apps.jsonld_converter.dependencies import (
 )
 from apps.migrate.data_description.applet_user_access import AppletUserDAO
 from apps.migrate.data_description.user_pins import UserPinsDAO
+from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
 from apps.migrate.exception.exception import (
     FormatldException,
     EmptyAppletException,
@@ -32,14 +34,16 @@ from apps.migrate.services.applet_versions import (
     content_to_jsonld,
     CONTEXT,
 )
-from apps.migrate.utilities import mongoid_to_uuid, migration_log, convert_role
+from apps.migrate.utilities import (
+    mongoid_to_uuid,
+    migration_log,
+    convert_role,
+    uuid_to_mongoid,
+)
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt
 from apps.workspaces.domain.constants import Role
 from apps.applets.domain.base import Encryption
-
-
-# from apps.applets.domain.applet_create_update import AppletCreate
 
 
 def decrypt(data):
@@ -661,3 +665,98 @@ class Mongo:
                 )
                 pin_dao_list.add(dao)
         return pin_dao_list
+
+    def get_folders(self, account_id):
+        return list(
+            FolderModel().find(
+                query={"accountId": account_id, "baseParentType": "user"}
+            )
+        )
+
+    def get_applets_in_folder(self, folder_id):
+        return list(
+            FolderModel().find(
+                query={
+                    "baseParentType": "folder",
+                    "baseParentId": folder_id,
+                    "meta.applet": {"$exists": True},
+                }
+            )
+        )
+
+    def get_root_applets(self, account_id):
+        return list(
+            FolderModel().find(
+                query={
+                    "accountId": account_id,
+                    "baseParentType": "collection",
+                    "baseParentId": ObjectId("5ea689a286d25a5dbb14e82c"),
+                    "meta.applet": {"$exists": True},
+                }
+            )
+        )
+
+    def get_folders_and_applets(self, account_id):
+        folders = self.get_folders(account_id)
+        for folder in folders:
+            folder["applets"] = self.get_applets_in_folder(folder["_id"])
+        result = {
+            "applets": self.get_root_applets(account_id),
+            "folders": folders,
+        }
+        return result
+
+    def get_folder_pin(
+        self, folder: dict, applet_id: ObjectId
+    ) -> datetime.datetime | None:
+        meta = folder.get("meta", {})
+        applets_order = meta.get("applets", {})
+        order_it = filter(lambda m: m["_id"] == applet_id, applets_order)
+        order = next(order_it, None)
+        if not order or order.get("_pin_order"):
+            return None
+        now = datetime.datetime.now()
+        return now + datetime.timedelta(seconds=order["_pin_order"])
+
+    def get_folder_mapping(
+        self, workspace_ids: List[uuid.UUID]
+    ) -> Tuple[Set[FolderDAO], Set[FolderAppletDAO]]:
+        folders_list = []
+        applets_list = []
+        for workspace_id in workspace_ids:
+            profile_id = uuid_to_mongoid(workspace_id)
+            if profile_id is None:
+                # non migrated workspace
+                continue
+            res = self.get_folders_and_applets(profile_id)
+            for folder in res["folders"]:
+                folders_list.append(
+                    FolderDAO(
+                        id=mongoid_to_uuid(folder["_id"]),
+                        created_at=folder["created"],
+                        updated_at=folder["updated"],
+                        name=folder["name"],
+                        creator_id=mongoid_to_uuid(folder["creatorId"]),
+                        workspace_id=mongoid_to_uuid(folder["parentId"]),
+                        migrated_date=datetime.datetime.now(),
+                        migrated_update=datetime.datetime.now(),
+                        is_deleted=False,
+                    )
+                )
+                for applet in folder["applets"]:
+                    pinned_at = self.get_folder_pin(folder, applet["_id"])
+                    applets_list.append(
+                        FolderAppletDAO(
+                            id=uuid.uuid4(),
+                            folder_id=mongoid_to_uuid(folder["_id"]),
+                            applet_id=mongoid_to_uuid(applet["_id"]),
+                            created_at=applet["created"],
+                            updated_at=applet["updated"],
+                            pinned_at=pinned_at,
+                            migrated_date=datetime.datetime.now(),
+                            migrated_update=datetime.datetime.now(),
+                            is_deleted=False,
+                        )
+                    )
+
+        return set(folders_list), set(applets_list)

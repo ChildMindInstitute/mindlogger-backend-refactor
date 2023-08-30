@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import List, Collection, Any
 
 import psycopg2
-from psycopg2.errorcodes import UNIQUE_VIOLATION
+from psycopg2.errorcodes import UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION
 from bson import ObjectId
 
 from apps.migrate.services.applet_service import AppletMigrationService
@@ -221,7 +221,7 @@ class Postgres:
         #     ]
         # }
 
-    def get_pk_array(self, sql, as_bson=True):
+    def get_pk_array(self, sql, as_bson=True) -> List[uuid.UUID | ObjectId]:
         cursor = self.connection.cursor()
         cursor.execute(sql)
         results = cursor.fetchall()
@@ -310,3 +310,30 @@ class Postgres:
         """
         rows_count = self.insert_dao_collection(sql, list(user_pin_dao))
         migration_log.warning(f"Inserted {rows_count} rows")
+
+    def get_migrated_workspaces(self) -> List[uuid.UUID]:
+        sql = "SELECT id FROM users_workspaces"
+        return self.get_pk_array(sql, as_bson=False)
+
+    def execute_in_transact(self, dao_list, err_prefix=""):
+        success, skip = 0, 0
+        for dao in dao_list:
+            try:
+                cursor = self.connection.cursor()
+                sql = str(dao)
+                cursor.execute(sql)
+                success += 1
+            except Exception as ex:
+                skip += 1
+                if not hasattr(ex, "pgcode"):
+                    # not pg error
+                    raise ex
+                if getattr(ex, "pgcode") == FOREIGN_KEY_VIOLATION:
+                    migration_log.warning(f"[{err_prefix}] {ex}")
+                elif getattr(ex, "pgcode") == UNIQUE_VIOLATION:
+                    migration_log.warning(f"[{err_prefix}] {ex}")
+                else:
+                    raise ex
+            finally:
+                self.connection.commit()
+        return success, skip
