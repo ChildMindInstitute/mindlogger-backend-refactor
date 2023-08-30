@@ -97,7 +97,7 @@ def getDbConnection(
         if key in clientOptions:
             del clientOptions[key]
 
-    uri = None
+    # uri = None
 
     if uri is None:
         dbUriRedacted = "mongodb://localhost:27017/mindlogger"

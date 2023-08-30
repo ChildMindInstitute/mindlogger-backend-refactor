@@ -6,6 +6,7 @@ from bson import ObjectId
 from apps.answers.db.schemas import AnswerSchema
 from apps.girderformindlogger.models.note import Note
 from apps.girderformindlogger.models.profile import Profile
+from apps.girderformindlogger.models.item import Item
 from apps.migrate.answers.answer_item_service import AnswerItemMigrationService
 from apps.migrate.answers.answer_note_service import AnswerNoteMigrateService
 from apps.migrate.answers.answer_service import AnswerMigrationService
@@ -84,9 +85,18 @@ class AnswersMigrateFacade:
                             )
                             answer_id = answer.id
                         else:
-                            answer_id = mongoid_to_uuid(
-                                mongo_answer["meta"]["reviewing"]["responseId"]
+                            mongoId = mongo_answer["meta"]["reviewing"]["responseId"]
+                            mongo_answer_assessment = Item().findOne(query={'_id': mongoId})
+                            respondent_id = mongoid_to_uuid(
+                                mongo_answer_assessment["creatorId"]
                             )
+                            if not await self.answer_migrate_service.is_respondent_exist(
+                                    session=session, respondent_id=respondent_id
+                            ):
+                                skipped_answers_migration += 1
+                                continue
+                            answer_id = mongoid_to_uuid(mongoId)
+
 
                         # Collect answer data to prevent integrity issues
                         answer_item_data = {
