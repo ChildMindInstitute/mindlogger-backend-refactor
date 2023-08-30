@@ -48,7 +48,7 @@ class ConditionalLogicParser:
             || !input_checkbox.includes(1)"
     """
 
-    re_var = r"[a-zA-Z][\w_\-]*"
+    re_var = r"[0-9a-zA-Z][\w_\-]*"
 
     #  "({variable} >= {int1} && {variable} <= {int2})"
     #  "({variable} <= {int1} || {variable} >= {int2})"

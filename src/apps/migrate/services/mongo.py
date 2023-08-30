@@ -1,6 +1,7 @@
 import datetime
 import hashlib
 import os
+import json
 from typing import List
 
 from Cryptodome.Cipher import AES
@@ -9,6 +10,9 @@ from pymongo import MongoClient
 
 from apps.girderformindlogger.models.activity import Activity
 from apps.girderformindlogger.models.applet import Applet
+from apps.girderformindlogger.models.account_profile import AccountProfile
+from apps.girderformindlogger.models.user import User
+
 from apps.girderformindlogger.models.folder import Folder as FolderModel
 from apps.girderformindlogger.models.user import User
 from apps.girderformindlogger.utility import jsonld_expander
@@ -32,6 +36,7 @@ from apps.migrate.utilities import mongoid_to_uuid, migration_log, convert_role
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt
 from apps.workspaces.domain.constants import Role
+from apps.applets.domain.base import Encryption
 
 
 # from apps.applets.domain.applet_create_update import AppletCreate
@@ -54,12 +59,87 @@ def decrypt(data):
     return txt[:length]
 
 
+def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
+    broken_applet_versions = [
+        "6201cc26ace55b10691c0814",
+        "6202734eace55b10691c0fc4",
+        "623b757b5197b9338bdae930",
+        "623cd7ee5197b9338bdaf218",
+        "623e26175197b9338bdafbf0",
+        "627be9f60a62aa47962269b7",
+        "62f2ce4facd35a39e99b5e92",
+        "634715115cb70043112196ba",
+        "63ca78b7b71996780cdf1f16",
+        "63dd2d4eb7199623ac5002e4",
+        "6202738aace55b10691c101d",
+        "620eb401b0b0a55f680dd5f5",
+        "6210202db0b0a55f680de1a5",
+        "63ebcec2601cdc0fee1f3d42",
+        "63ec1498601cdc0fee1f47d2",
+    ]
+    if applet_id in broken_applet_versions:
+        for activity in applet["reprolib:terms/order"][0]["@list"]:
+            for property in activity["reprolib:terms/addProperties"]:
+                property["reprolib:terms/isVis"] = [{"@value": True}]
+
+    return applet
+
+
+def patch_broken_applets(
+    applet_id: str, applet_ld: dict, applet_mongo: dict
+) -> tuple[dict, dict]:
+    broken_applets = [
+        # broken conditional logic [object object]  in main applet
+        "6202738aace55b10691c101d",
+        "620eb401b0b0a55f680dd5f5",
+        "6210202db0b0a55f680de1a5",
+    ]
+    if applet_id in broken_applets:
+        for activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            for property in activity["reprolib:terms/addProperties"]:
+                if type(
+                    property["reprolib:terms/isVis"][0]["@value"]
+                ) == str and (
+                    "[object object]"
+                    in property["reprolib:terms/isVis"][0]["@value"]
+                ):
+                    property["reprolib:terms/isVis"] = [{"@value": True}]
+
+    # "623ce52a5197b9338bdaf4b6",  # needs to be renamed in cache,version as well
+    broken_applet_name = [
+        "623ce52a5197b9338bdaf4b6",
+        "64934a618819c1120b4f8e34",
+    ]
+    if applet_id in broken_applet_name:
+        applet_ld["displayName"] = str(applet_ld["displayName"]) + str("(1)")
+        applet_ld["http://www.w3.org/2004/02/skos/core#prefLabel"] = applet_ld[
+            "displayName"
+        ]
+    broken_applet_version = "623ce52a5197b9338bdaf4b6"
+    if applet_id == broken_applet_version:
+        applet_mongo["meta"]["applet"]["version"] = str("2.6.40")
+
+    broken_conditional_logic = [
+        "63ebcec2601cdc0fee1f3d42",
+        "63ec1498601cdc0fee1f47d2",
+    ]
+    if applet_id in broken_conditional_logic:
+        for activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            for property in activity["reprolib:terms/addProperties"]:
+                if (
+                    property["reprolib:terms/isAbout"][0]["@id"]
+                    == "IUQ_Wd_Social_Device"
+                ):
+                    property["reprolib:terms/isVis"] = [{"@value": True}]
+    return applet_ld, applet_mongo
+
+
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
         # uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        # uri = f"mongodb://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        self.client = MongoClient("mongo", 27017)  # uri
+        uri = f"mongodb://{os.getenv('MONGO__HOST')}"  # noqa: E501  {os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@
+        self.client = MongoClient(uri, 27017)  # uri
         self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
     @staticmethod
@@ -267,7 +347,12 @@ class Mongo:
             activity_ids_inside_applet.append(activity["@id"])
 
         if applet.get("reprolib:terms/activityFlowOrder"):
-            activity_flows = applet_format["activityFlows"]
+            activity_flows = applet_format["activityFlows"].copy()
+            for _key, _flow in activity_flows.copy().items():
+                flow_id = _flow["@id"]
+                if flow_id not in activity_flows:
+                    activity_flows[flow_id] = _flow.copy()
+
             activity_flows_fixed = {}
             # setup activity flow items
             for key, activity_flow in activity_flows.items():
@@ -291,7 +376,10 @@ class Mongo:
 
             # setup activity flows
             for flow in applet["reprolib:terms/activityFlowOrder"][0]["@list"]:
-                activity_flow_objects.append(activity_flows_fixed[flow["@id"]])
+                if activity_flows_fixed.get(flow["@id"]):
+                    activity_flow_objects.append(
+                        activity_flows_fixed[flow["@id"]]
+                    )
 
             applet["reprolib:terms/activityFlowOrder"][0][
                 "@list"
@@ -309,12 +397,23 @@ class Mongo:
             raise EmptyAppletException()
 
         ld_request_schema = self.get_applet_repro_schema(applet)
+        ld_request_schema, applet = patch_broken_applets(
+            applet_id, ld_request_schema, applet
+        )
         converted = await self.get_converter_result(ld_request_schema)
 
         converted.extra_fields["created"] = applet["created"]
         converted.extra_fields["updated"] = applet["updated"]
         converted.extra_fields["version"] = applet["meta"]["applet"].get(
             "version", "0.0.1"
+        )
+        converted.encryption = Encryption(
+            public_key=json.dumps(
+                applet["meta"]["encryption"]["appletPublicKey"]
+            ),
+            prime=json.dumps(applet["meta"]["encryption"]["appletPrime"]),
+            base=json.dumps(applet["meta"]["encryption"]["base"]),
+            account_id=str(applet["accountId"]),
         )
         converted = self._extract_ids(converted, applet_id)
 
@@ -327,9 +426,15 @@ class Mongo:
         result = get_versions_from_content(protocolId)
         converted_applet_versions = dict()
         if result is not None:
+            old_activities_by_id = {}
             for version, content in result.items():
                 print(version)
-                ld_request_schema = content_to_jsonld(content["applet"])
+                ld_request_schema, old_activities_by_id = content_to_jsonld(
+                    content["applet"], old_activities_by_id
+                )
+                ld_request_schema = patch_broken_applet_versions(
+                    applet_id, ld_request_schema
+                )
                 converted = await self.get_converter_result(ld_request_schema)
                 converted.extra_fields["created"] = content["updated"]
                 converted.extra_fields["updated"] = content["updated"]
@@ -359,6 +464,21 @@ class Mongo:
                 flow.extra_fields["extra"]["_:id"][0]["@value"]
             )
         return converted
+
+    def get_applet_info(self, applet_id: str) -> dict:
+        info = {}
+        applet = Applet().findOne({"_id": ObjectId(applet_id)})
+        account = AccountProfile().findOne({"_id": applet["accountId"]})
+        owner = User().findOne({"_id": applet["creatorId"]})
+        info["applet_id"] = applet_id
+        info["applet_name"] = applet["meta"]["applet"].get(
+            "displayName", "Untitled"
+        )
+        info["account_name"] = account["accountName"]
+        info["owner_email"] = owner["email"]
+        info["updated"] = applet["updated"]
+
+        return info
 
     def docs_by_ids(
         self, collection: str, doc_ids: List[ObjectId]
