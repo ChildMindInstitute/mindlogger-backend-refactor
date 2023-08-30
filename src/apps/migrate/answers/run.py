@@ -43,6 +43,8 @@ class AnswersMigrateFacade:
                 )
             )
             for answer_with_files in anwswers_with_files:
+                if not answer_with_files:
+                    continue
                 total_answers += 1
                 try:
                     async with atomic(session):
@@ -113,7 +115,7 @@ class AnswersMigrateFacade:
                             )
                     successfully_answers_migrated += 1
                 except Exception as e:
-                    traceback.print_exception(e)
+                    print(e)
                     error_answers_migration.append(
                         (query, f"mongo answer id {mongo_answer_id}", f"{e}")
                     )
@@ -131,7 +133,7 @@ class AnswersMigrateFacade:
                     )
             except Exception as e:
                 print(answer_item_data)
-                print(traceback.print_exception(e))
+                print(e)
                 continue
 
         print(f"Total answers count: {total_answers}")
