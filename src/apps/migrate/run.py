@@ -222,14 +222,6 @@ async def main():
     workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
     postgres.save_users_workspace(workspaces, users_mapping)
 
-    # Migrate with users
-    users: list[dict] = mongo.get_users()
-    users_mapping = postgres.save_users(users)
-
-    # Migrate with users_workspace
-    workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
-    postgres.save_users_workspace(workspaces, users_mapping)
-
     # Migrate applets, activities, items
     await migrate_applets(mongo, postgres)
 
