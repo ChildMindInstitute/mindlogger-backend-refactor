@@ -115,7 +115,6 @@ class AnswersMigrateFacade:
                             )
                     successfully_answers_migrated += 1
                 except Exception as e:
-                    print(e)
                     error_answers_migration.append(
                         (query, f"mongo answer id {mongo_answer_id}", f"{e}")
                     )
