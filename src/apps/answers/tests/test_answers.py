@@ -1185,7 +1185,7 @@ class TestAnswerActivityItems(BaseTest):
             "reviewedAnswerId", "userPublicKey", "version", "submitId",
             "scheduledDatetime", "startDatetime", "endDatetime"
         }
-        assert answer['startDatetime'] == 1690188679657
+        assert answer['startDatetime'] * 1000 == 1690188679657
         # fmt: on
 
         assert set(assessment.keys()) == expected_keys

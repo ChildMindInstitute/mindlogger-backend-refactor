@@ -313,7 +313,7 @@ class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
     @validator("start_datetime", "end_datetime", "scheduled_datetime")
     def convert_to_timestamp(cls, value: datetime.datetime):
         if value:
-            return int(value.timestamp() * 1000)  # wtf, rework this
+            return value.timestamp()
         return None
 
 
