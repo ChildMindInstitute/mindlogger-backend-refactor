@@ -477,8 +477,9 @@
       "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3618_1.1.0",
       "scores_and_reports": {
         "generate_report": true,
-        "scores": [
+        "reports": [
           {
+            "type": "score",
             "name":"Score 1",
             "id": "score_1",
             "calculation_type": "sum"
@@ -550,8 +551,9 @@
       "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3688_1.1.0",
       "scores_and_reports": {
         "generate_report": true,
-        "scores": [
+        "reports": [
           {
+            "type": "score",
             "name":"Score 1",
             "id": "score_1",
             "calculation_type": "sum"
