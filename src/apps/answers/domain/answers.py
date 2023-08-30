@@ -404,3 +404,7 @@ class AnswersCheck(PublicModel):
 
 class AnswerExistenceResponse(PublicModel):
     exists: bool
+
+
+class ArbitraryPreprocessor(PublicModel):
+    applet_id: uuid.UUID | None = None

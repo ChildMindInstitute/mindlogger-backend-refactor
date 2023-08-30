@@ -44,6 +44,7 @@ env = [
     "DATABASE__PASSWORD=postgres",
     "DATABASE__USER=postgres",
     "DATABASE__DB=test",
+    "ARBITRARY_DB=test_arbitrary"
 ]
 
 [tool.coverage.run]

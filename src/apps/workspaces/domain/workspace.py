@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from typing import Optional
 
 from pydantic import Field, validator
 
@@ -15,6 +16,7 @@ __all__ = [
     "PublicWorkspaceManager",
     "WorkspaceInfo",
     "PublicWorkspaceInfo",
+    "WorkspaceArbitrary",
 ]
 
 from apps.workspaces.domain.constants import Role
@@ -231,3 +233,15 @@ class WorkspacePrioritizedRole(PublicModel):
 class AppletRoles(InternalModel):
     applet_id: uuid.UUID
     roles: list[Role]
+
+
+class WorkspaceArbitrary(InternalModel):
+    id: uuid.UUID
+    database_uri: str
+    storage_access_key: str
+    storage_secret_key: str
+    storage_region: str
+    storage_type: str
+    storage_url: Optional[str] = None
+    storage_bucket: Optional[str] = None
+    use_arbitrary: bool
