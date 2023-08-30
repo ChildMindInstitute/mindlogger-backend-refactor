@@ -3,7 +3,7 @@ import uuid
 from pydantic import BaseModel, EmailStr, Field
 
 from apps.shared.domain import InternalModel, PublicModel
-from apps.shared.encryption import decrypt
+from apps.shared.encryption import decrypt, encrypt
 
 __all__ = [
     "PublicUser",
@@ -43,10 +43,22 @@ class UserCreateRequest(_UserBase, PublicModel):
         min_length=1,
     )
 
+    @property
+    def encrypted_first_name(self) -> bytes | None:
+        if self.first_name:
+            return encrypt(bytes(self.first_name, "utf-8"))
+        return None
+
+    @property
+    def encrypted_last_name(self) -> bytes | None:
+        if self.last_name:
+            return encrypt(bytes(self.last_name, "utf-8"))
+        return None
+
 
 class UserCreate(_UserBase, InternalModel):
-    first_name: bytes | None
-    last_name: bytes | None
+    first_name: bytes
+    last_name: bytes
     hashed_password: str
 
 
@@ -55,6 +67,18 @@ class UserUpdateRequest(InternalModel):
 
     first_name: str
     last_name: str
+
+    @property
+    def encrypted_first_name(self) -> bytes | None:
+        if self.first_name:
+            return encrypt(bytes(self.first_name, "utf-8"))
+        return None
+
+    @property
+    def encrypted_last_name(self) -> bytes | None:
+        if self.last_name:
+            return encrypt(bytes(self.last_name, "utf-8"))
+        return None
 
 
 class User(UserCreate):

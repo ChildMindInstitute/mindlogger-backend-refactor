@@ -349,8 +349,8 @@ class InvitationsService:
             "key": uuid.uuid3(uuid.uuid4(), schema.email),
             "invitor_id": self._user.id,
             "status": InvitationStatus.PENDING,
-            "first_name": schema.first_name,
-            "last_name": schema.last_name,
+            "first_name": schema.encrypted_first_name,
+            "last_name": schema.encrypted_last_name,
         }
 
         payload = None

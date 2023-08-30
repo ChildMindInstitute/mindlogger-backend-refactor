@@ -62,7 +62,10 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         instance = await self._update_one(
             lookup="id",
             value=user.id,
-            schema=UserSchema(**update_schema.dict()),
+            schema=UserSchema(
+                first_name=update_schema.encrypted_first_name,
+                last_name=update_schema.encrypted_last_name,
+            ),
         )
 
         # Create internal data model

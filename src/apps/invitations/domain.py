@@ -7,6 +7,7 @@ from pydantic import EmailStr, Field
 from apps.applets.domain import ManagersRole, Role
 from apps.invitations.constants import InvitationStatus
 from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.encryption import encrypt
 
 
 class Applet(PublicModel):
@@ -44,6 +45,18 @@ class _InvitationRequest(PublicModel):
     language: InvitationLanguage = Field(
         description="This field represents the language of invitation"
     )
+
+    @property
+    def encrypted_first_name(self) -> bytes | None:
+        if self.first_name:
+            return encrypt(bytes(self.first_name, "utf-8"))
+        return None
+
+    @property
+    def encrypted_last_name(self) -> bytes | None:
+        if self.last_name:
+            return encrypt(bytes(self.last_name, "utf-8"))
+        return None
 
 
 class InvitationRespondentRequest(_InvitationRequest):
@@ -128,8 +141,8 @@ class Invitation(InternalModel):
     key: uuid.UUID
     status: str
     invitor_id: uuid.UUID
-    first_name: str
-    last_name: str
+    first_name: bytes
+    last_name: bytes
     created_at: datetime
 
 
