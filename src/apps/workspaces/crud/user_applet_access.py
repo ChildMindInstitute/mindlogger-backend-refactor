@@ -661,6 +661,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserAppletAccessSchema.applet_id == applet_id
                 if applet_id
                 else True,
+                UserAppletAccessSchema.soft_exists(),
             )
             .group_by(UserSchema.id)
         )
