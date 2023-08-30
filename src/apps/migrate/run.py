@@ -14,6 +14,9 @@ from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.item import Item
 
 
+from apps.migrate.utilities import get_logger, migration_log
+
+
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
     toSkip = [
         "62768ff20a62aa1056078093",  # broken flanker
@@ -169,17 +172,55 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
 #     return info
 
 
+def migrate_roles(mongo: Mongo, postgres: Postgres):
+    migration_log.warning("Start Role migration")
+    applet_ids = postgres.get_migrated_applets()
+    roles = mongo.get_user_applet_role_mapping(applet_ids)
+    postgres.save_user_access_workspace(roles)
+    migration_log.warning("Role has been migrated")
+
+
+def migrate_user_pins(mongo: Mongo, postgres: Postgres):
+    migration_log.warning("Start UserPins migration")
+    pinned_dao = mongo.get_user_pin_mapping()
+    migrated_ids = postgres.get_migrated_users_ids()
+    to_migrate = []
+    skipped = 0
+    for profile in pinned_dao:
+        if profile.user_id not in migrated_ids:
+            migration_log.warning(
+                f"user_id {profile.user_id} not presented in PostgreSQL"
+            )
+            skipped += 1
+            continue
+        if profile.pinned_user_id not in migrated_ids:
+            migration_log.warning(
+                f"pinned_user_id {profile.user_id} not presented in PostgreSQL"
+            )
+            skipped += 1
+            continue
+        if profile.owner_id not in migrated_ids:
+            migration_log.warning(
+                f"owner_id {profile.owner_id} not presented in PostgreSQL"
+            )
+            skipped += 1
+            continue
+        to_migrate.append(profile)
+    postgres.save_user_pins(to_migrate)
+    migration_log.warning("UserPins has been migrated")
+
+
 async def main():
     mongo = Mongo()
     postgres = Postgres()
 
     # Migrate with users
-    # users: list[dict] = mongo.get_users()
-    # users_mapping = postgres.save_users(users)
+    users: list[dict] = mongo.get_users()
+    users_mapping = postgres.save_users(users)
 
     # Migrate with users_workspace
-    # workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
-    # postgres.save_users_workspace(workspaces, users_mapping)
+    workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
+    postgres.save_users_workspace(workspaces, users_mapping)
 
     # Migrate applets, activities, items
     await migrate_applets(mongo, postgres)
@@ -191,6 +232,10 @@ async def main():
     #     writer = csv.DictWriter(file, fieldnames=headers)
     #     writer.writerows(info)
 
+    # Migrate roles
+    migrate_roles(mongo, postgres)
+    # Migrate user pins
+    migrate_user_pins(mongo, postgres)
     # Close connections
     mongo.close_connection()
     postgres.close_connection()
