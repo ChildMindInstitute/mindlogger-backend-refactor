@@ -159,6 +159,7 @@ class AnswersMigrateFacade:
                 f"Error asnwers migration data (mongo query, mongo item id, error):"
             )
             for s in error_answers_migration:
+                print("#" * 10)
                 print(s)
 
         self.mongo.close_connection()
