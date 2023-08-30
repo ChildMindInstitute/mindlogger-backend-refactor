@@ -1,7 +1,7 @@
 """added migrated_data field
 
 Revision ID: 55508b7bf7cb
-Revises: 879e5b56ca8b
+Revises: 83115d22e7ef
 Create Date: 2023-08-22 10:58:36.078809
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "55508b7bf7cb"
-down_revision = "879e5b56ca8b"
+down_revision = "83115d22e7ef"
 branch_labels = None
 depends_on = None
 
