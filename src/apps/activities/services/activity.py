@@ -169,6 +169,9 @@ class ActivityService:
                     if activity_data.subscale_setting
                     else None,
                     order=index + 1,
+                    report_included_item_name=(
+                        activity_data.report_included_item_name
+                    ),
                 )
             )
 
