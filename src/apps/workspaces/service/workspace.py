@@ -60,7 +60,9 @@ class WorkspaceService:
         has_managers = await UserAppletAccessCRUD(self.session).has_managers(
             self._user_id
         )
-        workspace_name = decrypt(schema.workspace_name).decode("utf-8")
+        workspace_name = decrypt(bytes.fromhex(schema.workspace_name)).decode(
+            "utf-8"
+        )
         return WorkspaceInfo(name=workspace_name, has_managers=has_managers)
 
     async def has_access(
