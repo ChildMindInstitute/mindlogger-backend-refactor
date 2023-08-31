@@ -1485,10 +1485,11 @@ class TestActivityItems(BaseTest):
                     scores_and_reports=dict(
                         generateReport=True,
                         showScoreSummary=True,
-                        scores=[
+                        reports=[
                             dict(
-                                name="score1",
-                                id="score1_activity1",
+                                name="activity_item_singleselect",
+                                type="score",
+                                id="activity_item_singleselect",
                                 calculationType="sum",
                                 minScore=0,
                                 maxScore=3,
@@ -1503,20 +1504,26 @@ class TestActivityItems(BaseTest):
                                 conditionalLogic=[
                                     dict(
                                         name="score1_condition1",
-                                        id="score1_condition1_id",
+                                        id="activity_item_singleselect",
                                         flagScore=True,
                                         message="Hello2",
                                         match="any",
                                         conditions=[
                                             dict(
-                                                item_name="score1_activity1",
+                                                item_name=(
+                                                    "activity_item_"
+                                                    "singleselect"
+                                                ),
                                                 type="GREATER_THAN",
                                                 payload=dict(
                                                     value=1,
                                                 ),
                                             ),
                                             dict(
-                                                item_name="score1_activity1",
+                                                item_name=(
+                                                    "activity_item_"
+                                                    "singleselect"
+                                                ),
                                                 type="GREATER_THAN",
                                                 payload=dict(
                                                     value=2,
@@ -1526,10 +1533,9 @@ class TestActivityItems(BaseTest):
                                     ),
                                 ],
                             ),
-                        ],
-                        sections=[
                             dict(
                                 name="section1",
+                                type="section",
                                 messages="Hello from the other side",
                                 itemsPrint=[
                                     "activity_item_singleselect",
@@ -1541,14 +1547,18 @@ class TestActivityItems(BaseTest):
                                     match="all",
                                     conditions=[
                                         dict(
-                                            item_name="score1",
+                                            item_name=(
+                                                "activity_item_singleselect"
+                                            ),
                                             type="GREATER_THAN",
                                             payload=dict(
                                                 value=1,
                                             ),
                                         ),
                                         dict(
-                                            item_name="activity_item_singleselect",  # noqa E501
+                                            item_name=(
+                                                "activity_item_singleselect"  # noqa E501
+                                            ),
                                             type="EQUAL_TO_OPTION",
                                             payload=dict(
                                                 option_value="1",  # noqa E501
