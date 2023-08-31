@@ -1,4 +1,5 @@
 import json
+import sys
 import uuid
 import logging
 from apps.workspaces.domain.constants import Role
@@ -25,7 +26,7 @@ def convert_role(role: str) -> str:
 
 def get_logger(name) -> logging.Logger:
     formatter = logging.Formatter(f"[{name}] %(levelname)s - %(message)s")
-    handler = logging.StreamHandler()
+    handler = logging.StreamHandler(stream=sys.stdout)
     handler.setFormatter(formatter)
     log = logging.getLogger()
     log.addHandler(handler)
