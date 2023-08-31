@@ -3,10 +3,11 @@ import hashlib
 import os
 import json
 from typing import List
+from functools import partial
 
 from Cryptodome.Cipher import AES
 from bson.objectid import ObjectId
-from pymongo import MongoClient
+from pymongo import MongoClient, ASCENDING
 
 from apps.girderformindlogger.models.activity import Activity
 from apps.girderformindlogger.models.applet import Applet
@@ -464,6 +465,63 @@ class Mongo:
                 flow.extra_fields["extra"]["_:id"][0]["@value"]
             )
         return converted
+
+    def paginate(self, collection_function, page_size=300):
+        def _page(page_size=page_size, skip_count=0):
+            items = collection_function().skip(skip_count).limit(page_size)
+            return items
+
+        page_number = 1
+
+        while True:
+            skip_count = (page_number - 1) * page_size
+            items = _page(skip_count=skip_count)
+            yield from items
+            page_number += 1
+            if items.count() < page_size:
+                break
+
+    def get_answer_migration_queries(self, **kwargs):
+        query = {
+            "meta.responses": {"$exists": True},
+            "meta.activity.@id": kwargs["activity_id"],
+            "meta.applet.@id": kwargs["applet_id"],
+            "meta.applet.version": kwargs["version"],
+        }
+
+        item_collection = self.db["item"]
+        creators_ids = item_collection.find(query).distinct("creatorId")
+        for creator_id in creators_ids:
+            yield {**query, "creatorId": creator_id}
+
+    def get_answers_with_files(
+        self,
+        *,
+        answer_migration_queries,
+    ):
+        for query in answer_migration_queries:
+            item_collection = self.db["item"]
+            collection_function = partial(
+                item_collection.find,
+                query,
+                sort=[
+                    ("created", ASCENDING),
+                ],
+            )
+            del query["meta.responses"]
+            answer_with_files = dict()
+            for item in self.paginate(collection_function):
+                if not answer_with_files and "dataSource" in item["meta"]:
+                    answer_with_files["answer"] = item
+                    answer_with_files["query"] = query
+                elif answer_with_files and "dataSource" not in item["meta"]:
+                    answer_with_files.setdefault("files", []).append(
+                        item["meta"]["responses"]
+                    )
+                elif answer_with_files and "dataSource" in item["meta"]:
+                    yield answer_with_files
+                    answer_with_files = dict(answer=item, query=query)
+            yield answer_with_files
 
     def get_applet_info(self, applet_id: str) -> dict:
         info = {}

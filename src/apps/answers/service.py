@@ -682,13 +682,22 @@ class AnswerService:
             self.answer_session
         ).get_identifiers_by_activity_id(ids)
         results = []
-        for identifier, key in identifiers:
-            results.append(
-                Identifier(
-                    identifier=identifier,
-                    user_public_key=key,
+        for identifier, key, migrated_data in identifiers:
+            if not migrated_data or not migrated_data.get(
+                "is_identifier_encrypted"
+            ):
+                results.append(
+                    Identifier(
+                        identifier=identifier,
+                        user_public_key=key,
+                    )
                 )
-            )
+            else:
+                results.append(
+                    Identifier(
+                        identifier=identifier,
+                    )
+                )
         return results
 
     async def get_activity_versions(
