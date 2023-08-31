@@ -97,10 +97,8 @@ def getDbConnection(
         if key in clientOptions:
             del clientOptions[key]
 
-    # uri = None
-
     if uri is None:
-        dbUriRedacted = "mongodb://localhost:27017/mindlogger"
+        dbUriRedacted = "mongodb://localhost:27017/girderformindlogger"
         if not quiet:
             logprint.warning(
                 "WARNING: No MongoDB URI specified, using " "the default value"
