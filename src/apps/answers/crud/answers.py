@@ -233,7 +233,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         self, activity_hist_ids: Collection[str]
     ) -> list[tuple[str, str, dict]]:
         query: Query = select(
-            AnswerItemSchema.identifier, AnswerItemSchema.user_public_key
+            AnswerItemSchema.identifier,
+            AnswerItemSchema.user_public_key,
+            AnswerItemSchema.migrated_data,
         )
         query = query.distinct(AnswerItemSchema.identifier)
         query = query.where(

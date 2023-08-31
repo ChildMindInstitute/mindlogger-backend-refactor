@@ -965,9 +965,10 @@ class TestAnswerActivityItems(BaseTest):
         expected_keys = {
             "activityHistoryId", "activityId", "answer", "appletHistoryId",
             "appletId", "createdAt", "events", "flowHistoryId", "flowId",
-            "flowName", "id", "itemIds", "respondentId", "respondentSecretId",
-            "reviewedAnswerId", "userPublicKey", "version", "submitId",
-            "scheduledDatetime", "startDatetime", "endDatetime"
+            "flowName", "id", "itemIds", "migratedData", "respondentId",
+            "respondentSecretId", "reviewedAnswerId", "userPublicKey",
+            "version", "submitId", "scheduledDatetime", "startDatetime",
+            "endDatetime"
         }
         assert answer['startDatetime'] * 1000 == 1690188679657
         # fmt: on
@@ -1331,9 +1332,10 @@ class TestAnswerActivityItems(BaseTest):
         expected_keys = {
             "activityHistoryId", "activityId", "answer", "appletHistoryId",
             "appletId", "createdAt", "events", "flowHistoryId", "flowId",
-            "flowName", "id", "itemIds", "respondentId", "respondentSecretId",
-            "reviewedAnswerId", "userPublicKey", "version", "submitId",
-            "scheduledDatetime", "startDatetime", "endDatetime"
+            "flowName", "id", "itemIds", "migratedData", "respondentId",
+            "respondentSecretId", "reviewedAnswerId", "userPublicKey",
+            "version", "submitId", "scheduledDatetime", "startDatetime",
+            "endDatetime"
         }
         assert answer['startDatetime'] * 1000 == 1690188679657
         # fmt: on
