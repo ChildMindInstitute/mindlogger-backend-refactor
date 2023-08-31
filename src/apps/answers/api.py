@@ -317,7 +317,10 @@ async def note_add(
             applet_id
         )
         await AnswerService(session, user.id).add_note(
-            applet_id, answer_id, activity_id, schema.note
+            applet_id,
+            answer_id,
+            activity_id,
+            schema.encrypted_note,  # type: ignore[arg-type]
         )
     return
 
@@ -342,7 +345,9 @@ async def note_list(
             answer_id, activity_id
         )
     return ResponseMulti(
-        result=[AnswerNoteDetailPublic.from_orm(note) for note in notes],
+        result=[
+            AnswerNoteDetailPublic.from_note_detail(note) for note in notes
+        ],
         count=count,
     )
 
@@ -362,7 +367,11 @@ async def note_edit(
             applet_id
         )
         await AnswerService(session, user.id).edit_note(
-            applet_id, answer_id, activity_id, note_id, schema.note
+            applet_id,
+            answer_id,
+            activity_id,
+            note_id,
+            schema.encrypted_note,  # type: ignore[arg-type]
         )
     return
 
