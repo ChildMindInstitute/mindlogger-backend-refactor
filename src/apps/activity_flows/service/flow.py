@@ -123,6 +123,12 @@ class FlowService:
                     hide_badge=flow_update.hide_badge,
                     is_hidden=flow_update.is_hidden,
                     order=index + 1,
+                    report_included_activity_name=(
+                        flow_update.report_included_activity_name
+                    ),
+                    report_included_item_name=(
+                        flow_update.report_included_item_name
+                    ),
                 )
             )
             for flow_item_update in flow_update.items:
