@@ -215,14 +215,10 @@ def migrate_folders(mongo, postgres):
     migration_log.warning("[FOLDERS] In progress")
     workspaces_ids = postgres.get_migrated_workspaces()
     folders_dao, applet_dao = mongo.get_folder_mapping(workspaces_ids)
-    migrated, skipped = postgres.execute_in_transact(
-        folders_dao, err_prefix="FOLDERS"
-    )
+    migrated, skipped = postgres.save_folders(folders_dao)
     migration_log.warning(f"[FOLDERS] {migrated=}, {skipped=}")
     migration_log.warning("[FOLDER_APPLETS] In progress")
-    migrated, skipped = postgres.execute_in_transact(
-        applet_dao, err_prefix="APPLET_FOLDERS"
-    )
+    migrated, skipped = postgres.save_folders_applet(applet_dao)
     migration_log.warning(f"[FOLDER_APPLETS] {migrated=}, {skipped=}")
 
 
