@@ -1,7 +1,4 @@
 import asyncio
-import traceback
-
-from bson import ObjectId
 
 from apps.answers.db.schemas import AnswerSchema
 from apps.girderformindlogger.models.note import Note

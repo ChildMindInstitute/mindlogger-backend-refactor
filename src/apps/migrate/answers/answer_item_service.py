@@ -1,8 +1,7 @@
 from apps.answers.crud import AnswerItemsCRUD
-from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
+from apps.answers.db.schemas import AnswerItemSchema
 from apps.girderformindlogger.models.item import Item
 from apps.migrate.utilities import mongoid_to_uuid
-from infrastructure.database import session_manager, atomic
 from datetime import datetime
 
 
