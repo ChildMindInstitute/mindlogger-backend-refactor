@@ -85,18 +85,21 @@ class AnswersMigrateFacade:
                             )
                             answer_id = answer.id
                         else:
-                            mongoId = mongo_answer["meta"]["reviewing"]["responseId"]
-                            mongo_answer_assessment = Item().findOne(query={'_id': mongoId})
+                            mongo_id = mongo_answer["meta"]["reviewing"][
+                                "responseId"
+                            ]
+                            mongo_answer_assessment = Item().findOne(
+                                query={"_id": mongo_id}
+                            )
                             respondent_id = mongoid_to_uuid(
                                 mongo_answer_assessment["creatorId"]
                             )
                             if not await self.answer_migrate_service.is_respondent_exist(
-                                    session=session, respondent_id=respondent_id
+                                session=session, respondent_id=respondent_id
                             ):
                                 skipped_answers_migration += 1
                                 continue
-                            answer_id = mongoid_to_uuid(mongoId)
-
+                            answer_id = mongoid_to_uuid(mongo_id)
 
                         # Collect answer data to prevent integrity issues
                         answer_item_data = {
@@ -104,11 +107,6 @@ class AnswersMigrateFacade:
                             "answer_id": answer_id,
                             "is_assessment": is_assessment,
                         }
-
-                        # await self.answer_item_migrate_service.create_item(
-                        #     session=session,
-                        #     **answer_item_data,
-                        # )
 
                         answer_items_data.append(answer_item_data)
 
