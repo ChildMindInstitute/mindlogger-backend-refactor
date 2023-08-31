@@ -44,21 +44,21 @@ class UserCreateRequest(_UserBase, PublicModel):
     )
 
     @property
-    def encrypted_first_name(self) -> bytes | None:
+    def encrypted_first_name(self) -> str | None:
         if self.first_name:
-            return encrypt(bytes(self.first_name, "utf-8"))
+            return encrypt(bytes(self.first_name, "utf-8")).hex()
         return None
 
     @property
-    def encrypted_last_name(self) -> bytes | None:
+    def encrypted_last_name(self) -> str | None:
         if self.last_name:
-            return encrypt(bytes(self.last_name, "utf-8"))
+            return encrypt(bytes(self.last_name, "utf-8")).hex()
         return None
 
 
 class UserCreate(_UserBase, InternalModel):
-    first_name: bytes
-    last_name: bytes
+    first_name: str
+    last_name: str
     hashed_password: str
 
 
@@ -69,15 +69,15 @@ class UserUpdateRequest(InternalModel):
     last_name: str
 
     @property
-    def encrypted_first_name(self) -> bytes | None:
+    def encrypted_first_name(self) -> str | None:
         if self.first_name:
-            return encrypt(bytes(self.first_name, "utf-8"))
+            return encrypt(bytes(self.first_name, "utf-8")).hex()
         return None
 
     @property
-    def encrypted_last_name(self) -> bytes | None:
+    def encrypted_last_name(self) -> str | None:
         if self.last_name:
-            return encrypt(bytes(self.last_name, "utf-8"))
+            return encrypt(bytes(self.last_name, "utf-8")).hex()
         return None
 
 
@@ -95,13 +95,13 @@ class User(UserCreate):
     @property
     def plain_first_name(self) -> str | None:
         if self.first_name:
-            return decrypt(self.first_name).decode("utf-8")
+            return decrypt(bytes.fromhex(self.first_name)).decode("utf-8")
         return None
 
     @property
     def plain_last_name(self) -> str | None:
         if self.last_name:
-            return decrypt(self.last_name).decode("utf-8")
+            return decrypt(bytes.fromhex(self.last_name)).decode("utf-8")
         return None
 
 

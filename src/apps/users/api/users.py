@@ -49,9 +49,13 @@ async def user_create(
             raise EmailAddressNotValid(email=user_create_schema.email)
 
         # Create default workspace for new user
+        workspace_name = f"{user.plain_first_name} {user.plain_last_name}"
+        workspace_name_encrypted = encrypt(
+            bytes(workspace_name, "utf-8")
+        ).hex()
         user_workspace = UserWorkspaceSchema(
             user_id=user.id,
-            workspace_name=f"{user.plain_first_name} {user.plain_last_name}",
+            workspace_name=workspace_name_encrypted,
             is_modified=False,
         )
         await UserWorkspaceCRUD(session).save(schema=user_workspace)

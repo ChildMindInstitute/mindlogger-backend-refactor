@@ -17,6 +17,7 @@ __all__ = [
     "PublicWorkspaceInfo",
 ]
 
+from apps.shared.encryption import decrypt
 from apps.workspaces.domain.constants import Role
 
 
@@ -46,6 +47,12 @@ class UserWorkspace(InternalModel):
         "which is consists of 'first name', 'last name' of user "
         "which is applet owner and prefix",
     )
+
+    @property
+    def plain_workspace_name(self) -> str | None:
+        if self.workspace_name:
+            return decrypt(bytes.fromhex(self.workspace_name)).decode("utf-8")
+        return None
 
 
 class WorkspaceAppletEncryption(InternalModel):
@@ -142,6 +149,18 @@ class WorkspaceManager(InternalModel):
             applets[applet_id] = applet
 
         return list(applets.values())
+
+    @property
+    def plain_first_name(self) -> str | None:
+        if self.first_name:
+            return decrypt(bytes.fromhex(self.first_name)).decode("utf-8")
+        return None
+
+    @property
+    def plain_last_name(self) -> str | None:
+        if self.last_name:
+            return decrypt(bytes.fromhex(self.last_name)).decode("utf-8")
+        return None
 
 
 class PublicWorkspaceRespondent(PublicModel):

@@ -17,8 +17,8 @@ class UserSchema(Base):
 
     email = Column(String(length=56), unique=True)
     email_aes_encrypted = Column(LargeBinary(length=100), default=None)
-    first_name = Column(LargeBinary(length=100), default=None)
-    last_name = Column(LargeBinary(length=100), default=None)
+    first_name = Column(String(length=50))
+    last_name = Column(String(length=50))
     hashed_password = Column(String(length=100))
     last_seen_at = Column(DateTime(), default=datetime.now)
     is_super_admin = Column(Boolean(), default=False, server_default="false")

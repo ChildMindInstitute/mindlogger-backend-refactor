@@ -47,15 +47,15 @@ class _InvitationRequest(PublicModel):
     )
 
     @property
-    def encrypted_first_name(self) -> bytes | None:
+    def encrypted_first_name(self) -> str | None:
         if self.first_name:
-            return encrypt(bytes(self.first_name, "utf-8"))
+            return encrypt(bytes(self.first_name, "utf-8")).hex()
         return None
 
     @property
-    def encrypted_last_name(self) -> bytes | None:
+    def encrypted_last_name(self) -> str | None:
         if self.last_name:
-            return encrypt(bytes(self.last_name, "utf-8"))
+            return encrypt(bytes(self.last_name, "utf-8")).hex()
         return None
 
 
@@ -96,6 +96,12 @@ class InvitationReviewerRequest(_InvitationRequest):
         default=None,
     )
 
+    @property
+    def encrypted_workspace_prefix(self) -> str | None:
+        if self.workspace_prefix:
+            return encrypt(bytes(self.workspace_prefix, "utf-8")).hex()
+        return None
+
 
 class InvitationManagersRequest(_InvitationRequest):
     """This model is used to send the invitation request
@@ -112,6 +118,12 @@ class InvitationManagersRequest(_InvitationRequest):
         "this name can not be changed anymore.",
         default=None,
     )
+
+    @property
+    def encrypted_workspace_prefix(self) -> str | None:
+        if self.workspace_prefix:
+            return encrypt(bytes(self.workspace_prefix, "utf-8")).hex()
+        return None
 
 
 class RespondentMeta(InternalModel):
@@ -141,8 +153,8 @@ class Invitation(InternalModel):
     key: uuid.UUID
     status: str
     invitor_id: uuid.UUID
-    first_name: bytes
-    last_name: bytes
+    first_name: str
+    last_name: str
     created_at: datetime
 
 
