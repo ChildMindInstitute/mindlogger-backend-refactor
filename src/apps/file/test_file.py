@@ -126,9 +126,11 @@ class TestAnswerActivityItems(BaseTest):
         assert mock_client.call_count == 1
 
     @rollback_with_session
-    @mock.patch("infrastructure.utility.cdn_arbitrary.CDNClient.check_existence")
+    @mock.patch(
+        "infrastructure.utility.cdn_arbitrary.CDNClient.check_existence"
+    )
     async def test_default_storage_check_existence(
-            self, mock_client: mock.MagicMock, **kwargs
+        self, mock_client: mock.MagicMock, **kwargs
     ):
         await self.client.login(
             self.login_url, "ivan@mindlogger.com", "Test1234!"
@@ -141,9 +143,11 @@ class TestAnswerActivityItems(BaseTest):
         assert mock_client.call_count == 1
 
     @rollback_with_session
-    @mock.patch("infrastructure.utility.cdn_arbitrary.CdnClientS3.check_existence")
+    @mock.patch(
+        "infrastructure.utility.cdn_arbitrary.CdnClientS3.check_existence"
+    )
     async def test_arbitary_s3_aws_check_existence(
-            self, mock_client: mock.MagicMock, **kwargs
+        self, mock_client: mock.MagicMock, **kwargs
     ):
         await self.client.login(
             self.login_url, "ivan@mindlogger.com", "Test1234!"
