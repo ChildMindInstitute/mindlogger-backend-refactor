@@ -464,7 +464,8 @@ class ReproFieldRadio(ReproFieldBase):
                     if bool(self.ld_scoring)
                     else None,
                     tooltip=choice.get("tooltip"),
-                    is_hidden=True if choice.get("is_vis") is False else False,
+                    # is_vis means is_hidden
+                    is_hidden=choice.get("is_vis", False),
                     color=color,
                     alert=choice.get("alert"),
                 )
