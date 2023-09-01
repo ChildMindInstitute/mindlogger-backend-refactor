@@ -1,19 +1,29 @@
+import datetime
 import hashlib
 import os
+import json
+from typing import List
+from functools import partial
 
-from bson.objectid import ObjectId
 from Cryptodome.Cipher import AES
-from pymongo import MongoClient
+from bson.objectid import ObjectId
+from pymongo import MongoClient, ASCENDING
 
 from apps.girderformindlogger.models.activity import Activity
 from apps.girderformindlogger.models.applet import Applet
+from apps.girderformindlogger.models.account_profile import AccountProfile
+from apps.girderformindlogger.models.user import User
+
 from apps.girderformindlogger.models.folder import Folder as FolderModel
+from apps.girderformindlogger.models.user import User
 from apps.girderformindlogger.utility import jsonld_expander
 from apps.jsonld_converter.dependencies import (
     get_context_resolver,
     get_document_loader,
     get_jsonld_model_converter,
 )
+from apps.migrate.data_description.applet_user_access import AppletUserDAO
+from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.migrate.exception.exception import (
     FormatldException,
     EmptyAppletException,
@@ -23,9 +33,11 @@ from apps.migrate.services.applet_versions import (
     content_to_jsonld,
     CONTEXT,
 )
-from apps.migrate.utilities import mongoid_to_uuid
+from apps.migrate.utilities import mongoid_to_uuid, migration_log, convert_role
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt
+from apps.workspaces.domain.constants import Role
+from apps.applets.domain.base import Encryption
 
 
 # from apps.applets.domain.applet_create_update import AppletCreate
@@ -48,12 +60,87 @@ def decrypt(data):
     return txt[:length]
 
 
+def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
+    broken_applet_versions = [
+        "6201cc26ace55b10691c0814",
+        "6202734eace55b10691c0fc4",
+        "623b757b5197b9338bdae930",
+        "623cd7ee5197b9338bdaf218",
+        "623e26175197b9338bdafbf0",
+        "627be9f60a62aa47962269b7",
+        "62f2ce4facd35a39e99b5e92",
+        "634715115cb70043112196ba",
+        "63ca78b7b71996780cdf1f16",
+        "63dd2d4eb7199623ac5002e4",
+        "6202738aace55b10691c101d",
+        "620eb401b0b0a55f680dd5f5",
+        "6210202db0b0a55f680de1a5",
+        "63ebcec2601cdc0fee1f3d42",
+        "63ec1498601cdc0fee1f47d2",
+    ]
+    if applet_id in broken_applet_versions:
+        for activity in applet["reprolib:terms/order"][0]["@list"]:
+            for property in activity["reprolib:terms/addProperties"]:
+                property["reprolib:terms/isVis"] = [{"@value": True}]
+
+    return applet
+
+
+def patch_broken_applets(
+    applet_id: str, applet_ld: dict, applet_mongo: dict
+) -> tuple[dict, dict]:
+    broken_applets = [
+        # broken conditional logic [object object]  in main applet
+        "6202738aace55b10691c101d",
+        "620eb401b0b0a55f680dd5f5",
+        "6210202db0b0a55f680de1a5",
+    ]
+    if applet_id in broken_applets:
+        for activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            for property in activity["reprolib:terms/addProperties"]:
+                if type(
+                    property["reprolib:terms/isVis"][0]["@value"]
+                ) == str and (
+                    "[object object]"
+                    in property["reprolib:terms/isVis"][0]["@value"]
+                ):
+                    property["reprolib:terms/isVis"] = [{"@value": True}]
+
+    # "623ce52a5197b9338bdaf4b6",  # needs to be renamed in cache,version as well
+    broken_applet_name = [
+        "623ce52a5197b9338bdaf4b6",
+        "64934a618819c1120b4f8e34",
+    ]
+    if applet_id in broken_applet_name:
+        applet_ld["displayName"] = str(applet_ld["displayName"]) + str("(1)")
+        applet_ld["http://www.w3.org/2004/02/skos/core#prefLabel"] = applet_ld[
+            "displayName"
+        ]
+    broken_applet_version = "623ce52a5197b9338bdaf4b6"
+    if applet_id == broken_applet_version:
+        applet_mongo["meta"]["applet"]["version"] = str("2.6.40")
+
+    broken_conditional_logic = [
+        "63ebcec2601cdc0fee1f3d42",
+        "63ec1498601cdc0fee1f47d2",
+    ]
+    if applet_id in broken_conditional_logic:
+        for activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            for property in activity["reprolib:terms/addProperties"]:
+                if (
+                    property["reprolib:terms/isAbout"][0]["@id"]
+                    == "IUQ_Wd_Social_Device"
+                ):
+                    property["reprolib:terms/isVis"] = [{"@value": True}]
+    return applet_ld, applet_mongo
+
+
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
         # uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        # uri = f"mongodb://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
-        self.client = MongoClient("mongo", 27017)  # uri
+        uri = f"mongodb://{os.getenv('MONGO__HOST')}"  # noqa: E501  {os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@
+        self.client = MongoClient(uri, 27017)  # uri
         self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
 
     @staticmethod
@@ -261,7 +348,12 @@ class Mongo:
             activity_ids_inside_applet.append(activity["@id"])
 
         if applet.get("reprolib:terms/activityFlowOrder"):
-            activity_flows = applet_format["activityFlows"]
+            activity_flows = applet_format["activityFlows"].copy()
+            for _key, _flow in activity_flows.copy().items():
+                flow_id = _flow["@id"]
+                if flow_id not in activity_flows:
+                    activity_flows[flow_id] = _flow.copy()
+
             activity_flows_fixed = {}
             # setup activity flow items
             for key, activity_flow in activity_flows.items():
@@ -285,7 +377,10 @@ class Mongo:
 
             # setup activity flows
             for flow in applet["reprolib:terms/activityFlowOrder"][0]["@list"]:
-                activity_flow_objects.append(activity_flows_fixed[flow["@id"]])
+                if activity_flows_fixed.get(flow["@id"]):
+                    activity_flow_objects.append(
+                        activity_flows_fixed[flow["@id"]]
+                    )
 
             applet["reprolib:terms/activityFlowOrder"][0][
                 "@list"
@@ -303,12 +398,23 @@ class Mongo:
             raise EmptyAppletException()
 
         ld_request_schema = self.get_applet_repro_schema(applet)
+        ld_request_schema, applet = patch_broken_applets(
+            applet_id, ld_request_schema, applet
+        )
         converted = await self.get_converter_result(ld_request_schema)
 
         converted.extra_fields["created"] = applet["created"]
         converted.extra_fields["updated"] = applet["updated"]
         converted.extra_fields["version"] = applet["meta"]["applet"].get(
             "version", "0.0.1"
+        )
+        converted.encryption = Encryption(
+            public_key=json.dumps(
+                applet["meta"]["encryption"]["appletPublicKey"]
+            ),
+            prime=json.dumps(applet["meta"]["encryption"]["appletPrime"]),
+            base=json.dumps(applet["meta"]["encryption"]["base"]),
+            account_id=str(applet["accountId"]),
         )
         converted = self._extract_ids(converted, applet_id)
 
@@ -321,9 +427,15 @@ class Mongo:
         result = get_versions_from_content(protocolId)
         converted_applet_versions = dict()
         if result is not None:
+            old_activities_by_id = {}
             for version, content in result.items():
                 print(version)
-                ld_request_schema = content_to_jsonld(content["applet"])
+                ld_request_schema, old_activities_by_id = content_to_jsonld(
+                    content["applet"], old_activities_by_id
+                )
+                ld_request_schema = patch_broken_applet_versions(
+                    applet_id, ld_request_schema
+                )
                 converted = await self.get_converter_result(ld_request_schema)
                 converted.extra_fields["created"] = content["updated"]
                 converted.extra_fields["updated"] = content["updated"]
@@ -353,3 +465,257 @@ class Mongo:
                 flow.extra_fields["extra"]["_:id"][0]["@value"]
             )
         return converted
+
+    def paginate(self, collection_function, page_size=300):
+        def _page(page_size=page_size, skip_count=0):
+            items = collection_function().skip(skip_count).limit(page_size)
+            return items
+
+        page_number = 1
+
+        while True:
+            skip_count = (page_number - 1) * page_size
+            items = _page(skip_count=skip_count)
+            yield from items
+            page_number += 1
+            if items.count() < page_size:
+                break
+
+    def get_answer_migration_queries(self, **kwargs):
+        query = {
+            "meta.responses": {"$exists": True},
+            "meta.activity.@id": kwargs["activity_id"],
+            "meta.applet.@id": kwargs["applet_id"],
+            "meta.applet.version": kwargs["version"],
+        }
+
+        item_collection = self.db["item"]
+        creators_ids = item_collection.find(query).distinct("creatorId")
+        for creator_id in creators_ids:
+            yield {**query, "creatorId": creator_id}
+
+    def get_answers_with_files(
+        self,
+        *,
+        answer_migration_queries,
+    ):
+        for query in answer_migration_queries:
+            item_collection = self.db["item"]
+            collection_function = partial(
+                item_collection.find,
+                query,
+                sort=[
+                    ("created", ASCENDING),
+                ],
+            )
+            del query["meta.responses"]
+            answer_with_files = dict()
+            for item in self.paginate(collection_function):
+                if not answer_with_files and "dataSource" in item["meta"]:
+                    answer_with_files["answer"] = item
+                    answer_with_files["query"] = query
+                elif answer_with_files and "dataSource" not in item["meta"]:
+                    answer_with_files.setdefault("files", []).append(
+                        item["meta"]["responses"]
+                    )
+                elif answer_with_files and "dataSource" in item["meta"]:
+                    yield answer_with_files
+                    answer_with_files = dict(answer=item, query=query)
+            yield answer_with_files
+
+    def get_applet_info(self, applet_id: str) -> dict:
+        info = {}
+        applet = Applet().findOne({"_id": ObjectId(applet_id)})
+        account = AccountProfile().findOne({"_id": applet["accountId"]})
+        owner = User().findOne({"_id": applet["creatorId"]})
+        info["applet_id"] = applet_id
+        info["applet_name"] = applet["meta"]["applet"].get(
+            "displayName", "Untitled"
+        )
+        info["account_name"] = account["accountName"]
+        info["owner_email"] = owner["email"]
+        info["updated"] = applet["updated"]
+
+        return info
+
+    def docs_by_ids(
+        self, collection: str, doc_ids: List[ObjectId]
+    ) -> List[dict]:
+        return self.db[collection].find({"_id": {"$in": doc_ids}})
+
+    def get_user_nickname(self, user) -> str:
+        first_name = decrypt(user.get("firstName"))
+        if not first_name:
+            first_name = "-"
+        elif len(first_name) >= 50:
+            first_name = first_name[:49]
+
+        last_name = decrypt(user.get("lastName"))
+        if not last_name:
+            last_name = "-"
+        elif len(last_name) >= 50:
+            last_name = last_name[:49]
+        return f"{first_name} {last_name}"
+
+    def reviewer_meta(self, applet_id: ObjectId) -> List[str]:
+        applet_docs = self.db["accountProfile"].find(
+            {"applets.user": applet_id}
+        )
+        return list(
+            map(lambda doc: str(mongoid_to_uuid(doc["userId"])), applet_docs)
+        )
+
+    def respondent_metadata(self, user: dict, applet_id: ObjectId):
+        doc_cur = (
+            self.db["appletProfile"]
+            .find({"userId": user["_id"], "appletId": applet_id})
+            .limit(1)
+        )
+        doc = next(doc_cur, None)
+        if not doc:
+            return {}
+        return {
+            "nick": self.get_user_nickname(user),
+            "secret": doc.get("MRN", ""),
+        }
+
+    def inviter_id(self, user_id, applet_id):
+        doc_invite = self.db["invitation"].find(
+            {"userId": user_id, "appletId": applet_id}
+        )
+        doc_invite = next(doc_invite, {})
+        invitor = doc_invite.get("invitedBy", {})
+        invitor_profile_id = invitor.get("_id")
+        ap_doc = self.db["appletProfile"].find_one({"_id": invitor_profile_id})
+        return mongoid_to_uuid(ap_doc["userId"]) if ap_doc else None
+
+    def is_pinned(self, user_id):
+        res = self.db["appletProfile"].find_one(
+            {"userId": user_id, "pinnedBy": {"$exists": 1, "$ne": []}}
+        )
+        return bool(res)
+
+    def get_user_applet_role_mapping(
+        self, migrated_applet_ids: List[ObjectId]
+    ) -> List[AppletUserDAO]:
+        account_profile_collection = self.db["accountProfile"]
+        not_found_users = []
+        not_found_applets = []
+        access_result = []
+        account_profile_docs = account_profile_collection.find()
+        for doc in account_profile_docs:
+            if doc["userId"] in not_found_users:
+                continue
+
+            user = User().findOne({"_id": doc["userId"]})
+            if not user:
+                msg = (
+                    f"Skip AppletProfile({doc['_id']}), "
+                    f"User({doc['userId']}) does not exist (field: userId)"
+                )
+                migration_log.warning(msg)
+                not_found_users.append(doc["userId"])
+                continue
+            role_applets_mapping = doc.get("applets")
+            for role_name, applet_ids in role_applets_mapping.items():
+                applet_docs = self.docs_by_ids("folder", applet_ids)
+                for applet_id in applet_ids:
+                    # Check maybe we already check this id in past
+                    if applet_id in not_found_applets:
+                        continue
+
+                    if applet_id not in migrated_applet_ids:
+                        # Applet doesn't exist in postgresql, just skip it
+                        # ant put id to cache
+                        migration_log.warning(
+                            f"Skip: Applet({applet_id}) "
+                            f"doesnt represent in PostgreSQL"
+                        )
+                        not_found_applets.append(applet_id)
+                        continue
+                    applet = next(
+                        filter(
+                            lambda item: item["_id"] == applet_id, applet_docs
+                        ),
+                        None,
+                    )
+                    if not applet:
+                        continue
+                    meta = {}
+                    if role_name == Role.REVIEWER:
+                        meta["respondents"] = self.reviewer_meta(applet_id)
+                    elif role_name == "user":
+                        data = self.respondent_metadata(user, applet_id)
+                        if data:
+                            meta["nickname"] = data["nick"]
+                            meta["secretUserId"] = data["secret"]
+
+                    owner_id = (
+                        mongoid_to_uuid(applet.get("creatorId"))
+                        if applet.get("creatorId")
+                        else None
+                    )
+                    access = AppletUserDAO(
+                        applet_id=mongoid_to_uuid(applet_id),
+                        user_id=mongoid_to_uuid(doc["userId"]),
+                        owner_id=owner_id,
+                        inviter_id=self.inviter_id(doc["userId"], applet_id),
+                        role=convert_role(role_name),
+                        created_at=datetime.datetime.now(),
+                        updated_at=datetime.datetime.now(),
+                        meta=meta,
+                        is_pinned=self.is_pinned(doc["userId"]),
+                        is_deleted=False,
+                    )
+                    access_result.append(access)
+        migration_log.warning(
+            f"[Role] Prepared for migrations {len(access_result)} items"
+        )
+        return list(set(access_result))
+
+    def get_pinned_users(self):
+        return self.db["appletProfile"].find(
+            {"pinnedBy": {"$exists": 1}, "userId": {"$exists": 1, "$ne": None}}
+        )
+
+    def get_applet_profiles_by_ids(self, ids):
+        return self.db["appletProfile"].find({"_id": {"$in": ids}})
+
+    def get_pinned_role(self, applet_profile):
+        system_roles = Role.as_list().copy()
+        system_roles.remove(Role.RESPONDENT)
+        system_roles = set(system_roles)
+        applet_roles = set(applet_profile.get("roles", []))
+        if system_roles.intersection(applet_roles):
+            return Role.MANAGER
+        else:
+            return Role.RESPONDENT
+
+    def get_owner_by_applet_profile(self, applet_profile):
+        profiles = self.db["accountProfile"].find(
+            {"userId": applet_profile["userId"]}
+        )
+        it = filter(lambda p: p["_id"] == p["accountId"], profiles)
+        profile = next(it, None)
+        return profile["userId"] if profiles else None
+
+    def get_user_pin_mapping(self):
+        pin_profiles = self.get_pinned_users()
+        pin_dao_list = set()
+        for profile in pin_profiles:
+            if not profile["pinnedBy"]:
+                continue
+            pinned_by = self.get_applet_profiles_by_ids(profile["pinnedBy"])
+            for manager_profile in pinned_by:
+                role = self.get_pinned_role(manager_profile)
+                owner_id = self.get_owner_by_applet_profile(manager_profile)
+                dao = UserPinsDAO(
+                    user_id=mongoid_to_uuid(profile["userId"]),
+                    pinned_user_id=mongoid_to_uuid(manager_profile["userId"]),
+                    owner_id=mongoid_to_uuid(owner_id),
+                    role=convert_role(role),
+                    created_at=datetime.datetime.now(),
+                    updated_at=datetime.datetime.now(),
+                )
+                pin_dao_list.add(dao)
+        return pin_dao_list

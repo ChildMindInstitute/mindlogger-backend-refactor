@@ -1181,11 +1181,12 @@ class TestAnswerActivityItems(BaseTest):
         expected_keys = {
             "activityHistoryId", "activityId", "answer", "appletHistoryId",
             "appletId", "createdAt", "events", "flowHistoryId", "flowId",
-            "flowName", "id", "itemIds", "respondentId", "respondentSecretId",
-            "reviewedAnswerId", "userPublicKey", "version", "submitId",
-            "scheduledDatetime", "startDatetime", "endDatetime"
+            "flowName", "id", "itemIds", "migratedData", "respondentId",
+            "respondentSecretId", "reviewedAnswerId", "userPublicKey",
+            "version", "submitId", "scheduledDatetime", "startDatetime",
+            "endDatetime"
         }
-        assert answer['startDatetime'] == 1690188679657
+        assert answer['startDatetime'] * 1000 == 1690188679657
         # fmt: on
 
         assert set(assessment.keys()) == expected_keys
@@ -1550,3 +1551,57 @@ class TestAnswerActivityItems(BaseTest):
         }
         assert activity_answer_data["answerId"] == answer_id
         assert activity_answer_data["localEndTime"] == "12:35:00"
+
+    @rollback
+    async def test_summary_restricted_for_reviewer_if_external_respondent(
+        self,
+    ):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.9.9",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answer=dict(
+                user_public_key="user key",
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                identifier="some identifier",
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
+        )
+
+        response = await self.client.post(self.answer_url, data=create_data)
+        assert response.status_code == 201
+
+        await self.client.logout()
+        await self.client.login(
+            self.login_url, "reviewer@mail.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.summary_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            )
+        )
+
+        assert response.status_code == 403

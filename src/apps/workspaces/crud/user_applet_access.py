@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+from datetime import datetime
 from typing import Tuple
 
 from pydantic import parse_obj_as
@@ -367,6 +368,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "applet_id": stmt.excluded.applet_id,
                 "role": stmt.excluded.role,
                 "is_deleted": stmt.excluded.is_deleted,
+                "created_at": datetime.now(),
+                "updated_at": datetime.now(),
                 "meta": stmt.excluded.meta,
             },
         )
@@ -579,11 +582,10 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         has_access = (
             exists()
             .where(
-                UserAppletAccessSchema.soft_exists(),
-                UserAppletAccessSchema.user_id == user_id,
                 UserAppletAccessSchema.applet_id == AppletSchema.id,
+                UserAppletAccessSchema.user_id == user_id,
+                UserAppletAccessSchema.soft_exists(),
                 or_(
-                    UserAppletAccessSchema.soft_exists(),
                     UserAppletAccessSchema.role.in_(
                         [Role.OWNER, Role.MANAGER, Role.COORDINATOR]
                     ),
@@ -659,6 +661,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserAppletAccessSchema.applet_id == applet_id
                 if applet_id
                 else True,
+                UserAppletAccessSchema.soft_exists(),
             )
             .group_by(UserSchema.id)
         )
@@ -742,12 +745,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                         UserAppletAccessSchema.role
                     )
                 ).label("roles"),
-                func.max(
-                    UserAppletAccessSchema.reviewer_respondents,
-                    where=(
-                            UserAppletAccessSchema.role == Role.REVIEWER
-                    )
-                ).label("reviewer_respondents"),
 
                 func.array_agg(
                     aggregate_order_by(
@@ -757,9 +754,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                             AppletSchema.display_name,  # noqa: E501
                             text("'applet_image'"), AppletSchema.image,
                             text("'access_id'"), UserAppletAccessSchema.id,
-                            # noqa: E501
                             text("'role'"), UserAppletAccessSchema.role,
-                            text("'encryption'"), AppletSchema.encryption
+                            text("'encryption'"), AppletSchema.encryption,
+                            text("'reviewer_respondents'"), UserAppletAccessSchema.reviewer_respondents,  # noqa: E501
                         ),
                         AppletSchema.id
                     )
@@ -850,6 +847,21 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_by_user_applet_accesses(
+        self,
+        user_id: uuid.UUID,
+        applet_id: uuid.UUID,
+        role: Role,
+    ) -> UserAppletAccessSchema:
+        query: Query = select(self.schema_class)
+        query = query.where(self.schema_class.soft_exists())
+        query = query.where(self.schema_class.user_id == user_id)
+        query = query.where(self.schema_class.applet_id == applet_id)
+        query = query.where(self.schema_class.role == role)
+
+        db_result = await self._execute(query)
+        return db_result.scalars().one_or_none()
 
     async def remove_access_by_user_and_applet_to_role(
         self,

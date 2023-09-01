@@ -159,5 +159,26 @@
       "plain_first_name": "Anonymous",
       "plain_last_name": "Respondent"
     }
+  },
+    {
+    "table": "users",
+    "fields": {
+      "id": "7484f34a-3acc-4ee6-8a94-fd7299502f00",
+      "email": "9c29f41ea935a26cc5d808e042fa390b460eae79239c743e1b1ffa24",
+      "first_name": "Reviewer",
+      "last_name": "ReviewerOne",
+      "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
+      "is_deleted": false,
+      "is_super_admin": true,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": false,
+      "email_aes_encrypted": null
+    },
+    "note": {
+      "Password": "Test1234!",
+      "plain_email": "reviewer@mail.com"
+    }
   }
 ]

@@ -1,4 +1,5 @@
 import uuid
+from typing import Collection, List
 
 from sqlalchemy import select
 from sqlalchemy.orm import Query
@@ -24,34 +25,15 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
         answer_id: uuid.UUID,
         activity_id: uuid.UUID,
         query_params: QueryParams,
-    ) -> list[AnswerNoteDetail]:
-        query: Query = select(AnswerNoteSchema, UserSchema)
-        query = query.join(
-            UserSchema, UserSchema.id == AnswerNoteSchema.user_id
-        )
+    ) -> list[AnswerNoteSchema]:
+        query: Query = select(AnswerNoteSchema)
         query = query.where(AnswerNoteSchema.answer_id == answer_id)
         query = query.where(AnswerNoteSchema.activity_id == activity_id)
         query = query.order_by(AnswerNoteSchema.created_at.desc())
         query = paging(query, query_params.page, query_params.limit)
 
         db_result = await self._execute(query)
-        results = []
-        for (
-            schema,
-            user_schema,
-        ) in db_result.all():  # type: AnswerNoteSchema, UserSchema
-            results.append(
-                AnswerNoteDetail(
-                    id=schema.id,
-                    user=dict(
-                        first_name=user_schema.first_name,
-                        last_name=user_schema.last_name,
-                    ),
-                    note=schema.note,
-                    created_at=schema.created_at,
-                )
-            )
-        return results
+        return db_result.scalars().all()  # noqa
 
     async def get_count_by_answer_id(
         self, answer_id: uuid.UUID, activity_id: uuid.UUID
@@ -77,3 +59,23 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
 
     async def delete_note_by_id(self, note_id: uuid.UUID):
         await self._delete("id", note_id)
+
+    @staticmethod
+    async def map_users_and_notes(
+        notes: Collection[AnswerNoteSchema], users: Collection[UserSchema]
+    ) -> List[AnswerNoteDetail]:
+        result = []
+        for note in notes:
+            note_user = next(filter(lambda u: u.id == note.user_id, users))
+            result.append(
+                AnswerNoteDetail(
+                    id=note.id,
+                    user=dict(
+                        first_name=note_user.first_name,
+                        last_name=note_user.last_name,
+                    ),
+                    note=note.note,
+                    created_at=note.created_at,
+                )
+            )
+        return result

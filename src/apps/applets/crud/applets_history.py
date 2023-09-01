@@ -7,6 +7,7 @@ from sqlalchemy.orm import Query
 
 from apps.applets import errors
 from apps.applets.db.schemas import AppletHistorySchema
+from apps.applets.domain.applet_create_update import AppletReportConfiguration
 from apps.applets.errors import AppletVersionNotFoundError
 from apps.users.db.schemas import UserSchema
 from infrastructure.database.crud import BaseCRUD
@@ -82,3 +83,18 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
         query = query.where(AppletHistorySchema.id == applet_id)
         result = await self._execute(query)
         return [id_version for id_version, in result]
+
+    async def set_report_configuration(
+        self,
+        applet_id: uuid.UUID,
+        version: str,
+        schema: AppletReportConfiguration,
+    ):
+        query: Query = update(AppletHistorySchema)
+        query = query.where(
+            AppletHistorySchema.id_version
+            == AppletHistorySchema.generate_id_version(applet_id, version)
+        )
+        query = query.values(**schema.dict(by_alias=False))
+
+        await self._execute(query)

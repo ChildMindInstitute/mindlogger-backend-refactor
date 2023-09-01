@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from copy import deepcopy
 from typing import Type
 from uuid import uuid4
@@ -274,6 +275,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         super()._load_extra(doc)
 
     def _export_items(self) -> list[ActivityItemCreate]:
+        # capture field variables for conditional logic resolving
         var_item_map = {
             item.ld_variable_name: item
             for item in self.nested_by_order or []
@@ -333,19 +335,56 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
 
         return names
 
-    def _export_sections(
+    def _export_section(
         self,
+        item: ReproActivitySection,
         var_item_map: dict[str, ResolvesConditionalLogic],
-        items: list[ReproActivitySection],
-    ) -> list[Section]:
-        models = []
-        for item in items:
-            model = item.export()
+    ) -> Section:
+        model = item.export()
+        expression = item.ld_is_vis
+        if isinstance(expression, str):
+            try:
+                # resolve conditional logic expression with condition name
+                # and condition value
+                match, conditions = ConditionalLogicParser(expression).parse()
+                resolved_conditions = []
+                for condition in conditions:
+                    condition_item: ResolvesConditionalLogic = var_item_map.get(  # type: ignore # noqa: E501
+                        condition.var_name
+                    )
+                    if condition_item is None:
+                        raise ConditionalLogicError(expression)
+                    resolved_conditions.append(
+                        condition_item.resolve_condition(condition)
+                    )
+                model.conditional_logic = SectionConditionalLogic(
+                    match=match, conditions=resolved_conditions
+                )
+
+                # replace variables with names
+                if model.items_print:
+                    model.items_print = self._resolve_item_names_by_vars(
+                        var_item_map, model.items_print
+                    )
+
+            except ConditionalLogicError:
+                raise  # TODO
+
+        return model
+
+    def _export_score(
+        self,
+        score: ReproActivityScore,
+        var_item_map: dict[str, ResolvesConditionalLogic],
+    ) -> Score:
+        model = score.export()
+        conditionals = []
+        for item in score.conditionals or []:
             expression = item.ld_is_vis
             if isinstance(expression, str):
                 try:
-                    # resolve conditional logic expression with condition name
-                    # and condition value
+                    # resolve conditional logic expression with condition
+                    # name and condition value
                     match, conditions = ConditionalLogicParser(
                         expression
                     ).parse()
@@ -359,105 +398,66 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                         resolved_conditions.append(
                             condition_item.resolve_condition(condition)
                         )
-                    model.conditional_logic = SectionConditionalLogic(
-                        match=match, conditions=resolved_conditions
-                    )
 
-                    # replace variables with names
-                    if model.items_print:
-                        model.items_print = self._resolve_item_names_by_vars(
-                            var_item_map, model.items_print
-                        )
+                    conditional_model = ScoreConditionalLogic(
+                        name=item.ld_pref_label or item.ld_alt_label,
+                        id=item.ld_id,
+                        flag_score=bool(item.ld_flag_score),
+                        message=item.ld_message or None,
+                        items_print=self._resolve_item_names_by_vars(
+                            var_item_map, item.ld_print_items or []
+                        ),
+                        match=match,
+                        conditions=resolved_conditions,
+                    )
+                    conditionals.append(conditional_model)
 
                 except ConditionalLogicError:
                     raise  # TODO
 
-            models.append(model)
+        model.conditional_logic = conditionals
+        if model.items_print:
+            model.items_print = self._resolve_item_names_by_vars(
+                var_item_map, model.items_print
+            )
+        if model.items_score:
+            model.items_score = self._resolve_item_names_by_vars(
+                var_item_map, model.items_score
+            )
 
-        return models
+        return model
 
-    def _export_scores(
-        self,
-        var_item_map: dict[str, ResolvesConditionalLogic],
-        items: list[ReproActivityScore],
-    ) -> list[Score]:
-        models = []
-        for score in items:
-            model = score.export()
-            conditionals = []
-            for item in score.conditionals or []:
-                expression = item.ld_is_vis
-                if isinstance(expression, str):
-                    try:
-                        # resolve conditional logic expression with condition
-                        # name and condition value
-                        match, conditions = ConditionalLogicParser(
-                            expression
-                        ).parse()
-                        resolved_conditions = []
-                        for condition in conditions:
-                            condition_item: ResolvesConditionalLogic = var_item_map.get(  # type: ignore # noqa: E501
-                                condition.var_name
-                            )
-                            if condition_item is None:
-                                raise ConditionalLogicError(expression)
-                            resolved_conditions.append(
-                                condition_item.resolve_condition(condition)
-                            )
-
-                        conditional_model = ScoreConditionalLogic(
-                            name=item.ld_pref_label or item.ld_alt_label,
-                            id=item.ld_id,
-                            flag_score=bool(item.ld_flag_score),
-                            message=item.ld_message or None,
-                            items_print=self._resolve_item_names_by_vars(
-                                var_item_map, item.ld_print_items or []
-                            ),
-                            match=match,
-                            conditions=resolved_conditions,
-                        )
-                        conditionals.append(conditional_model)
-
-                    except ConditionalLogicError:
-                        raise  # TODO
-
-            model.conditional_logic = conditionals
-            if model.items_print:
-                model.items_print = self._resolve_item_names_by_vars(
-                    var_item_map, model.items_print
-                )
-            if model.items_score:
-                model.items_score = self._resolve_item_names_by_vars(
-                    var_item_map, model.items_score
-                )
-            models.append(model)
-
-        return models
-
-    def _export_reports(self) -> dict:
+    def _export_reports(self) -> list[Section | Score]:
+        # capture field variables for conditional logic resolving
         var_item_map = {
             item.ld_variable_name: item
             for item in self.nested_by_order or []
             if isinstance(item, ResolvesConditionalLogic)
         }
-        sections, scores = [], []
+
+        # capture all reports variables for conditional logic resolving
         for item in self.reports_by_order or []:
             if isinstance(item, ReproActivityScore):
                 var_item_map[item.ld_variable_name] = item  # type: ignore[assignment] # noqa: E501
                 if conditionals := item.conditionals:
                     for conditional in conditionals:
                         var_item_map[conditional.ld_id] = conditional  # type: ignore[assignment] # noqa: E501
-                scores.append(item)
             elif isinstance(item, ReproActivitySection):
                 var_item_map[item.ld_variable_name] = item  # type: ignore[assignment] # noqa: E501
-                sections.append(item)
             else:
                 NotImplementedError("Item not supported", item)
 
-        return dict(
-            sections=self._export_sections(var_item_map, sections),  # type: ignore[arg-type] # noqa: E501
-            scores=self._export_scores(var_item_map, scores),  # type: ignore[arg-type] # noqa: E501
-        )
+        # export scores and sections with conditional logic
+        reports: list[Section | Score] = []
+        for item in self.reports_by_order or []:
+            if isinstance(item, ReproActivityScore):
+                reports.append(self._export_score(item, var_item_map))  # type: ignore[arg-type] # noqa: E501
+            elif isinstance(item, ReproActivitySection):
+                reports.append(self._export_section(item, var_item_map))  # type: ignore[arg-type] # noqa: E501
+            else:
+                NotImplementedError("Item not supported", item)
+
+        return reports
 
     def _export_subscales(self) -> SubscaleSetting | None:
         settings: dict = {}
@@ -477,6 +477,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             }
             subscale_names = [subscale.name for subscale in subscales]
             for subscale in subscales:
+                non_existent_items = []
                 for item in subscale.items or []:
                     if item.type == SubscaleItemType.SUBSCALE:
                         if item.name in subscale_names:
@@ -493,9 +494,17 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                         if item.name in subscale_names:
                             item.type = SubscaleItemType.SUBSCALE
                         else:
-                            raise SubscaleParsingError(
-                                f'Item name "{item.name}" not found'
+                            # remove item from subscale
+                            non_existent_items.append(item)
+                            logging.error(
+                                f'Item name "{item.name}" inside subscale "{subscale.name}" not found.'  # noqa: E501
                             )
+                            # raise SubscaleParsingError(
+                            #     f'Item name "{item.name}" not found'
+                            # )
+                if subscale.items:
+                    for item in non_existent_items:
+                        subscale.items.remove(item)
 
         return SubscaleSetting(**settings) if settings else None
 
@@ -520,7 +529,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             scores_and_reports=ScoresAndReports(
                 generate_report=self.is_export_allowed,
                 show_score_summary=not self.is_summary_disabled,
-                **reports,
+                reports=reports,
             ),
             subscale_setting=subscales,
             report_included_item_name=self.ld_report_include_item or None,

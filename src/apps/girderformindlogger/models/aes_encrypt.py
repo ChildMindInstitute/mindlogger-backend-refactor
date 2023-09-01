@@ -40,11 +40,9 @@ class AESEncryption(AccessControlledModel):
         super(AESEncryption, self).__init__()
 
     def initAES(self, fields=[], maxCount=4):
-        self.baseKey = (
-            cherrypy.config["aes_key"]
-            if "aes_key" in cherrypy.config
-            else b"a!z%C*f4JanU5kap2te45v9y/A?D(G+K"
-        )
+        self.baseKey = os.environ.get(
+            "AES_KEY", "a!z%C*f4JanU5kap2te45v9y/A?D(G+K"
+        ).encode()
 
         self.AES_KEY = self.baseKey
         self.fields = fields

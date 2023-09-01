@@ -1,11 +1,15 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
 from apps.users import User
-from apps.workspaces.db.schemas import UserWorkspaceSchema
+from apps.workspaces.db.schemas import (
+    UserAppletAccessSchema,
+    UserWorkspaceSchema,
+)
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import UserWorkspace
 from infrastructure.database.crud import BaseCRUD
 
@@ -68,3 +72,41 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
             schema=schema,
         )
         return instance
+
+    async def get_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> UserWorkspaceSchema | None:
+        access_subquery: Query = select(UserAppletAccessSchema.owner_id)
+        access_subquery = access_subquery.where(
+            and_(
+                UserAppletAccessSchema.role == Role.OWNER,
+                UserAppletAccessSchema.applet_id == applet_id,
+            )
+        )
+        access_subquery = access_subquery.subquery()
+
+        query: Query = select(UserWorkspaceSchema)
+        query = query.where(UserWorkspaceSchema.user_id.in_(access_subquery))
+        db_result = await self._execute(query)
+        res = db_result.scalars().first()
+        return res
+
+    async def get_bucket_info(self, applet_id: uuid.UUID):
+        query: Query = select(
+            UserWorkspaceSchema.storage_access_key,
+            UserWorkspaceSchema.storage_secret_key,
+            UserWorkspaceSchema.storage_bucket,
+            UserWorkspaceSchema.database_uri,
+        )
+        query.join(
+            UserAppletAccessSchema,
+            UserAppletAccessSchema.owner_id == UserWorkspaceSchema.user_id,
+        )
+        query.where(
+            UserAppletAccessSchema.applet_id == applet_id,
+            UserWorkspaceSchema.use_arbitrary.is_(True),
+        )
+        query.limit(1)
+        db_result = await self._execute(query)
+        res = db_result.scalars().first()
+        return res

@@ -1,6 +1,8 @@
 import uuid
 from typing import Tuple
 
+from pydantic import ValidationError
+
 from apps.applets.crud import AppletsCRUD
 from apps.shared.encryption import decrypt
 from apps.shared.query_params import QueryParams
@@ -11,6 +13,7 @@ from apps.workspaces.db.schemas import UserWorkspaceSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import (
     WorkspaceApplet,
+    WorkspaceArbitrary,
     WorkspaceInfo,
     WorkspaceManager,
     WorkspaceRespondent,
@@ -284,3 +287,16 @@ class WorkspaceService:
         ).get_applets_roles_by_priority_for_workspace(
             owner_id, self._user_id, applet_ids
         )
+
+    async def get_arbitrary_info(
+        self, applet_id: uuid.UUID
+    ) -> WorkspaceArbitrary | None:
+        schema = await UserWorkspaceCRUD(self.session).get_by_applet_id(
+            applet_id
+        )
+        if not schema:
+            return None
+        try:
+            return WorkspaceArbitrary.from_orm(schema) if schema else None
+        except ValidationError:
+            return None

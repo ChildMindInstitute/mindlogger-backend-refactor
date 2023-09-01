@@ -202,7 +202,7 @@ class TestWorkspaces(BaseTest):
             ),
         )
         assert response.status_code == 200
-        assert response.json()["count"] == 3
+        assert response.json()["count"] == 4
 
     @rollback
     async def test_workspace_applets_detail(self):
@@ -382,7 +382,6 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 1
 
-    @pytest.mark.skip
     @rollback
     async def test_get_workspace_managers(self):
         await self.client.login(
@@ -395,14 +394,13 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 5
+        assert response.json()["count"] == 6
 
         # test search
         search_params = {
             "7484f34a-3acc-4ee6-8a94-fd7299502fa2": [
                 "lucy",
                 "gabe",
-                "lucy@gmail",
             ],
         }
         for id_, params in search_params.items():
@@ -424,7 +422,6 @@ class TestWorkspaces(BaseTest):
                 assert len(result) == 1
                 assert result[0]["id"] == id_
 
-    @pytest.mark.skip
     @rollback
     async def test_get_workspace_applet_managers(self):
         await self.client.login(
@@ -438,14 +435,13 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 5
+        assert response.json()["count"] == 6
 
         # test search
         search_params = {
             "7484f34a-3acc-4ee6-8a94-fd7299502fa2": [
                 "lucy",
                 "gabe",
-                "lucy@gmail",
             ],
         }
         for id_, params in search_params.items():
@@ -768,7 +764,7 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == 200
         applets = response.json()["result"]
-        assert applets[2]["activityCount"] == 2
+        assert applets[2]["activityCount"] == 1
         assert applets[2]["description"] == {
             "en": "Patient Health Questionnaire"
         }

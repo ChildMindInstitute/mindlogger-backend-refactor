@@ -13,6 +13,7 @@ from apps.activities.domain.activity_create import (
 )
 from apps.activities.domain.activity_full import ActivityFull
 from apps.activities.domain.activity_update import (
+    ActivityReportConfiguration,
     ActivityUpdate,
     PreparedActivityItemUpdate,
 )
@@ -168,6 +169,9 @@ class ActivityService:
                     if activity_data.subscale_setting
                     else None,
                     order=index + 1,
+                    report_included_item_name=(
+                        activity_data.report_included_item_name
+                    ),
                 )
             )
 
@@ -395,3 +399,10 @@ class ActivityService:
             for key, val in values.items():
                 return val
             return ""
+
+    async def update_report(
+        self, activity_id: uuid.UUID, schema: ActivityReportConfiguration
+    ):
+        await ActivitiesCRUD(self.session).update_by_id(
+            activity_id, **schema.dict(by_alias=False, exclude_unset=True)
+        )

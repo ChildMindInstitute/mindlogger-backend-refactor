@@ -1,0 +1,640 @@
+[
+  {
+  "table": "users",
+  "fields": {
+    "id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+    "email": "5c88e00db1ec7020e8a0fd0f1dd225ff93e9088821d554d5fc437216",
+    "first_name": "Ivan",
+    "last_name": "K",
+    "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
+    "is_deleted": false,
+    "is_super_admin": false,
+    "created_at": "2023-08-07T12:39:38.111",
+    "updated_at": "2023-08-11T10:32:41.603",
+    "last_seen_at": "2023-08-11T10:32:41.602",
+    "is_anonymous_respondent": false
+  },
+    "note": "Password is Test1234!",
+    "email": "ivan@mindlogger.com"
+  },
+  {
+    "table": "users",
+    "fields": {
+      "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa8",
+      "email": "a97eaac8af05b6b82d66a67a2ba0e5bbe928844832748c1aa74e3065",
+      "first_name": "Anonymous",
+      "last_name": "Respondent",
+      "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
+      "is_deleted": false,
+      "is_super_admin": true,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": true
+    },
+    "note": "Password is Test1234!",
+    "email": "anoymous_respondent@mindlogger.com"
+  },
+  {
+    "table": "users",
+    "fields": {
+      "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa5",
+      "email": "b11bf1419d7434b4b0da08c39a871eee65b614a34fb4830c066dfeed",
+      "first_name": "Patric",
+      "last_name": "Davidson",
+      "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
+      "is_deleted": false,
+      "is_super_admin": false,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": false
+    },
+      "note": "Password is Test1234",
+      "email": "patric@gmail.com"
+  },
+  {
+    "table": "users_workspaces",
+    "fields": {
+      "id": "8b83d791-0d27-42c5-8b1d-e0c8d7faf808",
+      "created_at": "2023-08-07T12:39:38.116",
+      "updated_at": "2023-08-07T12:39:38.116",
+      "is_deleted": false,
+      "user_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "workspace_name": "Admin",
+      "is_modified": false,
+      "database_uri": "postgresql+asyncpg://postgres:postgres@localhost:5432/test_arbitrary",
+      "storage_type": "key",
+      "storage_access_key": "key",
+      "storage_secret_key": "DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=youraccountkey;EndpointSuffix=core.windows.net",
+      "storage_region": "region",
+      "storage_url": "url",
+      "use_arbitrary": true
+    }
+  },
+  {
+  "table": "applets",
+  "fields": {
+    "id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
+    "encryption": {
+      "public_key": "-----BEGIN PUBLIC KEY-----\nMIGaMFMGCSqGSIb3DQEDATBGAkEA5PPjxBOfS6rv0AL2HtIV02JaqYTyjmbU26uu ...",
+      "prime": "11991225580616300198418736930805539013218516911726243131907471503172221906921856236853325120086286157687782051503487707931996762114546244981907661201581863",
+      "base": "2",
+      "account_id": "2"
+    },
+    "created_at": "2023-01-05T15:49:51.752113",
+    "updated_at": "2023-01-05T15:49:51.752113",
+    "is_deleted": false,
+    "is_published": false,
+    "display_name": "Applet 1",
+    "description": {
+      "en": "Patient Health Questionnaire"
+    },
+    "about": {
+      "en": "Patient Health Questionnaire"
+    },
+    "image": "",
+    "watermark": "",
+    "theme_id": "3e31a64e-449f-4788-8516-eca7809f1a41",
+    "version": "1.1.0",
+    "report_server_ip": "https://report-server.l.trackmage.com",
+    "report_public_key": "-----BEGIN PUBLIC KEY-----\nMII ...",
+    "report_recipients": ["tom@mindlogger.com", "lucy@mindlogger.com"],
+    "report_include_user_id": false,
+    "report_include_case_id": false,
+    "report_email_body": "",
+    "link": "51857e10-6c05-4fa8-a2c8-725b8c1a0aa6",
+    "require_login": false
+  },
+  "private_key": "private key"
+  },
+  {
+    "table": "user_applet_accesses",
+    "fields": {
+      "id": "f0dd4996-e0eb-461f-b2f8-ba873a674781",
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "is_pinned": false,
+      "user_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
+      "owner_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "invitor_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "role": "respondent",
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674781",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674781"
+      }
+    }
+  },
+  {
+    "table": "user_applet_accesses",
+    "fields": {
+      "id": "f0dd4996-e0eb-461f-b2f8-ba873a674788",
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "is_pinned": false,
+      "user_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
+      "owner_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "invitor_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "role": "owner",
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674781",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674781"
+      }
+    }
+  },
+  {
+    "table": "user_applet_accesses",
+    "fields": {
+      "id": "f0dd4996-e0eb-461f-b2f8-ba873a674888",
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "is_pinned": false,
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa8",
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
+      "owner_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "invitor_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "role": "respondent",
+      "meta": {
+        "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674781",
+        "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674781"
+      }
+    }
+  },
+  {
+    "table": "applet_histories",
+    "fields": {
+      "created_at": "2023-08-07 12:45:14.750",
+      "updated_at": "2023-08-07 12:45:14.750",
+      "is_deleted": false,
+      "description": {
+        "en": "Test applet"
+      },
+      "about": {
+        "en": ""
+      },
+      "image": "",
+      "watermark": "",
+      "theme_id": null,
+      "version": "1.1.0",
+      "user_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "report_server_ip": "",
+      "report_public_key": "",
+      "report_recipients": [],
+      "report_include_user_id": false,
+      "report_include_case_id": false,
+      "report_email_body": "",
+      "id_version": "92917a56-d586-4613-b7aa-991f2c4b15b8_1.1.0",
+      "id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
+      "display_name": "Applet0"
+    },
+    "private_key": ""
+  },
+  {
+    "table": "activities",
+    "fields": {
+      "id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3688",
+      "created_at": "2023-08-07 19:57:41.566",
+      "updated_at": "2023-08-07 19:57:41.566",
+      "is_deleted": false,
+      "name": "review",
+      "description": {
+        "en": "my activity description"
+      },
+      "splash_screen": "",
+      "image": "",
+      "show_all_at_once": false,
+      "is_skippable": false,
+      "is_reviewable": false,
+      "response_is_editable": false,
+      "order": 1.0,
+      "order": 1.0,
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
+      "is_hidden": false,
+      "scores_and_reports": null,
+      "subscale_setting": null,
+      "extra_fields": {}
+    }
+  },
+  {
+    "table": "activities",
+    "fields": {
+      "id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
+      "created_at": "2023-08-07 19:57:41.566",
+      "updated_at": "2023-08-07 19:57:41.566",
+      "is_deleted": false,
+      "name": "ActivityIdentifiers",
+      "description": {
+        "en": "my activity description"
+      },
+      "splash_screen": "",
+      "image": "",
+      "show_all_at_once": false,
+      "is_skippable": false,
+      "is_reviewable": false,
+      "response_is_editable": false,
+      "order": 1.0,
+      "order": 1.0,
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
+      "is_hidden": false,
+      "scores_and_reports": null,
+      "subscale_setting": null,
+      "extra_fields": {}
+    }
+  },
+  {
+    "table": "activity_items",
+    "fields": {
+      "id": "2bcf1de2-aff8-494e-af28-d1ce2602585f",
+      "created_at": "2023-08-07 19:57:41.570",
+      "updated_at": "2023-08-07 19:57:41.570",
+      "is_deleted": false,
+      "name": "SingleSelectItem",
+      "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
+      "question": {
+        "en": "Select two"
+      },
+      "response_type": "singleSelect",
+      "response_values": {
+        "options": [
+          {
+            "id": "bc161e71-0eaf-4313-9cb3-f1df580323ab",
+            "text": "One",
+            "alert": null,
+            "color": null,
+            "image": null,
+            "score": null,
+            "value": 0,
+            "tooltip": null,
+            "is_hidden": false
+          },
+          {
+            "id": "e5d38e99-a15e-4bdc-a58d-5d203377851b",
+            "text": "Two",
+            "alert": null,
+            "color": null,
+            "image": null,
+            "score": null,
+            "value": 0,
+            "tooltip": null,
+            "is_hidden": false
+          }
+        ]
+      },
+      "config": {
+        "timer": 0,
+        "add_scores": false,
+        "add_tokens": null,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "skippable_item": false,
+        "randomize_options": false,
+        "remove_back_button": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
+      "order": 1.0
+    }
+  },
+  {
+    "table": "activity_items",
+    "fields": {
+      "id": "8e5ef149-ce10-4590-bc03-594e5200ecb9",
+      "created_at": "2023-08-07 19:57:41.570",
+      "updated_at": "2023-08-07 19:57:41.570",
+      "is_deleted": false,
+      "name": "Identifier",
+      "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
+      "question": {
+        "en": "Identifier"
+      },
+      "response_type": "text",
+      "config": {
+        "is_identifier": null,
+        "correct_answer": "",
+        "skippable_item": true,
+        "response_required": false,
+        "remove_back_button": false,
+        "max_response_length": 300,
+        "correct_answer_required": false,
+        "response_data_identifier": true,
+        "numerical_response_required": false
+      },
+      "order": 2.0
+    }
+  },
+  {
+    "table": "activity_items",
+    "fields": {
+      "id": "f698d5c6-3861-46a1-a6e7-3bdae7228bce",
+      "created_at": "2023-08-07 19:57:41.570",
+      "updated_at": "2023-08-07 19:57:41.570",
+      "is_deleted": false,
+      "name": "ItemMul",
+      "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
+      "question": {
+        "en": "O.o"
+      },
+      "response_type": "multiSelect",
+      "response_values": {
+        "options": [
+          {
+            "id": "f6c998bb-4f85-4a71-9f17-3ff08f42df75",
+            "text": "O1",
+            "alert": null,
+            "color": null,
+            "image": null,
+            "score": null,
+            "value": 0,
+            "tooltip": null,
+            "is_hidden": false
+          },
+          {
+            "id": "d96b6b4b-19d1-4744-a69e-bbe53ad3dd21",
+            "text": "O2",
+            "alert": null,
+            "color": null,
+            "image": null,
+            "score": null,
+            "value": 0,
+            "tooltip": null,
+            "is_hidden": false
+          }
+        ]
+      },
+      "config": {
+        "timer": 0,
+        "add_scores": false,
+        "add_tokens": null,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "skippable_item": false,
+        "randomize_options": false,
+        "remove_back_button": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
+      "order": 3.0
+    }
+  },
+  {
+    "table": "activity_items",
+    "fields": {
+      "id": "c6fd4e75-c5c1-4a99-89db-4044526b6ad5",
+      "created_at": "2023-08-11 10:04:26.547",
+      "updated_at": "2023-08-11 10:04:26.547",
+      "is_deleted": false,
+      "name": "Item",
+      "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
+      "question": {
+        "en": "Slider"
+      },
+      "response_type": "slider",
+      "config": {
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "skippable_item": false,
+        "show_tick_marks": false,
+        "show_tick_labels": false,
+        "continuous_slider": false,
+        "remove_back_button": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
+      "response_values": {
+        "alerts": null,
+        "scores": null,
+        "max_image": null,
+        "max_label": "",
+        "max_value": 5,
+        "min_image": null,
+        "min_label": "",
+        "min_value": 0
+      },
+      "order": 1.0
+    }
+  },
+  {
+    "table": "activity_items",
+    "fields": {
+      "id": "f0ccc10a-2388-48da-a5a1-35e9b19cde5d",
+      "created_at": "2023-08-11 10:04:26.547",
+      "updated_at": "2023-08-11 10:04:26.547",
+      "is_deleted": false,
+      "name": "ItemIdentifier",
+      "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
+      "question": {
+        "en": "Identifier"
+      },
+      "response_type": "text",
+      "config": {
+        "is_identifier": null,
+        "correct_answer": "",
+        "skippable_item": true,
+        "response_required": false,
+        "remove_back_button": false,
+        "max_response_length": 300,
+        "correct_answer_required": false,
+        "response_data_identifier": true,
+        "numerical_response_required": false
+      },
+      "order": 2.0
+    }
+  },
+  {
+    "table": "activity_histories",
+    "fields": {
+      "id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8_1.1.0",
+      "name": "PHQ2",
+      "description": {
+        "en": "PHQ2",
+        "fr": "PHQ2"
+      },
+      "splash_screen": "",
+      "image": "",
+      "show_all_at_once": false,
+      "is_skippable": false,
+      "is_reviewable": false,
+      "response_is_editable": false,
+      "order": 1.0,
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3618_1.1.0",
+      "scores_and_reports": {
+        "generate_report": true,
+        "reports": [
+          {
+            "type": "score",
+            "name":"Score 1",
+            "id": "score_1",
+            "calculation_type": "sum"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "table": "activity_items",
+    "fields": {
+      "id": "c6fd4e75-c5c1-4a99-89db-4044526b6a85",
+      "created_at": "2023-08-11 10:04:26.547",
+      "updated_at": "2023-08-11 10:04:26.547",
+      "is_deleted": false,
+      "name": "Item",
+      "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3688",
+      "question": {
+        "en": "Slider"
+      },
+      "response_type": "slider",
+      "config": {
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "skippable_item": false,
+        "show_tick_marks": false,
+        "show_tick_labels": false,
+        "continuous_slider": false,
+        "remove_back_button": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
+      "response_values": {
+        "alerts": null,
+        "scores": null,
+        "max_image": null,
+        "max_label": "",
+        "max_value": 5,
+        "min_image": null,
+        "min_label": "",
+        "min_value": 0
+      },
+      "order": 1.0
+    }
+  },
+  {
+    "table": "activity_histories",
+    "fields": {
+      "id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3688",
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8_1.1.0",
+      "name": "PHQ2",
+      "description": {
+        "en": "PHQ2",
+        "fr": "PHQ2"
+      },
+      "splash_screen": "",
+      "image": "",
+      "show_all_at_once": false,
+      "is_skippable": false,
+      "is_reviewable": true,
+      "response_is_editable": false,
+      "order": 1.0,
+      "id_version": "09e3dbf0-aefb-4d0e-9177-bdb321bf3688_1.1.0",
+      "scores_and_reports": {
+        "generate_report": true,
+        "reports": [
+          {
+            "type": "score",
+            "name":"Score 1",
+            "id": "score_1",
+            "calculation_type": "sum"
+          }
+        ]
+      }
+    }
+  },
+   {
+    "table": "activity_item_histories",
+    "fields": {
+      "id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0018",
+      "name": "a18d3409_2c96_4a5e_a1f3_1c1c14be0011",
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "is_deleted": false,
+      "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3688_1.1.0",
+      "question": {
+        "en": "Little interest or pleasure in doing things?",
+        "fr": "Peu dintérêt ou de plaisir à faire les choses ?"
+      },
+      "response_type": "singleSelect",
+      "response_values": {
+        "options": [
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+            "text": "Not at all",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d3",
+            "text": "Several days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d4",
+            "text": "More than half the days",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          },
+          {
+            "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d5",
+            "text": "Nearly every day",
+            "image": null,
+            "score": null,
+            "tooltip": null,
+            "is_hidden": false,
+            "color": null
+          }
+        ]
+      },
+      "config": {
+        "randomize_options": false,
+        "timer": 0,
+        "add_scores": false,
+        "set_alerts": false,
+        "add_tooltip": false,
+        "set_palette": false,
+        "remove_back_button": false,
+        "skippable_item": false,
+        "additional_response_option": {
+          "text_input_option": false,
+          "text_input_required": false
+        }
+      },
+      "order": 3,
+      "id_version": "a18d3409-2c96-4a5e-a1f3-1c1c14be0018_1.1.0"
+    }
+  }
+
+]
+
+

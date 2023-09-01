@@ -15,6 +15,6 @@ class FileCheckRequest(PublicModel):
 
 
 class FileExistenceResponse(PublicModel):
-    file_id: str
+    key: str
     uploaded: bool
-    remote_url: str | None = None
+    url: str | None = None

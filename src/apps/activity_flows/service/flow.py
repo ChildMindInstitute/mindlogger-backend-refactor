@@ -3,6 +3,7 @@ import uuid
 from apps.activity_flows.crud import FlowItemsCRUD, FlowsCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.activity_flows.domain.flow import (
+    Flow,
     FlowDuplicate,
     FlowSingleLanguageDetail,
 )
@@ -12,6 +13,7 @@ from apps.activity_flows.domain.flow_create import (
 )
 from apps.activity_flows.domain.flow_full import FlowFull
 from apps.activity_flows.domain.flow_update import (
+    ActivityFlowReportConfiguration,
     FlowUpdate,
     PreparedFlowItemUpdate,
 )
@@ -121,6 +123,12 @@ class FlowService:
                     hide_badge=flow_update.hide_badge,
                     is_hidden=flow_update.is_hidden,
                     order=index + 1,
+                    report_included_activity_name=(
+                        flow_update.report_included_activity_name
+                    ),
+                    report_included_item_name=(
+                        flow_update.report_included_item_name
+                    ),
                 )
             )
             for flow_item_update in flow_update.items:
@@ -262,3 +270,13 @@ class FlowService:
             for key, val in values.items():
                 return val
             return ""
+
+    async def update_report_config(
+        self, flow_id: uuid.UUID, schema: ActivityFlowReportConfiguration
+    ):
+        await FlowsCRUD(self.session).update_by_id(
+            flow_id, **schema.dict(by_alias=False)
+        )
+
+    async def get_by_id(self, flow_id: uuid.UUID) -> Flow | None:
+        return await FlowsCRUD(self.session).get_by_id(flow_id)

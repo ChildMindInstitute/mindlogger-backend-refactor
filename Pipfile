@@ -30,6 +30,7 @@ aiohttp = "*"
 firebase-admin = "*"
 aio-pika = "*"
 pyld = "*"
+azure-storage-blob = "*"
 
 [dev-packages]
 black = "~=22.6"
