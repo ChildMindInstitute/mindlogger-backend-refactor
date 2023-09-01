@@ -172,7 +172,8 @@ class ActivityItemSingleSelectExport(ActivityItemBaseExport):
                 LdKeyword.type: "schema:option",
                 "schema:name": option.text,
                 # "schema:value": i,  # TODO value???
-                "isVis": not option.is_hidden,
+                # is_vis means is_hidden
+                "isVis": option.is_hidden,
                 "schema:color": option.color,
                 "schema:description": option.tooltip,
                 "schema:score": option.score,
