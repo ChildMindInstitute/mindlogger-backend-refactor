@@ -83,6 +83,12 @@ class AnswerAlert(InternalModel):
     activity_item_id: uuid.UUID
     message: str
 
+    @property
+    def encrypted_message(self) -> str | None:
+        if self.message:
+            return encrypt(bytes(self.message, "utf-8")).hex()
+        return None
+
 
 class ClientMeta(InternalModel):
     app_id: str
