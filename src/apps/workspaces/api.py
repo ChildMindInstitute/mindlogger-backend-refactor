@@ -338,7 +338,6 @@ async def workspace_managers_list(
                 last_name=workspace_manager.plain_last_name,
                 email=workspace_manager.email,
                 roles=workspace_manager.roles,
-                reviewer_respondents=workspace_manager.reviewer_respondents,
                 last_seen=workspace_manager.last_seen,
                 is_pinned=workspace_manager.is_pinned,
                 applets=workspace_manager.applets,
