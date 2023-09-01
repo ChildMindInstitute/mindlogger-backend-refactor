@@ -10,22 +10,22 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.authentication.deps import get_current_user
-from apps.file.constants import FileScope
 from apps.file.domain import (
     FileCheckRequest,
     FileDownloadRequest,
     FileExistenceResponse,
-    FilePresignedResponse,
     FilePresignRequest,
     UploadedFile,
 )
+from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
 from apps.file.services import PresignedUrlsGeneratorService
 from apps.file.storage import select_storage
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.users.domain import User
-from apps.workspaces.crud.applet_access import AppletAccessCRUD
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import AnswerViewAccessDenied
 from config import settings
 from infrastructure.database.deps import get_session
@@ -38,7 +38,8 @@ async def upload(
 ) -> Response[UploadedFile]:
     cdn_client = CDNClient(settings.cdn, env=settings.env)
     key = CDNClient.generate_key(
-        FileScope.CONTENT,
+        settings.cdn.bucket,
+        FileScopeEnum.CONTENT,
         user.id,
         file.filename,
     )
@@ -78,19 +79,23 @@ async def answer_upload(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    if not await AppletAccessCRUD(session).can_see_data(
-        applet_id=applet_id, user_id=user.id
+    if not await UserAppletAccessCRUD(session).get_by_roles(
+        user.id,
+        applet_id,
+        [Role.OWNER, Role.MANAGER, Role.REVIEWER],
     ):
         raise AnswerViewAccessDenied()
 
     cdn_client = await select_storage(applet_id, session)
-    unique = f"{applet_id}/{user.id}"
+    unique = f"{user.id}/{applet_id}"
     cleaned_file_id = file_id.strip()
-    key = CDNClient.generate_key(FileScope.ANSWER, unique, cleaned_file_id)
+    key = CDNClient.generate_key(
+        settings.cdn.bucket, FileScopeEnum.ANSWER, unique, cleaned_file_id
+    )
     with ThreadPoolExecutor() as executor:
         future = executor.submit(cdn_client.upload, key, file.file)
     await asyncio.wrap_future(future)
-    result = UploadedFile(key=key, url=key)
+    result = UploadedFile(key=key)
     return Response(result=result)
 
 
@@ -119,8 +124,10 @@ async def check_file_uploaded(
 ) -> ResponseMulti[FileExistenceResponse]:
     """Provides the information if the files is uploaded."""
 
-    if not await AppletAccessCRUD(session).can_see_data(
-        applet_id=applet_id, user_id=user.id
+    if not await UserAppletAccessCRUD(session).get_by_roles(
+        user.id,
+        applet_id,
+        [Role.OWNER, Role.MANAGER, Role.REVIEWER],
     ):
         raise AnswerViewAccessDenied()
 
@@ -131,7 +138,9 @@ async def check_file_uploaded(
         cleaned_file_id = file_id.strip()
 
         unique = f"{applet_id}/{user.id}"
-        key = CDNClient.generate_key(FileScope.ANSWER, unique, cleaned_file_id)
+        key = CDNClient.generate_key(
+            settings.cdn.bucket, FileScopeEnum.ANSWER, unique, cleaned_file_id
+        )
 
         file_existence_factory = partial(
             FileExistenceResponse,
@@ -160,19 +169,10 @@ async def presign(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    if not await AppletAccessCRUD(session).can_see_data(
-        applet_id=applet_id, user_id=user.id
-    ):
-        raise AnswerViewAccessDenied()
-
-    results: list[
-        FilePresignedResponse
-    ] = await PresignedUrlsGeneratorService()(
-        session=session,
-        applet_id=applet_id,
+    results: list[str] = await PresignedUrlsGeneratorService(
+        session=session, user_id=user.id, applet_id=applet_id
+    )(
         given_private_urls=request.private_urls,
     )
 
-    return ResponseMulti[FilePresignedResponse](
-        result=results, count=len(results)
-    )
+    return ResponseMulti[str](result=results, count=len(results))

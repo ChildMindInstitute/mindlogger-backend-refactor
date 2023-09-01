@@ -61,7 +61,7 @@ router.post(
 
 
 router.post(
-    "/{applet_id}/presign/",
+    "/{applet_id}/presign",
     description=(
         "Used for generating temporary public urls for files"
         "File stored in S3 account or arbitrary storage(S3, AzureBlob)"

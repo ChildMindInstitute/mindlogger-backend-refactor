@@ -19,7 +19,7 @@ class CDNClient:
     def configure_client(self, config):
         assert config, "set CDN"
 
-        if self.env == "dev":
+        if config.access_key and config.secret_key:
             return boto3.client(
                 "s3",
                 region_name=config.region,
@@ -45,8 +45,8 @@ class CDNClient:
         )
 
     @staticmethod
-    def generate_key(scope, unique, filename):
-        return f"mindlogger/{scope}/{unique}/{filename}"
+    def generate_key(bucket, scope, unique, filename):
+        return f"s3://{bucket}/mindlogger/{scope}/{unique}/{filename}"
 
     def check_existence(self, key: str):
         try:
