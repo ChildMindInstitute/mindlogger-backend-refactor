@@ -268,6 +268,33 @@ class Mongo:
 
         return results
 
+    def patch_cloned_activities_order(self, original_id: ObjectId, applet_format: dict) -> dict:
+        '''
+        This patches a bug in the legacy system where after an applet is duplicated the activities order still
+        refers to the original records.
+        If it's the case, it will remove those and replace with the cloned applet activities IDs.
+        '''
+        original = Applet().findOne(query={'_id': original_id})
+        if original:
+            original_format = jsonld_expander.formatLdObject(
+                original, "applet", refreshCache=False, reimportFromUrl=False
+            )
+        else:
+            original_format = None
+
+        if original_format and 'applet' in original_format and 'reprolib:terms/order' in original_format['applet']:
+            act_blacklist = []
+            for _orig_act in original_format['applet']['reprolib:terms/order'][0]['@list']:
+                act_blacklist.append(_orig_act['@id'])
+
+            order = applet_format['applet']['reprolib:terms/order'][0]['@list']
+            order = [_act for _act in order if _act['@id'] not in act_blacklist]
+            if len(order) == 0:
+                order = [{'@id': str(_act)} for _act in applet_format['activities']]
+            applet_format['applet']['reprolib:terms/order'][0]['@list'] = order
+
+        return applet_format
+
     def get_applet_repro_schema(self, applet: dict) -> dict:
         applet_format = jsonld_expander.formatLdObject(
             applet, "applet", refreshCache=False, reimportFromUrl=False
@@ -277,6 +304,9 @@ class Mongo:
             raise FormatldException(
                 message="formatLdObject returned empty object"
             )
+
+        if 'duplicateOf' in applet:
+            applet_format = self.patch_cloned_activities_order(applet['duplicateOf'], applet_format)
 
         if applet_format["activities"] == {}:
             raise FormatldException(
