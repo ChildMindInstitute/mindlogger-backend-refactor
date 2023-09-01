@@ -7,7 +7,10 @@ from apps.activities.db.schemas import (
     ActivityHistorySchema,
     ActivityItemHistorySchema,
 )
-from apps.activities.domain.response_type_config import PerformanceTaskType
+from apps.activities.domain.response_type_config import (
+    PerformanceTaskType,
+    ResponseType,
+)
 from apps.activities.errors import ActivityHistoryDoeNotExist
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
@@ -140,6 +143,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
                     PerformanceTaskType.GYROSCOPE,
                     PerformanceTaskType.TOUCH,
                     PerformanceTaskType.ABTRAILS,
+                    ResponseType.STABILITYTRACKER,
                 ]
             )
         )
