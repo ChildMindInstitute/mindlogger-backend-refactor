@@ -39,7 +39,7 @@ async def upload(
     cdn_client = CDNClient(settings.cdn, env=settings.env)
     key = CDNClient.generate_key(
         FileScope.CONTENT,
-        hash(user.id),
+        user.id,
         file.filename,
     )
     with ThreadPoolExecutor() as executor:
@@ -129,17 +129,20 @@ async def check_file_uploaded(
     for file_key in schema.files:
         cleaned_file_key = file_key.strip()
 
+        unique = f"{applet_id}/{user.id}"
+        key = CDNClient.generate_key(FileScope.ANSWER, unique, cleaned_file_key)
+
         file_existence_factory = partial(
             FileExistenceResponse,
-            key=cleaned_file_key,
+            key=key,
         )
 
         try:
-            cdn_client.check_existence(cleaned_file_key)
+            cdn_client.check_existence(key)
             results.append(
                 file_existence_factory(
                     uploaded=True,
-                    url=quote(settings.cdn.url.format(key=file_key), "/:"),
+                    url=quote(settings.cdn.url.format(key=key), "/:"),
                 )
             )
         except NotFoundError:

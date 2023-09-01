@@ -47,7 +47,7 @@ class CDNClient:
 
     @staticmethod
     def generate_key(scope, unique, filename):
-        return f"mindlogger/{scope}/{unique}/{uuid.uuid4()}/{filename}"
+        return f"mindlogger/{scope}/{unique}/{filename}"
 
     def check_existence(self, key: str):
         try:
