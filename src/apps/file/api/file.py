@@ -85,7 +85,8 @@ async def answer_upload(
 
     cdn_client = await select_storage(applet_id, session)
     unique = f"{applet_id}/{user.id}"
-    key = CDNClient.generate_key(FileScope.ANSWER, unique, file_id)
+    cleaned_file_id = file_id.strip()
+    key = CDNClient.generate_key(FileScope.ANSWER, unique, cleaned_file_id)
     with ThreadPoolExecutor() as executor:
         future = executor.submit(cdn_client.upload, key, file.file)
     await asyncio.wrap_future(future)
@@ -126,11 +127,11 @@ async def check_file_uploaded(
     cdn_client = CDNClient(settings.cdn, env=settings.env)
     results: list[FileExistenceResponse] = []
 
-    for file_key in schema.files:
-        cleaned_file_key = file_key.strip()
+    for file_id in schema.files:
+        cleaned_file_id = file_id.strip()
 
         unique = f"{applet_id}/{user.id}"
-        key = CDNClient.generate_key(FileScope.ANSWER, unique, cleaned_file_key)
+        key = CDNClient.generate_key(FileScope.ANSWER, unique, cleaned_file_id)
 
         file_existence_factory = partial(
             FileExistenceResponse,
