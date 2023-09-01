@@ -1,6 +1,5 @@
 import io
 import mimetypes
-import uuid
 from typing import BinaryIO
 
 import boto3
