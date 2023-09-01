@@ -27,6 +27,7 @@ class TestAnswerActivityItems(BaseTest):
     upload_url = "file/{applet_id}/upload"
     download_url = "file/{applet_id}/download"
     applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b8"
+    file_id = "1693560380000/c60859c4-6f5f-4390-a572-da85fcd59709"
 
     @rollback_with_session
     @mock.patch("infrastructure.utility.cdn_arbitrary.CdnClientS3.upload")
@@ -41,6 +42,7 @@ class TestAnswerActivityItems(BaseTest):
         content = io.BytesIO(b"File content")
         response = await self.client.post(
             self.upload_url.format(applet_id=self.applet_id),
+            query={"file_id": self.file_id},
             files={"file": content},
         )
         assert 200 == response.status_code
@@ -78,6 +80,7 @@ class TestAnswerActivityItems(BaseTest):
         content = io.BytesIO(b"File content")
         response = await self.client.post(
             self.upload_url.format(applet_id=self.applet_id),
+            query={"file_id": self.file_id},
             files={"file": content},
         )
         assert 200 == response.status_code
@@ -115,6 +118,7 @@ class TestAnswerActivityItems(BaseTest):
         content = io.BytesIO(b"File content")
         response = await self.client.post(
             self.upload_url.format(applet_id=self.applet_id),
+            query={"file_id": self.file_id},
             files={"file": content},
         )
         assert 200 == response.status_code
