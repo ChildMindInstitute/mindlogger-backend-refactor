@@ -37,7 +37,7 @@ async def upload(
     user: User = Depends(get_current_user),
 ) -> Response[UploadedFile]:
     cdn_client = CDNClient(settings.cdn, env=settings.env)
-    key = CDNClient.generate_key(
+    key = cdn_client.generate_key(
         settings.cdn.bucket,
         FileScopeEnum.CONTENT,
         user.id,
@@ -89,7 +89,7 @@ async def answer_upload(
     cdn_client = await select_storage(applet_id, session)
     unique = f"{user.id}/{applet_id}"
     cleaned_file_id = file_id.strip()
-    key = CDNClient.generate_key(
+    key = cdn_client.generate_key(
         settings.cdn.bucket, FileScopeEnum.ANSWER, unique, cleaned_file_id
     )
     with ThreadPoolExecutor() as executor:
@@ -138,7 +138,7 @@ async def check_file_uploaded(
         cleaned_file_id = file_id.strip()
 
         unique = f"{applet_id}/{user.id}"
-        key = CDNClient.generate_key(
+        key = cdn_client.generate_key(
             settings.cdn.bucket, FileScopeEnum.ANSWER, unique, cleaned_file_id
         )
 

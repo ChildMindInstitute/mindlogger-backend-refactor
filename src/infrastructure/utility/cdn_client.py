@@ -44,9 +44,11 @@ class CDNClient:
             Bucket=self.config.bucket,
         )
 
-    @staticmethod
-    def generate_key(bucket, scope, unique, filename):
+    def generate_key(self, bucket, scope, unique, filename):
         return f"s3://{bucket}/mindlogger/{scope}/{unique}/{filename}"
+
+    def generate_url(self, bucket, key):
+        return f"s3://{bucket}/{key}"
 
     def check_existence(self, key: str):
         try:
