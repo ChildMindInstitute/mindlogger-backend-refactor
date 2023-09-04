@@ -1,6 +1,4 @@
-import asyncio
 import uuid
-from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from urllib.parse import quote
 
@@ -33,10 +31,7 @@ async def upload(
 ) -> Response[UploadedFile]:
     cdn_client = CDNClient(settings.cdn, env=settings.env)
     key = fileId or CDNClient.generate_key(hash(user.id), file.filename)
-
-    with ThreadPoolExecutor() as executor:
-        future = executor.submit(cdn_client.upload, key, file.file)
-    await asyncio.wrap_future(future)
+    await cdn_client.upload(key, file.file)
     result = UploadedFile(
         key=key, url=quote(settings.cdn.url.format(key=key), "/:")
     )
@@ -71,9 +66,7 @@ async def answer_upload(
 ):
     cdn_client = await select_storage(applet_id, session)
     key = cdn_client.generate_key(hash(user.id), file.filename)
-    with ThreadPoolExecutor() as executor:
-        future = executor.submit(cdn_client.upload, key, file.file)
-    await asyncio.wrap_future(future)
+    await cdn_client.upload(key, file.file)
     result = UploadedFile(
         key=key, url=quote(settings.cdn.url.format(key=key), "/:")
     )

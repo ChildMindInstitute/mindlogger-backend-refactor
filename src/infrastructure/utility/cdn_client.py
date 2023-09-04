@@ -1,6 +1,8 @@
+import asyncio
 import io
 import mimetypes
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from typing import BinaryIO
 
 import boto3
@@ -25,8 +27,7 @@ class CDNClient:
         except KeyError:
             print("CDN configuration is not full")
 
-    def upload(self, path, body: BinaryIO):
-
+    def _upload(self, path, body: BinaryIO):
         if self.env == "testing":
             # filename = path.split("/")[-1]
             # with open(filename, "wb") as file:
@@ -37,6 +38,11 @@ class CDNClient:
             Key=path,
             Bucket=self.bucket,
         )
+
+    async def upload(self, path, body: BinaryIO):
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(self._upload, path, body)
+        await asyncio.wrap_future(future)
 
     @staticmethod
     def generate_key(unique, filename):

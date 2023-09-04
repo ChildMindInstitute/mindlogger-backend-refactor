@@ -1,3 +1,5 @@
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from typing import BinaryIO, Optional
 
 import boto3
@@ -43,6 +45,9 @@ class CdnClientBlob(CDNClient):
     def configure_client(self, _):
         return BlobServiceClient.from_connection_string(self.sec_key)
 
-    def upload(self, path, body: BinaryIO):
+    async def upload(self, path, body: BinaryIO):
         blob_client = self.client.get_blob_client(blob=path)
         blob_client.upload_blob(body)
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(blob_client.upload_blob, body)
+        await asyncio.wrap_future(future)
