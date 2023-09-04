@@ -364,8 +364,8 @@ class Mongo:
         activity_objects = []
         # setup activities
         for activity in applet["reprolib:terms/order"][0]["@list"]:
-            activity_id = activity["@id"]
-            if activity_id in activities_by_id:
+            activity_id = self.find_additional_id(list(activities_by_id.keys()), activity["@id"])
+            if activity_id:
                 activity_objects.append(
                     activities_by_id[activity_id]["activity"]
                 )
@@ -426,6 +426,30 @@ class Mongo:
         applet["@type"] = CONTEXT["@type"]
 
         return applet
+
+    def find_additional_id(self, activities_ids: list[str], activity_id: str) -> str|None:
+        if activity_id in activities_ids:
+            return activity_id
+
+        lookup = {
+            'ab_trails_v1/ab_trails_v1_schema': 'A/B Trails v1.0',
+            'ab_trails_v2/ab_trails_v2_schema': 'A/B Trails v2.0',
+            'Flanker/Flanker_schema': 'flanker_schema',
+            'Stability/Stability_schema': 'stability_schema',
+        }
+        for _a_id in activities_ids:
+            for key, value in lookup.items():
+                if key in activity_id and value == _a_id:
+                    return _a_id
+
+        # e.g take Flanker_schema from
+        # https://raw.github.com/CMI/flanker/master/activities/Flanker/Flanker_schema
+        activity_id_from_relative_url = activity_id.split("/").pop()
+        for _a_id in activities_ids:
+            if activity_id_from_relative_url == _a_id or activity_id_from_relative_url.lower() == _a_id.lower():
+                return _a_id
+
+        return None
 
     async def get_applet(self, applet_id: str) -> dict:
         applet = Applet().findOne({"_id": ObjectId(applet_id)})
