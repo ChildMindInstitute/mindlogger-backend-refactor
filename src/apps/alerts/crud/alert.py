@@ -83,19 +83,25 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
             UserWorkspaceSchema.user_id == UserAppletAccessSchema.owner_id,
             isouter=True,
         )
-        query = query.where(AlertSchema.user_id == user_id)
+        query = query.where(
+            AlertSchema.user_id == user_id, AppletSchema.is_deleted.is_(False)
+        )
         query = query.order_by(AlertSchema.created_at.desc())
         query = paging(query, page, limit)
 
         db_result = await self._execute(query)
-
         return db_result.all()
 
     async def get_all_for_user_count(self, user_id: uuid.UUID) -> dict:
         query: Query = select(
             AlertSchema.is_watched, func.count(AlertSchema.id).label("count")
         )
-        query = query.where(AlertSchema.user_id == user_id)
+        query = query.join(
+            AppletSchema, AppletSchema.id == AlertSchema.applet_id
+        )
+        query = query.where(
+            AlertSchema.user_id == user_id, AppletSchema.is_deleted.is_(False)
+        )
         query = query.group_by(AlertSchema.is_watched)
         db_result = await self._execute(query)
         db_result = db_result.all()
