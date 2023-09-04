@@ -34,11 +34,7 @@ class CDNClient:
             print("CDN configuration is not full")
 
     def upload(self, path, body: BinaryIO):
-
         if self.env == "testing":
-            # filename = path.split("/")[-1]
-            # with open(filename, "wb") as file:
-            #     file.write(body.getvalue())
             return
         self.client.upload_fileobj(
             body,
@@ -59,6 +55,8 @@ class CDNClient:
             raise NotFoundError
 
     async def check_existence(self, key: str):
+        if self.env == "testing":
+            return
         with ThreadPoolExecutor() as executor:
             future = executor.submit(self._check_existence, key)
             return await asyncio.wrap_future(future)
