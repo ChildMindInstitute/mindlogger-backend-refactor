@@ -33,6 +33,8 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     ld_image: str | None = None
     ld_shuffle: bool | None = None
     ld_watermark: str | None = None
+    ld_retention_period: int | None = None
+    ld_retention_type: str | None = None
 
     extra: dict | None = None
     properties: dict
@@ -100,6 +102,12 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         )
 
         self._load_extra(processed_doc)
+
+        rs = doc.get('retentionSettings', {})
+        if rs.get('enabled', False):
+            self.ld_retention_period = rs.get('period')
+            self.ld_retention_type = rs.get('retention')
+
 
     def _get_report_configuration(
         self, processed_doc: dict, *, drop=False
@@ -222,8 +230,8 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             # link: uuid.UUID | None
             # require_login: bool | None
             # pinned_at: datetime.datetime | None
-            # retention_period: int | None
-            # retention_type: str | None
+            retention_period=self.ld_retention_period,
+            retention_type=self.ld_retention_type,
             report_server_ip=report_cfg.get("serverIp") or "",
             report_public_key=report_cfg.get("publicEncryptionKey") or "",
             report_recipients=report_cfg.get("emailRecipients") or [],
