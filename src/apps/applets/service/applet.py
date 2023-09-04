@@ -1,3 +1,4 @@
+import asyncio
 import re
 import uuid
 
@@ -504,13 +505,15 @@ class AppletService:
             retention_type=schema.retention_type,
             is_published=schema.is_published,
         )
-
-        applet.activities = await ActivityService(
+        activities = ActivityService(
             self.session, self.user_id
         ).get_single_language_by_applet_id(applet_id, language)
-        applet.activity_flows = await FlowService(
+        activity_flows = FlowService(
             self.session
         ).get_single_language_by_applet_id(applet_id, language)
+        futures = await asyncio.gather(activities, activity_flows)
+        applet.activities = futures[0]
+        applet.activity_flows = futures[1]
         return applet
 
     async def get_single_language_by_key(
