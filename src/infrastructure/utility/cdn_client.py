@@ -52,11 +52,16 @@ class CDNClient:
     def generate_private_url(self, key):
         return f"s3://{self.config.bucket}/{key}"
 
-    def check_existence(self, key: str):
+    def _check_existence(self, key: str):
         try:
             return self.client.head_object(Bucket=self.config.bucket, Key=key)
         except ClientError:
             raise NotFoundError
+
+    async def check_existence(self, key: str):
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(self._check_existence, key)
+            return await asyncio.wrap_future(future)
 
     def download(self, key):
         file = io.BytesIO()

@@ -147,7 +147,7 @@ async def check_file_uploaded(
         )
 
         try:
-            cdn_client.check_existence(key)
+            await cdn_client.check_existence(key)
             results.append(
                 file_existence_factory(
                     uploaded=True,
