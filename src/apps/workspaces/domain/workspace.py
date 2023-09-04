@@ -244,4 +244,5 @@ class WorkspaceArbitrary(InternalModel):
     storage_type: str
     storage_url: Optional[str] = None
     storage_bucket: Optional[str] = None
+    # storage_bucket_answer: Optional[str] = None
     use_arbitrary: bool

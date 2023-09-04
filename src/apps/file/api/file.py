@@ -5,7 +5,7 @@ from functools import partial
 from urllib.parse import quote
 
 from botocore.exceptions import ClientError
-from fastapi import Body, Depends, File, UploadFile
+from fastapi import Body, Depends, File, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -73,7 +73,7 @@ async def download(
 
 async def answer_upload(
     applet_id: uuid.UUID,
-    file_id: str,
+    file_id=Query(None, alias="fileId"),
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -81,13 +81,15 @@ async def answer_upload(
     if not await UserAppletAccessCRUD(session).get_by_roles(
         user.id,
         applet_id,
-        [Role.OWNER, Role.MANAGER, Role.REVIEWER],
+        [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
     ):
         raise AnswerViewAccessDenied()
 
     cdn_client = await select_storage(applet_id, session)
     unique = f"{user.id}/{applet_id}"
-    cleaned_file_id = file_id.strip()
+    cleaned_file_id = (
+        file_id.strip() if file_id else f"{file.filename}_{uuid.uuid4()}"
+    )
     key = cdn_client.generate_key(
         FileScopeEnum.ANSWER, unique, cleaned_file_id
     )
@@ -126,11 +128,11 @@ async def check_file_uploaded(
     if not await UserAppletAccessCRUD(session).get_by_roles(
         user.id,
         applet_id,
-        [Role.OWNER, Role.MANAGER, Role.REVIEWER],
+        [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
     ):
         raise AnswerViewAccessDenied()
 
-    cdn_client = CDNClient(settings.cdn, env=settings.env)
+    cdn_client = await select_storage(applet_id, session)
     results: list[FileExistenceResponse] = []
 
     for file_id in schema.files:
