@@ -1,4 +1,3 @@
-import asyncio
 import re
 import uuid
 
@@ -114,14 +113,15 @@ class PresignedUrlsGeneratorService:
             self.session, self.user_id
         ).get_arbitrary_info(self.applet_id)
 
-        coros = []
+        urls = list()
 
         if arbitary_info and arbitary_info.storage_type.lower() in [
             StorageType.AZURE,
             StorageType.GCP,
         ]:
             for url in given_private_urls:
-                coros.append(regular_cdn_client.generate_presigned_url(url))
+                url = await regular_cdn_client.generate_presigned_url(url)
+                urls.append(url)
         else:
             legacy_cdn_client = (
                 get_legacy_storage()
@@ -132,10 +132,9 @@ class PresignedUrlsGeneratorService:
                 self.user_id, self.applet_id, self.access
             )
             for url in given_private_urls:
-                coros.append(
-                    presign_service(legacy_cdn_client, regular_cdn_client, url)
+                url = await presign_service(
+                    legacy_cdn_client, regular_cdn_client, url
                 )
-
-        urls = await asyncio.gather(*coros)
+                urls.append(url)
 
         return urls

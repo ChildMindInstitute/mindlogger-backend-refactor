@@ -1,5 +1,7 @@
+import asyncio
 import io
 import mimetypes
+from concurrent.futures import ThreadPoolExecutor
 from typing import BinaryIO
 
 import boto3
@@ -73,12 +75,15 @@ class CDNClient:
         return file, media_type
 
     async def generate_presigned_url(self, private_url):
-        url = self.client.generate_presigned_url(
-            "get_object",
-            Params={
-                "Bucket": self.config.bucket,
-                "Key": private_url,
-            },
-            ExpiresIn=self.ttl_signed_urls,
-        )
-        return url
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(
+                self.client.generate_presigned_url,
+                "get_object",
+                Params={
+                    "Bucket": self.config.bucket,
+                    "Key": private_url,
+                },
+                ExpiresIn=self.ttl_signed_urls,
+            )
+            url = await asyncio.wrap_future(future)
+            return url
