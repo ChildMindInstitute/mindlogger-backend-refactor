@@ -1,10 +1,13 @@
+import asyncio
 import re
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.file.storage import get_legacy_storage, select_storage
+from apps.file.dependencies import get_legacy_storage
+from apps.file.storage import select_storage
 from apps.migrate.utilities import mongoid_to_uuid
+from apps.workspaces.constants import StorageType
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service import workspace
@@ -21,11 +24,12 @@ class S3PresignService:
             if not await self._check_access_to_legacy_url(url):
                 return url
             url = self._get_legacy_key(url)
-            return legacy_cdn_client.generate_presigned_url(url)
+            return await legacy_cdn_client.generate_presigned_url(url)
         elif self._is_regular_file_url_format(url):
             if not await self._check_access_to_regular_url(url):
                 return url
-            return regular_cdn_client.generate_presigned_url(url)
+            url = self._get_legacy_key(url)
+            return await regular_cdn_client.generate_presigned_url(url)
         else:
             return url
 
@@ -40,7 +44,7 @@ class S3PresignService:
         return bool(match)
 
     def _is_regular_file_url_format(self, url):
-        pattern = r"s3:\/\/[^\/]+\/[^\/]+\/[^\/]+\/([0-9a-fA-F-]+)\/([0-9a-fA-F-]+)\/([0-9a-fA-F-]+)\/([a-zA-Z0-9_-]+)"  # noqa
+        pattern = r"s3:\/\/[a-zA-Z0-9.-]+\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+\/[a-f0-9-]+\/[a-f0-9-]+\/[a-zA-Z0-9-]+"  # noqa
         match = re.search(pattern, url)
         return bool(match)
 
@@ -70,13 +74,6 @@ class S3PresignService:
             return False
 
         return bool(self.access)
-
-
-def get_presign_url_service(url: str, applet_id, user_id, access):
-    # Detect needed presign service (S3, Azure, GCP) using format of given url
-    return S3PresignService(
-        applet_id=applet_id, user_id=user_id, access=access
-    )
 
 
 class PresignedUrlsGeneratorService:
@@ -113,25 +110,32 @@ class PresignedUrlsGeneratorService:
             applet_id=self.applet_id, session=self.session
         )
 
-        is_arbitrary = bool(
-            await workspace.WorkspaceService(
-                self.session, self.user_id
-            ).get_arbitrary_info(self.applet_id)
-        )
+        arbitary_info = await workspace.WorkspaceService(
+            self.session, self.user_id
+        ).get_arbitrary_info(self.applet_id)
 
-        legacy_cdn_client = (
-            get_legacy_storage() if is_arbitrary else regular_cdn_client
-        )
+        coros = []
 
-        urls = []
-
-        for url in given_private_urls:
-            presign_service = get_presign_url_service(
-                url, self.applet_id, self.user_id, self.access
+        if arbitary_info and arbitary_info.storage_type.lower() in [
+            StorageType.AZURE,
+            StorageType.GCP,
+        ]:
+            for url in given_private_urls:
+                coros.append(regular_cdn_client.generate_presigned_url(url))
+        else:
+            legacy_cdn_client = (
+                get_legacy_storage()
+                if not arbitary_info
+                else regular_cdn_client
             )
-            presigned_url = await presign_service(
-                url, regular_cdn_client, legacy_cdn_client
+            presign_service = S3PresignService(
+                self.user_id, self.applet_id, self.access
             )
-            urls.append(presigned_url)
+            for url in given_private_urls:
+                coros.append(
+                    presign_service(legacy_cdn_client, regular_cdn_client, url)
+                )
+
+        urls = await asyncio.gather(*coros)
 
         return urls

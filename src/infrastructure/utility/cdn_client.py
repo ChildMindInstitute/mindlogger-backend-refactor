@@ -44,11 +44,11 @@ class CDNClient:
             Bucket=self.config.bucket,
         )
 
-    def generate_key(self, bucket, scope, unique, filename):
-        return f"s3://{bucket}/mindlogger/{scope}/{unique}/{filename}"
+    def generate_key(self, scope, unique, filename):
+        return f"mindlogger/{scope}/{unique}/{filename}"
 
-    def generate_url(self, bucket, key):
-        return f"s3://{bucket}/{key}"
+    def generate_private_url(self, key):
+        return f"s3://{self.config.bucket}/{key}"
 
     def check_existence(self, key: str):
         try:
@@ -72,7 +72,7 @@ class CDNClient:
         )
         return file, media_type
 
-    def generate_presigned_url(self, private_url):
+    async def generate_presigned_url(self, private_url):
         url = self.client.generate_presigned_url(
             "get_object",
             Params={

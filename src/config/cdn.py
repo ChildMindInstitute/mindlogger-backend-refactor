@@ -11,12 +11,11 @@ class CDNSettings(BaseModel):
 
     region: str | None
     bucket: str | None
-    answer_bucket: str | None
     secret_key: str | None
     access_key: str | None
 
     domain: str = ""
-    ttl_signed_urls: int = 10
+    ttl_signed_urls: int | None
 
     @property
     def url(self):

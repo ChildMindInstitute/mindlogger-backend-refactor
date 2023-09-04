@@ -38,7 +38,6 @@ async def upload(
 ) -> Response[UploadedFile]:
     cdn_client = CDNClient(settings.cdn, env=settings.env)
     key = cdn_client.generate_key(
-        settings.cdn.bucket,
         FileScopeEnum.CONTENT,
         user.id,
         file.filename,
@@ -90,12 +89,12 @@ async def answer_upload(
     unique = f"{user.id}/{applet_id}"
     cleaned_file_id = file_id.strip()
     key = cdn_client.generate_key(
-        settings.cdn.bucket, FileScopeEnum.ANSWER, unique, cleaned_file_id
+        FileScopeEnum.ANSWER, unique, cleaned_file_id
     )
     with ThreadPoolExecutor() as executor:
         future = executor.submit(cdn_client.upload, key, file.file)
     await asyncio.wrap_future(future)
-    result = UploadedFile(key=key)
+    result = UploadedFile(key=key, url=cdn_client.generate_private_url(key))
     return Response(result=result)
 
 
@@ -137,9 +136,9 @@ async def check_file_uploaded(
     for file_id in schema.files:
         cleaned_file_id = file_id.strip()
 
-        unique = f"{applet_id}/{user.id}"
+        unique = f"{user.id}/{applet_id}"
         key = cdn_client.generate_key(
-            settings.cdn.bucket, FileScopeEnum.ANSWER, unique, cleaned_file_id
+            FileScopeEnum.ANSWER, unique, cleaned_file_id
         )
 
         file_existence_factory = partial(
@@ -152,7 +151,7 @@ async def check_file_uploaded(
             results.append(
                 file_existence_factory(
                     uploaded=True,
-                    url=quote(settings.cdn.url.format(key=key), "/:"),
+                    url=cdn_client.generate_private_url(key),
                 )
             )
         except NotFoundError:
