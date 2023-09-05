@@ -165,8 +165,8 @@
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502f00",
       "email": "9c29f41ea935a26cc5d808e042fa390b460eae79239c743e1b1ffa24",
-      "first_name": "Reviewer",
-      "last_name": "ReviewerOne",
+      "first_name": "0e59ad1ebe1638ab",
+      "last_name": "0e59ad1ebe1638ab6b11da",
       "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
       "is_deleted": false,
       "is_super_admin": true,
@@ -178,7 +178,9 @@
     },
     "note": {
       "Password": "Test1234!",
-      "plain_email": "reviewer@mail.com"
+      "plain_email": "reviewer@mail.com",
+      "plain_first_name": "Reviewer",
+      "plain_last_name": "ReviewerOne"
     }
   }
 ]
