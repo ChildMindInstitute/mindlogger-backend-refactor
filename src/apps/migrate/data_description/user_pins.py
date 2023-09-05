@@ -30,8 +30,8 @@ class UserPinsDAO:
             f"'{self.role}'",
             f"'{self.created_at}'::TIMESTAMP",
             f"'{self.updated_at}'::TIMESTAMP",
-            f"'{datetime.datetime.now()}'::TIMESTAMP",
-            f"'{datetime.datetime.now()}'::TIMESTAMP",
+            f"'{datetime.datetime.utcnow()}'::TIMESTAMP",
+            f"'{datetime.datetime.utcnow()}'::TIMESTAMP",
         )
         values = ",".join(values)
         return f"({values})"

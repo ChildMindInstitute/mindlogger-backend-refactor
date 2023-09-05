@@ -31,7 +31,7 @@ class AnswerItemMigrationService:
                     mongo_answer["meta"].get("responseCompleted")
                 ),
                 is_assessment=kwargs["is_assessment"],
-                migrated_date=datetime.now(),
+                migrated_date=datetime.utcnow(),
                 migrated_data=self._get_migrated_data(identifier),
             )
         )
@@ -68,4 +68,4 @@ class AnswerItemMigrationService:
     def _fromtimestamp(self, timestamp: int | None):
         if timestamp is None:
             return None
-        return datetime.fromtimestamp((float(timestamp) / 1000))
+        return datetime.utcfromtimestamp((float(timestamp) / 1000))

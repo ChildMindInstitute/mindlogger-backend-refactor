@@ -46,7 +46,7 @@ class TestPassword(BaseTest):
         instance=PasswordRecoveryInfoFactory.build(
             email=create_request_user.dict()["email"],
         ),
-        created_at=datetime.datetime.now(),
+        created_at=datetime.datetime.utcnow(),
     )
 
     @rollback

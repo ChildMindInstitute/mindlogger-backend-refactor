@@ -20,7 +20,7 @@ class UserSchema(Base):
     first_name = Column(String(length=50))
     last_name = Column(String(length=50))
     hashed_password = Column(String(length=100))
-    last_seen_at = Column(DateTime(), default=datetime.now)
+    last_seen_at = Column(DateTime(), default=datetime.utcnow)
     is_super_admin = Column(Boolean(), default=False, server_default="false")
     is_anonymous_respondent = Column(
         Boolean(), default=False, server_default="false"

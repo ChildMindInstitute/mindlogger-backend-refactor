@@ -66,7 +66,7 @@ class Postgres:
         count = 0
 
         for old_user in users:
-            time_now = datetime.now()
+            time_now = datetime.utcnow()
             new_user = {
                 "id": mongoid_to_uuid(old_user["id_"]),
                 "created_at": old_user["created_at"],
@@ -115,7 +115,7 @@ class Postgres:
         count = 0
 
         for workspace in workspaces:
-            time_now = datetime.now()
+            time_now = datetime.utcnow()
             # Create users workspace
             user_workspace = {
                 "id": mongoid_to_uuid(workspace["id_"]),

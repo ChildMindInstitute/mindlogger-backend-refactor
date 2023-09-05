@@ -970,7 +970,7 @@ class TestAnswerActivityItems(BaseTest):
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime"
         }
-        assert answer['startDatetime'] * 1000 == 1690188679657
+        assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on
 
         assert set(assessment.keys()) == expected_keys
@@ -1337,7 +1337,7 @@ class TestAnswerActivityItems(BaseTest):
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime"
         }
-        assert answer['startDatetime'] * 1000 == 1690188679657
+        assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on
 
         assert set(assessment.keys()) == expected_keys
