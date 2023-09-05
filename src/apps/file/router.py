@@ -9,7 +9,7 @@ from apps.file.api.file import (
     presign,
     upload,
 )
-from apps.file.domain import FileExistenceResponse
+from apps.file.domain import FileExistenceResponse, UploadedFile
 from apps.shared.domain import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
@@ -37,6 +37,11 @@ router.post(
         "Used for uploading images and files related to applets."
         "File stored in S3 account or arbitrary storage(S3, AzureBlob)"
     ),
+    responses={
+        status.HTTP_200_OK: {"model": UploadedFile},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
 )(answer_upload)
 
 
@@ -66,4 +71,9 @@ router.post(
         "Used for generating temporary public urls for files"
         "File stored in S3 account or arbitrary storage(S3, AzureBlob)"
     ),
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[str]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
 )(presign)

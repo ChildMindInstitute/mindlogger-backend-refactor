@@ -94,7 +94,9 @@ async def answer_upload(
     with ThreadPoolExecutor() as executor:
         future = executor.submit(cdn_client.upload, key, file.file)
     await asyncio.wrap_future(future)
-    result = UploadedFile(key=key, url=cdn_client.generate_private_url(key))
+    result = UploadedFile(
+        key=cleaned_file_id, url=cdn_client.generate_private_url(key)
+    )
     return Response(result=result)
 
 
@@ -143,7 +145,7 @@ async def check_file_uploaded(
 
         file_existence_factory = partial(
             FileExistenceResponse,
-            key=key,
+            key=file_id,
         )
 
         try:
