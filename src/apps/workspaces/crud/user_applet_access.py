@@ -790,10 +790,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             query = query.where(
                 *_AppletUsersFilter().get_clauses(**query_params.filters)
             )
-        if query_params.search:
-            query = query.where(
-                _AppletUsersSearch().get_clauses(query_params.search)
-            )
 
         coro_total = self._execute(
             select(count()).select_from(query.with_only_columns(UserSchema.id))
@@ -811,6 +807,26 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         data = parse_obj_as(list[WorkspaceManager], res_data.all())
         total = res_total.scalar()
+
+        if query_params.search:
+            data_search = []
+            total_search = 0
+            for manager in data:
+                if manager.plain_first_name:
+                    first_name_lower = manager.plain_first_name.lower()
+                else:
+                    first_name_lower = ""
+                if manager.plain_last_name:
+                    last_name_lower = manager.plain_last_name.lower()
+                else:
+                    last_name_lower = ""
+                if (
+                    query_params.search.lower() in first_name_lower
+                    or query_params.search.lower() in last_name_lower
+                ):
+                    data_search.append(manager)
+                    total_search += 1
+            return data_search, total_search
 
         return data, total
 
