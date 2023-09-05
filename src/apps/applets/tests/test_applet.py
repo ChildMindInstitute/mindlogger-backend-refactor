@@ -1716,7 +1716,106 @@ class TestApplet(BaseTest):
                                 skippable_item=True,
                             ),
                         ),
+                        dict(
+                            name="morning_activity_item_2",
+                            question=dict(
+                                en="How had you woke?",
+                                fr="How had you woke?",
+                            ),
+                            response_type="slider",
+                            response_values=dict(
+                                min_label="Not at all",
+                                max_label="Very much",
+                                min_value=1,
+                                max_value=5,
+                                min_image=None,
+                                max_image=None,
+                                scores=None,
+                            ),
+                            config=dict(
+                                add_scores=True,
+                                set_alerts=False,
+                                show_tick_marks=False,
+                                show_tick_labels=False,
+                                continuous_slider=False,
+                                timer=None,
+                                remove_back_button=False,
+                                skippable_item=True,
+                                additional_response_option=dict(
+                                    text_input_option=False,
+                                    text_input_required=False,
+                                ),
+                            ),
+                        ),
                     ],
+                    scores_and_reports=dict(
+                        generateReport=True,
+                        showScoreSummary=True,
+                        reports=[
+                            dict(
+                                name="morning_activity_item_2",
+                                type="score",
+                                id="morning_activity_item_2",
+                                calculationType="sum",
+                                minScore=0,
+                                maxScore=3,
+                                itemsScore=["morning_activity_item_2"],
+                                message="Hello",
+                                itemsPrint=["morning_activity_item_2"],
+                                conditionalLogic=[
+                                    dict(
+                                        name="morning_activity_item_2",
+                                        id="morning_activity_item_2",
+                                        flagScore=True,
+                                        message="Hello2",
+                                        match="any",
+                                        conditions=[
+                                            dict(
+                                                item_name=(
+                                                    "morning_activity_item_2"
+                                                ),
+                                                type="GREATER_THAN",
+                                                payload=dict(
+                                                    value=1,
+                                                ),
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+                            dict(
+                                name="morning_activity_item_2",
+                                type="section",
+                                messages="Hello from the other side",
+                                itemsPrint=[
+                                    "morning_activity_item_2",
+                                ],
+                                conditionalLogic=dict(
+                                    match="all",
+                                    conditions=[
+                                        dict(
+                                            item_name=(
+                                                "morning_activity_item_2"
+                                            ),
+                                            type="GREATER_THAN",
+                                            payload=dict(
+                                                value=1,
+                                            ),
+                                        ),
+                                        dict(
+                                            item_name=(
+                                                "morning_activity_item_2"
+                                            ),
+                                            type="EQUAL_TO_OPTION",
+                                            payload=dict(
+                                                option_value="1",  # noqa E501
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ],
+                    ),
                 ),
                 dict(
                     name="Evening activity",

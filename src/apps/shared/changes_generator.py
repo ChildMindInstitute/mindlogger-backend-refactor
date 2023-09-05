@@ -187,20 +187,21 @@ class ChangeGenerator:
                                         "enabled" if val else "disabled",
                                     )
                                 )
-                            elif key == "scores":
-                                for v in val:
-                                    changes.append(
-                                        self._change_text_generator.added_text(
-                                            f'Activity score {v["name"]}'
+                            elif key == "reports":
+                                for rep in val:
+                                    text = ""
+                                    if rep["type"] == "score":
+                                        text = f"Activity score {rep['name']}"
+                                    elif rep["type"] == "section":
+                                        text = (
+                                            f"Activity section {rep['name']}"
                                         )
+                                    if text == "":
+                                        continue
+                                    self._change_text_generator.added_text(
+                                        text
                                     )
-                            elif key == "sections":
-                                for v in val:
-                                    changes.append(
-                                        self._change_text_generator.added_text(
-                                            f'Activity section {v["name"]}'
-                                        )
-                                    )
+
                 elif field == "subscale_setting":
                     if value:
                         for key, val in value.items():
