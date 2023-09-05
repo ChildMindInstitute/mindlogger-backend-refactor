@@ -58,3 +58,10 @@ dcheck:
 	${DOCKER_EXEC} \
 		${BLACK_COMMAND} ./ && ${FLAKE8_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./ \
 		&& ${TEST_COMMAND}
+
+
+# Setting pre-commit hooks to search for aws keys
+.PHONY: aws-scan
+aws-scan:
+	git secrets --register-aws --global && \
+	pre-commit install

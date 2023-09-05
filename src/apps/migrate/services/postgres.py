@@ -8,9 +8,10 @@ from datetime import datetime
 from typing import List, Collection, Any
 
 import psycopg2
-from psycopg2.errorcodes import UNIQUE_VIOLATION
+from psycopg2.errorcodes import UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION
 from bson import ObjectId
 
+from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
 from apps.migrate.services.applet_service import AppletMigrationService
 from apps.migrate.utilities import (
     mongoid_to_uuid,
@@ -221,7 +222,7 @@ class Postgres:
         #     ]
         # }
 
-    def get_pk_array(self, sql, as_bson=True):
+    def get_pk_array(self, sql, as_bson=True) -> List[uuid.UUID | ObjectId]:
         cursor = self.connection.cursor()
         cursor.execute(sql)
         results = cursor.fetchall()
@@ -310,3 +311,105 @@ class Postgres:
         """
         rows_count = self.insert_dao_collection(sql, list(user_pin_dao))
         migration_log.warning(f"Inserted {rows_count} rows")
+
+    def get_migrated_workspaces(self) -> List[uuid.UUID]:
+        sql = "SELECT id FROM users_workspaces"
+        return self.get_pk_array(sql, as_bson=False)
+
+    def log_pg_err(self, ex):
+        if not hasattr(ex, "pgcode"):
+            # not pg error
+            raise ex
+        if getattr(ex, "pgcode") == FOREIGN_KEY_VIOLATION:
+            migration_log.warning(f"[FOLDERS] {ex}")
+        elif getattr(ex, "pgcode") == UNIQUE_VIOLATION:
+            migration_log.warning(f"[FOLDERS] {ex}")
+        else:
+            raise ex
+
+    def save_folders(self, folders: List[FolderDAO]):
+        sql = """
+            INSERT INTO folders
+            (
+                id, 
+                created_at, 
+                updated_at, 
+                is_deleted, 
+                name, 
+                creator_id, 
+                workspace_id, 
+                migrated_date, 
+                migrated_updated
+            )
+            VALUES
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+        migrated, skipped = 0, 0
+        for folder_data in folders:
+            try:
+                cursor = self.connection.cursor()
+                cursor.execute(
+                    sql,
+                    (
+                        str(folder_data.id),
+                        folder_data.created_at,
+                        folder_data.updated_at,
+                        folder_data.is_deleted,
+                        folder_data.name,
+                        str(folder_data.creator_id),
+                        str(folder_data.workspace_id),
+                        folder_data.migrated_date,
+                        folder_data.migrated_update,
+                    ),
+                )
+                migrated += 1
+            except Exception as ex:
+                skipped += 1
+                self.log_pg_err(ex)
+            finally:
+                self.connection.commit()
+        return migrated, skipped
+
+    def save_folders_applet(self, folder_applets: List[FolderAppletDAO]):
+        migrated, skipped = 0, 0
+        sql = """
+            INSERT INTO public.folder_applets
+            (
+                id, 
+                created_at, 
+                updated_at, 
+                is_deleted, 
+                folder_id, 
+                applet_id, 
+                pinned_at, 
+                migrated_date, 
+                migrated_updated
+            )
+            VALUES
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+
+        """
+        for folder_applet in folder_applets:
+            try:
+                cursor = self.connection.cursor()
+                cursor.execute(
+                    sql,
+                    (
+                        str(folder_applet.id),
+                        folder_applet.created_at,
+                        folder_applet.updated_at,
+                        folder_applet.is_deleted,
+                        str(folder_applet.folder_id),
+                        str(folder_applet.applet_id),
+                        folder_applet.pinned_at,
+                        folder_applet.migrated_date,
+                        folder_applet.migrated_update,
+                    ),
+                )
+                migrated += 1
+            except Exception as ex:
+                skipped += 1
+                self.log_pg_err(ex)
+            finally:
+                self.connection.commit()
+        return migrated, skipped

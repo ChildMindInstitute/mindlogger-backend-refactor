@@ -234,14 +234,23 @@ class AnswerService:
         try:
             if not is_flow_single:
                 await queue.publish(
-                    data=dict(submit_id=answer.submit_id, answer_id=answer.id)
+                    data=dict(
+                        submit_id=answer.submit_id,
+                        answer_id=answer.id,
+                        applet_id=answer.applet_id,
+                    )
                 )
             else:
                 is_flow_finished = await service.is_flow_finished(
                     answer.submit_id, answer.id
                 )
                 if is_flow_finished:
-                    await queue.publish(data=dict(submit_id=answer.submit_id))
+                    await queue.publish(
+                        data=dict(
+                            submit_id=answer.submit_id,
+                            applet_id=answer.applet_id,
+                        )
+                    )
         finally:
             await queue.close()
 
@@ -951,7 +960,7 @@ class ReportServerService:
     async def is_flow_finished(
         self, submit_id: uuid.UUID, answer_id: uuid.UUID
     ) -> bool:
-        answers = await AnswersCRUD(self.session).get_by_submit_id(
+        answers = await AnswersCRUD(self.answers_session).get_by_submit_id(
             submit_id, answer_id
         )
         if not answers:

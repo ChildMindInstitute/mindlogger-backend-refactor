@@ -144,12 +144,16 @@ set -o allexport; source .env; set +o allexport
 
 It is a good practice to use Git hooks to provide better commits.
 
+For increased security during development, install `git-secrets` to scan code for aws keys.
+
+Please use this link for that: https://github.com/awslabs/git-secrets#installing-git-secrets
+
 `.pre-commit-config.yaml` is placed in the root of the repository.
 
-👉 Add this rule to the Git hooks. Just do it
+👉 Once you have installed `git-secrets` and `pre-commit` simply run the following command.
 
 ```bash
-pre-commit install
+make aws-scan
 ```
 
 👉 Then all your staged cahnges will be checked via git hooks on every `git commit`

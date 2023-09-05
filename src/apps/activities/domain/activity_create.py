@@ -43,7 +43,7 @@ class ActivityCreate(ActivityBase, InternalModel):
         return validate_item_flow(values)
 
     @root_validator()
-    def validate_score_and_sections_conditional_logic(cls, values):
+    def validate_scores_and_reports_conditional_logic(cls, values):
         return validate_score_and_sections(values)
 
     @root_validator()

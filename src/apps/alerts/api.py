@@ -24,7 +24,6 @@ async def get_all_alerts(
     async with atomic(session):
         service = AlertService(session, user.id)
         alerts = await service.get_all_alerts(query_params)
-
         counts = await service.get_all_alerts_count()
 
     return AlertResponseMulti(

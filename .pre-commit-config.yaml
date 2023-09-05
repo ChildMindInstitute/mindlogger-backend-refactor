@@ -30,3 +30,8 @@ repos:
         language: system
         types: [python]
         exclude: "apps/girderformindlogger"
+      
+      - id: git-secrets
+        name: git-secrets
+        entry: git secrets --scan
+        language: system
