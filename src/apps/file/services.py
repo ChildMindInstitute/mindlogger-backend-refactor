@@ -5,11 +5,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.file.dependencies import get_legacy_storage
 from apps.file.storage import select_storage
-from apps.migrate.utilities import mongoid_to_uuid
 from apps.workspaces.constants import StorageType
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service import workspace
+
+
+def mongoid_to_uuid(id_):
+    if isinstance(id_, str) and "/" in id_:
+        id_ = id_.split("/").pop()
+    return uuid.UUID(str(id_) + "00000000")
 
 
 class S3PresignService:
