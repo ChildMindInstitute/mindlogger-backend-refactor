@@ -360,3 +360,16 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().first()
+
+    async def exist(
+        self,
+        email: str,
+        role: str,
+        applet_id: uuid.UUID,
+    ) -> bool:
+        query: Query = select(count(InvitationSchema.id))
+        query = query.where(InvitationSchema.email == email)
+        query = query.where(InvitationSchema.applet_id == applet_id)
+        query = query.where(InvitationSchema.role == role)
+        db_result: Result = await self._execute(query)
+        return bool(db_result.scalars().first())

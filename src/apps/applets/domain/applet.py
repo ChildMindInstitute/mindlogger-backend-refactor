@@ -17,7 +17,7 @@ from apps.applets.domain.base import (
     AppletFetchBase,
     Encryption,
 )
-from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.themes.domain import PublicTheme, Theme
 from apps.workspaces.domain.constants import DataRetention
 
@@ -115,3 +115,7 @@ class AppletDataRetention(InternalModel):
         if retention == DataRetention.INDEFINITELY:
             values["period"] = None
         return values
+
+
+class AppletRetrieveResponse(Response[AppletSingleLanguageDetailPublic]):
+    respondent_meta: dict | None = None

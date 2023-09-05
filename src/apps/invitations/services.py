@@ -584,6 +584,9 @@ class InvitationsService:
     async def clear_applets_invitations(self, applet_id: uuid.UUID):
         await InvitationCRUD(self.session).delete_by_applet_id(applet_id)
 
+    async def exist(self, email: str, role: str, applet_id: uuid.UUID) -> int:
+        return await InvitationCRUD(self.session).exist(email, role, applet_id)
+
 
 class PrivateInvitationService:
     def __init__(self, session):

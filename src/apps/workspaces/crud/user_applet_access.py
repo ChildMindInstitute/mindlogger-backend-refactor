@@ -1233,3 +1233,16 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
+
+    async def get_user_nickname(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ) -> str | None:
+        query: Query = select(UserAppletAccessSchema.meta)
+        query = query.where(
+            UserAppletAccessSchema.applet_id == applet_id,
+            UserAppletAccessSchema.user_id == user_id,
+            UserAppletAccessSchema.role == Role.RESPONDENT,
+        )
+        db_result = await self._execute(query)
+        db_result = db_result.first()
+        return db_result[0].get("nickname") if db_result else None
