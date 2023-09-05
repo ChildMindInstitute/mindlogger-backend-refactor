@@ -38,9 +38,7 @@ async def upload(
 ) -> Response[UploadedFile]:
     cdn_client = CDNClient(settings.cdn, env=settings.env)
     key = cdn_client.generate_key(
-        FileScopeEnum.CONTENT,
-        user.id,
-        file.filename,
+        FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{file.filename}"
     )
     with ThreadPoolExecutor() as executor:
         future = executor.submit(cdn_client.upload, key, file.file)
@@ -88,7 +86,7 @@ async def answer_upload(
     cdn_client = await select_storage(applet_id, session)
     unique = f"{user.id}/{applet_id}"
     cleaned_file_id = (
-        file_id.strip() if file_id else f"{file.filename}_{uuid.uuid4()}"
+        file_id.strip() if file_id else f"{uuid.uuid4()}/{file.filename}"
     )
     key = cdn_client.generate_key(
         FileScopeEnum.ANSWER, unique, cleaned_file_id
