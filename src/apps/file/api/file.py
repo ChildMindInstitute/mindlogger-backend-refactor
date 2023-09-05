@@ -143,7 +143,7 @@ async def check_file_uploaded(
 
         file_existence_factory = partial(
             FileExistenceResponse,
-            key=key,
+            key=file_id,
         )
 
         try:
