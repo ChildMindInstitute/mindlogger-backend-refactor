@@ -9,7 +9,7 @@ from apps.file.api.file import (
     presign,
     upload,
 )
-from apps.file.domain import FileExistenceResponse, UploadedFile
+from apps.file.domain import AnswerUploadedFile, FileExistenceResponse
 from apps.shared.domain import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
@@ -38,7 +38,7 @@ router.post(
         "File stored in S3 account or arbitrary storage(S3, AzureBlob)"
     ),
     responses={
-        status.HTTP_200_OK: {"model": UploadedFile},
+        status.HTTP_200_OK: {"model": AnswerUploadedFile},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

@@ -11,11 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.authentication.deps import get_current_user
 from apps.file.domain import (
+    AnswerUploadedFile,
+    ContentUploadedFile,
     FileCheckRequest,
     FileDownloadRequest,
     FileExistenceResponse,
     FilePresignRequest,
-    UploadedFile,
 )
 from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
@@ -35,7 +36,7 @@ from infrastructure.utility.cdn_client import CDNClient
 async def upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
-) -> Response[UploadedFile]:
+) -> Response[ContentUploadedFile]:
     cdn_client = CDNClient(settings.cdn, env=settings.env)
     key = cdn_client.generate_key(
         FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{file.filename}"
@@ -43,7 +44,7 @@ async def upload(
     with ThreadPoolExecutor() as executor:
         future = executor.submit(cdn_client.upload, key, file.file)
     await asyncio.wrap_future(future)
-    result = UploadedFile(
+    result = ContentUploadedFile(
         key=key, url=quote(settings.cdn.url.format(key=key), "/:")
     )
     return Response(result=result)
@@ -94,8 +95,10 @@ async def answer_upload(
     with ThreadPoolExecutor() as executor:
         future = executor.submit(cdn_client.upload, key, file.file)
     await asyncio.wrap_future(future)
-    result = UploadedFile(
-        key=cleaned_file_id, url=cdn_client.generate_private_url(key)
+    result = AnswerUploadedFile(
+        key=key,
+        url=cdn_client.generate_private_url(key),
+        file_id=cleaned_file_id,
     )
     return Response(result=result)
 
@@ -145,7 +148,8 @@ async def check_file_uploaded(
 
         file_existence_factory = partial(
             FileExistenceResponse,
-            key=file_id,
+            key=key,
+            file_id=file_id,
         )
 
         try:
