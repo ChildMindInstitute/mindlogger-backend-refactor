@@ -52,7 +52,7 @@ class S3PresignService:
         match = re.search(pattern, url)
         user_id, applet_id = match.group(1), match.group(2)
 
-        if self.user_id == mongoid_to_uuid(user_id):
+        if self.user_id == user_id:
             return True
 
         if str(self.applet_id) != applet_id:
