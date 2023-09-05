@@ -813,8 +813,14 @@ class AnswerService:
             respondents = access.meta.get("respondents", []) if access else []
             if str(respondent_id) not in respondents:
                 raise AnswerAccessDeniedError()
+
+        answer_srv = AnswersCRUD(self.answer_session)
+        applet_version = await answer_srv.get_latest_applet_version(applet_id)
+
         act_hst_crud = ActivityHistoriesCRUD(self.session)
-        activities = await act_hst_crud.get_by_applet_id_for_summary(applet_id)
+        activities = await act_hst_crud.get_by_applet_id_for_summary(
+            applet_id_version=applet_version, applet_id=applet_id
+        )
         activity_ver_ids = [activity.id_version for activity in activities]
         activity_ids_with_answer = await AnswersCRUD(
             self.answer_session
