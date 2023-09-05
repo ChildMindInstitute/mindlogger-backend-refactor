@@ -17,6 +17,6 @@ class InvitationSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     status = Column(String())
-    first_name = Column(String())
-    last_name = Column(String())
+    first_name = Column(String(String(length=100)))
+    last_name = Column(String(String(length=100)))
     meta = Column(JSONB())
