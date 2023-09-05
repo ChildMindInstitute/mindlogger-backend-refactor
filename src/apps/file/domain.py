@@ -3,7 +3,7 @@ from apps.shared.domain import PublicModel
 
 class UploadedFile(PublicModel):
     key: str
-    url: str
+    url: str | None
 
 
 class FileDownloadRequest(PublicModel):
@@ -18,3 +18,7 @@ class FileExistenceResponse(PublicModel):
     key: str
     uploaded: bool
     url: str | None = None
+
+
+class FilePresignRequest(PublicModel):
+    private_urls: list[str]

@@ -5,7 +5,7 @@ from functools import partial
 from urllib.parse import quote
 
 from botocore.exceptions import ClientError
-from fastapi import Body, Depends, File, UploadFile
+from fastapi import Body, Depends, File, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,13 +14,19 @@ from apps.file.domain import (
     FileCheckRequest,
     FileDownloadRequest,
     FileExistenceResponse,
+    FilePresignRequest,
     UploadedFile,
 )
+from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
+from apps.file.services import PresignedUrlsGeneratorService
 from apps.file.storage import select_storage
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.users.domain import User
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.errors import AnswerViewAccessDenied
 from config import settings
 from infrastructure.database.deps import get_session
 from infrastructure.utility.cdn_client import CDNClient
@@ -29,11 +35,13 @@ from infrastructure.utility.cdn_client import CDNClient
 async def upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
-    fileId: str | None = None,
 ) -> Response[UploadedFile]:
     cdn_client = CDNClient(settings.cdn, env=settings.env)
-    key = fileId or CDNClient.generate_key(hash(user.id), file.filename)
-
+    key = cdn_client.generate_key(
+        FileScopeEnum.CONTENT,
+        user.id,
+        file.filename,
+    )
     with ThreadPoolExecutor() as executor:
         future = executor.submit(cdn_client.upload, key, file.file)
     await asyncio.wrap_future(future)
@@ -65,18 +73,30 @@ async def download(
 
 async def answer_upload(
     applet_id: uuid.UUID,
+    file_id=Query(None, alias="fileId"),
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
+    if not await UserAppletAccessCRUD(session).get_by_roles(
+        user.id,
+        applet_id,
+        [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
+    ):
+        raise AnswerViewAccessDenied()
+
     cdn_client = await select_storage(applet_id, session)
-    key = cdn_client.generate_key(hash(user.id), file.filename)
+    unique = f"{user.id}/{applet_id}"
+    cleaned_file_id = (
+        file_id.strip() if file_id else f"{file.filename}_{uuid.uuid4()}"
+    )
+    key = cdn_client.generate_key(
+        FileScopeEnum.ANSWER, unique, cleaned_file_id
+    )
     with ThreadPoolExecutor() as executor:
         future = executor.submit(cdn_client.upload, key, file.file)
     await asyncio.wrap_future(future)
-    result = UploadedFile(
-        key=key, url=quote(settings.cdn.url.format(key=key), "/:")
-    )
+    result = UploadedFile(key=key, url=cdn_client.generate_private_url(key))
     return Response(result=result)
 
 
@@ -98,27 +118,42 @@ async def answer_download(
 
 
 async def check_file_uploaded(
+    applet_id: uuid.UUID,
     schema: FileCheckRequest,
     user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ) -> ResponseMulti[FileExistenceResponse]:
     """Provides the information if the files is uploaded."""
 
-    cdn_client = CDNClient(settings.cdn, env=settings.env)
+    if not await UserAppletAccessCRUD(session).get_by_roles(
+        user.id,
+        applet_id,
+        [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
+    ):
+        raise AnswerViewAccessDenied()
+
+    cdn_client = await select_storage(applet_id, session)
     results: list[FileExistenceResponse] = []
 
-    for file_key in schema.files:
-        cleaned_file_key = file_key.strip()
+    for file_id in schema.files:
+        cleaned_file_id = file_id.strip()
+
+        unique = f"{user.id}/{applet_id}"
+        key = cdn_client.generate_key(
+            FileScopeEnum.ANSWER, unique, cleaned_file_id
+        )
+
         file_existence_factory = partial(
             FileExistenceResponse,
-            key=cleaned_file_key,
+            key=key,
         )
 
         try:
-            cdn_client.check_existence(cleaned_file_key)
+            await cdn_client.check_existence(key)
             results.append(
                 file_existence_factory(
                     uploaded=True,
-                    url=quote(settings.cdn.url.format(key=file_key), "/:"),
+                    url=cdn_client.generate_private_url(key),
                 )
             )
         except NotFoundError:
@@ -127,3 +162,18 @@ async def check_file_uploaded(
     return ResponseMulti[FileExistenceResponse](
         result=results, count=len(results)
     )
+
+
+async def presign(
+    applet_id: uuid.UUID,
+    request: FilePresignRequest = Body(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    results: list[str] = await PresignedUrlsGeneratorService(
+        session=session, user_id=user.id, applet_id=applet_id
+    )(
+        given_private_urls=request.private_urls,
+    )
+
+    return ResponseMulti[str](result=results, count=len(results))
