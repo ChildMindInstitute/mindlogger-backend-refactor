@@ -465,7 +465,7 @@ class ReproFieldRadio(ReproFieldBase):
                     else None,
                     tooltip=choice.get("tooltip"),
                     # is_vis means is_hidden
-                    is_hidden=choice.get("is_vis", False),
+                    is_hidden=choice.get("is_vis", False) or False,
                     color=color,
                     alert=choice.get("alert"),
                 )
