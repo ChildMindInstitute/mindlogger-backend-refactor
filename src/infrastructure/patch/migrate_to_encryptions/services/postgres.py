@@ -24,7 +24,7 @@ class Postgres:
         cursor = self.connection.cursor()
         # Encryption and updates users: first_name
         cursor.execute(
-            "SELECT id, first_name FROM users " "WHERE first_name IS NOT NULL;"
+            "SELECT id, first_name FROM users WHERE first_name IS NOT NULL;"
         )
         result = cursor.fetchall()
         count = 0
@@ -49,7 +49,7 @@ class Postgres:
         )
         # Encryption and updates users: last_name
         cursor.execute(
-            "SELECT id, last_name FROM users " "WHERE last_name IS NOT NULL;"
+            "SELECT id, last_name FROM users WHERE last_name IS NOT NULL;"
         )
         result = cursor.fetchall()
         count = 0
@@ -171,7 +171,7 @@ class Postgres:
         cursor = self.connection.cursor()
         # Encryption and updates answer_notes: note
         cursor.execute(
-            "SELECT id, note FROM answer_notes " "WHERE note IS NOT NULL;"
+            "SELECT id, note FROM answer_notes WHERE note IS NOT NULL;"
         )
         result = cursor.fetchall()
         count = 0
@@ -225,3 +225,40 @@ class Postgres:
             f"{count} - Updated Successfully!"
         )
         cursor.close()
+
+    def re_encrypt_users_email_aes_encrypted(self) -> None:
+        """transfer of encrypted data
+        from field 'email_aes_encrypted' to field 'email_encrypted'
+        """
+        cursor = self.connection.cursor()
+        cursor.execute(
+            "SELECT id, email_aes_encrypted, email_encrypted FROM users "
+            "WHERE email_aes_encrypted IS NOT NULL;"
+        )
+        result = cursor.fetchall()
+        count = 0
+        for row in result:
+            user_id, email_aes_encrypted, email_encrypted_previous = row
+            if email_aes_encrypted:
+                try:
+                    email = decrypt(email_aes_encrypted).decode("utf-8")
+                except UnicodeDecodeError:
+                    email = decrypt(
+                        bytes.fromhex(
+                            email_aes_encrypted.tobytes().decode("utf-8")
+                        )
+                    ).decode("utf-8")
+
+                email_encrypted_current = encrypt(bytes(email, "utf-8")).hex()
+                if email_encrypted_previous != email_encrypted_current:
+                    cursor.execute(
+                        "UPDATE users SET email_encrypted = %s "
+                        "WHERE id = %s",
+                        (email_encrypted_current, user_id),
+                    )
+                    count += 1
+        self.connection.commit()
+        print(
+            "Users 'encrypted_email' encryption and updates completed.\n"
+            f"{count} - Updated Successfully!"
+        )

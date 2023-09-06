@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, String
+from sqlalchemy import Boolean, Column, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 
 from infrastructure.database.base import Base
@@ -25,5 +25,5 @@ class AlertSchema(Base):
     version = Column(String())
     activity_id = Column(UUID(as_uuid=True))
     activity_item_id = Column(UUID(as_uuid=True))
-    alert_message = Column(String(), nullable=False)
+    alert_message = Column(Text(), nullable=False)
     answer_id = Column(UUID(as_uuid=True))

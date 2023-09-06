@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     LargeBinary,
     String,
+    Text,
 )
 
 from infrastructure.database.base import Base
@@ -17,8 +18,9 @@ class UserSchema(Base):
 
     email = Column(String(length=56), unique=True)
     email_aes_encrypted = Column(LargeBinary(length=100), default=None)
-    first_name = Column(String(length=100))
-    last_name = Column(String(length=100))
+    email_encrypted = Column(Text(), default=None)
+    first_name = Column(Text())
+    last_name = Column(Text())
     hashed_password = Column(String(length=100))
     last_seen_at = Column(DateTime(), default=datetime.utcnow)
     is_super_admin = Column(Boolean(), default=False, server_default="false")
