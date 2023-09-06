@@ -10,7 +10,7 @@ from apps.migrate.utilities import uuid_to_mongoid
 
 
 class MigrateAnswersCRUD(AnswersCRUD):
-    async def get_answers_migration_params(self):
+    async def get_answers_migration_params(self) -> list[dict]:
         query: Query = select(
             ActivityHistorySchema.id,
             func.split_part(ActivityHistorySchema.applet_id, "_", 1).label(

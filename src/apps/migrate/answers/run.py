@@ -1,6 +1,10 @@
 import asyncio
 
 from apps.answers.db.schemas import AnswerSchema
+from apps.answers.deps.preprocess_arbitrary import (
+    get_answer_session,
+    get_arbitrary_info,
+)
 from apps.girderformindlogger.models.note import Note
 from apps.girderformindlogger.models.profile import Profile
 from apps.girderformindlogger.models.item import Item
@@ -11,6 +15,8 @@ from apps.migrate.answers.crud import MigrateAnswersCRUD
 
 from apps.migrate.services.mongo import Mongo
 from apps.migrate.utilities import mongoid_to_uuid
+from apps.users import UsersCRUD
+from apps.users.services.user import UserService
 from infrastructure.database import session_manager, atomic
 
 
@@ -21,17 +27,32 @@ class AnswersMigrateFacade:
         self.answer_item_migrate_service = AnswerItemMigrationService()
         self.answer_note_migrate_service = AnswerNoteMigrateService()
 
+    async def _get_regular_or_arbitary_session(self, session, applet_id):
+        arbitrary_url = await get_arbitrary_info(applet_id, session)
+        arbitary_session = (
+            session_manager.get_session(arbitrary_url)
+            if arbitrary_url
+            else None
+        )
+        if arbitary_session:
+            return arbitary_session
+        return session
+
     async def migrate(self):
+        guest_answers = 0
         total_answers = 0
         successfully_answers_migrated = 0
         error_answers_migration = []
         skipped_answers_migration = 0
         answer_items_data = []
 
-        session = session_manager.get_session()
-        async with atomic(session):
+        regular_session = session_manager.get_session()
+
+        await UserService(regular_session).create_anonymous_respondent()
+
+        async with atomic(regular_session):
             answers_migration_params = await MigrateAnswersCRUD(
-                session
+                regular_session
             ).get_answers_migration_params()
 
         for answer_migration_params in answers_migration_params:
@@ -44,86 +65,105 @@ class AnswersMigrateFacade:
                 if not answer_with_files:
                     continue
                 total_answers += 1
+
+                query = answer_with_files["query"]
+                mongo_answer = answer_with_files["answer"]
+                files = answer_with_files.get("files", {})
+                mongo_answer_id = mongo_answer["_id"]
+
+                applet_id = mongoid_to_uuid(
+                    str(mongo_answer["meta"]["applet"]["@id"])
+                )
+
                 try:
-                    async with atomic(session):
-                        query = answer_with_files["query"]
-                        mongo_answer = answer_with_files["answer"]
-                        files = answer_with_files.get("files", {})
-                        mongo_answer_id = mongo_answer["_id"]
-
-                        print(
-                            f"Starting migration of answer with mongo id: {mongo_answer_id}"
+                    regular_or_arbitary_session = (
+                        await self._get_regular_or_arbitary_session(
+                            regular_session, applet_id
                         )
-                        is_assessment = "reviewing" in mongo_answer["meta"]
+                    )
+                    async with atomic(regular_session):
+                        async with atomic(regular_or_arbitary_session):
+                            print(
+                                f"Starting migration of answer with mongo id: {mongo_answer_id}"
+                            )
+                            is_assessment = "reviewing" in mongo_answer["meta"]
 
-                        if not is_assessment:
-                            if await self.answer_migrate_service.is_answer_migrated(
-                                session=session,
-                                answer_id=mongoid_to_uuid(mongo_answer["_id"]),
-                            ):
-                                continue
-                            flow_history_id = await self.answer_migrate_service.get_flow_history_id(
-                                session=session, response=mongo_answer
-                            )
-                            respondent_id = mongoid_to_uuid(
-                                mongo_answer["creatorId"]
-                            )
-                            if not await self.answer_migrate_service.is_respondent_exist(
-                                session=session, respondent_id=respondent_id
-                            ):
-                                skipped_answers_migration += 1
-                                continue
-                            answer: AnswerSchema = await self.answer_migrate_service.create_answer(
-                                session=session,
-                                mongo_answer=mongo_answer,
-                                files=files,
-                                flow_history_id=flow_history_id,
-                                respondent_id=respondent_id,
-                            )
-                            answer_id = answer.id
-                        else:
-                            mongo_id = mongo_answer["meta"]["reviewing"][
-                                "responseId"
-                            ]
-                            mongo_answer_assessment = Item().findOne(
-                                query={"_id": mongo_id}
-                            )
-                            respondent_id = mongoid_to_uuid(
-                                mongo_answer_assessment["creatorId"]
-                            )
-                            if not await self.answer_migrate_service.is_respondent_exist(
-                                session=session, respondent_id=respondent_id
-                            ):
-                                skipped_answers_migration += 1
-                                continue
-                            answer_id = mongoid_to_uuid(mongo_id)
+                            if not is_assessment:
+                                if await self.answer_migrate_service.is_answer_migrated(
+                                    session=regular_or_arbitary_session,
+                                    answer_id=mongoid_to_uuid(
+                                        mongo_answer["_id"]
+                                    ),
+                                ):
+                                    continue
+                                flow_history_id = await self.answer_migrate_service.get_flow_history_id(
+                                    session=regular_session,
+                                    response=mongo_answer,
+                                )
+                                respondent_id = mongoid_to_uuid(
+                                    mongo_answer["creatorId"]
+                                )
+                                if not await self.answer_migrate_service.is_respondent_exist(
+                                    session=regular_session,
+                                    respondent_id=respondent_id,
+                                ):
+                                    anonymous_respondent = await UsersCRUD(
+                                        regular_session
+                                    ).get_anonymous_respondent()
+                                    respondent_id = anonymous_respondent.id
+                                    guest_answers += 1
+                                answer: AnswerSchema = await self.answer_migrate_service.create_answer(
+                                    session=regular_or_arbitary_session,
+                                    mongo_answer=mongo_answer,
+                                    files=files,
+                                    flow_history_id=flow_history_id,
+                                    respondent_id=respondent_id,
+                                )
+                                answer_id = answer.id
+                            else:
+                                mongo_id = mongo_answer["meta"]["reviewing"][
+                                    "responseId"
+                                ]
+                                mongo_answer_assessment = Item().findOne(
+                                    query={"_id": mongo_id}
+                                )
+                                respondent_id = mongoid_to_uuid(
+                                    mongo_answer_assessment["creatorId"]
+                                )
+                                if not await self.answer_migrate_service.is_respondent_exist(
+                                    session=regular_session,
+                                    respondent_id=respondent_id,
+                                ):
+                                    skipped_answers_migration += 1
+                                    continue
 
-                        # Collect answer data to prevent integrity issues
-                        answer_item_data = {
-                            "mongo_answer": mongo_answer,
-                            "answer_id": answer_id,
-                            "is_assessment": is_assessment,
-                        }
+                                answer_id = mongoid_to_uuid(mongo_id)
 
-                        answer_items_data.append(answer_item_data)
-
-                        for note in Note().find(
-                            query={
-                                "appletId": mongo_answer["meta"]["applet"][
-                                    "@id"
-                                ],
-                                "responseId": mongo_answer["_id"],
+                            # Collect answer data to prevent integrity issues
+                            answer_item_data = {
+                                "mongo_answer": mongo_answer,
+                                "answer_id": answer_id,
+                                "is_assessment": is_assessment,
                             }
-                        ):
-                            applet_profile = Profile().find(
-                                query={"_id": note["userProfileId"]}
-                            )[0]
-                            await self.answer_note_migrate_service.create(
-                                session=session,
-                                note=note,
-                                answer_id=answer_id,
-                                applet_profile=applet_profile,
-                            )
+                            answer_items_data.append(answer_item_data)
+
+                            for note in Note().find(
+                                query={
+                                    "appletId": mongo_answer["meta"]["applet"][
+                                        "@id"
+                                    ],
+                                    "responseId": mongo_answer["_id"],
+                                }
+                            ):
+                                applet_profile = Profile().find(
+                                    query={"_id": note["userProfileId"]}
+                                )[0]
+                                await self.answer_note_migrate_service.create(
+                                    session=regular_session,
+                                    note=note,
+                                    answer_id=answer_id,
+                                    applet_profile=applet_profile,
+                                )
                     successfully_answers_migrated += 1
                 except Exception as e:
                     error_answers_migration.append(
@@ -134,9 +174,9 @@ class AnswersMigrateFacade:
         for i, answer_item_data in enumerate(answer_items_data):
             print(f"Migrating {i} answer_item of {len(answer_items_data)}")
             try:
-                async with atomic(session):
+                async with atomic(regular_session):
                     await self.answer_item_migrate_service.create_item(
-                        session=session,
+                        session=regular_session,
                         **answer_item_data,
                     )
             except Exception as e:
@@ -156,6 +196,8 @@ class AnswersMigrateFacade:
             for s in error_answers_migration:
                 print("#" * 10)
                 print(s)
+
+        print(f"Guest answers count {guest_answers}")
 
         self.mongo.close_connection()
 
