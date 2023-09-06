@@ -31,6 +31,9 @@ firebase-admin = "*"
 aio-pika = "*"
 pyld = "*"
 azure-storage-blob = "*"
+taskiq-fastapi = "*"
+taskiq-redis = "*"
+taskiq-aio-pika = "*"
 
 [dev-packages]
 black = "~=22.6"

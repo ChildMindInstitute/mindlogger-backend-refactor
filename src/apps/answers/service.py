@@ -63,6 +63,7 @@ from apps.answers.errors import (
     WrongAnswerGroupVersion,
     WrongRespondentForAnswerGroup,
 )
+from apps.answers.tasks import create_report
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
@@ -73,7 +74,6 @@ from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.utility import RedisCache
-from infrastructure.utility.rabbitmq_queue import RabbitMqQueue
 
 
 class AnswerService:
@@ -217,31 +217,17 @@ class AnswerService:
         if not is_reportable:
             return
 
-        queue = RabbitMqQueue()
-        await queue.connect()
         is_flow_single = await service.is_flows_single_report(answer.id)
-        try:
-            if not is_flow_single:
-                await queue.publish(
-                    data=dict(
-                        submit_id=answer.submit_id,
-                        answer_id=answer.id,
-                        applet_id=answer.applet_id,
-                    )
-                )
-            else:
-                is_flow_finished = await service.is_flow_finished(
-                    answer.submit_id, answer.id
-                )
-                if is_flow_finished:
-                    await queue.publish(
-                        data=dict(
-                            submit_id=answer.submit_id,
-                            applet_id=answer.applet_id,
-                        )
-                    )
-        finally:
-            await queue.close()
+        if not is_flow_single:
+            await create_report.kiq(
+                answer.applet_id, answer.submit_id, answer.id
+            )
+        else:
+            is_flow_finished = await service.is_flow_finished(
+                answer.submit_id, answer.id
+            )
+            if is_flow_finished:
+                await create_report.kiq(answer.applet_id, answer.submit_id)
 
     async def get_review_activities(
         self,
