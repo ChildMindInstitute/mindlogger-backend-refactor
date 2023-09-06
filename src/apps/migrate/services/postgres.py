@@ -49,7 +49,7 @@ class Postgres:
                 'updated_at': datetime(2023, 4, 20, 2, 51, 9, 860665),
                 'is_deleted': False,
                 'email': '3400...031d',
-                'email_aes_encrypted': 'b'6X\xb4\x12...\xf6\xed'' | null
+                'email_encrypted': '3653b319e9...b69b7e3e748' | null
                 'hashed_password': '$2b$12$Y.../PO',
                 'first_name': 'firstname',
                 'last_name': '-',
@@ -77,14 +77,14 @@ class Postgres:
                 "hashed_password": old_user["hashed_password"],
                 "first_name": old_user["first_name"],
                 "last_name": old_user["last_name"],
-                "email_aes_encrypted": old_user["email_aes_encrypted"],
+                "email_encrypted": old_user["email_aes_encrypted"],
             }
-            with suppress(Exception):
+            try:
                 cursor.execute(
                     "INSERT INTO users"
                     "(created_at, updated_at, is_deleted, email, "
                     "hashed_password, id, first_name, last_name, "
-                    "last_seen_at, email_aes_encrypted)"
+                    "last_seen_at, email_encrypted)"
                     "VALUES"
                     f"('{new_user['created_at']}', "
                     f"'{new_user['updated_at']}', "
@@ -92,11 +92,15 @@ class Postgres:
                     f"'{new_user['hashed_password']}', '{new_user['id']}', "
                     f"'{new_user['first_name']}', '{new_user['last_name']}', "
                     f"'{new_user['last_seen_at']}', "
-                    f"'{new_user['email_aes_encrypted']}');"
+                    f"'{new_user['email_encrypted']}');"
                 )
 
                 results[old_user["id_"]] = new_user
                 count += 1
+
+            except Exception as e:
+                print(f"Error: {e}")
+                self.connection.rollback()
 
         self.connection.commit()
         cursor.close()
@@ -131,7 +135,7 @@ class Postgres:
                 "is_modified": False,
             }
 
-            with suppress(Exception):
+            try:
                 cursor.execute(
                     "INSERT INTO users_workspaces"
                     "(user_id, id, created_at, updated_at, is_deleted, "
@@ -148,6 +152,9 @@ class Postgres:
 
                 results.append(user_workspace)
                 count += 1
+            except Exception as e:
+                print(f"Error: {e}")
+                self.connection.rollback()
 
         self.connection.commit()
         cursor.close()
