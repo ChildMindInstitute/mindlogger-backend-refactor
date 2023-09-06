@@ -1,8 +1,8 @@
 from datetime import date, datetime, timedelta
-from typing import Iterable, List
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 
 from apps.schedule.db.schemas import (
     PeriodicitySchema,
@@ -25,6 +25,8 @@ from apps.schedule.crud.notification import (
     NotificationCRUD,
     ReminderCRUD,
 )
+
+from infrastructure.database import atomic
 
 
 __all__ = [
@@ -190,10 +192,8 @@ class EventMigrationService:
 
         periodicity = PeriodicitySchema(**periodicity_data)
 
-        p = await PeriodicityCRUD(self.session)._create(periodicity)
-        print(f"Periodicity is: {p}")
-        print(f"Periodicity id is: {p.id}")
-        print(f"kek id is: {periodicity.id}")
+        async with atomic(self.session):
+            await PeriodicityCRUD(self.session)._create(periodicity)
 
         return periodicity
 
@@ -234,9 +234,12 @@ class EventMigrationService:
 
         event_data["applet_id"] = mongoid_to_uuid(event.applet_id)
 
-        event_data["periodicity_id"] = periodicity
+        event_data["periodicity_id"] = periodicity.id
 
         pg_event = EventSchema(**event_data)
+
+        async with atomic(self.session):
+            await EventCRUD(self.session)._create(pg_event)
 
         return pg_event
 
@@ -245,23 +248,32 @@ class EventMigrationService:
             user = event.data.users[0]
         user_event_data = {
             "user_id": mongoid_to_uuid(user),
-            "event_id": pg_event,
+            "event_id": pg_event.id,
         }
         user_event = UserEventsSchema(**user_event_data)
+
+        async with atomic(self.session):
+            await UserEventsCRUD(self.session)._create(user_event)
 
     async def _create_activity(self, event: MongoEvent, pg_event: EventSchema):
         activity_event_data: dict = {
             "activity_id": mongoid_to_uuid(event.data.activity_id),
-            "event_id": pg_event,
+            "event_id": pg_event.id,
         }
         activity = ActivityEventsSchema(**activity_event_data)
+
+        async with atomic(self.session):
+            await ActivityEventsCRUD(self.session)._create(activity)
 
     async def _create_flow(self, event: MongoEvent, pg_event: EventSchema):
         flow_event_data: dict = {
             "flow_id": mongoid_to_uuid(event.data.activity_flow_id),
-            "event_id": pg_event,
+            "event_id": pg_event.id,
         }
         flow = FlowEventsSchema(**flow_event_data)
+
+        async with atomic(self.session):
+            await FlowEventsCRUD(self.session)._create(flow)
 
     async def _create_notification(
         self, event: MongoEvent, pg_event: EventSchema
@@ -271,30 +283,39 @@ class EventMigrationService:
             for notification in event.data.notifications:
                 if notification.allow:
                     notification_data: dict = {}
-                    if notification.start:
-                        notification_data["from_time"] = datetime.strptime(
-                            notification.start, "%H:%M"
-                        ).time()
+                    if notification.random:
+                        notification_data["trigger_type"] = "RANDOM"
 
-                    if notification.end:
-                        notification_data["to_time"] = datetime.strptime(
-                            notification.end, "%H:%M"
-                        ).time()
+                        if notification.start:
+                            notification_data["from_time"] = datetime.strptime(
+                                notification.start, "%H:%M"
+                            ).time()
 
-                    notification_data["trigger_type"] = (
-                        "random" if notification.random else "fixed"
-                    )
+                        if notification.end:
+                            notification_data["to_time"] = datetime.strptime(
+                                notification.end, "%H:%M"
+                            ).time()
+                    else:
+                        notification_data["trigger_type"] = "FIXED"
 
-                    notification_data["event_id"] = pg_event
+                        if notification.start:
+                            notification_data["at_time"] = datetime.strptime(
+                                notification.start, "%H:%M"
+                            ).time()
+
+                    notification_data["event_id"] = pg_event.id
 
                     notifications.append(
                         NotificationSchema(**notification_data)
                     )
 
+        async with atomic(self.session):
+            await NotificationCRUD(self.session).create_many(notifications)
+
     async def _create_reminder(self, event: MongoEvent, pg_event: EventSchema):
         if event.data.reminder:
             reminder_data: dict = {
-                "event_id": pg_event,
+                "event_id": pg_event.id,
                 "activity_incomplete": int(event.data.reminder.days),
                 "reminder_time": datetime.strptime(
                     event.data.reminder.time, "%H:%M"
@@ -303,35 +324,49 @@ class EventMigrationService:
 
             reminder = ReminderSchema(**reminder_data)
 
+            async with atomic(self.session):
+                await ReminderCRUD(self.session)._create(reminder)
+
     async def run_events_migration(self):
-        # periodicity = await self._create_periodicity(self.events[0])
-        for event in self.events:
-            # Migrate data to PeriodicitySchema
-            periodicity = await self._create_periodicity(event)
+        number_of_errors: int = 0
+        number_of_events_in_mongo: int = len(self.events)
+        for i, event in enumerate(self.events, 1):
+            print(
+                f"Migrate events {i}/{number_of_events_in_mongo}. Event: {event.id}"
+            )
+            try:
+                # Migrate data to PeriodicitySchema
+                periodicity = await self._create_periodicity(event)
 
-            # Migrate data to EventSchema
-            pg_event = await self._create_event(event, periodicity)
+                # Migrate data to EventSchema
+                pg_event = await self._create_event(event, periodicity)
 
-            # Migrate data to UserEventsSchema (if individualized)
-            if event.individualized:
-                await self._create_user(event, pg_event)
+                # Migrate data to UserEventsSchema (if individualized)
+                if event.individualized:
+                    await self._create_user(event, pg_event)
 
-            # Migrate data to ActivityEventsSchema or FlowEventsSchema
-            if event.data.isActivityFlow:
-                if event.data.activity_id:
-                    await self._create_activity(event, pg_event)
-            else:
-                if event.data.activity_flow_id:
-                    await self._create_flow(event, pg_event)
+                # Migrate data to ActivityEventsSchema or FlowEventsSchema
+                if event.data.isActivityFlow:
+                    if event.data.activity_id:
+                        await self._create_activity(event, pg_event)
+                else:
+                    if event.data.activity_flow_id:
+                        await self._create_flow(event, pg_event)
 
-            # Migrate data to NotificationSchema
-            if event.data.notifications:
-                await self._create_notification(event, pg_event)
+                # Migrate data to NotificationSchema
+                if event.data.notifications:
+                    await self._create_notification(event, pg_event)
 
-            # Migrate data to ReminderSchema
-            if (
-                event.data.reminder
-                and event.data.reminder.valid
-                and event.data.reminder.time
-            ):
-                await self._create_reminder(event, pg_event)
+                # Migrate data to ReminderSchema
+                if (
+                    event.data.reminder
+                    and event.data.reminder.valid
+                    and event.data.reminder.time
+                ):
+                    await self._create_reminder(event, pg_event)
+            except IntegrityError as e:
+                number_of_errors += 1
+                print(
+                    f"Erorr during events migration.{str(e._sql_message)}. Number of errors: {number_of_errors}"
+                )
+                continue
