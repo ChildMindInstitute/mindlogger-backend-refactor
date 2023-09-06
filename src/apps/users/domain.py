@@ -84,12 +84,12 @@ class UserUpdateRequest(InternalModel):
 class User(UserCreate):
     id: uuid.UUID
     is_super_admin: bool
-    email_aes_encrypted: bytes | None
+    email_encrypted: str | None
 
     @property
     def plain_email(self) -> str | None:
-        if self.email_aes_encrypted:
-            return decrypt(self.email_aes_encrypted).decode("utf-8")
+        if self.email_encrypted:
+            return decrypt(bytes.fromhex(self.email_encrypted)).decode("utf-8")
         return None
 
     @property

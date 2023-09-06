@@ -27,7 +27,9 @@ async def user_create(
 ) -> Response[PublicUser]:
     async with atomic(session):
         email_hash = hash_sha224(user_create_schema.email)
-        email_aes_encrypted = encrypt(bytes(user_create_schema.email, "utf-8"))
+        email_encrypted = encrypt(
+            bytes(user_create_schema.email, "utf-8")
+        ).hex()
 
         user_schema = await UsersCRUD(session).save(
             UserSchema(
@@ -37,7 +39,7 @@ async def user_create(
                 hashed_password=AuthenticationService.get_password_hash(
                     user_create_schema.password
                 ),
-                email_aes_encrypted=email_aes_encrypted,
+                email_encrypted=email_encrypted,
             )
         )
 
