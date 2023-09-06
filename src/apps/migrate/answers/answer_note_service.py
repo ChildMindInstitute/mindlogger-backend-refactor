@@ -16,6 +16,6 @@ class AnswerNoteMigrateService:
                 note=note["note"],
                 user_id=mongoid_to_uuid(applet_profile["userId"]),
                 activity_id=mongoid_to_uuid(applet_profile["appletId"]),
-                migrated_date=datetime.now(),
+                migrated_date=datetime.utcnow(),
             )
             await AnswerNotesCRUD(session).save(answer_note_schema)

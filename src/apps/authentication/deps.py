@@ -52,7 +52,7 @@ async def get_current_user_for_ws(
             )
             token_data = TokenPayload(**payload)
 
-            if datetime.fromtimestamp(token_data.exp) < datetime.now():
+            if datetime.utcfromtimestamp(token_data.exp) < datetime.utcnow():
                 raise AuthenticationError
         except (JWTError, ValidationError):
             raise AuthenticationError
@@ -85,7 +85,10 @@ def get_current_token(type_: TokenPurpose = TokenPurpose.ACCESS):
 
             token_payload = TokenPayload(**payload)
 
-            if datetime.fromtimestamp(token_payload.exp) < datetime.now():
+            if (
+                datetime.utcfromtimestamp(token_payload.exp)
+                < datetime.utcnow()
+            ):
                 raise AuthenticationError
         except (JWTError, ValidationError):
             raise AuthenticationError

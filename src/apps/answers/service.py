@@ -163,11 +163,7 @@ class AnswerService:
 
     async def _create_answer(self, applet_answer: AppletAnswerCreate):
         pk = self._generate_history_id(applet_answer.version)
-        created_at = datetime.datetime.now()
-        if applet_answer.created_at:
-            created_at = datetime.datetime.fromtimestamp(
-                applet_answer.created_at
-            )
+        created_at = applet_answer.created_at or datetime.datetime.utcnow()
         answer = await AnswersCRUD(self.answer_session).create(
             AnswerSchema(
                 submit_id=applet_answer.submit_id,
@@ -196,15 +192,9 @@ class AnswerService:
             user_public_key=item_answer.user_public_key,
             item_ids=item_answer.item_ids,
             identifier=item_answer.identifier,
-            scheduled_datetime=datetime.datetime.fromtimestamp(
-                item_answer.scheduled_time
-            )
-            if item_answer.scheduled_time
-            else None,
-            start_datetime=datetime.datetime.fromtimestamp(
-                item_answer.start_time
-            ),
-            end_datetime=datetime.datetime.fromtimestamp(item_answer.end_time),
+            scheduled_datetime=item_answer.scheduled_time,
+            start_datetime=item_answer.start_time,
+            end_datetime=item_answer.end_time,
             is_assessment=False,
             scheduled_event_id=item_answer.scheduled_event_id,
             local_end_date=item_answer.local_end_date,
@@ -521,19 +511,19 @@ class AnswerService:
                 AnswerItemSchema(
                     id=assessment.id,
                     created_at=assessment.created_at,
-                    updated_at=datetime.datetime.now(),
+                    updated_at=datetime.datetime.utcnow(),
                     answer_id=answer_id,
                     respondent_id=self.user_id,
                     answer=schema.answer,
                     item_ids=list(map(str, schema.item_ids)),
                     user_public_key=schema.reviewer_public_key,
                     is_assessment=True,
-                    start_datetime=datetime.datetime.now(),
-                    end_datetime=datetime.datetime.now(),
+                    start_datetime=datetime.datetime.utcnow(),
+                    end_datetime=datetime.datetime.utcnow(),
                 )
             )
         else:
-            now = datetime.datetime.now()
+            now = datetime.datetime.utcnow()
             await AnswerItemsCRUD(self.answer_session).create(
                 AnswerItemSchema(
                     answer_id=answer_id,
@@ -1002,7 +992,7 @@ class ReportServerService:
             responses=responses,
             userPublicKeys=user_public_keys,
             userPublicKey=user_public_keys[0],
-            now=datetime.date.today().strftime("%x"),
+            now=datetime.datetime.utcnow().strftime("%x"),
             user=user_info,
             applet=applet_full,
         )

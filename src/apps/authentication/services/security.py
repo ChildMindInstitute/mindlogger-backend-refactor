@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from jose import jwt
 from passlib.context import CryptContext
@@ -93,7 +93,7 @@ class AuthenticationService:
         if not token.payload.rjti:
             return None
 
-        access_exp = datetime.fromtimestamp(token.payload.exp)
+        access_exp = datetime.utcfromtimestamp(token.payload.exp)
         refresh_expires_delta = timedelta(
             minutes=settings.authentication.refresh_token.expiration
         )
@@ -104,7 +104,7 @@ class AuthenticationService:
         refresh_token = InternalToken(
             payload=TokenPayload(
                 sub=token.payload.sub,
-                exp=expire.timestamp(),
+                exp=expire.replace(tzinfo=timezone.utc).timestamp(),
                 jti=token.payload.rjti,
             )
         )

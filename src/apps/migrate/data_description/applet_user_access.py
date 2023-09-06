@@ -38,7 +38,7 @@ class AppletUserDAO:
             (f"'{self.inviter_id}'::UUID" if self.inviter_id else "NULL"),
             f"'{json.dumps(self.meta, cls=EncUUID)}'",
             str(self.is_pinned),
-            f"'{datetime.datetime.now()}'::TIMESTAMP",
-            f"'{datetime.datetime.now()}'::TIMESTAMP",
+            f"'{datetime.datetime.utcnow()}'::TIMESTAMP",
+            f"'{datetime.datetime.utcnow()}'::TIMESTAMP",
         )
         return f"({','.join(values)})"

@@ -17,6 +17,7 @@ from apps.activities.domain.scores_reports import SubscaleSetting
 from apps.activity_flows.domain.flow_full import FlowFull
 from apps.applets.domain.base import AppletBaseInfo
 from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain.custom_validations import datetime_from_ms
 
 
 class Text(InternalModel):
@@ -54,9 +55,9 @@ class ItemAnswerCreate(InternalModel):
     events: str | None
     item_ids: list[uuid.UUID] | None
     identifier: str | None
-    scheduled_time: int | None
-    start_time: int
-    end_time: int
+    scheduled_time: datetime.datetime | None
+    start_time: datetime.datetime
+    end_time: datetime.datetime
     user_public_key: str | None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date | None = None
@@ -66,11 +67,9 @@ class ItemAnswerCreate(InternalModel):
     def convert_item_ids(cls, value: list[uuid.UUID]):
         return list(map(str, value))
 
-    @validator("start_time", "end_time", "scheduled_time")
-    def convert_time_to_unix_timestamp(cls, value: int):
-        if value:
-            return value / 1000  # wtf, rework this
-        return value
+    _dates_from_ms = validator(
+        "start_time", "end_time", "scheduled_time", pre=True, allow_reuse=True
+    )(datetime_from_ms)
 
 
 class AnswerItemSchemaAnsweredActivityItem(InternalModel):
@@ -98,15 +97,13 @@ class AppletAnswerCreate(InternalModel):
     is_flow_completed: bool | None = None
     activity_id: uuid.UUID
     answer: ItemAnswerCreate
-    created_at: int | None
+    created_at: datetime.datetime | None
     alerts: list[AnswerAlert] = Field(default_factory=list)
     client: ClientMeta
 
-    @validator("created_at")
-    def convert_time_to_unix_timestamp(cls, value: int):
-        if value:
-            return value / 1000  # wtf, rework this
-        return value
+    _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(
+        datetime_from_ms
+    )
 
 
 class AssessmentAnswerCreate(InternalModel):
@@ -315,7 +312,7 @@ class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
     @validator("start_datetime", "end_datetime", "scheduled_datetime")
     def convert_to_timestamp(cls, value: datetime.datetime):
         if value:
-            return value.timestamp()
+            return value.replace(tzinfo=datetime.timezone.utc).timestamp()
         return None
 
 

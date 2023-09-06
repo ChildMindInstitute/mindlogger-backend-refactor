@@ -99,8 +99,8 @@ class AppletMigrationService:
                 else None,
                 created_at=create_data.extra_fields["created"],
                 updated_at=create_data.extra_fields["updated"],
-                migrated_date=datetime.datetime.now(),
-                migrated_updated=datetime.datetime.now(),
+                migrated_date=datetime.datetime.utcnow(),
+                migrated_updated=datetime.datetime.utcnow(),
             )
         )
         return AppletMigratedFull.from_orm(schema)
@@ -167,8 +167,8 @@ class AppletMigrationService:
                 report_email_body=update_data.report_email_body,
                 created_at=update_data.extra_fields["created"],
                 updated_at=update_data.extra_fields["updated"],
-                migrated_date=datetime.datetime.now(),
-                migrated_updated=datetime.datetime.now(),
+                migrated_date=datetime.datetime.utcnow(),
+                migrated_updated=datetime.datetime.utcnow(),
             ),
         )
         return AppletMigratedFull.from_orm(schema)

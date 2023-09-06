@@ -120,7 +120,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
     async def update_last_seen_by_id(self, id_: uuid.UUID):
         query = update(UserSchema)
         query = query.where(UserSchema.id == id_)
-        query = query.values(last_seen_at=datetime.datetime.now())
+        query = query.values(last_seen_at=datetime.datetime.utcnow())
         await self._execute(query)
 
     async def exist_by_id(self, id_: uuid.UUID) -> bool:

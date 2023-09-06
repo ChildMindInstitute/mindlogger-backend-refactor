@@ -48,7 +48,7 @@ class AnswerMigrationService:
                 mongoid_to_uuid(mongo_answer["meta"]["activity"]["@id"])
             ),
             client=mongo_answer["meta"]["client"],
-            migrated_date=datetime.now(),
+            migrated_date=datetime.utcnow(),
             migrated_data=self._get_migrated_data(files),
         )
         answer = await AnswersCRUD(session).create(answer_schema)
