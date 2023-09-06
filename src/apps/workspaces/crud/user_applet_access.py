@@ -368,8 +368,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "applet_id": stmt.excluded.applet_id,
                 "role": stmt.excluded.role,
                 "is_deleted": stmt.excluded.is_deleted,
-                "created_at": datetime.now(),
-                "updated_at": datetime.now(),
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
                 "meta": stmt.excluded.meta,
             },
         )

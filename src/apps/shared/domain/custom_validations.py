@@ -1,3 +1,4 @@
+import datetime
 import mimetypes
 import uuid
 from gettext import gettext as _
@@ -106,4 +107,18 @@ def validate_uuid(value):
         return str(uuid.uuid4())
     if not isinstance(value, str) or not uuid.UUID(value):
         raise InvalidUUIDError()
+    return value
+
+
+def datetime_from_ms(value):
+    if value and isinstance(value, int):
+        if (
+            value
+            > datetime.datetime(
+                year=2000, month=1, day=1, tzinfo=datetime.timezone.utc
+            ).timestamp()
+            * 1000
+        ):  # ms, assume date > 2000-01-01
+            value = value / 1000  # wtf, rework this
+        return datetime.datetime.utcfromtimestamp(value)
     return value

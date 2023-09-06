@@ -24,6 +24,7 @@ from apps.authentication.errors import (
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.encryption import encrypt
+from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
 from apps.users.domain import PublicUser, User
 from apps.users.errors import UserNotFound
@@ -94,7 +95,7 @@ async def refresh_access_token(
             )
             token_data = TokenPayload(**payload)
 
-            if datetime.fromtimestamp(token_data.exp) < datetime.now():
+            if datetime.utcfromtimestamp(token_data.exp) < datetime.utcnow():
                 raise AuthenticationError
 
             if not (user_id := payload[JWTClaim.sub]):
@@ -140,7 +141,7 @@ async def delete_access_token(
             await UserDeviceService(session, user.id).remove_device(
                 schema.device_id
             )
-    return ""
+    return EmptyResponse()
 
 
 async def delete_refresh_token(
@@ -158,4 +159,4 @@ async def delete_refresh_token(
             await UserDeviceService(session, token.payload.sub).remove_device(
                 schema.device_id
             )
-    return ""
+    return EmptyResponse()

@@ -666,8 +666,8 @@ class Mongo:
                         owner_id=owner_id,
                         inviter_id=self.inviter_id(doc["userId"], applet_id),
                         role=convert_role(role_name),
-                        created_at=datetime.datetime.now(),
-                        updated_at=datetime.datetime.now(),
+                        created_at=datetime.datetime.utcnow(),
+                        updated_at=datetime.datetime.utcnow(),
                         meta=meta,
                         is_pinned=self.is_pinned(doc["userId"]),
                         is_deleted=False,
@@ -719,8 +719,8 @@ class Mongo:
                     pinned_user_id=mongoid_to_uuid(manager_profile["userId"]),
                     owner_id=mongoid_to_uuid(owner_id),
                     role=convert_role(role),
-                    created_at=datetime.datetime.now(),
-                    updated_at=datetime.datetime.now(),
+                    created_at=datetime.datetime.utcnow(),
+                    updated_at=datetime.datetime.utcnow(),
                 )
                 pin_dao_list.add(dao)
         return pin_dao_list
@@ -774,7 +774,7 @@ class Mongo:
         order = next(order_it, None)
         if not order or order.get("_pin_order"):
             return None
-        now = datetime.datetime.now()
+        now = datetime.datetime.utcnow()
         return now + datetime.timedelta(seconds=order["_pin_order"])
 
     def get_folder_mapping(
@@ -797,8 +797,8 @@ class Mongo:
                         name=folder["name"],
                         creator_id=mongoid_to_uuid(folder["creatorId"]),
                         workspace_id=mongoid_to_uuid(folder["parentId"]),
-                        migrated_date=datetime.datetime.now(),
-                        migrated_update=datetime.datetime.now(),
+                        migrated_date=datetime.datetime.utcnow(),
+                        migrated_update=datetime.datetime.utcnow(),
                         is_deleted=False,
                     )
                 )
@@ -812,8 +812,8 @@ class Mongo:
                             created_at=applet["created"],
                             updated_at=applet["updated"],
                             pinned_at=pinned_at,
-                            migrated_date=datetime.datetime.now(),
-                            migrated_update=datetime.datetime.now(),
+                            migrated_date=datetime.datetime.utcnow(),
+                            migrated_update=datetime.datetime.utcnow(),
                             is_deleted=False,
                         )
                     )

@@ -37,20 +37,20 @@ class Base(_Base):  # type: ignore
     )
     created_at = Column(
         DateTime(),
-        default=datetime.now,
+        default=datetime.utcnow,
         server_default=text("timezone('utc', now())"),
     )
     updated_at = Column(
         DateTime(),
-        default=datetime.now,
-        onupdate=datetime.now,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
         server_default=text("timezone('utc', now())"),
         server_onupdate=text("timezone('utc', now())"),
     )
     migrated_date = Column(
         DateTime(),
         default=None,
-        onupdate=datetime.now,
+        onupdate=datetime.utcnow,
         server_default=None,
         server_onupdate=text("timezone('utc', now())"),
         nullable=True,
@@ -58,7 +58,7 @@ class Base(_Base):  # type: ignore
     migrated_updated = Column(
         DateTime(),
         default=None,
-        onupdate=datetime.now,
+        onupdate=datetime.utcnow,
         server_default=None,
         server_onupdate=text("timezone('utc', now())"),
         nullable=True,

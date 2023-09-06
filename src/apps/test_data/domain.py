@@ -8,7 +8,7 @@ from apps.shared.domain import PublicModel
 
 class AppletGeneration(PublicModel):
     anchor_date_time: datetime = Field(
-        description="Anchor date time", default=datetime.now()
+        description="Anchor date time", default=datetime.utcnow()
     )
     encryption: Encryption
 

@@ -870,7 +870,6 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             literal(0).label("folders_applet_count"),
             literal("2").label("ordering"),
             AppletSchema.description,
-            access_query,
             activity_subquery,
         )
         query = query.join(
