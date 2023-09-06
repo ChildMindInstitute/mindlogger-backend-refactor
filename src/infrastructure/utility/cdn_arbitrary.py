@@ -43,6 +43,6 @@ class CdnClientBlob(CDNClient):
     def configure_client(self, _):
         return BlobServiceClient.from_connection_string(self.sec_key)
 
-    def upload(self, path, body: BinaryIO):
+    def _upload(self, path, body: BinaryIO):
         blob_client = self.client.get_blob_client(blob=path)
         blob_client.upload_blob(body)
