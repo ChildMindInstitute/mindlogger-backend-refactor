@@ -103,7 +103,7 @@ class WorkspaceManager(InternalModel):
     id: uuid.UUID
     first_name: str
     last_name: str
-    email: str
+    email_encrypted: str
     roles: list[Role]
     last_seen: datetime.datetime
     is_pinned: bool = False
@@ -138,6 +138,12 @@ class WorkspaceManager(InternalModel):
             applets[applet_id] = applet
 
         return list(applets.values())
+
+    @property
+    def plain_email(self) -> str | None:
+        if self.email_encrypted:
+            return decrypt(bytes.fromhex(self.email_encrypted)).decode("utf-8")
+        return None
 
     @property
     def plain_first_name(self) -> str | None:

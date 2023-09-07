@@ -731,7 +731,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserSchema.id,
                 UserSchema.first_name,
                 UserSchema.last_name,
-                UserSchema.email,
+                UserSchema.email_encrypted,
 
                 func.coalesce(
                     UserSchema.last_seen_at, UserSchema.created_at

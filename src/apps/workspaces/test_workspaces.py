@@ -396,6 +396,18 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 6
 
+        plain_emails = [
+            "reviewer@mail.com",
+            "tom@mindlogger.com",
+            "lucy@gmail.com",
+            "bob@gmail.com",
+            "mike@gmail.com",
+            "mike2@gmail.com",
+        ]
+
+        for result in response.json()["result"]:
+            assert result["email"] in plain_emails
+
         # test search
         search_params = {
             "7484f34a-3acc-4ee6-8a94-fd7299502fa2": [
