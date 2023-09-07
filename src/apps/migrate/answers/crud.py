@@ -7,9 +7,10 @@ from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.answers.crud.answers import AnswersCRUD
 from apps.migrate.utilities import uuid_to_mongoid
+from apps.users import UsersCRUD, UserSchema
 
 
-class MigrateAnswersCRUD(AnswersCRUD):
+class AnswersMigrateCRUD(AnswersCRUD):
     async def get_answers_migration_params(self) -> list[dict]:
         query: Query = select(
             ActivityHistorySchema.id,
@@ -41,3 +42,13 @@ class MigrateAnswersCRUD(AnswersCRUD):
         db_result = await self._execute(query)
         db_result = db_result.scalars().one_or_none()
         return db_result
+
+
+class MigrateUsersMCRUD(UsersCRUD):
+    async def get_legacy_deleted_respondent(self) -> UserSchema | None:
+        query: Query = select(UserSchema)
+        query = query.where(
+            UserSchema.is_legacy_deleted_respondent == True  # noqa: E712
+        )
+        db_result = await self._execute(query)
+        return db_result.scalars().one_or_none()
