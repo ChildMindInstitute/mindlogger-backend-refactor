@@ -444,3 +444,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             activities=activities,
             activity_flows=flows,
         )
+
+    async def get_latest_applet_version(self, applet_id: uuid.UUID) -> str:
+        query: Query = select(AnswerSchema.applet_history_id)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.order_by(AnswerSchema.version.desc())
+        query = query.limit(1)
+        db_result = await self._execute(query)
+        res = db_result.first()
+        return res[0] if res else None
