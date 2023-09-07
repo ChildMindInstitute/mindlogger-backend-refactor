@@ -82,91 +82,98 @@ def validate_score_and_sections(values: dict):
         score_condition_item_ids = []
         if not hasattr(scores_and_reports, "reports"):
             return
-        for report in scores_and_reports.reports:
-            if report.type == ReportType.score:
-                score_item_ids.append(report.id)
-                # check if all item names are same as values.name
-                for item in report.items_score:
-                    if item not in item_names:
-                        raise IncorrectScoreItemError()
-                    else:
-                        score_item_index = item_names.index(item)
-                        if items[score_item_index].response_type not in [
-                            ResponseType.SINGLESELECT,
-                            ResponseType.MULTISELECT,
-                            ResponseType.SLIDER,
-                        ]:
-                            raise IncorrectScoreItemTypeError()
-                        if not items[score_item_index].config.add_scores:
-                            raise IncorrectScoreItemConfigError()
 
-                for item in report.items_print:
-                    if item not in item_names:
-                        raise IncorrectScorePrintItemError()
-                    else:
-                        if items[item_names.index(item)].response_type not in [
-                            ResponseType.SINGLESELECT,
-                            ResponseType.MULTISELECT,
-                            ResponseType.SLIDER,
-                            ResponseType.TEXT,
-                        ]:
-                            raise IncorrectScorePrintItemTypeError()
+        scores = filter(
+            lambda r: r.type == ReportType.score, scores_and_reports.reports
+        )
+        sections = filter(
+            lambda r: r.type == ReportType.section, scores_and_reports.reports
+        )
 
-                if report.conditional_logic:
-                    for conditional_logic in report.conditional_logic:
-                        score_condition_item_ids.append(conditional_logic.id)
-                        for item in conditional_logic.items_print:
-                            if item not in item_names:
-                                raise IncorrectScorePrintItemError()
-                            else:
-                                if items[
-                                    item_names.index(item)
-                                ].response_type not in [
-                                    ResponseType.SINGLESELECT,
-                                    ResponseType.MULTISELECT,
-                                    ResponseType.SLIDER,
-                                    ResponseType.TEXT,
-                                ]:
-                                    raise IncorrectScorePrintItemTypeError()
+        for report in list(scores):
+            score_item_ids.append(report.id)
+            # check if all item names are same as values.name
+            for item in report.items_score:
+                if item not in item_names:
+                    raise IncorrectScoreItemError()
+                else:
+                    score_item_index = item_names.index(item)
+                    if items[score_item_index].response_type not in [
+                        ResponseType.SINGLESELECT,
+                        ResponseType.MULTISELECT,
+                        ResponseType.SLIDER,
+                    ]:
+                        raise IncorrectScoreItemTypeError()
+                    if not items[score_item_index].config.add_scores:
+                        raise IncorrectScoreItemConfigError()
 
-            # validate items in sections
-            elif report.type == ReportType.section:
-                for item in report.items_print:
-                    if item not in item_names:
-                        raise IncorrectSectionPrintItemError()
-                    else:
-                        if items[item_names.index(item)].response_type not in [
-                            ResponseType.SINGLESELECT,
-                            ResponseType.MULTISELECT,
-                            ResponseType.SLIDER,
-                            ResponseType.TEXT,
-                        ]:
-                            raise IncorrectSectionPrintItemTypeError()
+            for item in report.items_print:
+                if item not in item_names:
+                    raise IncorrectScorePrintItemError()
+                else:
+                    if items[item_names.index(item)].response_type not in [
+                        ResponseType.SINGLESELECT,
+                        ResponseType.MULTISELECT,
+                        ResponseType.SLIDER,
+                        ResponseType.TEXT,
+                    ]:
+                        raise IncorrectScorePrintItemTypeError()
 
-                if report.conditional_logic:
-                    if hasattr(report.conditional_logic, "items_print"):
-                        for item in report.conditional_logic.items_print:
-                            if item not in item_names:
-                                raise IncorrectSectionPrintItemError()
-                            else:
-                                if items[
-                                    item_names.index(item)
-                                ].response_type not in [
-                                    ResponseType.SINGLESELECT,
-                                    ResponseType.MULTISELECT,
-                                    ResponseType.SLIDER,
-                                    ResponseType.TEXT,
-                                ]:
-                                    raise IncorrectSectionPrintItemTypeError()
-                    if hasattr(report.conditional_logic, "conditions"):
-                        for item in report.conditional_logic.conditions:
-                            if (
-                                item.item_name not in item_names
-                                or item.item_name not in score_item_ids
-                                or item.item_name
-                                not in score_condition_item_ids
-                            ):
-                                raise IncorrectSectionConditionItemError()
+            if report.conditional_logic:
+                for conditional_logic in report.conditional_logic:
+                    score_condition_item_ids.append(conditional_logic.id)
+                    for item in conditional_logic.items_print:
+                        if item not in item_names:
+                            raise IncorrectScorePrintItemError()
+                        else:
+                            if items[
+                                item_names.index(item)
+                            ].response_type not in [
+                                ResponseType.SINGLESELECT,
+                                ResponseType.MULTISELECT,
+                                ResponseType.SLIDER,
+                                ResponseType.TEXT,
+                            ]:
+                                raise IncorrectScorePrintItemTypeError()
+
+        for report in list(sections):
+            for item in report.items_print:
+                if item not in item_names:
+                    raise IncorrectSectionPrintItemError()
+                else:
+                    if items[item_names.index(item)].response_type not in [
+                        ResponseType.SINGLESELECT,
+                        ResponseType.MULTISELECT,
+                        ResponseType.SLIDER,
+                        ResponseType.TEXT,
+                    ]:
+                        raise IncorrectSectionPrintItemTypeError()
+
+            if report.conditional_logic:
+                if hasattr(report.conditional_logic, "items_print"):
+                    for item in report.conditional_logic.items_print:
+                        if item not in item_names:
+                            raise IncorrectSectionPrintItemError()
+                        else:
+                            if items[
+                                item_names.index(item)
+                            ].response_type not in [
+                                ResponseType.SINGLESELECT,
+                                ResponseType.MULTISELECT,
+                                ResponseType.SLIDER,
+                                ResponseType.TEXT,
+                            ]:
+                                raise IncorrectSectionPrintItemTypeError()
+                if hasattr(report.conditional_logic, "conditions"):
+                    for item in report.conditional_logic.conditions:
+                        dependency_conditions = (
+                            item.item_name in item_names,
+                            item.item_name in score_item_ids,
+                            item.item_name in score_condition_item_ids,
+                        )
+
+                        if not any(dependency_conditions):
+                            raise IncorrectSectionConditionItemError()
 
     return values
 
