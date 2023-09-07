@@ -2,7 +2,8 @@ from datetime import datetime
 from apps.answers.crud.notes import AnswerNotesCRUD
 from apps.answers.db.schemas import AnswerNoteSchema
 from apps.migrate.utilities import mongoid_to_uuid
-from infrastructure.database import session_manager, atomic
+from apps.shared.encryption import encrypt
+from infrastructure.database import atomic
 
 
 class AnswerNoteMigrateService:
@@ -13,7 +14,7 @@ class AnswerNoteMigrateService:
                 created_at=note["created"],
                 updated_at=note["updated"],
                 answer_id=answer_id,
-                note=note["note"],
+                note=encrypt(bytes(note["note"], "utf-8")).hex(),
                 user_id=mongoid_to_uuid(applet_profile["userId"]),
                 activity_id=mongoid_to_uuid(applet_profile["appletId"]),
                 migrated_date=datetime.utcnow(),

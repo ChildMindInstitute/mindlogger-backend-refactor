@@ -2,7 +2,6 @@ import asyncio
 
 from apps.answers.db.schemas import AnswerSchema
 from apps.answers.deps.preprocess_arbitrary import (
-    get_answer_session,
     get_arbitrary_info,
 )
 from apps.girderformindlogger.models.note import Note
@@ -11,12 +10,15 @@ from apps.girderformindlogger.models.item import Item
 from apps.migrate.answers.answer_item_service import AnswerItemMigrationService
 from apps.migrate.answers.answer_note_service import AnswerNoteMigrateService
 from apps.migrate.answers.answer_service import AnswerMigrationService
-from apps.migrate.answers.crud import MigrateAnswersCRUD
+from apps.migrate.answers.crud import AnswersMigrateCRUD, MigrateUsersMCRUD
+from apps.migrate.answers.user_applet_access import (
+    MigrateUserAppletAccessService,
+)
+from apps.migrate.answers.user_service import UserMigrateService
 
 from apps.migrate.services.mongo import Mongo
 from apps.migrate.utilities import mongoid_to_uuid
-from apps.users import UsersCRUD
-from apps.users.services.user import UserService
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from infrastructure.database import session_manager, atomic
 
 
@@ -39,7 +41,7 @@ class AnswersMigrateFacade:
         return session
 
     async def migrate(self):
-        guest_answers = 0
+        legacy_deleted_respondent_answers = 0
         total_answers = 0
         successfully_answers_migrated = 0
         error_answers_migration = []
@@ -48,10 +50,12 @@ class AnswersMigrateFacade:
 
         regular_session = session_manager.get_session()
 
-        await UserService(regular_session).create_anonymous_respondent()
+        await UserMigrateService(
+            regular_session
+        ).create_legacy_deleted_respondent()
 
         async with atomic(regular_session):
-            answers_migration_params = await MigrateAnswersCRUD(
+            answers_migration_params = await AnswersMigrateCRUD(
                 regular_session
             ).get_answers_migration_params()
 
@@ -107,11 +111,33 @@ class AnswersMigrateFacade:
                                     session=regular_session,
                                     respondent_id=respondent_id,
                                 ):
-                                    anonymous_respondent = await UsersCRUD(
+                                    legacy_deleted_respondent = (
+                                        await MigrateUsersMCRUD(
+                                            regular_session
+                                        ).get_legacy_deleted_respondent()
+                                    )
+                                    respondent_id = (
+                                        legacy_deleted_respondent.id
+                                    )
+
+                                    applet_id = mongoid_to_uuid(
+                                        str(
+                                            mongo_answer["meta"]["applet"][
+                                                "@id"
+                                            ]
+                                        )
+                                    )
+                                    applet_owner = await UserAppletAccessCRUD(
                                         regular_session
-                                    ).get_anonymous_respondent()
-                                    respondent_id = anonymous_respondent.id
-                                    guest_answers += 1
+                                    ).get_applet_owner(applet_id)
+
+                                    await MigrateUserAppletAccessService(
+                                        regular_session,
+                                        applet_owner.user_id,
+                                        applet_id,
+                                    ).add_role_for_legacy_deleted_respondent()
+
+                                    legacy_deleted_respondent_answers += 1
                                 answer: AnswerSchema = await self.answer_migrate_service.create_answer(
                                     session=regular_or_arbitary_session,
                                     mongo_answer=mongo_answer,
@@ -197,7 +223,9 @@ class AnswersMigrateFacade:
                 print("#" * 10)
                 print(s)
 
-        print(f"Guest answers count {guest_answers}")
+        print(
+            f"Legacy deleted users answers count {legacy_deleted_respondent_answers}"
+        )
 
         self.mongo.close_connection()
 
