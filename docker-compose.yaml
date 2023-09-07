@@ -48,23 +48,37 @@ services:
     volumes:
       - ./:/app/
 
-  report-consumer:
-    stdin_open: true
-    tty: true
-    image: mindlogger_consumer
+  worker:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-    container_name: mindlogger_consumer
+    image: mindlogger_worker
+    container_name: mindlogger_worker
     entrypoint: /fastapi-entrypoint
-    command: /fastapi-consume-report
+    command: ['taskiq', 'worker', 'src.broker:broker', '-fsd']
     env_file: .env
+    volumes:
+      - ./:/app/
     depends_on:
       - postgres
       - redis
       - rabbitmq
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: ./compose/fastapi/Dockerfile
+    image: mindlogger_scheduler
+    container_name: mindlogger_scheduler
+    entrypoint: /fastapi-entrypoint
+    command: ['taskiq', 'scheduler', 'src.scheduler:scheduler', '-fsd']
+    env_file: .env
     volumes:
       - ./:/app/
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
 
   mailhog:
     image: mailhog/mailhog:v1.0.0
