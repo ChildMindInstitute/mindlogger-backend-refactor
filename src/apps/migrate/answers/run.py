@@ -41,7 +41,7 @@ class AnswersMigrateFacade:
             return arbitary_session
         return session
 
-    async def _collect_migratable(self):
+    async def _collect_migratable_answers(self):
         migratable_data_count = 0
 
         regular_session = session_manager.get_session()
@@ -104,7 +104,7 @@ class AnswersMigrateFacade:
 
         regular_session = session_manager.get_session()
 
-        async for answer_with_files in self._collect_migratable():
+        async for answer_with_files in self._collect_migratable_answers():
             total_answers += 1
             query = answer_with_files["query"]
             mongo_answer = answer_with_files["answer"]
@@ -181,6 +181,8 @@ class AnswersMigrateFacade:
                             mongo_answer_assessment = Item().findOne(
                                 query={"_id": mongo_id}
                             )
+                            if not mongo_answer_assessment:
+                                continue
                             respondent_id = mongoid_to_uuid(
                                 mongo_answer_assessment["creatorId"]
                             )
