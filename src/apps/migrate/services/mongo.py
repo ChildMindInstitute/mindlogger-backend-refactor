@@ -138,6 +138,19 @@ def patch_broken_applets(
                     == "IUQ_Wd_Social_Device"
                 ):
                     property["reprolib:terms/isVis"] = [{"@value": True}]
+
+
+    repo_replacements = [
+        ('mtg137/Stability_tracker_applet_touch', 'ChildMindInstitute/stability_touch_applet_schema'),
+        ('mtg137/Stability_tracker_applet', 'ChildMindInstitute/stability_tilt_applet_schema'),
+        ('ChildMindInstitute/A-B-Trails', 'ChildMindInstitute/mindlogger-trails-task'),
+    ]
+    for (what, repl) in repo_replacements:
+        if 'schema:image' in applet_ld and what in applet_ld['schema:image']:
+            contents = json.dumps(applet_ld)
+            contents = contents.replace(what, repl)
+            applet_ld = json.loads(contents)
+
     return applet_ld, applet_mongo
 
 
