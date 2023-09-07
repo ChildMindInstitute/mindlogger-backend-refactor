@@ -1,4 +1,5 @@
 import asyncio
+import sys
 
 from apps.answers.db.schemas import AnswerSchema
 from apps.answers.deps.preprocess_arbitrary import (
@@ -59,6 +60,10 @@ class AnswersMigrateFacade:
                 regular_session
             ).get_answers_migration_params()
 
+            print(
+                f"Answer migration params count: {len(answers_migration_params)}"
+            )
+
         for answer_migration_params in answers_migration_params:
             anwswers_with_files = self.mongo.get_answers_with_files(
                 answer_migration_queries=self.mongo.get_answer_migration_queries(
@@ -69,6 +74,33 @@ class AnswersMigrateFacade:
                 if not answer_with_files:
                     continue
                 total_answers += 1
+
+                # ONLY FOR TESTING NEEDS !!!
+
+                if total_answers == 10000:
+                    print(f"Total answers count: {total_answers}")
+                    print(
+                        f"Successfully answers migrated count: {successfully_answers_migrated}"
+                    )
+                    print(
+                        f"Skipped answers migration count: {skipped_answers_migration}"
+                    )
+                    print(
+                        f"Error answers migration count: {len(error_answers_migration)}"
+                    )
+                    if error_answers_migration:
+                        print(
+                            f"Error asnwers migration data (mongo query, mongo item id, error):"
+                        )
+                        for s in error_answers_migration:
+                            print("#" * 10)
+                            print(s)
+
+                    print(
+                        f"Legacy deleted users answers count {legacy_deleted_respondent_answers}"
+                    )
+
+                    exit()
 
                 query = answer_with_files["query"]
                 mongo_answer = answer_with_files["answer"]
