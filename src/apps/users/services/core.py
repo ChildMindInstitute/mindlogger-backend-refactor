@@ -39,11 +39,11 @@ class PasswordRecoveryService:
         self, schema: PasswordRecoveryRequest
     ) -> PublicUser:
 
-        encrypted_email = encrypt(bytes(schema.email, "utf-8"))
+        encrypted_email = encrypt(bytes(schema.email, "utf-8")).hex()
 
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
-        if user.email_aes_encrypted != encrypted_email:
+        if user.email_encrypted != encrypted_email:
             user = await UsersCRUD(self.session).update_encrypted_email(
                 user, encrypted_email
             )

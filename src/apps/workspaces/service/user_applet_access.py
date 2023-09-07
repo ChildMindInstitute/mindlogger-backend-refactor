@@ -32,7 +32,7 @@ class UserAppletAccessService:
             user = await UsersCRUD(self.session).get_by_id(user_id)
             meta.update(
                 secretUserId=str(uuid.uuid4()),
-                nickname=f"{user.first_name} {user.last_name}",
+                nickname=f"{user.plain_first_name} {user.plain_last_name}",
             )
 
         return meta
