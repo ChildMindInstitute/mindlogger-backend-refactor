@@ -33,7 +33,7 @@ class CDNClient:
         except KeyError:
             print("CDN configuration is not full")
 
-    def upload(self, path, body: BinaryIO):
+    def _upload(self, path, body: BinaryIO):
         if self.env == "testing":
             return
         self.client.upload_fileobj(
@@ -41,6 +41,11 @@ class CDNClient:
             Key=path,
             Bucket=self.config.bucket,
         )
+
+    async def upload(self, path, body: BinaryIO):
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(self._upload, path, body)
+        await asyncio.wrap_future(future)
 
     def generate_key(self, scope, unique, filename):
         return f"mindlogger/{scope}/{unique}/{filename}"
