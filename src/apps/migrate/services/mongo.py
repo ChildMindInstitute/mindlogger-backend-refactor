@@ -480,14 +480,15 @@ class Mongo:
         converted.extra_fields["version"] = applet["meta"]["applet"].get(
             "version", "0.0.1"
         )
-        converted.encryption = Encryption(
-            public_key=json.dumps(
-                applet["meta"]["encryption"]["appletPublicKey"]
-            ),
-            prime=json.dumps(applet["meta"]["encryption"]["appletPrime"]),
-            base=json.dumps(applet["meta"]["encryption"]["base"]),
-            account_id=str(applet["accountId"]),
-        )
+        if 'encryption' in applet['meta']:
+            converted.encryption = Encryption(
+                public_key=json.dumps(
+                    applet["meta"]["encryption"]["appletPublicKey"]
+                ),
+                prime=json.dumps(applet["meta"]["encryption"]["appletPrime"]),
+                base=json.dumps(applet["meta"]["encryption"]["base"]),
+                account_id=str(applet["accountId"]),
+            )
         converted = self._extract_ids(converted, applet_id)
 
         return converted
