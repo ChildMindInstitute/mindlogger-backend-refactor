@@ -95,13 +95,19 @@ class User(UserCreate):
     @property
     def plain_first_name(self) -> str | None:
         if self.first_name:
-            return decrypt(bytes.fromhex(self.first_name)).decode("utf-8")
+            try:
+                return decrypt(bytes.fromhex(self.first_name)).decode("utf-8")
+            except:
+                return self.first_name
         return None
 
     @property
     def plain_last_name(self) -> str | None:
         if self.last_name:
-            return decrypt(bytes.fromhex(self.last_name)).decode("utf-8")
+            try:
+                return decrypt(bytes.fromhex(self.last_name)).decode("utf-8")
+            except:
+                return self.last_name
         return None
 
 
