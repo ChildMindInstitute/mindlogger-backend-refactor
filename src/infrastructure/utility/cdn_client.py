@@ -12,10 +12,11 @@ from config.cdn import CDNSettings
 
 
 class CDNClient:
+    default_container_name = "mindlogger"
+
     def __init__(self, config: CDNSettings, env: str):
         self.config = config
         self.env = env
-        self.ttl_signed_urls = config.ttl_signed_urls
         self.client = self.configure_client(config)
 
     def configure_client(self, config):
@@ -48,7 +49,7 @@ class CDNClient:
         await asyncio.wrap_future(future)
 
     def generate_key(self, scope, unique, filename):
-        return f"mindlogger/{scope}/{unique}/{filename}"
+        return f"{self.default_container_name}/{scope}/{unique}/{filename}"
 
     def generate_private_url(self, key):
         return f"s3://{self.config.bucket}/{key}"
@@ -82,16 +83,19 @@ class CDNClient:
         )
         return file, media_type
 
-    async def generate_presigned_url(self, private_url):
+    async def _generate_presigned_url(self, key):
+        url = self.client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": self.config.bucket,
+                "Key": key,
+            },
+            ExpiresIn=self.config.ttl_signed_urls,
+        )
+        return url
+
+    async def generate_presigned_url(self, key):
         with ThreadPoolExecutor() as executor:
-            future = executor.submit(
-                self.client.generate_presigned_url,
-                "get_object",
-                Params={
-                    "Bucket": self.config.bucket,
-                    "Key": private_url,
-                },
-                ExpiresIn=self.ttl_signed_urls,
-            )
+            future = executor.submit(self._generate_presigned_url, key)
             url = await asyncio.wrap_future(future)
             return url

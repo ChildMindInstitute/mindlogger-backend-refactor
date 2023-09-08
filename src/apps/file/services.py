@@ -80,6 +80,10 @@ class S3PresignService:
         return bool(self.access)
 
 
+class GCPPresignService:
+    pass
+
+
 class PresignedUrlsGeneratorService:
     def __init__(
         self, session: AsyncSession, user_id: uuid.UUID, applet_id: uuid.UUID
