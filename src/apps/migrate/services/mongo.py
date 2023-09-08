@@ -27,6 +27,7 @@ from apps.jsonld_converter.dependencies import (
 from apps.migrate.data_description.applet_user_access import AppletUserDAO
 from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
+from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
 from apps.migrate.exception.exception import (
     FormatldException,
     EmptyAppletException,
@@ -660,11 +661,14 @@ class Mongo:
                         if applet.get("creatorId")
                         else None
                     )
+                    inviter_id = self.inviter_id(doc["userId"], applet_id)
+                    if not inviter_id:
+                        inviter_id = owner_id
                     access = AppletUserDAO(
                         applet_id=mongoid_to_uuid(applet_id),
                         user_id=mongoid_to_uuid(doc["userId"]),
                         owner_id=owner_id,
-                        inviter_id=self.inviter_id(doc["userId"], applet_id),
+                        inviter_id=inviter_id,
                         role=convert_role(role_name),
                         created_at=datetime.datetime.utcnow(),
                         updated_at=datetime.datetime.utcnow(),
@@ -819,3 +823,65 @@ class Mongo:
                     )
 
         return set(folders_list), set(applets_list)
+
+    def get_theme(
+        self, key: str | ObjectId, applet_id: uuid.UUID
+    ) -> ThemeDao | None:
+        if not isinstance(key, ObjectId):
+            try:
+                theme_id = ObjectId(key)
+            except Exception:
+                return None
+        theme_doc = self.db["folder"].find_one({"_id": theme_id})
+        if theme_doc:
+            meta = theme_doc.get("meta", {})
+            return ThemeDao(
+                id=mongoid_to_uuid(theme_doc["_id"]),
+                creator_id=mongoid_to_uuid(theme_doc["creatorId"]),
+                name=theme_doc["name"],
+                logo=meta.get("logo"),
+                background_image=None,
+                primary_color=meta.get("primaryColor"),
+                secondary_color=meta.get("secondaryColor"),
+                tertiary_color=meta.get("tertiaryColor"),
+                public=theme_doc["public"],
+                allow_rename=True,
+                created_at=theme_doc["created"],
+                updated_at=theme_doc["updated"],
+                applet_id=applet_id,
+            )
+        return None
+
+    def get_library(self) -> (LibraryDao, ThemeDao):
+        lib_set = set()
+        theme_set = set()
+        library = self.db["appletLibrary"].find({})
+        for lib_doc in library:
+            applet_id = mongoid_to_uuid(lib_doc["appletId"])
+            version = lib_doc.get("version")
+            if version:
+                version_id = f"{applet_id}_{version}"
+            else:
+                version_id = None
+            now = datetime.datetime.now()
+            created_at = lib_doc.get("createdAt", now)
+            updated_at = lib_doc.get("updated_at", now)
+            lib = LibraryDao(
+                id=mongoid_to_uuid(lib_doc["_id"]),
+                applet_id=applet_id,
+                applet_id_version=version_id,
+                keywords=lib_doc["keywords"],
+                search_keywords=lib_doc["keywords"],
+                created_at=created_at,
+                updated_at=updated_at,
+                migrated_date=now,
+                migrated_updated=now,
+                is_deleted=False,
+            )
+            theme_id = lib_doc.get("themeId")
+            if theme_id:
+                theme = self.get_theme(theme_id, applet_id)
+                if theme:
+                    theme_set.add(theme)
+            lib_set.add(lib)
+        return lib_set, theme_set
