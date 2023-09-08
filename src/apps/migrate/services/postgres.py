@@ -38,6 +38,26 @@ class Postgres:
     def close_connection(self):
         self.connection.close()
 
+    def wipe_applet(self, applet_id: ObjectId|uuid.UUID|str):
+        if isinstance(applet_id, ObjectId):
+            applet_id = mongoid_to_uuid(str(applet_id))
+        if isinstance(applet_id, str) and len(applet_id) == 24:
+            applet_id = mongoid_to_uuid(applet_id)
+        if isinstance(applet_id, str) and len(applet_id) == 36:
+            applet_id = uuid.UUID(applet_id)
+
+
+        cursor = self.connection.cursor()
+        cursor.execute("delete from activities where applet_id = %s", (applet_id.hex,))
+        cursor.execute("delete from user_applet_accesses where applet_id = %s", (applet_id.hex,))
+        cursor.execute("delete from activity_histories where applet_id = %s", (applet_id.hex,))
+        cursor.execute("delete from activity_histories where applet_id like %s", (str(applet_id)+'%',))
+        cursor.execute("delete from applet_histories where id = %s", (applet_id.hex,))
+        cursor.execute("delete from applets where id = %s", (applet_id.hex,))
+
+        self.connection.commit()
+        cursor.close()
+
     def save_users(self, users: list[dict]) -> dict[str, dict]:
         """Returns the mapping between old Users ID and the created Users.
 
