@@ -284,17 +284,18 @@ class EventMigrationService:
                 if notification.allow:
                     notification_data: dict = {}
                     if notification.random:
-                        notification_data["trigger_type"] = "RANDOM"
+                        if notification.start and notification.end:
+                            notification_data["trigger_type"] = "RANDOM"
 
-                        if notification.start:
                             notification_data["from_time"] = datetime.strptime(
                                 notification.start, "%H:%M"
                             ).time()
 
-                        if notification.end:
                             notification_data["to_time"] = datetime.strptime(
                                 notification.end, "%H:%M"
                             ).time()
+                        else:
+                            continue
                     else:
                         notification_data["trigger_type"] = "FIXED"
 
@@ -332,7 +333,7 @@ class EventMigrationService:
         number_of_events_in_mongo: int = len(self.events)
         for i, event in enumerate(self.events, 1):
             print(
-                f"Migrate events {i}/{number_of_events_in_mongo}. Event: {event.id}"
+                f"Migrate events {i}/{number_of_events_in_mongo}. Working on Event: {event.id}"
             )
             try:
                 # Migrate data to PeriodicitySchema
@@ -366,7 +367,7 @@ class EventMigrationService:
                     await self._create_reminder(event, pg_event)
             except IntegrityError as e:
                 number_of_errors += 1
-                print(
-                    f"Erorr during events migration.{str(e._sql_message)}. Number of errors: {number_of_errors}"
-                )
+                print(f"Skipped Event: {event.id}")
                 continue
+
+        print(f"Number of skiped events: {number_of_errors}")
