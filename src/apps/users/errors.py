@@ -12,7 +12,7 @@ class UserAlreadyExistError(ValidationError):
 
 
 class EmailAddressError(ValidationError):
-    message = _("Email doesn't exist!")
+    message = _("That email is not associated with a MindLogger account.")
 
 
 class EmailAddressNotValid(ValidationError):

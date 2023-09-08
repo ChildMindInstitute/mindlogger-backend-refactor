@@ -84,7 +84,7 @@ class AuthenticationService:
         if not self.verify_password(
             user_login_schema.password, user.hashed_password, False
         ):
-            raise PasswordMismatch()
+            raise PasswordMismatch(email=user.plain_email)
         return user
 
     def _get_refresh_token_by_access(
