@@ -63,6 +63,9 @@ class ArbitaryAzureCdnClient(CDNClient):
         blob_client = self.client.get_blob_client(blob=path)
         blob_client.upload_blob(body)
 
+    def generate_key(self, scope, unique, filename):
+        return f"{scope}/{unique}/{filename}"
+
     def _check_existence(self, key: str):
         blob_client = self.client.get_blob_client(
             self.default_container_name, blob=key

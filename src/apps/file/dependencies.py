@@ -1,11 +1,13 @@
-from config import settings
-from infrastructure.utility.cdn_arbitrary import ArbitaryS3CdnClient
+from config import CDNSettings, settings
+from infrastructure.utility import CDNClient
 
 
 def get_legacy_storage():
-    return ArbitaryS3CdnClient(
+    settings_cdn = CDNSettings(
         region=settings.cdn.legacy_region,
         bucket=settings.cdn.legacy_bucket,
-        acc_key=settings.cdn.legacy_access_key,
-        sec_key=settings.cdn.legacy_secret_key,
+        access_key=settings.cdn.legacy_access_key,
+        secret_key=settings.cdn.legacy_secret_key,
+        ttl_signed_urls=settings.cdn.ttl_signed_urls,
     )
+    return CDNClient(settings_cdn, env=settings.env)
