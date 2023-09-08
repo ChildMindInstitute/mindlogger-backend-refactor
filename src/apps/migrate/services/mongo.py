@@ -150,6 +150,19 @@ def patch_broken_applets(
             contents = contents.replace(what, repl)
             applet_ld = json.loads(contents)
 
+    # fix duplicated names for stability activity items in prefLabel
+    duplications = [
+        ('stability_schema', 'Stability Tracker'),
+        ('flanker_schema', 'Visual Stimulus Response'),
+    ]
+    key = 'http://www.w3.org/2004/02/skos/core#prefLabel'
+    for stability_activity in applet_ld['reprolib:terms/order'][0]['@list']:
+        for (activity_name, item_label) in duplications:
+            if stability_activity['@id'] == activity_name:
+                for stability_item in stability_activity['reprolib:terms/order'][0]['@list']:
+                    if key in stability_item and stability_item[key][0]['@value'] == item_label:
+                        stability_item[key][0]['@value'] += ' ' + stability_item['@id']
+
     return applet_ld, applet_mongo
 
 

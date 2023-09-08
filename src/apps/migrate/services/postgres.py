@@ -48,12 +48,15 @@ class Postgres:
 
 
         cursor = self.connection.cursor()
-        cursor.execute("delete from activities where applet_id = %s", (applet_id.hex,))
-        cursor.execute("delete from user_applet_accesses where applet_id = %s", (applet_id.hex,))
-        cursor.execute("delete from activity_histories where applet_id = %s", (applet_id.hex,))
-        cursor.execute("delete from activity_histories where applet_id like %s", (str(applet_id)+'%',))
-        cursor.execute("delete from applet_histories where id = %s", (applet_id.hex,))
-        cursor.execute("delete from applets where id = %s", (applet_id.hex,))
+        cursor.execute("DELETE FROM flow_item_histories WHERE id IN (SELECT id FROM flow_items WHERE activity_id IN (SELECT id FROM activities WHERE applet_id = %s))", (applet_id.hex,))
+        cursor.execute("DELETE FROM flow_items WHERE activity_id IN (SELECT id FROM activities WHERE applet_id = %s)", (applet_id.hex,))
+        cursor.execute("DELETE FROM activities WHERE applet_id = %s", (applet_id.hex,))
+        cursor.execute("DELETE FROM user_applet_accesses WHERE applet_id = %s", (applet_id.hex,))
+        cursor.execute("DELETE FROM flow_histories WHERE applet_id LIKE %s", (str(applet_id)+'%',))
+        cursor.execute("DELETE FROM activity_histories WHERE applet_id LIKE %s", (str(applet_id)+'%',))
+        cursor.execute("DELETE FROM applet_histories WHERE id = %s", (applet_id.hex,))
+        cursor.execute("DELETE FROM flows WHERE applet_id = %s", (applet_id.hex,))
+        cursor.execute("DELETE FROM applets WHERE id = %s", (applet_id.hex,))
 
         self.connection.commit()
         cursor.close()
