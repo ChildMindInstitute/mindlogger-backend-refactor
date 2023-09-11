@@ -200,14 +200,15 @@ class PresignedUrlsGeneratorService:
         arbitary_info = await workspace.WorkspaceService(
             self.session, self.user_id
         ).get_arbitrary_info(self.applet_id)
-        if arbitary_info.storage_type.lower() == StorageType.AZURE.value:
-            return AzurePresignService(
-                self.session, self.user_id, self.applet_id, self.access
-            )
-        if arbitary_info.storage_type.lower() == StorageType.GCP.value:
-            return GCPPresignService(
-                self.session, self.user_id, self.applet_id, self.access
-            )
+        if arbitary_info:
+            if arbitary_info.storage_type.lower() == StorageType.AZURE.value:
+                return AzurePresignService(
+                    self.session, self.user_id, self.applet_id, self.access
+                )
+            if arbitary_info.storage_type.lower() == StorageType.GCP.value:
+                return GCPPresignService(
+                    self.session, self.user_id, self.applet_id, self.access
+                )
         return S3PresignService(
             self.session, self.user_id, self.applet_id, self.access
         )
