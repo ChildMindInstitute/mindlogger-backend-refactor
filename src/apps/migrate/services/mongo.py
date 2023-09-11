@@ -163,7 +163,55 @@ def patch_broken_applets(
                     if key in stability_item and stability_item[key][0]['@value'] == item_label:
                         stability_item[key][0]['@value'] += ' ' + stability_item['@id']
 
+    broken_conditional_logic_naming = [
+        "64e7af5e22d81858d681de92",
+        "633ecc1ab7ee9765ba54452d",
+    ]
+    if applet_id in broken_conditional_logic_naming:
+        for _activity in applet_ld['reprolib:terms/order'][0]['@list']:
+            for _report in _activity['reprolib:terms/reports'][0]['@list']:
+                _report = fix_spacing_in_report(_report)
+                if 'reprolib:terms/conditionals' in _report:
+                    for _conditional in _report['reprolib:terms/conditionals'][0]['@list']:
+                        _conditional = fix_spacing_in_report(_conditional)
+
+
+    broken_conditional_non_existing_slider2_item = ["64dce2d622d81858d6819f13"]
+    if applet_id in broken_conditional_non_existing_slider2_item:
+        for _activity in applet_ld['reprolib:terms/order'][0]['@list']:
+            for _report in _activity['reprolib:terms/reports'][0]['@list']:
+                key = 'reprolib:terms/printItems'
+                if key in _report:
+                    _report[key][0]['@list'] = [print_item for print_item in _report[key][0]['@list'] if print_item['@value'] != 'Slider2']
+
+    broken_conditional_non_existing_items = ["633ecc1ab7ee9765ba54452d"]
+    if applet_id in broken_conditional_non_existing_items:
+        for _activity in applet_ld['reprolib:terms/order'][0]['@list']:
+            if _activity['@id'] == 'NIH Toolbox: Perceived Stress (SR 18+1) (1)':
+                for _report in _activity['reprolib:terms/reports'][0]['@list']:
+                    key = 'reprolib:terms/printItems'
+                    if key in _report:
+                        _report[key][0]['@list'] = [print_item for print_item in _report[key][0]['@list'] if print_item['@value'] not in ['nihps_sr18_q05', 'nihps_sr18_q06', 'nihps_sr18_q07', 'nihps_sr18_q08']]
+                    if _report['@id'] in ['averageScore_score_2', 'percentScore_score_3']:
+                        _report.pop('reprolib:terms/jsExpression')
+
+
+
     return applet_ld, applet_mongo
+
+
+def fix_spacing_in_report(_report: dict) -> dict:
+    if '@id' in _report:
+        _report['@id'] = _report['@id'].replace(' ', '_')
+    if 'reprolib:terms/isVis' in _report:
+        _report['reprolib:terms/isVis'][0]['@value'] = _report['reprolib:terms/isVis'][0]['@value'] \
+            .replace('averageScore_average_less than', 'averageScore_average_less_than') \
+            .replace('averageScore_average_greater than', 'averageScore_average_greater_than') \
+            .replace('averageScore_average_equal to', 'averageScore_average_equal_to') \
+            .replace('averageScore_average_is not equal to', 'averageScore_average_is_not_equal_to') \
+            .replace('averageScore_average_outside of', 'averageScore_average_outside_of')
+
+    return _report
 
 
 class Mongo:
