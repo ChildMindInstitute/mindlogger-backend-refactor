@@ -126,7 +126,7 @@ class GCPPresignService(S3PresignService):
 
 class AzurePresignService(GCPPresignService):
     check_access_to_legacy_url_url_pattern = (
-        r"\/([^/]+)\/[^/]+\/[^/]+\/[^/]+\.\w+"
+        r"\/[0-9a-fA-F-]+\/([0-9a-fA-F-]+)\/[0-9a-fA-F-]+\/"
     )
     check_access_to_regular_url_pattern = r"\/([0-9a-fA-F-]+)\/([0-9a-fA-F-]+)"
 
