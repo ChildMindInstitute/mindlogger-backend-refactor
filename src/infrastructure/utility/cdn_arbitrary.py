@@ -47,6 +47,9 @@ class ArbitaryAzureCdnClient(CDNClient):
         config = CDNSettings(bucket=bucket)
         super().__init__(config, env)
 
+    def generate_key(self, scope, unique, filename):
+        return f"{scope}/{unique}/{filename}"
+
     def generate_private_url(self, key):
         return f"https://{self.config.bucket}.blob.core.windows.net/mindlogger/{key}"  # noqa
 
@@ -62,9 +65,6 @@ class ArbitaryAzureCdnClient(CDNClient):
     def _upload(self, path, body: BinaryIO):
         blob_client = self.client.get_blob_client(blob=path)
         blob_client.upload_blob(body)
-
-    def generate_key(self, scope, unique, filename):
-        return f"{scope}/{unique}/{filename}"
 
     def _check_existence(self, key: str):
         blob_client = self.client.get_blob_client(
