@@ -34,6 +34,7 @@ azure-storage-blob = "*"
 taskiq-fastapi = "*"
 taskiq-redis = "*"
 taskiq-aio-pika = "*"
+sqlalchemy-utils = "==0.41.1"
 
 [dev-packages]
 black = "~=22.6"

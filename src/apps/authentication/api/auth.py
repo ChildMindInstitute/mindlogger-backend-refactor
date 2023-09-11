@@ -23,7 +23,6 @@ from apps.authentication.errors import (
 )
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
-from apps.shared.encryption import encrypt
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
 from apps.users.domain import PublicUser, User
@@ -51,13 +50,9 @@ async def get_token(
         except UserNotFound:
             raise EmailDoesNotExist()
 
-        encrypted_email = encrypt(
-            bytes(user_login_schema.email, "utf-8")
-        ).hex()
-
-        if user.email_encrypted != encrypted_email:
+        if user.email_encrypted != user_login_schema.email:
             user = await UsersCRUD(session).update_encrypted_email(
-                user, encrypted_email
+                user, user_login_schema.email
             )
 
     rjti = str(uuid.uuid4())
@@ -73,7 +68,7 @@ async def get_token(
     )
 
     token = Token(access_token=access_token, refresh_token=refresh_token)
-    public_user = PublicUser.from_user(user)
+    public_user = PublicUser.from_orm(user)
 
     return Response(
         result=UserLogin(

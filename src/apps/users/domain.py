@@ -3,7 +3,8 @@ import uuid
 from pydantic import BaseModel, EmailStr, Field
 
 from apps.shared.domain import InternalModel, PublicModel
-from apps.shared.encryption import decrypt, encrypt
+
+# from apps.shared.encryption import decrypt, encrypt
 
 __all__ = [
     "PublicUser",
@@ -43,18 +44,6 @@ class UserCreateRequest(_UserBase, PublicModel):
         min_length=1,
     )
 
-    @property
-    def encrypted_first_name(self) -> str | None:
-        if self.first_name:
-            return encrypt(bytes(self.first_name, "utf-8")).hex()
-        return None
-
-    @property
-    def encrypted_last_name(self) -> str | None:
-        if self.last_name:
-            return encrypt(bytes(self.last_name, "utf-8")).hex()
-        return None
-
 
 class UserCreate(_UserBase, InternalModel):
     first_name: str
@@ -68,59 +57,20 @@ class UserUpdateRequest(InternalModel):
     first_name: str
     last_name: str
 
-    @property
-    def encrypted_first_name(self) -> str | None:
-        if self.first_name:
-            return encrypt(bytes(self.first_name, "utf-8")).hex()
-        return None
-
-    @property
-    def encrypted_last_name(self) -> str | None:
-        if self.last_name:
-            return encrypt(bytes(self.last_name, "utf-8")).hex()
-        return None
-
 
 class User(UserCreate):
     id: uuid.UUID
     is_super_admin: bool
     email_encrypted: str | None
 
-    @property
-    def plain_email(self) -> str | None:
-        if self.email_encrypted:
-            return decrypt(bytes.fromhex(self.email_encrypted)).decode("utf-8")
-        return None
-
-    @property
-    def plain_first_name(self) -> str | None:
-        if self.first_name:
-            return decrypt(bytes.fromhex(self.first_name)).decode("utf-8")
-        return None
-
-    @property
-    def plain_last_name(self) -> str | None:
-        if self.last_name:
-            return decrypt(bytes.fromhex(self.last_name)).decode("utf-8")
-        return None
-
 
 class PublicUser(PublicModel):
     """Public user data model."""
 
-    email: EmailStr | None
+    email_encrypted: EmailStr | None
     first_name: str
     last_name: str
     id: uuid.UUID
-
-    @classmethod
-    def from_user(cls, user: User) -> "PublicUser":
-        return cls(
-            email=user.plain_email,
-            first_name=user.plain_first_name,
-            last_name=user.plain_last_name,
-            id=user.id,
-        )
 
 
 class ChangePasswordRequest(InternalModel):

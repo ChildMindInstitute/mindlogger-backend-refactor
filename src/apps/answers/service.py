@@ -67,7 +67,6 @@ from apps.answers.tasks import create_report
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
-from apps.shared.encryption import decrypt
 from apps.shared.query_params import QueryParams
 from apps.users import UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
@@ -841,7 +840,7 @@ class AnswerService:
                         version=version,
                         activity_id=activity_id,
                         activity_item_id=raw_alert.activity_item_id,
-                        alert_message=raw_alert.encrypted_message,
+                        alert_message=raw_alert.message,
                         answer_id=answer_id,
                     )
                 )
@@ -851,13 +850,6 @@ class AnswerService:
         for alert in alerts:
             channel_id = f"channel_{alert.user_id}"
             try:
-                plain_message = decrypt(
-                    bytes.fromhex(alert.alert_message)
-                ).decode("utf-8")
-            except ValueError:
-                plain_message = alert.alert_message
-
-            try:
                 await cache.publish(
                     channel_id,
                     AlertMessage(
@@ -865,7 +857,7 @@ class AnswerService:
                         respondent_id=self.user_id,
                         applet_id=applet_id,
                         version=version,
-                        message=plain_message,
+                        message=alert.alert_message,
                         created_at=alert.created_at,
                         activity_id=alert.activity_id,
                         activity_item_id=alert.activity_item_id,
