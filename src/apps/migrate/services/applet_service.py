@@ -172,3 +172,16 @@ class AppletMigrationService:
             ),
         )
         return AppletMigratedFull.from_orm(schema)
+
+    async def get_unique_name(self, display_name: str) -> str:
+        i = 1
+        while True:
+            if i > 1:
+                try_name = '%s (%d)' % (display_name, i,)
+            else:
+                try_name = display_name
+            try:
+                await self.decorated._validate_applet_name(try_name)
+                return try_name
+            except Exception:
+                i += 1

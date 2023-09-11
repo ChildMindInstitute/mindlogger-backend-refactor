@@ -208,6 +208,7 @@ class Postgres:
     ):
         owner_uuid = mongoid_to_uuid(owner_id)
         initail_version = list(applets_by_versions.keys())[0]
+        last_version = list(applets_by_versions.keys())[-1]
         # applet = applets_by_versions[version]
         session = session_manager.get_session()
 
@@ -218,15 +219,17 @@ class Postgres:
         # TODO: Lookup the owner_uuid for the applet workspace
 
         async with atomic(session):
+            service = AppletMigrationService(session, owner_uuid)
+
+            applet = applets_by_versions[last_version]
+            applet_name = await service.get_unique_name(applet.display_name)
+
             for version, applet in applets_by_versions.items():
+                applet.display_name = applet_name
                 if version == initail_version:
-                    applet_create = await AppletMigrationService(
-                        session, owner_uuid
-                    ).create(applet, owner_uuid)
+                    applet_create = await service.create(applet, owner_uuid)
                 else:
-                    applet_create = await AppletMigrationService(
-                        session, owner_uuid
-                    ).update(applet)
+                    applet_create = await service.update(applet)
                     # break
 
         # print(applet_create)
