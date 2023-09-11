@@ -154,6 +154,7 @@ def patch_broken_applets(
     duplications = [
         ('stability_schema', 'Stability Tracker'),
         ('flanker_schema', 'Visual Stimulus Response'),
+        ('Flanker_360', 'Visual Stimulus Response'),
     ]
     key = 'http://www.w3.org/2004/02/skos/core#prefLabel'
     for stability_activity in applet_ld['reprolib:terms/order'][0]['@list']:
@@ -195,6 +196,17 @@ def patch_broken_applets(
                     if _report['@id'] in ['averageScore_score_2', 'percentScore_score_3']:
                         _report.pop('reprolib:terms/jsExpression')
 
+    duplicated_activity_names = ['640b239b601cdc5212d63e75']
+    key_pref = 'http://www.w3.org/2004/02/skos/core#prefLabel'
+    key_alt = 'http://www.w3.org/2004/02/skos/core#altLabel'
+    if applet_id in duplicated_activity_names:
+        current_names = []
+        for _activity in applet_ld['reprolib:terms/order'][0]['@list']:
+            if _activity['@id'] in current_names:
+                _activity['@id'] = _activity['@id'] + ' (1)'
+                _activity[key_pref][0]['@value'] = _activity['@id']
+                _activity[key_alt][0]['@value'] = _activity['@id']
+            current_names.append(_activity['@id'])
 
 
     return applet_ld, applet_mongo
