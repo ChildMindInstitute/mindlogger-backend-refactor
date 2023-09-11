@@ -694,6 +694,10 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         query = query.join(
             UserEventsSchema, EventSchema.id == UserEventsSchema.event_id
         )
+        query = query.join(
+            ActivitySchema,
+            ActivityEventsSchema.activity_id == ActivitySchema.id,
+        )
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(UserEventsSchema.user_id == user_id)
         result = await self._execute(query)
