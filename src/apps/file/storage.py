@@ -5,7 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.workspaces.constants import StorageType
 from apps.workspaces.service import workspace
 from config import CDNSettings, settings
-from infrastructure.utility.cdn_arbitrary import CdnClientBlob, CdnClientS3
+from infrastructure.utility.cdn_arbitrary import (
+    ArbitaryAzureCdnClient,
+    ArbitaryGCPCdnClient,
+    ArbitaryS3CdnClient,
+)
 from infrastructure.utility.cdn_client import CDNClient
 
 
@@ -26,22 +30,25 @@ async def select_storage(
         return CDNClient(settings_cdn, env=settings.env)
 
     bucket_type = info.storage_type.lower()
+    arbitary_cdn_settings = CDNSettings(
+        region=info.storage_region,
+        bucket=info.storage_bucket,
+        ttl_signed_urls=settings.cdn.ttl_signed_urls,
+        access_key=info.storage_access_key,
+        secret_key=info.storage_secret_key,
+    )
     match bucket_type:
         case StorageType.AZURE:
-            return CdnClientBlob(sec_key=info.storage_secret_key)
-        case StorageType.GCP:
-            return CdnClientS3(
-                region=info.storage_region,
-                bucket=info.storage_bucket,
-                domain="https://storage.googleapis.com",
-                acc_key=info.storage_access_key,
+            return ArbitaryAzureCdnClient(
                 sec_key=info.storage_secret_key,
+                bucket=str(info.storage_bucket),
+            )
+        case StorageType.GCP:
+            return ArbitaryGCPCdnClient(
+                arbitary_cdn_settings,
+                endpoint_url=settings.cdn.gcp_endpoint_url,
+                env=settings.env,
             )
         case _:
             # default is aws (logic from legacy app)
-            return CdnClientS3(
-                region=info.storage_region,
-                bucket=info.storage_bucket,
-                acc_key=info.storage_access_key,
-                sec_key=info.storage_secret_key,
-            )
+            return ArbitaryS3CdnClient(arbitary_cdn_settings, env=settings.env)
