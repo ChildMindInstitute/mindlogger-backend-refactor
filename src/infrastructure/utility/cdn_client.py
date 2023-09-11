@@ -19,6 +19,12 @@ class CDNClient:
         self.env = env
         self.client = self.configure_client(config)
 
+    def generate_key(self, scope, unique, filename):
+        return f"{self.default_container_name}/{scope}/{unique}/{filename}"
+
+    def generate_private_url(self, key):
+        return f"s3://{self.config.bucket}/{key}"
+
     def configure_client(self, config):
         assert config, "set CDN"
 
@@ -47,12 +53,6 @@ class CDNClient:
         with ThreadPoolExecutor() as executor:
             future = executor.submit(self._upload, path, body)
         await asyncio.wrap_future(future)
-
-    def generate_key(self, scope, unique, filename):
-        return f"{self.default_container_name}/{scope}/{unique}/{filename}"
-
-    def generate_private_url(self, key):
-        return f"s3://{self.config.bucket}/{key}"
 
     def _check_existence(self, key: str):
         try:
@@ -83,7 +83,7 @@ class CDNClient:
         )
         return file, media_type
 
-    async def _generate_presigned_url(self, key):
+    def _generate_presigned_url(self, key):
         url = self.client.generate_presigned_url(
             "get_object",
             Params={

@@ -108,7 +108,7 @@ class GCPPresignService(S3PresignService):
     legacy_file_url_pattern = r"gs:\/\/[a-zA-Z0-9-]+\/[0-9a-fA-F]+\/[0-9a-fA-F]+\/[0-9a-fA-F]+(\/[a-zA-Z0-9.-]*)?"  # noqa
     regular_file_url_pattern = r"gs:\/\/[a-zA-Z0-9.-]+\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+\/[a-f0-9-]+\/[a-f0-9-]+\/[a-zA-Z0-9-]+"  # noqa
 
-    def __call__(self, url):
+    async def __call__(self, url):
         regular_cdn_client = await select_storage(
             applet_id=self.applet_id, session=self.session
         )
@@ -130,7 +130,7 @@ class AzurePresignService(GCPPresignService):
     )
     check_access_to_regular_url_pattern = r"\/([0-9a-fA-F-]+)\/([0-9a-fA-F-]+)"
 
-    def __call__(self, url):
+    async def __call__(self, url):
         regular_cdn_client = await select_storage(
             applet_id=self.applet_id, session=self.session
         )
@@ -164,7 +164,12 @@ class AzurePresignService(GCPPresignService):
         return result.group(1)
 
     def _is_legacy_file_url_format(self, url):
-        return ".net/mindlogger/" in url
+        return (
+            ".net/mindlogger/" in url and ".net/mindlogger/answer/" not in url
+        )
+
+    def _is_regular_file_url_format(self, url):
+        return ".net/mindlogger/answer/" in url
 
 
 class PresignedUrlsGeneratorService:
@@ -195,10 +200,6 @@ class PresignedUrlsGeneratorService:
         arbitary_info = await workspace.WorkspaceService(
             self.session, self.user_id
         ).get_arbitrary_info(self.applet_id)
-        if not arbitary_info:
-            return S3PresignService(
-                self.session, self.user_id, self.applet_id, self.access
-            )
         if arbitary_info.storage_type.lower() == StorageType.AZURE.value:
             return AzurePresignService(
                 self.session, self.user_id, self.applet_id, self.access
@@ -207,6 +208,9 @@ class PresignedUrlsGeneratorService:
             return GCPPresignService(
                 self.session, self.user_id, self.applet_id, self.access
             )
+        return S3PresignService(
+            self.session, self.user_id, self.applet_id, self.access
+        )
 
     async def _generate_presigned_urls(
         self,
