@@ -210,6 +210,29 @@ def patch_broken_applets(
             current_names.append(_activity['@id'])
 
 
+    no_ids_flanker_map = {
+        '<<<<<': 'left-con',
+        '<<><<': 'right-inc',
+        '>><>>': 'left-inc',
+        '>>>>>': 'right-con',
+        '--<--': 'left-neut',
+        '-->--': 'right-neut',
+    }
+    no_ids_flanker_buttons = [
+        '62768ff20a62aa1056078093'
+    ]
+    if applet_id in no_ids_flanker_buttons:
+        for _activity in applet_ld['reprolib:terms/order'][0]['@list']:
+            if _activity['@id'] == 'Flanker_360':
+                for _item in _activity['reprolib:terms/order'][0]['@list']:
+                    if 'reprolib:terms/inputs' in _item:
+                        for _intput in _item['reprolib:terms/inputs']:
+                            if 'schema:itemListElement' in _intput:
+                                for _el in _intput['schema:itemListElement']:
+                                    if '@id' not in _el and 'schema:image' in _el:
+                                        _el['@id'] = no_ids_flanker_map[_el['schema:image']]
+
+
     return applet_ld, applet_mongo
 
 
