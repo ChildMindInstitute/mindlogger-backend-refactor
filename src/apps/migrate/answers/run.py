@@ -1,5 +1,4 @@
 import asyncio
-import sys
 
 from apps.answers.db.schemas import AnswerSchema
 from apps.answers.deps.preprocess_arbitrary import (
@@ -7,7 +6,6 @@ from apps.answers.deps.preprocess_arbitrary import (
 )
 from apps.girderformindlogger.models.note import Note
 from apps.girderformindlogger.models.profile import Profile
-from apps.girderformindlogger.models.item import Item
 from apps.migrate.answers.answer_item_service import AnswerItemMigrationService
 from apps.migrate.answers.answer_note_service import AnswerNoteMigrateService
 from apps.migrate.answers.answer_service import AnswerMigrationService
@@ -69,8 +67,8 @@ class AnswersMigrateFacade:
 
                 migratable_data_count += 1
 
-                if migratable_data_count >= 10000:
-                    return
+                # if migratable_data_count >= 10000:
+                #     return
 
     async def migrate(self):
         legacy_deleted_respondent_answers = 0
@@ -79,28 +77,6 @@ class AnswersMigrateFacade:
         error_answers_migration = []
         skipped_answers_migration = 0
         answer_items_data = []
-
-        # regular_session = session_manager.get_session()
-        #
-        # await UserMigrateService(
-        #     regular_session
-        # ).create_legacy_deleted_respondent()
-        #
-        # async with atomic(regular_session):
-        #     answers_migration_params = await AnswersMigrateCRUD(
-        #         regular_session
-        #     ).get_answers_migration_params()
-        #
-        #     print(
-        #         f"Answer migration params count: {len(answers_migration_params)}"
-        #     )
-        #
-        # for answer_migration_params in answers_migration_params:
-        #     anwswers_with_files = self.mongo.get_answers_with_files(
-        #         answer_migration_queries=self.mongo.get_answer_migration_queries(
-        #             **answer_migration_params
-        #         )
-        #     )
 
         regular_session = session_manager.get_session()
 
