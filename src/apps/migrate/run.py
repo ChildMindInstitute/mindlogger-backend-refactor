@@ -26,11 +26,6 @@ from infrastructure.database import session_manager
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
     toSkip = [
         "635d04365cb700431121f8a1",  # chinese texts
-        # "64d4cd2522d8180cf9b40b3d",  # Activity names are duplicated.
-        # "640b239b601cdc5212d63e75",  # Activity names are duplicated.
-        "62768ff20a62aa1056078093",  # broken flanker: Validation error for StimulusConfiguration: id none is not an allowed value
-        "62d06045acd35a1054f106f6",  # broken flanker: Validation error for StimulusConfiguration: id none is not an allowed value
-        "64946e208819c1120b4f9271",  # broken flanker: Validation error for StimulusConfiguration: id none is not an allowed value
     ]
 
     # applets = list(Applet().find(
