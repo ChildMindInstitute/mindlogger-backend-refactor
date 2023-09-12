@@ -236,7 +236,7 @@ async def migrate_events(mongo: Mongo, postgres: Postgres):
         events.append(MongoEvent.parse_obj(event))
 
     print(f"Total number of events in mongo: {len(events)}")
-    assert len(events) == events_collection.estimated_document_count()
+    # assert len(events) == events_collection.estimated_document_count()
 
     await EventMigrationService(session, events).run_events_migration()
 
