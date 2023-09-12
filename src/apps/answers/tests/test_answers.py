@@ -775,6 +775,8 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
         ]
+        assert response.json()["result"][0]["reviewer"]["firstName"] == "Tom"
+        assert response.json()["result"][0]["reviewer"]["lastName"] == "Isaak"
 
     @rollback
     async def test_applet_activities(self):
