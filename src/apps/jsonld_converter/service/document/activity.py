@@ -261,7 +261,8 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                     if val is not None and hasattr(node, prop):
                         setattr(node, prop, val)
             else:
-                # in case conditional logic contains full url while the item id is short
+                # in case conditional logic contains full url while
+                # the item id is short
                 # e.g https://github.com/a/b/item_name and item.id is item_name
                 for _prop, _val in self.properties.items():
                     if node.ld_id == _prop.rsplit('/', 1).pop():

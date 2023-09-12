@@ -97,7 +97,7 @@ class User(UserCreate):
         if self.first_name:
             try:
                 return decrypt(bytes.fromhex(self.first_name)).decode("utf-8")
-            except:
+            except Exception:
                 return self.first_name
         return None
 
@@ -106,7 +106,7 @@ class User(UserCreate):
         if self.last_name:
             try:
                 return decrypt(bytes.fromhex(self.last_name)).decode("utf-8")
-            except:
+            except Exception:
                 return self.last_name
         return None
 
