@@ -348,6 +348,7 @@ class AppletService:
                 watermark=update_data.watermark,
                 theme_id=update_data.theme_id,
                 version=version,
+                stream_enabled=update_data.stream_enabled,
             ),
         )
         return AppletFull.from_orm(schema)
@@ -460,6 +461,7 @@ class AppletService:
                     report_email_body=schema.report_email_body,
                     created_at=schema.created_at,
                     updated_at=schema.updated_at,
+                    stream_enabled=schema.stream_enabled,
                 )
             )
         return applets
@@ -504,6 +506,7 @@ class AppletService:
             retention_period=schema.retention_period,
             retention_type=schema.retention_type,
             is_published=schema.is_published,
+            stream_enabled=schema.stream_enabled,
         )
         activities = ActivityService(
             self.session, self.user_id

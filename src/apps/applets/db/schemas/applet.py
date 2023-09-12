@@ -37,6 +37,8 @@ class _BaseAppletSchema:
         JSONB(), default=dict, server_default=text("'{}'::jsonb")
     )
 
+    stream_enabled = Column(Boolean(), default=False)
+
 
 class AppletSchema(_BaseAppletSchema, Base):
     __tablename__ = "applets"

@@ -785,6 +785,7 @@ class TestApplet(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         update_data = dict(
+            stream_enabled=True,
             display_name="Applet 1",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
