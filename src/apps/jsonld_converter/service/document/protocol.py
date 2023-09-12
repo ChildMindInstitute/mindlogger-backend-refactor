@@ -108,7 +108,6 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             self.ld_retention_period = rs.get('period')
             self.ld_retention_type = rs.get('retention')
 
-
     def _get_report_configuration(
         self, processed_doc: dict, *, drop=False
     ) -> dict:
