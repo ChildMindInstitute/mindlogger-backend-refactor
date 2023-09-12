@@ -177,7 +177,10 @@ class AppletMigrationService:
         i = 1
         while True:
             if i > 1:
-                try_name = '%s (%d)' % (display_name, i,)
+                try_name = "%s (%d)" % (
+                    display_name,
+                    i,
+                )
             else:
                 try_name = display_name
             try:
