@@ -35,6 +35,7 @@ class AppletBaseInfo(BaseModel):
     pinned_at: datetime.datetime | None
     retention_period: int | None
     retention_type: str | None
+    stream_enabled: bool | None
 
 
 class AppletBase(AppletBaseInfo):

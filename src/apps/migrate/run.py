@@ -11,11 +11,16 @@ from apps.migrate.exception.exception import (
 )
 from apps.migrate.services.mongo import Mongo
 from apps.migrate.services.postgres import Postgres
+from apps.migrate.services.event_service import (
+    MongoEvent,
+    EventMigrationService,
+)
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.item import Item
 
 
 from apps.migrate.utilities import migration_log
+from infrastructure.database import session_manager
 
 
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
@@ -87,7 +92,7 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
             continue
         print("processing", applet_id, index, "/", appletsCount)
         try:
-            applet: dict | None = await mongo.get_applet(applet_id)
+            applet = await mongo.get_applet(applet_id)
 
             applets, owner_id = await mongo.get_applet_versions(applet_id)
             for version, _applet in applets.items():
@@ -250,6 +255,20 @@ def migrate_library(mongo, postgres):
     migration_log.warning(f"[THEME] Migrated {theme_count}")
 
 
+async def migrate_events(mongo: Mongo, postgres: Postgres):
+    events_collection = mongo.db["events"]
+    session = session_manager.get_session()
+
+    events: list = []
+    for event in events_collection.find():
+        events.append(MongoEvent.parse_obj(event))
+
+    print(f"Total number of events in mongo: {len(events)}")
+    assert len(events) == events_collection.estimated_document_count()
+
+    await EventMigrationService(session, events).run_events_migration()
+
+
 async def main():
     mongo = Mongo()
     postgres = Postgres()
@@ -276,8 +295,13 @@ async def main():
     migrate_roles(mongo, postgres)
     # Migrate user pins
     migrate_user_pins(mongo, postgres)
-    # Close connections
+    # Migrate folders
     migrate_folders(mongo, postgres)
+
+    # Migrate events
+    await migrate_events(mongo, postgres)
+
+    # Close connections
     mongo.close_connection()
     postgres.close_connection()
 

@@ -62,7 +62,10 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         instance = await self._update_one(
             lookup="id",
             value=user.id,
-            schema=UserSchema(**update_schema.dict()),
+            schema=UserSchema(
+                first_name=update_schema.encrypted_first_name,
+                last_name=update_schema.encrypted_last_name,
+            ),
         )
 
         # Create internal data model
@@ -82,13 +85,13 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         return instance
 
     async def update_encrypted_email(
-        self, user: User, encrypted_email: bytes
+        self, user: User, encrypted_email: str
     ) -> User:
         # Update user in database
         instance = await self._update_one(
             lookup="id",
             value=user.id,
-            schema=UserSchema(email_aes_encrypted=encrypted_email),
+            schema=UserSchema(email_encrypted=encrypted_email),
         )
         # Create internal data model
         user = User.from_orm(instance)

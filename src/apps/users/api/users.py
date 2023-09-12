@@ -27,17 +27,19 @@ async def user_create(
 ) -> Response[PublicUser]:
     async with atomic(session):
         email_hash = hash_sha224(user_create_schema.email)
-        email_aes_encrypted = encrypt(bytes(user_create_schema.email, "utf-8"))
+        email_encrypted = encrypt(
+            bytes(user_create_schema.email, "utf-8")
+        ).hex()
 
         user_schema = await UsersCRUD(session).save(
             UserSchema(
                 email=email_hash,
-                first_name=user_create_schema.first_name,
-                last_name=user_create_schema.last_name,
+                first_name=user_create_schema.encrypted_first_name,
+                last_name=user_create_schema.encrypted_last_name,
                 hashed_password=AuthenticationService.get_password_hash(
                     user_create_schema.password
                 ),
-                email_aes_encrypted=email_aes_encrypted,
+                email_encrypted=email_encrypted,
             )
         )
 
@@ -49,9 +51,13 @@ async def user_create(
             raise EmailAddressNotValid(email=user_create_schema.email)
 
         # Create default workspace for new user
+        workspace_name = f"{user.plain_first_name} {user.plain_last_name}"
+        workspace_name_encrypted = encrypt(
+            bytes(workspace_name, "utf-8")
+        ).hex()
         user_workspace = UserWorkspaceSchema(
             user_id=user.id,
-            workspace_name=f"{user.first_name} {user.last_name}",
+            workspace_name=workspace_name_encrypted,
             is_modified=False,
         )
         await UserWorkspaceCRUD(session).save(schema=user_workspace)

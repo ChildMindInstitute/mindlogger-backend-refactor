@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, String
+from sqlalchemy import Boolean, Column, ForeignKey, String, Text
 
 from infrastructure.database.base import Base
 
@@ -12,7 +12,7 @@ class UserWorkspaceSchema(Base):
         unique=True,
         index=True,
     )
-    workspace_name = Column(String(length=100), nullable=False, index=True)
+    workspace_name = Column(Text(), nullable=False, index=True)
     is_modified = Column(Boolean(), default=False)
     database_uri = Column(String())
     storage_type = Column(String())

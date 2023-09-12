@@ -3,14 +3,17 @@ import urllib.parse
 from io import BytesIO
 from typing import Mapping
 
+import taskiq_fastapi
 from httpx import AsyncClient, Response
 
+from broker import broker
 from infrastructure.app import create_app
 
 
 class TestClient:
     def __init__(self):
         app = create_app()
+        taskiq_fastapi.populate_dependency_context(broker, app)
         self.client = AsyncClient(app=app, base_url="http://test.com")
         self.headers = {}
 

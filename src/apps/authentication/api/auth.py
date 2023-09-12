@@ -51,9 +51,11 @@ async def get_token(
         except UserNotFound:
             raise EmailDoesNotExist()
 
-        encrypted_email = encrypt(bytes(user_login_schema.email, "utf-8"))
+        encrypted_email = encrypt(
+            bytes(user_login_schema.email, "utf-8")
+        ).hex()
 
-        if user.email_aes_encrypted != encrypted_email:
+        if user.email_encrypted != encrypted_email:
             user = await UsersCRUD(session).update_encrypted_email(
                 user, encrypted_email
             )

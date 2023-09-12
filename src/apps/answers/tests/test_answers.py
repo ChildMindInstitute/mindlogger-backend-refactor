@@ -9,7 +9,6 @@ from apps.answers.db.schemas import AnswerSchema
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback, rollback_with_session
 from infrastructure.utility import RedisCacheTest
-from infrastructure.utility.rabbitmq_queue import RabbitMqQueueTest
 
 
 class TestAnswerActivityItems(BaseTest):
@@ -61,8 +60,11 @@ class TestAnswerActivityItems(BaseTest):
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
     latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
 
+    @patch("apps.answers.service.create_report.kiq")
     @rollback
-    async def test_answer_activity_items_create_for_respondent(self):
+    async def test_answer_activity_items_create_for_respondent(
+        self, report_mock: CoroutineMock
+    ):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -109,13 +111,10 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         response = await self.client.post(self.answer_url, data=create_data)
-
         assert response.status_code == 201, response.json()
-        assert len(RabbitMqQueueTest.messages) == 1
-        message = RabbitMqQueueTest.messages[RabbitMqQueueTest.routing_key][
-            0
-        ].body
-        assert b"submit_id" in message and b"answer_id" in message
+
+        report_mock.assert_awaited_once()
+
         published_values = await RedisCacheTest().get(
             "channel_7484f34a-3acc-4ee6-8a94-fd7299502fa1"
         )

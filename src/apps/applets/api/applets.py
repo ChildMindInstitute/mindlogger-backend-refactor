@@ -161,7 +161,7 @@ async def applet_create(
                     subject="Applet upload failed!",
                     body=mail_service.get_template(
                         path="applet_create_success_en",
-                        first_name=user.first_name,
+                        first_name=user.plain_first_name,
                         applet_name=schema.display_name,
                     ),
                 )
@@ -173,7 +173,7 @@ async def applet_create(
                 subject="Applet upload success!",
                 body=mail_service.get_template(
                     path="applet_create_success_en",
-                    first_name=user.first_name,
+                    first_name=user.plain_first_name,
                     applet_name=applet.display_name,
                 ),
             )

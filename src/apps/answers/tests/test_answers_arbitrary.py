@@ -16,7 +16,6 @@ from infrastructure.database import (
     rollback_with_session,
 )
 from infrastructure.utility import RedisCacheTest
-from infrastructure.utility.rabbitmq_queue import RabbitMqQueueTest
 
 
 async def get_arbitrary_session():
@@ -87,8 +86,11 @@ class TestAnswerActivityItems(BaseTest):
         "/test_arbitrary"
     )
 
+    @patch("apps.answers.service.create_report.kiq")
     @rollback
-    async def test_answer_activity_items_create_for_respondent(self):
+    async def test_answer_activity_items_create_for_respondent(
+        self, report_mock: CoroutineMock
+    ):
         submit_id = "270d86e0-2158-4d18-befd-86b3ce0122a1"
         await self.client.login(
             self.login_url, "ivan@mindlogger.com", "Test1234!"
@@ -132,11 +134,9 @@ class TestAnswerActivityItems(BaseTest):
         )
         response = await self.client.post(self.answer_url, data=create_data)
         assert response.status_code == 201, response.json()
-        assert len(RabbitMqQueueTest.messages) == 1
-        message = RabbitMqQueueTest.messages[RabbitMqQueueTest.routing_key][
-            0
-        ].body
-        assert b"submit_id" in message and b"answer_id" in message
+
+        report_mock.assert_awaited_once()
+
         published_values = await RedisCacheTest().get(
             "channel_6cde911e-8a57-47c0-b6b2-685b3664f418"
         )

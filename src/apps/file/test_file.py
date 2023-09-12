@@ -31,7 +31,9 @@ class TestAnswerActivityItems(BaseTest):
     file_id = "1693560380000/c60859c4-6f5f-4390-a572-da85fcd59709"
 
     @rollback_with_session
-    @mock.patch("infrastructure.utility.cdn_arbitrary.CdnClientS3.upload")
+    @mock.patch(
+        "infrastructure.utility.cdn_arbitrary.ArbitaryS3CdnClient.upload"
+    )
     async def test_arbitrary_upload_to_s3_aws(
         self, mock_client: mock.MagicMock, **kwargs
     ):
@@ -51,7 +53,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @rollback_with_session
     @mock.patch(
-        "infrastructure.utility.cdn_arbitrary.CdnClientS3.download",
+        "infrastructure.utility.cdn_arbitrary.ArbitaryS3CdnClient.download",
         return_value=(iter(("a", "b")), "txt"),
     )
     async def test_arbitrary_download_from_s3_aws(
@@ -70,7 +72,9 @@ class TestAnswerActivityItems(BaseTest):
         assert mock_client.call_count == 1
 
     @rollback_with_session
-    @mock.patch("infrastructure.utility.cdn_arbitrary.CdnClientS3.upload")
+    @mock.patch(
+        "infrastructure.utility.cdn_arbitrary.ArbitaryGCPCdnClient.upload"
+    )
     async def test_arbitrary_upload_to_s3_gcp(
         self, mock_client: mock.MagicMock, **kwargs
     ):
@@ -89,7 +93,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @rollback_with_session
     @mock.patch(
-        "infrastructure.utility.cdn_arbitrary.CdnClientS3.download",
+        "infrastructure.utility.cdn_arbitrary.ArbitaryGCPCdnClient.download",
         return_value=(iter(("a", "b")), "txt"),
     )
     async def test_arbitrary_download_from_s3_gcp(
@@ -108,9 +112,14 @@ class TestAnswerActivityItems(BaseTest):
         assert mock_client.call_count == 1
 
     @rollback_with_session
-    @mock.patch("infrastructure.utility.cdn_arbitrary.CdnClientBlob.upload")
+    @mock.patch(
+        "infrastructure.utility.cdn_arbitrary.ArbitaryAzureCdnClient.upload"
+    )
+    @mock.patch(
+        "infrastructure.utility.cdn_arbitrary.ArbitaryAzureCdnClient.configure_client"  # noqa
+    )
     async def test_arbitrary_upload_to_blob_azure(
-        self, mock_client: mock.MagicMock, **kwargs
+        self, mock_client: mock.MagicMock, *args, **kwargs
     ):
         await self.client.login(
             self.login_url, "ivan@mindlogger.com", "Test1234!"
@@ -144,7 +153,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @rollback_with_session
     @mock.patch(
-        "infrastructure.utility.cdn_arbitrary.CdnClientS3.check_existence"
+        "infrastructure.utility.cdn_arbitrary.ArbitaryS3CdnClient.check_existence"  # noqa
     )
     async def test_arbitary_s3_aws_check_existence(
         self, mock_client: mock.MagicMock, **kwargs

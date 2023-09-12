@@ -63,9 +63,11 @@ from apps.answers.errors import (
     WrongAnswerGroupVersion,
     WrongRespondentForAnswerGroup,
 )
+from apps.answers.tasks import create_report
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
+from apps.shared.encryption import decrypt
 from apps.shared.query_params import QueryParams
 from apps.users import UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
@@ -73,7 +75,6 @@ from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.utility import RedisCache
-from infrastructure.utility.rabbitmq_queue import RabbitMqQueue
 
 
 class AnswerService:
@@ -217,31 +218,17 @@ class AnswerService:
         if not is_reportable:
             return
 
-        queue = RabbitMqQueue()
-        await queue.connect()
         is_flow_single = await service.is_flows_single_report(answer.id)
-        try:
-            if not is_flow_single:
-                await queue.publish(
-                    data=dict(
-                        submit_id=answer.submit_id,
-                        answer_id=answer.id,
-                        applet_id=answer.applet_id,
-                    )
-                )
-            else:
-                is_flow_finished = await service.is_flow_finished(
-                    answer.submit_id, answer.id
-                )
-                if is_flow_finished:
-                    await queue.publish(
-                        data=dict(
-                            submit_id=answer.submit_id,
-                            applet_id=answer.applet_id,
-                        )
-                    )
-        finally:
-            await queue.close()
+        if not is_flow_single:
+            await create_report.kiq(
+                answer.applet_id, answer.submit_id, answer.id
+            )
+        else:
+            is_flow_finished = await service.is_flow_finished(
+                answer.submit_id, answer.id
+            )
+            if is_flow_finished:
+                await create_report.kiq(answer.applet_id, answer.submit_id)
 
     async def get_review_activities(
         self,
@@ -803,8 +790,14 @@ class AnswerService:
             respondents = access.meta.get("respondents", []) if access else []
             if str(respondent_id) not in respondents:
                 raise AnswerAccessDeniedError()
+
+        answer_srv = AnswersCRUD(self.answer_session)
+        applet_version = await answer_srv.get_latest_applet_version(applet_id)
+
         act_hst_crud = ActivityHistoriesCRUD(self.session)
-        activities = await act_hst_crud.get_by_applet_id_for_summary(applet_id)
+        activities = await act_hst_crud.get_by_applet_id_for_summary(
+            applet_id_version=applet_version, applet_id=applet_id
+        )
         activity_ver_ids = [activity.id_version for activity in activities]
         activity_ids_with_answer = await AnswersCRUD(
             self.answer_session
@@ -848,7 +841,7 @@ class AnswerService:
                         version=version,
                         activity_id=activity_id,
                         activity_item_id=raw_alert.activity_item_id,
-                        alert_message=raw_alert.message,
+                        alert_message=raw_alert.encrypted_message,
                         answer_id=answer_id,
                     )
                 )
@@ -858,6 +851,13 @@ class AnswerService:
         for alert in alerts:
             channel_id = f"channel_{alert.user_id}"
             try:
+                plain_message = decrypt(
+                    bytes.fromhex(alert.alert_message)
+                ).decode("utf-8")
+            except ValueError:
+                plain_message = alert.alert_message
+
+            try:
                 await cache.publish(
                     channel_id,
                     AlertMessage(
@@ -865,7 +865,7 @@ class AnswerService:
                         respondent_id=self.user_id,
                         applet_id=applet_id,
                         version=version,
-                        message=alert.alert_message,
+                        message=plain_message,
                         created_at=alert.created_at,
                         activity_id=alert.activity_id,
                         activity_item_id=alert.activity_item_id,

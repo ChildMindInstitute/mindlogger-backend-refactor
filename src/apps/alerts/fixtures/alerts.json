@@ -13,8 +13,11 @@
       "version": "1.0.0",
       "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
       "activity_item_id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-      "alert_message": "Hi, did something wrong",
+      "alert_message": "1455f757bf0839f95710d2f278f1e9e6429b6ee7096d8a",
       "answer_id": "655ddd55-a9f4-48f3-abae-4cbfa9c695da"
+    },
+    "note": {
+      "plain_alert_message": "Hi, did something wrong"
     }
   },
   {
@@ -31,8 +34,11 @@
       "version": "1.0.0",
       "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
       "activity_item_id": "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-      "alert_message": "Something wrong",
+      "alert_message": "0f53b612af0934b7435fc8e563f7e7",
       "answer_id": "655ddd55-a9f4-48f3-abae-4cbfa9c695da"
+    },
+    "note": {
+      "plain_alert_message": "Something wrong"
     }
   }
 ]
