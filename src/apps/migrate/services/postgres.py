@@ -38,7 +38,7 @@ class Postgres:
     def close_connection(self):
         self.connection.close()
 
-    def wipe_applet(self, applet_id: ObjectId|uuid.UUID|str):
+    def wipe_applet(self, applet_id: ObjectId | uuid.UUID | str):
         if isinstance(applet_id, ObjectId):
             applet_id = mongoid_to_uuid(str(applet_id))
         if isinstance(applet_id, str) and len(applet_id) == 24:
@@ -46,16 +46,36 @@ class Postgres:
         if isinstance(applet_id, str) and len(applet_id) == 36:
             applet_id = uuid.UUID(applet_id)
 
-
         cursor = self.connection.cursor()
-        cursor.execute("DELETE FROM flow_item_histories WHERE id IN (SELECT id FROM flow_items WHERE activity_id IN (SELECT id FROM activities WHERE applet_id = %s))", (applet_id.hex,))
-        cursor.execute("DELETE FROM flow_items WHERE activity_id IN (SELECT id FROM activities WHERE applet_id = %s)", (applet_id.hex,))
-        cursor.execute("DELETE FROM activities WHERE applet_id = %s", (applet_id.hex,))
-        cursor.execute("DELETE FROM user_applet_accesses WHERE applet_id = %s", (applet_id.hex,))
-        cursor.execute("DELETE FROM flow_histories WHERE applet_id LIKE %s", (str(applet_id)+'%',))
-        cursor.execute("DELETE FROM activity_histories WHERE applet_id LIKE %s", (str(applet_id)+'%',))
-        cursor.execute("DELETE FROM applet_histories WHERE id = %s", (applet_id.hex,))
-        cursor.execute("DELETE FROM flows WHERE applet_id = %s", (applet_id.hex,))
+        cursor.execute(
+            "DELETE FROM flow_item_histories WHERE id IN (SELECT id FROM flow_items WHERE activity_id IN (SELECT id FROM activities WHERE applet_id = %s))",
+            (applet_id.hex,),
+        )
+        cursor.execute(
+            "DELETE FROM flow_items WHERE activity_id IN (SELECT id FROM activities WHERE applet_id = %s)",
+            (applet_id.hex,),
+        )
+        cursor.execute(
+            "DELETE FROM activities WHERE applet_id = %s", (applet_id.hex,)
+        )
+        cursor.execute(
+            "DELETE FROM user_applet_accesses WHERE applet_id = %s",
+            (applet_id.hex,),
+        )
+        cursor.execute(
+            "DELETE FROM flow_histories WHERE applet_id LIKE %s",
+            (str(applet_id) + "%",),
+        )
+        cursor.execute(
+            "DELETE FROM activity_histories WHERE applet_id LIKE %s",
+            (str(applet_id) + "%",),
+        )
+        cursor.execute(
+            "DELETE FROM applet_histories WHERE id = %s", (applet_id.hex,)
+        )
+        cursor.execute(
+            "DELETE FROM flows WHERE applet_id = %s", (applet_id.hex,)
+        )
         cursor.execute("DELETE FROM applets WHERE id = %s", (applet_id.hex,))
 
         self.connection.commit()
@@ -114,16 +134,16 @@ class Postgres:
                 cursor.execute(
                     sql,
                     (
-                        str(new_user['created_at']),
-                        str(new_user['updated_at']),
-                        new_user['is_deleted'],
-                        new_user['email'],
-                        new_user['hashed_password'],
-                        str(new_user['id']),
-                        new_user['first_name'],
-                        new_user['last_name'],
-                        str(new_user['last_seen_at']),
-                        new_user['email_encrypted'],
+                        str(new_user["created_at"]),
+                        str(new_user["updated_at"]),
+                        new_user["is_deleted"],
+                        new_user["email"],
+                        new_user["hashed_password"],
+                        str(new_user["id"]),
+                        new_user["first_name"],
+                        new_user["last_name"],
+                        str(new_user["last_seen_at"]),
+                        new_user["email_encrypted"],
                         str(time_now),
                         str(time_now),
                     ),

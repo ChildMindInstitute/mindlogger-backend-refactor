@@ -103,10 +103,10 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
 
         self._load_extra(processed_doc)
 
-        rs = doc.get('retentionSettings', {})
-        if rs.get('enabled', False):
-            self.ld_retention_period = rs.get('period')
-            self.ld_retention_type = rs.get('retention')
+        rs = doc.get("retentionSettings", {})
+        if rs.get("enabled", False):
+            self.ld_retention_period = rs.get("period")
+            self.ld_retention_type = rs.get("retention")
 
     def _get_report_configuration(
         self, processed_doc: dict, *, drop=False

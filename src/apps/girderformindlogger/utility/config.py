@@ -49,9 +49,9 @@ def loadConfig():
         cherrypy.config["database"]["uri"] = os.getenv("GIRDER_MONGO_URI")
 
     if "GIRDER_TEST_DB" in os.environ:
-        cherrypy.config["database"]["uri"] = os.environ["GIRDER_TEST_DB"].replace(
-            ".", "_"
-        )
+        cherrypy.config["database"]["uri"] = os.environ[
+            "GIRDER_TEST_DB"
+        ].replace(".", "_")
 
     if "AES_KEY" in os.environ:
         cherrypy.config["aes_key"] = bytes(os.getenv("AES_KEY"), "utf8")

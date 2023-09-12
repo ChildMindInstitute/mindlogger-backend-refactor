@@ -265,7 +265,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                 # the item id is short
                 # e.g https://github.com/a/b/item_name and item.id is item_name
                 for _prop, _val in self.properties.items():
-                    if node.ld_id == _prop.rsplit('/', 1).pop():
+                    if node.ld_id == _prop.rsplit("/", 1).pop():
                         for prop, val in _val.items():
                             if val is not None and hasattr(node, prop):
                                 setattr(node, prop, val)

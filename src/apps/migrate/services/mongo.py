@@ -115,7 +115,10 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
                         for _intput in _item["reprolib:terms/inputs"]:
                             if "schema:itemListElement" in _intput:
                                 for _el in _intput["schema:itemListElement"]:
-                                    if "@id" not in _el and "schema:image" in _el:
+                                    if (
+                                        "@id" not in _el
+                                        and "schema:image" in _el
+                                    ):
                                         _el["@id"] = no_ids_flanker_map[
                                             _el["schema:image"]
                                         ]
@@ -148,7 +151,10 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
                                             }
                                         ],
                                         "schema:name": [
-                                            {"@language": "en", "@value": "Block 1"}
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 1",
+                                            }
                                         ],
                                         "schema:value": [{"@value": 0}],
                                     },
@@ -166,7 +172,10 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
                                             }
                                         ],
                                         "schema:name": [
-                                            {"@language": "en", "@value": "Block 2"}
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 2",
+                                            }
                                         ],
                                         "schema:value": [{"@value": 1}],
                                     },
@@ -184,7 +193,10 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
                                             }
                                         ],
                                         "schema:name": [
-                                            {"@language": "en", "@value": "Block 3"}
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 3",
+                                            }
                                         ],
                                         "schema:value": [{"@value": 1}],
                                     },
@@ -202,7 +214,10 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
                                             }
                                         ],
                                         "schema:name": [
-                                            {"@language": "en", "@value": "Block 4"}
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 4",
+                                            }
                                         ],
                                         "schema:value": [{"@value": 1}],
                                     },
@@ -220,7 +235,10 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
                                             }
                                         ],
                                         "schema:name": [
-                                            {"@language": "en", "@value": "Block 5"}
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 5",
+                                            }
                                         ],
                                         "schema:value": [{"@value": 1}],
                                     },
@@ -269,8 +287,11 @@ def patch_broken_applets(
     if applet_id in broken_applets:
         for activity in applet_ld["reprolib:terms/order"][0]["@list"]:
             for property in activity["reprolib:terms/addProperties"]:
-                if type(property["reprolib:terms/isVis"][0]["@value"]) == str and (
-                    "[object object]" in property["reprolib:terms/isVis"][0]["@value"]
+                if type(
+                    property["reprolib:terms/isVis"][0]["@value"]
+                ) == str and (
+                    "[object object]"
+                    in property["reprolib:terms/isVis"][0]["@value"]
                 ):
                     property["reprolib:terms/isVis"] = [{"@value": True}]
 
@@ -310,7 +331,10 @@ def patch_broken_applets(
             "mtg137/Stability_tracker_applet",
             "ChildMindInstitute/stability_tilt_applet_schema",
         ),
-        ("ChildMindInstitute/A-B-Trails", "ChildMindInstitute/mindlogger-trails-task"),
+        (
+            "ChildMindInstitute/A-B-Trails",
+            "ChildMindInstitute/mindlogger-trails-task",
+        ),
     ]
     for what, repl in repo_replacements:
         if "schema:image" in applet_ld and what in applet_ld["schema:image"]:
@@ -328,14 +352,16 @@ def patch_broken_applets(
     for stability_activity in applet_ld["reprolib:terms/order"][0]["@list"]:
         for activity_name, item_label in duplications:
             if stability_activity["@id"] == activity_name:
-                for stability_item in stability_activity["reprolib:terms/order"][0][
-                    "@list"
-                ]:
+                for stability_item in stability_activity[
+                    "reprolib:terms/order"
+                ][0]["@list"]:
                     if (
                         key in stability_item
                         and stability_item[key][0]["@value"] == item_label
                     ):
-                        stability_item[key][0]["@value"] += " " + stability_item["@id"]
+                        stability_item[key][0]["@value"] += (
+                            " " + stability_item["@id"]
+                        )
 
     broken_conditional_logic_naming = [
         "64e7af5e22d81858d681de92",
@@ -346,9 +372,9 @@ def patch_broken_applets(
             for _report in _activity["reprolib:terms/reports"][0]["@list"]:
                 _report = fix_spacing_in_report(_report)
                 if "reprolib:terms/conditionals" in _report:
-                    for _conditional in _report["reprolib:terms/conditionals"][0][
-                        "@list"
-                    ]:
+                    for _conditional in _report["reprolib:terms/conditionals"][
+                        0
+                    ]["@list"]:
                         _conditional = fix_spacing_in_report(_conditional)
 
     broken_conditional_non_existing_slider2_item = ["64dce2d622d81858d6819f13"]
@@ -366,7 +392,10 @@ def patch_broken_applets(
     broken_conditional_non_existing_items = ["633ecc1ab7ee9765ba54452d"]
     if applet_id in broken_conditional_non_existing_items:
         for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
-            if _activity["@id"] == "NIH Toolbox: Perceived Stress (SR 18+1) (1)":
+            if (
+                _activity["@id"]
+                == "NIH Toolbox: Perceived Stress (SR 18+1) (1)"
+            ):
                 for _report in _activity["reprolib:terms/reports"][0]["@list"]:
                     key = "reprolib:terms/printItems"
                     if key in _report:
@@ -407,7 +436,10 @@ def patch_broken_applets(
         "--<--": "left-neut",
         "-->--": "right-neut",
     }
-    no_ids_flanker_buttons = ["62768ff20a62aa1056078093", "64946e208819c1120b4f9271"]
+    no_ids_flanker_buttons = [
+        "62768ff20a62aa1056078093",
+        "64946e208819c1120b4f9271",
+    ]
     if applet_id in no_ids_flanker_buttons:
         for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
             if _activity["@id"] == "Flanker_360":
@@ -416,7 +448,10 @@ def patch_broken_applets(
                         for _intput in _item["reprolib:terms/inputs"]:
                             if "schema:itemListElement" in _intput:
                                 for _el in _intput["schema:itemListElement"]:
-                                    if "@id" not in _el and "schema:image" in _el:
+                                    if (
+                                        "@id" not in _el
+                                        and "schema:image" in _el
+                                    ):
                                         _el["@id"] = no_ids_flanker_map[
                                             _el["schema:image"]
                                         ]
@@ -449,7 +484,10 @@ def patch_broken_applets(
                                             }
                                         ],
                                         "schema:name": [
-                                            {"@language": "en", "@value": "Block 1"}
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 1",
+                                            }
                                         ],
                                         "schema:value": [{"@value": 0}],
                                     },
@@ -467,7 +505,10 @@ def patch_broken_applets(
                                             }
                                         ],
                                         "schema:name": [
-                                            {"@language": "en", "@value": "Block 2"}
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 2",
+                                            }
                                         ],
                                         "schema:value": [{"@value": 1}],
                                     },
@@ -485,7 +526,10 @@ def patch_broken_applets(
                                             }
                                         ],
                                         "schema:name": [
-                                            {"@language": "en", "@value": "Block 3"}
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 3",
+                                            }
                                         ],
                                         "schema:value": [{"@value": 1}],
                                     },
@@ -503,7 +547,10 @@ def patch_broken_applets(
                                             }
                                         ],
                                         "schema:name": [
-                                            {"@language": "en", "@value": "Block 4"}
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 4",
+                                            }
                                         ],
                                         "schema:value": [{"@value": 1}],
                                     },
@@ -521,7 +568,10 @@ def patch_broken_applets(
                                             }
                                         ],
                                         "schema:name": [
-                                            {"@language": "en", "@value": "Block 5"}
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 5",
+                                            }
                                         ],
                                         "schema:value": [{"@value": 1}],
                                     },
@@ -565,17 +615,25 @@ def fix_spacing_in_report(_report: dict) -> dict:
     if "reprolib:terms/isVis" in _report:
         _report["reprolib:terms/isVis"][0]["@value"] = (
             _report["reprolib:terms/isVis"][0]["@value"]
-            .replace("averageScore_average_less than", "averageScore_average_less_than")
             .replace(
-                "averageScore_average_greater than", "averageScore_average_greater_than"
+                "averageScore_average_less than",
+                "averageScore_average_less_than",
             )
-            .replace("averageScore_average_equal to", "averageScore_average_equal_to")
+            .replace(
+                "averageScore_average_greater than",
+                "averageScore_average_greater_than",
+            )
+            .replace(
+                "averageScore_average_equal to",
+                "averageScore_average_equal_to",
+            )
             .replace(
                 "averageScore_average_is not equal to",
                 "averageScore_average_is_not_equal_to",
             )
             .replace(
-                "averageScore_average_outside of", "averageScore_average_outside_of"
+                "averageScore_average_outside of",
+                "averageScore_average_outside_of",
             )
         )
 
@@ -594,7 +652,9 @@ class Mongo:
     async def get_converter_result(schema) -> InternalModel | PublicModel:
         document_loader = get_document_loader()
         context_resolver = get_context_resolver(document_loader)
-        converter = get_jsonld_model_converter(document_loader, context_resolver)
+        converter = get_jsonld_model_converter(
+            document_loader, context_resolver
+        )
 
         return await converter.convert(schema)
 
@@ -647,7 +707,10 @@ class Mongo:
                         encrypted_count += 1
                     else:
                         email_aes_encrypted = None
-                elif user.get("email_encrypted") and len(user.get("email")) == 56:
+                elif (
+                    user.get("email_encrypted")
+                    and len(user.get("email")) == 56
+                ):
                     email_hash = user.get("email")
                     email_aes_encrypted = None
                 else:
@@ -727,15 +790,19 @@ class Mongo:
             and "reprolib:terms/order" in original_format["applet"]
         ):
             act_blacklist = []
-            for _orig_act in original_format["applet"]["reprolib:terms/order"][0][
-                "@list"
-            ]:
+            for _orig_act in original_format["applet"]["reprolib:terms/order"][
+                0
+            ]["@list"]:
                 act_blacklist.append(_orig_act["@id"])
 
             order = applet_format["applet"]["reprolib:terms/order"][0]["@list"]
-            order = [_act for _act in order if _act["@id"] not in act_blacklist]
+            order = [
+                _act for _act in order if _act["@id"] not in act_blacklist
+            ]
             if len(order) == 0:
-                order = [{"@id": str(_act)} for _act in applet_format["activities"]]
+                order = [
+                    {"@id": str(_act)} for _act in applet_format["activities"]
+                ]
             applet_format["applet"]["reprolib:terms/order"][0]["@list"] = order
 
         return applet_format
@@ -746,7 +813,9 @@ class Mongo:
         )
 
         if applet_format is None or applet_format == {}:
-            raise FormatldException(message="formatLdObject returned empty object")
+            raise FormatldException(
+                message="formatLdObject returned empty object"
+            )
 
         if "duplicateOf" in applet:
             applet_format = self.patch_cloned_activities_order(
@@ -754,7 +823,9 @@ class Mongo:
             )
 
         if applet_format["activities"] == {}:
-            raise FormatldException(message="formatLdObject returned empty activities")
+            raise FormatldException(
+                message="formatLdObject returned empty activities"
+            )
 
         for key, activity in applet_format["activities"].items():
             applet_format["activities"][key] = jsonld_expander.formatLdObject(
@@ -786,7 +857,9 @@ class Mongo:
             for item in activity_object["reprolib:terms/order"][0]["@list"]:
                 item_key = item["@id"]
                 if item_key in activity_items_by_id:
-                    activity_items_objects.append(activity_items_by_id[item_key])
+                    activity_items_objects.append(
+                        activity_items_by_id[item_key]
+                    )
                 else:
                     activity_items_objects.append(item)
                     print(
@@ -809,7 +882,9 @@ class Mongo:
                 list(activities_by_id.keys()), activity["@id"]
             )
             if activity_id:
-                activity_objects.append(activities_by_id[activity_id]["activity"])
+                activity_objects.append(
+                    activities_by_id[activity_id]["activity"]
+                )
             else:
                 print(
                     "Warning: activity ",
@@ -844,7 +919,9 @@ class Mongo:
                             "presents in flow order but absent in applet activities. activityFlowId:",
                             str(key),
                         )
-                activity_flow["reprolib:terms/order"][0]["@list"] = activity_flow_order
+                activity_flow["reprolib:terms/order"][0][
+                    "@list"
+                ] = activity_flow_order
                 activity_flows_fixed[key] = activity_flow
 
             activity_flow_objects = []
@@ -852,7 +929,9 @@ class Mongo:
             # setup activity flows
             for flow in applet["reprolib:terms/activityFlowOrder"][0]["@list"]:
                 if activity_flows_fixed.get(flow["@id"]):
-                    activity_flow_objects.append(activity_flows_fixed[flow["@id"]])
+                    activity_flow_objects.append(
+                        activity_flows_fixed[flow["@id"]]
+                    )
 
             applet["reprolib:terms/activityFlowOrder"][0][
                 "@list"
@@ -911,7 +990,9 @@ class Mongo:
         )
         if "encryption" in applet["meta"]:
             converted.encryption = Encryption(
-                public_key=json.dumps(applet["meta"]["encryption"]["appletPublicKey"]),
+                public_key=json.dumps(
+                    applet["meta"]["encryption"]["appletPublicKey"]
+                ),
                 prime=json.dumps(applet["meta"]["encryption"]["appletPrime"]),
                 base=json.dumps(applet["meta"]["encryption"]["base"]),
                 account_id=str(applet["accountId"]),
@@ -1029,14 +1110,18 @@ class Mongo:
         account = AccountProfile().findOne({"_id": applet["accountId"]})
         owner = User().findOne({"_id": applet["creatorId"]})
         info["applet_id"] = applet_id
-        info["applet_name"] = applet["meta"]["applet"].get("displayName", "Untitled")
+        info["applet_name"] = applet["meta"]["applet"].get(
+            "displayName", "Untitled"
+        )
         info["account_name"] = account["accountName"]
         info["owner_email"] = owner["email"]
         info["updated"] = applet["updated"]
 
         return info
 
-    def docs_by_ids(self, collection: str, doc_ids: List[ObjectId]) -> List[dict]:
+    def docs_by_ids(
+        self, collection: str, doc_ids: List[ObjectId]
+    ) -> List[dict]:
         return self.db[collection].find({"_id": {"$in": doc_ids}})
 
     def get_user_nickname(self, user) -> str:
@@ -1054,8 +1139,12 @@ class Mongo:
         return f"{first_name} {last_name}"
 
     def reviewer_meta(self, applet_id: ObjectId) -> List[str]:
-        applet_docs = self.db["accountProfile"].find({"applets.user": applet_id})
-        return list(map(lambda doc: str(mongoid_to_uuid(doc["userId"])), applet_docs))
+        applet_docs = self.db["accountProfile"].find(
+            {"applets.user": applet_id}
+        )
+        return list(
+            map(lambda doc: str(mongoid_to_uuid(doc["userId"])), applet_docs)
+        )
 
     def respondent_metadata(self, user: dict, applet_id: ObjectId):
         doc_cur = (
@@ -1126,7 +1215,9 @@ class Mongo:
                         not_found_applets.append(applet_id)
                         continue
                     applet = next(
-                        filter(lambda item: item["_id"] == applet_id, applet_docs),
+                        filter(
+                            lambda item: item["_id"] == applet_id, applet_docs
+                        ),
                         None,
                     )
                     if not applet:
@@ -1182,7 +1273,9 @@ class Mongo:
             return Role.RESPONDENT
 
     def get_owner_by_applet_profile(self, applet_profile):
-        profiles = self.db["accountProfile"].find({"userId": applet_profile["userId"]})
+        profiles = self.db["accountProfile"].find(
+            {"userId": applet_profile["userId"]}
+        )
         it = filter(lambda p: p["_id"] == p["accountId"], profiles)
         profile = next(it, None)
         return profile["userId"] if profiles else None
