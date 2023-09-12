@@ -297,12 +297,13 @@ class EventMigrationService:
                         else:
                             continue
                     else:
-                        notification_data["trigger_type"] = "FIXED"
-
                         if notification.start:
+                            notification_data["trigger_type"] = "FIXED"
                             notification_data["at_time"] = datetime.strptime(
                                 notification.start, "%H:%M"
                             ).time()
+                        else:
+                            continue
 
                     notification_data["event_id"] = pg_event.id
 
