@@ -366,13 +366,23 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_activities_which_has_answer(
         self, activity_hist_ids: list[str], respondent_id: uuid.UUID | None
-    ) -> list[uuid.UUID]:
+    ) -> list[str]:
+        activity_ids = set(
+            map(lambda id_version: id_version.split("_")[0], activity_hist_ids)
+        )
         query: Query = select(AnswerSchema.activity_history_id)
         query = query.where(
-            AnswerSchema.activity_history_id.in_(activity_hist_ids)
+            or_(
+                *(
+                    AnswerSchema.activity_history_id.like(f"{item}_%")
+                    for item in activity_ids
+                )
+            )
         )
         if respondent_id:
             query.where(AnswerSchema.respondent_id == respondent_id)
+        query = query.distinct(AnswerSchema.activity_history_id)
+        query.order_by(AnswerSchema.activity_history_id)
         db_result = await self._execute(query)
         results = []
         for activity_id in db_result.all():
