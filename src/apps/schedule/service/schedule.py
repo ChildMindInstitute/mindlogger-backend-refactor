@@ -625,6 +625,7 @@ class ScheduleService:
         activities = await ActivityEventsCRUD(
             self.session
         ).get_by_applet_and_user_id(applet_id, user_id)
+
         activity_ids = {activity.activity_id for activity in activities}
 
         flows = await FlowEventsCRUD(self.session).get_by_applet_and_user_id(
