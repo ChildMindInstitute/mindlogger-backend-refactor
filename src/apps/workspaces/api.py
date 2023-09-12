@@ -329,8 +329,21 @@ async def workspace_managers_list(
     data, total = await service.get_workspace_managers(
         owner_id, None, deepcopy(query_params)
     )
-
-    return ResponseMulti(result=data, count=total)
+    workspaces_manager = []
+    for workspace_manager in data:
+        workspaces_manager.append(
+            PublicWorkspaceManager(
+                id=workspace_manager.id,
+                first_name=workspace_manager.first_name,
+                last_name=workspace_manager.last_name,
+                email=workspace_manager.email_encrypted,
+                roles=workspace_manager.roles,
+                last_seen=workspace_manager.last_seen,
+                is_pinned=workspace_manager.is_pinned,
+                applets=workspace_manager.applets,
+            )
+        )
+    return ResponseMulti(result=workspaces_manager, count=total)
 
 
 async def workspace_applet_managers_list(
@@ -352,8 +365,21 @@ async def workspace_applet_managers_list(
     data, total = await service.get_workspace_managers(
         owner_id, applet_id, deepcopy(query_params)
     )
-
-    return ResponseMulti(result=data, count=total)
+    workspaces_manager = []
+    for workspace_manager in data:
+        workspaces_manager.append(
+            PublicWorkspaceManager(
+                id=workspace_manager.id,
+                first_name=workspace_manager.first_name,
+                last_name=workspace_manager.last_name,
+                email=workspace_manager.email_encrypted,
+                roles=workspace_manager.roles,
+                last_seen=workspace_manager.last_seen,
+                is_pinned=workspace_manager.is_pinned,
+                applets=workspace_manager.applets,
+            )
+        )
+    return ResponseMulti(result=workspaces_manager, count=total)
 
 
 async def workspace_respondent_pin(
