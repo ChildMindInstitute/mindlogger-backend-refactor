@@ -105,8 +105,14 @@ class FolderCRUD(BaseCRUD):
         await self._execute(query)
 
     async def has_applets(self, folder_id: uuid.UUID):
-        query: Query = select(FolderAppletSchema.id)
-        query = query.where(FolderAppletSchema.folder_id == folder_id)
+        query: Query = select(FolderAppletSchema.id, AppletSchema.is_deleted)
+        query = query.join(
+            AppletSchema, AppletSchema.id == FolderAppletSchema.id
+        )
+        query = query.where(
+            FolderAppletSchema.folder_id == folder_id,
+            AppletSchema.is_deleted.is_(False),
+        )
         query = query.exists()
 
         db_result = await self._execute(select(query))

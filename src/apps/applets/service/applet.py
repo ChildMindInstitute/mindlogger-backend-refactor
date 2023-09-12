@@ -43,7 +43,7 @@ from apps.applets.errors import (
     AppletsFolderAccessDenied,
 )
 from apps.applets.service.applet_history_service import AppletHistoryService
-from apps.folders.crud import FolderCRUD
+from apps.folders.crud import FolderAppletCRUD, FolderCRUD
 from apps.shared.version import (
     INITIAL_VERSION,
     VERSION_DIFFERENCE_ACTIVITY,
@@ -607,6 +607,9 @@ class AppletService:
             applet_id
         )
         await AppletsCRUD(self.session).delete_by_id(applet_id)
+        await FolderAppletCRUD(self.session).delete_folder_applet_by_applet_id(
+            applet_id
+        )
 
     async def set_applet_folder(self, schema: AppletFolder):
         if schema.folder_id:
