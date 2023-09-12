@@ -4,8 +4,10 @@ import datetime
 import json
 import uuid
 from collections import defaultdict
+from typing import List
 
 import aiohttp
+import pydantic
 import sentry_sdk
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -67,9 +69,11 @@ from apps.answers.tasks import create_report
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
+from apps.mailing.domain import MessageSchema
+from apps.mailing.services import MailingService
 from apps.shared.encryption import decrypt
 from apps.shared.query_params import QueryParams
-from apps.users import UsersCRUD
+from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -826,15 +830,16 @@ class AnswerService:
         if len(raw_alerts) == 0:
             return
         cache = RedisCache()
-        receiver_ids = await UserAppletAccessCRUD(
+        persons = await UserAppletAccessCRUD(
             self.session
         ).get_responsible_persons(applet_id, self.user_id)
         alert_schemas = []
-        for receiver_id in receiver_ids:
+
+        for person in persons:
             for raw_alert in raw_alerts:
                 alert_schemas.append(
                     AlertSchema(
-                        user_id=receiver_id,
+                        user_id=person.id,
                         respondent_id=self.user_id,
                         is_watched=False,
                         applet_id=applet_id,
@@ -845,7 +850,6 @@ class AnswerService:
                         answer_id=answer_id,
                     )
                 )
-
         alerts = await AlertCRUD(self.session).create_many(alert_schemas)
 
         for alert in alerts:
@@ -875,6 +879,7 @@ class AnswerService:
             except Exception as e:
                 sentry_sdk.capture_exception(e)
                 break
+        await self.send_alert_mail(persons)
 
     async def get_completed_answers_data(
         self, applet_id: uuid.UUID, version: str, from_date: datetime.date
@@ -900,6 +905,19 @@ class AnswerService:
             return False
 
         return True
+
+    @staticmethod
+    async def send_alert_mail(users: List[UserSchema]):
+        mail_service = MailingService()
+        schemas = pydantic.parse_obj_as(List[User], users)
+        email_list = [schema.plain_email for schema in schemas]
+        return await mail_service.send(
+            MessageSchema(
+                recipients=email_list,
+                subject="Response alert",
+                body=mail_service.get_template(path="response_alert_en"),
+            )
+        )
 
 
 class ReportServerService:

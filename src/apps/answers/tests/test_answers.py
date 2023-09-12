@@ -6,6 +6,7 @@ from asynctest import CoroutineMock, patch
 from sqlalchemy import select
 
 from apps.answers.db.schemas import AnswerSchema
+from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback, rollback_with_session
 from infrastructure.utility import RedisCacheTest
@@ -121,6 +122,8 @@ class TestAnswerActivityItems(BaseTest):
         published_values = published_values or []
         assert len(published_values) == 1
         assert len(RedisCacheTest()._storage) == 3
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].subject == "Response alert"
 
     @patch("aiohttp.ClientSession.post")
     @rollback
