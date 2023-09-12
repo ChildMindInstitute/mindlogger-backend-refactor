@@ -791,17 +791,19 @@ class AnswerService:
             if str(respondent_id) not in respondents:
                 raise AnswerAccessDeniedError()
 
-        answer_srv = AnswersCRUD(self.answer_session)
-        applet_version = await answer_srv.get_latest_applet_version(applet_id)
-
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_by_applet_id_for_summary(
-            applet_id_version=applet_version, applet_id=applet_id
+            applet_id=applet_id
         )
         activity_ver_ids = [activity.id_version for activity in activities]
         activity_ids_with_answer = await AnswersCRUD(
             self.answer_session
         ).get_activities_which_has_answer(activity_ver_ids, respondent_id)
+        answers_act_ids = set(
+            map(
+                lambda act_ver: act_ver.split("_")[0], activity_ids_with_answer
+            )
+        )
 
         results = []
         for activity in activities:
@@ -810,7 +812,7 @@ class AnswerService:
                     id=activity.id,
                     name=activity.name,
                     is_performance_task=activity.is_performance_task,
-                    has_answer=activity.id_version in activity_ids_with_answer,
+                    has_answer=str(activity.id) in answers_act_ids,
                 )
             )
         return results
