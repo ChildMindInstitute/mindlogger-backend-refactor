@@ -1060,21 +1060,6 @@ class Mongo:
             )
         return converted
 
-    def paginate(self, collection_function, page_size=300):
-        def _page(page_size=page_size, skip_count=0):
-            items = collection_function().skip(skip_count).limit(page_size)
-            return items
-
-        page_number = 1
-
-        while True:
-            skip_count = (page_number - 1) * page_size
-            items = _page(skip_count=skip_count)
-            yield from items
-            page_number += 1
-            if items.count() < page_size:
-                break
-
     def get_answer_migration_queries(self, **kwargs):
         query = {
             "meta.responses": {"$exists": True},
@@ -1082,9 +1067,8 @@ class Mongo:
             "meta.applet.@id": kwargs["applet_id"],
             "meta.applet.version": kwargs["version"],
         }
-        creators_ids = Item().find(query=query).distinct("creatorId")
-        # item_collection = self.db["item"]
-        # creators_ids = item_collection.find(query).distinct("creatorId")
+        item_collection = self.db["item"]
+        creators_ids = item_collection.find(query).distinct("creatorId")
         for creator_id in creators_ids:
             yield {**query, "creatorId": creator_id}
 
@@ -1093,15 +1077,14 @@ class Mongo:
         *,
         answer_migration_queries,
     ):
-        for query in answer_migration_queries:
-            items = list(Item().find(query=query, sort=[
-                    ("created", ASCENDING),
-                ], fields={"_id": 1}))
+        item_collection = self.db["item"]
 
+        for query in answer_migration_queries:
+            items = item_collection.find(query, sort=[("created", ASCENDING)])
             del query["meta.responses"]
             answer_with_files = dict()
             for item in items:
-                item = Item().findOne(query={'_id': item['_id']})
+                item = item_collection.find_one({"_id": item["_id"]})
                 if not answer_with_files and "dataSource" in item["meta"]:
                     answer_with_files["answer"] = item
                     answer_with_files["query"] = query
