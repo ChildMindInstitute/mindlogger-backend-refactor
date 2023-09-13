@@ -54,10 +54,11 @@ class FolderCRUD(BaseCRUD):
             AppletSchema,
             AppletSchema.id == FolderAppletSchema.applet_id,
         )
+        query = query.where(AppletSchema.is_deleted.is_(False))  # noqa
         query = query.where(FolderSchema.workspace_id == workspace_id)
         query = query.order_by(FolderSchema.id.desc())
         query = query.where(FolderSchema.creator_id == user_id)
-        query = query.where(AppletSchema.is_deleted.is_(False))  # noqa
+        query = query.distinct(FolderSchema.id)
 
         db_result = await self._execute(query)
 
@@ -107,7 +108,7 @@ class FolderCRUD(BaseCRUD):
     async def has_applets(self, folder_id: uuid.UUID):
         query: Query = select(FolderAppletSchema.id, AppletSchema.is_deleted)
         query = query.join(
-            AppletSchema, AppletSchema.id == FolderAppletSchema.id
+            AppletSchema, AppletSchema.id == FolderAppletSchema.applet_id
         )
         query = query.where(
             FolderAppletSchema.folder_id == folder_id,
