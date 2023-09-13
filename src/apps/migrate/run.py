@@ -227,6 +227,34 @@ def migrate_folders(mongo, postgres):
     migration_log.warning(f"[FOLDER_APPLETS] {migrated=}, {skipped=}")
 
 
+def migrate_library(mongo, postgres):
+    lib_count = 0
+    theme_count = 0
+    lib_set, theme_set = mongo.get_library()
+    for lib in lib_set:
+        if lib.applet_id_version is None:
+            version = postgres.get_latest_applet_id_version(lib.applet_id)
+            lib.applet_id_version = version
+            if version is None:
+                continue
+        keywords = postgres.get_applet_library_keywords(
+            applet_id=lib.applet_id, applet_version=lib.applet_id_version
+        )
+        lib.search_keywords = keywords + lib.keywords
+        success = postgres.save_library_item(lib)
+        if success:
+            lib_count += 1
+
+    for theme in theme_set:
+        success = postgres.save_theme_item(theme)
+        if success:
+            theme_count += 1
+            postgres.add_theme_to_applet(theme.applet_id, theme.id)
+
+    migration_log.warning(f"[LIBRARY] Migrated {lib_count}")
+    migration_log.warning(f"[THEME] Migrated {theme_count}")
+
+
 async def migrate_events(mongo: Mongo, postgres: Postgres):
     events_collection = mongo.db["events"]
     session = session_manager.get_session()

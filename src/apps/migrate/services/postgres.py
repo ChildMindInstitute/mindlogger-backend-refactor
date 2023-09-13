@@ -12,6 +12,7 @@ from psycopg2.errorcodes import UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION
 from bson import ObjectId
 
 from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
+from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
 from apps.migrate.services.applet_service import AppletMigrationService
 from apps.migrate.utilities import (
     mongoid_to_uuid,
@@ -420,3 +421,95 @@ class Postgres:
             finally:
                 self.connection.commit()
         return migrated, skipped
+
+    def exec_escaped(self, sql: str, values: tuple, log_tag=""):
+        success = False
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(sql, values)
+            success = True
+        except Exception as ex:
+            migration_log.warning(f"{log_tag} {ex}")
+        finally:
+            self.connection.commit()
+        return success
+
+    def save_library_item(self, lib: LibraryDao) -> bool:
+        sql = """
+        INSERT INTO public."library"
+        (
+            id,  
+            is_deleted,
+            applet_id_version, 
+            keywords, 
+            search_keywords, 
+            created_at, 
+            updated_at, 
+            migrated_date, 
+            migrated_updated
+        )
+        VALUES(
+            %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        return self.exec_escaped(sql, lib.values(), "[LIBRARY]")
+
+    def save_theme_item(self, theme: ThemeDao) -> bool:
+        sql = """
+            INSERT INTO public.themes
+            (
+                id,
+                creator_id,
+                created_at, 
+                updated_at, 
+                is_deleted, 
+                "name", 
+                logo, 
+                background_image, 
+                primary_color, 
+                secondary_color, 
+                tertiary_color, 
+                public, 
+                allow_rename, 
+                migrated_date, 
+                migrated_updated
+            )
+            VALUES
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+        """
+        return self.exec_escaped(sql, theme.values(), "[THEME]")
+
+    def get_latest_applet_id_version(self, applet_id: uuid.UUID) -> str | None:
+        sql = """
+            SELECT id_version 
+            FROM applet_histories 
+            WHERE id = %s 
+            ORDER BY id_version desc 
+            LIMIT 1
+        """
+        cursor = self.connection.cursor()
+        cursor.execute(sql, (str(applet_id),))
+        row = cursor.fetchone()
+        return row[0] if row else None
+
+    def get_applet_library_keywords(
+        self, applet_id: uuid.UUID, applet_version: str
+    ) -> List[str]:
+        kw = []
+        cursor = self.connection.cursor()
+        sql = "SELECT description FROM applets WHERE id=%s"
+        cursor.execute(sql, (str(applet_id),))
+        result = cursor.fetchone()
+        if result and result[0]:
+            kw.extend(result[0].values())
+        sql = "SELECT name FROM activity_histories where applet_id=%s"
+        cursor.execute(sql, (applet_version,))
+        result = cursor.fetchall()
+        act_names = map(lambda row: row[0], result)
+        kw.extend(act_names)
+        return kw
+
+    def add_theme_to_applet(self, applet_id: uuid.UUID, theme_id: uuid.UUID):
+        sql = "UPDATE applets SET theme_id = %s WHERE id = %s"
+        return self.exec_escaped(
+            sql, (str(theme_id), str(applet_id)), "[THEME APPLET]"
+        )
