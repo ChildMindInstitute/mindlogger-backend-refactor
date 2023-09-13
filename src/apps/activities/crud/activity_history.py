@@ -133,10 +133,13 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         return db_result.scalars().all()
 
     async def get_by_applet_id_for_summary(
-        self,
-        applet_id: uuid.UUID,
-        applet_id_version: str | None = None,
+        self, applet_id: uuid.UUID
     ) -> list[ActivityHistorySchema]:
+        app_version_query: Query = select([AppletHistorySchema.id_version])
+        app_version_query = app_version_query.where(
+            AppletHistorySchema.id == applet_id
+        )
+
         activity_types_query: Query = select(ActivityItemHistorySchema.id)
         activity_types_query = activity_types_query.where(
             ActivityItemHistorySchema.response_type.in_(
@@ -162,10 +165,9 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
             AppletHistorySchema,
             AppletHistorySchema.id_version == ActivityHistorySchema.applet_id,
         )
-        if applet_id_version:
-            query = query.where(
-                ActivityHistorySchema.applet_id == applet_id_version
-            )
+        query = query.where(
+            ActivityHistorySchema.applet_id.in_(app_version_query)
+        )
         query = query.where(AppletHistorySchema.id == applet_id)
         query = query.where(
             ActivityHistorySchema.is_reviewable == False  # noqa

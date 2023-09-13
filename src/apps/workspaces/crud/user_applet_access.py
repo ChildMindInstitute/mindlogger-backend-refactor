@@ -1236,7 +1236,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     UserAppletAccessSchema.role == Role.OWNER,
                     UserAppletAccessSchema.role == Role.MANAGER,
                     and_(
-                        UserAppletAccessSchema.role == Role.COORDINATOR,
+                        UserAppletAccessSchema.role == Role.REVIEWER,
                         UserAppletAccessSchema.meta.contains(
                             dict(respondents=[str(respondent_id)])
                         ),
