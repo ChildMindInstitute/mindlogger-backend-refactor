@@ -10,6 +10,8 @@ from functools import partial
 from Cryptodome.Cipher import AES
 from bson.objectid import ObjectId
 from pymongo import MongoClient, ASCENDING
+from sqlalchemy.types import String
+from sqlalchemy_utils.types.encrypted.encrypted_type import StringEncryptedType
 
 from apps.girderformindlogger.models.activity import Activity
 from apps.girderformindlogger.models.applet import Applet
@@ -43,9 +45,12 @@ from apps.migrate.utilities import (
     uuid_to_mongoid,
 )
 from apps.shared.domain.base import InternalModel, PublicModel
-from apps.shared.encryption import encrypt
+from apps.shared.encryption import encrypt, get_key
 from apps.workspaces.domain.constants import Role
 from apps.applets.domain.base import Encryption
+
+
+enc = StringEncryptedType(key=get_key())
 
 
 def decrypt(data):
@@ -188,12 +193,14 @@ class Mongo:
                 first_name = "-"
             elif len(first_name) >= 50:
                 first_name = first_name[:49]
+            first_name = enc.process_bind_param(first_name, String)
 
             last_name = decrypt(user.get("lastName"))
             if not last_name:
                 last_name = "-"
             elif len(last_name) >= 50:
                 last_name = last_name[:49]
+            last_name = enc.process_bind_param(last_name, String)
 
             if user.get("email"):
                 if not user.get("email_encrypted"):
@@ -201,7 +208,9 @@ class Mongo:
                         user.get("email").encode("utf-8")
                     ).hexdigest()
                     if "@" in user.get("email"):
-                        email_aes_encrypted = user.get("email")
+                        email_aes_encrypted = enc.process_bind_param(
+                            user.get("email"), String
+                        )
                         encrypted_count += 1
                     else:
                         email_aes_encrypted = None
@@ -254,6 +263,7 @@ class Mongo:
             workspace_name = user_workspace.get("accountName")
             if len(workspace_name) >= 100:
                 workspace_name = workspace_name[:99]
+            workspace_name = enc.process_bind_param(workspace_name, String)
             results.append(
                 {
                     "id_": user_workspace.get("_id"),
