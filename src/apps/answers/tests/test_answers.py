@@ -1604,3 +1604,42 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         assert response.status_code == 403
+
+    @rollback
+    async def test_public_answer_with_zero_timestamps(self):
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            created_at=1690188731636,
+            answer=dict(
+                user_public_key="user key",
+                events=json.dumps(dict(events=["event1", "event2"])),
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                scheduled_time=1690188679657,
+                start_time=0,
+                end_time=0,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
+        )
+
+        response = await self.client.post(
+            self.public_answer_url, data=create_data
+        )
+
+        assert response.status_code == 201, response.json()
