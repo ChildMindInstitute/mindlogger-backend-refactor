@@ -39,7 +39,6 @@ class FolderCRUD(BaseCRUD):
         query: Query = select(
             FolderSchema,
             func.coalesce(workspace_applets_query.c.applet_count, 0),
-            AppletSchema.is_deleted,
         )
         query = query.join(
             workspace_applets_query,
@@ -54,7 +53,7 @@ class FolderCRUD(BaseCRUD):
             AppletSchema,
             AppletSchema.id == FolderAppletSchema.applet_id,
         )
-        query = query.where(AppletSchema.is_deleted.is_(False))  # noqa
+        query = query.where(AppletSchema.is_deleted.is_(False))
         query = query.where(FolderSchema.workspace_id == workspace_id)
         query = query.order_by(FolderSchema.id.desc())
         query = query.where(FolderSchema.creator_id == user_id)
@@ -64,7 +63,7 @@ class FolderCRUD(BaseCRUD):
 
         schemas = []
 
-        for schema, applet_count, _ in db_result.all():
+        for schema, applet_count in db_result.all():
             schema.applet_count = applet_count
             schemas.append(schema)
 
