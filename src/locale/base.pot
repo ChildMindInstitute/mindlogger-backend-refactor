@@ -235,15 +235,7 @@ msgstr ""
 msgid "Not enough permissions."
 msgstr ""
 
-#: apps/authentication/errors.py:30
-msgid "Incorrect Email."
-msgstr ""
-
-#: apps/authentication/errors.py:33
-msgid "Incorrect Password."
-msgstr ""
-
-#: apps/authentication/errors.py:33
+#: apps/authentication/errors.py:29
 msgid "Incorrect password for {email} if that user exists"
 msgstr ""
 
