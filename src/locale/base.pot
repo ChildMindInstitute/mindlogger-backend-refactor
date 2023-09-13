@@ -243,6 +243,10 @@ msgstr ""
 msgid "Incorrect Password."
 msgstr ""
 
+#: apps/authentication/errors.py:33
+msgid "Incorrect password for {email} if that user exists"
+msgstr ""
+
 #: apps/file/errors.py:7
 msgid "File not found."
 msgstr ""

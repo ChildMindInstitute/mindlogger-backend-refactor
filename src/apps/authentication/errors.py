@@ -32,3 +32,7 @@ class EmailDoesNotExist(AccessDeniedError):
 
 class PasswordMismatch(AccessDeniedError):
     message = _("Incorrect Password.")
+
+
+class InvalidCredentials(AccessDeniedError):
+    message = _("Incorrect password for {email} if that user exists")
