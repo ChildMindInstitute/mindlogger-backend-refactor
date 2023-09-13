@@ -86,7 +86,6 @@ def downgrade() -> None:
             decrypted_field = StringEncryptedType(Unicode, get_key).process_result_value(
                 encrypted_field, dialect=conn.dialect
             )
-            # print("decrypted_email =", decrypted_email)
             field_encrypted = encrypt(bytes(decrypted_field, "utf-8")).hex()
             conn.execute(
                 sa.text(f"UPDATE {table_name} SET {column_name} = :field_encrypted WHERE id = :table_id"),
