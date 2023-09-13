@@ -19,6 +19,7 @@ from apps.girderformindlogger.models.activity import Activity
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.folder import Folder as FolderModel
 from apps.girderformindlogger.models.user import User
+from apps.girderformindlogger.models.item import Item
 from apps.girderformindlogger.utility import jsonld_expander
 from apps.jsonld_converter.dependencies import (
     get_context_resolver,
@@ -1081,9 +1082,9 @@ class Mongo:
             "meta.applet.@id": kwargs["applet_id"],
             "meta.applet.version": kwargs["version"],
         }
-
-        item_collection = self.db["item"]
-        creators_ids = item_collection.find(query).distinct("creatorId")
+        creators_ids = Item().find(query=query).distinct("creatorId")
+        # item_collection = self.db["item"]
+        # creators_ids = item_collection.find(query).distinct("creatorId")
         for creator_id in creators_ids:
             yield {**query, "creatorId": creator_id}
 
@@ -1093,17 +1094,14 @@ class Mongo:
         answer_migration_queries,
     ):
         for query in answer_migration_queries:
-            item_collection = self.db["item"]
-            collection_function = partial(
-                item_collection.find,
-                query,
-                sort=[
+            items = list(Item().find(query=query, sort=[
                     ("created", ASCENDING),
-                ],
-            )
+                ], fields={"_id": 1}))
+
             del query["meta.responses"]
             answer_with_files = dict()
-            for item in self.paginate(collection_function):
+            for item in items:
+                item = Item().findOne(query={'_id': item['_id']})
                 if not answer_with_files and "dataSource" in item["meta"]:
                     answer_with_files["answer"] = item
                     answer_with_files["query"] = query
