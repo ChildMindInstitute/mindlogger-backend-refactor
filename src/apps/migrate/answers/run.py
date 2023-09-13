@@ -230,7 +230,7 @@ class AnswersMigrateFacade:
                 print(s)
 
         print(
-            f"Legacy deleted users answers count {legacy_deleted_respondent_answers}"
+            f"Legacy deleted users answers count: {legacy_deleted_respondent_answers}"
         )
 
         self.mongo.close_connection()
