@@ -120,7 +120,7 @@ class TestAnswerActivityItems(BaseTest):
         )
         published_values = published_values or []
         assert len(published_values) == 1
-        assert len(RedisCacheTest()._storage) == 3
+        assert len(RedisCacheTest()._storage) == 2
 
     @patch("aiohttp.ClientSession.post")
     @rollback
