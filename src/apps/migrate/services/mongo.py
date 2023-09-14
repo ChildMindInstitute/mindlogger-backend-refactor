@@ -1210,8 +1210,6 @@ class Mongo:
                     # Skip owner in case of it was
                     # created on applet migration stage
                     continue
-                if role_name.find("own") != -1:
-                    pass
                 applet_docs = self.docs_by_ids("folder", applet_ids)
                 for applet_id in applet_ids:
                     # Check maybe we already check this id in past
