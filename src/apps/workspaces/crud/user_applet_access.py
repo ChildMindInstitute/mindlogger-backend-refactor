@@ -1222,10 +1222,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
     async def get_responsible_persons(
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
-    ) -> list[uuid.UUID]:
-        query: Query = select(UserAppletAccessSchema.user_id)
+    ) -> list[UserSchema]:
+        query: Query = select(UserSchema)
         query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.join(
+            UserAppletAccessSchema,
+            UserSchema.id == UserAppletAccessSchema.user_id,
+        )
         if respondent_id:
             query = query.where(
                 or_(
