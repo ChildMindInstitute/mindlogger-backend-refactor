@@ -4,8 +4,10 @@ import datetime
 import json
 import uuid
 from collections import defaultdict
+from typing import List
 
 import aiohttp
+import pydantic
 import sentry_sdk
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -67,8 +69,10 @@ from apps.answers.tasks import create_report
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
+from apps.mailing.domain import MessageSchema
+from apps.mailing.services import MailingService
 from apps.shared.query_params import QueryParams
-from apps.users import UsersCRUD
+from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -790,17 +794,19 @@ class AnswerService:
             if str(respondent_id) not in respondents:
                 raise AnswerAccessDeniedError()
 
-        answer_srv = AnswersCRUD(self.answer_session)
-        applet_version = await answer_srv.get_latest_applet_version(applet_id)
-
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_by_applet_id_for_summary(
-            applet_id_version=applet_version, applet_id=applet_id
+            applet_id=applet_id
         )
         activity_ver_ids = [activity.id_version for activity in activities]
         activity_ids_with_answer = await AnswersCRUD(
             self.answer_session
         ).get_activities_which_has_answer(activity_ver_ids, respondent_id)
+        answers_act_ids = set(
+            map(
+                lambda act_ver: act_ver.split("_")[0], activity_ids_with_answer
+            )
+        )
 
         results = []
         for activity in activities:
@@ -809,7 +815,7 @@ class AnswerService:
                     id=activity.id,
                     name=activity.name,
                     is_performance_task=activity.is_performance_task,
-                    has_answer=activity.id_version in activity_ids_with_answer,
+                    has_answer=str(activity.id) in answers_act_ids,
                 )
             )
         return results
@@ -825,15 +831,16 @@ class AnswerService:
         if len(raw_alerts) == 0:
             return
         cache = RedisCache()
-        receiver_ids = await UserAppletAccessCRUD(
+        persons = await UserAppletAccessCRUD(
             self.session
         ).get_responsible_persons(applet_id, self.user_id)
         alert_schemas = []
-        for receiver_id in receiver_ids:
+
+        for person in persons:
             for raw_alert in raw_alerts:
                 alert_schemas.append(
                     AlertSchema(
-                        user_id=receiver_id,
+                        user_id=person.id,
                         respondent_id=self.user_id,
                         is_watched=False,
                         applet_id=applet_id,
@@ -844,7 +851,6 @@ class AnswerService:
                         answer_id=answer_id,
                     )
                 )
-
         alerts = await AlertCRUD(self.session).create_many(alert_schemas)
 
         for alert in alerts:
@@ -867,6 +873,7 @@ class AnswerService:
             except Exception as e:
                 sentry_sdk.capture_exception(e)
                 break
+        await self.send_alert_mail(persons)
 
     async def get_completed_answers_data(
         self, applet_id: uuid.UUID, version: str, from_date: datetime.date
@@ -892,6 +899,19 @@ class AnswerService:
             return False
 
         return True
+
+    @staticmethod
+    async def send_alert_mail(users: List[UserSchema]):
+        mail_service = MailingService()
+        schemas = pydantic.parse_obj_as(List[User], users)
+        email_list = [schema.email_encrypted for schema in schemas]
+        return await mail_service.send(
+            MessageSchema(
+                recipients=email_list,
+                subject="Response alert",
+                body=mail_service.get_template(path="response_alert_en"),
+            )
+        )
 
 
 class ReportServerService:

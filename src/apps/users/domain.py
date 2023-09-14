@@ -4,8 +4,6 @@ from pydantic import BaseModel, EmailStr, Field
 
 from apps.shared.domain import InternalModel, PublicModel
 
-# from apps.shared.encryption import decrypt, encrypt
-
 __all__ = [
     "PublicUser",
     "UserCreate",

@@ -29,6 +29,7 @@ from apps.jsonld_converter.dependencies import (
 from apps.migrate.data_description.applet_user_access import AppletUserDAO
 from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
+from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
 from apps.migrate.exception.exception import (
     FormatldException,
     EmptyAppletException,
@@ -93,6 +94,190 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
             for property in activity["reprolib:terms/addProperties"]:
                 property["reprolib:terms/isVis"] = [{"@value": True}]
 
+    broken_applet_abtrails = [
+        "62768ff20a62aa1056078093",
+        "62d06045acd35a1054f106f6",
+        "64946e208819c1120b4f9271",
+    ]
+    if (
+        applet_id == "62768ff20a62aa1056078093"
+        and applet["schema:version"][0]["@value"] == "1.0.4"
+    ):
+        applet["reprolib:terms/order"][0]["@list"].pop(4)
+
+    no_ids_flanker_map = {
+        "<<<<<": "left-con",
+        "<<><<": "right-inc",
+        ">><>>": "left-inc",
+        ">>>>>": "right-con",
+        "--<--": "left-neut",
+        "-->--": "right-neut",
+    }
+    if applet_id in broken_applet_abtrails:
+        for _activity in applet["reprolib:terms/order"][0]["@list"]:
+            if _activity["@id"] == "Flanker_360":
+                for _item in _activity["reprolib:terms/order"][0]["@list"]:
+                    if "reprolib:terms/inputs" in _item:
+                        for _intput in _item["reprolib:terms/inputs"]:
+                            if "schema:itemListElement" in _intput:
+                                for _el in _intput["schema:itemListElement"]:
+                                    if (
+                                        "@id" not in _el
+                                        and "schema:image" in _el
+                                    ):
+                                        _el["@id"] = no_ids_flanker_map[
+                                            _el["schema:image"]
+                                        ]
+                        _item["reprolib:terms/inputs"].append(
+                            {
+                                "@type": ["http://schema.org/Text"],
+                                "http://schema.org/name": [
+                                    {"@language": "en", "@value": "blockType"}
+                                ],
+                                "http://schema.org/value": [
+                                    {"@language": "en", "@value": "practice"}
+                                ],
+                            }
+                        )
+                        _item["reprolib:terms/inputs"].append(
+                            {
+                                "@type": ["http://schema.org/ItemList"],
+                                "schema:itemListElement": [
+                                    {
+                                        "reprolib:terms/order": [
+                                            {
+                                                "@list": [
+                                                    {"@id": "left-con"},
+                                                    {"@id": "right-con"},
+                                                    {"@id": "left-inc"},
+                                                    {"@id": "right-inc"},
+                                                    {"@id": "left-neut"},
+                                                    {"@id": "right-neut"},
+                                                ]
+                                            }
+                                        ],
+                                        "schema:name": [
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 1",
+                                            }
+                                        ],
+                                        "schema:value": [{"@value": 0}],
+                                    },
+                                    {
+                                        "reprolib:terms/order": [
+                                            {
+                                                "@list": [
+                                                    {"@id": "left-con"},
+                                                    {"@id": "right-con"},
+                                                    {"@id": "left-inc"},
+                                                    {"@id": "right-inc"},
+                                                    {"@id": "left-neut"},
+                                                    {"@id": "right-neut"},
+                                                ]
+                                            }
+                                        ],
+                                        "schema:name": [
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 2",
+                                            }
+                                        ],
+                                        "schema:value": [{"@value": 1}],
+                                    },
+                                    {
+                                        "reprolib:terms/order": [
+                                            {
+                                                "@list": [
+                                                    {"@id": "left-con"},
+                                                    {"@id": "right-con"},
+                                                    {"@id": "left-inc"},
+                                                    {"@id": "right-inc"},
+                                                    {"@id": "left-neut"},
+                                                    {"@id": "right-neut"},
+                                                ]
+                                            }
+                                        ],
+                                        "schema:name": [
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 3",
+                                            }
+                                        ],
+                                        "schema:value": [{"@value": 1}],
+                                    },
+                                    {
+                                        "reprolib:terms/order": [
+                                            {
+                                                "@list": [
+                                                    {"@id": "left-con"},
+                                                    {"@id": "right-con"},
+                                                    {"@id": "left-inc"},
+                                                    {"@id": "right-inc"},
+                                                    {"@id": "left-neut"},
+                                                    {"@id": "right-neut"},
+                                                ]
+                                            }
+                                        ],
+                                        "schema:name": [
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 4",
+                                            }
+                                        ],
+                                        "schema:value": [{"@value": 1}],
+                                    },
+                                    {
+                                        "reprolib:terms/order": [
+                                            {
+                                                "@list": [
+                                                    {"@id": "left-con"},
+                                                    {"@id": "right-con"},
+                                                    {"@id": "left-inc"},
+                                                    {"@id": "right-inc"},
+                                                    {"@id": "left-neut"},
+                                                    {"@id": "right-neut"},
+                                                ]
+                                            }
+                                        ],
+                                        "schema:name": [
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 5",
+                                            }
+                                        ],
+                                        "schema:value": [{"@value": 1}],
+                                    },
+                                ],
+                                "schema:name": [
+                                    {"@language": "en", "@value": "blocks"}
+                                ],
+                                "schema:numberOfItems": [{"@value": 5}],
+                            }
+                        )
+                        _item["reprolib:terms/inputs"].append(
+                            {
+                                "schema:itemListElement": [
+                                    {
+                                        "schema:image": "",
+                                        "schema:name": [
+                                            {"@language": "en", "@value": "<"}
+                                        ],
+                                        "schema:value": [{"@value": 0}],
+                                    },
+                                    {
+                                        "schema:image": "",
+                                        "schema:name": [
+                                            {"@language": "en", "@value": ">"}
+                                        ],
+                                        "schema:value": [{"@value": 1}],
+                                    },
+                                ],
+                                "schema:name": [
+                                    {"@language": "en", "@value": "buttons"}
+                                ],
+                            }
+                        )
     return applet
 
 
@@ -142,7 +327,323 @@ def patch_broken_applets(
                     == "IUQ_Wd_Social_Device"
                 ):
                     property["reprolib:terms/isVis"] = [{"@value": True}]
+
+    repo_replacements = [
+        (
+            "mtg137/Stability_tracker_applet_touch",
+            "ChildMindInstitute/stability_touch_applet_schema",
+        ),
+        (
+            "mtg137/Stability_tracker_applet",
+            "ChildMindInstitute/stability_tilt_applet_schema",
+        ),
+        (
+            "ChildMindInstitute/A-B-Trails",
+            "ChildMindInstitute/mindlogger-trails-task",
+        ),
+    ]
+    for what, repl in repo_replacements:
+        if "schema:image" in applet_ld and what in applet_ld["schema:image"]:
+            contents = json.dumps(applet_ld)
+            contents = contents.replace(what, repl)
+            applet_ld = json.loads(contents)
+
+    # fix duplicated names for stability activity items in prefLabel
+    duplications = [
+        ("stability_schema", "Stability Tracker"),
+        ("flanker_schema", "Visual Stimulus Response"),
+        ("Flanker_360", "Visual Stimulus Response"),
+    ]
+    key = "http://www.w3.org/2004/02/skos/core#prefLabel"
+    for stability_activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+        for activity_name, item_label in duplications:
+            if stability_activity["@id"] == activity_name:
+                for stability_item in stability_activity[
+                    "reprolib:terms/order"
+                ][0]["@list"]:
+                    if (
+                        key in stability_item
+                        and stability_item[key][0]["@value"] == item_label
+                    ):
+                        stability_item[key][0]["@value"] += (
+                            " " + stability_item["@id"]
+                        )
+
+    broken_conditional_logic_naming = [
+        "64e7af5e22d81858d681de92",
+        "633ecc1ab7ee9765ba54452d",
+    ]
+    if applet_id in broken_conditional_logic_naming:
+        for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            for _report in _activity["reprolib:terms/reports"][0]["@list"]:
+                _report = fix_spacing_in_report(_report)
+                if "reprolib:terms/conditionals" in _report:
+                    for _conditional in _report["reprolib:terms/conditionals"][
+                        0
+                    ]["@list"]:
+                        _conditional = fix_spacing_in_report(_conditional)
+
+    broken_conditional_non_existing_slider2_item = ["64dce2d622d81858d6819f13"]
+    if applet_id in broken_conditional_non_existing_slider2_item:
+        for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            for _report in _activity["reprolib:terms/reports"][0]["@list"]:
+                key = "reprolib:terms/printItems"
+                if key in _report:
+                    _report[key][0]["@list"] = [
+                        print_item
+                        for print_item in _report[key][0]["@list"]
+                        if print_item["@value"] != "Slider2"
+                    ]
+
+    broken_conditional_non_existing_items = ["633ecc1ab7ee9765ba54452d"]
+    if applet_id in broken_conditional_non_existing_items:
+        for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            if (
+                _activity["@id"]
+                == "NIH Toolbox: Perceived Stress (SR 18+1) (1)"
+            ):
+                for _report in _activity["reprolib:terms/reports"][0]["@list"]:
+                    key = "reprolib:terms/printItems"
+                    if key in _report:
+                        _report[key][0]["@list"] = [
+                            print_item
+                            for print_item in _report[key][0]["@list"]
+                            if print_item["@value"]
+                            not in [
+                                "nihps_sr18_q05",
+                                "nihps_sr18_q06",
+                                "nihps_sr18_q07",
+                                "nihps_sr18_q08",
+                            ]
+                        ]
+                    if _report["@id"] in [
+                        "averageScore_score_2",
+                        "percentScore_score_3",
+                    ]:
+                        _report.pop("reprolib:terms/jsExpression")
+
+    duplicated_activity_names = ["640b239b601cdc5212d63e75"]
+    key_pref = "http://www.w3.org/2004/02/skos/core#prefLabel"
+    key_alt = "http://www.w3.org/2004/02/skos/core#altLabel"
+    if applet_id in duplicated_activity_names:
+        current_names = []
+        for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            if _activity["@id"] in current_names:
+                _activity["@id"] = _activity["@id"] + " (1)"
+                _activity[key_pref][0]["@value"] = _activity["@id"]
+                _activity[key_alt][0]["@value"] = _activity["@id"]
+            current_names.append(_activity["@id"])
+
+    no_ids_flanker_map = {
+        "<<<<<": "left-con",
+        "<<><<": "right-inc",
+        ">><>>": "left-inc",
+        ">>>>>": "right-con",
+        "--<--": "left-neut",
+        "-->--": "right-neut",
+    }
+    no_ids_flanker_buttons = [
+        "62768ff20a62aa1056078093",
+        "64946e208819c1120b4f9271",
+    ]
+    if applet_id in no_ids_flanker_buttons:
+        for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            if _activity["@id"] == "Flanker_360":
+                for _item in _activity["reprolib:terms/order"][0]["@list"]:
+                    if "reprolib:terms/inputs" in _item:
+                        for _intput in _item["reprolib:terms/inputs"]:
+                            if "schema:itemListElement" in _intput:
+                                for _el in _intput["schema:itemListElement"]:
+                                    if (
+                                        "@id" not in _el
+                                        and "schema:image" in _el
+                                    ):
+                                        _el["@id"] = no_ids_flanker_map[
+                                            _el["schema:image"]
+                                        ]
+                        _item["reprolib:terms/inputs"].append(
+                            {
+                                "@type": ["http://schema.org/Text"],
+                                "http://schema.org/name": [
+                                    {"@language": "en", "@value": "blockType"}
+                                ],
+                                "http://schema.org/value": [
+                                    {"@language": "en", "@value": "practice"}
+                                ],
+                            }
+                        )
+                        _item["reprolib:terms/inputs"].append(
+                            {
+                                "@type": ["http://schema.org/ItemList"],
+                                "schema:itemListElement": [
+                                    {
+                                        "reprolib:terms/order": [
+                                            {
+                                                "@list": [
+                                                    {"@id": "left-con"},
+                                                    {"@id": "right-con"},
+                                                    {"@id": "left-inc"},
+                                                    {"@id": "right-inc"},
+                                                    {"@id": "left-neut"},
+                                                    {"@id": "right-neut"},
+                                                ]
+                                            }
+                                        ],
+                                        "schema:name": [
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 1",
+                                            }
+                                        ],
+                                        "schema:value": [{"@value": 0}],
+                                    },
+                                    {
+                                        "reprolib:terms/order": [
+                                            {
+                                                "@list": [
+                                                    {"@id": "left-con"},
+                                                    {"@id": "right-con"},
+                                                    {"@id": "left-inc"},
+                                                    {"@id": "right-inc"},
+                                                    {"@id": "left-neut"},
+                                                    {"@id": "right-neut"},
+                                                ]
+                                            }
+                                        ],
+                                        "schema:name": [
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 2",
+                                            }
+                                        ],
+                                        "schema:value": [{"@value": 1}],
+                                    },
+                                    {
+                                        "reprolib:terms/order": [
+                                            {
+                                                "@list": [
+                                                    {"@id": "left-con"},
+                                                    {"@id": "right-con"},
+                                                    {"@id": "left-inc"},
+                                                    {"@id": "right-inc"},
+                                                    {"@id": "left-neut"},
+                                                    {"@id": "right-neut"},
+                                                ]
+                                            }
+                                        ],
+                                        "schema:name": [
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 3",
+                                            }
+                                        ],
+                                        "schema:value": [{"@value": 1}],
+                                    },
+                                    {
+                                        "reprolib:terms/order": [
+                                            {
+                                                "@list": [
+                                                    {"@id": "left-con"},
+                                                    {"@id": "right-con"},
+                                                    {"@id": "left-inc"},
+                                                    {"@id": "right-inc"},
+                                                    {"@id": "left-neut"},
+                                                    {"@id": "right-neut"},
+                                                ]
+                                            }
+                                        ],
+                                        "schema:name": [
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 4",
+                                            }
+                                        ],
+                                        "schema:value": [{"@value": 1}],
+                                    },
+                                    {
+                                        "reprolib:terms/order": [
+                                            {
+                                                "@list": [
+                                                    {"@id": "left-con"},
+                                                    {"@id": "right-con"},
+                                                    {"@id": "left-inc"},
+                                                    {"@id": "right-inc"},
+                                                    {"@id": "left-neut"},
+                                                    {"@id": "right-neut"},
+                                                ]
+                                            }
+                                        ],
+                                        "schema:name": [
+                                            {
+                                                "@language": "en",
+                                                "@value": "Block 5",
+                                            }
+                                        ],
+                                        "schema:value": [{"@value": 1}],
+                                    },
+                                ],
+                                "schema:name": [
+                                    {"@language": "en", "@value": "blocks"}
+                                ],
+                                "schema:numberOfItems": [{"@value": 5}],
+                            }
+                        )
+                        _item["reprolib:terms/inputs"].append(
+                            {
+                                "schema:itemListElement": [
+                                    {
+                                        "schema:image": "",
+                                        "schema:name": [
+                                            {"@language": "en", "@value": "<"}
+                                        ],
+                                        "schema:value": [{"@value": 0}],
+                                    },
+                                    {
+                                        "schema:image": "",
+                                        "schema:name": [
+                                            {"@language": "en", "@value": ">"}
+                                        ],
+                                        "schema:value": [{"@value": 1}],
+                                    },
+                                ],
+                                "schema:name": [
+                                    {"@language": "en", "@value": "buttons"}
+                                ],
+                            }
+                        )
+
     return applet_ld, applet_mongo
+
+
+def fix_spacing_in_report(_report: dict) -> dict:
+    if "@id" in _report:
+        _report["@id"] = _report["@id"].replace(" ", "_")
+    if "reprolib:terms/isVis" in _report:
+        _report["reprolib:terms/isVis"][0]["@value"] = (
+            _report["reprolib:terms/isVis"][0]["@value"]
+            .replace(
+                "averageScore_average_less than",
+                "averageScore_average_less_than",
+            )
+            .replace(
+                "averageScore_average_greater than",
+                "averageScore_average_greater_than",
+            )
+            .replace(
+                "averageScore_average_equal to",
+                "averageScore_average_equal_to",
+            )
+            .replace(
+                "averageScore_average_is not equal to",
+                "averageScore_average_is_not_equal_to",
+            )
+            .replace(
+                "averageScore_average_outside of",
+                "averageScore_average_outside_of",
+            )
+        )
+
+    return _report
 
 
 class Mongo:
@@ -276,6 +777,45 @@ class Mongo:
 
         return results
 
+    def patch_cloned_activities_order(
+        self, original_id: ObjectId, applet_format: dict
+    ) -> dict:
+        """
+        This patches a bug in the legacy system where after an applet is duplicated the activities order still
+        refers to the original records.
+        If it's the case, it will remove those and replace with the cloned applet activities IDs.
+        """
+        original = Applet().findOne(query={"_id": original_id})
+        if original:
+            original_format = jsonld_expander.formatLdObject(
+                original, "applet", refreshCache=False, reimportFromUrl=False
+            )
+        else:
+            original_format = None
+
+        if (
+            original_format
+            and "applet" in original_format
+            and "reprolib:terms/order" in original_format["applet"]
+        ):
+            act_blacklist = []
+            for _orig_act in original_format["applet"]["reprolib:terms/order"][
+                0
+            ]["@list"]:
+                act_blacklist.append(_orig_act["@id"])
+
+            order = applet_format["applet"]["reprolib:terms/order"][0]["@list"]
+            order = [
+                _act for _act in order if _act["@id"] not in act_blacklist
+            ]
+            if len(order) == 0:
+                order = [
+                    {"@id": str(_act)} for _act in applet_format["activities"]
+                ]
+            applet_format["applet"]["reprolib:terms/order"][0]["@list"] = order
+
+        return applet_format
+
     def get_applet_repro_schema(self, applet: dict) -> dict:
         applet_format = jsonld_expander.formatLdObject(
             applet, "applet", refreshCache=False, reimportFromUrl=False
@@ -284,6 +824,11 @@ class Mongo:
         if applet_format is None or applet_format == {}:
             raise FormatldException(
                 message="formatLdObject returned empty object"
+            )
+
+        if "duplicateOf" in applet:
+            applet_format = self.patch_cloned_activities_order(
+                applet["duplicateOf"], applet_format
             )
 
         if applet_format["activities"] == {}:
@@ -342,8 +887,10 @@ class Mongo:
         activity_objects = []
         # setup activities
         for activity in applet["reprolib:terms/order"][0]["@list"]:
-            activity_id = activity["@id"]
-            if activity_id in activities_by_id:
+            activity_id = self.find_additional_id(
+                list(activities_by_id.keys()), activity["@id"]
+            )
+            if activity_id:
                 activity_objects.append(
                     activities_by_id[activity_id]["activity"]
                 )
@@ -405,6 +952,35 @@ class Mongo:
 
         return applet
 
+    def find_additional_id(
+        self, activities_ids: list[str], activity_id: str
+    ) -> str | None:
+        if activity_id in activities_ids:
+            return activity_id
+
+        lookup = {
+            "ab_trails_v1/ab_trails_v1_schema": "A/B Trails v1.0",
+            "ab_trails_v2/ab_trails_v2_schema": "A/B Trails v2.0",
+            "Flanker/Flanker_schema": "flanker_schema",
+            "Stability/Stability_schema": "stability_schema",
+        }
+        for _a_id in activities_ids:
+            for key, value in lookup.items():
+                if key in activity_id and value == _a_id:
+                    return _a_id
+
+        # e.g take Flanker_schema from
+        # https://raw.github.com/CMI/flanker/master/activities/Flanker/Flanker_schema
+        activity_id_from_relative_url = activity_id.split("/").pop()
+        for _a_id in activities_ids:
+            if (
+                activity_id_from_relative_url == _a_id
+                or activity_id_from_relative_url.lower() == _a_id.lower()
+            ):
+                return _a_id
+
+        return None
+
     async def get_applet(self, applet_id: str) -> dict:
         applet = Applet().findOne({"_id": ObjectId(applet_id)})
         if "applet" not in applet["meta"] or applet["meta"]["applet"] == {}:
@@ -421,14 +997,15 @@ class Mongo:
         converted.extra_fields["version"] = applet["meta"]["applet"].get(
             "version", "0.0.1"
         )
-        converted.encryption = Encryption(
-            public_key=json.dumps(
-                applet["meta"]["encryption"]["appletPublicKey"]
-            ),
-            prime=json.dumps(applet["meta"]["encryption"]["appletPrime"]),
-            base=json.dumps(applet["meta"]["encryption"]["base"]),
-            account_id=str(applet["accountId"]),
-        )
+        if "encryption" in applet["meta"]:
+            converted.encryption = Encryption(
+                public_key=json.dumps(
+                    applet["meta"]["encryption"]["appletPublicKey"]
+                ),
+                prime=json.dumps(applet["meta"]["encryption"]["appletPrime"]),
+                base=json.dumps(applet["meta"]["encryption"]["base"]),
+                account_id=str(applet["accountId"]),
+            )
         converted = self._extract_ids(converted, applet_id)
 
         return converted
@@ -668,11 +1245,14 @@ class Mongo:
                         if applet.get("creatorId")
                         else None
                     )
+                    inviter_id = self.inviter_id(doc["userId"], applet_id)
+                    if not inviter_id:
+                        inviter_id = owner_id
                     access = AppletUserDAO(
                         applet_id=mongoid_to_uuid(applet_id),
                         user_id=mongoid_to_uuid(doc["userId"]),
                         owner_id=owner_id,
-                        inviter_id=self.inviter_id(doc["userId"], applet_id),
+                        inviter_id=inviter_id,
                         role=convert_role(role_name),
                         created_at=datetime.datetime.utcnow(),
                         updated_at=datetime.datetime.utcnow(),
@@ -827,3 +1407,65 @@ class Mongo:
                     )
 
         return set(folders_list), set(applets_list)
+
+    def get_theme(
+        self, key: str | ObjectId, applet_id: uuid.UUID
+    ) -> ThemeDao | None:
+        if not isinstance(key, ObjectId):
+            try:
+                theme_id = ObjectId(key)
+            except Exception:
+                return None
+        theme_doc = self.db["folder"].find_one({"_id": theme_id})
+        if theme_doc:
+            meta = theme_doc.get("meta", {})
+            return ThemeDao(
+                id=mongoid_to_uuid(theme_doc["_id"]),
+                creator_id=mongoid_to_uuid(theme_doc["creatorId"]),
+                name=theme_doc["name"],
+                logo=meta.get("logo"),
+                background_image=None,
+                primary_color=meta.get("primaryColor"),
+                secondary_color=meta.get("secondaryColor"),
+                tertiary_color=meta.get("tertiaryColor"),
+                public=theme_doc["public"],
+                allow_rename=True,
+                created_at=theme_doc["created"],
+                updated_at=theme_doc["updated"],
+                applet_id=applet_id,
+            )
+        return None
+
+    def get_library(self) -> (LibraryDao, ThemeDao):
+        lib_set = set()
+        theme_set = set()
+        library = self.db["appletLibrary"].find({})
+        for lib_doc in library:
+            applet_id = mongoid_to_uuid(lib_doc["appletId"])
+            version = lib_doc.get("version")
+            if version:
+                version_id = f"{applet_id}_{version}"
+            else:
+                version_id = None
+            now = datetime.datetime.now()
+            created_at = lib_doc.get("createdAt", now)
+            updated_at = lib_doc.get("updated_at", now)
+            lib = LibraryDao(
+                id=mongoid_to_uuid(lib_doc["_id"]),
+                applet_id=applet_id,
+                applet_id_version=version_id,
+                keywords=lib_doc["keywords"],
+                search_keywords=lib_doc["keywords"],
+                created_at=created_at,
+                updated_at=updated_at,
+                migrated_date=now,
+                migrated_updated=now,
+                is_deleted=False,
+            )
+            theme_id = lib_doc.get("themeId")
+            if theme_id:
+                theme = self.get_theme(theme_id, applet_id)
+                if theme:
+                    theme_set.add(theme)
+            lib_set.add(lib)
+        return lib_set, theme_set

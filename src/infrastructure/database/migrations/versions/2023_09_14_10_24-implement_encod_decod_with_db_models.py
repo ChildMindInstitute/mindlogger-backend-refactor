@@ -1,7 +1,7 @@
 """Implement encod decod with db models
 
 Revision ID: 67dc7cd54c43
-Revises: 39d0778295f1
+Revises: 41458766b541
 Create Date: 2023-09-11 10:24:58.093851
 
 """
@@ -15,7 +15,7 @@ from apps.shared.encryption import decrypt, encrypt, get_key
 
 # revision identifiers, used by Alembic.
 revision = "67dc7cd54c43"
-down_revision = "39d0778295f1"
+down_revision = "41458766b541"
 branch_labels = None
 depends_on = None
 

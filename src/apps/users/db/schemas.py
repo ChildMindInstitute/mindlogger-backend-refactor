@@ -22,6 +22,9 @@ class UserSchema(Base):
     is_anonymous_respondent = Column(
         Boolean(), default=False, server_default="false"
     )
+    is_legacy_deleted_respondent = Column(
+        Boolean(), default=False, server_default="false"
+    )
 
     def __repr__(self):
         return f"UserSchema(id='{self.id}', email='{self.email}')"

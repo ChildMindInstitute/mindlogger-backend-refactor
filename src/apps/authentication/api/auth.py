@@ -18,7 +18,7 @@ from apps.authentication.domain.token import (
 )
 from apps.authentication.errors import (
     AuthenticationError,
-    EmailDoesNotExist,
+    InvalidCredentials,
     InvalidRefreshToken,
 )
 from apps.authentication.services.security import AuthenticationService
@@ -48,7 +48,7 @@ async def get_token(
                     user_login_schema.device_id
                 )
         except UserNotFound:
-            raise EmailDoesNotExist()
+            raise InvalidCredentials(email=user_login_schema.email)
 
         if user.email_encrypted != user_login_schema.email:
             user = await UsersCRUD(session).update_encrypted_email(

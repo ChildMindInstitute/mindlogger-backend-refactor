@@ -145,7 +145,7 @@ class LdSubscale(LdSubscaleBase):
         score_table_data = []
         if self.lookup_table:
             for item in self.lookup_table:
-                if "-" in item["age"]:
+                if isinstance(item["age"], str) and "-" in item["age"]:
                     item["age"] = int(item["age"].split("-")[-1])
 
                 score_table_data.append(

@@ -39,7 +39,7 @@ class UserAppletAccessSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     invitor_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     meta = Column(JSONB())
     is_pinned = Column(Boolean(), default=False)
