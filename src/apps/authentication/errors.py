@@ -26,9 +26,5 @@ class PermissionsError(AccessDeniedError):
     message = _("Not enough permissions.")
 
 
-class EmailDoesNotExist(AccessDeniedError):
-    message = _("Incorrect Email.")
-
-
-class PasswordMismatch(AccessDeniedError):
-    message = _("Incorrect Password.")
+class InvalidCredentials(AccessDeniedError):
+    message = _("Incorrect password for {email} if that user exists")

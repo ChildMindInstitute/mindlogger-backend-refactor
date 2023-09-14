@@ -11,7 +11,7 @@ from apps.authentication.domain.token import (
     TokenPayload,
     TokenPurpose,
 )
-from apps.authentication.errors import BadCredentials, PasswordMismatch
+from apps.authentication.errors import BadCredentials, InvalidCredentials
 from apps.authentication.services.core import TokensService
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
@@ -84,7 +84,7 @@ class AuthenticationService:
         if not self.verify_password(
             user_login_schema.password, user.hashed_password, False
         ):
-            raise PasswordMismatch()
+            raise InvalidCredentials(email=user_login_schema.email)
         return user
 
     def _get_refresh_token_by_access(
