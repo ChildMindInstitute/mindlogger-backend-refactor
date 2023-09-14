@@ -15,6 +15,9 @@ from apps.migrate.services.event_service import (
     MongoEvent,
     EventMigrationService,
 )
+from apps.migrate.services.default_event_service import (
+    DefaultEventAddingService,
+)
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.item import Item
 
@@ -269,6 +272,34 @@ async def migrate_events(mongo: Mongo, postgres: Postgres):
     await EventMigrationService(session, events).run_events_migration()
 
 
+async def add_default_evets(postgres: Postgres):
+    migration_log.warning(
+        "Started adding default event to activities and flows"
+    )
+    activities_without_events: list[
+        tuple[str, str]
+    ] = postgres.get_activities_without_activity_events()
+    flows_without_events: list[
+        tuple[str, str]
+    ] = postgres.get_flows_without_activity_events()
+
+    migration_log.warning(
+        f"Number of activities without default event: {len(activities_without_events)}"
+    )
+    migration_log.warning(
+        f"Number of flows without default event: {len(flows_without_events)}"
+    )
+
+    session = session_manager.get_session()
+    await DefaultEventAddingService(
+        session, activities_without_events, flows_without_events
+    ).run_adding_default_event()
+
+    migration_log.warning(
+        "Finished adding default event to activities and flows"
+    )
+
+
 async def main():
     mongo = Mongo()
     postgres = Postgres()
@@ -300,6 +331,9 @@ async def main():
 
     # Migrate events
     await migrate_events(mongo, postgres)
+
+    # Add default (AlwayAvalible) events to activities and flows
+    await add_default_evets(postgres)
 
     # Close connections
     mongo.close_connection()
