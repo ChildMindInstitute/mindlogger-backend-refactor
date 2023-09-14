@@ -15,7 +15,7 @@ from apps.shared.encryption import decrypt, encrypt, get_key
 
 # revision identifiers, used by Alembic.
 revision = "67dc7cd54c43"
-down_revision = "41458766b541"
+down_revision = "79ae42ccb0d1"
 branch_labels = None
 depends_on = None
 
