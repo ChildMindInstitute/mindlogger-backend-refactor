@@ -1005,7 +1005,7 @@ class Mongo:
             query={"applets.owner": {"$in": [ObjectId(applet_id)]}}
         )
 
-        owner_id = owner["userId"] if owner else ""
+        owner_id = owner["userId"] if owner else str(applet["creatorId"])
 
         protocolId = applet["meta"]["protocol"].get("_id").split("/").pop()
         result = get_versions_from_content(protocolId)
