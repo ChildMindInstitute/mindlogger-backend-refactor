@@ -20,7 +20,6 @@ from apps.invitations.domain import (
     InvitationRespondent,
     InvitationReviewer,
 )
-from apps.shared.encryption import decrypt
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
@@ -255,12 +254,6 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         if not result:
             return None
         invitation, applet_name = result
-        first_name = decrypt(bytes.fromhex(invitation.first_name)).decode(
-            "utf-8"
-        )
-        last_name = decrypt(bytes.fromhex(invitation.last_name)).decode(
-            "utf-8"
-        )
         invitation_detail_base = InvitationDetailBase(
             id=invitation.id,
             email=invitation.email,
@@ -270,8 +263,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             key=invitation.key,
             status=invitation.status,
             invitor_id=invitation.invitor_id,
-            first_name=first_name,
-            last_name=last_name,
+            first_name=invitation.first_name,
+            last_name=invitation.last_name,
             created_at=invitation.created_at,
         )
         if invitation.role == Role.RESPONDENT:

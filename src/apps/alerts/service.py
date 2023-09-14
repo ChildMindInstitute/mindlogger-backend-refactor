@@ -2,7 +2,6 @@ import uuid
 
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.domain import Alert
-from apps.shared.encryption import decrypt
 from apps.shared.query_params import QueryParams
 
 
@@ -18,12 +17,6 @@ class AlertService:
         )
 
         for alert, applet_history, access, applet, workspace in schemas:
-            try:
-                plain_message = decrypt(
-                    bytes.fromhex(alert.alert_message)
-                ).decode("utf-8")
-            except ValueError:
-                plain_message = alert.alert_message
             alerts.append(
                 Alert(
                     id=alert.id,
@@ -34,7 +27,7 @@ class AlertService:
                     secret_id=access.meta.get("secretUserId", "Anonymous"),
                     activity_id=alert.activity_id,
                     activity_item_id=alert.activity_item_id,
-                    message=plain_message,
+                    message=alert.alert_message,
                     created_at=alert.created_at,
                     answer_id=alert.answer_id,
                     encryption=applet.encryption,

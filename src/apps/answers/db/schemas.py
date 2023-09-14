@@ -1,6 +1,17 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Text, Time
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Text,
+    Time,
+    Unicode,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy_utils import StringEncryptedType
 
+from apps.shared.encryption import get_key
 from infrastructure.database.base import Base
 
 
@@ -24,7 +35,7 @@ class AnswerNoteSchema(Base):
 
     answer_id = Column(UUID(as_uuid=True), index=True)
     activity_id = Column(UUID(as_uuid=True))
-    note = Column(Text())
+    note = Column(StringEncryptedType(Unicode, get_key))
     user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     user_public_key = Column(Text())
 

@@ -1,5 +1,7 @@
-from sqlalchemy import Boolean, Column, ForeignKey, String, Text
+from sqlalchemy import Boolean, Column, ForeignKey, String, Unicode
+from sqlalchemy_utils import StringEncryptedType
 
+from apps.shared.encryption import get_key
 from infrastructure.database.base import Base
 
 
@@ -12,7 +14,9 @@ class UserWorkspaceSchema(Base):
         unique=True,
         index=True,
     )
-    workspace_name = Column(Text(), nullable=False, index=True)
+    workspace_name = Column(
+        StringEncryptedType(Unicode, get_key), nullable=False, index=True
+    )
     is_modified = Column(Boolean(), default=False)
     database_uri = Column(String())
     storage_type = Column(String())

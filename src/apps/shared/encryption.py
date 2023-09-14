@@ -33,3 +33,7 @@ def decrypt(
     decryptor = cipher.decryptor()
     ct = decryptor.update(value) + decryptor.finalize()
     return ct
+
+
+def get_key() -> bytes:
+    return settings.secrets.key
