@@ -351,10 +351,7 @@ class Postgres:
                 if not hasattr(ex, "pgcode"):
                     # not pg error
                     raise ex
-                if getattr(ex, "pgcode") == UNIQUE_VIOLATION:
-                    migration_log.warning(f"Role already exist {row=}")
-                else:
-                    raise ex
+                migration_log.warning(ex.pgerror)
             self.connection.commit()
 
     def save_user_pins(self, user_pin_dao):

@@ -1177,6 +1177,12 @@ class Mongo:
         )
         return bool(res)
 
+    def get_owner_by_applet(self, applet_id: str) -> uuid.UUID | None:
+        owner = AccountProfile().findOne(
+            query={"applets.owner": {"$in": [ObjectId(applet_id)]}}
+        )
+        return mongoid_to_uuid(owner["userId"]) if owner else None
+
     def get_user_applet_role_mapping(
         self, migrated_applet_ids: List[ObjectId]
     ) -> List[AppletUserDAO]:
@@ -1200,6 +1206,12 @@ class Mongo:
                 continue
             role_applets_mapping = doc.get("applets")
             for role_name, applet_ids in role_applets_mapping.items():
+                if role_name == Role.OWNER:
+                    # Skip owner in case of it was
+                    # created on applet migration stage
+                    continue
+                if role_name.find("own") != -1:
+                    pass
                 applet_docs = self.docs_by_ids("folder", applet_ids)
                 for applet_id in applet_ids:
                     # Check maybe we already check this id in past
@@ -1232,11 +1244,10 @@ class Mongo:
                             meta["nickname"] = data["nick"]
                             meta["secretUserId"] = data["secret"]
 
-                    owner_id = (
-                        mongoid_to_uuid(applet.get("creatorId"))
-                        if applet.get("creatorId")
-                        else None
-                    )
+                    owner_id = self.get_owner_by_applet(applet_id)
+                    if not owner_id:
+                        owner_id = applet.get("creatorId")
+
                     inviter_id = self.inviter_id(doc["userId"], applet_id)
                     if not inviter_id:
                         inviter_id = owner_id
