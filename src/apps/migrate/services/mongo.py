@@ -1,21 +1,19 @@
 import datetime
 import hashlib
+import json
 import os
 import uuid
-from typing import List, Set, Tuple
-import json
-from typing import List
 from functools import partial
+from typing import List, Set, Tuple
 
-from Cryptodome.Cipher import AES
 from bson.objectid import ObjectId
-from pymongo import MongoClient, ASCENDING
+from Cryptodome.Cipher import AES
+from pymongo import ASCENDING, MongoClient
 
+from apps.applets.domain.base import Encryption
+from apps.girderformindlogger.models.account_profile import AccountProfile
 from apps.girderformindlogger.models.activity import Activity
 from apps.girderformindlogger.models.applet import Applet
-from apps.girderformindlogger.models.account_profile import AccountProfile
-from apps.girderformindlogger.models.user import User
-
 from apps.girderformindlogger.models.folder import Folder as FolderModel
 from apps.girderformindlogger.models.user import User
 from apps.girderformindlogger.utility import jsonld_expander
@@ -25,28 +23,28 @@ from apps.jsonld_converter.dependencies import (
     get_jsonld_model_converter,
 )
 from apps.migrate.data_description.applet_user_access import AppletUserDAO
+from apps.migrate.data_description.folder_dao import FolderAppletDAO, FolderDAO
 from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
 from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
 from apps.migrate.exception.exception import (
-    FormatldException,
     EmptyAppletException,
+    FormatldException,
 )
 from apps.migrate.services.applet_versions import (
-    get_versions_from_content,
-    content_to_jsonld,
     CONTEXT,
+    content_to_jsonld,
+    get_versions_from_content,
 )
 from apps.migrate.utilities import (
-    mongoid_to_uuid,
-    migration_log,
     convert_role,
+    migration_log,
+    mongoid_to_uuid,
     uuid_to_mongoid,
 )
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt
 from apps.workspaces.domain.constants import Role
-from apps.applets.domain.base import Encryption
 
 
 def decrypt(data):
@@ -1004,7 +1002,12 @@ class Mongo:
 
     async def get_applet_versions(self, applet_id: str) -> [dict, str]:
         applet = FolderModel().findOne(query={"_id": ObjectId(applet_id)})
-        owner_id = str(applet["creatorId"])
+        owner = AccountProfile().findOne(
+            query={"applets.owner": {"$in": [ObjectId(applet_id)]}}
+        )
+
+        owner_id = owner["userId"] if owner else ""
+
         protocolId = applet["meta"]["protocol"].get("_id").split("/").pop()
         result = get_versions_from_content(protocolId)
         converted_applet_versions = dict()
