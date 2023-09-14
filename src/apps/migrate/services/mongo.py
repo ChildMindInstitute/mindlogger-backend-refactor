@@ -24,9 +24,8 @@ from apps.jsonld_converter.dependencies import (
 )
 from apps.migrate.data_description.applet_user_access import AppletUserDAO
 from apps.migrate.data_description.folder_dao import FolderAppletDAO, FolderDAO
-from apps.migrate.data_description.user_pins import UserPinsDAO
-from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
 from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
+from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.migrate.exception.exception import (
     EmptyAppletException,
     FormatldException,
