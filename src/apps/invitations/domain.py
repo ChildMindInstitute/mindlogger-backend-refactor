@@ -7,7 +7,6 @@ from pydantic import EmailStr, Field
 from apps.applets.domain import ManagersRole, Role
 from apps.invitations.constants import InvitationStatus
 from apps.shared.domain import InternalModel, PublicModel
-from apps.shared.encryption import encrypt
 
 
 class Applet(PublicModel):
@@ -45,18 +44,6 @@ class _InvitationRequest(PublicModel):
     language: InvitationLanguage = Field(
         description="This field represents the language of invitation"
     )
-
-    @property
-    def encrypted_first_name(self) -> str | None:
-        if self.first_name:
-            return encrypt(bytes(self.first_name, "utf-8")).hex()
-        return None
-
-    @property
-    def encrypted_last_name(self) -> str | None:
-        if self.last_name:
-            return encrypt(bytes(self.last_name, "utf-8")).hex()
-        return None
 
 
 class InvitationRespondentRequest(_InvitationRequest):
@@ -96,12 +83,6 @@ class InvitationReviewerRequest(_InvitationRequest):
         default=None,
     )
 
-    @property
-    def encrypted_workspace_prefix(self) -> str | None:
-        if self.workspace_prefix:
-            return encrypt(bytes(self.workspace_prefix, "utf-8")).hex()
-        return None
-
 
 class InvitationManagersRequest(_InvitationRequest):
     """This model is used to send the invitation request
@@ -118,12 +99,6 @@ class InvitationManagersRequest(_InvitationRequest):
         "this name can not be changed anymore.",
         default=None,
     )
-
-    @property
-    def encrypted_workspace_prefix(self) -> str | None:
-        if self.workspace_prefix:
-            return encrypt(bytes(self.workspace_prefix, "utf-8")).hex()
-        return None
 
 
 class RespondentMeta(InternalModel):

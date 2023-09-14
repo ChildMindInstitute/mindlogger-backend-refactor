@@ -18,7 +18,6 @@ from apps.activity_flows.domain.flow_full import FlowFull
 from apps.applets.domain.base import AppletBaseInfo
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.domain.custom_validations import datetime_from_ms
-from apps.shared.encryption import decrypt, encrypt
 
 
 class Text(InternalModel):
@@ -81,12 +80,6 @@ class AnswerItemSchemaAnsweredActivityItem(InternalModel):
 class AnswerAlert(InternalModel):
     activity_item_id: uuid.UUID
     message: str
-
-    @property
-    def encrypted_message(self) -> str | None:
-        if self.message:
-            return encrypt(bytes(self.message, "utf-8")).hex()
-        return None
 
 
 class ClientMeta(InternalModel):
@@ -245,28 +238,10 @@ class AssessmentAnswerPublic(PublicModel):
 class AnswerNote(InternalModel):
     note: str
 
-    @property
-    def encrypted_note(self) -> str | None:
-        if self.note:
-            return encrypt(bytes(self.note, "utf-8")).hex()
-        return None
-
 
 class NoteOwner(InternalModel):
     first_name: str
     last_name: str
-
-    @property
-    def plain_first_name(self) -> str | None:
-        if self.first_name:
-            return decrypt(bytes.fromhex(self.first_name)).decode("utf-8")
-        return None
-
-    @property
-    def plain_last_name(self) -> str | None:
-        if self.last_name:
-            return decrypt(bytes.fromhex(self.last_name)).decode("utf-8")
-        return None
 
 
 class AnswerNoteDetail(InternalModel):
@@ -274,11 +249,6 @@ class AnswerNoteDetail(InternalModel):
     user: NoteOwner
     note: str
     created_at: datetime.datetime
-
-    def plain_note(self) -> str | None:
-        if self.note:
-            return decrypt(bytes.fromhex(self.note)).decode("utf-8")
-        return None
 
 
 class NoteOwnerPublic(PublicModel):
@@ -291,20 +261,6 @@ class AnswerNoteDetailPublic(PublicModel):
     user: NoteOwnerPublic
     note: str
     created_at: datetime.datetime
-
-    @classmethod
-    def from_note_detail(
-        cls, note: AnswerNoteDetail
-    ) -> "AnswerNoteDetailPublic":
-        return cls(
-            id=note.id,
-            user=NoteOwner(
-                first_name=note.user.plain_first_name,
-                last_name=note.user.plain_last_name,
-            ),
-            note=note.plain_note(),
-            created_at=note.created_at,
-        )
 
 
 class UserAnswerDataBase(BaseModel):

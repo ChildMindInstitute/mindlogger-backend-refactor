@@ -71,7 +71,6 @@ from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
-from apps.shared.encryption import decrypt
 from apps.shared.query_params import QueryParams
 from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
@@ -848,7 +847,7 @@ class AnswerService:
                         version=version,
                         activity_id=activity_id,
                         activity_item_id=raw_alert.activity_item_id,
-                        alert_message=raw_alert.encrypted_message,
+                        alert_message=raw_alert.message,
                         answer_id=answer_id,
                     )
                 )
@@ -857,13 +856,6 @@ class AnswerService:
         for alert in alerts:
             channel_id = f"channel_{alert.user_id}"
             try:
-                plain_message = decrypt(
-                    bytes.fromhex(alert.alert_message)
-                ).decode("utf-8")
-            except ValueError:
-                plain_message = alert.alert_message
-
-            try:
                 await cache.publish(
                     channel_id,
                     AlertMessage(
@@ -871,7 +863,7 @@ class AnswerService:
                         respondent_id=self.user_id,
                         applet_id=applet_id,
                         version=version,
-                        message=plain_message,
+                        message=alert.alert_message,
                         created_at=alert.created_at,
                         activity_id=alert.activity_id,
                         activity_item_id=alert.activity_item_id,
@@ -912,7 +904,7 @@ class AnswerService:
     async def send_alert_mail(users: List[UserSchema]):
         mail_service = MailingService()
         schemas = pydantic.parse_obj_as(List[User], users)
-        email_list = [schema.plain_email for schema in schemas]
+        email_list = [schema.email_encrypted for schema in schemas]
         return await mail_service.send(
             MessageSchema(
                 recipients=email_list,

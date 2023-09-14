@@ -4,7 +4,6 @@ from typing import Tuple
 from pydantic import ValidationError
 
 from apps.applets.crud import AppletsCRUD
-from apps.shared.encryption import decrypt
 from apps.shared.query_params import QueryParams
 from apps.users import User, UsersCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -63,10 +62,9 @@ class WorkspaceService:
         has_managers = await UserAppletAccessCRUD(self.session).has_managers(
             self._user_id
         )
-        workspace_name = decrypt(bytes.fromhex(schema.workspace_name)).decode(
-            "utf-8"
+        return WorkspaceInfo(
+            name=schema.workspace_name, has_managers=has_managers
         )
-        return WorkspaceInfo(name=workspace_name, has_managers=has_managers)
 
     async def has_access(
         self, user_id: uuid.UUID, owner_id: uuid.UUID, roles: list[Role]

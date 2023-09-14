@@ -808,21 +808,24 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         data = parse_obj_as(list[WorkspaceManager], res_data.all())
         total = res_total.scalar()
 
+        # TODO: Fix via class Searching
+        #  using database fields - StringEncryptedType
         if query_params.search:
             data_search = []
             total_search = 0
             for manager in data:
-                if manager.plain_first_name:
-                    first_name_lower = manager.plain_first_name.lower()
+                if manager.first_name:
+                    first_name_lower = manager.first_name.lower()
                 else:
                     first_name_lower = ""
-                if manager.plain_last_name:
-                    last_name_lower = manager.plain_last_name.lower()
+                if manager.last_name:
+                    last_name_lower = manager.last_name.lower()
                 else:
                     last_name_lower = ""
                 if (
                     query_params.search.lower() in first_name_lower
                     or query_params.search.lower() in last_name_lower
+                    or query_params.search.lower() in manager.email_encrypted
                 ):
                     data_search.append(manager)
                     total_search += 1

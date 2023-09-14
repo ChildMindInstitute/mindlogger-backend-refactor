@@ -4,15 +4,16 @@
   "fields": {
     "id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
     "email": "5c88e00db1ec7020e8a0fd0f1dd225ff93e9088821d554d5fc437216",
-    "first_name": "154aba19",
-    "last_name": "17",
+    "first_name": "PWrlro9d6WB767UVp43dNg==",
+    "last_name": "USpl8mH9r0f1/ffBdCO/jw==",
     "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
     "is_deleted": false,
     "is_super_admin": false,
     "created_at": "2023-08-07T12:39:38.111",
     "updated_at": "2023-08-11T10:32:41.603",
     "last_seen_at": "2023-08-11T10:32:41.602",
-    "is_anonymous_respondent": false
+    "is_anonymous_respondent": false,
+    "email_encrypted": "mWykF1OYv6Z/KkYLEA8lAbt7GQqBX7Xy57II/r9DqhM="
   },
     "note": {
       "Password": "Test1234!",
@@ -26,15 +27,16 @@
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa8",
       "email": "a97eaac8af05b6b82d66a67a2ba0e5bbe928844832748c1aa74e3065",
-      "first_name": "1d52b419a20c32ac57",
-      "last_name": "0e59a807b40f39bc4a0b",
+      "first_name": "xjYl6DpzZ1uq+KofwSTn7w==",
+      "last_name": "YRCR7GN7zM6TsUQOSLMmvw==",
       "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
       "is_deleted": false,
       "is_super_admin": true,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "last_seen_at": "2023-01-05T15:49:51.752113",
-      "is_anonymous_respondent": true
+      "is_anonymous_respondent": true,
+      "email_encrypted": "wR8cW30TKhQwbCCddfawUoOe1rXUZYBl4bmgF7NWDu+qbYXlU9Qjcxb+AJugpF9+"
     },
     "note": {
       "Password": "Test1234!",
@@ -48,15 +50,16 @@
     "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa5",
       "email": "b11bf1419d7434b4b0da08c39a871eee65b614a34fb4830c066dfeed",
-      "first_name": "0c5daf05b202",
-      "last_name": "185dad1ebf1232b7",
+      "first_name": "IgLF5PDUgQJm/mZkW5cpyA==",
+      "last_name": "0bajeWazqGcY10QHZlCriQ==",
       "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
       "is_deleted": false,
       "is_super_admin": false,
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "last_seen_at": "2023-01-05T15:49:51.752113",
-      "is_anonymous_respondent": false
+      "is_anonymous_respondent": false,
+      "email_encrypted": "vott7BpTryWpGH5R8EAuur0jFrP8xWbHhSnyD99zCU0="
     },
     "note": {
       "Password": "Test1234",
@@ -73,7 +76,7 @@
       "updated_at": "2023-08-07T12:39:38.116",
       "is_deleted": false,
       "user_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
-      "workspace_name": "1d58b61eb5",
+      "workspace_name": "eRPtCowGI0bcq4BEzB3lGA==",
       "is_modified": false,
       "database_uri": "postgresql+asyncpg://postgres:postgres@localhost:5432/test_arbitrary",
       "storage_type": "key",
@@ -227,7 +230,6 @@
       "is_reviewable": false,
       "response_is_editable": false,
       "order": 1.0,
-      "order": 1.0,
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
       "is_hidden": false,
       "scores_and_reports": null,
@@ -252,7 +254,6 @@
       "is_skippable": false,
       "is_reviewable": false,
       "response_is_editable": false,
-      "order": 1.0,
       "order": 1.0,
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
       "is_hidden": false,
