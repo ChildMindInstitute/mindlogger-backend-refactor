@@ -389,10 +389,15 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             FolderAppletSchema.folder_id,
         )
         workspace_applets_query = workspace_applets_query.join(
+            AppletSchema,
+            AppletSchema.id == FolderAppletSchema.applet_id,
+        )
+        workspace_applets_query = workspace_applets_query.join(
             FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
         )
         workspace_applets_query = workspace_applets_query.where(
-            FolderSchema.workspace_id == owner_id
+            FolderSchema.workspace_id == owner_id,
+            AppletSchema.is_deleted.is_(False),
         )
         workspace_applets_query = workspace_applets_query.group_by(
             FolderAppletSchema.folder_id
@@ -424,6 +429,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             workspace_applets_query.c.folder_id == FolderSchema.id,
             isouter=True,
         )
+
         folders_query = folders_query.where(
             FolderSchema.workspace_id == owner_id
         )
@@ -512,7 +518,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             access_query.c.applet_id == AppletSchema.id,
             isouter=False,
         )
-        query = query.where(AppletSchema.id.notin_(folder_applets_query))
+        query = query.where(
+            AppletSchema.id.notin_(folder_applets_query),
+        )
         folders_query = await self._folder_list_query(owner_id, user_id)
         query = folders_query.union(query)
 
@@ -814,7 +822,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     def _get_activity_subquery() -> Query:
         return (
             select([func.count().label("count")])
-            .where(AppletSchema.id == ActivitySchema.applet_id)
+            .where(
+                AppletSchema.id == ActivitySchema.applet_id,
+            )
             .as_scalar()
         )
 
@@ -877,7 +887,10 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             access_query.c.applet_id == AppletSchema.id,
             isouter=True,
         )
-        query = query.where(access_query.c.role != None)  # noqa
+        query = query.where(
+            access_query.c.role != None,  # noqa
+            AppletSchema.is_deleted.is_(False),
+        )
         query_cte = query.cte("applets")
         query = select(query_cte)
 

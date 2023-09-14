@@ -21,7 +21,7 @@ class FolderAppletSchema(Base):
     __tablename__ = "folder_applets"
 
     folder_id = Column(
-        ForeignKey("folders.id", ondelete="RESTRICT"), nullable=False
+        ForeignKey("folders.id", ondelete="CASCADE"), nullable=False
     )
     applet_id = Column(
         ForeignKey("applets.id", ondelete="CASCADE"), nullable=False
