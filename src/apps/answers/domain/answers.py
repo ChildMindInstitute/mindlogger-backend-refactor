@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, validator
 
 from apps.activities.domain.activity_full import (
     ActivityFull,
+    ActivityItemHistoryFull,
     PublicActivityItemFull,
 )
 from apps.activities.domain.activity_history import (
@@ -319,11 +320,17 @@ class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
 class AnswerExport(InternalModel):
     answers: list[RespondentAnswerData] = Field(default_factory=list)
     activities: list[ActivityHistoryFull] = Field(default_factory=list)
+    aggregated_items: list[ActivityItemHistoryFull] = Field(
+        default_factory=list, alias="aggregatedItems"
+    )
 
 
 class PublicAnswerExport(PublicModel):
     answers: list[RespondentAnswerDataPublic] = Field(default_factory=list)
     activities: list[ActivityHistoryExport] = Field(default_factory=list)
+    aggregated_items: list[PublicActivityItemFull] = Field(
+        default_factory=list, alias="aggregatedItems"
+    )
 
 
 class Version(InternalModel):
