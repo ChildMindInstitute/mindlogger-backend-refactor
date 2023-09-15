@@ -20,6 +20,9 @@ class AnswersMigrateCRUD(AnswersCRUD):
             func.split_part(ActivityHistorySchema.applet_id, "_", 2).label(
                 "version"
             ),
+        ).where(
+            ActivityHistorySchema.id =='6413083f-8371-8f0f-bf0a-f8f300000000',
+            ActivityHistorySchema.applet_id == "6411e17a-8371-8f0f-bf0a-f53e00000000_5.16.55"
         )
 
         db_result = await self._execute(query)
