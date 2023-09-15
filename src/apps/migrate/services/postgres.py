@@ -19,9 +19,13 @@ from apps.migrate.utilities import (
     uuid_to_mongoid,
     migration_log,
 )
+from apps.workspaces.domain.constants import Role
 from infrastructure.database import session_manager
 from infrastructure.database import atomic
-from apps.migrate.data_description.applet_user_access import AppletUserDAO
+from apps.migrate.data_description.applet_user_access import (
+    AppletUserDAO,
+    sort_by_role_priority,
+)
 from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.users.services.user import UserService
 
@@ -331,6 +335,20 @@ class Postgres:
         cursor.close()
         return inserted_count
 
+    def get_user_roles(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
+    ) -> List[str]:
+        sql = """
+            SELECT role 
+            FROM user_applet_accesses 
+            WHERE user_id=%s AND applet_id=%s
+        """
+        cursor = self.connection.cursor()
+        cursor.execute(sql, (str(user_id), str(applet_id)))
+        results = cursor.fetchall()
+        cursor.close()
+        return list(map(lambda t: t[0], results))
+
     def save_user_access_workspace(self, access_mapping: List[AppletUserDAO]):
         sql = """
             INSERT INTO user_applet_accesses
@@ -351,7 +369,22 @@ class Postgres:
             )
             VALUES {values}
         """
+        sub_managers = (
+            Role.REVIEWER.value,
+            Role.COORDINATOR.value,
+            Role.EDITOR.value,
+        )
+        managers = (Role.MANAGER.value, *sub_managers)
+        access_mapping = sorted(access_mapping, key=sort_by_role_priority)
         for row in access_mapping:
+            roles = self.get_user_roles(row.user_id, row.applet_id)
+            hierarchy_violation = (
+                Role.OWNER.value in roles and row.role in managers,
+                Role.MANAGER.value in roles and row.role in sub_managers,
+            )
+            if any(hierarchy_violation):
+                continue
+
             cursor = self.connection.cursor()
             query = sql.format(values=str(row))
             try:
