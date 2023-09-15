@@ -23,6 +23,7 @@ from infrastructure.database import session_manager
 from infrastructure.database import atomic
 from apps.migrate.data_description.applet_user_access import AppletUserDAO
 from apps.migrate.data_description.user_pins import UserPinsDAO
+from apps.users.services.user import UserService
 
 
 class Postgres:
@@ -301,6 +302,14 @@ class Postgres:
     def get_migrated_applets(self) -> list[ObjectId]:
         return self.get_pk_array('SELECT id FROM "applets"')
 
+    def get_anon_respondent(self) -> uuid.UUID:
+        sql = "SELECT id FROM users WHERE is_anonymous_respondent = true"
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        cursor.close()
+        return uuid.UUID(results[0][0])
+
     def get_migrated_users_ids(self):
         return self.get_pk_array('SELECT id FROM "users"', as_bson=False)
 
@@ -567,3 +576,9 @@ class Postgres:
         return self.exec_escaped(
             sql, (str(theme_id), str(applet_id)), "[THEME APPLET]"
         )
+
+    async def create_anonymous_respondent(self):
+        session = session_manager.get_session()
+        async with atomic(session):
+            service = UserService(session)
+            await service.create_anonymous_respondent()
