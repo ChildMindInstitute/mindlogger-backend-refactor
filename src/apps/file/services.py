@@ -35,6 +35,8 @@ class S3PresignService(BasePresignService):
     check_access_to_legacy_url_pattern = r"\/([0-9a-fA-F]+)\/"
 
     async def __call__(self, url):
+        if not url:
+            return
         regular_cdn_client = await select_storage(
             applet_id=self.applet_id, session=self.session
         )
@@ -183,8 +185,8 @@ class PresignedUrlsGeneratorService:
     async def __call__(
         self,
         *,
-        given_private_urls: list[str],
-    ) -> list[str]:
+        given_private_urls: list[str | None],
+    ) -> list[str | None]:
         self.access = await UserAppletAccessCRUD(self.session).get_by_roles(
             self.user_id,
             self.applet_id,
@@ -216,7 +218,7 @@ class PresignedUrlsGeneratorService:
     async def _generate_presigned_urls(
         self,
         *,
-        given_private_urls: list[str],
+        given_private_urls: list[str | None],
     ):
         urls = list()
 
