@@ -168,10 +168,9 @@ async def presign(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    results: list[str] = await PresignedUrlsGeneratorService(
+    results: list[str | None] = await PresignedUrlsGeneratorService(
         session=session, user_id=user.id, applet_id=applet_id
     )(
         given_private_urls=request.private_urls,
     )
-
-    return ResponseMulti[str](result=results, count=len(results))
+    return ResponseMulti[str | None](result=results, count=len(results))

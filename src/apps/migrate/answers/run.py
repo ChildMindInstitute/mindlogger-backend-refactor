@@ -154,20 +154,6 @@ class AnswersMigrateFacade:
                             mongo_id = mongo_answer["meta"]["reviewing"][
                                 "responseId"
                             ]
-                            # mongo_answer_assessment = Item().findOne(
-                            #     query={"_id": mongo_id}
-                            # )
-                            # if not mongo_answer_assessment:
-                            #     continue
-                            # respondent_id = mongoid_to_uuid(
-                            #     mongo_answer_assessment["creatorId"]
-                            # )
-                            # if not await self.answer_migrate_service.is_respondent_exist(
-                            #     session=regular_session,
-                            #     respondent_id=respondent_id,
-                            # ):
-                            #     skipped_answers_migration += 1
-                            #     continue
 
                             answer_id = mongoid_to_uuid(mongo_id)
 

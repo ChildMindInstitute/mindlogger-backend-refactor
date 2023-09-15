@@ -64,7 +64,6 @@ router.post(
     },
 )(check_file_uploaded)
 
-
 router.post(
     "/{applet_id}/presign",
     description=(
@@ -72,7 +71,7 @@ router.post(
         "File stored in S3 account or arbitrary storage(S3, AzureBlob)"
     ),
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[str]},
+        status.HTTP_200_OK: {"model": ResponseMulti[str | None]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
