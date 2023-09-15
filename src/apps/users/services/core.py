@@ -100,7 +100,7 @@ class PasswordRecoveryService:
         )
         await service.send(message)
 
-        public_user = PublicUser.from_orm(user)
+        public_user = PublicUser.from_user(user)
 
         return public_user
 
@@ -130,7 +130,7 @@ class PasswordRecoveryService:
             user, user_change_password_schema
         )
 
-        public_user = PublicUser.from_orm(user)
+        public_user = PublicUser.from_user(user)
 
         # Delete cache entries
         await self._cache.delete_all_entries(email=schema.email)

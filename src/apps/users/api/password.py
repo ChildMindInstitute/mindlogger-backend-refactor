@@ -48,7 +48,7 @@ async def password_update(
         )
 
         # Create public representation of the internal user
-        public_user = PublicUser.from_orm(updated_user)
+        public_user = PublicUser.from_user(updated_user)
 
     return Response[PublicUser](result=public_user)
 

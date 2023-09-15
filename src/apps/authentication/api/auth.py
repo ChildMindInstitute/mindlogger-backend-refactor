@@ -68,7 +68,7 @@ async def get_token(
     )
 
     token = Token(access_token=access_token, refresh_token=refresh_token)
-    public_user = PublicUser.from_orm(user)
+    public_user = PublicUser.from_user(user)
 
     return Response(
         result=UserLogin(
