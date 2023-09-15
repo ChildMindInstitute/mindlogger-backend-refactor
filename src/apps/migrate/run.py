@@ -183,8 +183,10 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
 
 def migrate_roles(mongo: Mongo, postgres: Postgres):
     migration_log.warning("Start Role migration")
+    anon_id = postgres.get_anon_respondent()
     applet_ids = postgres.get_migrated_applets()
     roles = mongo.get_user_applet_role_mapping(applet_ids)
+    roles += mongo.get_anons(anon_id)
     postgres.save_user_access_workspace(roles)
     migration_log.warning("Role has been migrated")
 
@@ -307,7 +309,7 @@ async def main():
     # Migrate with users
     users: list[dict] = mongo.get_users()
     users_mapping = postgres.save_users(users)
-
+    await postgres.create_anonymous_respondent()
     # Migrate with users_workspace
     workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
     postgres.save_users_workspace(workspaces, users_mapping)
@@ -328,7 +330,8 @@ async def main():
     migrate_user_pins(mongo, postgres)
     # Migrate folders
     migrate_folders(mongo, postgres)
-
+    # Migrate library
+    migrate_library(mongo, postgres)
     # Migrate events
     await migrate_events(mongo, postgres)
 
