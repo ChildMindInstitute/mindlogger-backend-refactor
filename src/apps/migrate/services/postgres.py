@@ -577,6 +577,36 @@ class Postgres:
             sql, (str(theme_id), str(applet_id)), "[THEME APPLET]"
         )
 
+    def get_activities_without_activity_events(self) -> list[tuple[str, str]]:
+        sql = """
+            SELECT activities.id, activities.applet_id
+            FROM activities
+            LEFT JOIN activity_events ON activities.id = activity_events.activity_id
+            WHERE activity_events.activity_id IS NULL;
+        """
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        cursor.close()
+
+        return results
+
+    def get_flows_without_activity_events(self) -> list[tuple[str, str]]:
+        sql = """
+            SELECT flows.id, flows.applet_id
+            FROM flows
+            LEFT JOIN flow_events ON flows.id = flow_events.flow_id
+            WHERE flow_events.flow_id IS NULL;
+        """
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        cursor.close()
+
+        return results
+
     async def create_anonymous_respondent(self):
         session = session_manager.get_session()
         async with atomic(session):
