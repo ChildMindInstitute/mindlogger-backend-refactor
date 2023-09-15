@@ -1236,7 +1236,7 @@ class Mongo:
 
                     owner_id = self.get_owner_by_applet(applet_id)
                     if not owner_id:
-                        owner_id = applet.get("creatorId")
+                        owner_id = mongoid_to_uuid(applet.get("creatorId"))
 
                     inviter_id = self.inviter_id(doc["userId"], applet_id)
                     if not inviter_id:
