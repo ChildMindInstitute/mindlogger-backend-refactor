@@ -1176,9 +1176,9 @@ class Mongo:
         return mongoid_to_uuid(owner["userId"]) if owner else None
 
     def get_anons(self, anon_id: uuid.UUID) -> List[AppletUserDAO]:
-        applet_profiles = self.db["appletProfile"].find({
-            "MRN": "Guest Account Submission"
-        })
+        applet_profiles = self.db["appletProfile"].find(
+            {"MRN": "Guest Account Submission"}
+        )
         res = []
         for applet_profile in applet_profiles:
             owner_id = self.get_owner_by_applet(applet_profile["appletId"])
@@ -1195,14 +1195,13 @@ class Mongo:
                     updated_at=datetime.datetime.utcnow(),
                     meta={
                         "nickname": "Mindlogger ChildMindInstitute",
-                        "secretUserId": "Guest Account Submission"
+                        "secretUserId": "Guest Account Submission",
                     },
                     is_pinned=False,
-                    is_deleted=False
+                    is_deleted=False,
                 )
             )
         return res
-
 
     def get_user_applet_role_mapping(
         self, migrated_applet_ids: List[ObjectId]
