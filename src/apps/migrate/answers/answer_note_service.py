@@ -14,7 +14,7 @@ class AnswerNoteMigrateService:
                 created_at=note["created"],
                 updated_at=note["updated"],
                 answer_id=answer_id,
-                note=encrypt(bytes(note["note"], "utf-8")).hex(),
+                note=note["note"],
                 user_id=mongoid_to_uuid(applet_profile["userId"]),
                 activity_id=mongoid_to_uuid(applet_profile["appletId"]),
                 migrated_date=datetime.utcnow(),
