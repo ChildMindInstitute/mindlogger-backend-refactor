@@ -41,7 +41,7 @@ async def user_create(
         user: User = User.from_orm(user_schema)
 
         try:
-            public_user = PublicUser.from_orm(user)
+            public_user = PublicUser.from_user(user)
         except ValidationError:
             raise EmailAddressNotValid(email=user_create_schema.email)
 
@@ -60,7 +60,7 @@ async def user_retrieve(
     user: User = Depends(get_current_user),
 ) -> Response[PublicUser]:
     # Get public representation of the authenticated user
-    public_user = PublicUser.from_orm(user)
+    public_user = PublicUser.from_user(user)
 
     return Response(result=public_user)
 
@@ -76,7 +76,7 @@ async def user_update(
         )
 
     # Create public representation of the internal user
-    public_user = PublicUser.from_orm(updated_user)
+    public_user = PublicUser.from_user(updated_user)
 
     return Response(result=public_user)
 

@@ -65,10 +65,19 @@ class User(UserCreate):
 class PublicUser(PublicModel):
     """Public user data model."""
 
-    email_encrypted: EmailStr | None
+    email: EmailStr | None
     first_name: str
     last_name: str
     id: uuid.UUID
+
+    @classmethod
+    def from_user(cls, user: User) -> "PublicUser":
+        return cls(
+            email=user.email_encrypted,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            id=user.id,
+        )
 
 
 class ChangePasswordRequest(InternalModel):
