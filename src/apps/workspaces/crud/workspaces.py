@@ -1,16 +1,18 @@
 import uuid
 
+from pydantic import parse_obj_as
 from sqlalchemy import and_, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
+from apps.applets.db.schemas import AppletSchema
 from apps.users import User
 from apps.workspaces.db.schemas import (
     UserAppletAccessSchema,
     UserWorkspaceSchema,
 )
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.domain.workspace import UserWorkspace
+from apps.workspaces.domain.workspace import UserAnswersDBInfo, UserWorkspace
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["UserWorkspaceCRUD"]
@@ -110,3 +112,38 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         db_result = await self._execute(query)
         res = db_result.scalars().first()
         return res
+
+    async def get_user_answers_db_info(
+        self, user_id: uuid.UUID
+    ) -> list[UserAnswersDBInfo]:
+        query: Query = (
+            select(
+                UserAppletAccessSchema.applet_id,
+                AppletSchema.encryption,
+                UserWorkspaceSchema.use_arbitrary,
+                UserWorkspaceSchema.database_uri,
+            )
+            .join(
+                AppletSchema,
+                AppletSchema.id == UserAppletAccessSchema.applet_id,
+            )
+            .outerjoin(
+                UserWorkspaceSchema,
+                UserWorkspaceSchema.user_id == UserAppletAccessSchema.owner_id,
+            )
+            .where(
+                UserAppletAccessSchema.user_id == user_id,
+                AppletSchema.soft_exists(),
+                AppletSchema.encryption.isnot(None),
+            )
+            .order_by(
+                UserWorkspaceSchema.use_arbitrary,
+                UserWorkspaceSchema.database_uri,
+            )
+            .distinct()
+        )
+        db_result = await self._execute(query)
+
+        res = db_result.all()
+
+        return parse_obj_as(list[UserAnswersDBInfo], res)

@@ -65,3 +65,7 @@ class NotFoundError(BaseError):
 
 class InternalServerError(BaseError):
     pass
+
+
+class EncryptionError(Exception):
+    pass

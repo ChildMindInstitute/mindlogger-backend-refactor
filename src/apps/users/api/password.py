@@ -20,6 +20,7 @@ from apps.users.domain import (
 )
 from apps.users.errors import UserNotFound
 from apps.users.services import PasswordRecoveryCache, PasswordRecoveryService
+from apps.users.tasks import change_password_with_answers
 from infrastructure.cache import (
     CacheNotFound,
     PasswordRecoveryHealthCheckNotValid,
@@ -51,6 +52,11 @@ async def password_update(
 
         # Create public representation of the internal user
         public_user = PublicUser.from_user(updated_user)
+
+    email = user.email_encrypted
+    await change_password_with_answers.kiq(
+        user.id, email, schema.prev_password, schema.password
+    )
 
     return Response[PublicUser](result=public_user)
 

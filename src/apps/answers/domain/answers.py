@@ -416,3 +416,14 @@ class ArbitraryPreprocessor(PublicModel):
 
 class IdentifiersQueryParams(InternalModel):
     respondent_id: uuid.UUID | None = None
+
+
+class AnswerItemDataEncrypted(InternalModel):
+    id: uuid.UUID
+    answer: str
+    events: str | None
+    identifier: str | None
+
+
+class UserAnswerItemData(AnswerItemDataEncrypted):
+    user_public_key: str

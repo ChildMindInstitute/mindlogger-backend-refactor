@@ -16,6 +16,7 @@ from config.secret import SecretSettings
 from config.sentry import SentrySettings
 from config.service import JsonLdConverterSettings, ServiceSettings
 from config.superuser import SuperAdmin
+from config.task import AnswerEncryption
 
 
 # NOTE: Settings powered by pydantic
@@ -74,6 +75,8 @@ class Settings(BaseSettings):
     super_admin = SuperAdmin()
 
     anonymous_respondent = AnonymousRespondent()
+
+    task_answer_encryption = AnswerEncryption()
 
     class Config:
         env_nested_delimiter = "__"

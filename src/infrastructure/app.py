@@ -25,14 +25,13 @@ import apps.users.router as users
 import apps.workspaces.router as workspaces
 import middlewares as middlewares_
 from apps.shared.exception import BaseError
-from broker import broker
 from config import settings
 from infrastructure.http.execeptions import (
     custom_base_errors_handler,
     pydantic_validation_errors_handler,
     python_base_error_handler,
 )
-from infrastructure.logger import logger
+from infrastructure.lifespan import shutdown, startup
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -76,6 +75,10 @@ def create_app():
         description=f"Commit id: <b>{settings.commit_id}"
         f"</b><br>Version: <b>{settings.version}</b>"
     )
+
+    app.add_event_handler("startup", startup(app))
+    app.add_event_handler("shutdown", shutdown(app))
+
     if settings.sentry.dsn:
         sentry_sdk.init(dsn=settings.sentry.dsn, traces_sample_rate=1.0)
 
@@ -92,17 +95,5 @@ def create_app():
     )
     app.add_exception_handler(BaseError, custom_base_errors_handler)
     app.add_exception_handler(Exception, python_base_error_handler)
-
-    @app.on_event("startup")
-    async def app_startup():
-        if not broker.is_worker_process:
-            logger.debug("Broker start")
-            await broker.startup()
-
-    @app.on_event("shutdown")
-    async def app_shutdown():
-        if not broker.is_worker_process:
-            logger.debug("Broker shutdown")
-            await broker.shutdown()
 
     return app

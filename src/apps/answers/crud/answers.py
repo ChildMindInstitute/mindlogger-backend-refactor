@@ -4,8 +4,21 @@ import uuid
 from typing import Collection
 
 from pydantic import parse_obj_as
-from sqlalchemy import and_, case, delete, func, null, or_, select
+from sqlalchemy import (
+    Text,
+    and_,
+    case,
+    column,
+    delete,
+    func,
+    null,
+    or_,
+    select,
+    update,
+)
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Query
+from sqlalchemy.sql import Values
 
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
@@ -16,9 +29,11 @@ from apps.activities.domain.activity_full import ActivityItemHistoryFull
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import (
+    AnswerItemDataEncrypted,
     AppletCompletedEntities,
     CompletedEntity,
     RespondentAnswerData,
+    UserAnswerItemData,
     Version,
 )
 from apps.answers.errors import AnswerNotFoundError
@@ -478,3 +493,59 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         res = db_result.first()
         return res[0] if res else None
+
+    async def get_applet_user_answer_items(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID, page=None, limit=None
+    ) -> list[UserAnswerItemData]:
+        query: Query = (
+            select(
+                AnswerItemSchema.id,
+                AnswerItemSchema.user_public_key,
+                AnswerItemSchema.answer,
+                AnswerItemSchema.events,
+                AnswerItemSchema.identifier,
+            )
+            .select_from(AnswerSchema)
+            .join(
+                AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
+            )
+            .where(
+                AnswerSchema.applet_id == applet_id,
+                AnswerItemSchema.respondent_id == user_id,
+            )
+            .order_by(AnswerItemSchema.id)
+        )
+        query = paging(query, page, limit)
+
+        db_result = await self._execute(query)
+
+        return parse_obj_as(list[UserAnswerItemData], db_result.all())
+
+    async def update_encrypted_fields(
+        self, user_public_key: str, data: list[AnswerItemDataEncrypted]
+    ):
+        if data:
+            vals = Values(
+                column("id", UUID(as_uuid=True)),
+                column("answer", Text),
+                column("events", Text),
+                column("identifier", Text),
+                name="answer_data",
+            ).data(
+                [
+                    (row.id, row.answer, row.events, row.identifier)
+                    for row in data
+                ]
+            )
+            query = (
+                update(AnswerItemSchema)
+                .where(AnswerItemSchema.id == vals.c.id)
+                .values(
+                    answer=vals.c.answer,
+                    events=vals.c.events,
+                    identifier=vals.c.identifier,
+                    user_public_key=user_public_key,
+                )
+            )
+
+            await self._execute(query)

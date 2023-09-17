@@ -79,6 +79,7 @@ psycopg2-binary = "==2.9.6"
 cachetools = "==5.3.0"
 pyld = "==2.0.3"
 types-requests = "*"
+taskiq = {extras = ["reload"], version = "*"}
 
 [requires]
 python_version = "3.10"
