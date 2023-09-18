@@ -95,7 +95,7 @@ class TestPassword(BaseTest):
         self,
     ):
         # Creating new user
-        internal_response: HttpResponse = await self.client.post(
+        await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
@@ -113,8 +113,7 @@ class TestPassword(BaseTest):
 
         cache = RedisCache()
 
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == internal_response.json()
+        assert response.status_code == status.HTTP_201_CREATED
         keys = await cache.keys()
         assert len(keys) == 1
         assert password_recovery_request.email in keys[0]
@@ -132,8 +131,7 @@ class TestPassword(BaseTest):
             data=password_recovery_request.dict(),
         )
 
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == internal_response.json()
+        assert response.status_code == status.HTTP_201_CREATED
 
         new_keys = await cache.keys()
         assert len(keys) == 1

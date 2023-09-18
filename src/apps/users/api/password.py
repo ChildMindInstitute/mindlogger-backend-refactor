@@ -3,10 +3,12 @@ from typing import Annotated
 
 from fastapi import Body, Depends, Query
 from pydantic import Required
+from starlette import status
 
 from apps.authentication.deps import get_current_user
 from apps.authentication.services import AuthenticationService
 from apps.shared.domain.response import Response
+from apps.shared.response import EmptyResponse
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     ChangePasswordRequest,
@@ -16,7 +18,7 @@ from apps.users.domain import (
     User,
     UserChangePassword,
 )
-from apps.users.errors import EmailAddressError, UserNotFound
+from apps.users.errors import UserNotFound
 from apps.users.services import PasswordRecoveryCache, PasswordRecoveryService
 from infrastructure.cache import (
     CacheNotFound,
@@ -56,20 +58,20 @@ async def password_update(
 async def password_recovery(
     schema: PasswordRecoveryRequest = Body(...),
     session=Depends(get_session),
-) -> Response[PublicUser]:
+):
     """General endpoint for sending password recovery email
     and stored info in Redis.
     """
     # Send the password recovery the internal password recovery service
     async with atomic(session):
         try:
-            public_user: PublicUser = await PasswordRecoveryService(
-                session
-            ).send_password_recovery(schema)
+            await PasswordRecoveryService(session).send_password_recovery(
+                schema
+            )
         except UserNotFound:
-            raise EmailAddressError(email=schema.email)
+            pass  # mute error in terms of user enumeration vulnerability
 
-    return Response[PublicUser](result=public_user)
+    return EmptyResponse(status_code=status.HTTP_201_CREATED)
 
 
 async def password_recovery_approve(

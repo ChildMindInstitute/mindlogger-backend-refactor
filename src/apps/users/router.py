@@ -77,9 +77,8 @@ router.put(
 # Password recovery
 router.post(
     "/me/password/recover",
-    response_model=Response[PublicUser],
+    status_code=status.HTTP_201_CREATED,
     responses={
-        status.HTTP_200_OK: {"model": Response[PublicUser]},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
