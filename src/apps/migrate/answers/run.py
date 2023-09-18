@@ -24,7 +24,7 @@ from infrastructure.database import session_manager, atomic
 
 
 class AnswersMigrateFacade:
-    legacy_deleted_respondent_answers = 0
+    anonymous_respondent_answers = 0
     total_answers = 0
     successfully_answers_migrated = 0
     error_answers_migration: list[Any] = []
@@ -64,7 +64,11 @@ class AnswersMigrateFacade:
                         )
                         is_assessment = "reviewing" in mongo_answer["meta"]
 
-                        if not is_assessment:
+                        if is_assessment:
+                            answer_id = mongoid_to_uuid(
+                                mongo_answer["meta"]["reviewing"]["responseId"]
+                            )
+                        else:
                             if await self.answer_migrate_service.is_answer_migrated(
                                 session=regular_or_arbitary_session,
                                 answer_id=mongoid_to_uuid(mongo_answer["_id"]),
@@ -81,12 +85,10 @@ class AnswersMigrateFacade:
                                 session=regular_session,
                                 respondent_id=respondent_id,
                             ):
-                                legacy_deleted_respondent = (
-                                    await MigrateUsersMCRUD(
-                                        regular_session
-                                    ).get_legacy_deleted_respondent()
-                                )
-                                respondent_id = legacy_deleted_respondent.id
+                                anonymous_respondent = await MigrateUsersMCRUD(
+                                    regular_session
+                                ).get_anonymous_respondent()
+                                respondent_id = anonymous_respondent.id
 
                                 applet_owner = await UserAppletAccessCRUD(
                                     regular_session
@@ -96,9 +98,9 @@ class AnswersMigrateFacade:
                                     regular_session,
                                     applet_owner.user_id,
                                     applet_id,
-                                ).add_role_for_legacy_deleted_respondent()
+                                ).add_role_for_anonymous_respondent()
 
-                                self.legacy_deleted_respondent_answers += 1
+                                self.anonymous_respondent_answers += 1
                             answer = await self.answer_migrate_service.create_answer(
                                 session=regular_or_arbitary_session,
                                 mongo_answer=mongo_answer,
@@ -107,10 +109,6 @@ class AnswersMigrateFacade:
                                 respondent_id=respondent_id,
                             )
                             answer_id = answer.id
-                        else:
-                            answer_id = mongoid_to_uuid(
-                                mongo_answer["meta"]["reviewing"]["responseId"]
-                            )
 
                         answer_item_data = {
                             "mongo_answer": mongo_answer,
@@ -253,7 +251,7 @@ class AnswersMigrateFacade:
                 print(s)
 
         print(
-            f"Legacy deleted users answers count: {self.legacy_deleted_respondent_answers}"
+            f"Legacy deleted users answers count: {self.anonymous_respondent_answers}"
         )
 
 
