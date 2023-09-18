@@ -30,20 +30,5 @@ class EmailDoesNotExist(AccessDeniedError):
     message = _("That email is not associated with a MindLogger account.")
 
 
-class PasswordMismatch(AccessDeniedError):
-    def __init__(self, email=None):
-        self.email = email
-        super().__init__(email=email)
-
-    @property
-    def message(self):
-        message = _("Incorrect Password.")
-        if self.email:
-            message = (
-                f"Incorrect password for {self.email} if that user exist."
-            )
-        return message
-
-
 class InvalidCredentials(AccessDeniedError):
-    message = _("Incorrect password for {email} if that user exists")
+    message = _("Incorrect email or password")
