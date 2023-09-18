@@ -26,5 +26,9 @@ class PermissionsError(AccessDeniedError):
     message = _("Not enough permissions.")
 
 
+class EmailDoesNotExist(AccessDeniedError):
+    message = _("That email is not associated with a MindLogger account.")
+
+
 class InvalidCredentials(AccessDeniedError):
-    message = _("Incorrect password for {email} if that user exists")
+    message = _("Incorrect email or password")
