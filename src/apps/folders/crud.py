@@ -45,7 +45,6 @@ class FolderCRUD(BaseCRUD):
             workspace_applets_query.c.folder_id == FolderSchema.id,
             isouter=True,
         )
-        query = query.where(AppletSchema.is_deleted.is_(False))
         query = query.where(FolderSchema.workspace_id == workspace_id)
         query = query.order_by(FolderSchema.id.desc())
         query = query.where(FolderSchema.creator_id == user_id)
