@@ -81,7 +81,7 @@ class InvitationsService:
 
     async def get(self, key: uuid.UUID) -> InvitationDetailGeneric | None:
         invitation = await self.invitations_crud.get_by_email_and_key(
-            self._user.plain_email, key  # type: ignore[arg-type]
+            self._user.email_encrypted, key  # type: ignore[arg-type]
         )
         if not invitation:
             raise InvitationDoesNotExist(
@@ -129,8 +129,8 @@ class InvitationsService:
             "key": uuid.uuid3(uuid.uuid4(), schema.email),
             "invitor_id": self._user.id,
             "status": InvitationStatus.PENDING,
-            "first_name": schema.encrypted_first_name,
-            "last_name": schema.encrypted_last_name,
+            "first_name": schema.first_name,
+            "last_name": schema.last_name,
         }
 
         payload = None
@@ -240,8 +240,8 @@ class InvitationsService:
             "key": uuid.uuid3(uuid.uuid4(), schema.email),
             "invitor_id": self._user.id,
             "status": InvitationStatus.PENDING,
-            "first_name": schema.encrypted_first_name,
-            "last_name": schema.encrypted_last_name,
+            "first_name": schema.first_name,
+            "last_name": schema.last_name,
         }
 
         payload = None
@@ -311,7 +311,7 @@ class InvitationsService:
 
         await WorkspaceService(
             self.session, self._user.id
-        ).update_workspace_name(self._user, schema.encrypted_workspace_prefix)
+        ).update_workspace_name(self._user, schema.workspace_prefix)
 
         return InvitationDetailForReviewer(
             id=invitation_internal.id,
@@ -349,8 +349,8 @@ class InvitationsService:
             "key": uuid.uuid3(uuid.uuid4(), schema.email),
             "invitor_id": self._user.id,
             "status": InvitationStatus.PENDING,
-            "first_name": schema.encrypted_first_name,
-            "last_name": schema.encrypted_last_name,
+            "first_name": schema.first_name,
+            "last_name": schema.last_name,
         }
 
         payload = None
@@ -413,7 +413,7 @@ class InvitationsService:
 
         await WorkspaceService(
             self.session, self._user.id
-        ).update_workspace_name(self._user, schema.encrypted_workspace_prefix)
+        ).update_workspace_name(self._user, schema.workspace_prefix)
 
         return InvitationDetailForManagers(
             id=invitation_internal.id,
@@ -555,7 +555,7 @@ class InvitationsService:
 
     async def accept(self, key: uuid.UUID):
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
-            self._user.plain_email, key  # type: ignore[arg-type]
+            self._user.email_encrypted, key  # type: ignore[arg-type]
         )
         if not invitation:
             raise InvitationDoesNotExist()
@@ -571,7 +571,7 @@ class InvitationsService:
 
     async def decline(self, key: uuid.UUID):
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
-            self._user.plain_email, key  # type: ignore[arg-type]
+            self._user.email_encrypted, key  # type: ignore[arg-type]
         )
         if not invitation:
             raise InvitationDoesNotExist()

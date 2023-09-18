@@ -43,3 +43,7 @@ class PasswordMismatch(AccessDeniedError):
                 f"Incorrect password for {self.email} if that user exist."
             )
         return message
+
+
+class InvalidCredentials(AccessDeniedError):
+    message = _("Incorrect password for {email} if that user exists")

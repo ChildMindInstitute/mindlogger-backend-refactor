@@ -11,26 +11,33 @@ from apps.migrate.exception.exception import (
 )
 from apps.migrate.services.mongo import Mongo
 from apps.migrate.services.postgres import Postgres
+from apps.migrate.services.event_service import (
+    MongoEvent,
+    EventMigrationService,
+)
+from apps.migrate.services.default_event_service import (
+    DefaultEventAddingService,
+)
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.item import Item
 
 
 from apps.migrate.utilities import migration_log
+from infrastructure.database import session_manager
 
 
 async def migrate_applets(mongo: Mongo, postgres: Postgres):
     toSkip = [
-        "62768ff20a62aa1056078093",  # broken flanker
-        "627be2e30a62aa47962268c7",  # broken stability
-        "62d06045acd35a1054f106f6",  # broken stability
         "635d04365cb700431121f8a1",  # chinese texts
-        "649465528819c1120b4f91cf",  # broken js expression in subscales in main applet
-        "64946e208819c1120b4f9271",  # broken stimulus
     ]
 
-    # applets = Applet().find(
-    #     query={"_id": ObjectId("6201cc26ace55b10691c0814")}, fields={"_id": 1}
-    # )
+    # applets = list(Applet().find(
+    #     query={"_id": ObjectId("62768ff20a62aa1056078093")}, fields={"_id": 1}
+    #     # query={"accountId": {'$in': [ObjectId("64c2395b8819c178d236685b"), ObjectId("64e7a92522d81858d681d2c3")]}}, fields={"_id": 1}
+    #     # query={"_id": {'$in': [
+    #     #     ObjectId('62f6261dacd35a39e99b6870'), ObjectId('633ecc1ab7ee9765ba54452d'), ObjectId('633fc997b7ee9765ba5447f3'), ObjectId('633fc9b7b7ee9765ba544820'), ObjectId('63762e1a52ea0234e1f4fdfe'), ObjectId('63c946dfb71996780cdf17dc'), ObjectId('63e36745601cdc0fee1ec750'), ObjectId('63f5cdb8601cdc5212d5a3d5'), ObjectId('640b239b601cdc5212d63e75'), ObjectId('647486d4a67ac10f93b48fef'), ObjectId('64cd2c7922d8180cf9b3f1fa'), ObjectId('64d4cd2522d8180cf9b40b3d'), ObjectId('64dce2d622d81858d6819f13'), ObjectId('64e7abb122d81858d681d957'), ObjectId('64e7af5e22d81858d681de92')
+    #     # ]}}, fields={"_id": 1}
+    # ))
 
     answers = Item().find(
         query={
@@ -68,6 +75,7 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
     )
     migrating_applets = []
     for applet in applets:
+        # postgres.wipe_applet(str(applet["_id"]))
         migrating_applets.append(str(applet["_id"]))
     # migrating_applets = [
     #     "6202738aace55b10691c101d",  # broken conditional logic [object object]  in main applet
@@ -175,8 +183,10 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
 
 def migrate_roles(mongo: Mongo, postgres: Postgres):
     migration_log.warning("Start Role migration")
+    anon_id = postgres.get_anon_respondent()
     applet_ids = postgres.get_migrated_applets()
     roles = mongo.get_user_applet_role_mapping(applet_ids)
+    roles += mongo.get_anons(anon_id)
     postgres.save_user_access_workspace(roles)
     migration_log.warning("Role has been migrated")
 
@@ -222,6 +232,76 @@ def migrate_folders(mongo, postgres):
     migration_log.warning(f"[FOLDER_APPLETS] {migrated=}, {skipped=}")
 
 
+def migrate_library(mongo, postgres):
+    lib_count = 0
+    theme_count = 0
+    lib_set, theme_set = mongo.get_library()
+    for lib in lib_set:
+        if lib.applet_id_version is None:
+            version = postgres.get_latest_applet_id_version(lib.applet_id)
+            lib.applet_id_version = version
+            if version is None:
+                continue
+        keywords = postgres.get_applet_library_keywords(
+            applet_id=lib.applet_id, applet_version=lib.applet_id_version
+        )
+        lib.search_keywords = keywords + lib.keywords
+        success = postgres.save_library_item(lib)
+        if success:
+            lib_count += 1
+
+    for theme in theme_set:
+        success = postgres.save_theme_item(theme)
+        if success:
+            theme_count += 1
+            postgres.add_theme_to_applet(theme.applet_id, theme.id)
+
+    migration_log.warning(f"[LIBRARY] Migrated {lib_count}")
+    migration_log.warning(f"[THEME] Migrated {theme_count}")
+
+
+async def migrate_events(mongo: Mongo, postgres: Postgres):
+    events_collection = mongo.db["events"]
+    session = session_manager.get_session()
+
+    events: list = []
+    for event in events_collection.find():
+        events.append(MongoEvent.parse_obj(event))
+
+    print(f"Total number of events in mongo: {len(events)}")
+    # assert len(events) == events_collection.estimated_document_count()
+
+    await EventMigrationService(session, events).run_events_migration()
+
+
+async def add_default_evets(postgres: Postgres):
+    migration_log.warning(
+        "Started adding default event to activities and flows"
+    )
+    activities_without_events: list[
+        tuple[str, str]
+    ] = postgres.get_activities_without_activity_events()
+    flows_without_events: list[
+        tuple[str, str]
+    ] = postgres.get_flows_without_activity_events()
+
+    migration_log.warning(
+        f"Number of activities without default event: {len(activities_without_events)}"
+    )
+    migration_log.warning(
+        f"Number of flows without default event: {len(flows_without_events)}"
+    )
+
+    session = session_manager.get_session()
+    await DefaultEventAddingService(
+        session, activities_without_events, flows_without_events
+    ).run_adding_default_event()
+
+    migration_log.warning(
+        "Finished adding default event to activities and flows"
+    )
+
+
 async def main():
     mongo = Mongo()
     postgres = Postgres()
@@ -229,7 +309,7 @@ async def main():
     # Migrate with users
     users: list[dict] = mongo.get_users()
     users_mapping = postgres.save_users(users)
-
+    await postgres.create_anonymous_respondent()
     # Migrate with users_workspace
     workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
     postgres.save_users_workspace(workspaces, users_mapping)
@@ -248,8 +328,17 @@ async def main():
     migrate_roles(mongo, postgres)
     # Migrate user pins
     migrate_user_pins(mongo, postgres)
-    # Close connections
+    # Migrate folders
     migrate_folders(mongo, postgres)
+    # Migrate library
+    migrate_library(mongo, postgres)
+    # Migrate events
+    await migrate_events(mongo, postgres)
+
+    # Add default (AlwayAvalible) events to activities and flows
+    await add_default_evets(postgres)
+
+    # Close connections
     mongo.close_connection()
     postgres.close_connection()
 

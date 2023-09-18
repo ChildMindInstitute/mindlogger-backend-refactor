@@ -4,7 +4,6 @@ import uuid
 from apps.authentication.services import AuthenticationService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
-from apps.shared.encryption import encrypt
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     PasswordRecoveryApproveRequest,
@@ -39,32 +38,32 @@ class PasswordRecoveryService:
         self, schema: PasswordRecoveryRequest
     ) -> PublicUser:
 
-        encrypted_email = encrypt(bytes(schema.email, "utf-8")).hex()
+        # encrypted_email = encrypt(bytes(schema.email, "utf-8")).hex()
 
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
-        if user.email_encrypted != encrypted_email:
+        if user.email_encrypted != schema.email:
             user = await UsersCRUD(self.session).update_encrypted_email(
-                user, encrypted_email
+                user, schema.email
             )
 
         # If already exist password recovery for this user in Redis,
         # delete old password recovery, before generate and send new.
         await self._cache.delete_all_entries(
-            email=user.plain_email  # type: ignore[arg-type]
+            email=user.email_encrypted  # type: ignore[arg-type]
         )
 
         password_recovery_info = PasswordRecoveryInfo(
-            email=user.plain_email,
+            email=user.email_encrypted,
             user_id=user.id,
             key=uuid.uuid3(
-                uuid.uuid4(), user.plain_email  # type: ignore[arg-type]
+                uuid.uuid4(), user.email_encrypted  # type: ignore[arg-type]
             ),
         )
 
         # Build the cache key
         key: str = self._cache.build_key(
-            user.plain_email,  # type: ignore[arg-type]
+            user.email_encrypted,  # type: ignore[arg-type]
             password_recovery_info.key,
         )
 
@@ -80,26 +79,27 @@ class PasswordRecoveryService:
 
         exp = settings.authentication.password_recover.expiration // 60
 
+        url = (
+            f"https://{settings.service.urls.frontend.web_base}"
+            f"/{settings.service.urls.frontend.password_recovery_send}"
+            f"?key={password_recovery_info.key}"
+            f"&email="
+            f"{urllib.parse.quote(user.email_encrypted)}"  # type: ignore
+        )
+
         message = MessageSchema(
-            recipients=[user.plain_email],
+            recipients=[user.email_encrypted],
             subject="Girder for MindLogger (development instance): "
             "Temporary access",
             body=service.get_template(
                 path="reset_password_en",
-                email=user.plain_email,
+                email=user.email_encrypted,
                 expiration_minutes=exp,
-                url=(
-                    f"https://{settings.service.urls.frontend.web_base}"
-                    f"/{settings.service.urls.frontend.password_recovery_send}"
-                    f"?key={password_recovery_info.key}"
-                    f"&email="
-                    f"{urllib.parse.quote(user.plain_email)}"  # type: ignore
-                ),
+                url=url,
             ),
         )
         await service.send(message)
 
-        # public_user = PublicUser(**user.dict())
         public_user = PublicUser.from_user(user)
 
         return public_user

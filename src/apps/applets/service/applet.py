@@ -43,7 +43,7 @@ from apps.applets.errors import (
     AppletsFolderAccessDenied,
 )
 from apps.applets.service.applet_history_service import AppletHistoryService
-from apps.folders.crud import FolderCRUD
+from apps.folders.crud import FolderAppletCRUD, FolderCRUD
 from apps.shared.version import (
     INITIAL_VERSION,
     VERSION_DIFFERENCE_ACTIVITY,
@@ -348,6 +348,7 @@ class AppletService:
                 watermark=update_data.watermark,
                 theme_id=update_data.theme_id,
                 version=version,
+                stream_enabled=update_data.stream_enabled,
             ),
         )
         return AppletFull.from_orm(schema)
@@ -460,6 +461,7 @@ class AppletService:
                     report_email_body=schema.report_email_body,
                     created_at=schema.created_at,
                     updated_at=schema.updated_at,
+                    stream_enabled=schema.stream_enabled,
                 )
             )
         return applets
@@ -504,6 +506,7 @@ class AppletService:
             retention_period=schema.retention_period,
             retention_type=schema.retention_type,
             is_published=schema.is_published,
+            stream_enabled=schema.stream_enabled,
         )
         activities = ActivityService(
             self.session, self.user_id
@@ -604,6 +607,9 @@ class AppletService:
             applet_id
         )
         await AppletsCRUD(self.session).delete_by_id(applet_id)
+        await FolderAppletCRUD(self.session).delete_folder_applet_by_applet_id(
+            applet_id
+        )
 
     async def set_applet_folder(self, schema: AppletFolder):
         if schema.folder_id:

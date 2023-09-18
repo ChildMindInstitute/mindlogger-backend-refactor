@@ -4,8 +4,11 @@ import datetime
 import json
 import uuid
 from collections import defaultdict
+from operator import attrgetter
+from typing import List
 
 import aiohttp
+import pydantic
 import sentry_sdk
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -17,6 +20,7 @@ from apps.activities.crud import (
     ActivityItemHistoriesCRUD,
 )
 from apps.activities.domain.activity_history import ActivityHistoryFull
+from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
@@ -67,9 +71,10 @@ from apps.answers.tasks import create_report
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
-from apps.shared.encryption import decrypt
+from apps.mailing.domain import MessageSchema
+from apps.mailing.services import MailingService
 from apps.shared.query_params import QueryParams
-from apps.users import UsersCRUD
+from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -652,9 +657,62 @@ class AnswerService:
             if activity:
                 activity.items.append(item)
 
+        items = await self.get_aggregated_items(list(activity_map.values()))
+
         return AnswerExport(
-            answers=answers, activities=list(activity_map.values())
+            answers=answers,
+            activities=list(activity_map.values()),
+            aggregated_items=items,
         )
+
+    async def get_aggregated_items(self, activities):
+        aggregated_items = {
+            ResponseType.SLIDER: None,
+            ResponseType.SINGLESELECT: None,
+            ResponseType.MULTISELECT: None,
+        }
+
+        for activity in activities:
+            for item in activity.items:
+                response_type = item.response_type
+                if aggregated_items.get(response_type) is None:
+                    aggregated_items[response_type] = item
+                elif response_type == ResponseType.SLIDER:
+                    await self._aggregate_slider_item(
+                        aggregated_items[response_type], item
+                    )
+                elif response_type in [
+                    ResponseType.SINGLESELECT,
+                    ResponseType.MULTISELECT,
+                ]:
+                    await self._aggregate_selection_item(
+                        aggregated_items[response_type], item
+                    )
+
+        return list(filter(lambda i: i is not None, aggregated_items.values()))
+
+    async def _aggregate_slider_item(self, aggregated_slider_item, item):
+        min_value = attrgetter("response_values.min_value")
+        aggregated_slider_item.response_values.min_value = min(
+            min_value(aggregated_slider_item), min_value(item)
+        )
+        max_value = attrgetter("response_values.max_value")
+        aggregated_slider_item.response_values.max_value = max(
+            max_value(aggregated_slider_item), max_value(item)
+        )
+        return aggregated_slider_item
+
+    async def _aggregate_selection_item(self, aggregated_selection_item, item):
+        options = aggregated_selection_item.response_values.options
+        for option in item.response_values.options:
+            if not list(
+                filter(
+                    lambda i: i.id == option.id and i.text == option.text,
+                    options,
+                )
+            ):
+                options.append(option)
+        return aggregated_selection_item
 
     async def get_activity_identifiers(
         self, activity_id: uuid.UUID
@@ -791,17 +849,19 @@ class AnswerService:
             if str(respondent_id) not in respondents:
                 raise AnswerAccessDeniedError()
 
-        answer_srv = AnswersCRUD(self.answer_session)
-        applet_version = await answer_srv.get_latest_applet_version(applet_id)
-
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_by_applet_id_for_summary(
-            applet_id_version=applet_version, applet_id=applet_id
+            applet_id=applet_id
         )
         activity_ver_ids = [activity.id_version for activity in activities]
         activity_ids_with_answer = await AnswersCRUD(
             self.answer_session
         ).get_activities_which_has_answer(activity_ver_ids, respondent_id)
+        answers_act_ids = set(
+            map(
+                lambda act_ver: act_ver.split("_")[0], activity_ids_with_answer
+            )
+        )
 
         results = []
         for activity in activities:
@@ -810,7 +870,7 @@ class AnswerService:
                     id=activity.id,
                     name=activity.name,
                     is_performance_task=activity.is_performance_task,
-                    has_answer=activity.id_version in activity_ids_with_answer,
+                    has_answer=str(activity.id) in answers_act_ids,
                 )
             )
         return results
@@ -826,37 +886,30 @@ class AnswerService:
         if len(raw_alerts) == 0:
             return
         cache = RedisCache()
-        receiver_ids = await UserAppletAccessCRUD(
+        persons = await UserAppletAccessCRUD(
             self.session
         ).get_responsible_persons(applet_id, self.user_id)
         alert_schemas = []
-        for receiver_id in receiver_ids:
+
+        for person in persons:
             for raw_alert in raw_alerts:
                 alert_schemas.append(
                     AlertSchema(
-                        user_id=receiver_id,
+                        user_id=person.id,
                         respondent_id=self.user_id,
                         is_watched=False,
                         applet_id=applet_id,
                         version=version,
                         activity_id=activity_id,
                         activity_item_id=raw_alert.activity_item_id,
-                        alert_message=raw_alert.encrypted_message,
+                        alert_message=raw_alert.message,
                         answer_id=answer_id,
                     )
                 )
-
         alerts = await AlertCRUD(self.session).create_many(alert_schemas)
 
         for alert in alerts:
             channel_id = f"channel_{alert.user_id}"
-            try:
-                plain_message = decrypt(
-                    bytes.fromhex(alert.alert_message)
-                ).decode("utf-8")
-            except ValueError:
-                plain_message = alert.alert_message
-
             try:
                 await cache.publish(
                     channel_id,
@@ -865,7 +918,7 @@ class AnswerService:
                         respondent_id=self.user_id,
                         applet_id=applet_id,
                         version=version,
-                        message=plain_message,
+                        message=alert.alert_message,
                         created_at=alert.created_at,
                         activity_id=alert.activity_id,
                         activity_item_id=alert.activity_item_id,
@@ -875,6 +928,7 @@ class AnswerService:
             except Exception as e:
                 sentry_sdk.capture_exception(e)
                 break
+        await self.send_alert_mail(persons)
 
     async def get_completed_answers_data(
         self, applet_id: uuid.UUID, version: str, from_date: datetime.date
@@ -900,6 +954,19 @@ class AnswerService:
             return False
 
         return True
+
+    @staticmethod
+    async def send_alert_mail(users: List[UserSchema]):
+        mail_service = MailingService()
+        schemas = pydantic.parse_obj_as(List[User], users)
+        email_list = [schema.email_encrypted for schema in schemas]
+        return await mail_service.send(
+            MessageSchema(
+                recipients=email_list,
+                subject="Response alert",
+                body=mail_service.get_template(path="response_alert_en"),
+            )
+        )
 
 
 class ReportServerService:

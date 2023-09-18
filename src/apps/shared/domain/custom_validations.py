@@ -111,7 +111,7 @@ def validate_uuid(value):
 
 
 def datetime_from_ms(value):
-    if value and isinstance(value, int):
+    if isinstance(value, int):
         if (
             value
             > datetime.datetime(

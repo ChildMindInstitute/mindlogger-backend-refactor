@@ -64,7 +64,7 @@ async def user_workspaces(
         result=[
             PublicWorkspace(
                 owner_id=workspace.user_id,
-                workspace_name=workspace.plain_workspace_name,
+                workspace_name=workspace.workspace_name,
             )
             for workspace in workspaces
         ],
@@ -334,9 +334,9 @@ async def workspace_managers_list(
         workspaces_manager.append(
             PublicWorkspaceManager(
                 id=workspace_manager.id,
-                first_name=workspace_manager.plain_first_name,
-                last_name=workspace_manager.plain_last_name,
-                email=workspace_manager.plain_email,
+                first_name=workspace_manager.first_name,
+                last_name=workspace_manager.last_name,
+                email=workspace_manager.email_encrypted,
                 roles=workspace_manager.roles,
                 last_seen=workspace_manager.last_seen,
                 is_pinned=workspace_manager.is_pinned,
@@ -370,16 +370,15 @@ async def workspace_applet_managers_list(
         workspaces_manager.append(
             PublicWorkspaceManager(
                 id=workspace_manager.id,
-                first_name=workspace_manager.plain_first_name,
-                last_name=workspace_manager.plain_last_name,
-                email=workspace_manager.plain_email,
+                first_name=workspace_manager.first_name,
+                last_name=workspace_manager.last_name,
+                email=workspace_manager.email_encrypted,
                 roles=workspace_manager.roles,
                 last_seen=workspace_manager.last_seen,
                 is_pinned=workspace_manager.is_pinned,
                 applets=workspace_manager.applets,
             )
         )
-
     return ResponseMulti(result=workspaces_manager, count=total)
 
 

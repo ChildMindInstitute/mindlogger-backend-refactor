@@ -157,11 +157,11 @@ async def applet_create(
         except Exception:
             await mail_service.send(
                 MessageSchema(
-                    recipients=[user.plain_email],
+                    recipients=[user.email_encrypted],
                     subject="Applet upload failed!",
                     body=mail_service.get_template(
                         path="applet_create_success_en",
-                        first_name=user.plain_first_name,
+                        first_name=user.first_name,
                         applet_name=schema.display_name,
                     ),
                 )
@@ -169,16 +169,16 @@ async def applet_create(
             raise
         await mail_service.send(
             MessageSchema(
-                recipients=[user.plain_email],
+                recipients=[user.email_encrypted],
                 subject="Applet upload success!",
                 body=mail_service.get_template(
                     path="applet_create_success_en",
-                    first_name=user.plain_first_name,
+                    first_name=user.first_name,
                     applet_name=applet.display_name,
                 ),
             )
         )
-    return Response(result=public_detail.Applet.from_orm(applet))
+        return Response(result=public_detail.Applet.from_orm(applet))
 
 
 async def applet_update(
@@ -252,7 +252,7 @@ async def applet_duplicate(
 
         await mail_service.send(
             MessageSchema(
-                recipients=[user.plain_email],
+                recipients=[user.email_encrypted],
                 subject="Applet duplicate success!",
                 body=mail_service.get_template(
                     path="applet_duplicate_success_en",

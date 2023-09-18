@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import json
 from typing import Optional
 from apps.migrate.utilities import EncUUID
+from apps.workspaces.domain.constants import Role
 
 
 @dataclass
@@ -42,3 +43,8 @@ class AppletUserDAO:
             f"'{datetime.datetime.utcnow()}'::TIMESTAMP",
         )
         return f"({','.join(values)})"
+
+
+def sort_by_role_priority(dao: AppletUserDAO):
+    priority = {Role.OWNER.value: 0, Role.MANAGER.value: 1}
+    return priority.get(dao.role, 3)

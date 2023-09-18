@@ -5,7 +5,7 @@ from bson import ObjectId
 
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.db.schemas import AnswerSchema
-from apps.migrate.answers.crud import MigrateAnswersCRUD
+from apps.migrate.answers.crud import AnswersMigrateCRUD
 from apps.migrate.utilities import mongoid_to_uuid
 from apps.users import UsersCRUD
 
@@ -88,7 +88,7 @@ class AnswerMigrationService:
         if not activity_flow:
             return None
         activity_flow_id = str(mongoid_to_uuid(activity_flow["@id"]))
-        answer = await MigrateAnswersCRUD(session).get_flow_history_id_version(
+        answer = await AnswersMigrateCRUD(session).get_flow_history_id_version(
             activity_flow_id
         )
         return answer

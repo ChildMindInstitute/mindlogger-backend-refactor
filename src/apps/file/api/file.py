@@ -1,6 +1,4 @@
-import asyncio
 import uuid
-from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from urllib.parse import quote
 
@@ -41,9 +39,7 @@ async def upload(
     key = cdn_client.generate_key(
         FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{file.filename}"
     )
-    with ThreadPoolExecutor() as executor:
-        future = executor.submit(cdn_client.upload, key, file.file)
-    await asyncio.wrap_future(future)
+    await cdn_client.upload(key, file.file)
     result = ContentUploadedFile(
         key=key, url=quote(settings.cdn.url.format(key=key), "/:")
     )
@@ -92,9 +88,7 @@ async def answer_upload(
     key = cdn_client.generate_key(
         FileScopeEnum.ANSWER, unique, cleaned_file_id
     )
-    with ThreadPoolExecutor() as executor:
-        future = executor.submit(cdn_client.upload, key, file.file)
-    await asyncio.wrap_future(future)
+    await cdn_client.upload(key, file.file)
     result = AnswerUploadedFile(
         key=key,
         url=cdn_client.generate_private_url(key),
@@ -174,10 +168,9 @@ async def presign(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    results: list[str] = await PresignedUrlsGeneratorService(
+    results: list[str | None] = await PresignedUrlsGeneratorService(
         session=session, user_id=user.id, applet_id=applet_id
     )(
         given_private_urls=request.private_urls,
     )
-
-    return ResponseMulti[str](result=results, count=len(results))
+    return ResponseMulti[str | None](result=results, count=len(results))

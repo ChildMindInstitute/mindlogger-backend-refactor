@@ -12,16 +12,22 @@ from psycopg2.errorcodes import UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION
 from bson import ObjectId
 
 from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
+from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
 from apps.migrate.services.applet_service import AppletMigrationService
 from apps.migrate.utilities import (
     mongoid_to_uuid,
     uuid_to_mongoid,
     migration_log,
 )
+from apps.workspaces.domain.constants import Role
 from infrastructure.database import session_manager
 from infrastructure.database import atomic
-from apps.migrate.data_description.applet_user_access import AppletUserDAO
+from apps.migrate.data_description.applet_user_access import (
+    AppletUserDAO,
+    sort_by_role_priority,
+)
 from apps.migrate.data_description.user_pins import UserPinsDAO
+from apps.users.services.user import UserService
 
 
 class Postgres:
@@ -37,6 +43,49 @@ class Postgres:
 
     def close_connection(self):
         self.connection.close()
+
+    def wipe_applet(self, applet_id: ObjectId | uuid.UUID | str):
+        if isinstance(applet_id, ObjectId):
+            applet_id = mongoid_to_uuid(str(applet_id))
+        if isinstance(applet_id, str) and len(applet_id) == 24:
+            applet_id = mongoid_to_uuid(applet_id)
+        if isinstance(applet_id, str) and len(applet_id) == 36:
+            applet_id = uuid.UUID(applet_id)
+
+        cursor = self.connection.cursor()
+        cursor.execute(
+            "DELETE FROM flow_item_histories WHERE id IN (SELECT id FROM flow_items WHERE activity_id IN (SELECT id FROM activities WHERE applet_id = %s))",
+            (applet_id.hex,),
+        )
+        cursor.execute(
+            "DELETE FROM flow_items WHERE activity_id IN (SELECT id FROM activities WHERE applet_id = %s)",
+            (applet_id.hex,),
+        )
+        cursor.execute(
+            "DELETE FROM activities WHERE applet_id = %s", (applet_id.hex,)
+        )
+        cursor.execute(
+            "DELETE FROM user_applet_accesses WHERE applet_id = %s",
+            (applet_id.hex,),
+        )
+        cursor.execute(
+            "DELETE FROM flow_histories WHERE applet_id LIKE %s",
+            (str(applet_id) + "%",),
+        )
+        cursor.execute(
+            "DELETE FROM activity_histories WHERE applet_id LIKE %s",
+            (str(applet_id) + "%",),
+        )
+        cursor.execute(
+            "DELETE FROM applet_histories WHERE id = %s", (applet_id.hex,)
+        )
+        cursor.execute(
+            "DELETE FROM flows WHERE applet_id = %s", (applet_id.hex,)
+        )
+        cursor.execute("DELETE FROM applets WHERE id = %s", (applet_id.hex,))
+
+        self.connection.commit()
+        cursor.close()
 
     def save_users(self, users: list[dict]) -> dict[str, dict]:
         """Returns the mapping between old Users ID and the created Users.
@@ -80,19 +129,30 @@ class Postgres:
                 "email_encrypted": old_user["email_aes_encrypted"],
             }
             try:
+                sql = """
+                    INSERT INTO users
+                    (created_at, updated_at, is_deleted, email, 
+                    hashed_password, id, first_name, last_name,
+                    last_seen_at, email_encrypted,
+                    migrated_date, migrated_updated)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
                 cursor.execute(
-                    "INSERT INTO users"
-                    "(created_at, updated_at, is_deleted, email, "
-                    "hashed_password, id, first_name, last_name, "
-                    "last_seen_at, email_encrypted)"
-                    "VALUES"
-                    f"('{new_user['created_at']}', "
-                    f"'{new_user['updated_at']}', "
-                    f"'{new_user['is_deleted']}', '{new_user['email']}', "
-                    f"'{new_user['hashed_password']}', '{new_user['id']}', "
-                    f"'{new_user['first_name']}', '{new_user['last_name']}', "
-                    f"'{new_user['last_seen_at']}', "
-                    f"'{new_user['email_encrypted']}');"
+                    sql,
+                    (
+                        str(new_user["created_at"]),
+                        str(new_user["updated_at"]),
+                        new_user["is_deleted"],
+                        new_user["email"],
+                        new_user["hashed_password"],
+                        str(new_user["id"]),
+                        new_user["first_name"],
+                        new_user["last_name"],
+                        str(new_user["last_seen_at"]),
+                        new_user["email_encrypted"],
+                        str(time_now),
+                        str(time_now),
+                    ),
                 )
 
                 results[old_user["id_"]] = new_user
@@ -174,6 +234,7 @@ class Postgres:
     ):
         owner_uuid = mongoid_to_uuid(owner_id)
         initail_version = list(applets_by_versions.keys())[0]
+        last_version = list(applets_by_versions.keys())[-1]
         # applet = applets_by_versions[version]
         session = session_manager.get_session()
 
@@ -184,15 +245,17 @@ class Postgres:
         # TODO: Lookup the owner_uuid for the applet workspace
 
         async with atomic(session):
+            service = AppletMigrationService(session, owner_uuid)
+
+            applet = applets_by_versions[last_version]
+            applet_name = await service.get_unique_name(applet.display_name)
+
             for version, applet in applets_by_versions.items():
+                applet.display_name = applet_name
                 if version == initail_version:
-                    applet_create = await AppletMigrationService(
-                        session, owner_uuid
-                    ).create(applet, owner_uuid)
+                    applet_create = await service.create(applet, owner_uuid)
                 else:
-                    applet_create = await AppletMigrationService(
-                        session, owner_uuid
-                    ).update(applet)
+                    applet_create = await service.update(applet)
                     # break
 
         # print(applet_create)
@@ -243,6 +306,14 @@ class Postgres:
     def get_migrated_applets(self) -> list[ObjectId]:
         return self.get_pk_array('SELECT id FROM "applets"')
 
+    def get_anon_respondent(self) -> uuid.UUID:
+        sql = "SELECT id FROM users WHERE is_anonymous_respondent = true"
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        cursor.close()
+        return uuid.UUID(results[0][0])
+
     def get_migrated_users_ids(self):
         return self.get_pk_array('SELECT id FROM "users"', as_bson=False)
 
@@ -264,6 +335,20 @@ class Postgres:
         cursor.close()
         return inserted_count
 
+    def get_user_roles(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
+    ) -> List[str]:
+        sql = """
+            SELECT role 
+            FROM user_applet_accesses 
+            WHERE user_id=%s AND applet_id=%s
+        """
+        cursor = self.connection.cursor()
+        cursor.execute(sql, (str(user_id), str(applet_id)))
+        results = cursor.fetchall()
+        cursor.close()
+        return list(map(lambda t: t[0], results))
+
     def save_user_access_workspace(self, access_mapping: List[AppletUserDAO]):
         sql = """
             INSERT INTO user_applet_accesses
@@ -284,7 +369,22 @@ class Postgres:
             )
             VALUES {values}
         """
+        sub_managers = (
+            Role.REVIEWER.value,
+            Role.COORDINATOR.value,
+            Role.EDITOR.value,
+        )
+        managers = (Role.MANAGER.value, *sub_managers)
+        access_mapping = sorted(access_mapping, key=sort_by_role_priority)
         for row in access_mapping:
+            roles = self.get_user_roles(row.user_id, row.applet_id)
+            hierarchy_violation = (
+                Role.OWNER.value in roles and row.role in managers,
+                Role.MANAGER.value in roles and row.role in sub_managers,
+            )
+            if any(hierarchy_violation):
+                continue
+
             cursor = self.connection.cursor()
             query = sql.format(values=str(row))
             try:
@@ -293,10 +393,7 @@ class Postgres:
                 if not hasattr(ex, "pgcode"):
                     # not pg error
                     raise ex
-                if getattr(ex, "pgcode") == UNIQUE_VIOLATION:
-                    migration_log.warning(f"Role already exist {row=}")
-                else:
-                    raise ex
+                migration_log.warning(ex.pgerror)
             self.connection.commit()
 
     def save_user_pins(self, user_pin_dao):
@@ -420,3 +517,131 @@ class Postgres:
             finally:
                 self.connection.commit()
         return migrated, skipped
+
+    def exec_escaped(self, sql: str, values: tuple, log_tag=""):
+        success = False
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(sql, values)
+            success = True
+        except Exception as ex:
+            migration_log.warning(f"{log_tag} {ex}")
+        finally:
+            self.connection.commit()
+        return success
+
+    def save_library_item(self, lib: LibraryDao) -> bool:
+        sql = """
+        INSERT INTO public."library"
+        (
+            id,  
+            is_deleted,
+            applet_id_version, 
+            keywords, 
+            search_keywords, 
+            created_at, 
+            updated_at, 
+            migrated_date, 
+            migrated_updated
+        )
+        VALUES(
+            %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        return self.exec_escaped(sql, lib.values(), "[LIBRARY]")
+
+    def save_theme_item(self, theme: ThemeDao) -> bool:
+        sql = """
+            INSERT INTO public.themes
+            (
+                id,
+                creator_id,
+                created_at, 
+                updated_at, 
+                is_deleted, 
+                "name", 
+                logo, 
+                background_image, 
+                primary_color, 
+                secondary_color, 
+                tertiary_color, 
+                public, 
+                allow_rename, 
+                migrated_date, 
+                migrated_updated
+            )
+            VALUES
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+        """
+        return self.exec_escaped(sql, theme.values(), "[THEME]")
+
+    def get_latest_applet_id_version(self, applet_id: uuid.UUID) -> str | None:
+        sql = """
+            SELECT id_version 
+            FROM applet_histories 
+            WHERE id = %s 
+            ORDER BY id_version desc 
+            LIMIT 1
+        """
+        cursor = self.connection.cursor()
+        cursor.execute(sql, (str(applet_id),))
+        row = cursor.fetchone()
+        return row[0] if row else None
+
+    def get_applet_library_keywords(
+        self, applet_id: uuid.UUID, applet_version: str
+    ) -> List[str]:
+        kw = []
+        cursor = self.connection.cursor()
+        sql = "SELECT description FROM applets WHERE id=%s"
+        cursor.execute(sql, (str(applet_id),))
+        result = cursor.fetchone()
+        if result and result[0]:
+            kw.extend(result[0].values())
+        sql = "SELECT name FROM activity_histories where applet_id=%s"
+        cursor.execute(sql, (applet_version,))
+        result = cursor.fetchall()
+        act_names = map(lambda row: row[0], result)
+        kw.extend(act_names)
+        return kw
+
+    def add_theme_to_applet(self, applet_id: uuid.UUID, theme_id: uuid.UUID):
+        sql = "UPDATE applets SET theme_id = %s WHERE id = %s"
+        return self.exec_escaped(
+            sql, (str(theme_id), str(applet_id)), "[THEME APPLET]"
+        )
+
+    def get_activities_without_activity_events(self) -> list[tuple[str, str]]:
+        sql = """
+            SELECT activities.id, activities.applet_id
+            FROM activities
+            LEFT JOIN activity_events ON activities.id = activity_events.activity_id
+            WHERE activity_events.activity_id IS NULL;
+        """
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        cursor.close()
+
+        return results
+
+    def get_flows_without_activity_events(self) -> list[tuple[str, str]]:
+        sql = """
+            SELECT flows.id, flows.applet_id
+            FROM flows
+            LEFT JOIN flow_events ON flows.id = flow_events.flow_id
+            WHERE flow_events.flow_id IS NULL;
+        """
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        cursor.close()
+
+        return results
+
+    async def create_anonymous_respondent(self):
+        session = session_manager.get_session()
+        async with atomic(session):
+            service = UserService(session)
+            await service.create_anonymous_respondent()

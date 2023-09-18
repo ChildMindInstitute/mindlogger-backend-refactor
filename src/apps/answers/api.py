@@ -352,10 +352,7 @@ async def note_add(
         )
         async with atomic(answer_session):
             await AnswerService(session, user.id, answer_session).add_note(
-                applet_id,
-                answer_id,
-                activity_id,
-                schema.encrypted_note,  # type: ignore[arg-type]
+                applet_id, answer_id, activity_id, schema.note
             )
     return
 
@@ -382,9 +379,7 @@ async def note_list(
                 session, user.id, answer_session
             ).get_notes_count(answer_id, activity_id)
     return ResponseMulti(
-        result=[
-            AnswerNoteDetailPublic.from_note_detail(note) for note in notes
-        ],
+        result=[AnswerNoteDetailPublic.from_orm(note) for note in notes],
         count=count,
     )
 
@@ -406,11 +401,7 @@ async def note_edit(
         )
         async with atomic(answer_session):
             await AnswerService(session, user.id, answer_session).edit_note(
-                applet_id,
-                answer_id,
-                activity_id,
-                note_id,
-                schema.encrypted_note,  # type: ignore[arg-type]
+                applet_id, answer_id, activity_id, note_id, schema.note
             )
     return
 
@@ -450,9 +441,11 @@ async def applet_answers_export(
         applet_id
     )
     async with atomic(answer_session):
-        data: AnswerExport = await AnswerService(
-            session, user.id, answer_session
-        ).get_export_data(applet_id, query_params)
+        answer_service = AnswerService(session, user.id, answer_session)
+        data: AnswerExport = await answer_service.get_export_data(
+            applet_id, query_params
+        )
+
         for answer in data.answers:
             if answer.is_manager:
                 answer.respondent_secret_id = (
@@ -465,6 +458,10 @@ async def applet_answers_export(
                 session, applet.id, applet.version
             ).get_full()
             data.activities = activities
+            data.aggregated_items = await answer_service.get_aggregated_items(
+                activities
+            )
+
     return Response(result=PublicAnswerExport.from_orm(data))
 
 
