@@ -21,7 +21,6 @@ class AnswersMigrateCRUD(AnswersCRUD):
                 "version"
             ),
         )
-
         db_result = await self._execute(query)
         db_result = db_result.all()
         result = []

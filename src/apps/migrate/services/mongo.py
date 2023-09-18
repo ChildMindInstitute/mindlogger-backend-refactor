@@ -1069,8 +1069,11 @@ class Mongo:
         }
         item_collection = self.db["item"]
         creators_ids = item_collection.find(query).distinct("creatorId")
+        result = []
         for creator_id in creators_ids:
-            yield {**query, "creatorId": creator_id}
+            result.append({**query, "creatorId": creator_id})
+
+        return result
 
     def get_answers_with_files(
         self,

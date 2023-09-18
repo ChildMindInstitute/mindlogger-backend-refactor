@@ -67,11 +67,14 @@ class AnswerMigrationService:
     def _process_files(self, files):
         for item in files:
             key = next(iter(item))
+            value = item[key].get("value")
+            if not value:
+                continue
             yield {
                 "answerItemId": str(
                     mongoid_to_uuid(ObjectId(key.split("/").pop()))
                 ),
-                "fileUrl": self._get_direct_url(item[key]["value"]["uri"]),
+                "fileUrl": self._get_direct_url(value["uri"]),
             }
 
     def _generate_history_id(self, version: str):
