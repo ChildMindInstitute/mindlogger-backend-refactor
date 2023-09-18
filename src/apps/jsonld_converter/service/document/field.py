@@ -127,7 +127,7 @@ class ReproFieldBase(
     @property
     def name(self):
         name = (
-            self.ld_pref_label or self.ld_alt_label or self.ld_id
+            self.ld_id or self.ld_alt_label or self.ld_pref_label
         )  # TODO: discuss
         return str_to_id(name, r"\s")
 
@@ -1027,11 +1027,12 @@ class ReproFieldDrawing(ReproFieldBase):
 
 class ReproFieldMessage(ReproFieldBase):
     INPUT_TYPE = "markdownMessage"
+    INPUT_TYPE_ALT = "markdown-message"
     RESPONSE_TYPE = ResponseType.MESSAGE
 
     @classmethod
     def _get_supported_input_types(cls) -> list[str]:
-        return [cls.INPUT_TYPE]
+        return [cls.INPUT_TYPE, cls.INPUT_TYPE_ALT]
 
     def _build_config(self, _cls: Type | None, **attrs):
         config = MessageConfig(
