@@ -349,9 +349,21 @@ def patch_broken_applets(
 
     # fix duplicated names for stability activity items in prefLabel
     duplications = [
-        ("stability_schema", "Stability Tracker"),
-        ("flanker_schema", "Visual Stimulus Response"),
-        ("Flanker_360", "Visual Stimulus Response"),
+        ("stability_schema", ["Stability Tracker"]),
+        (
+            "flanker_schema",
+            [
+                "Visual Stimulus Response",
+                "Visual Stimulus Response instructions",
+            ],
+        ),
+        (
+            "Flanker_360",
+            [
+                "Visual Stimulus Response",
+                "Visual Stimulus Response instructions",
+            ],
+        ),
     ]
     key = "http://www.w3.org/2004/02/skos/core#prefLabel"
     for stability_activity in applet_ld["reprolib:terms/order"][0]["@list"]:
@@ -362,10 +374,12 @@ def patch_broken_applets(
                 ][0]["@list"]:
                     if (
                         key in stability_item
-                        and stability_item[key][0]["@value"] == item_label
+                        and stability_item[key][0]["@value"] in item_label
                     ):
-                        stability_item[key][0]["@value"] += (
-                            " " + stability_item["@id"]
+                        stability_item[key][0]["@value"] = (
+                            stability_item[key][0]["@value"]
+                            + "_"
+                            + stability_item["@id"]
                         )
 
     broken_conditional_logic_naming = [

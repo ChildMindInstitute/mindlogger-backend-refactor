@@ -127,7 +127,7 @@ class ReproFieldBase(
     @property
     def name(self):
         name = (
-            self.ld_id or self.ld_alt_label or self.ld_pref_label
+            self.ld_pref_label or self.ld_id or self.ld_alt_label
         )  # TODO: discuss
         return str_to_id(name, r"\s")
 
