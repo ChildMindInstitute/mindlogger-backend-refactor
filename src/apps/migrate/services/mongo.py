@@ -1131,13 +1131,27 @@ class Mongo:
             last_name = last_name[:49]
         return f"{first_name} {last_name}"
 
-    def reviewer_meta(self, applet_id: ObjectId) -> List[str]:
-        applet_docs = self.db["accountProfile"].find(
-            {"applets.user": applet_id}
+    def reviewer_meta(
+        self, applet_id: ObjectId, account_profile: dict
+    ) -> List[uuid.UUID]:
+        profiles = self.db["appletProfile"].find(
+            {
+                "accountId": account_profile["accountId"],
+                "appletId": applet_id,
+                "userId": account_profile["userId"],
+            }
         )
-        return list(
-            map(lambda doc: str(mongoid_to_uuid(doc["userId"])), applet_docs)
-        )
+        user_ids = []
+        for profile in profiles:
+            conditions = (
+                "reviewer" in profile["roles"],
+                "coordinator" in profile["roles"],
+                "manager" in profile["roles"],
+            )
+            if any(conditions):
+                if profile["userId"]:
+                    user_ids.append(mongoid_to_uuid(profile["userId"]))
+        return user_ids
 
     def respondent_metadata(self, user: dict, applet_id: ObjectId):
         doc_cur = (
@@ -1217,12 +1231,6 @@ class Mongo:
 
             user = User().findOne({"_id": doc["userId"]})
             if not user:
-                msg = (
-                    f"Skip AppletProfile({doc['_id']}), "
-                    f"User({doc['userId']}) does not exist (field: userId)"
-                )
-                migration_log.warning(msg)
-                not_found_users.append(doc["userId"])
                 continue
             role_applets_mapping = doc.get("applets")
             for role_name, applet_ids in role_applets_mapping.items():
@@ -1239,11 +1247,6 @@ class Mongo:
                     if applet_id not in migrated_applet_ids:
                         # Applet doesn't exist in postgresql, just skip it
                         # ant put id to cache
-                        migration_log.warning(
-                            f"Skip: Applet({applet_id}) "
-                            f"doesnt represent in PostgreSQL"
-                        )
-                        not_found_applets.append(applet_id)
                         continue
                     applet = next(
                         filter(
@@ -1255,7 +1258,9 @@ class Mongo:
                         continue
                     meta = {}
                     if role_name == Role.REVIEWER:
-                        meta["respondents"] = self.reviewer_meta(applet_id)
+                        meta["respondents"] = self.reviewer_meta(
+                            applet_id, doc
+                        )
                     elif role_name == "user":
                         data = self.respondent_metadata(user, applet_id)
                         if data:
