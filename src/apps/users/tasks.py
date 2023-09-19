@@ -20,7 +20,11 @@ async def change_password_with_answers(
     email,
     old_password,
     new_password,
+    retries: int | None = None,
+    retry_timeout: int | None = None,
 ):
+    logger.info(f"Reencryption {user_id}: change_password_with_answers start")
+
     old_private_key = generate_dh_user_private_key(
         user_id, email, old_password
     )
@@ -52,7 +56,8 @@ async def change_password_with_answers(
                 applet_pub_key = json.loads(applet.encryption.public_key)
             except JSONDecodeError as e:
                 logger.error(
-                    f'Reencryption: Wrong applet "{applet.applet_id}" encryption format, skip'  # noqa: E501
+                    f'Reencryption {user_id}: Wrong applet "{applet.applet_id}"'  # noqa: E501
+                    f" encryption format, skip"
                 )
                 logger.exception(str(e))
                 continue
@@ -98,11 +103,27 @@ async def change_password_with_answers(
                         await session_maker.remove()
 
             except Exception as e:
-                logger.error(f"Reencryption: {e}")
+                logger.error(
+                    f"Reencryption {user_id}: cannot process applet "
+                    f"{applet.applet_id}, skip"
+                )
                 logger.exception(str(e))
                 success = False
                 continue
 
     if not success:
-        # TODO retry
-        ...
+        if retries:
+            logger.info(f"Reencryption {user_id}: schedule retry")
+            if retry_timeout is None:
+                retry_timeout = settings.task_answer_encryption.retry_timeout
+            retries -= 1
+            await change_password_with_answers.kicker().with_labels(
+                delay=retry_timeout
+            ).kiq(
+                user_id,
+                email,
+                old_password,
+                new_password,
+                retries=retries,
+                retry_timeout=retry_timeout,
+            )

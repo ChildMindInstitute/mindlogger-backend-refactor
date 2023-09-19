@@ -21,6 +21,7 @@ from apps.users.domain import (
 from apps.users.errors import UserNotFound
 from apps.users.services import PasswordRecoveryCache, PasswordRecoveryService
 from apps.users.tasks import change_password_with_answers
+from config import settings
 from infrastructure.cache import (
     CacheNotFound,
     PasswordRecoveryHealthCheckNotValid,
@@ -54,8 +55,9 @@ async def password_update(
         public_user = PublicUser.from_user(updated_user)
 
     email = user.email_encrypted
+    retries = settings.task_answer_encryption.max_retries
     await change_password_with_answers.kiq(
-        user.id, email, schema.prev_password, schema.password
+        user.id, email, schema.prev_password, schema.password, retries=retries
     )
 
     return Response[PublicUser](result=public_user)
