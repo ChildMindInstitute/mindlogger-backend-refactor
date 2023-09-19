@@ -32,7 +32,7 @@ class S3PresignService(BasePresignService):
     check_access_to_regular_url_pattern = (
         r"\/([0-9a-fA-F-]+)\/([0-9a-fA-F-]+)\/"
     )
-    check_access_to_legacy_url_pattern = r"\/([0-9a-fA-F]+)\/"
+    check_access_to_legacy_url_pattern = r"\/([0-9a-fA-F]+)\/([0-9a-fA-F]+)\/"
 
     async def __call__(self, url):
         if not url:
@@ -97,7 +97,7 @@ class S3PresignService(BasePresignService):
     async def _check_access_to_legacy_url(self, url):
         pattern = self.check_access_to_legacy_url_pattern
         match = re.search(pattern, url)
-        applet_id = mongoid_to_uuid(match.group(1))
+        applet_id = mongoid_to_uuid(match.group(2))
 
         if self.applet_id != applet_id:
             return False
