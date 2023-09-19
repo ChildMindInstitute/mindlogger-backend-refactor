@@ -1041,22 +1041,34 @@ class Mongo:
         result = get_versions_from_content(protocolId)
         converted_applet_versions = dict()
         if result is not None:
+            last_version = list(result.keys())[-1]
+
             old_activities_by_id = {}
             for version, content in result.items():
                 print(version)
-                ld_request_schema, old_activities_by_id = content_to_jsonld(
-                    content["applet"], old_activities_by_id
-                )
-                ld_request_schema = patch_broken_applet_versions(
-                    applet_id, ld_request_schema
-                )
-                converted = await self.get_converter_result(ld_request_schema)
-                converted.extra_fields["created"] = content["updated"]
-                converted.extra_fields["updated"] = content["updated"]
-                converted.extra_fields["version"] = version
-                converted = self._extract_ids(converted, applet_id)
+                if version == last_version:
+                    converted_applet_versions[
+                        version
+                    ] = {}  # skipping last version for optimization
+                else:
+                    (
+                        ld_request_schema,
+                        old_activities_by_id,
+                    ) = content_to_jsonld(
+                        content["applet"], old_activities_by_id
+                    )
+                    ld_request_schema = patch_broken_applet_versions(
+                        applet_id, ld_request_schema
+                    )
+                    converted = await self.get_converter_result(
+                        ld_request_schema
+                    )
+                    converted.extra_fields["created"] = content["updated"]
+                    converted.extra_fields["updated"] = content["updated"]
+                    converted.extra_fields["version"] = version
+                    converted = self._extract_ids(converted, applet_id)
 
-                converted_applet_versions[version] = converted
+                    converted_applet_versions[version] = converted
 
         return converted_applet_versions, owner_id
 

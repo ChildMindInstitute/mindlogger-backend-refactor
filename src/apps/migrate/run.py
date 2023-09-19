@@ -61,7 +61,6 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
         query={
             "meta.applet.displayName": {"$exists": True},
             "meta.applet.deleted": {"$ne": True},
-            "meta.applet.editing": {"$ne": True},
             "$or": [
                 {
                     "created": {
@@ -82,11 +81,6 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
     for applet in applets:
         # postgres.wipe_applet(str(applet["_id"]))
         migrating_applets.append(str(applet["_id"]))
-    # migrating_applets = [
-    #     "6202738aace55b10691c101d",  # broken conditional logic [object object]  in main applet
-    #     "620eb401b0b0a55f680dd5f5",  # broken conditional logic [object object]  in main applet
-    #     "6210202db0b0a55f680de1a5",  # broken conditional logic [object object]  in main applet
-    # ]
 
     # migrating_applets = [
     #     "61dda090025fb7a0d64793d8",
@@ -112,17 +106,20 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
             applet: dict | None = await mongo.get_applet(applet_id)
 
             applets, owner_id = await mongo.get_applet_versions(applet_id)
+            if applets != {}:
+                if applet.extra_fields["version"] != list(applets.keys())[-1]:
+                    applet.extra_fields["version"] = list(applets.keys())[-1]
+
+                applets[list(applets.keys())[-1]] = applet
+            else:
+                applets[applet.extra_fields["version"]] = applet
+
             for version, _applet in applets.items():
                 _applet.extra_fields["created"] = applet.extra_fields[
                     "created"
                 ]
                 _applet.display_name = applet.display_name
                 _applet.encryption = applet.encryption
-
-            if applets != {}:
-                applets[list(applets.keys())[-1]] = applet
-            else:
-                applets[applet.extra_fields["version"]] = applet
 
             await postgres.save_applets(applets, owner_id)
         except (FormatldException, EmptyAppletException) as e:
