@@ -8,6 +8,7 @@ from datetime import datetime
 class AnswerItemMigrationService:
     async def create_item(self, *, session, mongo_answer: dict, **kwargs):
         identifier = mongo_answer["meta"]["subject"].get("identifier", "")
+        respondent_id = mongo_answer["meta"]["subject"].get("@id")
         answer_item = await AnswerItemsCRUD(session).create(
             AnswerItemSchema(
                 created_at=mongo_answer["created"],
@@ -16,7 +17,7 @@ class AnswerItemMigrationService:
                 answer=mongo_answer["meta"]["dataSource"],
                 item_ids=self._get_item_ids(mongo_answer),
                 events=mongo_answer["meta"].get("events", ""),
-                respondent_id=mongoid_to_uuid(mongo_answer["creatorId"]),
+                respondent_id=mongoid_to_uuid(respondent_id),
                 identifier=mongo_answer["meta"]["subject"].get(
                     "identifier", ""
                 ),
