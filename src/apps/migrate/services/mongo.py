@@ -349,7 +349,13 @@ def patch_broken_applets(
 
     # fix duplicated names for stability activity items in prefLabel
     duplications = [
-        ("stability_schema", ["Stability Tracker"]),
+        (
+            "stability_schema",
+            [
+                "Stability Tracker",
+                "Stability tracker instructions",
+            ],
+        ),
         (
             "flanker_schema",
             [
