@@ -15,7 +15,6 @@ from apps.migrate.answers.crud import AnswersMigrateCRUD, MigrateUsersMCRUD
 from apps.migrate.answers.user_applet_access import (
     MigrateUserAppletAccessService,
 )
-from apps.migrate.answers.user_service import UserMigrateService
 
 from apps.migrate.services.mongo import Mongo
 from apps.migrate.utilities import mongoid_to_uuid
@@ -158,10 +157,6 @@ class AnswersMigrateFacade:
 
         regular_session = session_manager.get_session()
 
-        await UserMigrateService(
-            regular_session
-        ).create_legacy_deleted_respondent()
-
         async with atomic(regular_session):
             answers_migration_params = await AnswersMigrateCRUD(
                 regular_session
@@ -171,6 +166,7 @@ class AnswersMigrateFacade:
             answer_migration_queries = self.mongo.get_answer_migration_queries(
                 **answer_migration_params
             )
+
             anwswers_with_files = self.mongo.get_answers_with_files(
                 answer_migration_queries=answer_migration_queries
             )
