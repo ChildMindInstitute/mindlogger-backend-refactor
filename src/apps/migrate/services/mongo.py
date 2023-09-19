@@ -1093,7 +1093,7 @@ class Mongo:
         return converted
 
     def get_answer_migration_queries(self, **kwargs):
-        creator_id_filtering = True
+        creator_id_filtering = False
         creator_ids = [ObjectId("64c2395b8819c178d236685a")]
 
         query = {

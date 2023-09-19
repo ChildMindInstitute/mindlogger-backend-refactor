@@ -247,7 +247,7 @@ class AnswersMigrateFacade:
                 print(s)
 
         print(
-            f"Legacy deleted users answers count: {self.anonymous_respondent_answers}"
+            f"Anonymous users answers count: {self.anonymous_respondent_answers}"
         )
 
 
