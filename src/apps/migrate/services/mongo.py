@@ -1093,6 +1093,9 @@ class Mongo:
         return converted
 
     def get_answer_migration_queries(self, **kwargs):
+        creator_id_filtering = True
+        creator_ids = [ObjectId("64c2395b8819c178d236685a")]
+
         query = {
             "meta.responses": {"$exists": True},
             "meta.activity.@id": kwargs["activity_id"],
@@ -1103,6 +1106,9 @@ class Mongo:
         creators_ids = item_collection.find(query).distinct("creatorId")
         result = []
         for creator_id in creators_ids:
+            if creator_id_filtering:
+                if creator_id not in creator_ids:
+                    continue
             result.append({**query, "creatorId": creator_id})
 
         return result
