@@ -24,6 +24,7 @@ from apps.invitations.services import (
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
@@ -130,9 +131,13 @@ async def invitation_respondent_send(
         await CheckAccessService(session, user.id).check_applet_invite_access(
             applet_id
         )
-        invitation = await InvitationsService(
-            session, user
-        ).send_respondent_invitation(applet_id, invitation_schema)
+        invitation_srv = InvitationsService(session, user)
+        await invitation_srv.check_for_duplicates(
+            applet_id, invitation_schema.email, Role.RESPONDENT
+        )
+        invitation = await invitation_srv.send_respondent_invitation(
+            applet_id, invitation_schema
+        )
 
     return Response[InvitationRespondentResponse](
         result=InvitationRespondentResponse(**invitation.dict())
@@ -155,9 +160,15 @@ async def invitation_reviewer_send(
         await CheckAccessService(session, user.id).check_applet_invite_access(
             applet_id
         )
-        invitation: InvitationDetailForReviewer = await InvitationsService(
-            session, user
-        ).send_reviewer_invitation(applet_id, invitation_schema)
+        invitation_srv = InvitationsService(session, user)
+        await invitation_srv.check_for_duplicates(
+            applet_id, invitation_schema.email, Role.REVIEWER
+        )
+        invitation: InvitationDetailForReviewer = await (
+            invitation_srv.send_reviewer_invitation(
+                applet_id, invitation_schema
+            )
+        )
 
     return Response[InvitationReviewerResponse](
         result=InvitationReviewerResponse(**invitation.dict())
@@ -181,9 +192,13 @@ async def invitation_managers_send(
         await CheckAccessService(session, user.id).check_applet_invite_access(
             applet_id
         )
-        invitation = await InvitationsService(
-            session, user
-        ).send_managers_invitation(applet_id, invitation_schema)
+        invitation_srv = InvitationsService(session, user)
+        await invitation_srv.check_for_duplicates(
+            applet_id, invitation_schema.email, invitation_schema.role
+        )
+        invitation = await invitation_srv.send_managers_invitation(
+            applet_id, invitation_schema
+        )
 
     return Response[InvitationManagersResponse](
         result=InvitationManagersResponse(**invitation.dict())

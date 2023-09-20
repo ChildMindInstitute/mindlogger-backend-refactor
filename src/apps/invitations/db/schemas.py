@@ -9,7 +9,7 @@ from infrastructure.database import Base
 class InvitationSchema(Base):
     __tablename__ = "invitations"
 
-    email = Column(String())
+    email = Column(StringEncryptedType(Unicode, get_key))
     applet_id = Column(
         ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
     )
