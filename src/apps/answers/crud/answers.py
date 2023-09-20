@@ -230,7 +230,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return parse_obj_as(list[ActivityItemHistoryFull], items)
 
     async def get_identifiers_by_activity_id(
-        self, activity_hist_ids: Collection[str]
+        self,
+        activity_hist_ids: Collection[str],
+        respondent_id: uuid.UUID | None,
     ) -> list[tuple[str, str, dict]]:
         query: Query = select(
             AnswerItemSchema.identifier,
@@ -242,6 +244,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             AnswerItemSchema.identifier.isnot(None),
             AnswerSchema.activity_history_id.in_(activity_hist_ids),
         )
+        if respondent_id:
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
+
         query = query.join(
             AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
         )
