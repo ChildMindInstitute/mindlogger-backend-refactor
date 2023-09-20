@@ -39,6 +39,7 @@ class ActivityHistory(InternalModel):
     is_skippable: bool
     is_reviewable: bool
     response_is_editable: bool
+    report_included_item_name: str | None = None
     order: int
     created_at: datetime.datetime
     is_hidden: bool | None = False
