@@ -1040,7 +1040,7 @@ class Mongo:
         protocolId = applet["meta"]["protocol"].get("_id").split("/").pop()
         result = get_versions_from_content(protocolId)
         converted_applet_versions = dict()
-        if result is not None:
+        if result is not None and result != {}:
             last_version = list(result.keys())[-1]
 
             old_activities_by_id = {}
