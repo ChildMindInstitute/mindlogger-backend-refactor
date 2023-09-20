@@ -118,8 +118,8 @@ def get_versions_from_content(protocolId):
     )
     result = {}
     for ref in references:
-        ver = ref["version"]
-        if ref.get("content") is None or ver in result:
+        ver = ref.get("version", None)
+        if ref.get("content") is None or ver is None or ver in result:
             continue
         applet = get_applet_with_activities(ref["content"])
         result[ver] = {"applet": applet, "updated": ref["updated"]}

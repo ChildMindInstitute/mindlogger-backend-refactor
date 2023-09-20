@@ -30,8 +30,8 @@ class TestFolder(BaseTest):
         response = await self.client.get(self.list_url)
 
         assert response.status_code == 200, response.json()
-        assert len(response.json()["result"]) == 2
-        assert response.json()["count"] == 2
+        assert len(response.json()["result"]) == 3
+        assert response.json()["count"] == 3
         assert (
             response.json()["result"][0]["id"]
             == "ecf66358-a717-41a7-8027-807374307736"
@@ -39,6 +39,10 @@ class TestFolder(BaseTest):
         assert (
             response.json()["result"][1]["id"]
             == "ecf66358-a717-41a7-8027-807374307732"
+        )
+        assert (
+            response.json()["result"][2]["id"]
+            == "ecf66358-a717-41a7-8027-807374307731"
         )
 
     @rollback

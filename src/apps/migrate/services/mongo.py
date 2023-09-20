@@ -349,9 +349,27 @@ def patch_broken_applets(
 
     # fix duplicated names for stability activity items in prefLabel
     duplications = [
-        ("stability_schema", "Stability Tracker"),
-        ("flanker_schema", "Visual Stimulus Response"),
-        ("Flanker_360", "Visual Stimulus Response"),
+        (
+            "stability_schema",
+            [
+                "Stability Tracker",
+                "Stability tracker instructions",
+            ],
+        ),
+        (
+            "flanker_schema",
+            [
+                "Visual Stimulus Response",
+                "Visual Stimulus Response instructions",
+            ],
+        ),
+        (
+            "Flanker_360",
+            [
+                "Visual Stimulus Response",
+                "Visual Stimulus Response instructions",
+            ],
+        ),
     ]
     key = "http://www.w3.org/2004/02/skos/core#prefLabel"
     for stability_activity in applet_ld["reprolib:terms/order"][0]["@list"]:
@@ -362,10 +380,12 @@ def patch_broken_applets(
                 ][0]["@list"]:
                     if (
                         key in stability_item
-                        and stability_item[key][0]["@value"] == item_label
+                        and stability_item[key][0]["@value"] in item_label
                     ):
-                        stability_item[key][0]["@value"] += (
-                            " " + stability_item["@id"]
+                        stability_item[key][0]["@value"] = (
+                            stability_item[key][0]["@value"]
+                            + "_"
+                            + stability_item["@id"]
                         )
 
     broken_conditional_logic_naming = [
@@ -1021,22 +1041,34 @@ class Mongo:
         result = get_versions_from_content(protocolId)
         converted_applet_versions = dict()
         if result is not None:
+            last_version = list(result.keys())[-1]
+
             old_activities_by_id = {}
             for version, content in result.items():
                 print(version)
-                ld_request_schema, old_activities_by_id = content_to_jsonld(
-                    content["applet"], old_activities_by_id
-                )
-                ld_request_schema = patch_broken_applet_versions(
-                    applet_id, ld_request_schema
-                )
-                converted = await self.get_converter_result(ld_request_schema)
-                converted.extra_fields["created"] = content["updated"]
-                converted.extra_fields["updated"] = content["updated"]
-                converted.extra_fields["version"] = version
-                converted = self._extract_ids(converted, applet_id)
+                if version == last_version:
+                    converted_applet_versions[
+                        version
+                    ] = {}  # skipping last version for optimization
+                else:
+                    (
+                        ld_request_schema,
+                        old_activities_by_id,
+                    ) = content_to_jsonld(
+                        content["applet"], old_activities_by_id
+                    )
+                    ld_request_schema = patch_broken_applet_versions(
+                        applet_id, ld_request_schema
+                    )
+                    converted = await self.get_converter_result(
+                        ld_request_schema
+                    )
+                    converted.extra_fields["created"] = content["updated"]
+                    converted.extra_fields["updated"] = content["updated"]
+                    converted.extra_fields["version"] = version
+                    converted = self._extract_ids(converted, applet_id)
 
-                converted_applet_versions[version] = converted
+                    converted_applet_versions[version] = converted
 
         return converted_applet_versions, owner_id
 

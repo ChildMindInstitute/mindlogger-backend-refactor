@@ -165,8 +165,8 @@ class EventMigrationService:
 
         if event.data.eventType in ("", None):
             periodicity_data["type"] = DEFAULT_PERIODICITY_TYPE
-        else:
-            periodicity_data["type"] = event.data.eventType
+        elif isinstance(event.data.eventType, str):
+            periodicity_data["type"] = event.data.eventType.upper()
 
         if event.schedule.start and event.schedule.end:
             periodicity_data["start_date"] = datetime.utcfromtimestamp(

@@ -175,7 +175,7 @@ class LibraryService:
                     image=activity.image,
                     splash_screen=activity.splash_screen,
                     show_all_at_once=activity.show_all_at_once,
-                    is_skippable=activity.show_all_at_once,
+                    is_skippable=activity.is_skippable,
                     is_reviewable=activity.is_reviewable,
                     response_is_editable=activity.response_is_editable,
                     is_hidden=activity.is_hidden,

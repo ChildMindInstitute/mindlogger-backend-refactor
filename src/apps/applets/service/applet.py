@@ -481,9 +481,9 @@ class AppletService:
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)
         theme = None
         if schema.theme_id:
-            theme = await ThemeService(
-                self.session, self.user_id
-            ).get_users_by_id(schema.theme_id)
+            theme = await ThemeService(self.session, self.user_id).get_by_id(
+                schema.theme_id
+            )
         applet = AppletSingleLanguageDetail(
             id=schema.id,
             encryption=schema.encryption,

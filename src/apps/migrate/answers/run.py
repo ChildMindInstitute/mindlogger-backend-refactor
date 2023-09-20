@@ -75,7 +75,7 @@ class AnswersMigrateFacade:
                                 response=mongo_answer,
                             )
                             respondent_id = mongoid_to_uuid(
-                                mongo_answer["creatorId"]
+                                mongo_answer["meta"]["subject"].get("@id")
                             )
                             if not await self.answer_migrate_service.is_respondent_exist(
                                 session=regular_session,

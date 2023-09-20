@@ -31,13 +31,18 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
         "635d04365cb700431121f8a1",  # chinese texts
     ]
 
-    # applets = list(Applet().find(
-    #     query={"_id": ObjectId("62768ff20a62aa1056078093")}, fields={"_id": 1}
-    #     # query={"accountId": {'$in': [ObjectId("64c2395b8819c178d236685b"), ObjectId("64e7a92522d81858d681d2c3")]}}, fields={"_id": 1}
-    #     # query={"_id": {'$in': [
-    #     #     ObjectId('62f6261dacd35a39e99b6870'), ObjectId('633ecc1ab7ee9765ba54452d'), ObjectId('633fc997b7ee9765ba5447f3'), ObjectId('633fc9b7b7ee9765ba544820'), ObjectId('63762e1a52ea0234e1f4fdfe'), ObjectId('63c946dfb71996780cdf17dc'), ObjectId('63e36745601cdc0fee1ec750'), ObjectId('63f5cdb8601cdc5212d5a3d5'), ObjectId('640b239b601cdc5212d63e75'), ObjectId('647486d4a67ac10f93b48fef'), ObjectId('64cd2c7922d8180cf9b3f1fa'), ObjectId('64d4cd2522d8180cf9b40b3d'), ObjectId('64dce2d622d81858d6819f13'), ObjectId('64e7abb122d81858d681d957'), ObjectId('64e7af5e22d81858d681de92')
-    #     # ]}}, fields={"_id": 1}
-    # ))
+    # applets = list(
+    #     Applet().find(
+    #         query={
+    #             "_id": ObjectId("64cd2c6a22d8180cf9b3f1ba")
+    #         },  # 64cd2c7922d8180cf9b3f1fa
+    #         fields={"_id": 1}
+    #         # query={"accountId": {'$in': [ObjectId("64c2395b8819c178d236685b"), ObjectId("64e7a92522d81858d681d2c3")]}}, fields={"_id": 1}
+    #         # query={"_id": {'$in': [
+    #         #     ObjectId('62f6261dacd35a39e99b6870'), ObjectId('633ecc1ab7ee9765ba54452d'), ObjectId('633fc997b7ee9765ba5447f3'), ObjectId('633fc9b7b7ee9765ba544820'), ObjectId('63762e1a52ea0234e1f4fdfe'), ObjectId('63c946dfb71996780cdf17dc'), ObjectId('63e36745601cdc0fee1ec750'), ObjectId('63f5cdb8601cdc5212d5a3d5'), ObjectId('640b239b601cdc5212d63e75'), ObjectId('647486d4a67ac10f93b48fef'), ObjectId('64cd2c7922d8180cf9b3f1fa'), ObjectId('64d4cd2522d8180cf9b40b3d'), ObjectId('64dce2d622d81858d6819f13'), ObjectId('64e7abb122d81858d681d957'), ObjectId('64e7af5e22d81858d681de92')
+    #         # ]}}, fields={"_id": 1}
+    #     )
+    # )
 
     answers = Item().find(
         query={
@@ -56,7 +61,6 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
         query={
             "meta.applet.displayName": {"$exists": True},
             "meta.applet.deleted": {"$ne": True},
-            "meta.applet.editing": {"$ne": True},
             "$or": [
                 {
                     "created": {
@@ -77,10 +81,14 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
     for applet in applets:
         # postgres.wipe_applet(str(applet["_id"]))
         migrating_applets.append(str(applet["_id"]))
+
     # migrating_applets = [
-    #     "6202738aace55b10691c101d",  # broken conditional logic [object object]  in main applet
-    #     "620eb401b0b0a55f680dd5f5",  # broken conditional logic [object object]  in main applet
-    #     "6210202db0b0a55f680de1a5",  # broken conditional logic [object object]  in main applet
+    #     "61dda090025fb7a0d64793d8",
+    #     "62b339f7b90b7f2ba9e1c818",
+    #     "5f0e35523477de8b4a528dd0",
+    #     "61dda0b5025fb7a0d64793f9",
+    #     "6437d20425d51a0f8edae5f4",
+    #     "61dd9f5d025fb7a0d6479259",
     # ]
 
     appletsCount = len(migrating_applets)
@@ -98,17 +106,20 @@ async def migrate_applets(mongo: Mongo, postgres: Postgres):
             applet: dict | None = await mongo.get_applet(applet_id)
 
             applets, owner_id = await mongo.get_applet_versions(applet_id)
+            if applets != {}:
+                if applet.extra_fields["version"] != list(applets.keys())[-1]:
+                    applet.extra_fields["version"] = list(applets.keys())[-1]
+
+                applets[list(applets.keys())[-1]] = applet
+            else:
+                applets[applet.extra_fields["version"]] = applet
+
             for version, _applet in applets.items():
                 _applet.extra_fields["created"] = applet.extra_fields[
                     "created"
                 ]
                 _applet.display_name = applet.display_name
                 _applet.encryption = applet.encryption
-
-            if applets != {}:
-                applets[list(applets.keys())[-1]] = applet
-            else:
-                applets[applet.extra_fields["version"]] = applet
 
             await postgres.save_applets(applets, owner_id)
         except (FormatldException, EmptyAppletException) as e:
@@ -307,12 +318,12 @@ async def main():
     postgres = Postgres()
 
     # Migrate with users
-    users: list[dict] = mongo.get_users()
-    users_mapping = postgres.save_users(users)
-    await postgres.create_anonymous_respondent()
-    # Migrate with users_workspace
-    workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
-    postgres.save_users_workspace(workspaces, users_mapping)
+    # users: list[dict] = mongo.get_users()
+    # users_mapping = postgres.save_users(users)
+    # await postgres.create_anonymous_respondent()
+    # # Migrate with users_workspace
+    # workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
+    # postgres.save_users_workspace(workspaces, users_mapping)
 
     # Migrate applets, activities, items
     await migrate_applets(mongo, postgres)
@@ -324,19 +335,19 @@ async def main():
     #     writer = csv.DictWriter(file, fieldnames=headers)
     #     writer.writerows(info)
 
-    # Migrate roles
-    migrate_roles(mongo, postgres)
-    # Migrate user pins
-    migrate_user_pins(mongo, postgres)
-    # Migrate folders
-    migrate_folders(mongo, postgres)
-    # Migrate library
-    migrate_library(mongo, postgres)
-    # Migrate events
-    await migrate_events(mongo, postgres)
+    # # Migrate roles
+    # migrate_roles(mongo, postgres)
+    # # Migrate user pins
+    # migrate_user_pins(mongo, postgres)
+    # # Migrate folders
+    # migrate_folders(mongo, postgres)
+    # # Migrate library
+    # migrate_library(mongo, postgres)
+    # # Migrate events
+    # await migrate_events(mongo, postgres)
 
-    # Add default (AlwayAvalible) events to activities and flows
-    await add_default_evets(postgres)
+    # # Add default (AlwayAvalible) events to activities and flows
+    # await add_default_evets(postgres)
 
     # Close connections
     mongo.close_connection()
