@@ -2,6 +2,7 @@ from gettext import gettext as _
 
 from apps.shared.exception import (
     AccessDeniedError,
+    FieldError,
     NotFoundError,
     ValidationError,
 )
@@ -33,3 +34,13 @@ class RespondentDoesNotExist(ValidationError):
 
 class RespondentsNotSet(ValidationError):
     message = _("Respondents are not set for the reviewer")
+
+
+class ManagerInvitationExist(FieldError):
+    zero_path = "email"
+    message = _("User already invited. Edit their access in the Managers tab.")
+
+
+class RespondentInvitationExist(FieldError):
+    zero_path = "email"
+    message = _("Respondent already invited.")

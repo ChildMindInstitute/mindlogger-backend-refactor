@@ -276,6 +276,14 @@ msgstr ""
 msgid "Respondent does not exist in applet."
 msgstr ""
 
+#: apps/invitations/errors.py:41
+msgid "User already invited. Edit their access in the Managers tab."
+msgstr ""
+
+#: apps/invitations/errors.py:46
+msgid "Respondent already invited."
+msgstr ""
+
 #: apps/logs/errors.py:7
 msgid "Unexpected NotificationLog error."
 msgstr ""

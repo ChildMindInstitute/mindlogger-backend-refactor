@@ -35,8 +35,10 @@ from apps.invitations.errors import (
     DoesNotHaveAccess,
     InvitationAlreadyProcesses,
     InvitationDoesNotExist,
+    ManagerInvitationExist,
     NonUniqueValue,
     RespondentDoesNotExist,
+    RespondentInvitationExist,
 )
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
@@ -586,6 +588,19 @@ class InvitationsService:
 
     async def exist(self, email: str, role: str, applet_id: uuid.UUID) -> int:
         return await InvitationCRUD(self.session).exist(email, role, applet_id)
+
+    async def check_for_duplicates(
+        self, applet_id: uuid.UUID, email: str, role: str
+    ):
+        is_exist = await self.exist(
+            applet_id=applet_id,
+            email=email,
+            role=role,
+        )
+        if is_exist and role in Role.managers():
+            raise ManagerInvitationExist()
+        elif is_exist:
+            raise RespondentInvitationExist()
 
 
 class PrivateInvitationService:
