@@ -715,16 +715,15 @@ class AnswerService:
         return aggregated_selection_item
 
     async def get_activity_identifiers(
-        self, activity_id: uuid.UUID
+        self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None
     ) -> list[Identifier]:
-        act_hst_crud = ActivityHistoriesCRUD(
-            self.session
-        )  # .exist_by_activity_id_or_raise(activity_id)
+        act_hst_crud = ActivityHistoriesCRUD(self.session)
+        await act_hst_crud.exist_by_activity_id_or_raise(activity_id)
         act_hst_list = await act_hst_crud.get_activities(activity_id, None)
         ids = set(map(lambda a: a.id_version, act_hst_list))
         identifiers = await AnswersCRUD(
             self.answer_session
-        ).get_identifiers_by_activity_id(ids)
+        ).get_identifiers_by_activity_id(ids, respondent_id)
         results = []
         for identifier, key, migrated_data in identifiers:
             if not migrated_data or not migrated_data.get(

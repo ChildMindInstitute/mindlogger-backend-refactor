@@ -414,3 +414,7 @@ class AnswerExistenceResponse(PublicModel):
 
 class ArbitraryPreprocessor(PublicModel):
     applet_id: uuid.UUID | None = None
+
+
+class IdentifiersQueryParams(InternalModel):
+    respondent_id: uuid.UUID | None = None

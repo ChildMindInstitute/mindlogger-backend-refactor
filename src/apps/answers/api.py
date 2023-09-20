@@ -21,6 +21,7 @@ from apps.answers.domain import (
     AssessmentAnswerCreate,
     AssessmentAnswerPublic,
     IdentifierPublic,
+    IdentifiersQueryParams,
     PublicAnswerDates,
     PublicAnswerExport,
     PublicReviewActivity,
@@ -280,6 +281,9 @@ async def applet_activity_assessment_retrieve(
 async def applet_activity_identifiers_retrieve(
     applet_id: uuid.UUID,
     activity_id: uuid.UUID,
+    query_params: QueryParams = Depends(
+        parse_query_params(IdentifiersQueryParams)
+    ),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
@@ -290,9 +294,10 @@ async def applet_activity_identifiers_retrieve(
             applet_id
         )
         async with atomic(answer_session):
+            respondent_id = query_params.filters.get("respondent_id")
             identifiers = await AnswerService(
                 session, user.id, answer_session
-            ).get_activity_identifiers(activity_id)
+            ).get_activity_identifiers(activity_id, respondent_id)
     return ResponseMulti(result=identifiers, count=len(identifiers))
 
 
