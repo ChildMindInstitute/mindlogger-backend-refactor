@@ -368,9 +368,10 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                     resolved_conditions.append(
                         condition_item.resolve_condition(condition)
                     )
-                model.conditional_logic = SectionConditionalLogic(
-                    match=match, conditions=resolved_conditions
-                )
+                if resolved_conditions:
+                    model.conditional_logic = SectionConditionalLogic(
+                        match=match, conditions=resolved_conditions
+                    )
 
                 # replace variables with names
                 if model.items_print:
