@@ -54,7 +54,7 @@ enc = StringEncryptedType(key=get_key())
 
 
 def decrypt(data):
-    aes_key = b"n]fwen%Z.,Ce4!/0(1D-Q0#ZUOBoqJrV"
+    aes_key = bytes(str(os.getenv("MONGO__AES_KEY")).encode("utf-8"))
     max_count = 4
 
     try:
@@ -1158,19 +1158,11 @@ class Mongo:
     ) -> List[dict]:
         return self.db[collection].find({"_id": {"$in": doc_ids}})
 
-    def get_user_nickname(self, user) -> str:
-        first_name = decrypt(user.get("firstName"))
-        if not first_name:
-            first_name = "-"
-        elif len(first_name) >= 50:
-            first_name = first_name[:49]
-
-        last_name = decrypt(user.get("lastName"))
-        if not last_name:
-            last_name = "-"
-        elif len(last_name) >= 50:
-            last_name = last_name[:49]
-        return f"{first_name} {last_name}"
+    def get_user_nickname(self, user_profile: dict) -> str:
+        nick_name = decrypt(user_profile.get("nickName"))
+        if not nick_name:
+            nick_name = ""
+        return nick_name
 
     def reviewer_meta(
         self, applet_id: ObjectId, account_profile: dict
@@ -1204,7 +1196,7 @@ class Mongo:
         if not doc:
             return {}
         return {
-            "nick": self.get_user_nickname(user),
+            "nick": self.get_user_nickname(doc),
             "secret": doc.get("MRN", ""),
         }
 
