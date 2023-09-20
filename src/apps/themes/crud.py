@@ -80,11 +80,8 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
         return db_result.scalars().all()
 
-    async def get_users_theme_by_id(
-        self, user_id: uuid.UUID, them_id: uuid.UUID
-    ) -> ThemeSchema:
+    async def get_users_theme_by_id(self, them_id: uuid.UUID) -> ThemeSchema:
         query: Query = select(ThemeSchema)
-        query = query.where(ThemeSchema.creator_id == user_id)
         query = query.where(ThemeSchema.id == them_id)
         db_result = await self._execute(query)
 
