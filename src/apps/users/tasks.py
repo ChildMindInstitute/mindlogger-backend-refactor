@@ -2,6 +2,8 @@ import json
 from json import JSONDecodeError
 
 from apps.answers.service import AnswerEncryptor, AnswerService
+from apps.job.constants import JobStatus
+from apps.job.service import JobService
 from apps.shared.encryption import (
     generate_dh_public_key,
     generate_dh_user_private_key,
@@ -15,7 +17,7 @@ from infrastructure.logger import logger
 
 
 @broker.task
-async def change_password_with_answers(
+async def reencrypt_answers(
     user_id,
     email,
     old_password,
@@ -23,7 +25,8 @@ async def change_password_with_answers(
     retries: int | None = None,
     retry_timeout: int | None = None,
 ):
-    logger.info(f"Reencryption {user_id}: change_password_with_answers start")
+    job_name = "reencrypt_answers"
+    logger.info(f"Reencryption {user_id}: reencrypt_answers start")
 
     old_private_key = generate_dh_user_private_key(
         user_id, email, old_password
@@ -38,6 +41,16 @@ async def change_password_with_answers(
     default_session_maker = session_manager.get_session()
     try:
         async with default_session_maker() as session:
+            job_service = JobService(session, user_id)
+            async with atomic(session):
+                job = await job_service.get_or_create_owned(
+                    job_name, JobStatus.in_progress
+                )
+                if job.status != JobStatus.in_progress:
+                    await job_service.change_status(
+                        job.id, JobStatus.in_progress
+                    )
+
             db_applets = await WorkspaceService(
                 session, user_id
             ).get_user_answer_db_info()
@@ -103,27 +116,53 @@ async def change_password_with_answers(
                         await session_maker.remove()
 
             except Exception as e:
-                logger.error(
+                msg = (
                     f"Reencryption {user_id}: cannot process applet "
                     f"{applet.applet_id}, skip"
                 )
+                logger.error(msg)
                 logger.exception(str(e))
+                try:
+                    async with default_session_maker() as session:
+                        async with atomic(session):
+                            details = dict(errors=[msg, str(e)])
+                            await JobService(session, user_id).change_status(
+                                job.id, JobStatus.error, details
+                            )
+                finally:
+                    await default_session_maker.remove()
                 success = False
                 continue
 
-    if not success:
-        if retries:
-            logger.info(f"Reencryption {user_id}: schedule retry")
-            if retry_timeout is None:
-                retry_timeout = settings.task_answer_encryption.retry_timeout
-            retries -= 1
-            await change_password_with_answers.kicker().with_labels(
-                delay=retry_timeout
-            ).kiq(
-                user_id,
-                email,
-                old_password,
-                new_password,
-                retries=retries,
-                retry_timeout=retry_timeout,
-            )
+    # Update job status, schedule retry
+    try:
+        async with default_session_maker() as session:
+            async with atomic(session):
+                if success:
+                    await JobService(session, user_id).change_status(
+                        job.id, JobStatus.success
+                    )
+                else:
+                    if retries:
+                        await JobService(session, user_id).change_status(
+                            job.id, JobStatus.retry
+                        )
+
+                        logger.info(f"Reencryption {user_id}: schedule retry")
+                        if retry_timeout is None:
+                            retry_timeout = (
+                                settings.task_answer_encryption.retry_timeout
+                            )
+                        retries -= 1
+                        await reencrypt_answers.kicker().with_labels(
+                            delay=retry_timeout
+                        ).kiq(
+                            user_id,
+                            email,
+                            old_password,
+                            new_password,
+                            retries=retries,
+                            retry_timeout=retry_timeout,
+                        )
+    finally:
+        await default_session_maker.remove()

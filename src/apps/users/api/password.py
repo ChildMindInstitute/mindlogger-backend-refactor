@@ -7,6 +7,7 @@ from starlette import status
 
 from apps.authentication.deps import get_current_user
 from apps.authentication.services import AuthenticationService
+from apps.job.service import JobService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
 from apps.users.cruds.user import UsersCRUD
@@ -18,9 +19,9 @@ from apps.users.domain import (
     User,
     UserChangePassword,
 )
-from apps.users.errors import UserNotFound
+from apps.users.errors import ReencryptionInProgressError, UserNotFound
 from apps.users.services import PasswordRecoveryCache, PasswordRecoveryService
-from apps.users.tasks import change_password_with_answers
+from apps.users.tasks import reencrypt_answers
 from config import settings
 from infrastructure.cache import (
     CacheNotFound,
@@ -36,6 +37,12 @@ async def password_update(
     session=Depends(get_session),
 ) -> Response[PublicUser]:
     """General endpoint for update password for signin."""
+    reencryption_in_progress = await JobService(
+        session, user.id
+    ).is_job_in_progress("reencrypt_answers")
+    if reencryption_in_progress:
+        raise ReencryptionInProgressError()
+
     async with atomic(session):
         AuthenticationService.verify_password(
             schema.prev_password,
@@ -56,7 +63,7 @@ async def password_update(
 
     email = user.email_encrypted
     retries = settings.task_answer_encryption.max_retries
-    await change_password_with_answers.kiq(
+    await reencrypt_answers.kiq(
         user.id, email, schema.prev_password, schema.password, retries=retries
     )
 

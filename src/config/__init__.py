@@ -107,5 +107,6 @@ settings = Settings(
         "alerts",
         "library",
         "authentication",
+        "job",
     ],
 )
