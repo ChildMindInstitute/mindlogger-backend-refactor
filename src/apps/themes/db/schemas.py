@@ -17,3 +17,4 @@ class ThemeSchema(Base):
     creator_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
+    small_logo = Column(Text())
