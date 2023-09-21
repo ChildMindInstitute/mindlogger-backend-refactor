@@ -1177,7 +1177,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200, response.json()
         data = response.json()["result"]
-        assert set(data.keys()) == {"answers", "activities", "aggregatedItems"}
+        assert set(data.keys()) == {"answers", "activities"}
         assert len(data["answers"]) == 2
 
         assessment, answer = data["answers"][0], data["answers"][1]

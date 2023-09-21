@@ -446,11 +446,9 @@ async def applet_answers_export(
         applet_id
     )
     async with atomic(answer_session):
-        answer_service = AnswerService(session, user.id, answer_session)
-        data: AnswerExport = await answer_service.get_export_data(
-            applet_id, query_params
-        )
-
+        data: AnswerExport = await AnswerService(
+            session, user.id, answer_session
+        ).get_export_data(applet_id, query_params)
         for answer in data.answers:
             if answer.is_manager:
                 answer.respondent_secret_id = (
@@ -463,10 +461,6 @@ async def applet_answers_export(
                 session, applet.id, applet.version
             ).get_full()
             data.activities = activities
-            data.aggregated_items = await answer_service.get_aggregated_items(
-                activities
-            )
-
     return Response(result=PublicAnswerExport.from_orm(data))
 
 
