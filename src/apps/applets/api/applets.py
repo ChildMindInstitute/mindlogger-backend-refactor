@@ -178,7 +178,7 @@ async def applet_create(
                 ),
             )
         )
-        return Response(result=public_detail.Applet.from_orm(applet))
+    return Response(result=public_detail.Applet.from_orm(applet))
 
 
 async def applet_update(

@@ -4,7 +4,6 @@ import datetime
 import json
 import uuid
 from collections import defaultdict
-from operator import attrgetter
 from typing import List
 
 import aiohttp
@@ -20,7 +19,6 @@ from apps.activities.crud import (
     ActivityItemHistoriesCRUD,
 )
 from apps.activities.domain.activity_history import ActivityHistoryFull
-from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
@@ -570,7 +568,7 @@ class AnswerService:
                 filters["respondent_ids"] = allowed_respondents
 
         repository = AnswersCRUD(self.answer_session)
-        answers = await repository.get_applet_answers(
+        answers, total = await repository.get_applet_answers(
             applet_id,
             page=query_params.page,
             limit=query_params.limit,
@@ -657,62 +655,11 @@ class AnswerService:
             if activity:
                 activity.items.append(item)
 
-        items = await self.get_aggregated_items(list(activity_map.values()))
-
         return AnswerExport(
             answers=answers,
             activities=list(activity_map.values()),
-            aggregated_items=items,
+            total_answers=total,
         )
-
-    async def get_aggregated_items(self, activities):
-        aggregated_items = {
-            ResponseType.SLIDER: None,
-            ResponseType.SINGLESELECT: None,
-            ResponseType.MULTISELECT: None,
-        }
-
-        for activity in activities:
-            for item in activity.items:
-                response_type = item.response_type
-                if aggregated_items.get(response_type) is None:
-                    aggregated_items[response_type] = item
-                elif response_type == ResponseType.SLIDER:
-                    await self._aggregate_slider_item(
-                        aggregated_items[response_type], item
-                    )
-                elif response_type in [
-                    ResponseType.SINGLESELECT,
-                    ResponseType.MULTISELECT,
-                ]:
-                    await self._aggregate_selection_item(
-                        aggregated_items[response_type], item
-                    )
-
-        return list(filter(lambda i: i is not None, aggregated_items.values()))
-
-    async def _aggregate_slider_item(self, aggregated_slider_item, item):
-        min_value = attrgetter("response_values.min_value")
-        aggregated_slider_item.response_values.min_value = min(
-            min_value(aggregated_slider_item), min_value(item)
-        )
-        max_value = attrgetter("response_values.max_value")
-        aggregated_slider_item.response_values.max_value = max(
-            max_value(aggregated_slider_item), max_value(item)
-        )
-        return aggregated_slider_item
-
-    async def _aggregate_selection_item(self, aggregated_selection_item, item):
-        options = aggregated_selection_item.response_values.options
-        for option in item.response_values.options:
-            if not list(
-                filter(
-                    lambda i: i.id == option.id and i.text == option.text,
-                    options,
-                )
-            ):
-                options.append(option)
-        return aggregated_selection_item
 
     async def get_activity_identifiers(
         self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None
