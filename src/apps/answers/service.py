@@ -568,7 +568,7 @@ class AnswerService:
                 filters["respondent_ids"] = allowed_respondents
 
         repository = AnswersCRUD(self.answer_session)
-        answers = await repository.get_applet_answers(
+        answers, total = await repository.get_applet_answers(
             applet_id,
             page=query_params.page,
             limit=query_params.limit,
@@ -656,7 +656,9 @@ class AnswerService:
                 activity.items.append(item)
 
         return AnswerExport(
-            answers=answers, activities=list(activity_map.values())
+            answers=answers,
+            activities=list(activity_map.values()),
+            total_answers=total,
         )
 
     async def get_activity_identifiers(

@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import uuid
 from typing import Collection
@@ -130,7 +131,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         page=None,
         limit=None,
         **filters,
-    ) -> list[RespondentAnswerData]:
+    ) -> tuple[list[RespondentAnswerData], int]:
 
         reviewed_answer_id = case(
             (AnswerItemSchema.is_assessment.is_(True), AnswerSchema.id),
@@ -184,17 +185,26 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.applet_id == applet_id,
                 *filter_clauses,
             )
-            .order_by(AnswerItemSchema.created_at.desc())
         )
-        query = paging(query, page, limit)
 
         if not include_assessments:
             query = query.where(AnswerItemSchema.is_assessment.isnot(True))
 
-        res = await self._execute(query)
+        query_count = query.with_only_columns(func.count())
+
+        query = query.order_by(AnswerItemSchema.created_at.desc())
+        query = paging(query, page, limit)
+
+        coro_data, coro_count = self._execute(query), self._execute(
+            query_count
+        )
+
+        res, res_count = await asyncio.gather(coro_data, coro_count)
         answers = res.all()
 
-        return parse_obj_as(list[RespondentAnswerData], answers)
+        total = res_count.scalars().one()
+
+        return parse_obj_as(list[RespondentAnswerData], answers), total
 
     async def get_activity_history_by_ids(
         self, activity_hist_ids: list[str]

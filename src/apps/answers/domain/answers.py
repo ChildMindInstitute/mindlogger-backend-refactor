@@ -16,7 +16,7 @@ from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.scores_reports import SubscaleSetting
 from apps.activity_flows.domain.flow_full import FlowFull
 from apps.applets.domain.base import AppletBaseInfo
-from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
 
 
@@ -319,11 +319,16 @@ class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
 class AnswerExport(InternalModel):
     answers: list[RespondentAnswerData] = Field(default_factory=list)
     activities: list[ActivityHistoryFull] = Field(default_factory=list)
+    total_answers: int = 0
 
 
 class PublicAnswerExport(PublicModel):
     answers: list[RespondentAnswerDataPublic] = Field(default_factory=list)
     activities: list[ActivityHistoryExport] = Field(default_factory=list)
+
+
+class PublicAnswerExportResponse(Response[PublicAnswerExport]):
+    count: int = 0
 
 
 class Version(InternalModel):
