@@ -71,14 +71,14 @@ class InvitationsService:
         self, query_params: QueryParams
     ) -> list[InvitationDetail]:
         return await self.invitations_crud.get_pending_by_invited_email(
-            self._user.email, query_params
+            self._user.email_encrypted, query_params
         )
 
     async def fetch_all_for_invited_count(
         self, query_params: QueryParams
     ) -> int:
         return await self.invitations_crud.get_pending_by_invited_email_count(
-            self._user.email, query_params
+            self._user.email_encrypted, query_params
         )
 
     async def get(self, key: uuid.UUID) -> InvitationDetailGeneric | None:
