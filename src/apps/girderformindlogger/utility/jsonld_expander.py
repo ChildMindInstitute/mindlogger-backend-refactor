@@ -41,7 +41,7 @@ from apps.girderformindlogger.models.protocol import Protocol as ProtocolModel
 from apps.girderformindlogger.models.screen import Screen as ScreenModel
 from apps.girderformindlogger.models.user import User as UserModel
 from apps.girderformindlogger.utility import loadJSON
-from apps.girderformindlogger.utility.response import responseDateList
+# from apps.girderformindlogger.utility.response import responseDateList
 
 
 def getModelCollection(modelType):
@@ -2086,13 +2086,13 @@ def formatLdObject(
                             inserted = True
 
             createCache(obj, applet, "applet", user)
-            if responseDates:
-                try:
-                    applet["applet"]["responseDates"] = responseDateList(
-                        obj.get("_id"), user.get("_id"), user
-                    )
-                except:
-                    applet["applet"]["responseDates"] = []
+            # if responseDates:
+            #     try:
+            #         applet["applet"]["responseDates"] = responseDateList(
+            #             obj.get("_id"), user.get("_id"), user
+            #         )
+            #     except:
+            #         applet["applet"]["responseDates"] = []
             return applet
         elif mesoPrefix == "protocol":
             protocol = {
