@@ -41,6 +41,7 @@ from apps.girderformindlogger.models.protocol import Protocol as ProtocolModel
 from apps.girderformindlogger.models.screen import Screen as ScreenModel
 from apps.girderformindlogger.models.user import User as UserModel
 from apps.girderformindlogger.utility import loadJSON
+
 # from apps.girderformindlogger.utility.response import responseDateList
 
 
@@ -587,7 +588,6 @@ def createProtocolFromExpandedDocument(
                                 ScreenModel().remove(item)
 
                                 if "identifier" in item["meta"]:
-
                                     activityId = str(
                                         item["meta"]["activityId"]
                                     )
@@ -596,7 +596,6 @@ def createProtocolFromExpandedDocument(
                                     )
 
                                     if not historyObj:
-
                                         activity = FolderModel().load(
                                             activityId, force=True
                                         )
