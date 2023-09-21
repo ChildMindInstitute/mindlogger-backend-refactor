@@ -456,7 +456,7 @@ def isodatetime(d):
 
 
 def responseDateList(appletId, userId, reviewer):
-    from apps.girderformindlogger.models.profile import Profile
+    from apps.girderformindlogger.models.profile import Profile as ProfileModel
 
     userId = ProfileModel().getProfile(userId, reviewer)
     if not isinstance(userId, dict):

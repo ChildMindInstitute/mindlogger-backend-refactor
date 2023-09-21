@@ -668,7 +668,7 @@ def fix_spacing_in_report(_report: dict) -> dict:
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
-        # uri = f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}"  # noqa: E501
+        # uri = f"mongodb://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}/{os.getenv('MONGO__DB')}"  # noqa: E501
         uri = f"mongodb://{os.getenv('MONGO__HOST')}"  # noqa: E501  {os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@
         self.client = MongoClient(uri, 27017)  # uri
         self.db = self.client[os.getenv("MONGO__DB", "mindlogger")]
