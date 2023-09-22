@@ -1,8 +1,9 @@
 import uuid
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, root_validator
 
 from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain.custom_validations import lowercase_email
 
 __all__ = [
     "PublicUser",
@@ -20,10 +21,15 @@ __all__ = [
 
 
 class _UserBase(BaseModel):
+    # Has this type because in the descendant classes the hash gets here
     email: str
 
     def __str__(self) -> str:
         return self.email
+
+    @root_validator
+    def email_validation(cls, values):
+        return lowercase_email(values)
 
 
 class UserCreateRequest(_UserBase, PublicModel):

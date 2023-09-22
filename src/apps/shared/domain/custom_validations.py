@@ -122,3 +122,10 @@ def datetime_from_ms(value):
             value = value / 1000  # wtf, rework this
         return datetime.datetime.utcfromtimestamp(value)
     return value
+
+
+def lowercase_email(values):
+    email = values.get("email")
+    if email:
+        values["email"] = email.lower()
+    return values
