@@ -18,6 +18,7 @@ from apps.girderformindlogger.models.account_profile import AccountProfile
 from apps.girderformindlogger.models.activity import Activity
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.folder import Folder as FolderModel
+from apps.girderformindlogger.models.profile import Profile
 from apps.girderformindlogger.models.user import User
 from apps.girderformindlogger.models.item import Item
 from apps.girderformindlogger.utility import jsonld_expander
@@ -1093,7 +1094,7 @@ class Mongo:
         return converted
 
     def get_answer_migration_queries(self, **kwargs):
-        creator_id_filtering = True
+        creator_id_filtering = False
         creator_ids = [ObjectId("64c2395b8819c178d236685a")]
 
         query = {
@@ -1325,10 +1326,11 @@ class Mongo:
         )
         return list(set(access_result))
 
-    def get_pinned_users(self):
-        return self.db["appletProfile"].find(
-            {"pinnedBy": {"$exists": 1}, "userId": {"$exists": 1, "$ne": None}}
-        )
+    def get_pinned_users(self, applets_ids: list[ObjectId]|None):
+        query={"pinnedBy": {"$exists": 1}, "userId": {"$exists": 1, "$ne": None}}
+        if applets_ids:
+            query['appletId'] = {'$in': applets_ids}
+        return self.db["appletProfile"].find(query)
 
     def get_applet_profiles_by_ids(self, ids):
         return self.db["appletProfile"].find({"_id": {"$in": ids}})
@@ -1351,8 +1353,8 @@ class Mongo:
         profile = next(it, None)
         return profile["userId"] if profiles else None
 
-    def get_user_pin_mapping(self):
-        pin_profiles = self.get_pinned_users()
+    def get_user_pin_mapping(self, applets_ids: list[ObjectId]|None):
+        pin_profiles = self.get_pinned_users(applets_ids)
         pin_dao_list = set()
         for profile in pin_profiles:
             if not profile["pinnedBy"]:
@@ -1496,10 +1498,13 @@ class Mongo:
             )
         return None
 
-    def get_library(self) -> (LibraryDao, ThemeDao):
+    def get_library(self, applet_ids: list[ObjectId]|None) -> (LibraryDao, ThemeDao):
         lib_set = set()
         theme_set = set()
-        library = self.db["appletLibrary"].find({})
+        query = {}
+        if applet_ids:
+            query['appletId'] = {'$in': applet_ids}
+        library = self.db["appletLibrary"].find(query)
         for lib_doc in library:
             applet_id = mongoid_to_uuid(lib_doc["appletId"])
             version = lib_doc.get("version")
@@ -1529,3 +1534,10 @@ class Mongo:
                     theme_set.add(theme)
             lib_set.add(lib)
         return lib_set, theme_set
+
+    def get_applets_by_workspace(self, workspace_id: str) -> list[str]:
+        items = Profile().find(query={'accountId': ObjectId(workspace_id)})
+        ids = set()
+        for item in items:
+            ids.add(str(item['appletId']))
+        return list(ids)
