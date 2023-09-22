@@ -1,7 +1,9 @@
 import asyncio
 import datetime
+from unittest.mock import patch
 
 import pytest
+from asynctest import CoroutineMock
 from httpx import Response as HttpResponse
 from starlette import status
 
@@ -49,8 +51,9 @@ class TestPassword(BaseTest):
         created_at=datetime.datetime.utcnow(),
     )
 
+    @patch("apps.users.api.password.reencrypt_answers.kiq")
     @rollback
-    async def test_password_update(self):
+    async def test_password_update(self, task_mock: CoroutineMock):
         # Creating new user
         await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -75,7 +78,7 @@ class TestPassword(BaseTest):
         )
 
         # User get token with new password
-        login_request_user: UserLoginRequest = UserLoginRequest(
+        login_request_user = UserLoginRequest(
             email=self.create_request_user.dict()["email"],
             password=password_update_request.dict()["password"],
         )
@@ -88,6 +91,7 @@ class TestPassword(BaseTest):
         assert response.status_code == status.HTTP_200_OK
         assert response.status_code == status.HTTP_200_OK
         assert internal_response.status_code == status.HTTP_200_OK
+        task_mock.assert_awaited_once()
 
     @pytest.mark.skip
     @rollback

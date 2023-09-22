@@ -11,6 +11,8 @@ from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import (
+    AnswerDbApplet,
+    AnswerDbApplets,
     WorkspaceApplet,
     WorkspaceArbitrary,
     WorkspaceInfo,
@@ -298,3 +300,31 @@ class WorkspaceService:
             return WorkspaceArbitrary.from_orm(schema) if schema else None
         except ValidationError:
             return None
+
+    async def get_user_answer_db_info(self) -> list[AnswerDbApplets]:
+        db_info = await UserWorkspaceCRUD(
+            self.session
+        ).get_user_answers_db_info(self._user_id)
+
+        # group by db_uri. None means default DB
+        db_applets_map: dict[str | None, AnswerDbApplets] = {}
+        for row in db_info:
+            db_uri = None
+            if row.use_arbitrary:
+                if not row.database_uri:
+                    continue
+                db_uri = row.database_uri
+            if db_uri not in db_applets_map:
+                db_applets_map[db_uri] = AnswerDbApplets(database_uri=db_uri)
+            db_applets_map[db_uri].applets.append(
+                AnswerDbApplet(
+                    applet_id=row.applet_id, encryption=row.encryption
+                )
+            )
+
+        # default db first
+        default_db_applets = db_applets_map.pop(None, None)
+        if default_db_applets:
+            return [default_db_applets, *db_applets_map.values()]
+
+        return list(db_applets_map.values())

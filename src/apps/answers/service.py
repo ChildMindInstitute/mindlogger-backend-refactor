@@ -4,6 +4,7 @@ import datetime
 import json
 import uuid
 from collections import defaultdict
+from json import JSONDecodeError
 from typing import List
 
 import aiohttp
@@ -40,6 +41,7 @@ from apps.answers.domain import (
     AnswerAlert,
     AnswerDate,
     AnswerExport,
+    AnswerItemDataEncrypted,
     AnswerNoteDetail,
     AnswerReview,
     AppletActivityAnswer,
@@ -71,12 +73,15 @@ from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.shared.encryption import decrypt_cbc, encrypt_cbc
+from apps.shared.exception import EncryptionError
 from apps.shared.query_params import QueryParams
 from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from infrastructure.logger import logger
 from infrastructure.utility import RedisCache
 
 
@@ -922,6 +927,97 @@ class AnswerService:
             )
         )
 
+    @classmethod
+    def _is_public_key_match(
+        cls, answer_id, stored_public_key, generated_public_key
+    ) -> bool:
+        if not stored_public_key:
+            logger.error(
+                f'Reencryption:  Answer item "{answer_id}": wrong public key, skip'  # noqa: E501
+            )
+        try:
+            stored_public_key = json.loads(stored_public_key)
+        except JSONDecodeError as e:
+            logger.error(
+                f'Reencryption:  Answer item "{answer_id}": wrong public key, skip'  # noqa: E501
+            )
+            logger.exception(str(e))
+            return False
+
+        if stored_public_key != generated_public_key:
+            logger.error(
+                f'Reencryption: Answer item "{answer_id}": public key doesn\'t match, skip'  # noqa: E501
+            )
+            return False
+
+        return True
+
+    async def reencrypt_user_answers(
+        self,
+        applet_id: uuid.UUID,
+        user_id: uuid.UUID,
+        page=1,
+        limit=1000,
+        *,
+        old_public_key: list,
+        new_public_key: list,
+        decryptor: "AnswerEncryptor",
+        encryptor: "AnswerEncryptor",
+    ) -> int:
+        logger.debug(
+            f'Reencryption: Start reencrypt_user_answers for "{applet_id}"'
+        )
+        repository = AnswersCRUD(self.answer_session)
+        answers = await repository.get_applet_user_answer_items(
+            applet_id, user_id, page, limit
+        )
+        count = len(answers)
+        if not count:
+            return 0
+
+        data_to_update: list[AnswerItemDataEncrypted] = []
+        for answer in answers:
+            if not self._is_public_key_match(
+                answer.id, answer.user_public_key, old_public_key
+            ):
+                continue
+
+            try:
+                encrypted_answer = encryptor.encrypt(
+                    decryptor.decrypt(answer.answer)
+                )
+                encrypted_events, encrypted_identifier = None, None
+                if answer.events:
+                    encrypted_events = encryptor.encrypt(
+                        decryptor.decrypt(answer.events)
+                    )
+                if answer.identifier:
+                    encrypted_identifier = encryptor.encrypt(
+                        decryptor.decrypt(answer.identifier)
+                    )
+
+                data_to_update.append(
+                    AnswerItemDataEncrypted(
+                        id=answer.id,
+                        answer=encrypted_answer,
+                        events=encrypted_events,
+                        identifier=encrypted_identifier,
+                    )
+                )
+            except EncryptionError as e:
+                logger.error(
+                    f'Reencryption: Skip answer item "{answer.id}": cannot decrypt answer'  # noqa: E501
+                )
+                logger.exception(str(e))
+                continue
+
+        if data_to_update:
+            await repository.update_encrypted_fields(
+                json.dumps(new_public_key), data_to_update
+            )
+
+        return count
+
 
 class ReportServerService:
     def __init__(self, session, arbitrary_session=None):
@@ -1143,3 +1239,30 @@ class ReportServerEncryption:
             algorithm=hashes.SHA1(),
             label=None,
         )
+
+
+class AnswerEncryptor:
+    def __init__(self, key: list | bytes):
+        if isinstance(key, list):
+            key = bytes(key)
+        self.key: bytes = key
+
+    def encrypt(self, data: str, iv: bytes | None = None):
+        try:
+            ct, iv = encrypt_cbc(self.key, data.encode("utf-8"), iv)
+        except Exception as e:
+            raise EncryptionError("Cannot encrypt answer data") from e
+        return f"{iv.hex()}:{ct.hex()}"
+
+    def decrypt(self, encrypted_data: str) -> str:
+        """
+        @param encrypted_data: data in hex format "iv:text"
+        """
+        try:
+            iv_hex, text_hex = encrypted_data.split(":", 1)
+            data = bytes.fromhex(text_hex)
+            iv = bytes.fromhex(iv_hex)
+
+            return decrypt_cbc(self.key, data, iv).decode("utf-8")
+        except Exception as e:
+            raise EncryptionError("Cannot decrypt answer data") from e

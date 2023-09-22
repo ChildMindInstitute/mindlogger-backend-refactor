@@ -33,3 +33,7 @@ class UserDeviceNotFound(NotFoundError):
 
 class UsersError(ValidationError):
     message = _("Can not make the looking up by {key} {value}.")
+
+
+class ReencryptionInProgressError(ValidationError):
+    message = _("Cannot change password. Reencryption process in progress.")

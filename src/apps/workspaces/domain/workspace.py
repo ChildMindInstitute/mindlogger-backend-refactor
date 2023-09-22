@@ -246,3 +246,18 @@ class WorkspaceArbitrary(InternalModel):
     storage_bucket: Optional[str] = None
     storage_bucket_answer: Optional[str] = None
     use_arbitrary: bool
+
+
+class AnswerDbApplet(InternalModel):
+    applet_id: uuid.UUID
+    encryption: Encryption
+
+
+class UserAnswersDBInfo(AnswerDbApplet):
+    use_arbitrary: bool | None
+    database_uri: str | None
+
+
+class AnswerDbApplets(InternalModel):
+    database_uri: str | None
+    applets: list[AnswerDbApplet] = Field(default_factory=list)
