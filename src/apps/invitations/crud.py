@@ -63,7 +63,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         return schema
 
     async def get_pending_by_invited_email(
-        self, email: str, query_params: QueryParams
+        self, email: str | None, query_params: QueryParams
     ) -> list[InvitationDetail]:
         """Return the list of pending invitations for the invited user."""
 
@@ -109,7 +109,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         return results
 
     async def get_pending_by_invited_email_count(
-        self, email: str, query_params: QueryParams
+        self, email: str | None, query_params: QueryParams
     ) -> int:
         """Return the count of pending invitations for the invited user."""
 
