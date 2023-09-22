@@ -28,12 +28,12 @@ class ThemeBase(BaseModel):
         example="My theme",
         max_length=100,
     )
-    logo: str = Field(
+    logo: str | None = Field(
         ...,
         description="URL to logo image",
         example="https://example.com/logo.png",
     )
-    background_image: str = Field(
+    background_image: str | None = Field(
         ...,
         description="URL to background image",
         example="https://example.com/background.png",
@@ -59,11 +59,11 @@ class ThemeBase(BaseModel):
 
     @validator("logo", "background_image")
     def validate_image(cls, value):
-        return validate_image(value)
+        return validate_image(value) if value else value
 
     @validator("primary_color", "secondary_color", "tertiary_color")
     def validate_color(cls, value):
-        return validate_color(value)
+        return validate_color(value) if value else value
 
 
 class Theme(ThemeBase, InternalModel):
