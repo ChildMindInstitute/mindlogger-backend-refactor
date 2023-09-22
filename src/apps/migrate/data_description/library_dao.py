@@ -44,6 +44,7 @@ class ThemeDao:
     applet_id: uuid.UUID
     name: str
     logo: str | None
+    small_logo: str | None
     background_image: str | None
     primary_color: str
     secondary_color: str
@@ -71,6 +72,7 @@ class ThemeDao:
             self.is_deleted,
             self.name,
             self.logo,
+            self.small_logo,
             self.background_image,
             self.primary_color,
             self.secondary_color,

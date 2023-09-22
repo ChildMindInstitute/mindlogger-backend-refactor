@@ -560,6 +560,7 @@ class Postgres:
                 is_deleted, 
                 "name", 
                 logo, 
+                small_logo,
                 background_image, 
                 primary_color, 
                 secondary_color, 
@@ -570,7 +571,7 @@ class Postgres:
                 migrated_updated
             )
             VALUES
-            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
         """
         return self.exec_escaped(sql, theme.values(), "[THEME]")
 
