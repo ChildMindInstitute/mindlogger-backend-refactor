@@ -352,7 +352,7 @@ async def main(workspace_id: str|None, applets_ids: list[str]|None):
         postgres.wipe_applet(str(applet_id))
 
     # Migrate applets, activities, items
-    await migrate_applets(mongo, postgres)
+    await migrate_applets(applets_ids, mongo, postgres)
 
     # Extract failing applets info
     # info = extract_applet_info(mongo)
