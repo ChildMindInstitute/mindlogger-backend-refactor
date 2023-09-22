@@ -23,7 +23,11 @@ depends_on = None
 def upgrade() -> None:
     conn = op.get_bind()
     result = conn.execute(
-        sa.text("SELECT id, email FROM invitations WHERE email IS NOT NULL")
+        sa.text("""
+            SELECT id, email 
+            FROM invitations WHERE email IS NOT NULL
+            ORDER BY created_at DESC 
+        """)
     )
     for row in result:
         pk, email = row
@@ -53,6 +57,7 @@ def upgrade() -> None:
             WHERE 
                 email IS NOT NULL
                 AND email_encrypted IS NOT NULL
+            ORDER BY created_at DESC 
             """
         )
     )
@@ -67,6 +72,15 @@ def upgrade() -> None:
             .process_bind_param(decrypted_field, dialect=conn.dialect)
         )
         hash_value = hash_sha224(decrypted_field)
+
+        row = conn.execute(
+            sa.text("SELECT count(id) FROM users WHERE email = :hash_value"), {
+                "hash_value": hash_value
+            }
+        )
+        if row.first()[0] != 0:
+            continue
+
         conn.execute(
             sa.text(
                 f"""
@@ -83,7 +97,6 @@ def upgrade() -> None:
                 "hash_value": hash_value
             }
         )
-
 
 def downgrade() -> None:
     pass
