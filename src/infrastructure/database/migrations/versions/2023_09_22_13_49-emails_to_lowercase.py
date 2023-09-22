@@ -47,7 +47,14 @@ def upgrade() -> None:
         )
 
     result = conn.execute(
-        sa.text("SELECT id, email_encrypted FROM users WHERE email IS NOT NULL")
+        sa.text("""
+            SELECT id, email_encrypted 
+            FROM users 
+            WHERE 
+                email IS NOT NULL
+                AND email_encrypted IS NOT NULL
+            """
+        )
     )
     for row in result:
         pk, email = row
