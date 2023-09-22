@@ -2,11 +2,12 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, root_validator
 
 from apps.applets.domain import ManagersRole, Role
 from apps.invitations.constants import InvitationStatus
 from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain.custom_validations import lowercase_email
 
 
 class Applet(PublicModel):
@@ -44,6 +45,10 @@ class _InvitationRequest(PublicModel):
     language: InvitationLanguage = Field(
         description="This field represents the language of invitation"
     )
+
+    @root_validator
+    def email_validation(cls, values):
+        return lowercase_email(values)
 
 
 class InvitationRespondentRequest(_InvitationRequest):
