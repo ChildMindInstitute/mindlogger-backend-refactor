@@ -5,10 +5,7 @@ import pytest
 
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role
-from apps.invitations.errors import (
-    ManagerInvitationExist,
-    RespondentInvitationExist,
-)
+from apps.invitations.errors import RespondentInvitationExist
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback, session_manager
@@ -529,7 +526,9 @@ class TestInvite(BaseTest):
     @pytest.mark.parametrize(
         "role", (Role.MANAGER, Role.COORDINATOR, Role.EDITOR)
     )
-    async def test_manager_invite_fail_if_duplicate_email_and_role(self, role):
+    async def test_manager_invite_if_duplicate_email_and_role_not_accepted(
+        self, role
+    ):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="person@gmail.com",
@@ -552,11 +551,8 @@ class TestInvite(BaseTest):
             ),
             request_data,
         )
-        assert response.status_code == 422
-        res = json.loads(response.content)
-        res = res["result"][0]
-        assert res["message"] == ManagerInvitationExist.message
-        assert len(TestMail.mails) == 1
+        assert response.status_code == 200
+        assert len(TestMail.mails) == 2
 
     @rollback
     async def test_admin_invite_respondent_fail_if_duplicate_email(self):
@@ -564,9 +560,9 @@ class TestInvite(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         request_data = dict(
-            email="patric@gmail.com",
-            first_name="Patric",
-            last_name="Daniel",
+            email="mike@gmail.com",
+            first_name="Mike",
+            last_name="M",
             role=Role.RESPONDENT,
             language="en",
             secret_user_id=str(uuid.uuid4()),
@@ -578,19 +574,8 @@ class TestInvite(BaseTest):
             ),
             request_data,
         )
-        assert response.status_code == 200
-
-        response = await self.client.post(
-            self.invite_respondent_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
-            request_data,
-        )
         assert response.status_code == 422
         res = json.loads(response.content)
         res = res["result"][0]
         assert res["message"] == RespondentInvitationExist.message
-
-        assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].recipients == [request_data["email"]]
-        assert TestMail.mails[0].subject == "Applet 1 invitation"
+        assert len(TestMail.mails) == 0

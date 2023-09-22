@@ -373,3 +373,16 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(InvitationSchema.role == role)
         db_result: Result = await self._execute(query)
         return bool(db_result.scalars().first())
+
+    async def duplicate_exist(
+        self, email: str, role: str, applet_id: uuid.UUID
+    ) -> bool:
+        query: Query = select(count(InvitationSchema.id))
+        query = query.where(
+            InvitationSchema.email == email,
+            InvitationSchema.applet_id == applet_id,
+            InvitationSchema.role == role,
+            InvitationSchema.status == InvitationStatus.APPROVED,
+        )
+        db_result: Result = await self._execute(query)
+        return bool(db_result.scalars().first())
