@@ -169,7 +169,12 @@ class ReproFieldBase(
             "is_vis": self._is_visible(doc),
             "alert": self.attr_processor.get_translation(
                 doc, "schema:alert", self.lang
-            ),
+            )
+            if self.attr_processor.get_translation(
+                doc, "schema:alert", self.lang
+            )
+            != ""
+            else None,
             "color": self._value_or_none(doc, "schema:color"),
             "tooltip": self._value_or_none(doc, "schema:description"),
             "score": self.attr_processor.get_attr_value(doc, "schema:score"),
