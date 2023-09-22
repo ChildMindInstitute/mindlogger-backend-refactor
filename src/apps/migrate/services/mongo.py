@@ -3,7 +3,6 @@ import hashlib
 import json
 import os
 import uuid
-from functools import partial
 from typing import List, Set, Tuple
 
 from bson.objectid import ObjectId
@@ -19,7 +18,6 @@ from apps.girderformindlogger.models.activity import Activity
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.folder import Folder as FolderModel
 from apps.girderformindlogger.models.user import User
-from apps.girderformindlogger.models.item import Item
 from apps.girderformindlogger.utility import jsonld_expander
 from apps.jsonld_converter.dependencies import (
     get_context_resolver,
@@ -48,7 +46,7 @@ from apps.migrate.utilities import (
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt, get_key
 from apps.workspaces.domain.constants import Role
-
+from config import settings
 
 enc = StringEncryptedType(key=get_key())
 
@@ -1093,8 +1091,16 @@ class Mongo:
         return converted
 
     def get_answer_migration_queries(self, **kwargs):
-        creator_id_filtering = True
+        result = []
+
+        applet_id_filtering = settings.data_migration.filtering_applet_id
+        creator_id_filtering = settings.data_migration.filtering_creator_id
         creator_ids = [ObjectId("64c2395b8819c178d236685a")]
+        applet_ids = []
+
+        if applet_id_filtering:
+            if kwargs["activity_id"] in applet_ids:
+                return result
 
         query = {
             "meta.responses": {"$exists": True},
@@ -1104,7 +1110,6 @@ class Mongo:
         }
         item_collection = self.db["item"]
         creators_ids = item_collection.find(query).distinct("creatorId")
-        result = []
         for creator_id in creators_ids:
             if creator_id_filtering:
                 if creator_id not in creator_ids:

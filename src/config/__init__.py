@@ -7,6 +7,7 @@ from config.anonymous_respondent import AnonymousRespondent
 from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
 from config.cors import CorsSettings
+from config.data_migration import DataMigrationSettings
 from config.database import DatabaseSettings
 from config.mailing import MailingSettings
 from config.notification import FirebaseCloudMessagingSettings
@@ -67,6 +68,8 @@ class Settings(BaseSettings):
 
     # Alerts configs
     alerts: AlertsSettings = AlertsSettings()
+
+    data_migration: DataMigrationSettings = DataMigrationSettings()
 
     # NOTE: This config is used by SQLAlchemy for imports
     migrations_apps: list[str]
