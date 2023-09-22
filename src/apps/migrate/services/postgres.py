@@ -53,6 +53,19 @@ class Postgres:
             applet_id = uuid.UUID(applet_id)
 
         cursor = self.connection.cursor()
+
+        cursor.execute(
+            "DELETE FROM folders WHERE id IN (SELECT folder_id FROM folder_applets WHERE applet_id = %s)",
+            (applet_id.hex,),
+        )
+        cursor.execute(
+            "DELETE FROM events WHERE applet_id = %s", (applet_id.hex,)
+        )
+        cursor.execute(
+            "DELETE FROM library WHERE applet_id_version LIKE %s",
+            (str(applet_id) + "%",),
+        )
+
         cursor.execute(
             "DELETE FROM flow_item_histories WHERE id IN (SELECT id FROM flow_items WHERE activity_id IN (SELECT id FROM activities WHERE applet_id = %s))",
             (applet_id.hex,),
