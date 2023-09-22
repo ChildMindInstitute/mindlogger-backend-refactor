@@ -36,17 +36,19 @@ async def create_report(
     submit_id: uuid.UUID,
     answer_id: uuid.UUID | None = None,
 ):
+    session_maker = session_manager.get_session()
     try:
-        session_maker = session_manager.get_session()
-        mail_service = MailingService()
         async with session_maker() as session:
             arb_uri = await get_arbitrary_info(applet_id, session)
             if arb_uri:
                 arb_session_maker = session_manager.get_session(arb_uri)
-                async with arb_session_maker() as arb_session:
-                    response = await _create_report(
-                        submit_id, answer_id, session, arb_session
-                    )
+                try:
+                    async with arb_session_maker() as arb_session:
+                        response = await _create_report(
+                            submit_id, answer_id, session, arb_session
+                        )
+                finally:
+                    await arb_session_maker.remove()
             else:
                 response = await _create_report(submit_id, answer_id, session)
 
@@ -57,6 +59,8 @@ async def create_report(
                 io.BytesIO(base64.b64decode(response.pdf.encode())),
                 "application/pdf",
             )
+
+            mail_service = MailingService()
             await mail_service.send(
                 MessageSchema(
                     recipients=response.email.email_recipients,
@@ -68,3 +72,5 @@ async def create_report(
     except Exception as e:
         traceback.print_exception(e)
         sentry_sdk.capture_exception(e)
+    finally:
+        await session_maker.remove()
