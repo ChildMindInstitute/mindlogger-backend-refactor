@@ -540,7 +540,10 @@ class AnswerService:
             raise ActivityIsNotAssessment()
 
     async def get_export_data(
-        self, applet_id: uuid.UUID, query_params: QueryParams
+        self,
+        applet_id: uuid.UUID,
+        query_params: QueryParams,
+        skip_activities: bool = False,
     ) -> AnswerExport:
         assert self.user_id is not None
 
@@ -639,25 +642,30 @@ class AnswerService:
                     answer.activity_history_id = activity.id_version
 
         repo_local = AnswersCRUD(self.session)
-        activities, items = await asyncio.gather(
-            repo_local.get_activity_history_by_ids(list(activity_hist_ids)),
-            repo_local.get_item_history_by_activity_history(
-                list(activity_hist_ids)
-            ),
-        )
+        activities_result = []
+        if not skip_activities:
+            activities, items = await asyncio.gather(
+                repo_local.get_activity_history_by_ids(
+                    list(activity_hist_ids)
+                ),
+                repo_local.get_item_history_by_activity_history(
+                    list(activity_hist_ids)
+                ),
+            )
 
-        activity_map = {
-            activity.id_version: ActivityHistoryFull.from_orm(activity)
-            for activity in activities
-        }
-        for item in items:
-            activity = activity_map.get(item.activity_id)
-            if activity:
-                activity.items.append(item)
+            activity_map = {
+                activity.id_version: ActivityHistoryFull.from_orm(activity)
+                for activity in activities
+            }
+            for item in items:
+                activity = activity_map.get(item.activity_id)
+                if activity:
+                    activity.items.append(item)
+            activities_result = list(activity_map.values())
 
         return AnswerExport(
             answers=answers,
-            activities=list(activity_map.values()),
+            activities=activities_result,
             total_answers=total,
         )
 

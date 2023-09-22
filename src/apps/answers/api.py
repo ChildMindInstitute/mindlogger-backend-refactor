@@ -439,6 +439,7 @@ async def applet_answers_export(
     query_params: QueryParams = Depends(
         parse_query_params(AnswerExportFilters)
     ),
+    activities_last_version: bool = False,
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ):
@@ -449,7 +450,7 @@ async def applet_answers_export(
     async with atomic(answer_session):
         data: AnswerExport = await AnswerService(
             session, user.id, answer_session
-        ).get_export_data(applet_id, query_params)
+        ).get_export_data(applet_id, query_params, activities_last_version)
         total_answers = data.total_answers
         for answer in data.answers:
             if answer.is_manager:
@@ -457,7 +458,7 @@ async def applet_answers_export(
                     f"[admin account]({answer.respondent_email})"
                 )
 
-        if not data.activities:
+        if activities_last_version:
             applet = await AppletService(session, user.id).get(applet_id)
             activities = await ActivityHistoryService(
                 session, applet.id, applet.version
