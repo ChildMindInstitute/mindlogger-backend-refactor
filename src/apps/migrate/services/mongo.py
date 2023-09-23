@@ -1267,6 +1267,11 @@ class Mongo:
             if not user:
                 continue
             role_applets_mapping = doc.get("applets")
+            managerial_applets = []
+            for role, applets in role_applets_mapping.items():
+                if role != "user":
+                    managerial_applets.extend(applets)
+
             for role_name, applet_ids in role_applets_mapping.items():
                 if role_name == Role.OWNER:
                     # Skip owner in case of it was
@@ -1298,8 +1303,26 @@ class Mongo:
                     elif role_name == "user":
                         data = self.respondent_metadata(user, applet_id)
                         if data:
-                            meta["nickname"] = data["nick"]
-                            meta["secretUserId"] = data["secret"]
+                            if applet_id in managerial_applets:
+                                if data["nick"] == "":
+                                    f_name = decrypt(user["firstName"])
+                                    l_name = decrypt(user["lastName"])
+                                    meta["nickname"] = (
+                                        f"{f_name} {l_name}"
+                                        if f_name and l_name
+                                        else f"- -"
+                                    )
+                                else:
+                                    meta["nickname"] = data["nick"]
+
+                                meta["secretUserId"] = (
+                                    f"{str(uuid.uuid4())}"
+                                    if data["secret"] == ""
+                                    else data["secret"]
+                                )
+                            else:
+                                meta["nickname"] = data["nick"]
+                                meta["secretUserId"] = data["secret"]
 
                     owner_id = self.get_owner_by_applet(applet_id)
                     if not owner_id:
