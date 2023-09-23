@@ -27,7 +27,9 @@ from apps.migrate.utilities import migration_log, mongoid_to_uuid, intersection
 from infrastructure.database import session_manager
 
 
-async def migrate_applets(migrating_applets: list[ObjectId], mongo: Mongo, postgres: Postgres):
+async def migrate_applets(
+    migrating_applets: list[ObjectId], mongo: Mongo, postgres: Postgres
+):
     toSkip = [
         "635d04365cb700431121f8a1",  # chinese texts
     ]
@@ -197,7 +199,9 @@ async def get_applets_ids() -> list[str]:
 #     return info
 
 
-def migrate_roles(applet_ids: list[ObjectId]|None, mongo: Mongo, postgres: Postgres):
+def migrate_roles(
+    applet_ids: list[ObjectId] | None, mongo: Mongo, postgres: Postgres
+):
     migration_log.warning("Start Role migration")
     anon_id = postgres.get_anon_respondent()
     if not applet_ids:
@@ -208,7 +212,9 @@ def migrate_roles(applet_ids: list[ObjectId]|None, mongo: Mongo, postgres: Postg
     migration_log.warning("Role has been migrated")
 
 
-def migrate_user_pins(applets_ids: list|None, mongo: Mongo, postgres: Postgres):
+def migrate_user_pins(
+    applets_ids: list | None, mongo: Mongo, postgres: Postgres
+):
     migration_log.warning("Start UserPins migration")
     pinned_dao = mongo.get_user_pin_mapping(applets_ids)
     migrated_ids = postgres.get_migrated_users_ids()
@@ -238,7 +244,7 @@ def migrate_user_pins(applets_ids: list|None, mongo: Mongo, postgres: Postgres):
     migration_log.warning("UserPins has been migrated")
 
 
-def migrate_folders(workspace_id: str|None, mongo, postgres):
+def migrate_folders(workspace_id: str | None, mongo, postgres):
     migration_log.warning("[FOLDERS] In progress")
     if workspace_id:
         workspaces_ids = [mongoid_to_uuid(workspace_id)]
@@ -252,7 +258,7 @@ def migrate_folders(workspace_id: str|None, mongo, postgres):
     migration_log.warning(f"[FOLDER_APPLETS] {migrated=}, {skipped=}")
 
 
-def migrate_library(applet_ids: list[ObjectId]|None, mongo, postgres):
+def migrate_library(applet_ids: list[ObjectId] | None, mongo, postgres):
     lib_count = 0
     theme_count = 0
     lib_set, theme_set = mongo.get_library(applet_ids)
@@ -280,15 +286,17 @@ def migrate_library(applet_ids: list[ObjectId]|None, mongo, postgres):
     migration_log.warning(f"[THEME] Migrated {theme_count}")
 
 
-async def migrate_events(applet_ids: list[ObjectId]|None, mongo: Mongo, postgres: Postgres):
+async def migrate_events(
+    applet_ids: list[ObjectId] | None, mongo: Mongo, postgres: Postgres
+):
     events_collection = mongo.db["events"]
     session = session_manager.get_session()
 
     events: list = []
 
-    query={}
+    query = {}
     if applet_ids:
-        query['applet_id'] = {'$in': applet_ids}
+        query["applet_id"] = {"$in": applet_ids}
 
     for event in events_collection.find(query):
         events.append(MongoEvent.parse_obj(event))
@@ -327,7 +335,7 @@ async def add_default_evets(postgres: Postgres):
     )
 
 
-async def main(workspace_id: str|None, applets_ids: list[str]|None):
+async def main(workspace_id: str | None, applets_ids: list[str] | None):
     mongo = Mongo()
     postgres = Postgres()
 
@@ -342,7 +350,9 @@ async def main(workspace_id: str|None, applets_ids: list[str]|None):
     allowed_applets_ids = await get_applets_ids()
 
     if workspace_id:
-        applets_ids = intersection(mongo.get_applets_by_workspace(workspace_id), allowed_applets_ids)
+        applets_ids = intersection(
+            mongo.get_applets_by_workspace(workspace_id), allowed_applets_ids
+        )
     elif not applets_ids:
         applets_ids = allowed_applets_ids
 
@@ -352,7 +362,7 @@ async def main(workspace_id: str|None, applets_ids: list[str]|None):
         postgres.wipe_applet(str(applet_id))
 
     # Migrate applets, activities, items
-    await migrate_applets(mongo, postgres)
+    await migrate_applets(applets_ids, mongo, postgres)
 
     # Extract failing applets info
     # info = extract_applet_info(mongo)
@@ -385,8 +395,12 @@ if __name__ == "__main__":
     parser.add_argument("-w", "--workspace", type=str, required=False)
     parser.add_argument("-a", "--applet", type=str, required=False)
     args = parser.parse_args()
-    workspace = args.workspace if 'workspace' in args and args.workspace else None
-    applets = args.applet.split(',') if 'applet' in args and args.applet else None
+    workspace = (
+        args.workspace if "workspace" in args and args.workspace else None
+    )
+    applets = (
+        args.applet.split(",") if "applet" in args and args.applet else None
+    )
     if workspace and applets:
-        raise Exception('Specify either workspace or applets arg')
+        raise Exception("Specify either workspace or applets arg")
     asyncio.run(main(workspace, applets))

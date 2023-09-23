@@ -32,6 +32,7 @@ def get_logger(name) -> logging.Logger:
     log.addHandler(handler)
     return log
 
+
 def intersection(lst1, lst2):
     # Use of hybrid method
     temp = set(lst2)

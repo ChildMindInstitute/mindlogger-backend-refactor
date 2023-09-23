@@ -1326,10 +1326,13 @@ class Mongo:
         )
         return list(set(access_result))
 
-    def get_pinned_users(self, applets_ids: list[ObjectId]|None):
-        query={"pinnedBy": {"$exists": 1}, "userId": {"$exists": 1, "$ne": None}}
+    def get_pinned_users(self, applets_ids: list[ObjectId] | None):
+        query = {
+            "pinnedBy": {"$exists": 1},
+            "userId": {"$exists": 1, "$ne": None},
+        }
         if applets_ids:
-            query['appletId'] = {'$in': applets_ids}
+            query["appletId"] = {"$in": applets_ids}
         return self.db["appletProfile"].find(query)
 
     def get_applet_profiles_by_ids(self, ids):
@@ -1353,7 +1356,7 @@ class Mongo:
         profile = next(it, None)
         return profile["userId"] if profiles else None
 
-    def get_user_pin_mapping(self, applets_ids: list[ObjectId]|None):
+    def get_user_pin_mapping(self, applets_ids: list[ObjectId] | None):
         pin_profiles = self.get_pinned_users(applets_ids)
         pin_dao_list = set()
         for profile in pin_profiles:
@@ -1498,12 +1501,14 @@ class Mongo:
             )
         return None
 
-    def get_library(self, applet_ids: list[ObjectId]|None) -> (LibraryDao, ThemeDao):
+    def get_library(
+        self, applet_ids: list[ObjectId] | None
+    ) -> (LibraryDao, ThemeDao):
         lib_set = set()
         theme_set = set()
         query = {}
         if applet_ids:
-            query['appletId'] = {'$in': applet_ids}
+            query["appletId"] = {"$in": applet_ids}
         library = self.db["appletLibrary"].find(query)
         for lib_doc in library:
             applet_id = mongoid_to_uuid(lib_doc["appletId"])
@@ -1536,8 +1541,8 @@ class Mongo:
         return lib_set, theme_set
 
     def get_applets_by_workspace(self, workspace_id: str) -> list[str]:
-        items = Profile().find(query={'accountId': ObjectId(workspace_id)})
+        items = Profile().find(query={"accountId": ObjectId(workspace_id)})
         ids = set()
         for item in items:
-            ids.add(str(item['appletId']))
+            ids.add(str(item["appletId"]))
         return list(ids)
