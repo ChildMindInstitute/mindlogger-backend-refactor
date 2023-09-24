@@ -1,6 +1,9 @@
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.db.schemas import AnswerItemSchema
 from apps.girderformindlogger.models.item import Item
+from apps.girderformindlogger.models.profile import Profile
+from apps.migrate.answers.crud import MigrateUsersMCRUD
+
 from apps.migrate.utilities import mongoid_to_uuid
 from datetime import datetime
 
@@ -8,7 +11,17 @@ from datetime import datetime
 class AnswerItemMigrationService:
     async def create_item(self, *, session, mongo_answer: dict, **kwargs):
         identifier = mongo_answer["meta"]["subject"].get("identifier", "")
-        respondent_id = mongo_answer["meta"]["subject"].get("@id")
+        respondent_mongo_id = Profile().findOne(
+            {"_id": mongo_answer["meta"]["subject"].get("@id")}
+        )["userId"]
+        if respondent_mongo_id:
+            respondent_id = mongoid_to_uuid(respondent_mongo_id)
+        else:
+            anon_respondent = await MigrateUsersMCRUD(
+                session
+            ).get_anonymous_respondent()
+            respondent_id = anon_respondent.id
+
         answer_item = await AnswerItemsCRUD(session).create(
             AnswerItemSchema(
                 created_at=mongo_answer["created"],
@@ -17,7 +30,7 @@ class AnswerItemMigrationService:
                 answer=mongo_answer["meta"]["dataSource"],
                 item_ids=self._get_item_ids(mongo_answer),
                 events=mongo_answer["meta"].get("events", ""),
-                respondent_id=mongoid_to_uuid(respondent_id),
+                respondent_id=respondent_id,
                 identifier=mongo_answer["meta"]["subject"].get(
                     "identifier", ""
                 ),

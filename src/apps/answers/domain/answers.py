@@ -302,7 +302,8 @@ class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
 
     @validator("activity_id", always=True)
     def extract_activity_id(cls, value, values):
-        return values["activity_history_id"][:36]
+        if val := values.get("activity_history_id"):
+            return val[:36]
 
     @validator("flow_id", always=True)
     def extract_flow_id(cls, value, values):

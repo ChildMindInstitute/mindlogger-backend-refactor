@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from typing import Any
 
 from bson import ObjectId
@@ -77,8 +78,17 @@ class AnswersMigrateFacade:
                                 session=regular_session,
                                 response=mongo_answer,
                             )
-                            respondent_id = mongoid_to_uuid(
-                                mongo_answer["meta"]["subject"].get("@id")
+                            respondent_mongo_id = Profile().findOne(
+                                {
+                                    "_id": mongo_answer["meta"]["subject"].get(
+                                        "@id"
+                                    )
+                                }
+                            )["userId"]
+                            respondent_id = (
+                                mongoid_to_uuid(respondent_mongo_id)
+                                if respondent_mongo_id
+                                else uuid.uuid4()
                             )
                             if not await self.answer_migrate_service.is_respondent_exist(
                                 session=regular_session,
