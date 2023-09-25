@@ -431,9 +431,10 @@ class AppletService:
         theme_ids = [schema.theme_id for schema in schemas if schema.theme_id]
         themes = []
         if theme_ids:
-            themes = await ThemeService(
-                self.session, self.user_id
-            ).get_users_by_ids(theme_ids)
+            themes = await ThemeService(self.session, self.user_id).get_by_ids(
+                theme_ids
+            )
+            pass
         theme_map = dict((theme.id, theme) for theme in themes)
         applets = []
 
