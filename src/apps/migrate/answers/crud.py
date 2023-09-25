@@ -12,7 +12,7 @@ from apps.users import UsersCRUD, UserSchema
 
 
 class AnswersMigrateCRUD(AnswersCRUD):
-    async def get_answers_migration_params(self) -> list[dict]:
+    async def get_answers_migration_params(self, applets_ids: list[uuid.UUID]) -> list[dict]:
         query: Query = select(
             ActivityHistorySchema.id,
             func.split_part(ActivityHistorySchema.applet_id, "_", 1).label(
@@ -26,10 +26,13 @@ class AnswersMigrateCRUD(AnswersCRUD):
         db_result = db_result.all()
         result = []
         for row in db_result:
+            applet_id = uuid.UUID(row[1])
+            if applet_id not in applets_ids:
+                continue
             result.append(
                 {
                     "activity_id": uuid_to_mongoid(row[0]),
-                    "applet_id": uuid_to_mongoid(uuid.UUID(row[1])),
+                    "applet_id": uuid_to_mongoid(applet_id),
                     "version": row[2],
                 }
             )
@@ -43,7 +46,7 @@ class AnswersMigrateCRUD(AnswersCRUD):
         db_result = db_result.scalars().one_or_none()
         return db_result
 
-    async def get_answer_id(self, applet_id: list[uuid.UUID]):
+    async def get_answer_id(self, applet_id: uuid.UUID):
         query: Query = select(AnswerSchema.id)
         query = query.where(AnswerSchema.applet_id == applet_id)
         db_result = await self._execute(query)
