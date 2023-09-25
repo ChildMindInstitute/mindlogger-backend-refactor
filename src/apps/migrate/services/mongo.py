@@ -71,7 +71,7 @@ def decrypt(data):
     return txt[:length]
 
 
-def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
+def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
     broken_applet_versions = [
         "6201cc26ace55b10691c0814",
         "6202734eace55b10691c0fc4",
@@ -90,7 +90,7 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
         "63ec1498601cdc0fee1f47d2",
     ]
     if applet_id in broken_applet_versions:
-        for activity in applet["reprolib:terms/order"][0]["@list"]:
+        for activity in applet_ld["reprolib:terms/order"][0]["@list"]:
             for property in activity["reprolib:terms/addProperties"]:
                 property["reprolib:terms/isVis"] = [{"@value": True}]
 
@@ -101,9 +101,9 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
     ]
     if (
         applet_id == "62768ff20a62aa1056078093"
-        and applet["schema:version"][0]["@value"] == "1.0.4"
+        and applet_ld["schema:version"][0]["@value"] == "1.0.4"
     ):
-        applet["reprolib:terms/order"][0]["@list"].pop(4)
+        applet_ld["reprolib:terms/order"][0]["@list"].pop(4)
 
     no_ids_flanker_map = {
         "<<<<<": "left-con",
@@ -114,7 +114,7 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
         "-->--": "right-neut",
     }
     if applet_id in broken_applet_abtrails:
-        for _activity in applet["reprolib:terms/order"][0]["@list"]:
+        for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
             if _activity["@id"] == "Flanker_360":
                 for _item in _activity["reprolib:terms/order"][0]["@list"]:
                     if "reprolib:terms/inputs" in _item:
@@ -278,7 +278,10 @@ def patch_broken_applet_versions(applet_id: str, applet: dict) -> dict:
                                 ],
                             }
                         )
-    return applet
+
+    applet_ld = patch_prize_activity(applet_id, applet_ld)
+
+    return applet_ld
 
 
 def patch_broken_applets(
@@ -632,7 +635,21 @@ def patch_broken_applets(
                             }
                         )
 
+    applet_ld = patch_prize_activity(applet_id, applet_ld)
+
     return applet_ld, applet_mongo
+
+
+def patch_prize_activity(applet_id: str, applet_ld: dict) -> dict:
+    # Prize activity
+    if applet_id == '613f7a206401599f0e495e0a':
+        for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            if _activity["@id"] == "PrizeActivity":
+                for _item in _activity["reprolib:terms/order"][0]["@list"]:
+                    if _item['@id'] == 'PrizeSelection':
+                        _item['reprolib:terms/inputType'][0]['@value'] = 'radio'
+
+    return applet_ld
 
 
 def fix_spacing_in_report(_report: dict) -> dict:
@@ -1003,7 +1020,7 @@ class Mongo:
 
     async def get_applet(self, applet_id: str) -> dict:
         applet = Applet().findOne({"_id": ObjectId(applet_id)})
-        if "applet" not in applet["meta"] or applet["meta"]["applet"] == {}:
+        if not applet or "applet" not in applet["meta"] or applet["meta"]["applet"] == {}:
             raise EmptyAppletException()
 
         ld_request_schema = self.get_applet_repro_schema(applet)
