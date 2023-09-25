@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from typing import Any
 
 from bson import ObjectId
@@ -77,18 +78,24 @@ class AnswersMigrateFacade:
                                 session=regular_session,
                                 response=mongo_answer,
                             )
-                            respondent_id = mongoid_to_uuid(
-                                mongo_answer["meta"]["subject"].get("@id")
-                            )
-                            if not await self.answer_migrate_service.is_respondent_exist(
-                                session=regular_session,
-                                respondent_id=respondent_id,
-                            ):
-                                anonymous_respondent = await MigrateUsersMCRUD(
-                                    regular_session
-                                ).get_anonymous_respondent()
-                                respondent_id = anonymous_respondent.id
+                            respondent_mongo_id = Profile().findOne(
+                                {
+                                    "_id": mongo_answer["meta"]["subject"].get(
+                                        "@id"
+                                    )
+                                }
+                            )["userId"]
 
+                            respondent_id = (
+                                mongoid_to_uuid(respondent_mongo_id)
+                                if respondent_mongo_id
+                                else (
+                                    await MigrateUsersMCRUD(
+                                        regular_session
+                                    ).get_anonymous_respondent()
+                                ).id
+                            )
+                            if not respondent_mongo_id:
                                 applet_owner = await UserAppletAccessCRUD(
                                     regular_session
                                 ).get_applet_owner(applet_id)
@@ -100,6 +107,7 @@ class AnswersMigrateFacade:
                                 ).add_role_for_anonymous_respondent()
 
                                 self.anonymous_respondent_answers += 1
+
                             answer = await self.answer_migrate_service.create_answer(
                                 session=regular_or_arbitary_session,
                                 mongo_answer=mongo_answer,
