@@ -49,22 +49,23 @@ git clone git@github.com:ChildMindInstitute/mindlogger-backend-refactor.git
 
 
 #### 2.1 Description 📜
-| Key | Default value                                                  | Description                                                                                                                                                                   |
-| --- |----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| PYTHONPATH | src/ | This variable makes all folders inside `src/` reachable in a runtime. </br> ***NOTE:*** You don't need to do this if you use Docker as far as it is hardcoded in `Dockerfile` |
-| DATABASE__HOST | postgres | Database Host |
-| DATABASE__USER | postgres | User name for Postgresql Database user |
-| DATABASE__PASSWORD | postgres | Password for Postgresql Database user |
-| DATABASE__DB | mindlogger_backend | Database name |
-| CORS__ALLOW_ORIGINS | `*` | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000` |
-| CORS__ALLOW_CREDENTIALS | true | Set the `Access-Control-Allow-Credentials` header |
-| CORS__ALLOW_METHODS | `*` | Set the `Access-Control-Allow-Methods` header |
-| CORS__ALLOW_HEADERS | `*` | Set the `Access-Control-Allow-Headers` header |
-| AUTHENTICATION__SECRET_KEY | e51bcf5f4cb8550ff3f6a8bb4dfe112a | Access token's salt |
-| AUTHENTICATION__REFRESH_SECRET_KEY | 5da342d54ed5659f123cdd1cefe439c5aaf7e317a0aba1405375c07d32e097cc | Refresh token salt |
-| AUTHENTICATION__ALGORITHM | HS256 | The JWT's algorithm |
-| AUTHENTICATION__ACCESS_TOKEN_EXPIRATION_TIME | 30 | Time in minutes after which the access token will stop working |
-| AUTHENTICATION__REFRESH_TOKEN_EXPIRATION_TIME | 30 | Time in minutes after which the refresh token will stop working |
+| Key | Default value                                                    | Description                                                                                                                                                                   |
+| --- |------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| PYTHONPATH | src/                                                             | This variable makes all folders inside `src/` reachable in a runtime. </br> ***NOTE:*** You don't need to do this if you use Docker as far as it is hardcoded in `Dockerfile` |
+| DATABASE__HOST | postgres                                                         | Database Host                                                                                                                                                                 |
+| DATABASE__USER | postgres                                                         | User name for Postgresql Database user                                                                                                                                        |
+| DATABASE__PASSWORD | postgres                                                         | Password for Postgresql Database user                                                                                                                                         |
+| DATABASE__DB | mindlogger_backend                                               | Database name                                                                                                                                                                 |
+| CORS__ALLOW_ORIGINS | `*`                                                              | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000`                                        |
+| CORS__ALLOW_CREDENTIALS | true                                                             | Set the `Access-Control-Allow-Credentials` header                                                                                                                             |
+| CORS__ALLOW_METHODS | `*`                                                              | Set the `Access-Control-Allow-Methods` header                                                                                                                                 |
+| CORS__ALLOW_HEADERS | `*`                                                              | Set the `Access-Control-Allow-Headers` header                                                                                                                                 |
+| AUTHENTICATION__SECRET_KEY | e51bcf5f4cb8550ff3f6a8bb4dfe112a                                 | Access token's salt                                                                                                                                                           |
+| AUTHENTICATION__REFRESH_SECRET_KEY | 5da342d54ed5659f123cdd1cefe439c5aaf7e317a0aba1405375c07d32e097cc | Refresh token salt                                                                                                                                                            |
+| AUTHENTICATION__ALGORITHM | HS256                                                            | The JWT's algorithm                                                                                                                                                           |
+| AUTHENTICATION__ACCESS_TOKEN_EXPIRATION_TIME | 30                                                               | Time in minutes after which the access token will stop working                                                                                                                |
+| AUTHENTICATION__REFRESH_TOKEN_EXPIRATION_TIME | 30                                                               | Time in minutes after which the refresh token will stop working                                                                                                               |
+| ADMIN_DOMAIN | -                                                                | Admin panel domain                                                                                                                                                            |
 
 ##### ✋ Mandatory:
 

@@ -2,6 +2,7 @@ import asyncio
 import base64
 import datetime
 import json
+import os
 import uuid
 from collections import defaultdict
 from json import JSONDecodeError
@@ -916,6 +917,7 @@ class AnswerService:
 
     @staticmethod
     async def send_alert_mail(users: List[UserSchema]):
+        domain = os.environ.get("ADMIN_DOMAIN", "")
         mail_service = MailingService()
         schemas = pydantic.parse_obj_as(List[User], users)
         email_list = [schema.email_encrypted for schema in schemas]
@@ -923,7 +925,9 @@ class AnswerService:
             MessageSchema(
                 recipients=email_list,
                 subject="Response alert",
-                body=mail_service.get_template(path="response_alert_en"),
+                body=mail_service.get_template(
+                    path="response_alert_en", domain=domain
+                ),
             )
         )
 
