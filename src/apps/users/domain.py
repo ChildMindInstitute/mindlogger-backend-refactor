@@ -106,6 +106,10 @@ class PasswordRecoveryRequest(InternalModel):
 
     email: EmailStr
 
+    @root_validator
+    def email_validation(cls, values):
+        return lowercase_email(values)
+
 
 class PasswordRecoveryInfo(InternalModel):
     """This is a password recovery representation

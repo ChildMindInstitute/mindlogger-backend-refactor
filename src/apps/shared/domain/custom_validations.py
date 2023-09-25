@@ -13,6 +13,7 @@ __all__ = [
     "validate_audio",
     "extract_history_version",
     "validate_uuid",
+    "lowercase_email",
 ]
 
 from apps.shared.exception import ValidationError
