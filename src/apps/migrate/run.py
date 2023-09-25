@@ -410,7 +410,7 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
     # Add default (AlwayAvalible) events to activities and flows
     # await add_default_evets(postgres)
     # Migrate events
-    await migrate_alerts(mongo, postgres)
+    await migrate_alerts(applets_ids, mongo, postgres)
 
     # Close connections
     mongo.close_connection()
