@@ -42,11 +42,13 @@ class AnswersMigrateFacade:
         regular_session = session_manager.get_session()
 
         applets_ids = await self._get_allowed_applets_ids(workspace, applets)
-        applets_ids = await self._wipe_answers_data(
+        applets_ids = [mongoid_to_uuid(applet_id) for applet_id in applets_ids]
+
+        await self._wipe_answers_data(
             regular_session, applets_ids
         )
 
-        async for answer_with_files in self._collect_migratable_answers():
+        async for answer_with_files in self._collect_migratable_answers(applets_ids):
             self.total_answers += 1
             query = answer_with_files["query"]
             mongo_answer = answer_with_files["answer"]
@@ -164,7 +166,7 @@ class AnswersMigrateFacade:
                 await self._get_regular_or_arbitary_session(session, applet_id)
             )
             migrate_crud = AnswersMigrateCRUD(regular_or_arbitary_session)
-            answer_id = await migrate_crud.get_answer_id(applets_ids)
+            answer_id = await migrate_crud.get_answer_id(applet_id)
             await migrate_crud.delete_answer(answer_id)
             await migrate_crud.delete_note(answer_id)
 
@@ -192,7 +194,7 @@ class AnswersMigrateFacade:
             return arbitary_session
         return session
 
-    async def _collect_migratable_answers(self):
+    async def _collect_migratable_answers(self, applets_ids: list[uuid.UUID]):
         migratable_data_count = 0
 
         regular_session = session_manager.get_session()
@@ -200,7 +202,7 @@ class AnswersMigrateFacade:
         async with atomic(regular_session):
             answers_migration_params = await AnswersMigrateCRUD(
                 regular_session
-            ).get_answers_migration_params()
+            ).get_answers_migration_params(applets_ids)
 
         for answer_migration_params in answers_migration_params:
             answer_migration_queries = self.mongo.get_answer_migration_queries(
