@@ -642,12 +642,14 @@ def patch_broken_applets(
 
 def patch_prize_activity(applet_id: str, applet_ld: dict) -> dict:
     # Prize activity
-    if applet_id == '613f7a206401599f0e495e0a':
+    if applet_id == "613f7a206401599f0e495e0a":
         for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
             if _activity["@id"] == "PrizeActivity":
                 for _item in _activity["reprolib:terms/order"][0]["@list"]:
-                    if _item['@id'] == 'PrizeSelection':
-                        _item['reprolib:terms/inputType'][0]['@value'] = 'radio'
+                    if _item["@id"] == "PrizeSelection":
+                        _item["reprolib:terms/inputType"][0][
+                            "@value"
+                        ] = "radio"
 
     return applet_ld
 
@@ -1020,7 +1022,11 @@ class Mongo:
 
     async def get_applet(self, applet_id: str) -> dict:
         applet = Applet().findOne({"_id": ObjectId(applet_id)})
-        if not applet or "applet" not in applet["meta"] or applet["meta"]["applet"] == {}:
+        if (
+            not applet
+            or "applet" not in applet["meta"]
+            or applet["meta"]["applet"] == {}
+        ):
             raise EmptyAppletException()
 
         ld_request_schema = self.get_applet_repro_schema(applet)
