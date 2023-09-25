@@ -281,7 +281,7 @@ def migrate_library(applet_ids: list[ObjectId] | None, mongo, postgres):
         if success:
             theme_count += 1
             postgres.add_theme_to_applet(theme.applet_id, theme.id)
-
+    postgres.apply_default_theme()
     migration_log.warning(f"[LIBRARY] Migrated {lib_count}")
     migration_log.warning(f"[THEME] Migrated {theme_count}")
 
