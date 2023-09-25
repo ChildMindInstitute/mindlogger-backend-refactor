@@ -16,9 +16,10 @@ from apps.migrate.answers.crud import AnswersMigrateCRUD, MigrateUsersMCRUD
 from apps.migrate.answers.user_applet_access import (
     MigrateUserAppletAccessService,
 )
+from apps.migrate.run import get_applets_ids
 
 from apps.migrate.services.mongo import Mongo
-from apps.migrate.utilities import mongoid_to_uuid
+from apps.migrate.utilities import mongoid_to_uuid, get_arguments, intersection
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from infrastructure.database import session_manager, atomic
 
@@ -37,8 +38,13 @@ class AnswersMigrateFacade:
         self.answer_item_migrate_service = AnswerItemMigrationService()
         self.answer_note_migrate_service = AnswerNoteMigrateService()
 
-    async def migrate(self):
+    async def migrate(self, workspace, applets):
         regular_session = session_manager.get_session()
+
+        applets_ids = await self._get_allowed_applets_ids(workspace, applets)
+        applets_ids = await self._wipe_answers_data(
+            regular_session, applets_ids
+        )
 
         async for answer_with_files in self._collect_migratable_answers():
             self.total_answers += 1
@@ -50,6 +56,9 @@ class AnswersMigrateFacade:
             applet_id = mongoid_to_uuid(
                 str(mongo_answer["meta"]["applet"]["@id"])
             )
+
+            if applet_id not in applets_ids:
+                continue
 
             try:
                 regular_or_arbitary_session = (
@@ -148,6 +157,29 @@ class AnswersMigrateFacade:
         self._log_migration_results()
 
         self.mongo.close_connection()
+
+    async def _wipe_answers_data(self, session, applets_ids):
+        for applet_id in applets_ids:
+            regular_or_arbitary_session = (
+                await self._get_regular_or_arbitary_session(session, applet_id)
+            )
+            migrate_crud = AnswersMigrateCRUD(regular_or_arbitary_session)
+            answer_id = await migrate_crud.get_answer_id(applets_ids)
+            await migrate_crud.delete_answer(answer_id)
+            await migrate_crud.delete_note(answer_id)
+
+    async def _get_allowed_applets_ids(self, workspace_id, applets_ids):
+        allowed_applets_ids = await get_applets_ids()
+
+        if workspace_id:
+            applets_ids = intersection(
+                self.mongo.get_applets_by_workspace(workspace_id),
+                allowed_applets_ids,
+            )
+        elif not applets_ids:
+            applets_ids = allowed_applets_ids
+
+        return applets_ids
 
     async def _get_regular_or_arbitary_session(self, session, applet_id):
         arbitrary_url = await get_arbitrary_info(applet_id, session)
@@ -260,4 +292,5 @@ class AnswersMigrateFacade:
 
 
 if __name__ == "__main__":
-    asyncio.run(AnswersMigrateFacade().migrate())
+    workspace, applets = get_arguments()
+    asyncio.run(AnswersMigrateFacade().migrate(workspace, applets))
