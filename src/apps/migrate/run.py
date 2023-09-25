@@ -27,7 +27,12 @@ from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.item import Item
 
 
-from apps.migrate.utilities import migration_log, mongoid_to_uuid, intersection
+from apps.migrate.utilities import (
+    migration_log,
+    mongoid_to_uuid,
+    intersection,
+    get_arguments,
+)
 from infrastructure.database import session_manager
 
 
@@ -466,16 +471,5 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-w", "--workspace", type=str, required=False)
-    parser.add_argument("-a", "--applet", type=str, required=False)
-    args = parser.parse_args()
-    workspace = (
-        args.workspace if "workspace" in args and args.workspace else None
-    )
-    applets = (
-        args.applet.split(",") if "applet" in args and args.applet else None
-    )
-    if workspace and applets:
-        raise Exception("Specify either workspace or applets arg")
+    workspace, applets = get_arguments()
     asyncio.run(main(workspace, applets))

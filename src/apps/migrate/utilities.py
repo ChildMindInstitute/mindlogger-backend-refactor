@@ -1,3 +1,4 @@
+import argparse
 import json
 import sys
 import uuid
@@ -48,3 +49,19 @@ class EncUUID(json.JSONEncoder):
 
 
 migration_log = get_logger("Migration")
+
+
+def get_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-w", "--workspace", type=str, required=False)
+    parser.add_argument("-a", "--applet", type=str, required=False)
+    args = parser.parse_args()
+    workspace = (
+        args.workspace if "workspace" in args and args.workspace else None
+    )
+    applets = (
+        args.applet.split(",") if "applet" in args and args.applet else None
+    )
+    if workspace and applets:
+        raise Exception("Specify either workspace or applets arg")
+    return workspace, applets
