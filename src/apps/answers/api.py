@@ -62,10 +62,10 @@ async def create_answer(
         await CheckAccessService(session, user.id).check_answer_create_access(
             schema.applet_id
         )
+        service = AnswerService(session, user.id, answer_session)
         async with atomic(answer_session):
-            return await AnswerService(
-                session, user.id, answer_session
-            ).create_answer(schema)
+            answer = await service.create_answer(schema)
+        await service.create_report_from_answer(answer)
 
 
 async def create_anonymous_answer(
@@ -77,12 +77,14 @@ async def create_anonymous_answer(
         anonymous_respondent = await UsersCRUD(
             session
         ).get_anonymous_respondent()
+        assert anonymous_respondent
+
+        service = AnswerService(
+            session, anonymous_respondent.id, answer_session
+        )
         async with atomic(answer_session):
-            await AnswerService(
-                session=session,
-                user_id=anonymous_respondent.id,  # type: ignore
-                arbitrary_session=answer_session,
-            ).create_answer(schema)
+            answer = await service.create_answer(schema)
+        await service.create_report_from_answer(answer)
     return
 
 

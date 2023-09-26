@@ -107,21 +107,21 @@ class AnswerService:
 
     async def create_answer(self, activity_answer: AppletAnswerCreate):
         if self.user_id:
-            await self._create_respondent_answer(activity_answer)
+            return await self._create_respondent_answer(activity_answer)
         else:
-            await self._create_anonymous_answer(activity_answer)
+            return await self._create_anonymous_answer(activity_answer)
 
     async def _create_respondent_answer(
         self, activity_answer: AppletAnswerCreate
     ):
         await self._validate_respondent_answer(activity_answer)
-        await self._create_answer(activity_answer)
+        return await self._create_answer(activity_answer)
 
     async def _create_anonymous_answer(
         self, activity_answer: AppletAnswerCreate
     ):
         await self._validate_anonymous_answer(activity_answer)
-        await self._create_answer(activity_answer)
+        return await self._create_answer(activity_answer)
 
     async def _validate_respondent_answer(
         self, activity_answer: AppletAnswerCreate
@@ -212,7 +212,6 @@ class AnswerService:
         )
 
         await AnswerItemsCRUD(self.answer_session).create(item_answer)
-        await self._create_report_from_answer(answer)
         await self._create_alerts(
             answer.id,
             answer.applet_id,
@@ -220,8 +219,9 @@ class AnswerService:
             answer.version,
             applet_answer.alerts,
         )
+        return answer
 
-    async def _create_report_from_answer(self, answer: AnswerSchema):
+    async def create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(self.session)
         is_reportable = await service.is_reportable(answer)
         if not is_reportable:
