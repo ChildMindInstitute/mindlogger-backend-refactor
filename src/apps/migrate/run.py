@@ -19,6 +19,10 @@ from apps.migrate.services.event_service import (
 from apps.migrate.services.default_event_service import (
     DefaultEventAddingService,
 )
+from apps.migrate.services.alert_service import (
+    MongoAlert,
+    AlertMigrationService,
+)
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.item import Item
 
@@ -373,6 +377,37 @@ async def add_default_evets(postgres: Postgres):
     )
 
 
+async def migrate_alerts(
+    applet_ids: list[ObjectId] | None, mongo: Mongo, postgres: Postgres
+):
+    alerts_collection = mongo.db["responseAlerts"]
+    applet_profile_collection = mongo.db["appletProfile"]
+    session = session_manager.get_session()
+
+    query = {}
+    if applet_ids:
+        query["appletId"] = {"$in": applet_ids}
+
+    alerts: list = []
+    for alert in alerts_collection.find(query):
+        applet_profile = applet_profile_collection.find_one(
+            {"_id": alert["profileId"]}
+        )
+        if applet_profile and applet_profile.get("userId"):
+            alert["user_id"] = applet_profile["userId"]
+            alerts.append(MongoAlert.parse_obj(alert))
+        else:
+            migration_log.warning(
+                f"[ALERTS] Skipped one of alerts because can't get userId"
+            )
+
+    migration_log.warning(
+        f"[ALERTS] Total number of alerts in mongo for {len(applet_ids) if applet_ids else 'all'} applets: {len(alerts)}"
+    )
+
+    await AlertMigrationService(session, alerts).run_alerts_migration()
+
+
 async def main(workspace_id: str | None, applets_ids: list[str] | None):
     mongo = Mongo()
     postgres = Postgres()
@@ -422,6 +457,8 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
 
     # Add default (AlwayAvalible) events to activities and flows
     # await add_default_evets(postgres)
+    # Migrate events
+    await migrate_alerts(applets_ids, mongo, postgres)
 
     # Close connections
     mongo.close_connection()
