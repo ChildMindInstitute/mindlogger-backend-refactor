@@ -580,11 +580,12 @@ class Postgres:
                 tertiary_color, 
                 public, 
                 allow_rename, 
+                is_default,
                 migrated_date, 
                 migrated_updated
             )
             VALUES
-            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         return self.exec_escaped(sql, theme.values(), "[THEME]")
 

@@ -14,7 +14,8 @@
       "tertiary_color": "white",
       "public": false,
       "allow_rename": true,
-      "creator_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+      "creator_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "is_default": true
     }
   },
   {

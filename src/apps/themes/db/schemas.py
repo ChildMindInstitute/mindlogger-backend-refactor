@@ -18,3 +18,4 @@ class ThemeSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     small_logo = Column(Text())
+    is_default = Column(Boolean(), default=False, nullable=False)
