@@ -72,8 +72,8 @@ class AlertMigrationService:
     async def _create_alert(self, alert: MongoAlert):
         alert_data: dict = {}
 
-        alert_data["user_id"] = mongoid_to_uuid(alert.user_id)
-        alert_data["respondent_id"] = mongoid_to_uuid(alert.profileId)
+        alert_data["user_id"] = mongoid_to_uuid(alert.reviewerId)
+        alert_data["respondent_id"] = mongoid_to_uuid(alert.user_id)
         alert_data["is_watched"] = alert.viewed
         alert_data["applet_id"] = mongoid_to_uuid(alert.appletId)
         activity_id = alert.itemSchema.split("/")[0]
