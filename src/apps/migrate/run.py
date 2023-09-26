@@ -343,6 +343,7 @@ async def migrate_alerts(
     applet_ids: list[ObjectId] | None, mongo: Mongo, postgres: Postgres
 ):
     alerts_collection = mongo.db["responseAlerts"]
+    applet_profile_collection = mongo.db["appletProfile"]
     session = session_manager.get_session()
 
     query = {}
@@ -351,7 +352,16 @@ async def migrate_alerts(
 
     alerts: list = []
     for alert in alerts_collection.find(query):
-        alerts.append(MongoAlert.parse_obj(alert))
+        applet_profile = applet_profile_collection.find_one(
+            {"_id": alert["profileId"]}
+        )
+        if applet_profile and applet_profile.get("userId"):
+            alert["user_id"] = applet_profile["userId"]
+            alerts.append(MongoAlert.parse_obj(alert))
+        else:
+            migration_log.warning(
+                f"[ALERTS] Skipped one of alerts because can't get userId"
+            )
 
     migration_log.warning(
         f"[ALERTS] Total number of alerts in mongo for {len(applet_ids) if applet_ids else 'all'} applets: {len(alerts)}"
