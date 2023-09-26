@@ -73,4 +73,5 @@ async def create_report(
         traceback.print_exception(e)
         sentry_sdk.capture_exception(e)
     finally:
-        await session_maker.remove()
+        if not isinstance(session_maker, AsyncSession):
+            await session_maker.remove()

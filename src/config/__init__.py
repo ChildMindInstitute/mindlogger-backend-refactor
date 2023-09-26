@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     root_dir: Path
     apps_dir: Path
     locale_dir: Path
+    default_language: str = "en"
 
     debug: bool = True
     commit_id: str = "Not assigned"

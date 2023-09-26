@@ -11,6 +11,7 @@ from apps.activities.domain.activity_full import (
 from apps.activities.domain.activity_history import (
     ActivityHistoryExport,
     ActivityHistoryFull,
+    ActivityHistoryTranslatedExport,
 )
 from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.scores_reports import SubscaleSetting
@@ -18,6 +19,7 @@ from apps.activity_flows.domain.flow_full import FlowFull
 from apps.applets.domain.base import AppletBaseInfo
 from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
+from apps.shared.locale import I18N
 
 
 class Text(InternalModel):
@@ -323,12 +325,27 @@ class AnswerExport(InternalModel):
     total_answers: int = 0
 
 
+class PublicAnswerExportTranslated(PublicModel):
+    answers: list[RespondentAnswerDataPublic] = Field(default_factory=list)
+    activities: list[ActivityHistoryTranslatedExport] = Field(
+        default_factory=list
+    )
+
+
 class PublicAnswerExport(PublicModel):
     answers: list[RespondentAnswerDataPublic] = Field(default_factory=list)
     activities: list[ActivityHistoryExport] = Field(default_factory=list)
 
+    def translate(self, i18n: I18N) -> PublicAnswerExportTranslated:
+        return PublicAnswerExportTranslated(
+            answers=self.answers,
+            activities=[
+                activity.translate(i18n) for activity in self.activities
+            ],
+        )
 
-class PublicAnswerExportResponse(Response[PublicAnswerExport]):
+
+class PublicAnswerExportResponse(Response[PublicAnswerExportTranslated]):
     count: int = 0
 
 
