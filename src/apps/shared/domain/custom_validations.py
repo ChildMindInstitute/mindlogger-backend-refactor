@@ -130,3 +130,9 @@ def lowercase_email(values):
     if email:
         values["email"] = email.lower()
     return values
+
+
+def translate(val):
+    lang = "en"
+    if isinstance(val, dict):
+        return val.get(lang, None)

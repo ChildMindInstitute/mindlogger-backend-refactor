@@ -3,14 +3,19 @@ import uuid
 
 from pydantic import Field, validator
 
+from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_full import (
     ActivityItemHistoryFull,
     PublicActivityFull,
     PublicActivityItemFull,
 )
+from apps.activities.domain.activity_item import (
+    ActivityItemSingleLanguageDetailPublic,
+)
 from apps.activities.domain.activity_item_history import (
     ActivityItemHistoryChange,
 )
+from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.activities.domain.scores_reports import (
     ScoresAndReports,
     SubscaleSetting,
@@ -25,6 +30,8 @@ __all__ = [
     "ActivityHistoryExport",
     "ActivityHistoryFull",
 ]
+
+from apps.shared.locale import I18N
 
 
 class ActivityHistory(InternalModel):
@@ -70,4 +77,30 @@ class ActivityHistoryExport(PublicActivityFull):
 
     _version = validator("version", always=True, allow_reuse=True)(
         extract_history_version
+    )
+
+    def translate(self, i18n: I18N) -> "ActivityHistoryTranslatedExport":
+        as_dict = self.dict(by_alias=False)
+        as_dict["description"] = i18n.translate(self.description)
+
+        items = []
+        for item in self.items:
+            itms_dict = item.dict(by_alias=False)
+            itms_dict["question"] = i18n.translate(item.question)
+            items.append(ActivityItemSingleLanguageDetailPublic(**itms_dict))
+        as_dict["items"] = items
+
+        return ActivityHistoryTranslatedExport(**as_dict)
+
+
+class ActivityHistoryTranslatedExport(ActivityBase, PublicModel):
+    id: uuid.UUID
+    id_version: str
+    version: str | None = None
+    description: str  # type: ignore[assignment]
+    created_at: datetime.datetime
+    is_performance_task: bool = False
+    performance_task_type: PerformanceTaskType | None = None
+    items: list[ActivityItemSingleLanguageDetailPublic] = Field(
+        default_factory=list
     )

@@ -39,7 +39,9 @@ from apps.answers.filters import (
 from apps.answers.service import AnswerService
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
+from apps.shared.deps import get_i18n
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.locale import I18N
 from apps.shared.query_params import (
     BaseQueryParams,
     QueryParams,
@@ -444,6 +446,7 @@ async def applet_answers_export(
     activities_last_version: bool = False,
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
+    i18n: I18N = Depends(get_i18n),
 ):
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answers_export_access(
@@ -467,7 +470,8 @@ async def applet_answers_export(
             ).get_full()
             data.activities = activities
     return PublicAnswerExportResponse(
-        result=PublicAnswerExport.from_orm(data), count=total_answers
+        result=PublicAnswerExport.from_orm(data).translate(i18n),
+        count=total_answers,
     )
 
 
