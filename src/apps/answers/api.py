@@ -443,7 +443,9 @@ async def applet_answers_export(
     query_params: QueryParams = Depends(
         parse_query_params(AnswerExportFilters)
     ),
-    activities_last_version: bool = False,
+    activities_last_version: bool = Query(
+        False, alias="activitiesLastVersion"
+    ),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
     i18n: I18N = Depends(get_i18n),
