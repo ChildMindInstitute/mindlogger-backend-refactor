@@ -10,6 +10,7 @@ from bson.objectid import ObjectId
 
 from Cryptodome.Cipher import AES
 from pymongo import ASCENDING, MongoClient
+from pymongo.database import Database
 from sqlalchemy.types import String
 from sqlalchemy_utils.types.encrypted.encrypted_type import StringEncryptedType
 
@@ -1116,14 +1117,36 @@ class Mongo:
             )
         return converted
 
+    mongo_arbitrary_db_cache = {}
+
+    def get_main_or_arbitrary_db(self, applet_id: ObjectId) -> Database:
+        def resolve_arbitrary_client(profile: dict):
+            if "db" in profile:
+                return MongoClient(profile["db"])
+
+        profile = self.db["accountProfile"].find_one(
+            {"applets.owner": applet_id}
+        )
+        profile_id = str(profile["_id"])
+        if profile_id in self.mongo_arbitrary_db_cache:
+            client = self.mongo_arbitrary_db_cache[profile_id]
+        elif _client := resolve_arbitrary_client(profile):
+            self.mongo_arbitrary_db_cache[profile_id] = _client
+            client = _client
+        else:
+            client = self.client
+
+        return client.get_database()
+
     def get_answer_migration_queries(self, **kwargs):
+        db = self.get_main_or_arbitrary_db(kwargs["applet_id"])
         query = {
             "meta.responses": {"$exists": True},
             "meta.activity.@id": kwargs["activity_id"],
             "meta.applet.@id": kwargs["applet_id"],
             "meta.applet.version": kwargs["version"],
         }
-        item_collection = self.db["item"]
+        item_collection = db["item"]
         creators_ids = item_collection.find(query).distinct("creatorId")
         result = []
         for creator_id in creators_ids:
@@ -1136,9 +1159,13 @@ class Mongo:
         *,
         answer_migration_queries,
     ):
-        item_collection = self.db["item"]
-
         for query in answer_migration_queries:
+            db = (
+                self.get_main_or_arbitrary_db(query["meta.applet.@id"])
+                if "meta.applet.@id" in query
+                else self.db
+            )
+            item_collection = db["item"]
             items = item_collection.find(query, sort=[("created", ASCENDING)])
             del query["meta.responses"]
             answer_with_files = dict()

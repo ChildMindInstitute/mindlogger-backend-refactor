@@ -35,6 +35,11 @@ def upgrade() -> None:
         sa.Column("migrated_date", sa.DateTime(), nullable=True),
         sa.Column("migrated_updated", sa.DateTime(), nullable=True),
         sa.Column("is_flow_completed", sa.Boolean(), nullable=True),
+        sa.Column(
+            "migrated_data",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=True,
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
 
@@ -81,6 +86,11 @@ def upgrade() -> None:
         sa.Column("local_end_time", sa.Time(), nullable=True),
         sa.Column("migrated_date", sa.DateTime(), nullable=True),
         sa.Column("migrated_updated", sa.DateTime(), nullable=True),
+        sa.Column(
+            "migrated_data",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=True,
+        ),
         sa.ForeignKeyConstraint(
             ["answer_id"],
             ["answers.id"],

@@ -44,11 +44,11 @@ class AnswersMigrateFacade:
         applets_ids = await self._get_allowed_applets_ids(workspace, applets)
         applets_ids = [mongoid_to_uuid(applet_id) for applet_id in applets_ids]
 
-        await self._wipe_answers_data(
-            regular_session, applets_ids
-        )
+        await self._wipe_answers_data(regular_session, applets_ids)
 
-        async for answer_with_files in self._collect_migratable_answers(applets_ids):
+        async for answer_with_files in self._collect_migratable_answers(
+            applets_ids
+        ):
             self.total_answers += 1
             query = answer_with_files["query"]
             mongo_answer = answer_with_files["answer"]
@@ -152,23 +152,31 @@ class AnswersMigrateFacade:
                 )
                 continue
 
-        await self._migrate_answers_items(
-            regular_session, self.answer_items_data
-        )
+        async with atomic(regular_session):
+            await self._migrate_answers_items(
+                regular_session, self.answer_items_data
+            )
 
         self._log_migration_results()
 
         self.mongo.close_connection()
 
     async def _wipe_answers_data(self, session, applets_ids):
+        print(f"Wiping responses of {len(applets_ids)} applet(s)")
         for applet_id in applets_ids:
             regular_or_arbitary_session = (
                 await self._get_regular_or_arbitary_session(session, applet_id)
             )
-            migrate_crud = AnswersMigrateCRUD(regular_or_arbitary_session)
-            answer_id = await migrate_crud.get_answer_id(applet_id)
-            await migrate_crud.delete_answer(answer_id)
-            await migrate_crud.delete_note(answer_id)
+            async with atomic(regular_or_arbitary_session):
+                migrate_crud = AnswersMigrateCRUD(regular_or_arbitary_session)
+                answers_ids = await migrate_crud.get_answers_ids(applet_id)
+                for answer_id in answers_ids:
+                    await migrate_crud.delete_answer(answer_id)
+
+            async with atomic(session):
+                migrate_crud = AnswersMigrateCRUD(session)
+                for answer_id in answers_ids:
+                    await migrate_crud.delete_note(answer_id)
 
     async def _get_allowed_applets_ids(self, workspace_id, applets_ids):
         allowed_applets_ids = await get_applets_ids()
@@ -243,7 +251,7 @@ class AnswersMigrateFacade:
             try:
                 async with atomic(regular_or_arbitary_session):
                     await self.answer_item_migrate_service.create_item(
-                        session=regular_session,
+                        session=regular_or_arbitary_session,
                         **answer_item_data,
                     )
             except Exception as e:
