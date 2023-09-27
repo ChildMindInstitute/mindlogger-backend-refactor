@@ -298,7 +298,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = (
             select(
                 UserSchema.id,
-                UserSchema.email,
+                UserSchema.email_encrypted.label("email"),
                 UserAppletAccessSchema.respondent_secret_id.label("secret_id"),  # type: ignore[attr-defined] # noqa: E501
                 has_manager_role.label("is_manager"),
             )
