@@ -77,3 +77,6 @@ class ThemeService:
         )
 
         return PublicTheme(**theme.dict())
+
+    async def get_default(self) -> Theme:
+        return await ThemesCRUD(self.session).get_default()

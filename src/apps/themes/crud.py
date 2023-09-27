@@ -158,3 +158,10 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().one_or_none()
+
+    async def get_default(self) -> Theme:
+        query: Query = select(ThemeSchema)
+        query = query.where(ThemeSchema.is_default.is_(True))
+        query = query.limit(1)
+        db_result = await self._execute(query)
+        return db_result.scalars().first()

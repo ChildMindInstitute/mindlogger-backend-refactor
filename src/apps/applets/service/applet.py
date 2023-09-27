@@ -144,6 +144,11 @@ class AppletService:
     async def _create(self, create_data: AppletCreate) -> AppletFull:
         applet_id = uuid.uuid4()
         await self._validate_applet_name(create_data.display_name)
+        if not create_data.theme_id:
+            theme = await ThemeService(
+                self.session, self.user_id
+            ).get_default()
+            create_data.theme_id = theme.id
         schema = await AppletsCRUD(self.session).save(
             AppletSchema(
                 id=applet_id,

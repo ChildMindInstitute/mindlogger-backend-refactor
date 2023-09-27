@@ -51,6 +51,7 @@ class ThemeDao:
     tertiary_color: str
     public: bool
     allow_rename: bool
+    is_default: bool
     created_at: datetime.datetime
     updated_at: datetime.datetime
     migrated_date: datetime.datetime = datetime.datetime.utcnow()
@@ -63,6 +64,16 @@ class ThemeDao:
     def __eq__(self, other):
         return hash(other) == hash(self)
 
+    def get_name(self) -> str:
+        if self.is_default():
+            return "Default"
+        return self.name
+
+    def is_default(self) -> bool:
+        if self.name.lower() == "mindlogger":
+            return True
+        return False
+
     def values(self):
         return (
             str(self.id),
@@ -70,7 +81,7 @@ class ThemeDao:
             self.created_at,
             self.updated_at,
             self.is_deleted,
-            self.name,
+            self.get_name(),
             self.logo,
             self.small_logo,
             self.background_image,
@@ -79,6 +90,7 @@ class ThemeDao:
             self.tertiary_color,
             self.public,
             self.allow_rename,
+            self.is_default(),
             self.migrated_date,
             self.migrated_updated,
         )
