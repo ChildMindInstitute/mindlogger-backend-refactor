@@ -23,6 +23,15 @@ from apps.migrate.utilities import mongoid_to_uuid, get_arguments, intersection
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from infrastructure.database import session_manager, atomic
 
+from apps.activities.crud import (
+    ActivityHistoriesCRUD,
+    ActivityItemHistoriesCRUD,
+)
+from apps.activities.db.schemas import (
+    ActivityHistorySchema,
+    ActivityItemHistorySchema,
+)
+
 
 class AnswersMigrateFacade:
     anonymous_respondent_answers = 0
@@ -79,6 +88,10 @@ class AnswersMigrateFacade:
                             answer_id = mongoid_to_uuid(
                                 mongo_answer["meta"]["reviewing"]["responseId"]
                             )
+                            await self._create_reviewer_assessment(
+                                regular_session, mongo_answer
+                            )
+
                         else:
                             if await self.answer_migrate_service.is_answer_migrated(
                                 session=regular_or_arbitary_session,
@@ -299,6 +312,60 @@ class AnswersMigrateFacade:
         print(
             f"Anonymous users answers count: {self.anonymous_respondent_answers}"
         )
+
+    async def _create_reviewer_assessment(self, regular_session, mongo_answer):
+        # check if reviewer assessment activity for this answers applet version exists
+        original_answer = self.mongo.db["item"].find_one(
+            {"_id": mongo_answer["meta"]["reviewing"]["responseId"]}
+        )
+
+        original_applet_id = mongoid_to_uuid(
+            original_answer["meta"]["applet"]["@id"]
+        )
+        original_applet_version = original_answer["meta"]["applet"]["version"]
+
+        reviewer_assessment_activity = await ActivityHistoriesCRUD(
+            regular_session
+        ).get_reviewable_activities(
+            [
+                f"{original_applet_id}_{original_applet_version}",
+            ]
+        )
+        # if not, create it
+        if not reviewer_assessment_activity:
+            missing_applet_version = mongo_answer["meta"]["applet"]["version"]
+
+            duplicating_activity_res = await ActivityHistoriesCRUD(
+                regular_session
+            ).get_reviewable_activities(
+                [
+                    f"{original_applet_id}_{missing_applet_version}",
+                ]
+            )
+            if duplicating_activity_res:
+                duplicating_activity = duplicating_activity_res[0]
+                duplicating_activity_items = await ActivityItemHistoriesCRUD(
+                    regular_session
+                ).get_by_activity_id_version(duplicating_activity.id_version)
+                duplicating_activity = dict(duplicating_activity)
+                duplicating_activity[
+                    "id_version"
+                ] = f"{str(duplicating_activity['id'])}_{original_applet_version}"
+                duplicating_activity[
+                    "applet_id"
+                ] = f"{str(original_applet_id)}_{original_applet_version}"
+                duplicating_activity = await ActivityHistoriesCRUD(
+                    regular_session
+                )._create(ActivityHistorySchema(**duplicating_activity))
+                for item in duplicating_activity_items:
+                    item = dict(item)
+                    item[
+                        "id_version"
+                    ] = f"{str(item['id'])}_{original_applet_version}"
+                    item["activity_id"] = duplicating_activity.id_version
+                    item = await ActivityItemHistoriesCRUD(
+                        regular_session
+                    )._create(ActivityItemHistorySchema(**item))
 
 
 if __name__ == "__main__":
