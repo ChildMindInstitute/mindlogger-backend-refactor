@@ -1191,23 +1191,21 @@ class Mongo:
     def reviewer_meta(
         self, applet_id: ObjectId, account_profile: dict
     ) -> List[uuid.UUID]:
-        profiles = self.db["appletProfile"].find(
+        reviewer_profile = self.db["appletProfile"].find_one(
+            {"userId": account_profile["userId"], "appletId": applet_id}
+        )
+        respondent_profiles = self.db["appletProfile"].find(
             {
-                "accountId": account_profile["accountId"],
                 "appletId": applet_id,
-                "userId": account_profile["userId"],
+                "reviewers": reviewer_profile["_id"],
+                "roles": "user",
             }
         )
         user_ids = []
-        for profile in profiles:
-            conditions = (
-                "reviewer" in profile["roles"],
-                "coordinator" in profile["roles"],
-                "manager" in profile["roles"],
-            )
-            if any(conditions):
-                if profile["userId"]:
-                    user_ids.append(mongoid_to_uuid(profile["userId"]))
+        for profile in respondent_profiles:
+            user_id = profile.get("userId")
+            if user_id:
+                user_ids.append(mongoid_to_uuid(user_id))
         return user_ids
 
     def respondent_metadata(self, user: dict, applet_id: ObjectId):
