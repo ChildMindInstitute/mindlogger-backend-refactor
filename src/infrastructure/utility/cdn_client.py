@@ -103,17 +103,17 @@ class CDNClient:
             url = await asyncio.wrap_future(future)
             return url
 
-    async def delete_object(self, key: str | None, bucket: str | None):
+    async def delete_object(self, key: str | None):
         with ThreadPoolExecutor() as executor:
             future = executor.submit(
-                self.client.delete_object, Bucket=bucket, Key=key
+                self.client.delete_object, Bucket=self.get_bucket(), Key=key
             )
             await asyncio.wrap_future(future)
 
-    async def list_object(self, key: str, bucket: str | None):
+    async def list_object(self, key: str):
         with ThreadPoolExecutor() as executor:
             future = executor.submit(
-                self.client.list_objects, Bucket=bucket, Prefix=key
+                self.client.list_objects, Bucket=self.get_bucket(), Prefix=key
             )
             result = await asyncio.wrap_future(future)
             return result.get("Contents", [])

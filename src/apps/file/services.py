@@ -245,7 +245,6 @@ class LogFileService:
     def __init__(self, user_id: uuid.UUID, cdn: CDNClient):
         self.user_id = user_id
         self.cdn = cdn
-        self.bucket = config.settings.cdn.bucket_answer
 
     def key(self, device_id: str, file_name: str) -> str:
         ts = str(int(datetime.datetime.utcnow().timestamp()))
@@ -282,13 +281,13 @@ class LogFileService:
                 now - file_date
             ).days > config.settings.logs.cycle_days
             if is_out_of_cycle:
-                await self.cdn.delete_object(oldest_file["Key"], self.bucket)
+                await self.cdn.delete_object(oldest_file["Key"])
         return res
 
     async def upload(self, device_id: str, file: UploadFile):
         key = self.device_key_prefix(device_id)
         obj_id = f"{key}/{file.filename}"
-        res = await self.cdn.list_object(key, bucket=self.bucket)
+        res = await self.cdn.list_object(key)
         res = await self.apply_filo_stack(res)
         await self.cdn.upload(obj_id, file.file)
         return res
@@ -304,14 +303,14 @@ class LogFileService:
             return start < date_tz < end
 
         key = self.device_key_prefix(device_id)
-        files = await self.cdn.list_object(key, bucket=self.bucket)
+        files = await self.cdn.list_object(key)
         files = sorted(files, key=lambda item: item["LastModified"])
         files = list(filter(filter_by_interval, files))
         return files
 
     async def check_exist(self, device_id: str, file_names: List[str]):
         key = self.device_key_prefix(device_id)
-        file_objects = await self.cdn.list_object(key, bucket=self.bucket)
+        file_objects = await self.cdn.list_object(key)
         keys = list(map(lambda f: f["Key"], file_objects))
         result: Dict[str, bool] = dict()
         for file_name in file_names:
