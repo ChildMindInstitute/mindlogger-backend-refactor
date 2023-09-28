@@ -381,7 +381,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
         query = query.join(
             ActivityHistorySchema,
-            ActivityHistorySchema.applet_id == AppletHistorySchema.id_version,
+            and_(
+                ActivityHistorySchema.applet_id
+                == AppletHistorySchema.id_version,
+                ActivityHistorySchema.id_version == answer.activity_history_id,
+            ),
             isouter=True,
         )
         query = query.where(
