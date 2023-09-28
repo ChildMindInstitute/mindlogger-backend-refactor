@@ -19,11 +19,14 @@ class CDNClient:
         self.env = env
         self.client = self.configure_client(config)
 
+    def get_bucket(self) -> str | None:
+        return self.config.bucket
+
     def generate_key(self, scope, unique, filename):
         return f"{self.default_container_name}/{scope}/{unique}/{filename}"
 
     def generate_private_url(self, key):
-        return f"s3://{self.config.bucket}/{key}"
+        return f"s3://{self.get_bucket()}/{key}"
 
     def configure_client(self, config):
         assert config, "set CDN"
@@ -46,7 +49,7 @@ class CDNClient:
         self.client.upload_fileobj(
             body,
             Key=path,
-            Bucket=self.config.bucket,
+            Bucket=self.get_bucket(),
         )
 
     async def upload(self, path, body: BinaryIO):
@@ -56,7 +59,7 @@ class CDNClient:
 
     def _check_existence(self, key: str):
         try:
-            return self.client.head_object(Bucket=self.config.bucket, Key=key)
+            return self.client.head_object(Bucket=self.get_bucket(), Key=key)
         except ClientError:
             raise NotFoundError
 
@@ -74,7 +77,7 @@ class CDNClient:
             local_file = open(key, "rb")
             file.write(local_file.read())
         else:
-            self.client.download_fileobj(self.config.bucket, key, file)
+            self.client.download_fileobj(self.get_bucket(), key, file)
         file.seek(0)
         media_type = (
             mimetypes.guess_type(key)[0]
@@ -87,7 +90,7 @@ class CDNClient:
         url = self.client.generate_presigned_url(
             "get_object",
             Params={
-                "Bucket": self.config.bucket,
+                "Bucket": self.get_bucket(),
                 "Key": key,
             },
             ExpiresIn=self.config.ttl_signed_urls,
@@ -114,3 +117,8 @@ class CDNClient:
             )
             result = await asyncio.wrap_future(future)
             return result.get("Contents", [])
+
+
+class LogCDN(CDNClient):
+    def get_bucket(self) -> str | None:
+        return self.config.bucket_answer

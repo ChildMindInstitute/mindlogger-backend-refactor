@@ -10,7 +10,7 @@ from infrastructure.utility.cdn_arbitrary import (
     ArbitaryGCPCdnClient,
     ArbitaryS3CdnClient,
 )
-from infrastructure.utility.cdn_client import CDNClient
+from infrastructure.utility.cdn_client import CDNClient, LogCDN
 
 
 async def select_storage(
@@ -62,4 +62,4 @@ def logs_storage():
         access_key=settings.cdn.access_key,
         secret_key=settings.cdn.secret_key,
     )
-    return CDNClient(settings_cdn, env=settings.env)
+    return LogCDN(settings_cdn, env=settings.env)

@@ -245,7 +245,7 @@ class LogFileService:
     def __init__(self, user_id: uuid.UUID, cdn: CDNClient):
         self.user_id = user_id
         self.cdn = cdn
-        self.bucket = config.settings.cdn.bucket
+        self.bucket = config.settings.cdn.bucket_answer
 
     def key(self, device_id: str, file_name: str) -> str:
         ts = str(int(datetime.datetime.utcnow().timestamp()))
