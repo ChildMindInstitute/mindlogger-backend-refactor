@@ -1421,7 +1421,7 @@ class ReproFieldVisualStimulusResponse(ReproFieldBase):
                         )
                 elif name == "fixationScreen":
                     image = self._get_ld_image(obj)
-                    if not image:
+                    if not image and not val:
                         continue
                     val = FixationScreen(value=val, image=image)
 

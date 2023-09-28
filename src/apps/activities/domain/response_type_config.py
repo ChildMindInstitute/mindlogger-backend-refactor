@@ -226,7 +226,7 @@ class ButtonConfiguration(PublicModel):
 
 class FixationScreen(PublicModel):
     value: str | None = None
-    image: str
+    image: str | None = None
 
 
 class FlankerConfig(PublicModel):
