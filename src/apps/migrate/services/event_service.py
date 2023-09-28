@@ -372,3 +372,15 @@ class EventMigrationService:
                 continue
 
         print(f"Number of skiped events: {number_of_errors}")
+
+    def find_closest_date(self, target_day_of_week: int):
+        today = date.today()
+
+        days_until_target = target_day_of_week - today.isoweekday()
+
+        if days_until_target <= 0:
+            days_until_target += 7  # If the target day has already passed this week, move to the next week
+
+        closest_date = today + timedelta(days=days_until_target)
+
+        return closest_date
