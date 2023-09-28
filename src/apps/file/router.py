@@ -6,6 +6,9 @@ from apps.file.api.file import (
     answer_upload,
     check_file_uploaded,
     download,
+    logs_download,
+    logs_exist_check,
+    logs_upload,
     presign,
     upload,
 )
@@ -76,3 +79,18 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(presign)
+
+router.post(
+    "/log-file/{device_id}",
+    status_code=status.HTTP_200_OK,
+    description="""Used for uploading mobile logfiles.
+                Receives file object, returns key as a path to S3 Bucket.""",
+)(logs_upload)
+
+router.get("/log-file/{user_id}/{device_id}", status_code=status.HTTP_200_OK)(
+    logs_download
+)
+
+router.post("/log-file/{device_id}/check", status_code=status.HTTP_200_OK)(
+    logs_exist_check
+)

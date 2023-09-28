@@ -99,3 +99,18 @@ class CDNClient:
             future = executor.submit(self._generate_presigned_url, key)
             url = await asyncio.wrap_future(future)
             return url
+
+    async def delete_object(self, key: str | None, bucket: str | None):
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(
+                self.client.delete_object, Bucket=bucket, Key=key
+            )
+            await asyncio.wrap_future(future)
+
+    async def list_object(self, key: str, bucket: str | None):
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(
+                self.client.list_objects, Bucket=bucket, Prefix=key
+            )
+            result = await asyncio.wrap_future(future)
+            return result.get("Contents", [])

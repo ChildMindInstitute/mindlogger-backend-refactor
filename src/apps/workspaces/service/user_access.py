@@ -1,10 +1,12 @@
 import uuid
 
+import config
 from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain.applet import AppletSingleLanguageInfo
 from apps.folders.crud import FolderCRUD
 from apps.invitations.errors import RespondentDoesNotExist, RespondentsNotSet
+from apps.shared.exception import AccessDeniedError
 from apps.shared.query_params import QueryParams
 from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
@@ -416,3 +418,11 @@ class UserAccessService:
                     applet_role.roles.insert(0, Role.SUPER_ADMIN)
 
         return {val.applet_id: val.roles for val in applet_roles}
+
+    @staticmethod
+    def raise_for_developer_access(email: str | None):
+        if not email:
+            raise AccessDeniedError()
+        email_list = config.settings.logs.get_access_emails()
+        if email not in email_list:
+            raise AccessDeniedError()
