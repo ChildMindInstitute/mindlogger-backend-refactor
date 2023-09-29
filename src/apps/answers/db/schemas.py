@@ -37,7 +37,6 @@ class AnswerNoteSchema(Base):
     activity_id = Column(UUID(as_uuid=True))
     note = Column(StringEncryptedType(Unicode, get_key))
     user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
-    user_public_key = Column(Text())
 
 
 class AnswerItemSchema(Base):
