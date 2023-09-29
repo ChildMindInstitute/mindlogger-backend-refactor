@@ -37,6 +37,7 @@ class ActivityItemHistoryService:
                     else None,
                     allow_edit=item.allow_edit,
                     extra_fields=item.extra_fields,
+                    is_hidden=item.is_hidden,
                 )
             )
         await ActivityItemHistoriesCRUD(self.session).create_many(schemas)
