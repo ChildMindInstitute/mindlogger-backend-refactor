@@ -25,6 +25,7 @@ from apps.schedule.crud.notification import (
     NotificationCRUD,
     ReminderCRUD,
 )
+from apps.schedule.domain.constants import PeriodicityType
 
 from infrastructure.database import atomic
 
@@ -164,31 +165,47 @@ class EventMigrationService:
         periodicity_data: dict = {}
 
         if event.data.eventType in ("", None):
-            periodicity_data["type"] = DEFAULT_PERIODICITY_TYPE
+            periodicity_data["type"] = PeriodicityType.ALWAYS
         elif isinstance(event.data.eventType, str):
             periodicity_data["type"] = event.data.eventType.upper()
 
-        if event.schedule.start and event.schedule.end:
+            if event.data.eventType.upper() in (
+                PeriodicityType.ONCE,
+                PeriodicityType.WEEKLY,
+                PeriodicityType.MONTHLY,
+            ):
+                if (
+                    event.schedule.dayOfMonth
+                    and event.schedule.month
+                    and event.schedule.year
+                ):
+                    try:
+                        periodicity_data["selected_date"] = date(
+                            event.schedule.year[0],
+                            event.schedule.month[0],
+                            event.schedule.dayOfMonth[0],
+                        )
+                    except ValueError:
+                        periodicity_data["selected_date"] = self._find_date(
+                            event
+                        )
+                else:
+                    periodicity_data["selected_date"] = self._find_date(event)
+
+                if (
+                    event.schedule.dayOfWeek
+                    and len(event.schedule.dayOfWeek) > 1
+                ):
+                    periodicity_data["type"] = PeriodicityType.WEEKDAYS
+
+        if event.schedule.start:
             periodicity_data["start_date"] = datetime.utcfromtimestamp(
                 event.schedule.start / 1000
             )
+        if event.schedule.end:
             periodicity_data["end_date"] = datetime.utcfromtimestamp(
                 event.schedule.end / 1000
             )
-
-        if (
-            event.schedule.dayOfMonth
-            and event.schedule.month
-            and event.schedule.year
-        ):
-            try:
-                periodicity_data["selected_date"] = date(
-                    event.schedule.year[0],
-                    event.schedule.month[0],
-                    event.schedule.dayOfMonth[0],
-                )
-            except ValueError:
-                periodicity_data["selected_date"] = None
 
         periodicity = PeriodicitySchema(**periodicity_data)
 
@@ -372,3 +389,55 @@ class EventMigrationService:
                 continue
 
         print(f"Number of skiped events: {number_of_errors}")
+
+    def _find_date(self, event: MongoEvent):
+        if event.data.eventType.upper() == PeriodicityType.WEEKLY:
+            return self._find_closest_date_by_week_day(
+                event.schedule.dayOfWeek[0]
+            )
+        if event.data.eventType.upper() == PeriodicityType.MONTHLY:
+            return self._find_closest_date_by_month_day(
+                event.schedule.dayOfMonth[0]
+            )
+
+    def _find_closest_date_by_week_day(self, target_day_of_week):
+        today = date.today()
+
+        if isinstance(target_day_of_week, list):
+            return today
+
+        days_until_target = target_day_of_week - today.isoweekday()
+
+        if days_until_target <= 0:
+            days_until_target += 7  # If the target day has already passed this week, move to the next week
+
+        closest_date = today + timedelta(days=days_until_target)
+
+        return closest_date
+
+    def _find_closest_date_by_month_day(self, target_day_of_month: int):
+        today = date.today()
+
+        current_month = today.month
+        current_year = today.year
+
+        try:
+            target_date = date(
+                current_year, current_month, target_day_of_month
+            )
+        except ValueError:
+            target_date = date(
+                current_year, current_month + 1, target_day_of_month
+            )
+
+        days_until_target = (target_date - today).days
+
+        if days_until_target < 0:
+            next_month = current_month + 1
+            if next_month > 12:
+                next_month = 1
+                current_year += 1
+            target_date = date(current_year, next_month, target_day_of_month)
+            days_until_target = (target_date - today).days
+
+        return target_date
