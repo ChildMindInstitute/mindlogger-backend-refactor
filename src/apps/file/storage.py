@@ -10,7 +10,7 @@ from infrastructure.utility.cdn_arbitrary import (
     ArbitaryGCPCdnClient,
     ArbitaryS3CdnClient,
 )
-from infrastructure.utility.cdn_client import CDNClient
+from infrastructure.utility.cdn_client import CDNClient, LogCDN
 
 
 async def select_storage(
@@ -52,3 +52,14 @@ async def select_storage(
         case _:
             # default is aws (logic from legacy app)
             return ArbitaryS3CdnClient(arbitary_cdn_settings, env=settings.env)
+
+
+def logs_storage():
+    settings_cdn = CDNSettings(
+        region=settings.cdn.region,
+        bucket=settings.cdn.bucket_answer,
+        ttl_signed_urls=settings.cdn.ttl_signed_urls,
+        access_key=settings.cdn.access_key,
+        secret_key=settings.cdn.secret_key,
+    )
+    return LogCDN(settings_cdn, env=settings.env)

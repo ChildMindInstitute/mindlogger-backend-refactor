@@ -1,7 +1,11 @@
+import asyncio
+import datetime
 import uuid
 from functools import partial
+from typing import Dict
 from urllib.parse import quote
 
+import pytz
 from botocore.exceptions import ClientError
 from fastapi import Body, Depends, File, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -18,14 +22,15 @@ from apps.file.domain import (
 )
 from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
-from apps.file.services import PresignedUrlsGeneratorService
-from apps.file.storage import select_storage
+from apps.file.services import LogFileService, PresignedUrlsGeneratorService
+from apps.file.storage import logs_storage, select_storage
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import AnswerViewAccessDenied
+from apps.workspaces.service.user_access import UserAccessService
 from config import settings
 from infrastructure.database.deps import get_session
 from infrastructure.utility.cdn_client import CDNClient
@@ -104,6 +109,9 @@ async def answer_download(
     session: AsyncSession = Depends(get_session),
 ):
     cdn_client = await select_storage(applet_id, session)
+    if request.key.startswith(LogFileService.LOG_KEY):
+        LogFileService.raise_for_access(user.email)
+
     try:
         file, media_type = cdn_client.download(request.key)
     except ClientError as e:
@@ -174,3 +182,48 @@ async def presign(
         given_private_urls=request.private_urls,
     )
     return ResponseMulti[str | None](result=results, count=len(results))
+
+
+async def logs_upload(
+    device_id: str,
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+):
+    cdn_client = logs_storage()
+    service = LogFileService(user.id, cdn_client)
+    key = service.key(device_id=device_id, file_name=file.filename)
+    await service.upload(device_id, file)
+    result = ContentUploadedFile(
+        key=key, url=quote(settings.cdn.url.format(key=key), "/:")
+    )
+    return Response(result=result)
+
+
+async def logs_download(
+    device_id: str,
+    user_id: uuid.UUID,
+    days: int,
+    user: User = Depends(get_current_user),
+):
+    UserAccessService.raise_for_developer_access(user.email_encrypted)
+    cdn_client = logs_storage()
+    service = LogFileService(user_id, cdn_client)
+    end = datetime.datetime.now(tz=pytz.UTC)
+    start = end - datetime.timedelta(days=days)
+    files = await service.log_list(device_id, start, end)
+    futures = []
+    for key in map(lambda f: f["Key"], files):
+        futures.append(cdn_client.generate_presigned_url(key))
+    result = await asyncio.gather(*futures)
+    return ResponseMulti[str](result=result, count=len(result))
+
+
+async def logs_exist_check(
+    device_id: str,
+    files: FileCheckRequest,
+    user: User = Depends(get_current_user),
+):
+    cdn_client = logs_storage()
+    service = LogFileService(user.id, cdn_client)
+    result = await service.check_exist(device_id, files.files)
+    return Response[Dict[str, bool]](result=result)

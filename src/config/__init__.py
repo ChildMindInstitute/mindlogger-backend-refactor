@@ -8,6 +8,7 @@ from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
 from config.cors import CorsSettings
 from config.database import DatabaseSettings
+from config.logs import Logs
 from config.mailing import MailingSettings
 from config.notification import FirebaseCloudMessagingSettings
 from config.rabbitmq import RabbitMQSettings
@@ -78,6 +79,8 @@ class Settings(BaseSettings):
     anonymous_respondent = AnonymousRespondent()
 
     task_answer_encryption = AnswerEncryption()
+
+    logs: Logs
 
     class Config:
         env_nested_delimiter = "__"
