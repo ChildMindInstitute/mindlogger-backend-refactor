@@ -23,6 +23,7 @@ from apps.workspaces.errors import (
     AccessDeniedToUpdateOwnAccesses,
     AppletAccessDenied,
     RemoveOwnPermissionAccessDenied,
+    TransferOwnershipAccessDenied,
     UserAccessAlreadyExists,
     UserAppletAccessesDenied,
     WorkspaceDoesNotExistError,
@@ -331,10 +332,9 @@ class UserAccessService:
             raise AccessDeniedToUpdateOwnAccesses()
         schemas = []
         for access in access_data.accesses:
-            try:
-                access.roles.remove(Role.OWNER)
-            except ValueError:
-                pass
+            for role in access.roles:
+                if role in [Role.OWNER, Role.SUPER_ADMIN]:
+                    raise TransferOwnershipAccessDenied()
             try:
                 access.roles.remove(Role.RESPONDENT)
             except ValueError:
