@@ -400,8 +400,11 @@ class EventMigrationService:
                 event.schedule.dayOfMonth[0]
             )
 
-    def _find_closest_date_by_week_day(self, target_day_of_week: int):
+    def _find_closest_date_by_week_day(self, target_day_of_week):
         today = date.today()
+
+        if isinstance(target_day_of_week, list):
+            return today
 
         days_until_target = target_day_of_week - today.isoweekday()
 
@@ -418,7 +421,14 @@ class EventMigrationService:
         current_month = today.month
         current_year = today.year
 
-        target_date = date(current_year, current_month, target_day_of_month)
+        try:
+            target_date = date(
+                current_year, current_month, target_day_of_month
+            )
+        except ValueError:
+            target_date = date(
+                current_year, current_month + 1, target_day_of_month
+            )
 
         days_until_target = (target_date - today).days
 

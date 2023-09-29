@@ -51,9 +51,9 @@ class ThemeDao:
     tertiary_color: str
     public: bool
     allow_rename: bool
-    is_default: bool
     created_at: datetime.datetime
     updated_at: datetime.datetime
+    is_default: bool
     migrated_date: datetime.datetime = datetime.datetime.utcnow()
     migrated_updated: datetime.datetime = datetime.datetime.utcnow()
     is_deleted: bool = False
