@@ -324,15 +324,18 @@ class AnswersMigrateFacade:
         )
         original_applet_version = original_answer["meta"]["applet"]["version"]
 
-        reviewer_assessment_activity = await ActivityHistoriesCRUD(
+        all_assessment_activities = await ActivityHistoriesCRUD(
             regular_session
-        ).get_reviewable_activities(
+        ).retrieve_by_applet_ids(
             [
                 f"{original_applet_id}_{original_applet_version}",
             ]
         )
+        reviewer_assessment_activities = [
+            _a for _a in all_assessment_activities if _a.is_reviewable
+        ]
         # if not, create it
-        if not reviewer_assessment_activity:
+        if not reviewer_assessment_activities:
             missing_applet_version = mongo_answer["meta"]["applet"]["version"]
 
             duplicating_activity_res = await ActivityHistoriesCRUD(
