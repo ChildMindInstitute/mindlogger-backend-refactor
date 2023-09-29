@@ -80,7 +80,7 @@ class Settings(BaseSettings):
 
     task_answer_encryption = AnswerEncryption()
 
-    logs: Logs
+    logs: Logs = Logs()
 
     class Config:
         env_nested_delimiter = "__"

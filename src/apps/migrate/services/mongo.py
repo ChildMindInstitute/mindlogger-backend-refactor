@@ -1134,7 +1134,7 @@ class Mongo:
             self.mongo_arbitrary_db_cache[profile_id] = _client
             client = _client
         else:
-            client = self.client
+            return self.db
 
         return client.get_database()
 

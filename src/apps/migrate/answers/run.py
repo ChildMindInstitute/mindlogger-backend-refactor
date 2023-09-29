@@ -334,6 +334,9 @@ class AnswersMigrateFacade:
         reviewer_assessment_activities = [
             _a for _a in all_assessment_activities if _a.is_reviewable
         ]
+        if len(all_assessment_activities) > 0 and not reviewer_assessment_activities:
+            raise Exception(f"All activities are not reviewable, applet: {original_applet_id}, version: {original_applet_version}")
+
         # if not, create it
         if not reviewer_assessment_activities:
             missing_applet_version = mongo_answer["meta"]["applet"]["version"]
