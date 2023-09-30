@@ -32,7 +32,7 @@ class AnswerItemMigrationService:
                 events=mongo_answer["meta"].get("events", ""),
                 respondent_id=respondent_id,
                 identifier=mongo_answer["meta"]["subject"].get(
-                    "identifier", ""
+                    "identifier", None
                 ),
                 user_public_key=str(mongo_answer["meta"]["userPublicKey"]),
                 scheduled_datetime=self._fromtimestamp(
