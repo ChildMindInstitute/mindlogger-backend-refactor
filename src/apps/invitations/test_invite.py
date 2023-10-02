@@ -5,7 +5,10 @@ import pytest
 
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role
-from apps.invitations.errors import RespondentInvitationExist
+from apps.invitations.errors import (
+    ManagerInvitationExist,
+    RespondentInvitationExist,
+)
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback, session_manager
@@ -578,4 +581,30 @@ class TestInvite(BaseTest):
         res = json.loads(response.content)
         res = res["result"][0]
         assert res["message"] == RespondentInvitationExist.message
+        assert len(TestMail.mails) == 0
+
+    @rollback
+    async def test_fail_if_invite_manager_on_editor_role(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        request_data = dict(
+            email="mike@gmail.com",
+            first_name="Mike",
+            last_name="M",
+            role=Role.EDITOR,
+            language="en",
+            secret_user_id=str(uuid.uuid4()),
+            nickname=str(uuid.uuid4()),
+        )
+        response = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2"
+            ),
+            request_data,
+        )
+        assert response.status_code == 422
+        res = json.loads(response.content)
+        res = res["result"][0]
+        assert res["message"] == ManagerInvitationExist.message
         assert len(TestMail.mails) == 0

@@ -592,13 +592,18 @@ class InvitationsService:
     async def check_for_duplicates(
         self, applet_id: uuid.UUID, email: str, role: str
     ):
-        is_exist = await InvitationCRUD(self.session).duplicate_exist(
-            email, role, applet_id
-        )
-        if is_exist and role in Role.managers():
-            raise ManagerInvitationExist()
-        elif is_exist:
-            raise RespondentInvitationExist()
+        crud = InvitationCRUD(self.session)
+        is_manager = role in Role.managers()
+        if is_manager:
+            is_exist = await crud.manager_invitation_exist(email, applet_id)
+            if is_exist:
+                raise ManagerInvitationExist()
+        else:
+            is_exist = await InvitationCRUD(self.session).duplicate_exist(
+                email, role, applet_id
+            )
+            if is_exist:
+                raise RespondentInvitationExist()
 
 
 class PrivateInvitationService:
