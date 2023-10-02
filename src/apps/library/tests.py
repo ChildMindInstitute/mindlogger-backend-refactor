@@ -30,6 +30,19 @@ class TestLibrary(BaseTest):
 
     applet_link = "/applets/{applet_id}/library_link"
 
+    applet_expected_keys = {
+        "about",
+        "activities",
+        "activityFlows",
+        "description",
+        "displayName",
+        "id",
+        "image",
+        "keywords",
+        "themeId",
+        "version",
+    }
+
     @rollback
     async def test_library_share(self):
         await self.client.login(
@@ -82,6 +95,8 @@ class TestLibrary(BaseTest):
         assert len(result) == 2
         assert result[1]["keywords"] == ["test", "test2"]
 
+        assert set(result[0].keys()) == self.applet_expected_keys
+
         response = await self.client.get(
             self.library_url_search.format(search_term="test")
         )
@@ -110,6 +125,7 @@ class TestLibrary(BaseTest):
 
         assert response.status_code == 200, response.json()
         result = response.json()["result"]
+        assert set(result.keys()) == self.applet_expected_keys
         assert result["keywords"] == ["test", "test2"]
 
     @rollback
@@ -177,7 +193,6 @@ class TestLibrary(BaseTest):
                     description={"en": "Patient Health Questionnaire"},
                     about={"en": "Patient Health Questionnaire"},
                     image="",
-                    watermark="",
                     theme_id="3e31a64e-449f-4788-8516-eca7809f1a42",
                     version="2.0.1",
                     activities=[
@@ -243,7 +258,6 @@ class TestLibrary(BaseTest):
                     description={"en": "Patient Health Questionnaire"},
                     about={"en": "Patient Health Questionnaire"},
                     image="",
-                    watermark="",
                     theme_id=None,
                     keywords=["One", "Two"],
                     version="1.0",
@@ -264,7 +278,6 @@ class TestLibrary(BaseTest):
                     display_name="Applet 4",
                     description={"en": "Patient Health Questionnaire"},
                     image="",
-                    watermark="",
                     theme_id=None,
                     keywords=["Three", "Four"],
                     version="1.0",
@@ -325,12 +338,12 @@ class TestLibrary(BaseTest):
             filter(lambda item: item["displayName"] == "PHQ2", result), None
         )
         assert applet
+        assert set(applet.keys()) == self.applet_expected_keys
         assert applet["description"] == {"en": "Patient Health Questionnaire"}
         assert applet["about"] == {"en": "Patient Health Questionnaire"}
         assert applet["keywords"] == ["test", "test2"]
         assert applet["version"] == "1.0.0"
         assert applet["image"] == "image_url"
-        assert applet["watermark"] == "watermark_url"
         assert len(applet["activities"]) == 2
 
     @rollback
