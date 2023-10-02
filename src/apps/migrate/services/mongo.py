@@ -854,6 +854,13 @@ class Mongo:
                 ]
             applet_format["applet"]["reprolib:terms/order"][0]["@list"] = order
 
+            # add missing acitivity ids in activity list
+            # when applet is a duplicate
+            for activity in order:
+                applet_format["activities"][activity["@id"]] = ObjectId(
+                    activity["@id"]
+                )
+
         return applet_format
 
     def get_applet_repro_schema(self, applet: dict) -> dict:
