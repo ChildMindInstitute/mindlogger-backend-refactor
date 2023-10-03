@@ -854,6 +854,13 @@ class Mongo:
                 ]
             applet_format["applet"]["reprolib:terms/order"][0]["@list"] = order
 
+            # add missing acitivity ids in activity list
+            # when applet is a duplicate
+            for activity in order:
+                applet_format["activities"][activity["@id"]] = ObjectId(
+                    activity["@id"]
+                )
+
         return applet_format
 
     def get_applet_repro_schema(self, applet: dict) -> dict:
@@ -1506,13 +1513,20 @@ class Mongo:
                 continue
             res = self.get_folders_and_applets(profile_id)
             for folder in res["folders"]:
+                creator = AccountProfile().findOne(
+                    query={"applets.owner": {"$in": [folder["_id"]]}}
+                )
+                if creator:
+                    owner_id = creator["userId"]
+                else:
+                    owner_id = folder["creatorId"]
                 folders_list.append(
                     FolderDAO(
                         id=mongoid_to_uuid(folder["_id"]),
                         created_at=folder["created"],
                         updated_at=folder["updated"],
                         name=folder["name"],
-                        creator_id=mongoid_to_uuid(folder["creatorId"]),
+                        creator_id=mongoid_to_uuid(owner_id),
                         workspace_id=mongoid_to_uuid(folder["parentId"]),
                         migrated_date=datetime.datetime.utcnow(),
                         migrated_update=datetime.datetime.utcnow(),

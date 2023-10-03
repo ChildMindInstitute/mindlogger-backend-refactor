@@ -1321,7 +1321,7 @@ class ReproFieldStabilityTracker(ReproFieldBase):
         }
         phase_type = self.input_options["phaseType"]
         phase = (
-            Phase.TEST if phase_type == "challenge-phase" else Phase.PRACTICE
+            Phase.PRACTICE if phase_type == "challenge-phase" else Phase.TEST
         )
         config = StabilityTrackerConfig(
             user_input_type=InputType(self.input_options["userInputType"]),

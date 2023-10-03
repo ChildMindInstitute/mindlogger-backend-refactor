@@ -80,7 +80,6 @@ class _LibraryItem(BaseModel):
     description: dict[str, str] | None = None
     about: dict[str, str] | None = None
     image: str = ""
-    watermark: str = ""
     theme_id: uuid.UUID | None = None
     keywords: list[str] | None = None
     activities: list[LibraryItemActivity] | None = None
