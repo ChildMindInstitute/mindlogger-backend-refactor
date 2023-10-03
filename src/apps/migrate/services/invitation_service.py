@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from apps.invitations.db.schemas import InvitationSchema
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.constants import InvitationStatus
+from apps.workspaces.domain.constants import Role
 
 
 from apps.migrate.utilities import mongoid_to_uuid
@@ -77,7 +78,10 @@ class InvitationsMigrationService:
         if invitation.userEmail:
             invitation_data["email"] = invitation.userEmail
         invitation_data["applet_id"] = mongoid_to_uuid(invitation.appletId)
-        invitation_data["role"] = invitation.role
+        if invitation.role == "user":
+            invitation_data["role"] = Role.RESPONDENT
+        else:
+            invitation_data["role"] = invitation.role
         invitation_data["invitor_id"] = mongoid_to_uuid(invitation.inviterId)
         invitation_data["status"] = InvitationStatus.PENDING
         if invitation.firstName:
