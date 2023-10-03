@@ -666,12 +666,12 @@ class Postgres:
             UPDATE applets 
                 SET theme_id = (SELECT id FROM themes WHERE "name"='Default')
             WHERE
-                theme_id NOT IN (SELECT id FROM themes) OR theme_id IS NULL
+                theme_id NOT IN (SELECT id FROM themes) OR theme_id IS NULL;
 
             UPDATE applet_histories  
                 SET theme_id = (SELECT id FROM themes WHERE "name"='Default')
             WHERE
-                theme_id NOT IN (SELECT id FROM themes) OR theme_id is null
+                theme_id NOT IN (SELECT id FROM themes) OR theme_id is null;
         """
         cursor = self.connection.cursor()
         cursor.execute(sql)
