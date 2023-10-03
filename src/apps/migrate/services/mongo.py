@@ -1128,7 +1128,7 @@ class Mongo:
     mongo_arbitrary_db_cache = {}
 
     def get_main_or_arbitrary_db(self, applet_id: ObjectId) -> Database:
-        return self.db # don't migrate arb servers
+        return self.db  # don't migrate arb servers
 
         def resolve_arbitrary_client(profile: dict):
             if "db" in profile:
@@ -1138,7 +1138,7 @@ class Mongo:
             {"applets.owner": applet_id}
         )
         if not profile:
-            print('Unable to find the account for applet', str(applet_id))
+            print("Unable to find the account for applet", str(applet_id))
             return self.db
 
         profile_id = str(profile["_id"])
@@ -1164,7 +1164,7 @@ class Mongo:
         try:
             creators_ids = item_collection.find(query).distinct("creatorId")
         except Exception as e:
-            print('Error: mongo is unreachable', str(e))
+            print("Error: mongo is unreachable", str(e))
             return []
         result = []
         for creator_id in creators_ids:
