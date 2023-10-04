@@ -26,6 +26,7 @@ from apps.schedule.crud.notification import (
     ReminderCRUD,
 )
 from apps.schedule.domain.constants import PeriodicityType
+from apps.girderformindlogger.models.profile import Profile
 
 from infrastructure.database import atomic
 
@@ -263,6 +264,12 @@ class EventMigrationService:
     async def _create_user(self, event: MongoEvent, pg_event: EventSchema):
         if event.data.users and event.data.users[0]:
             user = event.data.users[0]
+        else:
+            raise Exception("No user for individual event")
+        profile = Profile().findOne(query={"_id": ObjectId(user)})
+        if not profile:
+            raise Exception("Unable to find profile by event")
+        user = profile["userId"]
         user_event_data = {
             "user_id": mongoid_to_uuid(user),
             "event_id": pg_event.id,
