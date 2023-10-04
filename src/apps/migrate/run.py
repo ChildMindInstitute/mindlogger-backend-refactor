@@ -413,6 +413,14 @@ async def migrate_alerts(
     await AlertMigrationService(session, alerts).run_alerts_migration()
 
 
+async def migrate_public_links(postgres: Postgres, mongo: Mongo):
+    migration_log.warning("[PUBLIC LINKS] Started")
+    applet_mongo_ids = postgres.get_migrated_applets()
+    links = mongo.get_public_link_mappings(applet_mongo_ids)
+    await postgres.save_public_link(links)
+    migration_log.warning("[PUBLIC LINKS] Finished")
+
+
 async def main(workspace_id: str | None, applets_ids: list[str] | None):
     mongo = Mongo()
     postgres = Postgres()
@@ -464,6 +472,8 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
     # await add_default_evets(postgres)
     # Migrate events
     # await migrate_alerts(applets_ids, mongo, postgres)
+
+    # await migrate_public_links(postgres, mongo)
 
     # Close connections
     mongo.close_connection()
