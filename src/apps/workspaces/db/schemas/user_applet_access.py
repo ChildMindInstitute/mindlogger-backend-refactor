@@ -70,6 +70,14 @@ class UserAppletAccessSchema(Base):
         return cls.meta[text("'secretUserId'")].astext
 
     @hybrid_property
+    def legacy_profile_id(self):
+        return self.meta.get("legacyProfileId")
+
+    @legacy_profile_id.expression  # type: ignore[no-redef]
+    def legacy_profile_id(cls):
+        return cls.meta[text("'legacyProfileId'")].astext
+
+    @hybrid_property
     def reviewer_respondents(self):
         items = self.meta.get("respondents") or []
         return [uuid.UUID(itm) for itm in items]

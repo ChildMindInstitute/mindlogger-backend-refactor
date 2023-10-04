@@ -130,4 +130,5 @@ class RespondentExportData(InternalModel):
     id: uuid.UUID
     email: str | None
     secret_id: str | None
+    legacy_profile_id: str | None
     is_manager: bool
