@@ -31,6 +31,7 @@ from apps.jsonld_converter.dependencies import (
 from apps.migrate.data_description.applet_user_access import AppletUserDAO
 from apps.migrate.data_description.folder_dao import FolderAppletDAO, FolderDAO
 from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
+from apps.migrate.data_description.public_link import PublicLinkDao
 from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.migrate.exception.exception import (
     EmptyAppletException,
@@ -1625,3 +1626,38 @@ class Mongo:
         for item in items:
             ids.add(str(item["appletId"]))
         return list(ids)
+
+    def get_public_link_mappings(
+        self, applet_ids: List[ObjectId]
+    ) -> List[PublicLinkDao]:
+        applets = self.db["folder"].find(
+            {
+                "_id": {"$in": applet_ids},
+                "publicLink": {"$exists": -1},
+            }
+        )
+        result = []
+        for document in applets:
+            link: dict | None = document.get("publicLink")
+            if link:
+                link_id = link.get("id")
+                login = link.get("requireLogin")
+                created_by_ap = link.get("createdBy")
+                applet_profile = self.db["appletProfile"].find_one(
+                    {"_id": created_by_ap["_id"]}
+                )
+                if not applet_profile:
+                    continue
+                user_id = applet_profile["userId"]
+                if not isinstance(user_id, ObjectId):
+                    user_id = ObjectId(user_id)
+                if link_id and login:
+                    result.append(
+                        PublicLinkDao(
+                            applet_bson=document["_id"],
+                            link=link_id,
+                            require_login=login,
+                            created_by_bson=user_id,
+                        )
+                    )
+        return result
