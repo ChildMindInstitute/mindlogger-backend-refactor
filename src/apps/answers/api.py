@@ -462,7 +462,7 @@ async def applet_answers_export(
         for answer in data.answers:
             if answer.is_manager:
                 answer.respondent_secret_id = (
-                    f"[admin account]({answer.respondent_email})"
+                    f"[admin account] ({answer.respondent_email})"
                 )
 
         if activities_last_version:
