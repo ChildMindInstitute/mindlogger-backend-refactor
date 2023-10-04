@@ -35,6 +35,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     ld_watermark: str | None = None
     ld_retention_period: int | None = None
     ld_retention_type: str | None = None
+    ld_stream_enabled: bool | None = None
 
     extra: dict | None = None
     properties: dict
@@ -78,6 +79,11 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         self.ld_alt_label = self._get_ld_alt_label(processed_doc, drop=True)
         self.ld_image = self._get_ld_image(processed_doc, drop=True)
         self.ld_watermark = self._get_ld_watermark(processed_doc, drop=True)
+        self.ld_stream_enabled = self.attr_processor.get_attr_value(
+            processed_doc,
+            "reproschema:streamEnabled",
+            drop=True
+        )
 
         self.report_config = self._get_report_configuration(
             processed_doc, drop=True
@@ -223,6 +229,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             watermark=self.ld_watermark or "",
             activities=activities,
             activity_flows=activity_flows,
+            stream_enabled=self.ld_stream_enabled or False,
             extra_fields=self.extra,
             # encryption: Encryption  # TODO
             # theme_id: uuid.UUID | None = None
