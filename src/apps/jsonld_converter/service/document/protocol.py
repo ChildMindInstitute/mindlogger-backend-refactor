@@ -80,9 +80,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         self.ld_image = self._get_ld_image(processed_doc, drop=True)
         self.ld_watermark = self._get_ld_watermark(processed_doc, drop=True)
         self.ld_stream_enabled = self.attr_processor.get_attr_value(
-            processed_doc,
-            "reproschema:streamEnabled",
-            drop=True
+            processed_doc, "reproschema:streamEnabled", drop=True
         )
 
         self.report_config = self._get_report_configuration(
