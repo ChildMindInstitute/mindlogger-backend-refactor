@@ -2,7 +2,6 @@ from datetime import date, datetime, timedelta
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
-from sqlalchemy.exc import IntegrityError
 
 from apps.schedule.db.schemas import (
     PeriodicitySchema,
@@ -390,7 +389,7 @@ class EventMigrationService:
                     and event.data.reminder.time
                 ):
                     await self._create_reminder(event, pg_event)
-            except IntegrityError as e:
+            except Exception as e:
                 number_of_errors += 1
                 print(f"Skipped Event: {event.id}")
                 continue
