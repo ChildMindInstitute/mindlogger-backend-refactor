@@ -49,8 +49,8 @@ class AppletUserDAO:
             )
             VALUES (
                 %s,
-                NOW(),
-                NOW(),
+                now() at time zone ('utc'),
+                now() at time zone ('utc'),
                 FALSE,
                 %s, %s, %s, %s, %s, %s, %s
             )
