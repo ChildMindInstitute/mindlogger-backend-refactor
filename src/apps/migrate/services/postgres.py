@@ -1,3 +1,4 @@
+import json
 import logging
 
 import math
@@ -28,7 +29,6 @@ from apps.migrate.data_description.applet_user_access import (
     AppletUserDAO,
     sort_by_role_priority,
 )
-from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.users.services.user import UserService
 
 
@@ -367,26 +367,29 @@ class Postgres:
         cursor.close()
         return list(map(lambda t: t[0], results))
 
-    def save_user_access_workspace(self, access_mapping: List[AppletUserDAO]):
-        sql = """
-            INSERT INTO user_applet_accesses
-            (
-                "id", 
-                "created_at", 
-                "updated_at", 
-                "is_deleted", 
-                "role", 
-                "user_id", 
-                "applet_id",
-                "owner_id",
-                "invitor_id",
-                "meta",
-                "is_pinned",
-                "migrated_date",
-                "migrated_updated"
+    def update_access(self, access: AppletUserDAO):
+        try:
+            profile_id = access.meta.get("legacyProfileId")
+            if not profile_id:
+                return
+            cursor = self.connection.cursor()
+            sql = access.update_stmt()
+            cursor.execute(
+                sql,
+                (
+                    json.dumps(str(profile_id)),
+                    access.role,
+                    str(access.user_id),
+                    str(access.owner_id),
+                    str(access.applet_id),
+                ),
             )
-            VALUES {values}
-        """
+        except Exception as ex:
+            migration_log.warning(ex)
+        finally:
+            self.connection.commit()
+
+    def save_user_access_workspace(self, access_mapping: List[AppletUserDAO]):
         sub_managers = (
             Role.REVIEWER.value,
             Role.COORDINATOR.value,
@@ -404,15 +407,19 @@ class Postgres:
                 continue
 
             cursor = self.connection.cursor()
-            query = sql.format(values=str(row))
             try:
-                cursor.execute(query)
+                sql = row.insert_stmt()
+                values = row.values()
+                cursor.execute(sql, values)
             except Exception as ex:
-                if not hasattr(ex, "pgcode"):
-                    # not pg error
+                code = getattr(ex, "pgcode", None)
+                if code is None:
                     raise ex
-                migration_log.warning(ex.pgerror)
-            self.connection.commit()
+                elif code in [FOREIGN_KEY_VIOLATION, UNIQUE_VIOLATION]:
+                    # Close previous transaction in case of exception
+                    self.connection.commit()
+                    # Try to update current row
+                    self.update_access(row)
 
     def save_user_pins(self, user_pin_dao):
         sql = """

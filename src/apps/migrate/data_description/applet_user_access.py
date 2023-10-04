@@ -20,29 +20,67 @@ class AppletUserDAO:
     is_pinned: bool
     is_deleted: bool
 
+    def dump_meta(self) -> str:
+        if "legacyProfileId" in self.meta:
+            self.meta["legacyProfileId"] = str(self.meta["legacyProfileId"])
+        return json.dumps(self.meta, cls=EncUUID)
+
     def __hash__(self):
         return hash((self.user_id, self.applet_id, self.role))
 
     def __eq__(self, other):
         return hash(other) == hash(self)
 
-    def __str__(self):
-        values = (
-            f"'{uuid.uuid4()}'::UUID",
-            f"'{self.created_at}'::TIMESTAMP",
-            f"'{self.updated_at}'::TIMESTAMP",
-            str(self.is_deleted),
-            f"'{self.role}'",
-            f"'{self.user_id}'::UUID",
-            f"'{self.applet_id}'::UUID",
-            f"'{self.owner_id}'::UUID",
-            (f"'{self.inviter_id}'::UUID" if self.inviter_id else "NULL"),
-            f"'{json.dumps(self.meta, cls=EncUUID)}'",
-            str(self.is_pinned),
-            f"'{datetime.datetime.utcnow()}'::TIMESTAMP",
-            f"'{datetime.datetime.utcnow()}'::TIMESTAMP",
+    def insert_stmt(self) -> str:
+        return """
+            INSERT INTO user_applet_accesses
+            (
+                "id", 
+                "migrated_date",
+                "migrated_updated",
+                "is_deleted", 
+                "is_pinned",
+                "role", 
+                "user_id", 
+                "applet_id",
+                "owner_id",
+                "invitor_id",
+                "meta"
+            )
+            VALUES (
+                %s,
+                now() at time zone ('utc'),
+                now() at time zone ('utc'),
+                FALSE,
+                %s, %s, %s, %s, %s, %s, %s
+            )
+        """
+
+    def update_stmt(self):
+        return """
+        UPDATE user_applet_accesses 
+            SET meta = jsonb_set(
+                COALESCE(meta, '{}'::jsonb),
+                '{legacyProfileId}',%s, true
+            )
+        WHERE 
+            role = %s AND
+            user_id = %s AND
+            owner_id = %s AND
+            applet_id = %s
+        """
+
+    def values(self) -> tuple:
+        return (
+            str(uuid.uuid4()),
+            self.is_pinned,
+            self.role,
+            str(self.user_id),
+            str(self.applet_id),
+            str(self.owner_id),
+            str(self.inviter_id),
+            self.dump_meta(),
         )
-        return f"({','.join(values)})"
 
 
 def sort_by_role_priority(dao: AppletUserDAO):

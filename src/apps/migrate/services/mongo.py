@@ -1315,6 +1315,7 @@ class Mongo:
         self, migrated_applet_ids: List[ObjectId]
     ) -> List[AppletUserDAO]:
         account_profile_collection = self.db["accountProfile"]
+        applet_collection = self.db["folder"]
         not_found_users = []
         not_found_applets = []
         access_result = []
@@ -1333,11 +1334,6 @@ class Mongo:
                     managerial_applets.extend(applets)
 
             for role_name, applet_ids in role_applets_mapping.items():
-                if role_name == Role.OWNER:
-                    # Skip owner in case of it was
-                    # created on applet migration stage
-                    continue
-                applet_docs = self.docs_by_ids("folder", applet_ids)
                 for applet_id in applet_ids:
                     # Check maybe we already check this id in past
                     if applet_id in not_found_applets:
@@ -1347,12 +1343,7 @@ class Mongo:
                         # Applet doesn't exist in postgresql, just skip it
                         # ant put id to cache
                         continue
-                    applet = next(
-                        filter(
-                            lambda item: item["_id"] == applet_id, applet_docs
-                        ),
-                        None,
-                    )
+                    applet = applet_collection.find_one({"_id": applet_id})
                     if not applet:
                         continue
                     meta = {}
@@ -1388,6 +1379,16 @@ class Mongo:
                     if not owner_id:
                         owner_id = mongoid_to_uuid(applet.get("creatorId"))
 
+                    applet_profile = self.db["appletProfile"].find_one(
+                        {
+                            "userId": doc["userId"],
+                            "appletId": applet_id,
+                            "accountId": doc["_id"],
+                        }
+                    )
+                    if applet_profile is None:
+                        continue
+                    meta["legacyProfileId"] = applet_profile["_id"]
                     inviter_id = self.inviter_id(doc["userId"], applet_id)
                     if not inviter_id:
                         inviter_id = owner_id
