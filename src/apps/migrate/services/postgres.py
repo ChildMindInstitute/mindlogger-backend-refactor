@@ -14,6 +14,7 @@ from bson import ObjectId
 
 from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
 from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
+from apps.migrate.data_description.public_link import PublicLinkDao
 from apps.migrate.services.applet_service import AppletMigrationService
 from apps.migrate.utilities import (
     mongoid_to_uuid,
@@ -21,6 +22,7 @@ from apps.migrate.utilities import (
     migration_log,
 )
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database import session_manager
 from infrastructure.database import atomic
 from apps.migrate.data_description.applet_user_access import (
@@ -60,6 +62,9 @@ class Postgres:
         )
         cursor.execute(
             "DELETE FROM events WHERE applet_id = %s", (applet_id.hex,)
+        )
+        cursor.execute(
+            "DELETE FROM periodicity WHERE id NOT IN (SELECT periodicity_id FROM events)"
         )
         cursor.execute(
             "DELETE FROM library WHERE applet_id_version LIKE %s",
@@ -673,13 +678,34 @@ class Postgres:
             UPDATE applets 
                 SET theme_id = (SELECT id FROM themes WHERE "name"='Default')
             WHERE
-                theme_id NOT IN (SELECT id FROM themes) OR theme_id IS NULL
+                theme_id NOT IN (SELECT id FROM themes) OR theme_id IS NULL;
 
             UPDATE applet_histories  
                 SET theme_id = (SELECT id FROM themes WHERE "name"='Default')
             WHERE
-                theme_id NOT IN (SELECT id FROM themes) OR theme_id is null
+                theme_id NOT IN (SELECT id FROM themes) OR theme_id is null;
         """
         cursor = self.connection.cursor()
         cursor.execute(sql)
+        cursor.close()
+
+    @staticmethod
+    async def add_anon_to_applet(user_id: uuid.UUID, applet_id: uuid.UUID):
+        session = session_manager.get_session()
+        async with atomic(session):
+            await UserAppletAccessService(
+                session, user_id, applet_id
+            ).add_role_for_anonymous_respondent()
+
+    async def save_public_link(self, links: List[PublicLinkDao]):
+        cursor = self.connection.cursor()
+        for link in links:
+            sql = 'UPDATE "applets" SET link=%s, require_login=%s WHERE id=%s'
+            cursor.execute(
+                sql,
+                (str(link.link_id), link.require_login, str(link.applet_id)),
+            )
+            self.connection.commit()
+            if not link.require_login:
+                await self.add_anon_to_applet(link.created_by, link.applet_id)
         cursor.close()

@@ -23,6 +23,10 @@ from apps.migrate.services.alert_service import (
     MongoAlert,
     AlertMigrationService,
 )
+from apps.migrate.services.invitation_service import (
+    MongoInvitation,
+    InvitationsMigrationService,
+)
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.item import Item
 
@@ -413,6 +417,37 @@ async def migrate_alerts(
     await AlertMigrationService(session, alerts).run_alerts_migration()
 
 
+async def migrate_pending_invitations(
+    applet_ids: list[ObjectId] | None, mongo: Mongo, postgres: Postgres
+):
+    invitations_collection = mongo.db["invitation"]
+    session = session_manager.get_session()
+
+    query = {}
+    if applet_ids:
+        query["appletId"] = {"$in": applet_ids}
+
+    invitations: list = []
+    for invitation in invitations_collection.find(query):
+        invitations.append(MongoInvitation.parse_obj(invitation))
+
+    migration_log.warning(
+        f"[INVITATIONS] Total number of pending invitations in mongo for {len(applet_ids) if applet_ids else 'all'} applets: {len(invitations)}"
+    )
+
+    await InvitationsMigrationService(
+        session, invitations
+    ).run_invitations_migration()
+
+
+async def migrate_public_links(postgres: Postgres, mongo: Mongo):
+    migration_log.warning("[PUBLIC LINKS] Started")
+    applet_mongo_ids = postgres.get_migrated_applets()
+    links = mongo.get_public_link_mappings(applet_mongo_ids)
+    await postgres.save_public_link(links)
+    migration_log.warning("[PUBLIC LINKS] Finished")
+
+
 async def main(workspace_id: str | None, applets_ids: list[str] | None):
     mongo = Mongo()
     postgres = Postgres()
@@ -462,8 +497,12 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
 
     # Add default (AlwayAvalible) events to activities and flows
     # await add_default_evets(postgres)
-    # Migrate events
+    # Migrate alerts
     # await migrate_alerts(applets_ids, mongo, postgres)
+    # Migrate pending invitation
+    # await migrate_pending_invitations(applets_ids, mongo, postgres)
+
+    # await migrate_public_links(postgres, mongo)
 
     # Close connections
     mongo.close_connection()

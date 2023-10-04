@@ -17,6 +17,7 @@ from apps.schedule.domain.schedule.requests import (
 )
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.link import convert_link_key
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
@@ -86,13 +87,14 @@ async def schedule_get_all(
 
 
 async def public_schedule_get_all(
-    key: uuid.UUID,
+    key: str,
     session=Depends(get_session),
 ) -> Response[PublicEventByUser]:
     """Get all schedules for an applet."""
+    key_guid = convert_link_key(key)
     async with atomic(session):
         schedules = await ScheduleService(session).get_public_all_schedules(
-            key
+            key_guid
         )
 
     return Response(result=schedules)

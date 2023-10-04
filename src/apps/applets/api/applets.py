@@ -47,6 +47,7 @@ from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
+from apps.shared.link import convert_link_key
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
@@ -123,16 +124,17 @@ async def applet_retrieve(
 
 
 async def applet_retrieve_by_key(
-    key: uuid.UUID,
+    key: str,
     language: str = Depends(get_language),
     session=Depends(get_session),
 ) -> Response[AppletSingleLanguageDetailForPublic]:
+    key_guid = convert_link_key(key)
     async with atomic(session):
         service = AppletService(
             session, uuid.UUID("00000000-0000-0000-0000-000000000000")
         )
-        await service.exist_by_key(key)
-        applet = await service.get_single_language_by_key(key, language)
+        await service.exist_by_key(key_guid)
+        applet = await service.get_single_language_by_key(key_guid, language)
     return Response(
         result=AppletSingleLanguageDetailForPublic.from_orm(applet)
     )

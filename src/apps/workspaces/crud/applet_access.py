@@ -300,6 +300,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserSchema.id,
                 UserSchema.email_encrypted.label("email"),
                 UserAppletAccessSchema.respondent_secret_id.label("secret_id"),  # type: ignore[attr-defined] # noqa: E501
+                UserAppletAccessSchema.legacy_profile_id,
                 has_manager_role.label("is_manager"),
             )
             .outerjoin(
