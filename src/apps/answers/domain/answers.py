@@ -271,6 +271,7 @@ class UserAnswerDataBase(BaseModel):
     version: str
     respondent_id: uuid.UUID | str | None = None
     respondent_secret_id: str | None = None
+    legacy_profile_id: str | None = None
     user_public_key: str | None
     answer: str | None = None
     item_ids: list[str] = Field(default_factory=list)
@@ -284,19 +285,18 @@ class UserAnswerDataBase(BaseModel):
     flow_name: str | None
     reviewed_answer_id: uuid.UUID | str | None
     created_at: datetime.datetime
+    migrated_data: dict | None = None
 
 
 class RespondentAnswerData(UserAnswerDataBase, InternalModel):
     is_manager: bool = False
     respondent_email: str | None = None
-    migrated_data: dict | None = None
 
 
 class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
     applet_id: str | None
     activity_id: str | None
     flow_id: str | None
-    migrated_data: dict | None = None
 
     @validator("applet_id", always=True)
     def extract_applet_id(cls, value, values):

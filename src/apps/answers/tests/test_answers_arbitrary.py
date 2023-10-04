@@ -572,8 +572,9 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 404, response.json()
 
+    @patch("apps.answers.service.create_report.kiq")
     @rollback
-    async def test_applet_activity_answers(self):
+    async def test_applet_activity_answers(self, report_mock: CoroutineMock):
         await self.client.login(
             self.login_url, "ivan@mindlogger.com", "Test1234!"
         )
@@ -968,7 +969,7 @@ class TestAnswerActivityItems(BaseTest):
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime"
+            "endDatetime", "legacyProfileId"
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on
@@ -1187,6 +1188,7 @@ class TestAnswerActivityItems(BaseTest):
         assert app_width == res.client["width"]
         assert app_height == res.client["height"]
 
+    @patch("apps.answers.service.create_report.kiq")
     @pytest.mark.parametrize(
         "query,expected",
         (
@@ -1195,7 +1197,9 @@ class TestAnswerActivityItems(BaseTest):
         ),
     )
     @rollback
-    async def test_activity_answers_by_identifier(self, query, expected):
+    async def test_activity_answers_by_identifier(
+        self, report_mock: CoroutineMock, query, expected
+    ):
         await self.client.login(
             self.login_url, "ivan@mindlogger.com", "Test1234!"
         )
@@ -1241,8 +1245,8 @@ class TestAnswerActivityItems(BaseTest):
             query=query,
         )
         assert response.status_code == 200, response.json()
-        response = response.json()
-        assert response["count"] == expected
+        result = response.json()
+        assert result["count"] == expected
 
     @rollback
     async def test_answers_arbitrary_export(self):
@@ -1335,7 +1339,7 @@ class TestAnswerActivityItems(BaseTest):
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime"
+            "endDatetime", "legacyProfileId"
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on
