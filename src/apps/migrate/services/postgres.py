@@ -62,6 +62,9 @@ class Postgres:
             "DELETE FROM events WHERE applet_id = %s", (applet_id.hex,)
         )
         cursor.execute(
+            "DELETE FROM periodicity WHERE id NOT IN (SELECT periodicity_id FROM events)"
+        )
+        cursor.execute(
             "DELETE FROM library WHERE applet_id_version LIKE %s",
             (str(applet_id) + "%",),
         )
