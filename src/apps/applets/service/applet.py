@@ -800,6 +800,7 @@ class AppletService:
         device_ids: list | None = None,
         respondent_ids: list | None = None,
     ):
+        # TODO: make background task
         if device_ids is None:
             device_ids = []
         respondents_device_ids = await AppletsCRUD(

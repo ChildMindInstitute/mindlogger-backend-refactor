@@ -42,7 +42,6 @@ from apps.applets.service.applet_history import (
     retrieve_applet_by_version,
     retrieve_versions,
 )
-from apps.applets.tasks import notify_respondents
 from apps.authentication.deps import get_current_user
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
@@ -198,25 +197,25 @@ async def applet_update(
             applet_id
         )
         applet = await service.update(applet_id, schema)
-        await notify_respondents.kiq(
-            applet_id,
-            user.id,
-            "Applet is updated.",
-            "Applet is updated.",
-            FirebaseNotificationType.APPLET_UPDATE,
-        )
 
-        # await mail_service.send(
-        #     MessageSchema(
-        #         recipients=[user.email],
-        #         subject="Applet edit success!",
-        #         body=mail_service.get_template(
-        #             path="applet_edit_success_en",
-        #             first_name=user.first_name,
-        #             applet_name=applet.display_name,
-        #         ),
-        #     )
-        # )
+    await service.send_notification_to_applet_respondents(
+        applet_id,
+        "Applet is updated.",
+        "Applet is updated.",
+        FirebaseNotificationType.APPLET_UPDATE,
+    )
+
+    # await mail_service.send(
+    #     MessageSchema(
+    #         recipients=[user.email],
+    #         subject="Applet edit success!",
+    #         body=mail_service.get_template(
+    #             path="applet_edit_success_en",
+    #             first_name=user.first_name,
+    #             applet_name=applet.display_name,
+    #         ),
+    #     )
+    # )
     return Response(result=public_detail.Applet.from_orm(applet))
 
 
@@ -425,9 +424,8 @@ async def applet_delete(
         ).get_respondents_device_ids(applet_id)
         await service.delete_applet_by_id(applet_id)
 
-    await notify_respondents.kiq(
+    await service.send_notification_to_applet_respondents(
         applet_id,
-        user.id,
         "Applet is deleted.",
         "Applet is deleted.",
         FirebaseNotificationType.APPLET_DELETE,

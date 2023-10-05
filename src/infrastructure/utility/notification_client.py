@@ -1,4 +1,3 @@
-import asyncio
 import enum
 import json
 import uuid
@@ -54,20 +53,29 @@ class FCMNotificationTest:
 class FCMNotification:
     """Singleton FCM Notification client"""
 
+    _initialized = False
+    _app = None
+
     def __new__(cls, *args, **kwargs):
         if settings.env == "testing":
             return FCMNotificationTest()
-        return super().__new__(cls)
+        if not cls._app:
+            cls._app = super().__new__(cls)
+        return cls._app
 
-    def _init_app(self):
+    def __init__(self):
+        if self._initialized:
+            return
         certificate = settings.fcm.certificate
         for key, value in certificate.items():
             if not value:
                 return
 
-        return firebase_admin.initialize_app(
+        self._app = firebase_admin.initialize_app(
             credentials.Certificate(settings.fcm.certificate)
         )
+
+        self._initialized = True
 
     async def notify(
         self,
@@ -79,32 +87,8 @@ class FCMNotification:
         *args,
         **kwargs,
     ):
-        await asyncio.to_thread(
-            self.notify_sync,
-            devices,
-            message,
-            time_to_live,
-            badge,
-            extra_kwargs,
-            *args,
-            **kwargs,
-        )
-
-    def notify_sync(
-        self,
-        devices: list,
-        message: FirebaseMessage,
-        time_to_live: int | None = None,
-        badge: str | None = None,
-        extra_kwargs: dict | None = None,
-        *args,
-        **kwargs,
-    ):
-        app = self._init_app()
-        if not app:
+        if not self._initialized:
             return
-
-        devices = list(set(devices))
         if len(devices) == 0:
             return
         elif devices and len(devices) > 1:
@@ -125,7 +109,7 @@ class FCMNotification:
                         )
                     ),
                 ),
-                app=app,
+                app=self._app,
             )
         else:
             messaging.send(
@@ -145,5 +129,5 @@ class FCMNotification:
                         )
                     ),
                 ),
-                app=app,
+                app=self._app,
             )

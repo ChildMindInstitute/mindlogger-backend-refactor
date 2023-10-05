@@ -4,7 +4,6 @@ from copy import deepcopy
 from fastapi import Body, Depends
 
 from apps.applets.service import AppletService
-from apps.applets.tasks import notify_respondents
 from apps.authentication.deps import get_current_user
 from apps.schedule.domain.schedule.filters import EventQueryParams
 from apps.schedule.domain.schedule.public import (
@@ -36,8 +35,9 @@ async def schedule_create(
     session=Depends(get_session),
 ) -> Response[PublicEvent]:
     """Create a new event for an applet."""
+    applet_service = AppletService(session, user.id)
     async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
+        await applet_service.exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -47,9 +47,8 @@ async def schedule_create(
     respondent_ids = (
         [schedule.respondent_id] if schedule.respondent_id else None
     )
-    await notify_respondents.kiq(
+    await applet_service.send_notification_to_applet_respondents(
         applet_id,
-        user.id,
         "Schedules are updated",
         "Schedules are updated",
         FirebaseNotificationType.SCHEDULE_UPDATED,
@@ -112,17 +111,17 @@ async def schedule_delete_all(
     session=Depends(get_session),
 ):
     """Delete all default schedules for an applet."""
+    applet_service = AppletService(session, user.id)
     async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
+        await applet_service.exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
         service = ScheduleService(session)
         await service.delete_all_schedules(applet_id)
 
-    await notify_respondents.kiq(
+    await applet_service.send_notification_to_applet_respondents(
         applet_id,
-        user.id,
         "Schedules are updated",
         "Schedules are updated",
         FirebaseNotificationType.SCHEDULE_UPDATED,
@@ -136,8 +135,9 @@ async def schedule_delete_by_id(
     session=Depends(get_session),
 ):
     """Delete a schedule by id."""
+    applet_service = AppletService(session, user.id)
     async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
+        await applet_service.exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -146,9 +146,8 @@ async def schedule_delete_by_id(
             schedule_id, applet_id
         )
 
-    await notify_respondents.kiq(
+    await applet_service.send_notification_to_applet_respondents(
         applet_id,
-        user.id,
         "Schedules are updated",
         "Schedules are updated",
         FirebaseNotificationType.SCHEDULE_UPDATED,
@@ -164,8 +163,9 @@ async def schedule_update(
     session=Depends(get_session),
 ) -> Response[PublicEvent]:
     """Update a schedule by id."""
+    applet_service = AppletService(session, user.id)
     async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
+        await applet_service.exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -174,9 +174,8 @@ async def schedule_update(
             applet_id, schedule_id, schema
         )
 
-    await notify_respondents.kiq(
+    await applet_service.send_notification_to_applet_respondents(
         applet_id,
-        user.id,
         "Schedules are updated",
         "Schedules are updated",
         FirebaseNotificationType.SCHEDULE_UPDATED,
@@ -209,8 +208,9 @@ async def schedule_delete_by_user(
     session=Depends(get_session),
 ):
     """Delete all schedules for a respondent and create default ones."""
+    applet_service = AppletService(session, user.id)
     async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
+        await applet_service.exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -219,9 +219,8 @@ async def schedule_delete_by_user(
             applet_id=applet_id, user_id=respondent_id
         )
 
-    await notify_respondents.kiq(
+    await applet_service.send_notification_to_applet_respondents(
         applet_id,
-        user.id,
         "Schedules are updated",
         "Schedules are updated",
         FirebaseNotificationType.SCHEDULE_UPDATED,
@@ -265,8 +264,9 @@ async def schedule_remove_individual_calendar(
     session=Depends(get_session),
 ):
     """Remove individual calendar for a respondent."""
+    applet_service = AppletService(session, user.id)
     async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
+        await applet_service.exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -275,9 +275,8 @@ async def schedule_remove_individual_calendar(
             applet_id=applet_id, user_id=respondent_id
         )
 
-    await notify_respondents.kiq(
+    await applet_service.send_notification_to_applet_respondents(
         applet_id,
-        user.id,
         "Schedules are updated",
         "Schedules are updated",
         FirebaseNotificationType.SCHEDULE_UPDATED,
@@ -314,8 +313,9 @@ async def schedule_create_individual(
     session=Depends(get_session),
 ) -> ResponseMulti[PublicEvent]:
     """Create a new event for an applet."""
+    applet_service = AppletService(session, user.id)
     async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
+        await applet_service.exist_by_id(applet_id)
         await CheckAccessService(
             session, user.id
         ).check_applet_schedule_create_access(applet_id)
@@ -324,9 +324,8 @@ async def schedule_create_individual(
             applet_id, respondent_id
         )
 
-    await notify_respondents.kiq(
+    await applet_service.send_notification_to_applet_respondents(
         applet_id,
-        user.id,
         "Schedules are updated",
         "Schedules are updated",
         FirebaseNotificationType.SCHEDULE_UPDATED,
