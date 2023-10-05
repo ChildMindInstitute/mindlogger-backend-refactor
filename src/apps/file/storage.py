@@ -57,9 +57,7 @@ async def select_storage(
 def logs_storage():
     settings_cdn = CDNSettings(
         region=settings.cdn.region,
-        bucket=settings.cdn.bucket_answer,
+        bucket_answer=settings.cdn.bucket_answer,
         ttl_signed_urls=settings.cdn.ttl_signed_urls,
-        access_key=settings.cdn.access_key,
-        secret_key=settings.cdn.secret_key,
     )
     return LogCDN(settings_cdn, env=settings.env)
