@@ -636,6 +636,7 @@ class AnswerService:
             answer.respondent_secret_id = respondent.secret_id
             answer.respondent_email = respondent.email
             answer.is_manager = respondent.is_manager
+            answer.legacy_profile_id = respondent.legacy_profile_id
             # flow data
             if flow_id := answer.flow_history_id:
                 if flow := flow_map.get(flow_id):

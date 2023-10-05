@@ -31,6 +31,7 @@ from apps.jsonld_converter.dependencies import (
 from apps.migrate.data_description.applet_user_access import AppletUserDAO
 from apps.migrate.data_description.folder_dao import FolderAppletDAO, FolderDAO
 from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
+from apps.migrate.data_description.public_link import PublicLinkDao
 from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.migrate.exception.exception import (
     EmptyAppletException,
@@ -818,13 +819,14 @@ class Mongo:
         return results
 
     def patch_cloned_activities_order(
-        self, original_id: ObjectId, applet_format: dict
+        self, applet_format: dict, applet: dict
     ) -> dict:
         """
         This patches a bug in the legacy system where after an applet is duplicated the activities order still
         refers to the original records.
         If it's the case, it will remove those and replace with the cloned applet activities IDs.
         """
+        original_id = applet["duplicateOf"]
         original = Applet().findOne(query={"_id": original_id})
         if original:
             original_format = jsonld_expander.formatLdObject(
@@ -843,6 +845,38 @@ class Mongo:
                 0
             ]["@list"]:
                 act_blacklist.append(_orig_act["@id"])
+            for _key, _activity in original_format["activities"].items():
+                act_blacklist.append(str(_activity))
+
+            # exclude duplicates of activities
+            all_activities = []
+            for _orig_act in applet_format["applet"]["reprolib:terms/order"][
+                0
+            ]["@list"]:
+                try:
+                    all_activities.append(ObjectId(_orig_act["@id"]))
+                except Exception:
+                    continue
+            for _key, _activity in applet_format["activities"].items():
+                try:
+                    all_activities.append(ObjectId(_activity))
+                except Exception:
+                    continue
+            all_activities = list(
+                FolderModel().find(query={"_id": {"$in": all_activities}})
+            )
+            for _activity in all_activities:
+                if "duplicateOf" in _activity:
+                    act_blacklist.append(str(_activity["duplicateOf"]))
+                if (
+                    abs(
+                        (
+                            _activity["created"] - applet["created"]
+                        ).total_seconds()
+                    )
+                    > 60
+                ):
+                    act_blacklist.append(str(_activity["_id"]))
 
             order = applet_format["applet"]["reprolib:terms/order"][0]["@list"]
             order = [
@@ -875,7 +909,7 @@ class Mongo:
 
         if "duplicateOf" in applet:
             applet_format = self.patch_cloned_activities_order(
-                applet["duplicateOf"], applet_format
+                applet_format, applet
             )
 
         if applet_format["activities"] == {}:
@@ -1127,6 +1161,8 @@ class Mongo:
     mongo_arbitrary_db_cache = {}
 
     def get_main_or_arbitrary_db(self, applet_id: ObjectId) -> Database:
+        return self.db  # don't migrate arb servers
+
         def resolve_arbitrary_client(profile: dict):
             if "db" in profile:
                 return MongoClient(profile["db"])
@@ -1134,6 +1170,10 @@ class Mongo:
         profile = self.db["accountProfile"].find_one(
             {"applets.owner": applet_id}
         )
+        if not profile:
+            print("Unable to find the account for applet", str(applet_id))
+            return self.db
+
         profile_id = str(profile["_id"])
         if profile_id in self.mongo_arbitrary_db_cache:
             client = self.mongo_arbitrary_db_cache[profile_id]
@@ -1154,7 +1194,11 @@ class Mongo:
             "meta.applet.version": kwargs["version"],
         }
         item_collection = db["item"]
-        creators_ids = item_collection.find(query).distinct("creatorId")
+        try:
+            creators_ids = item_collection.find(query).distinct("creatorId")
+        except Exception as e:
+            print("Error: mongo is unreachable", str(e))
+            return []
         result = []
         for creator_id in creators_ids:
             result.append({**query, "creatorId": creator_id})
@@ -1293,6 +1337,7 @@ class Mongo:
                     meta={
                         "nickname": "Mindlogger ChildMindInstitute",
                         "secretUserId": "Guest Account Submission",
+                        "legacyProfileId": str(applet_profile["_id"]),
                     },
                     is_pinned=False,
                     is_deleted=False,
@@ -1304,6 +1349,7 @@ class Mongo:
         self, migrated_applet_ids: List[ObjectId]
     ) -> List[AppletUserDAO]:
         account_profile_collection = self.db["accountProfile"]
+        applet_collection = self.db["folder"]
         not_found_users = []
         not_found_applets = []
         access_result = []
@@ -1322,11 +1368,6 @@ class Mongo:
                     managerial_applets.extend(applets)
 
             for role_name, applet_ids in role_applets_mapping.items():
-                if role_name == Role.OWNER:
-                    # Skip owner in case of it was
-                    # created on applet migration stage
-                    continue
-                applet_docs = self.docs_by_ids("folder", applet_ids)
                 for applet_id in applet_ids:
                     # Check maybe we already check this id in past
                     if applet_id in not_found_applets:
@@ -1336,12 +1377,7 @@ class Mongo:
                         # Applet doesn't exist in postgresql, just skip it
                         # ant put id to cache
                         continue
-                    applet = next(
-                        filter(
-                            lambda item: item["_id"] == applet_id, applet_docs
-                        ),
-                        None,
-                    )
+                    applet = applet_collection.find_one({"_id": applet_id})
                     if not applet:
                         continue
                     meta = {}
@@ -1354,8 +1390,8 @@ class Mongo:
                         if data:
                             if applet_id in managerial_applets:
                                 if data["nick"] == "":
-                                    f_name = decrypt(user["firstName"])
-                                    l_name = decrypt(user["lastName"])
+                                    f_name = user["firstName"]
+                                    l_name = user["lastName"]
                                     meta["nickname"] = (
                                         f"{f_name} {l_name}"
                                         if f_name and l_name
@@ -1377,6 +1413,14 @@ class Mongo:
                     if not owner_id:
                         owner_id = mongoid_to_uuid(applet.get("creatorId"))
 
+                    applet_profile = self.db["appletProfile"].find_one(
+                        {
+                            "userId": doc["userId"],
+                            "appletId": applet_id,
+                        }
+                    )
+                    if applet_profile:
+                        meta["legacyProfileId"] = applet_profile["_id"]
                     inviter_id = self.inviter_id(doc["userId"], applet_id)
                     if not inviter_id:
                         inviter_id = owner_id
@@ -1576,6 +1620,7 @@ class Mongo:
                 allow_rename=True,
                 created_at=theme_doc["created"],
                 updated_at=theme_doc["updated"],
+                is_default=False,
                 applet_id=applet_id,
             )
         return None
@@ -1625,3 +1670,38 @@ class Mongo:
         for item in items:
             ids.add(str(item["appletId"]))
         return list(ids)
+
+    def get_public_link_mappings(
+        self, applet_ids: List[ObjectId]
+    ) -> List[PublicLinkDao]:
+        applets = self.db["folder"].find(
+            {
+                "_id": {"$in": applet_ids},
+                "publicLink": {"$exists": -1},
+            }
+        )
+        result = []
+        for document in applets:
+            link: dict | None = document.get("publicLink")
+            if link:
+                link_id = link.get("id")
+                login = link.get("requireLogin")
+                created_by_ap = link.get("createdBy")
+                applet_profile = self.db["appletProfile"].find_one(
+                    {"_id": created_by_ap["_id"]}
+                )
+                if not applet_profile:
+                    continue
+                user_id = applet_profile["userId"]
+                if not isinstance(user_id, ObjectId):
+                    user_id = ObjectId(user_id)
+                if link_id and login:
+                    result.append(
+                        PublicLinkDao(
+                            applet_bson=document["_id"],
+                            link=link_id,
+                            require_login=login,
+                            created_by_bson=user_id,
+                        )
+                    )
+        return result

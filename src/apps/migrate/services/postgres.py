@@ -1,3 +1,4 @@
+import json
 import logging
 
 import math
@@ -13,6 +14,7 @@ from bson import ObjectId
 
 from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
 from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
+from apps.migrate.data_description.public_link import PublicLinkDao
 from apps.migrate.services.applet_service import AppletMigrationService
 from apps.migrate.utilities import (
     mongoid_to_uuid,
@@ -20,13 +22,13 @@ from apps.migrate.utilities import (
     migration_log,
 )
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database import session_manager
 from infrastructure.database import atomic
 from apps.migrate.data_description.applet_user_access import (
     AppletUserDAO,
     sort_by_role_priority,
 )
-from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.users.services.user import UserService
 
 
@@ -62,6 +64,9 @@ class Postgres:
             "DELETE FROM events WHERE applet_id = %s", (applet_id.hex,)
         )
         cursor.execute(
+            "DELETE FROM periodicity WHERE id NOT IN (SELECT periodicity_id FROM events)"
+        )
+        cursor.execute(
             "DELETE FROM library WHERE applet_id_version LIKE %s",
             (str(applet_id) + "%",),
         )
@@ -91,6 +96,12 @@ class Postgres:
         )
         cursor.execute(
             "DELETE FROM applet_histories WHERE id = %s", (applet_id.hex,)
+        )
+        cursor.execute(
+            "DELETE FROM invitations WHERE applet_id = %s", (applet_id.hex,)
+        )
+        cursor.execute(
+            "DELETE FROM alerts WHERE applet_id = %s", (applet_id.hex,)
         )
         cursor.execute(
             "DELETE FROM flows WHERE applet_id = %s", (applet_id.hex,)
@@ -362,26 +373,29 @@ class Postgres:
         cursor.close()
         return list(map(lambda t: t[0], results))
 
-    def save_user_access_workspace(self, access_mapping: List[AppletUserDAO]):
-        sql = """
-            INSERT INTO user_applet_accesses
-            (
-                "id", 
-                "created_at", 
-                "updated_at", 
-                "is_deleted", 
-                "role", 
-                "user_id", 
-                "applet_id",
-                "owner_id",
-                "invitor_id",
-                "meta",
-                "is_pinned",
-                "migrated_date",
-                "migrated_updated"
+    def update_access(self, access: AppletUserDAO):
+        try:
+            profile_id = access.meta.get("legacyProfileId")
+            if not profile_id:
+                return
+            cursor = self.connection.cursor()
+            sql = access.update_stmt()
+            cursor.execute(
+                sql,
+                (
+                    json.dumps(str(profile_id)),
+                    access.role,
+                    str(access.user_id),
+                    str(access.owner_id),
+                    str(access.applet_id),
+                ),
             )
-            VALUES {values}
-        """
+        except Exception as ex:
+            migration_log.warning(ex)
+        finally:
+            self.connection.commit()
+
+    def save_user_access_workspace(self, access_mapping: List[AppletUserDAO]):
         sub_managers = (
             Role.REVIEWER.value,
             Role.COORDINATOR.value,
@@ -399,15 +413,20 @@ class Postgres:
                 continue
 
             cursor = self.connection.cursor()
-            query = sql.format(values=str(row))
             try:
-                cursor.execute(query)
+                sql = row.insert_stmt()
+                values = row.values()
+                cursor.execute(sql, values)
+                self.connection.commit()
             except Exception as ex:
-                if not hasattr(ex, "pgcode"):
-                    # not pg error
+                code = getattr(ex, "pgcode", None)
+                if code is None:
                     raise ex
-                migration_log.warning(ex.pgerror)
-            self.connection.commit()
+                elif code in [FOREIGN_KEY_VIOLATION, UNIQUE_VIOLATION]:
+                    # Close previous transaction in case of exception
+                    self.connection.commit()
+                    # Try to update current row
+                    self.update_access(row)
 
     def save_user_pins(self, user_pin_dao):
         sql = """
@@ -666,13 +685,34 @@ class Postgres:
             UPDATE applets 
                 SET theme_id = (SELECT id FROM themes WHERE "name"='Default')
             WHERE
-                theme_id NOT IN (SELECT id FROM themes) OR theme_id IS NULL
+                theme_id NOT IN (SELECT id FROM themes) OR theme_id IS NULL;
 
             UPDATE applet_histories  
                 SET theme_id = (SELECT id FROM themes WHERE "name"='Default')
             WHERE
-                theme_id NOT IN (SELECT id FROM themes) OR theme_id is null
+                theme_id NOT IN (SELECT id FROM themes) OR theme_id is null;
         """
         cursor = self.connection.cursor()
         cursor.execute(sql)
+        cursor.close()
+
+    @staticmethod
+    async def add_anon_to_applet(user_id: uuid.UUID, applet_id: uuid.UUID):
+        session = session_manager.get_session()
+        async with atomic(session):
+            await UserAppletAccessService(
+                session, user_id, applet_id
+            ).add_role_for_anonymous_respondent()
+
+    async def save_public_link(self, links: List[PublicLinkDao]):
+        cursor = self.connection.cursor()
+        for link in links:
+            sql = 'UPDATE "applets" SET link=%s, require_login=%s WHERE id=%s'
+            cursor.execute(
+                sql,
+                (str(link.link_id), link.require_login, str(link.applet_id)),
+            )
+            self.connection.commit()
+            if not link.require_login:
+                await self.add_anon_to_applet(link.created_by, link.applet_id)
         cursor.close()

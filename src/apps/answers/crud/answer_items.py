@@ -174,7 +174,9 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         if not identifiers and empty_identifiers:
             if "identifiers" in filters.filters:
                 filters.filters.pop("identifiers")
-            query = query.where(AnswerItemSchema.identifier.is_(None))
+        elif not identifiers and not empty_identifiers:
+            filters.filters.pop("identifiers")
+            query = query.where(AnswerItemSchema.identifier.isnot(None))
 
         query = query.order_by(AnswerSchema.created_at.asc())
         if filters.filters:

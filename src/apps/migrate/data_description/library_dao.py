@@ -65,11 +65,11 @@ class ThemeDao:
         return hash(other) == hash(self)
 
     def get_name(self) -> str:
-        if self.is_default():
+        if self.is_name_default():
             return "Default"
         return self.name
 
-    def is_default(self) -> bool:
+    def is_name_default(self) -> bool:
         if self.name.lower() == "mindlogger":
             return True
         return False
@@ -90,7 +90,7 @@ class ThemeDao:
             self.tertiary_color,
             self.public,
             self.allow_rename,
-            self.is_default(),
+            self.is_name_default(),
             self.migrated_date,
             self.migrated_updated,
         )

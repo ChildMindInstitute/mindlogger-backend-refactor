@@ -2,7 +2,6 @@ import datetime
 import json
 import uuid
 
-import pytest
 from asynctest import CoroutineMock, patch
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -572,8 +571,9 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 404, response.json()
 
+    @patch("apps.answers.service.create_report.kiq")
     @rollback
-    async def test_applet_activity_answers(self):
+    async def test_applet_activity_answers(self, report_mock: CoroutineMock):
         await self.client.login(
             self.login_url, "ivan@mindlogger.com", "Test1234!"
         )
@@ -618,6 +618,7 @@ class TestAnswerActivityItems(BaseTest):
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
             ),
+            query={"emptyIdentifiers": True},
         )
 
         assert response.status_code == 200, response.json()
@@ -968,7 +969,7 @@ class TestAnswerActivityItems(BaseTest):
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime"
+            "endDatetime", "legacyProfileId"
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on
@@ -1187,15 +1188,11 @@ class TestAnswerActivityItems(BaseTest):
         assert app_width == res.client["width"]
         assert app_height == res.client["height"]
 
-    @pytest.mark.parametrize(
-        "query,expected",
-        (
-            ({"identifiers": "encrypted"}, 1),
-            ({"emptyIdentifiers": True}, 0),
-        ),
-    )
+    @patch("apps.answers.service.create_report.kiq")
     @rollback
-    async def test_activity_answers_by_identifier(self, query, expected):
+    async def test_activity_answers_by_identifier(
+        self, report_mock: CoroutineMock
+    ):
         await self.client.login(
             self.login_url, "ivan@mindlogger.com", "Test1234!"
         )
@@ -1238,11 +1235,11 @@ class TestAnswerActivityItems(BaseTest):
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
             ),
-            query=query,
+            query={"identifiers": "encrypted", "emptyIdentifiers": False},
         )
         assert response.status_code == 200, response.json()
-        response = response.json()
-        assert response["count"] == expected
+        result = response.json()
+        assert result["count"] == 1
 
     @rollback
     async def test_answers_arbitrary_export(self):
@@ -1335,7 +1332,7 @@ class TestAnswerActivityItems(BaseTest):
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime"
+            "endDatetime", "legacyProfileId"
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on
