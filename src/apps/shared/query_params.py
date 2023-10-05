@@ -52,12 +52,6 @@ def parse_query_params(query_param_class):
                 grouped_query_params.ordering = list(
                     map(_camelcase_to_snakecase, val.split(","))
                 )
-                grouped_query_params.ordering = list(
-                    map(
-                        _positive_sort_field_name_fix,
-                        grouped_query_params.ordering,
-                    )
-                )
             else:
                 grouped_query_params.filters[key] = val
 
@@ -68,7 +62,3 @@ def parse_query_params(query_param_class):
 
 def _camelcase_to_snakecase(text: str):
     return re.sub(r"(?<!^)(?=[A-Z])", "_", text).lower()
-
-
-def _positive_sort_field_name_fix(text: str):
-    return text if text[0] != "+" else text[1:]
