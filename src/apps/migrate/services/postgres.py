@@ -101,6 +101,9 @@ class Postgres:
             "DELETE FROM invitations WHERE applet_id = %s", (applet_id.hex,)
         )
         cursor.execute(
+            "DELETE FROM alerts WHERE applet_id = %s", (applet_id.hex,)
+        )
+        cursor.execute(
             "DELETE FROM flows WHERE applet_id = %s", (applet_id.hex,)
         )
         cursor.execute("DELETE FROM applets WHERE id = %s", (applet_id.hex,))

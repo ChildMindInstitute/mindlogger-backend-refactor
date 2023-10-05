@@ -841,14 +841,18 @@ class Mongo:
             and "reprolib:terms/order" in original_format["applet"]
         ):
             act_blacklist = []
-            for _orig_act in original_format["applet"]["reprolib:terms/order"][0]["@list"]:
+            for _orig_act in original_format["applet"]["reprolib:terms/order"][
+                0
+            ]["@list"]:
                 act_blacklist.append(_orig_act["@id"])
             for _key, _activity in original_format["activities"].items():
                 act_blacklist.append(str(_activity))
 
             # exclude duplicates of activities
             all_activities = []
-            for _orig_act in applet_format["applet"]["reprolib:terms/order"][0]["@list"]:
+            for _orig_act in applet_format["applet"]["reprolib:terms/order"][
+                0
+            ]["@list"]:
                 try:
                     all_activities.append(ObjectId(_orig_act["@id"]))
                 except Exception:
@@ -858,11 +862,20 @@ class Mongo:
                     all_activities.append(ObjectId(_activity))
                 except Exception:
                     continue
-            all_activities = list(FolderModel().find(query={"_id": {"$in": all_activities}}))
+            all_activities = list(
+                FolderModel().find(query={"_id": {"$in": all_activities}})
+            )
             for _activity in all_activities:
-                if 'duplicateOf' in _activity:
+                if "duplicateOf" in _activity:
                     act_blacklist.append(str(_activity["duplicateOf"]))
-                if abs((_activity["created"] - applet["created"]).total_seconds()) > 60:
+                if (
+                    abs(
+                        (
+                            _activity["created"] - applet["created"]
+                        ).total_seconds()
+                    )
+                    > 60
+                ):
                     act_blacklist.append(str(_activity["_id"]))
 
             order = applet_format["applet"]["reprolib:terms/order"][0]["@list"]
@@ -1377,8 +1390,8 @@ class Mongo:
                         if data:
                             if applet_id in managerial_applets:
                                 if data["nick"] == "":
-                                    f_name = decrypt(user["firstName"])
-                                    l_name = decrypt(user["lastName"])
+                                    f_name = user["firstName"]
+                                    l_name = user["lastName"]
                                     meta["nickname"] = (
                                         f"{f_name} {l_name}"
                                         if f_name and l_name
