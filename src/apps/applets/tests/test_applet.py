@@ -1,10 +1,13 @@
 import asyncio
 import uuid
+from unittest.mock import patch
+
+from asynctest import CoroutineMock
 
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
-from infrastructure.utility import FCMNotificationTest
+from infrastructure.utility import FCMNotificationTest  # noqa
 
 
 class TestApplet(BaseTest):
@@ -779,8 +782,10 @@ class TestApplet(BaseTest):
             response.json()["result"][0]["message"] == "Applet already exists."
         )
 
+    @patch("apps.applets.api.applets.notify_respondents.kiq")
     @rollback
-    async def test_update_applet(self):
+    async def test_update_applet(self, task_mock: CoroutineMock):
+        # TODO: after removing scoped_session remove mock, test actual notification  # noqa
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -924,7 +929,9 @@ class TestApplet(BaseTest):
         assert response.status_code == 200, response.json()
         # assert len(TestMail.mails) == 1
         # assert TestMail.mails[0].subject == "Applet edit success!"
-        assert len(FCMNotificationTest.notifications) > 0
+        # TODO: after removing scoped_session remove mock, test actual notification  # noqa
+        # assert len(FCMNotificationTest.notifications) > 0
+        task_mock.assert_awaited_once()
 
         data = response.json()
         response = await self.client.put(
@@ -1139,8 +1146,10 @@ class TestApplet(BaseTest):
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 
+    @patch("apps.applets.api.applets.notify_respondents.kiq")
     @rollback
-    async def test_applet_delete(self):
+    async def test_applet_delete(self, task_mock: CoroutineMock):
+        # TODO: after removing scoped_session remove mock, test actual notification  # noqa
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -1160,7 +1169,9 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 404, response.json()
 
-        assert len(FCMNotificationTest.notifications) > 0
+        # TODO: after removing scoped_session remove mock, test actual notification  # noqa
+        # assert len(FCMNotificationTest.notifications) > 0
+        task_mock.assert_awaited_once()
 
     @rollback
     async def test_applet_delete_by_manager(self):

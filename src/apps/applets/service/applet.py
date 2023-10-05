@@ -797,14 +797,14 @@ class AppletService:
         title,
         body,
         type_: FirebaseNotificationType,
-        device_ids=None,
+        device_ids: list | None = None,
+        respondent_ids: list | None = None,
     ):
-        # TODO: make background task
         if device_ids is None:
             device_ids = []
         respondents_device_ids = await AppletsCRUD(
             self.session
-        ).get_respondents_device_ids(applet_id)
+        ).get_respondents_device_ids(applet_id, respondent_ids)
         respondents_device_ids += device_ids
         await FCMNotification().notify(
             respondents_device_ids,
