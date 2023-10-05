@@ -164,12 +164,14 @@ class EventMigrationService:
     ) -> PeriodicitySchema:
         periodicity_data: dict = {}
 
-        if event.data.eventType in ("", None):
+        if event.data.eventType is None:
             periodicity_data["type"] = PeriodicityType.ALWAYS
         elif isinstance(event.data.eventType, str):
             periodicity_data["type"] = event.data.eventType.upper()
+            if event.data.eventType == "":
+                periodicity_data["type"] = PeriodicityType.ONCE
 
-            if event.data.eventType.upper() in (
+            if periodicity_data["type"] in (
                 PeriodicityType.ONCE,
                 PeriodicityType.WEEKLY,
                 PeriodicityType.MONTHLY,
