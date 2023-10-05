@@ -30,4 +30,4 @@ async def notify_respondents(
                 respondent_ids=respondent_ids,
             )
     finally:
-        session_maker.remove()
+        session_maker.delete()
