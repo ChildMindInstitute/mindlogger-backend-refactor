@@ -67,6 +67,12 @@ from apps.workspaces.domain.constants import Role
 
 __all__ = ["ScheduleService"]
 
+from infrastructure.utility import (
+    FCMNotification,
+    FirebaseMessage,
+    FirebaseNotificationType,
+)
+
 
 class ScheduleService:
     def __init__(self, session):
@@ -1146,4 +1152,27 @@ class ScheduleService:
         return await self.get_all_schedules(
             applet_id,
             QueryParams(filters={"respondent_id": respondent_id}),
+        )
+
+    async def send_notification_to_respondents(
+        self,
+        applet_id: uuid.UUID,
+        title: str,
+        body: str,
+        type_: FirebaseNotificationType,
+        respondents_ids: list[uuid.UUID] | None = None,
+    ):
+        device_ids = await AppletsCRUD(
+            self.session
+        ).get_respondents_device_ids(applet_id, respondents_ids)
+        await FCMNotification().notify(
+            device_ids,
+            FirebaseMessage(
+                title=title,
+                body=body,
+                data=dict(
+                    type=type_,
+                    applet_id=applet_id,
+                ),
+            ),
         )

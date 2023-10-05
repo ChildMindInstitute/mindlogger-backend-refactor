@@ -1,4 +1,3 @@
-import asyncio
 import enum
 import json
 import uuid
@@ -90,12 +89,10 @@ class FCMNotification:
     ):
         if not self._initialized:
             return
-        devices = list(set(devices))
         if len(devices) == 0:
             return
         elif devices and len(devices) > 1:
-            await asyncio.to_thread(
-                messaging.send_each_for_multicast,
+            messaging.send_each_for_multicast(
                 messaging.MulticastMessage(
                     devices,
                     android=messaging.AndroidConfig(
@@ -115,8 +112,7 @@ class FCMNotification:
                 app=self._app,
             )
         else:
-            await asyncio.to_thread(
-                messaging.send,
+            messaging.send(
                 messaging.Message(
                     android=messaging.AndroidConfig(
                         ttl=settings.fcm.ttl, priority="high"
