@@ -8,25 +8,22 @@ import boto3
 from botocore.exceptions import ClientError
 
 from apps.shared.exception import NotFoundError
-from config.cdn import CDNSettings
+from infrastructure.utility.cdn_config import CdnConfig
 
 
 class CDNClient:
     default_container_name = "mindlogger"
 
-    def __init__(self, config: CDNSettings, env: str):
+    def __init__(self, config: CdnConfig, env: str):
         self.config = config
         self.env = env
         self.client = self.configure_client(config)
-
-    def get_bucket(self) -> str | None:
-        return self.config.bucket
 
     def generate_key(self, scope, unique, filename):
         return f"{self.default_container_name}/{scope}/{unique}/{filename}"
 
     def generate_private_url(self, key):
-        return f"s3://{self.get_bucket()}/{key}"
+        return f"s3://{self.config.bucket}/{key}"
 
     def configure_client(self, config):
         assert config, "set CDN"
@@ -49,7 +46,7 @@ class CDNClient:
         self.client.upload_fileobj(
             body,
             Key=path,
-            Bucket=self.get_bucket(),
+            Bucket=self.config.bucket,
         )
 
     async def upload(self, path, body: BinaryIO):
@@ -59,7 +56,7 @@ class CDNClient:
 
     def _check_existence(self, key: str):
         try:
-            return self.client.head_object(Bucket=self.get_bucket(), Key=key)
+            return self.client.head_object(Bucket=self.config.bucket, Key=key)
         except ClientError:
             raise NotFoundError
 
@@ -77,7 +74,7 @@ class CDNClient:
             local_file = open(key, "rb")
             file.write(local_file.read())
         else:
-            self.client.download_fileobj(self.get_bucket(), key, file)
+            self.client.download_fileobj(self.config.bucket, key, file)
         file.seek(0)
         media_type = (
             mimetypes.guess_type(key)[0]
@@ -90,7 +87,7 @@ class CDNClient:
         url = self.client.generate_presigned_url(
             "get_object",
             Params={
-                "Bucket": self.get_bucket(),
+                "Bucket": self.config.bucket,
                 "Key": key,
             },
             ExpiresIn=self.config.ttl_signed_urls,
@@ -106,19 +103,14 @@ class CDNClient:
     async def delete_object(self, key: str | None):
         with ThreadPoolExecutor() as executor:
             future = executor.submit(
-                self.client.delete_object, Bucket=self.get_bucket(), Key=key
+                self.client.delete_object, Bucket=self.config.bucket, Key=key
             )
             await asyncio.wrap_future(future)
 
     async def list_object(self, key: str):
         with ThreadPoolExecutor() as executor:
             future = executor.submit(
-                self.client.list_objects, Bucket=self.get_bucket(), Prefix=key
+                self.client.list_objects, Bucket=self.config.bucket, Prefix=key
             )
             result = await asyncio.wrap_future(future)
             return result.get("Contents", [])
-
-
-class LogCDN(CDNClient):
-    def get_bucket(self) -> str | None:
-        return self.config.bucket_answer

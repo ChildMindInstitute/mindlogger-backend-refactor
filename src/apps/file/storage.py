@@ -4,13 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.workspaces.constants import StorageType
 from apps.workspaces.service import workspace
-from config import CDNSettings, settings
+from config import settings
 from infrastructure.utility.cdn_arbitrary import (
-    ArbitaryAzureCdnClient,
-    ArbitaryGCPCdnClient,
-    ArbitaryS3CdnClient,
+    ArbitraryAzureCdnClient,
+    ArbitraryGCPCdnClient,
+    ArbitraryS3CdnClient,
 )
-from infrastructure.utility.cdn_client import CDNClient, LogCDN
+from infrastructure.utility.cdn_client import CDNClient
+from infrastructure.utility.cdn_config import CdnConfig
 
 
 async def select_storage(
@@ -20,17 +21,17 @@ async def select_storage(
     service = workspace.WorkspaceService(session, uuid.uuid4())
     info = await service.get_arbitrary_info(applet_id)
     if not info:
-        settings_cdn = CDNSettings(
+        config_cdn = CdnConfig(
             region=settings.cdn.region,
             bucket=settings.cdn.bucket_answer,
             ttl_signed_urls=settings.cdn.ttl_signed_urls,
             access_key=settings.cdn.access_key,
             secret_key=settings.cdn.secret_key,
         )
-        return CDNClient(settings_cdn, env=settings.env)
+        return CDNClient(config_cdn, env=settings.env)
 
     bucket_type = info.storage_type.lower()
-    arbitary_cdn_settings = CDNSettings(
+    arbitrary_cdn_config = CdnConfig(
         region=info.storage_region,
         bucket=info.storage_bucket,
         ttl_signed_urls=settings.cdn.ttl_signed_urls,
@@ -39,25 +40,16 @@ async def select_storage(
     )
     match bucket_type:
         case StorageType.AZURE:
-            return ArbitaryAzureCdnClient(
+            return ArbitraryAzureCdnClient(
                 sec_key=info.storage_secret_key,
                 bucket=str(info.storage_bucket),
             )
         case StorageType.GCP:
-            return ArbitaryGCPCdnClient(
-                arbitary_cdn_settings,
+            return ArbitraryGCPCdnClient(
+                arbitrary_cdn_config,
                 endpoint_url=settings.cdn.gcp_endpoint_url,
                 env=settings.env,
             )
         case _:
             # default is aws (logic from legacy app)
-            return ArbitaryS3CdnClient(arbitary_cdn_settings, env=settings.env)
-
-
-def logs_storage():
-    settings_cdn = CDNSettings(
-        region=settings.cdn.region,
-        bucket_answer=settings.cdn.bucket_answer,
-        ttl_signed_urls=settings.cdn.ttl_signed_urls,
-    )
-    return LogCDN(settings_cdn, env=settings.env)
+            return ArbitraryS3CdnClient(arbitrary_cdn_config, env=settings.env)
