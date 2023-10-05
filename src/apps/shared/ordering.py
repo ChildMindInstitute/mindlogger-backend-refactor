@@ -57,6 +57,7 @@ class Ordering:
         if sign != "-":
             field = value
             sign = "+"
+        field = field.lstrip("+")
 
         if field not in self.fields:
             return None
