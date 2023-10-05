@@ -54,29 +54,20 @@ class FCMNotificationTest:
 class FCMNotification:
     """Singleton FCM Notification client"""
 
-    _initialized = False
-    _app = None
-
     def __new__(cls, *args, **kwargs):
         if settings.env == "testing":
             return FCMNotificationTest()
-        if not cls._app:
-            cls._app = super().__new__(cls)
-        return cls._app
+        return super().__new__(cls)
 
-    def __init__(self):
-        if self._initialized:
-            return
+    def _init_app(self):
         certificate = settings.fcm.certificate
         for key, value in certificate.items():
             if not value:
                 return
 
-        self._app = firebase_admin.initialize_app(
+        return firebase_admin.initialize_app(
             credentials.Certificate(settings.fcm.certificate)
         )
-
-        self._initialized = True
 
     async def notify(
         self,
@@ -88,14 +79,36 @@ class FCMNotification:
         *args,
         **kwargs,
     ):
-        if not self._initialized:
+        await asyncio.to_thread(
+            self.notify_sync,
+            devices,
+            message,
+            time_to_live,
+            badge,
+            extra_kwargs,
+            *args,
+            **kwargs,
+        )
+
+    def notify_sync(
+        self,
+        devices: list,
+        message: FirebaseMessage,
+        time_to_live: int | None = None,
+        badge: str | None = None,
+        extra_kwargs: dict | None = None,
+        *args,
+        **kwargs,
+    ):
+        app = self._init_app()
+        if not app:
             return
+
         devices = list(set(devices))
         if len(devices) == 0:
             return
         elif devices and len(devices) > 1:
-            await asyncio.to_thread(
-                messaging.send_each_for_multicast,
+            messaging.send_each_for_multicast(
                 messaging.MulticastMessage(
                     devices,
                     android=messaging.AndroidConfig(
@@ -112,11 +125,10 @@ class FCMNotification:
                         )
                     ),
                 ),
-                app=self._app,
+                app=app,
             )
         else:
-            await asyncio.to_thread(
-                messaging.send,
+            messaging.send(
                 messaging.Message(
                     android=messaging.AndroidConfig(
                         ttl=settings.fcm.ttl, priority="high"
@@ -133,5 +145,5 @@ class FCMNotification:
                         )
                     ),
                 ),
-                app=self._app,
+                app=app,
             )
