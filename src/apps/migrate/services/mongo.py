@@ -1304,6 +1304,7 @@ class Mongo:
                     meta={
                         "nickname": "Mindlogger ChildMindInstitute",
                         "secretUserId": "Guest Account Submission",
+                        "legacyProfileId": str(applet_profile["_id"]),
                     },
                     is_pinned=False,
                     is_deleted=False,
@@ -1383,12 +1384,10 @@ class Mongo:
                         {
                             "userId": doc["userId"],
                             "appletId": applet_id,
-                            "accountId": doc["_id"],
                         }
                     )
-                    if applet_profile is None:
-                        continue
-                    meta["legacyProfileId"] = applet_profile["_id"]
+                    if applet_profile:
+                        meta["legacyProfileId"] = applet_profile["_id"]
                     inviter_id = self.inviter_id(doc["userId"], applet_id)
                     if not inviter_id:
                         inviter_id = owner_id

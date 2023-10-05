@@ -98,6 +98,9 @@ class Postgres:
             "DELETE FROM applet_histories WHERE id = %s", (applet_id.hex,)
         )
         cursor.execute(
+            "DELETE FROM invitations WHERE applet_id = %s", (applet_id.hex,)
+        )
+        cursor.execute(
             "DELETE FROM flows WHERE applet_id = %s", (applet_id.hex,)
         )
         cursor.execute("DELETE FROM applets WHERE id = %s", (applet_id.hex,))
@@ -411,6 +414,7 @@ class Postgres:
                 sql = row.insert_stmt()
                 values = row.values()
                 cursor.execute(sql, values)
+                self.connection.commit()
             except Exception as ex:
                 code = getattr(ex, "pgcode", None)
                 if code is None:
