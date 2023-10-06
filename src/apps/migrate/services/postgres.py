@@ -716,3 +716,15 @@ class Postgres:
             if not link.require_login:
                 await self.add_anon_to_applet(link.created_by, link.applet_id)
         cursor.close()
+
+    def get_applet_verions(self, applet_id: uuid.UUID):
+        sql = """
+            SELECT version
+            FROM applets
+            WHERE id = %s;
+        """
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql, (str(applet_id),))
+        row = cursor.fetchone()
+        return row[0] if row else None
