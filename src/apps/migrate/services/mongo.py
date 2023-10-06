@@ -289,6 +289,20 @@ def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
 def patch_broken_applets(
     applet_id: str, applet_ld: dict, applet_mongo: dict
 ) -> tuple[dict, dict]:
+    broken_activity_order = [
+        "63d3d579b71996780cdf409a",
+    ]
+    if applet_id in broken_activity_order:
+        applet_ld["reprolib:terms/order"][0]["@list"][-1][
+            "http://www.w3.org/2004/02/skos/core#altLabel"
+        ][0]["@value"] = "Mind logging [Practice] (3)"
+        applet_ld["reprolib:terms/order"][0]["@list"][-1][
+            "http://www.w3.org/2004/02/skos/core#prefLabel"
+        ][0]["@value"] = "Mind logging [Practice] (3)"
+        applet_ld["reprolib:terms/order"][0]["@list"][-1][
+            "@id"
+        ] = "Mind logging [Practice] (3)"
+
     broken_applets = [
         # broken conditional logic [object object]  in main applet
         "6202738aace55b10691c101d",
@@ -397,6 +411,7 @@ def patch_broken_applets(
     broken_conditional_logic_naming = [
         "64e7af5e22d81858d681de92",
         "633ecc1ab7ee9765ba54452d",
+        "64ec703122d81858d681eb27",
     ]
     if applet_id in broken_conditional_logic_naming:
         for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
