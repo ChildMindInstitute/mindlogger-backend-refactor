@@ -9,12 +9,12 @@ from azure.storage.blob import (
     generate_blob_sas,
 )
 
-from config.cdn import CDNSettings
 from infrastructure.utility.cdn_client import CDNClient
+from infrastructure.utility.cdn_config import CdnConfig
 
 
-class ArbitaryS3CdnClient(CDNClient):
-    def configure_client(self, config):
+class ArbitraryS3CdnClient(CDNClient):
+    def configure_client(self, config: CdnConfig):
         return boto3.client(
             "s3",
             aws_access_key_id=self.config.access_key,
@@ -23,8 +23,8 @@ class ArbitaryS3CdnClient(CDNClient):
         )
 
 
-class ArbitaryGCPCdnClient(CDNClient):
-    def __init__(self, config: CDNSettings, endpoint_url: str, env: str):
+class ArbitraryGCPCdnClient(CDNClient):
+    def __init__(self, config: CdnConfig, endpoint_url: str, env: str):
         self.endpoint_url = endpoint_url
         super().__init__(config, env)
 
@@ -41,11 +41,10 @@ class ArbitaryGCPCdnClient(CDNClient):
         )
 
 
-class ArbitaryAzureCdnClient(CDNClient):
+class ArbitraryAzureCdnClient(CDNClient):
     def __init__(self, sec_key: str, bucket: str, env: str = ""):
         self.sec_key = sec_key
-        config = CDNSettings(bucket=bucket)
-        super().__init__(config, env)
+        super().__init__(CdnConfig(bucket=bucket), env)
 
     def generate_key(self, scope, unique, filename):
         return f"{scope}/{unique}/{filename}"

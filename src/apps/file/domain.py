@@ -26,4 +26,4 @@ class FileExistenceResponse(PublicModel):
 
 
 class FilePresignRequest(PublicModel):
-    private_urls: list[str | None]
+    private_urls: list[str]
