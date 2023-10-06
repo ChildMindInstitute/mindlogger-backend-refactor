@@ -404,6 +404,16 @@ async def migrate_alerts(
         )
         if applet_profile and applet_profile.get("userId"):
             alert["user_id"] = applet_profile["userId"]
+            version = postgres.get_applet_verions(
+                mongoid_to_uuid(alert["appletId"])
+            )
+            if version:
+                alert["version"] = version
+            else:
+                migration_log.warning(
+                    f"[ALERTS] Skipped one of alerts because can't get applet version"
+                )
+                continue
             alerts.append(MongoAlert.parse_obj(alert))
         else:
             migration_log.warning(
