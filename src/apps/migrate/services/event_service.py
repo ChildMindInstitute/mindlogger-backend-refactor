@@ -320,6 +320,7 @@ class EventMigrationService:
         self, event: MongoEvent, pg_event: EventSchema
     ):
         notifications: list = []
+        order: int = 1
         if event.data.notifications:
             for notification in event.data.notifications:
                 if notification.allow:
@@ -348,6 +349,8 @@ class EventMigrationService:
 
                     notification_data["event_id"] = pg_event.id
                     notification_data["migrated_date"] = datetime.utcnow()
+                    notification_data["order"] = order
+                    order += 1
 
                     notifications.append(
                         NotificationSchema(**notification_data)
