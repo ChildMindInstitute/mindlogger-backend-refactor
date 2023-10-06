@@ -209,6 +209,8 @@ class EventMigrationService:
                 event.schedule.end / 1000
             )
 
+        periodicity_data["migrated_date"] = datetime.utcnow()
+
         periodicity = PeriodicitySchema(**periodicity_data)
 
         async with atomic(self.session):
@@ -266,6 +268,8 @@ class EventMigrationService:
 
         pg_event = EventSchema(**event_data)
 
+        pg_event["migrated_date"] = datetime.utcnow()
+
         async with atomic(self.session):
             await EventCRUD(self.session)._create(pg_event)
 
@@ -284,6 +288,7 @@ class EventMigrationService:
             "user_id": mongoid_to_uuid(user),
             "event_id": pg_event.id,
         }
+        user_event["migrated_date"] = datetime.utcnow()
         user_event = UserEventsSchema(**user_event_data)
 
         async with atomic(self.session):
@@ -294,6 +299,7 @@ class EventMigrationService:
             "activity_id": mongoid_to_uuid(event.data.activity_id),
             "event_id": pg_event.id,
         }
+        activity["migrated_date"] = datetime.utcnow()
         activity = ActivityEventsSchema(**activity_event_data)
 
         async with atomic(self.session):
@@ -304,6 +310,7 @@ class EventMigrationService:
             "flow_id": mongoid_to_uuid(event.data.activity_flow_id),
             "event_id": pg_event.id,
         }
+        flow["migrated_date"] = datetime.utcnow()
         flow = FlowEventsSchema(**flow_event_data)
 
         async with atomic(self.session):
@@ -340,6 +347,7 @@ class EventMigrationService:
                             continue
 
                     notification_data["event_id"] = pg_event.id
+                    notification_data["migrated_date"] = datetime.utcnow()
 
                     notifications.append(
                         NotificationSchema(**notification_data)
@@ -357,6 +365,7 @@ class EventMigrationService:
                     event.data.reminder.time, "%H:%M"
                 ).time(),
             }
+            reminder_data["migrated_date"] = datetime.utcnow()
 
             reminder = ReminderSchema(**reminder_data)
 
