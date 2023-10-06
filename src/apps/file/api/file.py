@@ -22,8 +22,8 @@ from apps.file.domain import (
 )
 from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
-from apps.file.services import LogFileService, PresignedUrlsGeneratorService
-from apps.file.storage import logs_storage, select_storage
+from apps.file.services import LogFileService
+from apps.file.storage import select_storage
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.users.domain import User
@@ -33,14 +33,16 @@ from apps.workspaces.errors import AnswerViewAccessDenied
 from apps.workspaces.service.user_access import UserAccessService
 from config import settings
 from infrastructure.database.deps import get_session
+from infrastructure.dependency.cdn import get_log_bucket, get_media_bucket
+from infrastructure.dependency.presign_service import get_presign_service
 from infrastructure.utility.cdn_client import CDNClient
 
 
 async def upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
+    cdn_client: CDNClient = Depends(get_media_bucket),
 ) -> Response[ContentUploadedFile]:
-    cdn_client = CDNClient(settings.cdn, env=settings.env)
     key = cdn_client.generate_key(
         FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{file.filename}"
     )
@@ -54,14 +56,10 @@ async def upload(
 async def download(
     request: FileDownloadRequest = Body(...),
     user: User = Depends(get_current_user),
+    cdn_client: CDNClient = Depends(get_media_bucket),
 ) -> StreamingResponse:
-
-    # download file by given key
-    cdn_client = CDNClient(settings.cdn, env=settings.env)
-
     try:
         file, media_type = cdn_client.download(request.key)
-
     except ClientError as e:
         if e.response["Error"]["Code"] == "404":
             raise FileNotFoundError
@@ -176,20 +174,17 @@ async def presign(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    results: list[str | None] = await PresignedUrlsGeneratorService(
-        session=session, user_id=user.id, applet_id=applet_id
-    )(
-        given_private_urls=request.private_urls,
-    )
-    return ResponseMulti[str | None](result=results, count=len(results))
+    service = await get_presign_service(applet_id, user.id, session)
+    links = await service.presign(request.private_urls)
+    return ResponseMulti[str](result=links, count=len(links))
 
 
 async def logs_upload(
     device_id: str,
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
+    cdn_client: CDNClient = Depends(get_log_bucket),
 ):
-    cdn_client = logs_storage()
     service = LogFileService(user.id, cdn_client)
     key = service.key(device_id=device_id, file_name=file.filename)
     await service.upload(device_id, file)
@@ -204,9 +199,9 @@ async def logs_download(
     user_id: uuid.UUID,
     days: int,
     user: User = Depends(get_current_user),
+    cdn_client: CDNClient = Depends(get_log_bucket),
 ):
     UserAccessService.raise_for_developer_access(user.email_encrypted)
-    cdn_client = logs_storage()
     service = LogFileService(user_id, cdn_client)
     end = datetime.datetime.now(tz=pytz.UTC)
     start = end - datetime.timedelta(days=days)
@@ -222,8 +217,8 @@ async def logs_exist_check(
     device_id: str,
     files: FileCheckRequest,
     user: User = Depends(get_current_user),
+    cdn_client: CDNClient = Depends(get_log_bucket),
 ):
-    cdn_client = logs_storage()
     service = LogFileService(user.id, cdn_client)
     result = await service.check_exist(device_id, files.files)
     return Response[Dict[str, bool]](result=result)

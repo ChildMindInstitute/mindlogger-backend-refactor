@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
@@ -46,6 +46,7 @@ class MongoAlert(BaseModel):
     reviewerId: PyObjectId = Field(default_factory=PyObjectId)
     viewed: bool
     user_id: PyObjectId = Field(default_factory=PyObjectId)
+    version: str
 
 
 class AlertMigrationService:
@@ -81,6 +82,8 @@ class AlertMigrationService:
         alert_data["activity_item_id"] = mongoid_to_uuid(alert.itemId)
         alert_data["alert_message"] = alert.alertMessage
         alert_data["created_at"] = alert.created
+        alert_data["version"] = alert.version
+        alert_data["migrated_date"] = datetime.utcnow()
 
         alert = AlertSchema(**alert_data)
 

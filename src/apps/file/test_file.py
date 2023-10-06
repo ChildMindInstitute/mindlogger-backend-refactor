@@ -32,7 +32,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @rollback_with_session
     @mock.patch(
-        "infrastructure.utility.cdn_arbitrary.ArbitaryS3CdnClient.upload"
+        "infrastructure.utility.cdn_arbitrary.ArbitraryS3CdnClient.upload"
     )
     async def test_arbitrary_upload_to_s3_aws(
         self, mock_client: mock.MagicMock, **kwargs
@@ -53,7 +53,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @rollback_with_session
     @mock.patch(
-        "infrastructure.utility.cdn_arbitrary.ArbitaryS3CdnClient.download",
+        "infrastructure.utility.cdn_arbitrary.ArbitraryS3CdnClient.download",
         return_value=(iter(("a", "b")), "txt"),
     )
     async def test_arbitrary_download_from_s3_aws(
@@ -73,7 +73,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @rollback_with_session
     @mock.patch(
-        "infrastructure.utility.cdn_arbitrary.ArbitaryGCPCdnClient.upload"
+        "infrastructure.utility.cdn_arbitrary.ArbitraryGCPCdnClient.upload"
     )
     async def test_arbitrary_upload_to_s3_gcp(
         self, mock_client: mock.MagicMock, **kwargs
@@ -93,7 +93,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @rollback_with_session
     @mock.patch(
-        "infrastructure.utility.cdn_arbitrary.ArbitaryGCPCdnClient.download",
+        "infrastructure.utility.cdn_arbitrary.ArbitraryGCPCdnClient.download",
         return_value=(iter(("a", "b")), "txt"),
     )
     async def test_arbitrary_download_from_s3_gcp(
@@ -113,10 +113,10 @@ class TestAnswerActivityItems(BaseTest):
 
     @rollback_with_session
     @mock.patch(
-        "infrastructure.utility.cdn_arbitrary.ArbitaryAzureCdnClient.upload"
+        "infrastructure.utility.cdn_arbitrary.ArbitraryAzureCdnClient.upload"
     )
     @mock.patch(
-        "infrastructure.utility.cdn_arbitrary.ArbitaryAzureCdnClient.configure_client"  # noqa
+        "infrastructure.utility.cdn_arbitrary.ArbitraryAzureCdnClient.configure_client"  # noqa
     )
     async def test_arbitrary_upload_to_blob_azure(
         self, mock_client: mock.MagicMock, *args, **kwargs
@@ -153,7 +153,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @rollback_with_session
     @mock.patch(
-        "infrastructure.utility.cdn_arbitrary.ArbitaryS3CdnClient.check_existence"  # noqa
+        "infrastructure.utility.cdn_arbitrary.ArbitraryS3CdnClient.check_existence"  # noqa
     )
     async def test_arbitary_s3_aws_check_existence(
         self, mock_client: mock.MagicMock, **kwargs
