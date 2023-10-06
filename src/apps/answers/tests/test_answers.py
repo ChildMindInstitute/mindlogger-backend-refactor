@@ -579,7 +579,6 @@ class TestAnswerActivityItems(BaseTest):
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
-            query={"emptyIdentifiers": True},
         )
 
         assert response.status_code == 200, response.json()
