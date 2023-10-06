@@ -221,13 +221,22 @@ class EventMigrationService:
     ) -> EventSchema:
         event_data: dict = {}
 
-        if event.schedule.start and event.schedule.end:
-            event_data["start_time"] = datetime.utcfromtimestamp(
-                event.schedule.start / 1000
-            ).time()
-            event_data["end_time"] = datetime.utcfromtimestamp(
-                event.schedule.end / 1000
-            ).time()
+        # if event.schedule.start and event.schedule.end:
+        #     event_data["start_time"] = datetime.utcfromtimestamp(
+        #         event.schedule.start / 1000
+        #     ).time()
+        #     event_data["end_time"] = datetime.utcfromtimestamp(
+        #         event.schedule.end / 1000
+        #     ).time()
+        start_time, end_time = self._calculate_time(
+            event.schedule.times[0],
+            {
+                "hour": event.data.timeout.hour,
+                "minute": event.data.timeout.minute,
+            },
+        )
+        event_data["start_time"] = start_time
+        event_data["end_time"] = end_time
 
         if event.data.onlyScheduledDay is None:
             event_data["access_before_schedule"] = None
@@ -449,3 +458,31 @@ class EventMigrationService:
             days_until_target = (target_date - today).days
 
         return target_date
+
+    def _calculate_time(self, input_time: str, time_dict: dict):
+        try:
+            if ":" in input_time:
+                input_hour, input_minute = map(int, input_time.split(":"))
+            else:
+                input_hour = int(input_time)
+                input_minute = 0
+
+            hour_delta = time_dict.get("hour", 0)
+            minute_delta = time_dict.get("minute", 0)
+
+            new_hour = input_hour + hour_delta
+            new_minute = input_minute + minute_delta
+
+            if new_hour >= 24:
+                new_hour = 23
+                new_minute = 59
+
+            new_hour = max(0, min(23, new_hour))
+            new_minute = max(0, min(59, new_minute))
+
+            original_time = datetime.time(input_hour, input_minute)
+            modified_time = datetime.time(new_hour, new_minute)
+
+            return original_time, modified_time
+        except ValueError:
+            raise Exception("Unable to parse start or end tiem")
