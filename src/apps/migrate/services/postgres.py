@@ -644,13 +644,17 @@ class Postgres:
             sql, (str(theme_id), str(applet_id)), "[THEME APPLET]"
         )
 
-    def get_activities_without_activity_events(self) -> list[tuple[str, str]]:
+    def get_activities_without_activity_events(self, applets_ids: list[str] | None) -> list[tuple[str, str]]:
         sql = """
             SELECT activities.id, activities.applet_id
             FROM activities
             LEFT JOIN activity_events ON activities.id = activity_events.activity_id
-            WHERE activity_events.activity_id IS NULL;
+            WHERE activity_events.activity_id IS NULL
         """
+
+        if applets_ids:
+            ids = "','".join(applets_ids)
+            sql += f" AND applet_id IN ('{ids}')"
 
         cursor = self.connection.cursor()
         cursor.execute(sql)
@@ -659,13 +663,17 @@ class Postgres:
 
         return results
 
-    def get_flows_without_activity_events(self) -> list[tuple[str, str]]:
+    def get_flows_without_activity_events(self, applets_ids: list[str] | None) -> list[tuple[str, str]]:
         sql = """
             SELECT flows.id, flows.applet_id
             FROM flows
             LEFT JOIN flow_events ON flows.id = flow_events.flow_id
-            WHERE flow_events.flow_id IS NULL;
+            WHERE flow_events.flow_id IS NULL
         """
+
+        if applets_ids:
+            ids = "','".join(applets_ids)
+            sql += f" AND applet_id IN ('{ids}')"
 
         cursor = self.connection.cursor()
         cursor.execute(sql)

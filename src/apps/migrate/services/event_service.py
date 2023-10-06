@@ -184,7 +184,7 @@ class EventMigrationService:
                     try:
                         periodicity_data["selected_date"] = date(
                             event.schedule.year[0],
-                            event.schedule.month[0],
+                            event.schedule.month[0] + 1,
                             event.schedule.dayOfMonth[0],
                         )
                     except ValueError:
