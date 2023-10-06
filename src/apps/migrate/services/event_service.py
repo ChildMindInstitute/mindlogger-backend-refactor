@@ -223,15 +223,9 @@ class EventMigrationService:
     ) -> EventSchema:
         event_data: dict = {}
 
-        # if event.schedule.start and event.schedule.end:
-        #     event_data["start_time"] = datetime.utcfromtimestamp(
-        #         event.schedule.start / 1000
-        #     ).time()
-        #     event_data["end_time"] = datetime.utcfromtimestamp(
-        #         event.schedule.end / 1000
-        #     ).time()
+        times = event.schedule.times[0] if event.schedule.times else "00:00"
         start_time, end_time = self._calculate_time(
-            event.schedule.times[0],
+            times,
             {
                 "hour": event.data.timeout.hour,
                 "minute": event.data.timeout.minute,
@@ -288,7 +282,7 @@ class EventMigrationService:
             "user_id": mongoid_to_uuid(user),
             "event_id": pg_event.id,
         }
-        user_event["migrated_date"] = datetime.utcnow()
+        user_event_data["migrated_date"] = datetime.utcnow()
         user_event = UserEventsSchema(**user_event_data)
 
         async with atomic(self.session):
@@ -299,7 +293,7 @@ class EventMigrationService:
             "activity_id": mongoid_to_uuid(event.data.activity_id),
             "event_id": pg_event.id,
         }
-        activity["migrated_date"] = datetime.utcnow()
+        activity_event_data["migrated_date"] = datetime.utcnow()
         activity = ActivityEventsSchema(**activity_event_data)
 
         async with atomic(self.session):
@@ -310,7 +304,7 @@ class EventMigrationService:
             "flow_id": mongoid_to_uuid(event.data.activity_flow_id),
             "event_id": pg_event.id,
         }
-        flow["migrated_date"] = datetime.utcnow()
+        flow_event_data["migrated_date"] = datetime.utcnow()
         flow = FlowEventsSchema(**flow_event_data)
 
         async with atomic(self.session):
@@ -394,12 +388,10 @@ class EventMigrationService:
                     await self._create_user(event, pg_event)
 
                 # Migrate data to ActivityEventsSchema or FlowEventsSchema
-                if event.data.isActivityFlow:
-                    if event.data.activity_id:
-                        await self._create_activity(event, pg_event)
-                else:
-                    if event.data.activity_flow_id:
-                        await self._create_flow(event, pg_event)
+                if event.data.activity_id:
+                    await self._create_activity(event, pg_event)
+                if event.data.activity_flow_id:
+                    await self._create_flow(event, pg_event)
 
                 # Migrate data to NotificationSchema
                 if event.data.notifications:
@@ -414,7 +406,7 @@ class EventMigrationService:
                     await self._create_reminder(event, pg_event)
             except Exception as e:
                 number_of_errors += 1
-                print(f"Skipped Event: {event.id}")
+                print(f"Skipped Event: {event.id}", str(e))
                 continue
 
         print(f"Number of skiped events: {number_of_errors}")
