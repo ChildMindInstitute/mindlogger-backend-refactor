@@ -358,7 +358,9 @@ async def migrate_events(
     await EventMigrationService(session, events).run_events_migration()
 
 
-async def add_default_evets(applet_ids: list[ObjectId] | None, postgres: Postgres):
+async def add_default_evets(
+    applet_ids: list[ObjectId] | None, postgres: Postgres
+):
     migration_log.warning(
         "Started adding default event to activities and flows"
     )
