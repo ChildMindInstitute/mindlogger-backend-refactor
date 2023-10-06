@@ -644,7 +644,9 @@ class Postgres:
             sql, (str(theme_id), str(applet_id)), "[THEME APPLET]"
         )
 
-    def get_activities_without_activity_events(self, applets_ids: list[str] | None) -> list[tuple[str, str]]:
+    def get_activities_without_activity_events(
+        self, applets_ids: list[str] | None
+    ) -> list[tuple[str, str]]:
         sql = """
             SELECT activities.id, activities.applet_id
             FROM activities
@@ -663,7 +665,9 @@ class Postgres:
 
         return results
 
-    def get_flows_without_activity_events(self, applets_ids: list[str] | None) -> list[tuple[str, str]]:
+    def get_flows_without_activity_events(
+        self, applets_ids: list[str] | None
+    ) -> list[tuple[str, str]]:
         sql = """
             SELECT flows.id, flows.applet_id
             FROM flows

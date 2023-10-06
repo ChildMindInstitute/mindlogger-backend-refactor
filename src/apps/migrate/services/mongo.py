@@ -869,19 +869,15 @@ class Mongo:
                 if "duplicateOf" in _activity:
                     act_blacklist.append(str(_activity["duplicateOf"]))
                 if (
-                    abs(
-                        (
-                            _activity["created"] - applet["created"]
-                        ).total_seconds()
-                    )
-                    > 60
-                ):
+                    applet["created"] - _activity["created"]
+                ).total_seconds() > 600:
                     act_blacklist.append(str(_activity["_id"]))
 
             order = applet_format["applet"]["reprolib:terms/order"][0]["@list"]
             order = [
                 _act for _act in order if _act["@id"] not in act_blacklist
             ]
+            # TODO: exclude from applet_format['activities'] ids from blacklist
             if len(order) == 0:
                 order = [
                     {"@id": str(_act)} for _act in applet_format["activities"]
