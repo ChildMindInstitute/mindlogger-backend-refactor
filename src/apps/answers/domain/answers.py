@@ -279,6 +279,7 @@ class UserAnswerDataBase(BaseModel):
     scheduled_datetime: datetime.datetime | None = None
     start_datetime: datetime.datetime | None = None
     end_datetime: datetime.datetime | None = None
+    migrated_date: datetime.datetime | None = None
     applet_history_id: str
     activity_history_id: str | None
     flow_history_id: str | None
