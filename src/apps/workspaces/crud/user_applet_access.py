@@ -344,7 +344,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     ) -> list[UserAppletAccessSchema]:
         return await self._create_many(schemas)
 
-    async def upsert_user_applet_access(self, schema: UserAppletAccessSchema):
+    async def upsert_user_applet_access(
+        self, schema: UserAppletAccessSchema, where=None
+    ):
         values = {
             "invitor_id": schema.invitor_id,
             "owner_id": schema.owner_id,
@@ -372,6 +374,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "updated_at": datetime.utcnow(),
                 "meta": stmt.excluded.meta,
             },
+            where=where,
         )
 
         await self._execute(stmt)

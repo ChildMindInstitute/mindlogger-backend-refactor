@@ -1,5 +1,7 @@
 import uuid
 
+from sqlalchemy import true
+
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.constants import InvitationStatus
@@ -183,17 +185,20 @@ class UserAppletAccessService:
             )
         else:
             meta = dict()
-        access_schema = await UserAppletAccessCRUD(self.session).save(
-            UserAppletAccessSchema(
-                user_id=self._user_id,
-                applet_id=self._applet_id,
-                role=role,
-                owner_id=owner_access.user_id,
-                invitor_id=owner_access.user_id,
-                meta=meta,
-            )
+
+        schema = UserAppletAccessSchema(
+            user_id=self._user_id,
+            applet_id=self._applet_id,
+            role=role,
+            owner_id=owner_access.user_id,
+            invitor_id=owner_access.user_id,
+            meta=meta,
+            is_deleted=False,
         )
-        return UserAppletAccess.from_orm(access_schema)
+        await UserAppletAccessCRUD(self.session).upsert_user_applet_access(
+            schema,
+            where=UserAppletAccessSchema.is_deleted == true(),
+        )
 
     async def get_roles(self) -> list[str]:
         roles = await UserAppletAccessCRUD(
