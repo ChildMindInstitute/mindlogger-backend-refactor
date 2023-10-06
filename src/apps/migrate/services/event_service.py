@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
@@ -266,9 +266,9 @@ class EventMigrationService:
 
         event_data["periodicity_id"] = periodicity.id
 
-        pg_event = EventSchema(**event_data)
+        event_data["migrated_date"] = datetime.utcnow()
 
-        pg_event["migrated_date"] = datetime.utcnow()
+        pg_event = EventSchema(**event_data)
 
         async with atomic(self.session):
             await EventCRUD(self.session)._create(pg_event)
@@ -489,8 +489,8 @@ class EventMigrationService:
             new_hour = max(0, min(23, new_hour))
             new_minute = max(0, min(59, new_minute))
 
-            original_time = datetime.time(input_hour, input_minute)
-            modified_time = datetime.time(new_hour, new_minute)
+            original_time = time(input_hour, input_minute)
+            modified_time = time(new_hour, new_minute)
 
             return original_time, modified_time
         except ValueError:
