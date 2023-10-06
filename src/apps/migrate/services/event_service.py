@@ -245,9 +245,9 @@ class EventMigrationService:
         else:
             event_data["access_before_schedule"] = False
 
-        if event.data.eventType in ("", None):
+        if periodicity.type is None:
             event_data["one_time_completion"] = None
-        elif event.data.eventType == "ONCE":
+        elif periodicity.type == PeriodicityType.ONCE:
             event_data["one_time_completion"] = True
         else:
             event_data["one_time_completion"] = False
