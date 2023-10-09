@@ -358,7 +358,6 @@ async def migrate_events(
     await EventMigrationService(session, events).run_events_migration()
 
 
-
 async def add_default_events(
     applet_ids: list[ObjectId] | None, postgres: Postgres
 ):
