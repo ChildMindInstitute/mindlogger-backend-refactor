@@ -358,16 +358,17 @@ async def migrate_events(
     await EventMigrationService(session, events).run_events_migration()
 
 
-async def add_default_evets(postgres: Postgres):
+async def add_default_evets(applet_ids: list[ObjectId] | None, postgres: Postgres):
     migration_log.warning(
         "Started adding default event to activities and flows"
     )
+    applets_ids = [str(mongoid_to_uuid(applet_id)) for applet_id in applet_ids]
     activities_without_events: list[
         tuple[str, str]
-    ] = postgres.get_activities_without_activity_events()
+    ] = postgres.get_activities_without_activity_events(applets_ids)
     flows_without_events: list[
         tuple[str, str]
-    ] = postgres.get_flows_without_activity_events()
+    ] = postgres.get_flows_without_activity_events(applets_ids)
 
     migration_log.warning(
         f"Number of activities without default event: {len(activities_without_events)}"
@@ -404,6 +405,16 @@ async def migrate_alerts(
         )
         if applet_profile and applet_profile.get("userId"):
             alert["user_id"] = applet_profile["userId"]
+            version = postgres.get_applet_verions(
+                mongoid_to_uuid(alert["appletId"])
+            )
+            if version:
+                alert["version"] = version
+            else:
+                migration_log.warning(
+                    f"[ALERTS] Skipped one of alerts because can't get applet version"
+                )
+                continue
             alerts.append(MongoAlert.parse_obj(alert))
         else:
             migration_log.warning(
@@ -496,7 +507,7 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
     # await migrate_events(applets_ids, mongo, postgres)
 
     # Add default (AlwayAvalible) events to activities and flows
-    # await add_default_evets(postgres)
+    # await add_default_evets(applets_ids, postgres)
     # Migrate alerts
     # await migrate_alerts(applets_ids, mongo, postgres)
     # Migrate pending invitation

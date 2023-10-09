@@ -819,13 +819,14 @@ class Mongo:
         return results
 
     def patch_cloned_activities_order(
-        self, original_id: ObjectId, applet_format: dict
+        self, applet_format: dict, applet: dict
     ) -> dict:
         """
         This patches a bug in the legacy system where after an applet is duplicated the activities order still
         refers to the original records.
         If it's the case, it will remove those and replace with the cloned applet activities IDs.
         """
+        original_id = applet["duplicateOf"]
         original = Applet().findOne(query={"_id": original_id})
         if original:
             original_format = jsonld_expander.formatLdObject(
@@ -844,6 +845,38 @@ class Mongo:
                 0
             ]["@list"]:
                 act_blacklist.append(_orig_act["@id"])
+            for _key, _activity in original_format["activities"].items():
+                act_blacklist.append(str(_activity))
+
+            # exclude duplicates of activities
+            all_activities = []
+            for _orig_act in applet_format["applet"]["reprolib:terms/order"][
+                0
+            ]["@list"]:
+                try:
+                    all_activities.append(ObjectId(_orig_act["@id"]))
+                except Exception:
+                    continue
+            for _key, _activity in applet_format["activities"].items():
+                try:
+                    all_activities.append(ObjectId(_activity))
+                except Exception:
+                    continue
+            all_activities = list(
+                FolderModel().find(query={"_id": {"$in": all_activities}})
+            )
+            for _activity in all_activities:
+                if "duplicateOf" in _activity:
+                    act_blacklist.append(str(_activity["duplicateOf"]))
+                if (
+                    abs(
+                        (
+                            _activity["created"] - applet["created"]
+                        ).total_seconds()
+                    )
+                    > 60
+                ):
+                    act_blacklist.append(str(_activity["_id"]))
 
             order = applet_format["applet"]["reprolib:terms/order"][0]["@list"]
             order = [
@@ -876,7 +909,7 @@ class Mongo:
 
         if "duplicateOf" in applet:
             applet_format = self.patch_cloned_activities_order(
-                applet["duplicateOf"], applet_format
+                applet_format, applet
             )
 
         if applet_format["activities"] == {}:
@@ -1357,8 +1390,8 @@ class Mongo:
                         if data:
                             if applet_id in managerial_applets:
                                 if data["nick"] == "":
-                                    f_name = decrypt(user["firstName"])
-                                    l_name = decrypt(user["lastName"])
+                                    f_name = user["firstName"]
+                                    l_name = user["lastName"]
                                     meta["nickname"] = (
                                         f"{f_name} {l_name}"
                                         if f_name and l_name

@@ -186,10 +186,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.scheduled_datetime,
                 AnswerItemSchema.start_datetime,
                 AnswerItemSchema.end_datetime,
+                AnswerItemSchema.migrated_date,
                 AnswerSchema.applet_history_id,
                 activity_history_id.label("activity_history_id"),
                 flow_history_id.label("flow_history_id"),
                 AnswerItemSchema.created_at,
+                reviewed_answer_id.label("reviewed_answer_id"),
                 reviewed_answer_id.label("reviewed_answer_id"),
             )
             .select_from(AnswerSchema)
