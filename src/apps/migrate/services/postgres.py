@@ -728,3 +728,21 @@ class Postgres:
         cursor.execute(sql, (str(applet_id),))
         row = cursor.fetchone()
         return row[0] if row else None
+
+    def fix_empty_questions(self):
+        sql = """
+        update activity_items
+        set question = jsonb_set(question, '{en}', to_json(''::text)::jsonb) 
+        where question = '{}';
+        
+        update activity_item_histories
+        set question = jsonb_set(question, '{en}', to_json(''::text)::jsonb) 
+        where question = '{}'
+        """
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(sql)
+        except Exception as ex:
+            migration_log.warning(f"[Applets] Empty question not fixed {ex}")
+        finally:
+            self.connection.commit()
