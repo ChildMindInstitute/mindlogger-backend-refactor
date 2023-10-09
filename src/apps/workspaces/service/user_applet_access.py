@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import true
+from asyncpg.exceptions import UniqueViolationError
 
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
@@ -195,10 +195,14 @@ class UserAppletAccessService:
             meta=meta,
             is_deleted=False,
         )
-        await UserAppletAccessCRUD(self.session).upsert_user_applet_access(
-            schema,
-            where=UserAppletAccessSchema.is_deleted == true(),
-        )
+
+        try:
+            await UserAppletAccessCRUD(self.session).upsert_user_applet_access(
+                schema,
+                where=UserAppletAccessSchema.soft_exists(exists=False),
+            )
+        except UniqueViolationError:
+            pass
 
     async def get_roles(self) -> list[str]:
         roles = await UserAppletAccessCRUD(
