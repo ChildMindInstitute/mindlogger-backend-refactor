@@ -107,7 +107,7 @@ async def migrate_applets(
         except Exception as e:
             skipped_applets.append(applet_id)
             print("error: ", applet_id)
-
+    postgres.fix_empty_questions()
     print("error in", len(skipped_applets), "applets:")
     print(skipped_applets)
 
@@ -358,7 +358,9 @@ async def migrate_events(
     await EventMigrationService(session, events).run_events_migration()
 
 
-async def add_default_evets(applet_ids: list[ObjectId] | None, postgres: Postgres):
+async def add_default_evets(
+    applet_ids: list[ObjectId] | None, postgres: Postgres
+):
     migration_log.warning(
         "Started adding default event to activities and flows"
     )
@@ -467,7 +469,7 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
     # users: list[dict] = mongo.get_users()
     # users_mapping = postgres.save_users(users)
     # await postgres.create_anonymous_respondent()
-    # # Migrate with users_workspace
+    # Migrate with users_workspace
     # workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
     # postgres.save_users_workspace(workspaces, users_mapping)
 
