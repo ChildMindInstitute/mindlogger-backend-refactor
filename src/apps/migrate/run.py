@@ -107,7 +107,7 @@ async def migrate_applets(
         except Exception as e:
             skipped_applets.append(applet_id)
             print("error: ", applet_id)
-
+    postgres.fix_empty_questions()
     print("error in", len(skipped_applets), "applets:")
     print(skipped_applets)
 
@@ -358,16 +358,17 @@ async def migrate_events(
     await EventMigrationService(session, events).run_events_migration()
 
 
-async def add_default_evets(postgres: Postgres):
+async def add_default_evets(applet_ids: list[ObjectId] | None, postgres: Postgres):
     migration_log.warning(
         "Started adding default event to activities and flows"
     )
+    applets_ids = [str(mongoid_to_uuid(applet_id)) for applet_id in applet_ids]
     activities_without_events: list[
         tuple[str, str]
-    ] = postgres.get_activities_without_activity_events()
+    ] = postgres.get_activities_without_activity_events(applets_ids)
     flows_without_events: list[
         tuple[str, str]
-    ] = postgres.get_flows_without_activity_events()
+    ] = postgres.get_flows_without_activity_events(applets_ids)
 
     migration_log.warning(
         f"Number of activities without default event: {len(activities_without_events)}"
@@ -466,7 +467,7 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
     # users: list[dict] = mongo.get_users()
     # users_mapping = postgres.save_users(users)
     # await postgres.create_anonymous_respondent()
-    # # Migrate with users_workspace
+    # Migrate with users_workspace
     # workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
     # postgres.save_users_workspace(workspaces, users_mapping)
 
@@ -506,7 +507,7 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
     # await migrate_events(applets_ids, mongo, postgres)
 
     # Add default (AlwayAvalible) events to activities and flows
-    # await add_default_evets(postgres)
+    # await add_default_evets(applets_ids, postgres)
     # Migrate alerts
     # await migrate_alerts(applets_ids, mongo, postgres)
     # Migrate pending invitation
