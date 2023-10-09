@@ -258,6 +258,8 @@ class EventMigrationService:
 
         event_data["applet_id"] = mongoid_to_uuid(event.applet_id)
 
+        event_data["id"] = mongoid_to_uuid(event.id)
+
         event_data["periodicity_id"] = periodicity.id
 
         event_data["migrated_date"] = datetime.utcnow()
@@ -269,17 +271,11 @@ class EventMigrationService:
 
         return pg_event
 
-    async def _create_user(self, event: MongoEvent, pg_event: EventSchema):
-        if event.data.users and event.data.users[0]:
-            user = event.data.users[0]
-        else:
-            raise Exception("No user for individual event")
-        profile = Profile().findOne(query={"_id": ObjectId(user)})
-        if not profile:
-            raise Exception("Unable to find profile by event")
-        user = profile["userId"]
+    async def _create_user(
+        self, event: MongoEvent, pg_event: EventSchema, user_id: str
+    ):
         user_event_data = {
-            "user_id": mongoid_to_uuid(user),
+            "user_id": mongoid_to_uuid(user_id),
             "event_id": pg_event.id,
         }
         user_event_data["migrated_date"] = datetime.utcnow()
@@ -377,15 +373,15 @@ class EventMigrationService:
                 f"Migrate events {i}/{number_of_events_in_mongo}. Working on Event: {event.id}"
             )
             try:
+                user_id = None
+                if event.individualized:
+                    user_id = self._check_user_existence(event)
+
                 # Migrate data to PeriodicitySchema
                 periodicity = await self._create_periodicity(event)
 
                 # Migrate data to EventSchema
                 pg_event = await self._create_event(event, periodicity)
-
-                # Migrate data to UserEventsSchema (if individualized)
-                if event.individualized:
-                    await self._create_user(event, pg_event)
 
                 # Migrate data to ActivityEventsSchema or FlowEventsSchema
                 if event.data.activity_id:
@@ -404,6 +400,11 @@ class EventMigrationService:
                     and event.data.reminder.time
                 ):
                     await self._create_reminder(event, pg_event)
+
+                # Migrate data to UserEventsSchema (if individualized)
+                if event.individualized:
+                    await self._create_user(event, pg_event, user_id)
+
             except Exception as e:
                 number_of_errors += 1
                 print(f"Skipped Event: {event.id}", str(e))
@@ -490,3 +491,14 @@ class EventMigrationService:
             return original_time, modified_time
         except ValueError:
             raise Exception("Unable to parse start or end tiem")
+
+    def _check_user_existence(self, event: dict):
+        if event.data.users and event.data.users[0]:
+            user = event.data.users[0]
+        else:
+            raise Exception("No user for individual event")
+        profile = Profile().findOne(query={"_id": ObjectId(user)})
+        if not profile:
+            raise Exception("Unable to find profile by event")
+
+        return profile["userId"]
