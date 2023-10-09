@@ -210,7 +210,7 @@ class EventMigrationService:
             )
 
         periodicity_data["migrated_date"] = datetime.utcnow()
-
+        periodicity_data["migrated_updated"] = datetime.utcnow()
         periodicity = PeriodicitySchema(**periodicity_data)
 
         async with atomic(self.session):
@@ -283,17 +283,20 @@ class EventMigrationService:
             "event_id": pg_event.id,
         }
         user_event_data["migrated_date"] = datetime.utcnow()
+        user_event_data["migrated_updated"] = datetime.utcnow()
         user_event = UserEventsSchema(**user_event_data)
 
         async with atomic(self.session):
             await UserEventsCRUD(self.session)._create(user_event)
 
     async def _create_activity(self, event: MongoEvent, pg_event: EventSchema):
+        now = datetime.utcnow()
         activity_event_data: dict = {
             "activity_id": mongoid_to_uuid(event.data.activity_id),
             "event_id": pg_event.id,
         }
         activity_event_data["migrated_date"] = datetime.utcnow()
+        activity_event_data["migrated_updated"] = datetime.utcnow()
         activity = ActivityEventsSchema(**activity_event_data)
 
         async with atomic(self.session):
@@ -305,6 +308,7 @@ class EventMigrationService:
             "event_id": pg_event.id,
         }
         flow_event_data["migrated_date"] = datetime.utcnow()
+        flow_event_data["migrated_updated"] = datetime.utcnow()
         flow = FlowEventsSchema(**flow_event_data)
 
         async with atomic(self.session):
@@ -340,9 +344,9 @@ class EventMigrationService:
                             ).time()
                         else:
                             continue
-
                     notification_data["event_id"] = pg_event.id
                     notification_data["migrated_date"] = datetime.utcnow()
+                    notification_data["migrated_updated"] = datetime.utcnow()
                     notification_data["order"] = order
                     order += 1
 
@@ -363,7 +367,7 @@ class EventMigrationService:
                 ).time(),
             }
             reminder_data["migrated_date"] = datetime.utcnow()
-
+            reminder_data["migrated_updated"] = datetime.utcnow()
             reminder = ReminderSchema(**reminder_data)
 
             async with atomic(self.session):

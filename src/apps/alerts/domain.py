@@ -28,7 +28,7 @@ class Alert(InternalModel):
     activity_item_id: uuid.UUID
     message: str
     created_at: datetime.datetime
-    answer_id: uuid.UUID|None
+    answer_id: uuid.UUID | None
     encryption: dict
     image: str
     workspace: str
@@ -46,7 +46,7 @@ class AlertPublic(PublicModel):
     activity_item_id: uuid.UUID
     message: str
     created_at: datetime.datetime
-    answer_id: uuid.UUID|None
+    answer_id: uuid.UUID | None
     encryption: dict
     image: str
     workspace: str

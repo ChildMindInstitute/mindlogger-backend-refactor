@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from apps.schedule.db.schemas import (
@@ -47,6 +48,8 @@ class DefaultEventAddingService:
             activity_event_data: dict = {
                 "activity_id": uuid.UUID(activity_id),
                 "event_id": event.id,
+                "migrated_date": datetime.datetime.utcnow(),
+                "migrated_updated": datetime.datetime.utcnow(),
             }
             activity = ActivityEventsSchema(**activity_event_data)
 
@@ -78,6 +81,8 @@ class DefaultEventAddingService:
         event_data["applet_id"] = uuid.UUID(applet_id)
         event_data["periodicity_id"] = periodicity.id
         event_data["timer_type"] = TIMER_TYPE[NOT_SET]
+        event_data["migrated_date"] = datetime.datetime.utcnow()
+        event_data["migrated_updated"] = datetime.datetime.utcnow()
         event = EventSchema(**event_data)
 
         async with atomic(self.session):

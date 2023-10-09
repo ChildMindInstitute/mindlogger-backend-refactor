@@ -50,17 +50,13 @@ class Base(_Base):  # type: ignore
     migrated_date = Column(
         DateTime(),
         default=None,
-        onupdate=datetime.utcnow,
         server_default=None,
-        server_onupdate=text("timezone('utc', now())"),
         nullable=True,
     )
     migrated_updated = Column(
         DateTime(),
         default=None,
-        onupdate=datetime.utcnow,
         server_default=None,
-        server_onupdate=text("timezone('utc', now())"),
         nullable=True,
     )
     is_deleted = Column(Boolean(), default=False)

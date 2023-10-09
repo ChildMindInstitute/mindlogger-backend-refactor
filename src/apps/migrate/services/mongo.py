@@ -1641,7 +1641,7 @@ class Mongo:
                 version_id = f"{applet_id}_{version}"
             else:
                 version_id = None
-            now = datetime.datetime.now()
+            now = datetime.datetime.utcnow()
             created_at = lib_doc.get("createdAt", now)
             updated_at = lib_doc.get("updated_at", now)
             lib = LibraryDao(
