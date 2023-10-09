@@ -358,7 +358,7 @@ async def migrate_events(
     await EventMigrationService(session, events).run_events_migration()
 
 
-async def add_default_evets(
+async def add_default_events(
     applet_ids: list[ObjectId] | None, postgres: Postgres
 ):
     migration_log.warning(
@@ -484,11 +484,11 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
 
     applets_ids = [ObjectId(applet_id) for applet_id in applets_ids]
 
-    for applet_id in applets_ids:
-        postgres.wipe_applet(str(applet_id))
+    # for applet_id in applets_ids:
+    #     postgres.wipe_applet(str(applet_id))
 
     # Migrate applets, activities, items
-    await migrate_applets(applets_ids, mongo, postgres)
+    # await migrate_applets(applets_ids, mongo, postgres)
 
     # Extract failing applets info
     # info = extract_applet_info(mongo)
@@ -497,7 +497,7 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
     #     writer = csv.DictWriter(file, fieldnames=headers)
     #     writer.writerows(info)
 
-    # # Migrate roles
+    # Migrate roles
     # migrate_roles(applets_ids, mongo, postgres)
     # # Migrate user pins
     # migrate_user_pins(applets_ids, mongo, postgres)
@@ -505,11 +505,11 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
     # migrate_folders(workspace_id, mongo, postgres)
     # # Migrate library
     # migrate_library(applets_ids, mongo, postgres)
-    # # Migrate events
+    # Migrate events
     # await migrate_events(applets_ids, mongo, postgres)
 
     # Add default (AlwayAvalible) events to activities and flows
-    # await add_default_evets(applets_ids, postgres)
+    # await add_default_events(applets_ids, postgres)
     # Migrate alerts
     # await migrate_alerts(applets_ids, mongo, postgres)
     # Migrate pending invitation
