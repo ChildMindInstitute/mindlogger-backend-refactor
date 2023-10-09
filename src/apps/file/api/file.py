@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import uuid
 from functools import partial
-from typing import Dict
 from urllib.parse import quote
 
 import pytz
@@ -25,7 +24,7 @@ from apps.file.errors import FileNotFoundError
 from apps.file.services import LogFileService
 from apps.file.storage import select_storage
 from apps.shared.domain.response import Response, ResponseMulti
-from apps.shared.exception import NotFoundError
+from apps.shared.exception import FieldError, NotFoundError
 from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -181,15 +180,23 @@ async def presign(
 
 async def logs_upload(
     device_id: str,
+    file_id=Query(None, alias="fileId"),
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_log_bucket),
 ):
+    if not file_id:
+        err = FieldError()
+        err.zero_path = "query"
+        raise err
+
     service = LogFileService(user.id, cdn_client)
     key = service.key(device_id=device_id, file_name=file.filename)
-    await service.upload(device_id, file)
-    result = ContentUploadedFile(
-        key=key, url=quote(settings.cdn.url.format(key=key), "/:")
+    await service.upload(device_id, file, file_id)
+    result = AnswerUploadedFile(
+        key=key,
+        url=quote(settings.cdn.url.format(key=key), "/:"),
+        file_id=file_id,
     )
     return Response(result=result)
 
@@ -221,4 +228,5 @@ async def logs_exist_check(
 ):
     service = LogFileService(user.id, cdn_client)
     result = await service.check_exist(device_id, files.files)
-    return Response[Dict[str, bool]](result=result)
+    count = len(result)
+    return ResponseMulti[FileExistenceResponse](result=result, count=count)

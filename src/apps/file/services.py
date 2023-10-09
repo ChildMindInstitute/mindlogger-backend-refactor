@@ -2,13 +2,14 @@ import asyncio
 import datetime
 import re
 import uuid
-from typing import Dict, List
+from typing import List
 
 import pytz
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import config
+from apps.file.domain import FileExistenceResponse
 from apps.file.storage import select_storage
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
@@ -207,8 +208,7 @@ class LogFileService:
         self.cdn = cdn
 
     def key(self, device_id: str, file_name: str) -> str:
-        ts = str(int(datetime.datetime.utcnow().timestamp()))
-        return f"{self.LOG_KEY}/{self.user_id}/{device_id}/{ts}__{file_name}"
+        return f"{self.LOG_KEY}/{self.user_id}/{device_id}/{file_name}"
 
     def device_key_prefix(self, device_id: str) -> str:
         return f"{self.LOG_KEY}/{self.user_id}/{device_id}"
@@ -244,9 +244,9 @@ class LogFileService:
                 await self.cdn.delete_object(oldest_file["Key"])
         return res
 
-    async def upload(self, device_id: str, file: UploadFile):
+    async def upload(self, device_id: str, file: UploadFile, file_id: str):
         key = self.device_key_prefix(device_id)
-        obj_id = f"{key}/{file.filename}"
+        obj_id = f"{key}/{file_id}"
         res = await self.cdn.list_object(key)
         res = await self.apply_filo_stack(res)
         await self.cdn.upload(obj_id, file.file)
@@ -271,9 +271,25 @@ class LogFileService:
     async def check_exist(self, device_id: str, file_names: List[str]):
         key = self.device_key_prefix(device_id)
         file_objects = await self.cdn.list_object(key)
-        keys = list(map(lambda f: f["Key"], file_objects))
-        result: Dict[str, bool] = dict()
+        result: List[FileExistenceResponse] = []
         for file_name in file_names:
-            full_id = f"{key}/{file_name}"
-            result[file_name] = full_id in keys
+            prefix = key[:]
+            full_id = f"{prefix}/{file_name}"
+            file_flt = filter(lambda f: f["Key"] == full_id, file_objects)
+            file_object = next(file_flt, None)
+            file_key = self.key(device_id=device_id, file_name=file_name)
+            if file_object:
+                url = self.cdn.generate_private_url(file_key)
+                file_id = file_name
+            else:
+                url = None
+                file_id = file_name
+            result.append(
+                FileExistenceResponse(
+                    key=file_key,
+                    uploaded=bool(file_object),
+                    url=url,
+                    file_id=file_id,
+                )
+            )
         return result

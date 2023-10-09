@@ -85,6 +85,11 @@ router.post(
     status_code=status.HTTP_200_OK,
     description="""Used for uploading mobile logfiles.
                 Receives file object, returns key as a path to S3 Bucket.""",
+    responses={
+        status.HTTP_200_OK: {"model": AnswerUploadedFile},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
 )(logs_upload)
 
 router.get("/log-file/{user_id}/{device_id}", status_code=status.HTTP_200_OK)(
