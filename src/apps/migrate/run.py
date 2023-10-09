@@ -463,12 +463,12 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
     postgres = Postgres()
 
     # Migrate with users
-    users: list[dict] = mongo.get_users()
-    users_mapping = postgres.save_users(users)
-    await postgres.create_anonymous_respondent()
+    # users: list[dict] = mongo.get_users()
+    # users_mapping = postgres.save_users(users)
+    # await postgres.create_anonymous_respondent()
     # Migrate with users_workspace
-    workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
-    postgres.save_users_workspace(workspaces, users_mapping)
+    # workspaces = mongo.get_users_workspaces(list(users_mapping.keys()))
+    # postgres.save_users_workspace(workspaces, users_mapping)
 
     allowed_applets_ids = await get_applets_ids()
 
