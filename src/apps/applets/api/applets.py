@@ -3,6 +3,7 @@ import uuid
 from copy import deepcopy
 
 from fastapi import Body, Depends
+from firebase_admin.exceptions import FirebaseError
 from starlette.responses import Response as HTTPResponse
 
 from apps.activities.crud import ActivitiesCRUD
@@ -75,6 +76,7 @@ __all__ = [
     "applet_retrieve_by_key",
 ]
 
+from infrastructure.logger import logger
 from infrastructure.utility import FirebaseNotificationType
 
 
@@ -197,23 +199,28 @@ async def applet_update(
             applet_id
         )
         applet = await service.update(applet_id, schema)
+    try:
         await service.send_notification_to_applet_respondents(
             applet_id,
             "Applet is updated.",
             "Applet is updated.",
             FirebaseNotificationType.APPLET_UPDATE,
         )
-        # await mail_service.send(
-        #     MessageSchema(
-        #         recipients=[user.email],
-        #         subject="Applet edit success!",
-        #         body=mail_service.get_template(
-        #             path="applet_edit_success_en",
-        #             first_name=user.first_name,
-        #             applet_name=applet.display_name,
-        #         ),
-        #     )
-        # )
+    except FirebaseError as e:
+        # mute error
+        logger.exception(e)
+
+    # await mail_service.send(
+    #     MessageSchema(
+    #         recipients=[user.email],
+    #         subject="Applet edit success!",
+    #         body=mail_service.get_template(
+    #             path="applet_edit_success_en",
+    #             first_name=user.first_name,
+    #             applet_name=applet.display_name,
+    #         ),
+    #     )
+    # )
     return Response(result=public_detail.Applet.from_orm(applet))
 
 
@@ -421,13 +428,17 @@ async def applet_delete(
             session
         ).get_respondents_device_ids(applet_id)
         await service.delete_applet_by_id(applet_id)
+    try:
         await service.send_notification_to_applet_respondents(
             applet_id,
             "Applet is deleted.",
             "Applet is deleted.",
             FirebaseNotificationType.APPLET_DELETE,
-            respondents_device_ids,
+            device_ids=respondents_device_ids,
         )
+    except FirebaseError as e:
+        # mute error
+        logger.exception(e)
 
 
 async def applet_set_folder(
