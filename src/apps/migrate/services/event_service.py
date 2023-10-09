@@ -272,7 +272,7 @@ class EventMigrationService:
         return pg_event
 
     async def _create_user(
-        self, event: MongoEvent, pg_event: EventSchema, user_id: str
+        self, event: MongoEvent, pg_event: EventSchema, user_id: ObjectId
     ):
         user_event_data = {
             "user_id": mongoid_to_uuid(user_id),
@@ -492,7 +492,7 @@ class EventMigrationService:
         except ValueError:
             raise Exception("Unable to parse start or end tiem")
 
-    def _check_user_existence(self, event: dict):
+    def _check_user_existence(self, event: dict) -> ObjectId:
         if event.data.users and event.data.users[0]:
             user = event.data.users[0]
         else:
