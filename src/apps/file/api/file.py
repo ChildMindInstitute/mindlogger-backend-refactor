@@ -180,7 +180,7 @@ async def presign(
 
 async def logs_upload(
     device_id: str,
-    file_id=Query(None, alias="fileId"),
+    file_id=Query(..., alias="fileId"),
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_log_bucket),
@@ -193,11 +193,8 @@ async def logs_upload(
     service = LogFileService(user.id, cdn_client)
     key = service.key(device_id=device_id, file_name=file.filename)
     await service.upload(device_id, file, file_id)
-    result = AnswerUploadedFile(
-        key=key,
-        url=quote(settings.cdn.url.format(key=key), "/:"),
-        file_id=file_id,
-    )
+    presigned_url = await cdn_client.generate_presigned_url(key)
+    result = AnswerUploadedFile(key=key, url=presigned_url, file_id=file_id)
     return Response(result=result)
 
 

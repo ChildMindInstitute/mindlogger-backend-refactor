@@ -279,7 +279,7 @@ class LogFileService:
             file_object = next(file_flt, None)
             file_key = self.key(device_id=device_id, file_name=file_name)
             if file_object:
-                url = self.cdn.generate_private_url(file_key)
+                url = await self.cdn.generate_presigned_url(file_key)
                 file_id = file_name
             else:
                 url = None
