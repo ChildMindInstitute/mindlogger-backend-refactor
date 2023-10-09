@@ -24,7 +24,7 @@ from apps.file.errors import FileNotFoundError
 from apps.file.services import LogFileService
 from apps.file.storage import select_storage
 from apps.shared.domain.response import Response, ResponseMulti
-from apps.shared.exception import FieldError, NotFoundError
+from apps.shared.exception import NotFoundError
 from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -180,16 +180,11 @@ async def presign(
 
 async def logs_upload(
     device_id: str,
-    file_id=Query(..., alias="fileId"),
+    file_id: str = Query(..., alias="fileId"),
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_log_bucket),
 ):
-    if not file_id:
-        err = FieldError()
-        err.zero_path = "query"
-        raise err
-
     service = LogFileService(user.id, cdn_client)
     key = service.key(device_id=device_id, file_name=file.filename)
     await service.upload(device_id, file, file_id)
