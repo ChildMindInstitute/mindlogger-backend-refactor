@@ -12,6 +12,7 @@ from sqlalchemy import (
     null,
     or_,
     select,
+    text,
     true,
     update,
 )
@@ -191,6 +192,12 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             )
         query = query.where(AppletSchema.id.in_(accessible_applets_query))
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
+        # Exclude edge case when after transfering applets ownership
+        # applet can be shown in applet list for owner in mobile or web
+        # without encryption
+        query = query.where(
+            func.jsonb_typeof(AppletSchema.encryption) != text("'null'"),
+        )
         query = paging(query, query_params.page, query_params.limit)
         result: Result = await self._execute(query)
         return result.scalars().all()
@@ -220,6 +227,12 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             )
         query = query.where(AppletSchema.id.in_(accessible_applets_query))
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
+        # Exclude edge case when after transfering applets ownership
+        # applet can be shown in applet list for owner in mobile or web
+        # without encryption
+        query = query.where(
+            func.jsonb_typeof(AppletSchema.encryption) != text("'null'"),
+        )
         result: Result = await self._execute(query)
         return result.scalars().first() or 0
 

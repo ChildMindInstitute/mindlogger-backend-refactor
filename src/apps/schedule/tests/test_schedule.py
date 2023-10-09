@@ -579,7 +579,7 @@ class TestSchedule(BaseTest):
         response = await self.client.get(self.schedule_user_url)
 
         assert response.status_code == 200
-        assert response.json()["count"] == 6
+        assert response.json()["count"] == 4
 
     @rollback
     async def test_schedule_get_user_by_applet(self):
