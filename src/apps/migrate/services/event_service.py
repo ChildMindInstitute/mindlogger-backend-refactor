@@ -248,7 +248,7 @@ class EventMigrationService:
         else:
             event_data["one_time_completion"] = False
 
-        if event.data.idleTime:
+        if event.data.idleTime and event.data.idleTime.allow:
             event_data["timer_type"] = TIMER_TYPE[IDLE]
             event_data["timer"] = timedelta(
                 minutes=float(event.data.idleTime.minute)
