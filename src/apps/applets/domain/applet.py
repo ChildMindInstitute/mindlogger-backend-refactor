@@ -90,7 +90,7 @@ class AppletSingleLanguageInfo(AppletFetchBase, InternalModel):
 class AppletSingleLanguageInfoPublic(AppletFetchBase, PublicModel):
     description: str  # type: ignore[assignment]
     about: str  # type: ignore[assignment]
-    theme: PublicTheme
+    theme: PublicTheme | None
 
 
 class AppletName(InternalModel):

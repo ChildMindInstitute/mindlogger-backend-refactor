@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 from typing import Tuple
 
+from asyncpg.exceptions import UniqueViolationError
 from pydantic import parse_obj_as
 from sqlalchemy import (
     and_,
@@ -344,7 +345,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     ) -> list[UserAppletAccessSchema]:
         return await self._create_many(schemas)
 
-    async def upsert_user_applet_access(self, schema: UserAppletAccessSchema):
+    async def upsert_user_applet_access(
+        self, schema: UserAppletAccessSchema, where=None
+    ):
         values = {
             "invitor_id": schema.invitor_id,
             "owner_id": schema.owner_id,
@@ -372,9 +375,17 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "updated_at": datetime.utcnow(),
                 "meta": stmt.excluded.meta,
             },
-        )
+            where=where,
+        ).returning(UserAppletAccessSchema)
 
-        await self._execute(stmt)
+        result = list(await self._execute(stmt))
+        if not result:
+            raise UniqueViolationError(
+                "duplicate key value violates unique"
+                ' constraint "unique_user_applet_role"'
+            )
+
+        return result
 
     async def upsert_user_applet_access_list(
         self, schemas: list[UserAppletAccessSchema]

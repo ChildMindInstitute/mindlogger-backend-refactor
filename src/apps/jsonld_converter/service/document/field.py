@@ -882,7 +882,7 @@ class ReproFieldSliderStacked(ReproFieldSliderBase):
                 last_choice = option.choices[-1]
                 for choice in option.choices:
                     scores.append(choice.get("score"))  # type: ignore[union-attr]  # noqa: E501
-                    if self.ld_response_alert:
+                    if self.ld_response_alert and choice.get("alert"):
                         alerts.append(  # type: ignore[union-attr]
                             SliderValueAlert(
                                 alert=choice.get("alert"),

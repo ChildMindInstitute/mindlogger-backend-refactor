@@ -127,8 +127,8 @@ class SliderValueAlert(PublicModel):
 
 
 class SliderValues(PublicModel):
-    min_label: str | None = Field(..., max_length=20)
-    max_label: str | None = Field(..., max_length=20)
+    min_label: str | None = Field(..., max_length=100)
+    max_label: str | None = Field(..., max_length=100)
     min_value: NonNegativeInt = Field(default=0, max_value=11)
     max_value: NonNegativeInt = Field(default=12, max_value=12)
     min_image: str | None
@@ -183,7 +183,7 @@ class DrawingValues(PublicModel):
 
 class SliderRowsValue(SliderValues, PublicModel):
     id: str | None = None
-    label: str = Field(..., max_length=11)
+    label: str = Field(..., max_length=100)
 
     @validator("id")
     def validate_id(cls, value):
@@ -196,7 +196,7 @@ class SliderRowsValues(PublicModel):
 
 class _SingleSelectionOption(PublicModel):
     id: str | None = None
-    text: str = Field(..., max_length=11)
+    text: str = Field(..., max_length=100)
     image: str | None
     tooltip: str | None
 
@@ -213,7 +213,7 @@ class _SingleSelectionOption(PublicModel):
 
 class _SingleSelectionRow(PublicModel):
     id: str | None = None
-    row_name: str = Field(..., max_length=11)
+    row_name: str = Field(..., max_length=100)
     row_image: str | None
     tooltip: str | None
 
