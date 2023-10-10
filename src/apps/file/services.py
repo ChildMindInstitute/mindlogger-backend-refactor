@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import logging
 import re
 import uuid
 from logging import INFO, WARNING
@@ -20,6 +19,7 @@ from apps.workspaces.service import workspace
 from apps.workspaces.service.user_access import UserAccessService
 from config import settings
 from infrastructure.dependency.cdn import get_legacy_bucket
+from infrastructure.logger import logger
 from infrastructure.utility import CDNClient
 
 
@@ -304,7 +304,6 @@ class LogFileService:
     async def backend_log(
         self, method_name: str, details: dict, success: bool
     ):
-        logger = logging.getLogger("uvicorn")
         logger.log(
             self.BE_LOG_LEVEL if success else WARNING,
             f"{self.BE_LOG_PREFIX} - {method_name}: {details}",
