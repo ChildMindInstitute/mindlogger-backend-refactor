@@ -57,7 +57,7 @@ class AppletSingleLanguageDetailPublic(AppletFetchBase, PublicModel):
     activity_flows: list[FlowSingleLanguageDetailPublic] = Field(
         default_factory=list
     )
-    theme: PublicTheme|None = None
+    theme: PublicTheme | None = None
 
 
 class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
@@ -90,7 +90,7 @@ class AppletSingleLanguageInfo(AppletFetchBase, InternalModel):
 class AppletSingleLanguageInfoPublic(AppletFetchBase, PublicModel):
     description: str  # type: ignore[assignment]
     about: str  # type: ignore[assignment]
-    theme: PublicTheme
+    theme: PublicTheme | None
 
 
 class AppletName(InternalModel):
