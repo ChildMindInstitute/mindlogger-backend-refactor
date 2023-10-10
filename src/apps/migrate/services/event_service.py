@@ -248,7 +248,7 @@ class EventMigrationService:
         else:
             event_data["one_time_completion"] = False
 
-        if event.data.idleTime:
+        if event.data.idleTime and event.data.idleTime.allow:
             event_data["timer_type"] = TIMER_TYPE[IDLE]
             event_data["timer"] = timedelta(
                 minutes=float(event.data.idleTime.minute)
@@ -478,12 +478,12 @@ class EventMigrationService:
             new_hour = input_hour + hour_delta
             new_minute = input_minute + minute_delta
 
-            if new_hour >= 24:
-                new_hour = 23
-                new_minute = 59
+            if new_minute >= 60:
+                new_hour += 1
+                new_minute -= 60
 
-            new_hour = max(0, min(23, new_hour))
-            new_minute = max(0, min(59, new_minute))
+            if new_hour > 23 or (new_hour == 23 and new_minute >= 60):
+                new_hour, new_minute = 23, 59
 
             original_time = time(input_hour, input_minute)
             modified_time = time(new_hour, new_minute)
