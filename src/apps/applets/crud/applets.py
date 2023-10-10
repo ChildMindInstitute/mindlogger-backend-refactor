@@ -164,7 +164,11 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         return db_result.scalars().first()
 
     async def get_applets_by_roles(
-        self, user_id: uuid.UUID, roles: list[Role], query_params: QueryParams
+        self,
+        user_id: uuid.UUID,
+        roles: list[Role],
+        query_params: QueryParams,
+        exclude_without_encryption: bool = False,
     ) -> list[AppletSchema]:
         accessible_applets_query = select(UserAppletAccessSchema.applet_id)
         accessible_applets_query = accessible_applets_query.where(
@@ -192,18 +196,20 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             )
         query = query.where(AppletSchema.id.in_(accessible_applets_query))
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
-        # Exclude edge case when after transfering applets ownership
-        # applet can be shown in applet list for owner in mobile or web
-        # without encryption
-        query = query.where(
-            func.jsonb_typeof(AppletSchema.encryption) != text("'null'"),
-        )
+        if exclude_without_encryption:
+            query = query.where(
+                func.jsonb_typeof(AppletSchema.encryption) != text("'null'"),
+            )
         query = paging(query, query_params.page, query_params.limit)
         result: Result = await self._execute(query)
         return result.scalars().all()
 
     async def get_applets_by_roles_count(
-        self, user_id: uuid.UUID, roles: list[str], query_params: QueryParams
+        self,
+        user_id: uuid.UUID,
+        roles: list[str],
+        query_params: QueryParams,
+        exclude_without_encryption: bool = False,
     ) -> int:
         accessible_applets_query = select(UserAppletAccessSchema.applet_id)
         accessible_applets_query = accessible_applets_query.where(
@@ -227,12 +233,10 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             )
         query = query.where(AppletSchema.id.in_(accessible_applets_query))
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
-        # Exclude edge case when after transfering applets ownership
-        # applet can be shown in applet list for owner in mobile or web
-        # without encryption
-        query = query.where(
-            func.jsonb_typeof(AppletSchema.encryption) != text("'null'"),
-        )
+        if exclude_without_encryption:
+            query = query.where(
+                func.jsonb_typeof(AppletSchema.encryption) != text("'null'"),
+            )
         result: Result = await self._execute(query)
         return result.scalars().first() or 0
 
