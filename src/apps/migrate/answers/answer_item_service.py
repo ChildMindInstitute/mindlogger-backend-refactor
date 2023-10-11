@@ -9,7 +9,14 @@ from datetime import datetime
 
 
 class AnswerItemMigrationService:
-    async def create_item(self, *, regular_session, regular_or_arbitary_session, mongo_answer: dict, **kwargs):
+    async def create_item(
+        self,
+        *,
+        regular_session,
+        regular_or_arbitary_session,
+        mongo_answer: dict,
+        **kwargs,
+    ):
         identifier = mongo_answer["meta"]["subject"].get("identifier", "")
         respondent_mongo_id = Profile().findOne(
             {"_id": mongo_answer["meta"]["subject"].get("@id")}
@@ -22,7 +29,9 @@ class AnswerItemMigrationService:
             ).get_anonymous_respondent()
             respondent_id = anon_respondent.id
 
-        answer_item = await AnswerItemsCRUD(regular_or_arbitary_session).create(
+        answer_item = await AnswerItemsCRUD(
+            regular_or_arbitary_session
+        ).create(
             AnswerItemSchema(
                 created_at=mongo_answer["created"],
                 updated_at=mongo_answer["updated"],
