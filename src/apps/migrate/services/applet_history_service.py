@@ -19,7 +19,10 @@ class AppletMigrationHistoryService:
         self.session = session
 
     async def add_history(
-        self, performer_id: uuid.UUID, applet: AppletMigratedFull
+        self,
+        performer_id: uuid.UUID,
+        applet: AppletMigratedFull,
+        initial_applet: bool = False,
     ):
         await AppletHistoriesCRUD(self.session).save(
             AppletHistorySchema(
@@ -39,8 +42,12 @@ class AppletMigrationHistoryService:
                 report_include_user_id=applet.report_include_user_id,
                 report_include_case_id=applet.report_include_case_id,
                 report_email_body=applet.report_email_body,
-                created_at=applet.created_at,
-                updated_at=applet.updated_at,
+                created_at=applet.created_at
+                if initial_applet
+                else applet.updated_at,
+                updated_at=applet.created_at
+                if initial_applet
+                else applet.updated_at,
                 migrated_date=applet.migrated_date,
                 migrated_updated=applet.migrated_updated,
             )

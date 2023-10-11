@@ -70,7 +70,7 @@ class AppletMigrationService:
         ).create(applet, create_data.activity_flows, activity_key_id_map)
 
         await AppletMigrationHistoryService(self.session).add_history(
-            manager_id or self.user_id, applet
+            manager_id or self.user_id, applet, initial_applet=True
         )
 
         return applet
