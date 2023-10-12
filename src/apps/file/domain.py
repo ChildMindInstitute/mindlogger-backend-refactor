@@ -27,3 +27,7 @@ class FileExistenceResponse(PublicModel):
 
 class FilePresignRequest(PublicModel):
     private_urls: list[str]
+
+
+class LogFileExistenceResponse(FileExistenceResponse):
+    file_size: int | None  # file size in bytes
