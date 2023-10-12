@@ -70,7 +70,7 @@ class AppletMigrationService:
         ).create(applet, create_data.activity_flows, activity_key_id_map)
 
         await AppletMigrationHistoryService(self.session).add_history(
-            manager_id or self.user_id, applet
+            manager_id or self.user_id, applet, initial_applet=True
         )
 
         return applet
@@ -101,6 +101,7 @@ class AppletMigrationService:
                 updated_at=create_data.extra_fields["updated"],
                 migrated_date=datetime.datetime.utcnow(),
                 migrated_updated=datetime.datetime.utcnow(),
+                stream_enabled=create_data.stream_enabled or False,
             )
         )
         return AppletMigratedFull.from_orm(schema)
@@ -169,6 +170,7 @@ class AppletMigrationService:
                 updated_at=update_data.extra_fields["updated"],
                 migrated_date=datetime.datetime.utcnow(),
                 migrated_updated=datetime.datetime.utcnow(),
+                stream_enabled=update_data.stream_enabled or False,
             ),
         )
         return AppletMigratedFull.from_orm(schema)

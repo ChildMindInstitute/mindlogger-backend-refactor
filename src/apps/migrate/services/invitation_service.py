@@ -1,3 +1,4 @@
+import datetime
 from datetime import date
 
 from bson import ObjectId
@@ -91,7 +92,14 @@ class InvitationsMigrationService:
         invitation_data["created_at"] = invitation.created
         invitation_data["updated_at"] = invitation.updated
 
-        invitation = InvitationSchema(**invitation_data)
+        now = datetime.datetime.utcnow()
+        invitation = InvitationSchema(
+            **{
+                **invitation_data,
+                "migrated_date": now,
+                "migrated_updated": now,
+            }
+        )
 
         async with atomic(self.session):
             await InvitationCRUD(self.session)._create(invitation)

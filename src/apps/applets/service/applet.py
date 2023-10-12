@@ -429,9 +429,14 @@ class AppletService:
         self, language: str, query_params: QueryParams
     ) -> list[AppletSingleLanguageInfo]:
         roles: str = query_params.filters.pop("roles")
-
+        # Exclude edge case when after transfering applets ownership
+        # applet can be shown in applet list for owner in mobile or web
+        # without encryption
         schemas = await AppletsCRUD(self.session).get_applets_by_roles(
-            self.user_id, list(map(Role, roles.split(","))), query_params
+            self.user_id,
+            list(map(Role, roles.split(","))),
+            query_params,
+            exclude_without_encryption=True,
         )
         theme_ids = [schema.theme_id for schema in schemas if schema.theme_id]
         themes = []
@@ -477,7 +482,10 @@ class AppletService:
     ) -> int:
         roles: str = query_params.filters.pop("roles")
         count = await AppletsCRUD(self.session).get_applets_by_roles_count(
-            self.user_id, roles.split(","), query_params
+            self.user_id,
+            roles.split(","),
+            query_params,
+            exclude_without_encryption=True,
         )
         return count
 

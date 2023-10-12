@@ -210,7 +210,7 @@ class EventMigrationService:
             )
 
         periodicity_data["migrated_date"] = datetime.utcnow()
-
+        periodicity_data["migrated_updated"] = datetime.utcnow()
         periodicity = PeriodicitySchema(**periodicity_data)
 
         async with atomic(self.session):
@@ -248,7 +248,7 @@ class EventMigrationService:
         else:
             event_data["one_time_completion"] = False
 
-        if event.data.idleTime:
+        if event.data.idleTime and event.data.idleTime.allow:
             event_data["timer_type"] = TIMER_TYPE[IDLE]
             event_data["timer"] = timedelta(
                 minutes=float(event.data.idleTime.minute)
@@ -279,17 +279,20 @@ class EventMigrationService:
             "event_id": pg_event.id,
         }
         user_event_data["migrated_date"] = datetime.utcnow()
+        user_event_data["migrated_updated"] = datetime.utcnow()
         user_event = UserEventsSchema(**user_event_data)
 
         async with atomic(self.session):
             await UserEventsCRUD(self.session)._create(user_event)
 
     async def _create_activity(self, event: MongoEvent, pg_event: EventSchema):
+        now = datetime.utcnow()
         activity_event_data: dict = {
             "activity_id": mongoid_to_uuid(event.data.activity_id),
             "event_id": pg_event.id,
         }
         activity_event_data["migrated_date"] = datetime.utcnow()
+        activity_event_data["migrated_updated"] = datetime.utcnow()
         activity = ActivityEventsSchema(**activity_event_data)
 
         async with atomic(self.session):
@@ -301,6 +304,7 @@ class EventMigrationService:
             "event_id": pg_event.id,
         }
         flow_event_data["migrated_date"] = datetime.utcnow()
+        flow_event_data["migrated_updated"] = datetime.utcnow()
         flow = FlowEventsSchema(**flow_event_data)
 
         async with atomic(self.session):
@@ -336,9 +340,9 @@ class EventMigrationService:
                             ).time()
                         else:
                             continue
-
                     notification_data["event_id"] = pg_event.id
                     notification_data["migrated_date"] = datetime.utcnow()
+                    notification_data["migrated_updated"] = datetime.utcnow()
                     notification_data["order"] = order
                     order += 1
 
@@ -359,7 +363,7 @@ class EventMigrationService:
                 ).time(),
             }
             reminder_data["migrated_date"] = datetime.utcnow()
-
+            reminder_data["migrated_updated"] = datetime.utcnow()
             reminder = ReminderSchema(**reminder_data)
 
             async with atomic(self.session):
@@ -478,12 +482,12 @@ class EventMigrationService:
             new_hour = input_hour + hour_delta
             new_minute = input_minute + minute_delta
 
-            if new_hour >= 24:
-                new_hour = 23
-                new_minute = 59
+            if new_minute >= 60:
+                new_hour += 1
+                new_minute -= 60
 
-            new_hour = max(0, min(23, new_hour))
-            new_minute = max(0, min(59, new_minute))
+            if new_hour > 23 or (new_hour == 23 and new_minute >= 60):
+                new_hour, new_minute = 23, 59
 
             original_time = time(input_hour, input_minute)
             modified_time = time(new_hour, new_minute)

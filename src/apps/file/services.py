@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import re
 import uuid
+from logging import INFO, WARNING
 from typing import List
 
 import pytz
@@ -9,7 +10,7 @@ from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import config
-from apps.file.domain import FileExistenceResponse
+from apps.file.domain import LogFileExistenceResponse
 from apps.file.storage import select_storage
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
@@ -18,6 +19,7 @@ from apps.workspaces.service import workspace
 from apps.workspaces.service.user_access import UserAccessService
 from config import settings
 from infrastructure.dependency.cdn import get_legacy_bucket
+from infrastructure.logger import logger
 from infrastructure.utility import CDNClient
 
 
@@ -202,6 +204,11 @@ class AzurePresignService(GCPPresignService):
 
 class LogFileService:
     LOG_KEY = "logfiles"
+    BE_LOG_PREFIX = "LOGFILE"
+    BE_LOG_LEVEL = INFO
+    METHOD_UPLOAD = "logs-upload"
+    METHOD_CHECK = "logs-upload-check"
+    METHOD_DOWNLOAD = "logs-download"
 
     def __init__(self, user_id: uuid.UUID, cdn: CDNClient):
         self.user_id = user_id
@@ -268,15 +275,17 @@ class LogFileService:
         files = list(filter(filter_by_interval, files))
         return files
 
-    async def check_exist(self, device_id: str, file_names: List[str]):
+    async def check_exist(
+        self, device_id: str, file_names: List[str]
+    ) -> list[LogFileExistenceResponse]:
         key = self.device_key_prefix(device_id)
         file_objects = await self.cdn.list_object(key)
-        result: List[FileExistenceResponse] = []
+        result: list[LogFileExistenceResponse] = []
         for file_name in file_names:
             prefix = key[:]
             full_id = f"{prefix}/{file_name}"
             file_flt = filter(lambda f: f["Key"] == full_id, file_objects)
-            file_object = next(file_flt, None)
+            file_object: dict = next(file_flt, {})
             file_key = self.key(device_id=device_id, file_name=file_name)
             if file_object:
                 url = await self.cdn.generate_presigned_url(file_key)
@@ -285,11 +294,61 @@ class LogFileService:
                 url = None
                 file_id = file_name
             result.append(
-                FileExistenceResponse(
+                LogFileExistenceResponse(
                     key=file_key,
                     uploaded=bool(file_object),
                     url=url,
                     file_id=file_id,
+                    file_size=file_object.get("Size"),
                 )
             )
         return result
+
+    async def backend_log(
+        self, method_name: str, details: dict, success: bool
+    ):
+        logger.log(
+            self.BE_LOG_LEVEL if success else WARNING,
+            f"{self.BE_LOG_PREFIX} - {method_name}: {details}",
+        )
+
+    async def backend_log_upload(
+        self, file_id: str, success: bool, details: str | None
+    ):
+        row = {
+            "userId": str(self.user_id),
+            "fileId": str(file_id),
+            "success": "true" if success else "false",
+            "details": details,
+        }
+        await self.backend_log(self.METHOD_UPLOAD, row, success)
+
+    async def backend_log_check(
+        self,
+        files: list[LogFileExistenceResponse],
+        success: bool,
+        details: str | None,
+    ):
+        row = {
+            "userId": str(self.user_id),
+            "response": [file.dict() for file in files],
+            "success": "true" if success else "false",
+            "details": details,
+        }
+        await self.backend_log(self.METHOD_CHECK, row, success)
+
+    async def backend_log_download(
+        self,
+        email: str | None,
+        details: str | None,
+        device_id: str,
+        success: bool,
+    ):
+        row = {
+            "userId": str(self.user_id),
+            "deviceId": device_id,
+            "success": "true" if success else "false",
+            "email": email,
+            "details": details,
+        }
+        await self.backend_log(self.METHOD_CHECK, row, success)

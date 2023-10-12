@@ -18,6 +18,7 @@ from apps.file.domain import (
     FileDownloadRequest,
     FileExistenceResponse,
     FilePresignRequest,
+    LogFileExistenceResponse,
 )
 from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
@@ -186,11 +187,16 @@ async def logs_upload(
     cdn_client: CDNClient = Depends(get_log_bucket),
 ):
     service = LogFileService(user.id, cdn_client)
-    key = service.key(device_id=device_id, file_name=file.filename)
-    await service.upload(device_id, file, file_id)
-    presigned_url = await cdn_client.generate_presigned_url(key)
-    result = AnswerUploadedFile(key=key, url=presigned_url, file_id=file_id)
-    return Response(result=result)
+    try:
+        key = service.key(device_id=device_id, file_name=file.filename)
+        await service.upload(device_id, file, file_id)
+        url = await cdn_client.generate_presigned_url(key)
+        result = AnswerUploadedFile(key=key, url=url, file_id=file_id)
+        await service.backend_log_upload(file_id, True, key)
+        return Response(result=result)
+    except Exception as ex:
+        await service.backend_log_upload(file_id, False, str(ex))
+        raise ex
 
 
 async def logs_download(
@@ -200,16 +206,25 @@ async def logs_download(
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_log_bucket),
 ):
-    UserAccessService.raise_for_developer_access(user.email_encrypted)
     service = LogFileService(user_id, cdn_client)
-    end = datetime.datetime.now(tz=pytz.UTC)
-    start = end - datetime.timedelta(days=days)
-    files = await service.log_list(device_id, start, end)
-    futures = []
-    for key in map(lambda f: f["Key"], files):
-        futures.append(cdn_client.generate_presigned_url(key))
-    result = await asyncio.gather(*futures)
-    return ResponseMulti[str](result=result, count=len(result))
+    try:
+        UserAccessService.raise_for_developer_access(user.email_encrypted)
+        end = datetime.datetime.now(tz=pytz.UTC)
+        start = end - datetime.timedelta(days=days)
+        files = await service.log_list(device_id, start, end)
+        futures = []
+        for key in map(lambda f: f["Key"], files):
+            futures.append(cdn_client.generate_presigned_url(key))
+        result = await asyncio.gather(*futures)
+        await service.backend_log_download(
+            user.email_encrypted, None, device_id, True
+        )
+        return ResponseMulti[str](result=result, count=len(result))
+    except Exception as ex:
+        await service.backend_log_download(
+            user.email_encrypted, str(ex), device_id, False
+        )
+        raise ex
 
 
 async def logs_exist_check(
@@ -219,6 +234,13 @@ async def logs_exist_check(
     cdn_client: CDNClient = Depends(get_log_bucket),
 ):
     service = LogFileService(user.id, cdn_client)
-    result = await service.check_exist(device_id, files.files)
-    count = len(result)
-    return ResponseMulti[FileExistenceResponse](result=result, count=count)
+    try:
+        result = await service.check_exist(device_id, files.files)
+        count = len(result)
+        await service.backend_log_check(result, True, None)
+        return ResponseMulti[LogFileExistenceResponse](
+            result=result, count=count
+        )
+    except Exception as ex:
+        await service.backend_log_check([], False, str(ex))
+        raise ex

@@ -55,7 +55,7 @@ class TestApplet(BaseTest):
                 "publicKey": "publicKey",
                 "prime": "privateKey",
                 "base": "[2]",
-                "accountId": "07216053-3974-4d60-ab8c-457793246a68",
+                "accountId": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             },
             "description": {"en": "Central granddaughter unfortunate"},
             "about": {"en": "channels indexing noisily"},
@@ -974,7 +974,7 @@ class TestApplet(BaseTest):
         assert TestMail.mails[0].subject == "Applet duplicate success!"
 
         response = await self.client.get(self.applet_list_url)
-        assert len(response.json()["result"]) == 5
+        assert len(response.json()["result"]) == 4
         assert response.json()["result"][0]["displayName"] == "New name"
 
         response = await self.client.post(
@@ -1121,21 +1121,17 @@ class TestApplet(BaseTest):
         response = await self.client.get(self.applet_list_url)
 
         assert response.status_code == 200, response.json()
-        assert len(response.json()["result"]) == 4
+        assert len(response.json()["result"]) == 3
         assert (
             response.json()["result"][0]["id"]
-            == "92917a56-d586-4613-b7aa-991f2c4b15b4"
-        )
-        assert (
-            response.json()["result"][1]["id"]
             == "92917a56-d586-4613-b7aa-991f2c4b15b5"
         )
         assert (
-            response.json()["result"][2]["id"]
+            response.json()["result"][1]["id"]
             == "92917a56-d586-4613-b7aa-991f2c4b15b2"
         )
         assert (
-            response.json()["result"][3]["id"]
+            response.json()["result"][2]["id"]
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 

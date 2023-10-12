@@ -85,6 +85,7 @@ class AlertMigrationService:
         alert_data["created_at"] = alert.created
         alert_data["version"] = alert.version
         alert_data["migrated_date"] = datetime.utcnow()
+        alert_data["migrated_updated"] = datetime.utcnow()
 
         alert = AlertSchema(**alert_data)
 

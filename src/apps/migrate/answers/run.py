@@ -264,7 +264,8 @@ class AnswersMigrateFacade:
             try:
                 async with atomic(regular_or_arbitary_session):
                     await self.answer_item_migrate_service.create_item(
-                        session=regular_or_arbitary_session,
+                        regular_session=regular_session,
+                        regular_or_arbitary_session=regular_or_arbitary_session,
                         **answer_item_data,
                     )
             except Exception as e:
