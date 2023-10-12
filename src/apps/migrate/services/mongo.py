@@ -852,6 +852,21 @@ class Mongo:
         refers to the original records.
         If it's the case, it will remove those and replace with the cloned applet activities IDs.
         """
+
+        # patch activity of applet with id=65155ba49932fa109e82de99
+        if applet["_id"] == ObjectId("65155ba49932fa109e82de99"):
+            _broken_activity_index = None
+            for _index, _activity in enumerate(
+                applet_format["applet"]["reprolib:terms/order"][0]["@list"]
+            ):
+                if _activity["@id"] == "617a62dba463200ebc8506fc":
+                    _broken_activity_index = _index
+                    break
+            if _broken_activity_index is not None:
+                applet_format["applet"]["reprolib:terms/order"][0]["@list"][
+                    _broken_activity_index
+                ] = {"@id": "65155aa49932fa109e82dbde"}
+
         original_id = applet["duplicateOf"]
         original = Applet().findOne(query={"_id": original_id})
         if original:
