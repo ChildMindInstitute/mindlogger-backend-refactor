@@ -291,17 +291,23 @@ def patch_broken_applets(
 ) -> tuple[dict, dict]:
     broken_activity_order = [
         "63d3d579b71996780cdf409a",
+        "63f36719601cdc5212d58eae",
     ]
     if applet_id in broken_activity_order:
-        applet_ld["reprolib:terms/order"][0]["@list"][-1][
-            "http://www.w3.org/2004/02/skos/core#altLabel"
-        ][0]["@value"] = "Mind logging [Practice] (3)"
-        applet_ld["reprolib:terms/order"][0]["@list"][-1][
-            "http://www.w3.org/2004/02/skos/core#prefLabel"
-        ][0]["@value"] = "Mind logging [Practice] (3)"
-        applet_ld["reprolib:terms/order"][0]["@list"][-1][
-            "@id"
-        ] = "Mind logging [Practice] (3)"
+        duplicate_activity = None
+        for _index, activity in enumerate(
+            applet_ld["reprolib:terms/order"][0]["@list"]
+        ):
+            if (
+                activity["_id"] == "activity/63d3d4eeb71996780cdf3e97"
+                or activity["_id"] == "activity/63f36646601cdc5212d58cbe"
+            ):
+                duplicate_activity = _index
+
+        if duplicate_activity:
+            applet_ld["reprolib:terms/order"][0]["@list"].pop(
+                duplicate_activity
+            )
 
     broken_applets = [
         # broken conditional logic [object object]  in main applet
@@ -467,12 +473,17 @@ def patch_broken_applets(
     key_alt = "http://www.w3.org/2004/02/skos/core#altLabel"
     if applet_id in duplicated_activity_names:
         current_names = []
-        for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+        current_names_indexes = []
+        for _index, _activity in enumerate(
+            applet_ld["reprolib:terms/order"][0]["@list"]
+        ):
             if _activity["@id"] in current_names:
-                _activity["@id"] = _activity["@id"] + " (1)"
-                _activity[key_pref][0]["@value"] = _activity["@id"]
-                _activity[key_alt][0]["@value"] = _activity["@id"]
+                current_names_indexes.append(_index)
             current_names.append(_activity["@id"])
+        if current_names_indexes:
+            current_names_indexes.sort(reverse=True)
+            for _index in current_names_indexes:
+                applet_ld["reprolib:terms/order"][0]["@list"].pop(_index)
 
     no_ids_flanker_map = {
         "<<<<<": "left-con",
