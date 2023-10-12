@@ -648,10 +648,10 @@ class Postgres:
         self, applets_ids: list[str] | None
     ) -> list[tuple[str, str]]:
         sql = """
-            SELECT DISTINCT activities.id, activities.applet_id
+            SELECT activities.id, activities.applet_id
             FROM activities
             LEFT JOIN (
-                SELECT DISTINCT activity_events.activity_id
+                SELECT activity_events.activity_id
                 FROM activity_events
                 LEFT JOIN user_events ON activity_events.event_id = user_events.event_id
                 WHERE user_events.event_id IS NULL
@@ -675,10 +675,10 @@ class Postgres:
         self, applets_ids: list[str] | None
     ) -> list[tuple[str, str]]:
         sql = """
-            SELECT DISTINCT flows.id, flows.applet_id
+            SELECT flows.id, flows.applet_id
             FROM flows
             LEFT JOIN (
-                SELECT DISTINCT flow_events.flow_id
+                SELECT flow_events.flow_id
                 FROM flow_events
                 LEFT JOIN user_events ON flow_events.event_id = user_events.event_id
                 WHERE user_events.event_id IS NULL
