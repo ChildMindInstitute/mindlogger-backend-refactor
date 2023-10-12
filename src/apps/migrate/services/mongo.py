@@ -283,12 +283,28 @@ def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
 
     applet_ld = patch_prize_activity(applet_id, applet_ld)
 
+    broken_item_flow = [
+        "6522a4753c36ce0d4d6cda4d",
+    ]
+    if applet_id in broken_item_flow:
+        applet_ld["reprolib:terms/order"][0]["@list"][0][
+            "reprolib:terms/addProperties"
+        ][5]["reprolib:terms/isVis"][0] = {"@value": True}
+
     return applet_ld
 
 
 def patch_broken_applets(
     applet_id: str, applet_ld: dict, applet_mongo: dict
 ) -> tuple[dict, dict]:
+    broken_item_flow = [
+        "6522a4753c36ce0d4d6cda4d",
+    ]
+    if applet_id in broken_item_flow:
+        applet_ld["reprolib:terms/order"][0]["@list"][0][
+            "reprolib:terms/addProperties"
+        ][5]["reprolib:terms/isVis"][0] = {"@value": True}
+
     broken_activity_order = [
         "63d3d579b71996780cdf409a",
     ]
