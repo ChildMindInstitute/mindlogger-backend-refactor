@@ -859,7 +859,8 @@ class Mongo:
             for _orig_act in original_format["applet"]["reprolib:terms/order"][
                 0
             ]["@list"]:
-                act_blacklist.append(_orig_act["@id"])
+                if ObjectId.is_valid(_orig_act["@id"]):
+                    act_blacklist.append(_orig_act["@id"])
             for _key, _activity in original_format["activities"].items():
                 act_blacklist.append(str(_activity))
 
@@ -902,9 +903,10 @@ class Mongo:
             # add missing acitivity ids in activity list
             # when applet is a duplicate
             for activity in order:
-                applet_format["activities"][activity["@id"]] = ObjectId(
-                    activity["@id"]
-                )
+                if ObjectId.is_valid(activity["@id"]):
+                    applet_format["activities"][activity["@id"]] = ObjectId(
+                        activity["@id"]
+                    )
 
         return applet_format
 
@@ -941,6 +943,11 @@ class Mongo:
             activity_id = _activity["activity"]["@id"]
             if activity_id not in activities_by_id:
                 activities_by_id[activity_id] = _activity.copy()
+            activity_name = _activity["activity"][
+                "http://www.w3.org/2004/02/skos/core#prefLabel"
+            ][0]["@value"]
+            if activity_name not in activities_by_id:
+                activities_by_id[activity_name] = _activity.copy()
 
         # setup activity items
         for key, value in activities_by_id.items():
