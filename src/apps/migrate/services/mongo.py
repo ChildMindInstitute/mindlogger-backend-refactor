@@ -307,17 +307,23 @@ def patch_broken_applets(
 
     broken_activity_order = [
         "63d3d579b71996780cdf409a",
+        "63f36719601cdc5212d58eae",
     ]
     if applet_id in broken_activity_order:
-        applet_ld["reprolib:terms/order"][0]["@list"][-1][
-            "http://www.w3.org/2004/02/skos/core#altLabel"
-        ][0]["@value"] = "Mind logging [Practice] (3)"
-        applet_ld["reprolib:terms/order"][0]["@list"][-1][
-            "http://www.w3.org/2004/02/skos/core#prefLabel"
-        ][0]["@value"] = "Mind logging [Practice] (3)"
-        applet_ld["reprolib:terms/order"][0]["@list"][-1][
-            "@id"
-        ] = "Mind logging [Practice] (3)"
+        duplicate_activity = None
+        for _index, activity in enumerate(
+            applet_ld["reprolib:terms/order"][0]["@list"]
+        ):
+            if (
+                activity["_id"] == "activity/63d3d4eeb71996780cdf3e97"
+                or activity["_id"] == "activity/63f36646601cdc5212d58cbe"
+            ):
+                duplicate_activity = _index
+
+        if duplicate_activity:
+            applet_ld["reprolib:terms/order"][0]["@list"].pop(
+                duplicate_activity
+            )
 
     broken_applets = [
         # broken conditional logic [object object]  in main applet
@@ -483,12 +489,17 @@ def patch_broken_applets(
     key_alt = "http://www.w3.org/2004/02/skos/core#altLabel"
     if applet_id in duplicated_activity_names:
         current_names = []
-        for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+        current_names_indexes = []
+        for _index, _activity in enumerate(
+            applet_ld["reprolib:terms/order"][0]["@list"]
+        ):
             if _activity["@id"] in current_names:
-                _activity["@id"] = _activity["@id"] + " (1)"
-                _activity[key_pref][0]["@value"] = _activity["@id"]
-                _activity[key_alt][0]["@value"] = _activity["@id"]
+                current_names_indexes.append(_index)
             current_names.append(_activity["@id"])
+        if current_names_indexes:
+            current_names_indexes.sort(reverse=True)
+            for _index in current_names_indexes:
+                applet_ld["reprolib:terms/order"][0]["@list"].pop(_index)
 
     no_ids_flanker_map = {
         "<<<<<": "left-con",
@@ -857,6 +868,21 @@ class Mongo:
         refers to the original records.
         If it's the case, it will remove those and replace with the cloned applet activities IDs.
         """
+
+        # patch activity of applet with id=65155ba49932fa109e82de99
+        if applet["_id"] == ObjectId("65155ba49932fa109e82de99"):
+            _broken_activity_index = None
+            for _index, _activity in enumerate(
+                applet_format["applet"]["reprolib:terms/order"][0]["@list"]
+            ):
+                if _activity["@id"] == "617a62dba463200ebc8506fc":
+                    _broken_activity_index = _index
+                    break
+            if _broken_activity_index is not None:
+                applet_format["applet"]["reprolib:terms/order"][0]["@list"][
+                    _broken_activity_index
+                ] = {"@id": "65155aa49932fa109e82dbde"}
+
         original_id = applet["duplicateOf"]
         original = Applet().findOne(query={"_id": original_id})
         if original:
@@ -875,7 +901,8 @@ class Mongo:
             for _orig_act in original_format["applet"]["reprolib:terms/order"][
                 0
             ]["@list"]:
-                act_blacklist.append(_orig_act["@id"])
+                if ObjectId.is_valid(_orig_act["@id"]):
+                    act_blacklist.append(_orig_act["@id"])
             for _key, _activity in original_format["activities"].items():
                 act_blacklist.append(str(_activity))
 
@@ -918,9 +945,10 @@ class Mongo:
             # add missing acitivity ids in activity list
             # when applet is a duplicate
             for activity in order:
-                applet_format["activities"][activity["@id"]] = ObjectId(
-                    activity["@id"]
-                )
+                if ObjectId.is_valid(activity["@id"]):
+                    applet_format["activities"][activity["@id"]] = ObjectId(
+                        activity["@id"]
+                    )
 
         return applet_format
 
@@ -957,6 +985,11 @@ class Mongo:
             activity_id = _activity["activity"]["@id"]
             if activity_id not in activities_by_id:
                 activities_by_id[activity_id] = _activity.copy()
+            activity_name = _activity["activity"][
+                "http://www.w3.org/2004/02/skos/core#prefLabel"
+            ][0]["@value"]
+            if activity_name not in activities_by_id:
+                activities_by_id[activity_name] = _activity.copy()
 
         # setup activity items
         for key, value in activities_by_id.items():
