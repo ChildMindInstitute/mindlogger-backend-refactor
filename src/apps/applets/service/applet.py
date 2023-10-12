@@ -98,8 +98,13 @@ class AppletService:
             raise AppletNotFoundError(key="link", value=str(applet_id))
 
     async def _create_applet_accesses(
-        self, applet_id: uuid.UUID, manager_id: uuid.UUID | None
+        self,
+        applet_id: uuid.UUID,
+        manager_id: uuid.UUID | None,
+        manager_role: Role | None = None,
     ):
+        if manager_role is None:
+            manager_role = Role.MANAGER
         # TODO: move to api level
         await UserAppletAccessService(
             self.session, self.user_id, applet_id
@@ -112,18 +117,21 @@ class AppletService:
         if manager_id and manager_id != self.user_id:
             await UserAppletAccessService(
                 self.session, self.user_id, applet_id
-            ).add_role(manager_id, Role.MANAGER)
+            ).add_role(manager_id, manager_role)
 
             await UserAppletAccessService(
                 self.session, self.user_id, applet_id
             ).add_role(manager_id, Role.RESPONDENT)
 
     async def create(
-        self, create_data: AppletCreate, manager_id: uuid.UUID | None = None
+        self,
+        create_data: AppletCreate,
+        manager_id: uuid.UUID | None = None,
+        manager_role: Role | None = None,
     ) -> AppletFull:
         applet = await self._create(create_data)
 
-        await self._create_applet_accesses(applet.id, manager_id)
+        await self._create_applet_accesses(applet.id, manager_id, manager_role)
 
         applet.activities = await ActivityService(
             self.session, self.user_id
@@ -229,6 +237,15 @@ class AppletService:
             self.session
         ).get_applet_owner(applet_exist.id)
 
+        has_editor = await UserAppletAccessCRUD(
+            self.session
+        ).check_access_by_user_and_owner(
+            user_id=self.user_id,
+            owner_id=applet_owner.user_id,
+            roles=[Role.EDITOR],
+        )
+        manager_role = Role.EDITOR if has_editor else Role.MANAGER
+
         create_data = self._prepare_duplicate(
             applet_exist, new_name, encryption
         )
@@ -245,7 +262,7 @@ class AppletService:
         if self.user_id != applet_owner.user_id:
             await UserAppletAccessService(
                 self.session, applet_owner.user_id, applet.id
-            ).add_role(self.user_id, Role.MANAGER)
+            ).add_role(self.user_id, manager_role)
             await UserAppletAccessService(
                 self.session, applet_owner.user_id, applet.id
             ).add_role(self.user_id, Role.RESPONDENT)
