@@ -1557,25 +1557,25 @@ class Mongo:
         return now + datetime.timedelta(seconds=order["_pin_order"])
 
     def get_folder_mapping(
-        self, workspace_ids: List[uuid.UUID]
+        self, workspaces: list[tuple[uuid.UUID, uuid.UUID]]
     ) -> Tuple[Set[FolderDAO], Set[FolderAppletDAO]]:
         folders_list = []
         applets_list = []
-        for workspace_id in workspace_ids:
-            profile_id = uuid_to_mongoid(workspace_id)
-            if profile_id is None:
-                # non migrated workspace
-                continue
-            res = self.get_folders_and_applets(profile_id)
+        for workspace in workspaces:
+            workspace_id = workspace[0]
+            workspace_user_id = workspace[1]
+            account_id = uuid_to_mongoid(workspace_id)
+            res = self.get_folders_and_applets(account_id)
             for folder in res["folders"]:
+                creator_id = mongoid_to_uuid(folder["creatorId"])
                 folders_list.append(
                     FolderDAO(
                         id=mongoid_to_uuid(folder["_id"]),
                         created_at=folder["created"],
                         updated_at=folder["updated"],
                         name=folder["name"],
-                        creator_id=mongoid_to_uuid(folder["creatorId"]),
-                        workspace_id=mongoid_to_uuid(folder["accountId"]),
+                        creator_id=creator_id,
+                        workspace_id=workspace_user_id,
                         migrated_date=datetime.datetime.utcnow(),
                         migrated_update=datetime.datetime.utcnow(),
                         is_deleted=False,
