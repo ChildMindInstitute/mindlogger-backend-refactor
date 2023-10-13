@@ -223,7 +223,8 @@ async def get_applets_ids() -> list[str]:
         "6486ed5d8819c1120b4f5d81",
         "648713b08819c1120b4f5f26",
         "6493334d8819c1120b4f8611",
-        "64f733f922d818224fd38d35", # test applet
+        "64f733f922d818224fd38d35",  # test applet
+        "627be2e30a62aa47962268c7",  # broken items, no real responses
     ]
     migrating_applets = [
         applet_id
