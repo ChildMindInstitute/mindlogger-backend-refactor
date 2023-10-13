@@ -187,6 +187,51 @@ async def get_applets_ids() -> list[str]:
     for applet in applets:
         migrating_applets.append(str(applet["_id"]))
 
+    excluded_applets = [
+        "62a0c76fb90b7f2ba9e19651",
+        "62dea832acd35a4bf1195b56",
+        "62e3b406acd35a4c635b1ddb",
+        "62eb8c23acd35a39e99b41b6",
+        "62f63d07acd35a39e99b69aa",
+        "63160c84b7ee970ffa90019c",
+        "63171548b7ee970ffa9002f6",
+        "6318827ab7ee970ffa900569",
+        "6319a5feb7ee970ffa90082c",
+        "63203221b7ee970ffa901067",
+        "6347d89e5cb7004311219d5c",
+        "6349475b5cb700431121a63f",
+        "634eb7035cb700431121c783",
+        "6352922c5cb700431121e6ea",
+        "6368cf6352ea021014675e25",
+        "636bd89b52ea021014676edd",
+        "6376857c52ea0234e1f4fea1",
+        "63c808bbb71996780cdf1158",
+        "63e24542601cdc0fee1eafd4",
+        "63e62535601cdc0fee1f11ca",
+        "63f908fd601cdc5212d5b88d",
+        "63ffcc37601cdc5212d5e4bd",
+        "640978be601cdc5212d621c4",
+        "640f146d83718f0fbf0adfc7",
+        "6413a39f83718f0fbf0aff7b",
+        "64149c8083718f0fbf0b0379",
+        "6422892683718f0fbf0b4297",
+        "642ec26783718f0fbf0b7996",
+        "6447de3b25d51a0f8edb17ee",
+        "64676a1ea67ac10f93b46c1a",
+        "646f5cbaa67ac10f93b48108",
+        "6474dc2fa67ac10f93b495e9",
+        "6486ed5d8819c1120b4f5d81",
+        "648713b08819c1120b4f5f26",
+        "6493334d8819c1120b4f8611",
+        "64f733f922d818224fd38d35", # test applet
+    ]
+    migrating_applets = [
+        applet_id
+        for applet_id in migrating_applets
+        if applet_id not in excluded_applets
+    ]
+
+    migrating_applets = list(set(migrating_applets))
     return migrating_applets
 
 
