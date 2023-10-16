@@ -1487,7 +1487,7 @@ class Mongo:
         applet_profiles = self.db["appletProfile"].find(
             {
                 "appletId": {"$in": migrated_applet_ids},
-                "roles": {"$exists": -1},
+                "roles": {"$exists": True, "$not": {"$size": 0}},
             }
         )
         owner_count = 0
@@ -1518,7 +1518,7 @@ class Mongo:
 
             roles = applet_profile["roles"]
             roles = roles[-1:] + roles[:1]  # highest and lowest role
-            for role_name in roles:
+            for role_name in set(roles):
                 if role_name != "user":
                     managerial_applets.append(applet_profile["appletId"])
                 meta = {}
