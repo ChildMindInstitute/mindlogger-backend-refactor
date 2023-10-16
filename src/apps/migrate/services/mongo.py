@@ -1379,7 +1379,7 @@ class Mongo:
             )
         return res
 
-    def get_user_applet_role_mapping_v1(
+    def get_roles_mapping_from_applet_profile(
             self, migrated_applet_ids: List[ObjectId]
     ):
         applet_collection = self.db["folder"]
