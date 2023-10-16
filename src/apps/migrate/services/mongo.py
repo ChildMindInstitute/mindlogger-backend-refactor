@@ -1416,6 +1416,8 @@ class Mongo:
             roles = applet_profile["roles"]
             roles = roles[-1:] + roles[:1]  # highest and lowest role
             for role_name in roles:
+                if role_name != "user":
+                    managerial_applets.append(applet_profile["appletId"])
                 meta = {}
                 if role_name == Role.REVIEWER:
                     meta["respondents"] = self.respondents_by_applet_profile(
