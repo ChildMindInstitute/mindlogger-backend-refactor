@@ -1340,6 +1340,29 @@ class Mongo:
                 user_ids.append(mongoid_to_uuid(user_id))
         return user_ids
 
+    def respondents_by_applet_profile(
+        self, account_profile: dict
+    ) -> List[uuid.UUID]:
+        respondent_profiles = self.db["appletProfile"].find(
+            {
+                "appletId": account_profile["appletId"],
+                "reviewers": account_profile["_id"],
+                "roles": "user",
+            }
+        )
+        user_ids = []
+        for profile in respondent_profiles:
+            user_id = profile.get("userId")
+            if user_id:
+                user_ids.append(mongoid_to_uuid(user_id))
+        return user_ids
+
+    def respondent_metadata_applet_profile(self, applet_profile: dict):
+        return {
+            "nick": self.get_user_nickname(applet_profile),
+            "secret": applet_profile.get("MRN", ""),
+        }
+
     def respondent_metadata(self, user: dict, applet_id: ObjectId):
         doc_cur = (
             self.db["appletProfile"]
@@ -1404,6 +1427,122 @@ class Mongo:
                 )
             )
         return res
+
+    def get_roles_mapping_from_applet_profile(
+        self, migrated_applet_ids: List[ObjectId]
+    ):
+        applet_collection = self.db["folder"]
+        not_found_users = []
+        access_result = []
+        applet_profiles = self.db["appletProfile"].find(
+            {
+                "appletId": {"$in": migrated_applet_ids},
+                "roles": {"$exists": -1},
+            }
+        )
+
+        owner_count = 0
+        manager_count = 0
+        reviewer_count = 0
+        editor_count = 0
+        coordinator_count = 0
+        respondent_count = 0
+        managerial_applets = []
+
+        for applet_profile in applet_profiles:
+            if applet_profile["userId"] in not_found_users:
+                continue
+            user = User().findOne({"_id": applet_profile["userId"]})
+            if not user:
+                continue
+
+            applet = applet_collection.find_one(
+                {"_id": applet_profile["appletId"]}
+            )
+            if not applet:
+                continue
+
+            roles = applet_profile["roles"]
+            roles = roles[-1:] + roles[:1]  # highest and lowest role
+            for role_name in roles:
+                if role_name != "user":
+                    managerial_applets.append(applet_profile["appletId"])
+                meta = {}
+                if role_name == Role.REVIEWER:
+                    meta["respondents"] = self.respondents_by_applet_profile(
+                        applet_profile
+                    )
+                    reviewer_count += 1
+                elif role_name == Role.EDITOR:
+                    editor_count += 1
+                elif role_name == Role.COORDINATOR:
+                    coordinator_count += 1
+                elif role_name == Role.OWNER:
+                    owner_count += 1
+                elif role_name == Role.MANAGER:
+                    manager_count += 1
+                elif role_name == "user":
+                    respondent_count += 1
+                    data = self.respondent_metadata_applet_profile(
+                        applet_profile
+                    )
+                    if data:
+                        if applet_profile["appletId"] in managerial_applets:
+                            if data["nick"] == "":
+                                f_name = user["firstName"]
+                                l_name = user["lastName"]
+                                meta["nickname"] = (
+                                    f"{f_name} {l_name}"
+                                    if f_name and l_name
+                                    else f"- -"
+                                )
+                            else:
+                                meta["nickname"] = data["nick"]
+
+                            meta["secretUserId"] = (
+                                f"{str(uuid.uuid4())}"
+                                if data["secret"] == ""
+                                else data["secret"]
+                            )
+                        else:
+                            meta["nickname"] = data["nick"]
+                            meta["secretUserId"] = data["secret"]
+
+                owner_id = self.get_owner_by_applet(applet_profile["appletId"])
+                if not owner_id:
+                    owner_id = mongoid_to_uuid(applet.get("creatorId"))
+                meta["legacyProfileId"] = applet_profile["_id"]
+                inviter_id = self.inviter_id(
+                    applet_profile["userId"], applet_profile["appletId"]
+                )
+                if not inviter_id:
+                    inviter_id = owner_id
+                access = AppletUserDAO(
+                    applet_id=mongoid_to_uuid(applet_profile["appletId"]),
+                    user_id=mongoid_to_uuid(applet_profile["userId"]),
+                    owner_id=owner_id,
+                    inviter_id=inviter_id,
+                    role=convert_role(role_name),
+                    created_at=datetime.datetime.utcnow(),
+                    updated_at=datetime.datetime.utcnow(),
+                    meta=meta,
+                    is_pinned=self.is_pinned(applet_profile["userId"]),
+                    is_deleted=False,
+                )
+                access_result.append(access)
+        prepared = len(access_result)
+        migration_log.warning(f"[ROLES] found: {prepared}")
+        migration_log.warning(
+            f"""[ROLES] 
+                Owner:          {owner_count}
+                Manager:        {manager_count}
+                Editor:         {editor_count}
+                Coordinator:    {coordinator_count}
+                Reviewer:       {reviewer_count}
+                Respondent:     {respondent_count}
+        """
+        )
+        return access_result
 
     def get_user_applet_role_mapping(
         self, migrated_applet_ids: List[ObjectId]

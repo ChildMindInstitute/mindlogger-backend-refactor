@@ -257,7 +257,7 @@ def migrate_roles(
     anon_id = postgres.get_anon_respondent()
     if not applet_ids:
         applet_ids = postgres.get_migrated_applets()
-    roles = mongo.get_user_applet_role_mapping(applet_ids)
+    roles = mongo.get_roles_mapping_from_applet_profile(applet_ids)
     roles += mongo.get_anons(anon_id)
     postgres.save_user_access_workspace(roles)
     migration_log.warning("Role has been migrated")
