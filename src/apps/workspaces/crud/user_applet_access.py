@@ -833,10 +833,15 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     last_name_lower = manager.last_name.lower()
                 else:
                     last_name_lower = ""
+                if manager.email_encrypted:
+                    email_encrypted_lower = manager.email_encrypted.lower()
+                else:
+                    email_encrypted_lower = ""
+
                 if (
                     query_params.search.lower() in first_name_lower
                     or query_params.search.lower() in last_name_lower
-                    or query_params.search.lower() in manager.email_encrypted
+                    or query_params.search.lower() in email_encrypted_lower
                 ):
                     data_search.append(manager)
                     total_search += 1
