@@ -96,7 +96,7 @@ class WorkspaceManager(InternalModel):
     id: uuid.UUID
     first_name: str
     last_name: str
-    email_encrypted: str
+    email_encrypted: str | None
     roles: list[Role]
     last_seen: datetime.datetime
     is_pinned: bool = False
@@ -147,7 +147,7 @@ class PublicWorkspaceManager(PublicModel):
     id: uuid.UUID
     first_name: str
     last_name: str
-    email: str
+    email: str | None
     roles: list[Role]
     last_seen: datetime.datetime
     is_pinned: bool = False
