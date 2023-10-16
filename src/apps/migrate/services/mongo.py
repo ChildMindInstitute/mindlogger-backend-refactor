@@ -1383,32 +1383,33 @@ class Mongo:
             self, migrated_applet_ids: List[ObjectId]
     ):
         applet_collection = self.db["folder"]
-        applet_profile_collection = self.db["appletProfile"]
         not_found_users = []
         access_result = []
-        applet_profiles = applet_profile_collection.find({
-            "appletId": {"$in": migrated_applet_ids}
+        applet_profiles = self.db["appletProfile"].find({
+            "appletId": {"$in": migrated_applet_ids},
+            "roles": {"$exists": -1}
         })
 
+        owner_count = 0
+        manager_count = 0
+        reviewer_count = 0
+        editor_count = 0
+        coordinator_count = 0
+        respondent_count = 0
         managerial_applets = []
+
         for applet_profile in applet_profiles:
             if applet_profile["userId"] in not_found_users:
                 continue
             user = User().findOne({"_id": applet_profile["userId"]})
             if not user:
                 continue
+
             applet = applet_collection.find_one({
                 "_id": applet_profile["appletId"]
             })
             if not applet:
                 continue
-
-            if (
-                    applet_profile["userId"] == ObjectId("615728055b70d65efedaf8bf")
-                    or applet_profile["userId"] == "615728055b70d65efedaf8bf"
-            ):
-                if applet_profile["appletId"] == ObjectId("6376a89752ea0234e1f4ffdb"):
-                    pass
 
             roles = applet_profile["roles"]
             roles = roles[-1:] + roles[:1]  # highest and lowest role
@@ -1418,7 +1419,17 @@ class Mongo:
                     meta["respondents"] = self.respondents_by_applet_profile(
                         applet_profile
                     )
+                    reviewer_count += 1
+                elif role_name == Role.EDITOR:
+                    editor_count += 1
+                elif role_name == Role.COORDINATOR:
+                    coordinator_count += 1
+                elif role_name == Role.OWNER:
+                    owner_count += 1
+                elif role_name == Role.MANAGER:
+                    manager_count += 1
                 elif role_name == "user":
+                    respondent_count += 1
                     data = self.respondent_metadata_applet_profile(
                         applet_profile
                     )
@@ -1468,6 +1479,14 @@ class Mongo:
                 access_result.append(access)
         prepared = len(access_result)
         migration_log.warning(f"[ROLES] found: {prepared}")
+        migration_log.warning(f"""[ROLES] 
+                Owner:          {owner_count}
+                Manager:        {manager_count}
+                Editor:         {editor_count}
+                Coordinator:    {coordinator_count}
+                Reviewer:       {reviewer_count}
+                Respondent:     {respondent_count}
+        """)
         return access_result
 
     def get_user_applet_role_mapping(
