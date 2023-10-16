@@ -448,9 +448,19 @@ class Postgres:
         rows_count = self.insert_dao_collection(sql, list(user_pin_dao))
         migration_log.warning(f"Inserted {rows_count} rows")
 
-    def get_migrated_workspaces(self) -> List[uuid.UUID]:
-        sql = "SELECT id FROM users_workspaces"
-        return self.get_pk_array(sql, as_bson=False)
+    def get_migrated_workspaces(self) -> list[tuple[uuid.UUID, uuid.UUID]]:
+        sql = "SELECT id, user_id FROM users_workspaces"
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            result = list(
+                map(lambda t: (uuid.UUID(t[0]), uuid.UUID(t[1])), rows)
+            )
+            return result
+        except Exception as ex:
+            migration_log.error(f"Migrated workspaces not found! {ex}")
+            return []
 
     def log_pg_err(self, ex):
         if not hasattr(ex, "pgcode"):
@@ -768,5 +778,22 @@ class Postgres:
             cursor.execute(sql)
         except Exception as ex:
             migration_log.warning(f"[Applets] Empty question not fixed {ex}")
+        finally:
+            self.connection.commit()
+
+    def get_workspace_info(
+        self, workspace_ids: list[uuid.UUID]
+    ) -> tuple[uuid.UUID, uuid.UUID]:
+        ids = ",".join(["%s" for _ in workspace_ids])
+        sql = f"SELECT id, user_id FROM users_workspaces WHERE id IN ({ids})"
+        try:
+            ids = [str(u) for u in workspace_ids]
+            cursor = self.connection.cursor()
+            cursor.execute(sql, ids)
+            result = cursor.fetchall()
+            return result
+        except Exception as ex:
+            migration_log.error(f"Can't fetch workspaces info! {ex}")
+            return []
         finally:
             self.connection.commit()

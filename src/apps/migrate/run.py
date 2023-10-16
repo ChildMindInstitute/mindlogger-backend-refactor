@@ -298,10 +298,11 @@ def migrate_user_pins(
 def migrate_folders(workspace_id: str | None, mongo, postgres):
     migration_log.warning("[FOLDERS] In progress")
     if workspace_id:
-        workspaces_ids = [mongoid_to_uuid(workspace_id)]
+        ids = [mongoid_to_uuid(workspace_id)]
+        workspaces = postgres.get_workspace_info(ids)
     else:
-        workspaces_ids = postgres.get_migrated_workspaces()
-    folders_dao, applet_dao = mongo.get_folder_mapping(workspaces_ids)
+        workspaces = postgres.get_migrated_workspaces()
+    folders_dao, applet_dao = mongo.get_folder_mapping(workspaces)
     migrated, skipped = postgres.save_folders(folders_dao)
     migration_log.warning(f"[FOLDERS] {migrated=}, {skipped=}")
     migration_log.warning("[FOLDER_APPLETS] In progress")
