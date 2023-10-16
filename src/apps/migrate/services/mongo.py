@@ -1292,7 +1292,7 @@ class Mongo:
         return user_ids
 
     def respondents_by_applet_profile(
-            self, account_profile: dict
+        self, account_profile: dict
     ) -> List[uuid.UUID]:
         respondent_profiles = self.db["appletProfile"].find(
             {
@@ -1380,15 +1380,17 @@ class Mongo:
         return res
 
     def get_roles_mapping_from_applet_profile(
-            self, migrated_applet_ids: List[ObjectId]
+        self, migrated_applet_ids: List[ObjectId]
     ):
         applet_collection = self.db["folder"]
         not_found_users = []
         access_result = []
-        applet_profiles = self.db["appletProfile"].find({
-            "appletId": {"$in": migrated_applet_ids},
-            "roles": {"$exists": -1}
-        })
+        applet_profiles = self.db["appletProfile"].find(
+            {
+                "appletId": {"$in": migrated_applet_ids},
+                "roles": {"$exists": -1},
+            }
+        )
 
         owner_count = 0
         manager_count = 0
@@ -1405,9 +1407,9 @@ class Mongo:
             if not user:
                 continue
 
-            applet = applet_collection.find_one({
-                "_id": applet_profile["appletId"]
-            })
+            applet = applet_collection.find_one(
+                {"_id": applet_profile["appletId"]}
+            )
             if not applet:
                 continue
 
@@ -1479,14 +1481,16 @@ class Mongo:
                 access_result.append(access)
         prepared = len(access_result)
         migration_log.warning(f"[ROLES] found: {prepared}")
-        migration_log.warning(f"""[ROLES] 
+        migration_log.warning(
+            f"""[ROLES] 
                 Owner:          {owner_count}
                 Manager:        {manager_count}
                 Editor:         {editor_count}
                 Coordinator:    {coordinator_count}
                 Reviewer:       {reviewer_count}
                 Respondent:     {respondent_count}
-        """)
+        """
+        )
         return access_result
 
     def get_user_applet_role_mapping(
