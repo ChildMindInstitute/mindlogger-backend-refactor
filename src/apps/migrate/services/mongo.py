@@ -1433,6 +1433,7 @@ class Mongo:
     ):
         applet_collection = self.db["folder"]
         not_found_users = []
+        not_found_applets = []
         access_result = []
         applet_profiles = self.db["appletProfile"].find(
             {
@@ -1440,7 +1441,6 @@ class Mongo:
                 "roles": {"$exists": -1},
             }
         )
-
         owner_count = 0
         manager_count = 0
         reviewer_count = 0
@@ -1452,14 +1452,19 @@ class Mongo:
         for applet_profile in applet_profiles:
             if applet_profile["userId"] in not_found_users:
                 continue
+            if applet_profile["appletId"] in not_found_applets:
+                continue
+
             user = User().findOne({"_id": applet_profile["userId"]})
             if not user:
+                not_found_users.append(applet_profile["userId"])
                 continue
 
             applet = applet_collection.find_one(
                 {"_id": applet_profile["appletId"]}
             )
             if not applet:
+                not_found_applets.append(applet_profile["appletId"])
                 continue
 
             roles = applet_profile["roles"]
