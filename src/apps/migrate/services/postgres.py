@@ -660,8 +660,14 @@ class Postgres:
         sql = """
             SELECT activities.id, activities.applet_id
             FROM activities
-            LEFT JOIN activity_events ON activities.id = activity_events.activity_id
-            WHERE activity_events.activity_id IS NULL
+            LEFT JOIN (
+                SELECT activity_events.activity_id
+                FROM activity_events
+                LEFT JOIN user_events ON activity_events.event_id = user_events.event_id
+                WHERE user_events.event_id IS NULL
+            ) awe
+            ON awe.activity_id = activities.id
+            WHERE awe.activity_id IS NULL
         """
 
         if applets_ids:
@@ -681,8 +687,14 @@ class Postgres:
         sql = """
             SELECT flows.id, flows.applet_id
             FROM flows
-            LEFT JOIN flow_events ON flows.id = flow_events.flow_id
-            WHERE flow_events.flow_id IS NULL
+            LEFT JOIN (
+                SELECT flow_events.flow_id
+                FROM flow_events
+                LEFT JOIN user_events ON flow_events.event_id = user_events.event_id
+                WHERE user_events.event_id IS NULL
+            ) awe
+            ON awe.flow_id = flows.id
+            WHERE awe.flow_id IS NULL
         """
 
         if applets_ids:

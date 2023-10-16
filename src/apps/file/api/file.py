@@ -18,6 +18,7 @@ from apps.file.domain import (
     FileDownloadRequest,
     FileExistenceResponse,
     FilePresignRequest,
+    LogFileExistenceResponse,
 )
 from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
@@ -237,7 +238,9 @@ async def logs_exist_check(
         result = await service.check_exist(device_id, files.files)
         count = len(result)
         await service.backend_log_check(result, True, None)
-        return ResponseMulti[FileExistenceResponse](result=result, count=count)
+        return ResponseMulti[LogFileExistenceResponse](
+            result=result, count=count
+        )
     except Exception as ex:
         await service.backend_log_check([], False, str(ex))
         raise ex

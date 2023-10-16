@@ -63,6 +63,8 @@ class DefaultEventAddingService:
             flow_event_data: dict = {
                 "flow_id": uuid.UUID(flow_id),
                 "event_id": event.id,
+                "migrated_date": datetime.datetime.utcnow(),
+                "migrated_updated": datetime.datetime.utcnow(),
             }
             flow = FlowEventsSchema(**flow_event_data)
 

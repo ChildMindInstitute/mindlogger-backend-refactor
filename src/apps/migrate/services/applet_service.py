@@ -101,6 +101,7 @@ class AppletMigrationService:
                 updated_at=create_data.extra_fields["updated"],
                 migrated_date=datetime.datetime.utcnow(),
                 migrated_updated=datetime.datetime.utcnow(),
+                stream_enabled=create_data.stream_enabled or False,
             )
         )
         return AppletMigratedFull.from_orm(schema)
@@ -169,6 +170,7 @@ class AppletMigrationService:
                 updated_at=update_data.extra_fields["updated"],
                 migrated_date=datetime.datetime.utcnow(),
                 migrated_updated=datetime.datetime.utcnow(),
+                stream_enabled=update_data.stream_enabled or False,
             ),
         )
         return AppletMigratedFull.from_orm(schema)

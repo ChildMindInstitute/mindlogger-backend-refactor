@@ -283,25 +283,47 @@ def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
 
     applet_ld = patch_prize_activity(applet_id, applet_ld)
 
+    broken_item_flow = [
+        "6522a4753c36ce0d4d6cda4d",
+    ]
+    if applet_id in broken_item_flow:
+        applet_ld["reprolib:terms/order"][0]["@list"][0][
+            "reprolib:terms/addProperties"
+        ][5]["reprolib:terms/isVis"][0] = {"@value": True}
+
     return applet_ld
 
 
 def patch_broken_applets(
     applet_id: str, applet_ld: dict, applet_mongo: dict
 ) -> tuple[dict, dict]:
+    broken_item_flow = [
+        "6522a4753c36ce0d4d6cda4d",
+    ]
+    if applet_id in broken_item_flow:
+        applet_ld["reprolib:terms/order"][0]["@list"][0][
+            "reprolib:terms/addProperties"
+        ][5]["reprolib:terms/isVis"][0] = {"@value": True}
+
     broken_activity_order = [
         "63d3d579b71996780cdf409a",
+        "63f36719601cdc5212d58eae",
     ]
     if applet_id in broken_activity_order:
-        applet_ld["reprolib:terms/order"][0]["@list"][-1][
-            "http://www.w3.org/2004/02/skos/core#altLabel"
-        ][0]["@value"] = "Mind logging [Practice] (3)"
-        applet_ld["reprolib:terms/order"][0]["@list"][-1][
-            "http://www.w3.org/2004/02/skos/core#prefLabel"
-        ][0]["@value"] = "Mind logging [Practice] (3)"
-        applet_ld["reprolib:terms/order"][0]["@list"][-1][
-            "@id"
-        ] = "Mind logging [Practice] (3)"
+        duplicate_activity = None
+        for _index, activity in enumerate(
+            applet_ld["reprolib:terms/order"][0]["@list"]
+        ):
+            if (
+                activity["_id"] == "activity/63d3d4eeb71996780cdf3e97"
+                or activity["_id"] == "activity/63f36646601cdc5212d58cbe"
+            ):
+                duplicate_activity = _index
+
+        if duplicate_activity:
+            applet_ld["reprolib:terms/order"][0]["@list"].pop(
+                duplicate_activity
+            )
 
     broken_applets = [
         # broken conditional logic [object object]  in main applet
@@ -467,12 +489,17 @@ def patch_broken_applets(
     key_alt = "http://www.w3.org/2004/02/skos/core#altLabel"
     if applet_id in duplicated_activity_names:
         current_names = []
-        for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+        current_names_indexes = []
+        for _index, _activity in enumerate(
+            applet_ld["reprolib:terms/order"][0]["@list"]
+        ):
             if _activity["@id"] in current_names:
-                _activity["@id"] = _activity["@id"] + " (1)"
-                _activity[key_pref][0]["@value"] = _activity["@id"]
-                _activity[key_alt][0]["@value"] = _activity["@id"]
+                current_names_indexes.append(_index)
             current_names.append(_activity["@id"])
+        if current_names_indexes:
+            current_names_indexes.sort(reverse=True)
+            for _index in current_names_indexes:
+                applet_ld["reprolib:terms/order"][0]["@list"].pop(_index)
 
     no_ids_flanker_map = {
         "<<<<<": "left-con",
@@ -841,6 +868,21 @@ class Mongo:
         refers to the original records.
         If it's the case, it will remove those and replace with the cloned applet activities IDs.
         """
+
+        # patch activity of applet with id=65155ba49932fa109e82de99
+        if applet["_id"] == ObjectId("65155ba49932fa109e82de99"):
+            _broken_activity_index = None
+            for _index, _activity in enumerate(
+                applet_format["applet"]["reprolib:terms/order"][0]["@list"]
+            ):
+                if _activity["@id"] == "617a62dba463200ebc8506fc":
+                    _broken_activity_index = _index
+                    break
+            if _broken_activity_index is not None:
+                applet_format["applet"]["reprolib:terms/order"][0]["@list"][
+                    _broken_activity_index
+                ] = {"@id": "65155aa49932fa109e82dbde"}
+
         original_id = applet["duplicateOf"]
         original = Applet().findOne(query={"_id": original_id})
         if original:
@@ -859,7 +901,8 @@ class Mongo:
             for _orig_act in original_format["applet"]["reprolib:terms/order"][
                 0
             ]["@list"]:
-                act_blacklist.append(_orig_act["@id"])
+                if ObjectId.is_valid(_orig_act["@id"]):
+                    act_blacklist.append(_orig_act["@id"])
             for _key, _activity in original_format["activities"].items():
                 act_blacklist.append(str(_activity))
 
@@ -902,9 +945,10 @@ class Mongo:
             # add missing acitivity ids in activity list
             # when applet is a duplicate
             for activity in order:
-                applet_format["activities"][activity["@id"]] = ObjectId(
-                    activity["@id"]
-                )
+                if ObjectId.is_valid(activity["@id"]):
+                    applet_format["activities"][activity["@id"]] = ObjectId(
+                        activity["@id"]
+                    )
 
         return applet_format
 
@@ -941,6 +985,11 @@ class Mongo:
             activity_id = _activity["activity"]["@id"]
             if activity_id not in activities_by_id:
                 activities_by_id[activity_id] = _activity.copy()
+            activity_name = _activity["activity"][
+                "http://www.w3.org/2004/02/skos/core#prefLabel"
+            ][0]["@value"]
+            if activity_name not in activities_by_id:
+                activities_by_id[activity_name] = _activity.copy()
 
         # setup activity items
         for key, value in activities_by_id.items():
@@ -1291,6 +1340,29 @@ class Mongo:
                 user_ids.append(mongoid_to_uuid(user_id))
         return user_ids
 
+    def respondents_by_applet_profile(
+        self, account_profile: dict
+    ) -> List[uuid.UUID]:
+        respondent_profiles = self.db["appletProfile"].find(
+            {
+                "appletId": account_profile["appletId"],
+                "reviewers": account_profile["_id"],
+                "roles": "user",
+            }
+        )
+        user_ids = []
+        for profile in respondent_profiles:
+            user_id = profile.get("userId")
+            if user_id:
+                user_ids.append(mongoid_to_uuid(user_id))
+        return user_ids
+
+    def respondent_metadata_applet_profile(self, applet_profile: dict):
+        return {
+            "nick": self.get_user_nickname(applet_profile),
+            "secret": applet_profile.get("MRN", ""),
+        }
+
     def respondent_metadata(self, user: dict, applet_id: ObjectId):
         doc_cur = (
             self.db["appletProfile"]
@@ -1355,6 +1427,122 @@ class Mongo:
                 )
             )
         return res
+
+    def get_roles_mapping_from_applet_profile(
+        self, migrated_applet_ids: List[ObjectId]
+    ):
+        applet_collection = self.db["folder"]
+        not_found_users = []
+        access_result = []
+        applet_profiles = self.db["appletProfile"].find(
+            {
+                "appletId": {"$in": migrated_applet_ids},
+                "roles": {"$exists": -1},
+            }
+        )
+
+        owner_count = 0
+        manager_count = 0
+        reviewer_count = 0
+        editor_count = 0
+        coordinator_count = 0
+        respondent_count = 0
+        managerial_applets = []
+
+        for applet_profile in applet_profiles:
+            if applet_profile["userId"] in not_found_users:
+                continue
+            user = User().findOne({"_id": applet_profile["userId"]})
+            if not user:
+                continue
+
+            applet = applet_collection.find_one(
+                {"_id": applet_profile["appletId"]}
+            )
+            if not applet:
+                continue
+
+            roles = applet_profile["roles"]
+            roles = roles[-1:] + roles[:1]  # highest and lowest role
+            for role_name in roles:
+                if role_name != "user":
+                    managerial_applets.append(applet_profile["appletId"])
+                meta = {}
+                if role_name == Role.REVIEWER:
+                    meta["respondents"] = self.respondents_by_applet_profile(
+                        applet_profile
+                    )
+                    reviewer_count += 1
+                elif role_name == Role.EDITOR:
+                    editor_count += 1
+                elif role_name == Role.COORDINATOR:
+                    coordinator_count += 1
+                elif role_name == Role.OWNER:
+                    owner_count += 1
+                elif role_name == Role.MANAGER:
+                    manager_count += 1
+                elif role_name == "user":
+                    respondent_count += 1
+                    data = self.respondent_metadata_applet_profile(
+                        applet_profile
+                    )
+                    if data:
+                        if applet_profile["appletId"] in managerial_applets:
+                            if data["nick"] == "":
+                                f_name = user["firstName"]
+                                l_name = user["lastName"]
+                                meta["nickname"] = (
+                                    f"{f_name} {l_name}"
+                                    if f_name and l_name
+                                    else f"- -"
+                                )
+                            else:
+                                meta["nickname"] = data["nick"]
+
+                            meta["secretUserId"] = (
+                                f"{str(uuid.uuid4())}"
+                                if data["secret"] == ""
+                                else data["secret"]
+                            )
+                        else:
+                            meta["nickname"] = data["nick"]
+                            meta["secretUserId"] = data["secret"]
+
+                owner_id = self.get_owner_by_applet(applet_profile["appletId"])
+                if not owner_id:
+                    owner_id = mongoid_to_uuid(applet.get("creatorId"))
+                meta["legacyProfileId"] = applet_profile["_id"]
+                inviter_id = self.inviter_id(
+                    applet_profile["userId"], applet_profile["appletId"]
+                )
+                if not inviter_id:
+                    inviter_id = owner_id
+                access = AppletUserDAO(
+                    applet_id=mongoid_to_uuid(applet_profile["appletId"]),
+                    user_id=mongoid_to_uuid(applet_profile["userId"]),
+                    owner_id=owner_id,
+                    inviter_id=inviter_id,
+                    role=convert_role(role_name),
+                    created_at=datetime.datetime.utcnow(),
+                    updated_at=datetime.datetime.utcnow(),
+                    meta=meta,
+                    is_pinned=self.is_pinned(applet_profile["userId"]),
+                    is_deleted=False,
+                )
+                access_result.append(access)
+        prepared = len(access_result)
+        migration_log.warning(f"[ROLES] found: {prepared}")
+        migration_log.warning(
+            f"""[ROLES] 
+                Owner:          {owner_count}
+                Manager:        {manager_count}
+                Editor:         {editor_count}
+                Coordinator:    {coordinator_count}
+                Reviewer:       {reviewer_count}
+                Respondent:     {respondent_count}
+        """
+        )
+        return access_result
 
     def get_user_applet_role_mapping(
         self, migrated_applet_ids: List[ObjectId]

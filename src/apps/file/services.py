@@ -10,7 +10,7 @@ from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import config
-from apps.file.domain import FileExistenceResponse
+from apps.file.domain import LogFileExistenceResponse
 from apps.file.storage import select_storage
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
@@ -275,15 +275,17 @@ class LogFileService:
         files = list(filter(filter_by_interval, files))
         return files
 
-    async def check_exist(self, device_id: str, file_names: List[str]):
+    async def check_exist(
+        self, device_id: str, file_names: List[str]
+    ) -> list[LogFileExistenceResponse]:
         key = self.device_key_prefix(device_id)
         file_objects = await self.cdn.list_object(key)
-        result: List[FileExistenceResponse] = []
+        result: list[LogFileExistenceResponse] = []
         for file_name in file_names:
             prefix = key[:]
             full_id = f"{prefix}/{file_name}"
             file_flt = filter(lambda f: f["Key"] == full_id, file_objects)
-            file_object = next(file_flt, None)
+            file_object: dict = next(file_flt, {})
             file_key = self.key(device_id=device_id, file_name=file_name)
             if file_object:
                 url = await self.cdn.generate_presigned_url(file_key)
@@ -292,11 +294,12 @@ class LogFileService:
                 url = None
                 file_id = file_name
             result.append(
-                FileExistenceResponse(
+                LogFileExistenceResponse(
                     key=file_key,
                     uploaded=bool(file_object),
                     url=url,
                     file_id=file_id,
+                    file_size=file_object.get("Size"),
                 )
             )
         return result
@@ -322,7 +325,7 @@ class LogFileService:
 
     async def backend_log_check(
         self,
-        files: list[FileExistenceResponse],
+        files: list[LogFileExistenceResponse],
         success: bool,
         details: str | None,
     ):
