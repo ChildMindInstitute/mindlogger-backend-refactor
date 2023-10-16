@@ -80,3 +80,6 @@ class ThemeService:
 
     async def get_default(self) -> Theme:
         return await ThemesCRUD(self.session).get_default()
+
+    async def count(self) -> int:
+        return await ThemesCRUD(self.session).count()
