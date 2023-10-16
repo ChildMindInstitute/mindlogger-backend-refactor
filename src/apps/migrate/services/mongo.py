@@ -4,7 +4,7 @@ import json
 import os
 import uuid
 from functools import partial
-from typing import List, Set, Tuple
+from typing import List, Set, Tuple, Any, Literal
 
 from bson.objectid import ObjectId
 
@@ -282,6 +282,8 @@ def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
                         )
 
     applet_ld = patch_prize_activity(applet_id, applet_ld)
+    if applet_id not in broken_applet_versions:
+        patch_broken_visability_for_applet(applet_ld)
 
     broken_item_flow = [
         "6522a4753c36ce0d4d6cda4d",
@@ -681,6 +683,11 @@ def patch_broken_applets(
 
     applet_ld = patch_prize_activity(applet_id, applet_ld)
 
+    if (
+        applet_id not in broken_applets
+        and applet_id not in broken_applet_version
+    ):
+        patch_broken_visability_for_applet(applet_ld)
     return applet_ld, applet_mongo
 
 
@@ -727,6 +734,48 @@ def fix_spacing_in_report(_report: dict) -> dict:
         )
 
     return _report
+
+
+def patch_broken_visability_for_applet(applet: dict) -> None:
+    def get_isvis(entity: dict) -> Any | Literal[False]:
+        term = entity.get("reprolib:terms/isVis", [])
+        # Return False if there is no isVis term, to make patch process more
+        # consistent (False and missing value for old UI have the same logic)
+        return term[0]["@value"] if term else False
+
+    def set_isvis(entity: dict, value: bool) -> None:
+        entity["reprolib:terms/isVis"] = [{"@value": value}]
+
+    acitivity_id_isvis_map = {}
+    for activity in applet["reprolib:terms/order"][0]["@list"]:
+        incorrect_vis = get_isvis(activity)
+        item_id_isvis_map = {}
+        # For each activity which has isVis bool type invert isVis
+        # and add new value to the map for futher updating addProperties
+        if isinstance(incorrect_vis, bool):
+            set_isvis(activity, not incorrect_vis)
+            acitivity_id_isvis_map[activity["@id"]] = get_isvis(activity)
+
+        # For each item which has isVis bool type invert isVis
+        # and add new value to the map for futher updating addProperties of
+        # activity
+        for item in activity["reprolib:terms/order"][0]["@list"]:
+            incorrect_vis = get_isvis(item)
+            if isinstance(incorrect_vis, bool):
+                set_isvis(item, not incorrect_vis)
+                item_id_isvis_map[item["@id"]] = get_isvis(item)
+        # update addProperties of applet if they exist
+        # set correct value from map
+        for add_prop in activity.get("reprolib:terms/addProperties", []):
+            item_id = add_prop["reprolib:terms/isAbout"][0]["@id"]
+            if item_id in item_id_isvis_map:
+                set_isvis(add_prop, item_id_isvis_map[item_id])
+
+    # update addProperties of applet if they exist, set correct value from map
+    for add_prop in applet.get("reprolib:terms/addProperties", []):
+        activity_id = add_prop["reprolib:terms/isAbout"][0]["@id"]
+        if activity_id in acitivity_id_isvis_map:
+            set_isvis(add_prop, acitivity_id_isvis_map[activity_id])
 
 
 class Mongo:
@@ -1533,7 +1582,7 @@ class Mongo:
         prepared = len(access_result)
         migration_log.warning(f"[ROLES] found: {prepared}")
         migration_log.warning(
-            f"""[ROLES] 
+            f"""[ROLES]
                 Owner:          {owner_count}
                 Manager:        {manager_count}
                 Editor:         {editor_count}
