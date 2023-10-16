@@ -4,7 +4,7 @@ import json
 import os
 import uuid
 from functools import partial
-from typing import List, Set, Tuple
+from typing import List, Set, Tuple, Any, Literal
 
 from bson.objectid import ObjectId
 
@@ -282,6 +282,8 @@ def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
                         )
 
     applet_ld = patch_prize_activity(applet_id, applet_ld)
+    if applet_id not in broken_applet_versions:
+        patch_broken_visability_for_applet(applet_ld)
 
     broken_item_flow = [
         "6522a4753c36ce0d4d6cda4d",
@@ -681,6 +683,11 @@ def patch_broken_applets(
 
     applet_ld = patch_prize_activity(applet_id, applet_ld)
 
+    if (
+        applet_id not in broken_applets
+        and applet_id not in broken_applet_version
+    ):
+        patch_broken_visability_for_applet(applet_ld)
     return applet_ld, applet_mongo
 
 
@@ -727,6 +734,48 @@ def fix_spacing_in_report(_report: dict) -> dict:
         )
 
     return _report
+
+
+def patch_broken_visability_for_applet(applet: dict) -> None:
+    def get_isvis(entity: dict) -> Any | Literal[False]:
+        term = entity.get("reprolib:terms/isVis", [])
+        # Return False if there is no isVis term, to make patch process more
+        # consistent (False and missing value for old UI have the same logic)
+        return term[0]["@value"] if term else False
+
+    def set_isvis(entity: dict, value: bool) -> None:
+        entity["reprolib:terms/isVis"] = [{"@value": value}]
+
+    acitivity_id_isvis_map = {}
+    for activity in applet["reprolib:terms/order"][0]["@list"]:
+        incorrect_vis = get_isvis(activity)
+        item_id_isvis_map = {}
+        # For each activity which has isVis bool type invert isVis
+        # and add new value to the map for futher updating addProperties
+        if isinstance(incorrect_vis, bool):
+            set_isvis(activity, not incorrect_vis)
+            acitivity_id_isvis_map[activity["@id"]] = get_isvis(activity)
+
+        # For each item which has isVis bool type invert isVis
+        # and add new value to the map for futher updating addProperties of
+        # activity
+        for item in activity["reprolib:terms/order"][0]["@list"]:
+            incorrect_vis = get_isvis(item)
+            if isinstance(incorrect_vis, bool):
+                set_isvis(item, not incorrect_vis)
+                item_id_isvis_map[item["@id"]] = get_isvis(item)
+        # update addProperties of applet if they exist
+        # set correct value from map
+        for add_prop in activity.get("reprolib:terms/addProperties", []):
+            item_id = add_prop["reprolib:terms/isAbout"][0]["@id"]
+            if item_id in item_id_isvis_map:
+                set_isvis(add_prop, item_id_isvis_map[item_id])
+
+    # update addProperties of applet if they exist, set correct value from map
+    for add_prop in applet.get("reprolib:terms/addProperties", []):
+        activity_id = add_prop["reprolib:terms/isAbout"][0]["@id"]
+        if activity_id in acitivity_id_isvis_map:
+            set_isvis(add_prop, acitivity_id_isvis_map[activity_id])
 
 
 class Mongo:
@@ -1340,6 +1389,29 @@ class Mongo:
                 user_ids.append(mongoid_to_uuid(user_id))
         return user_ids
 
+    def respondents_by_applet_profile(
+        self, account_profile: dict
+    ) -> List[uuid.UUID]:
+        respondent_profiles = self.db["appletProfile"].find(
+            {
+                "appletId": account_profile["appletId"],
+                "reviewers": account_profile["_id"],
+                "roles": "user",
+            }
+        )
+        user_ids = []
+        for profile in respondent_profiles:
+            user_id = profile.get("userId")
+            if user_id:
+                user_ids.append(mongoid_to_uuid(user_id))
+        return user_ids
+
+    def respondent_metadata_applet_profile(self, applet_profile: dict):
+        return {
+            "nick": self.get_user_nickname(applet_profile),
+            "secret": applet_profile.get("MRN", ""),
+        }
+
     def respondent_metadata(self, user: dict, applet_id: ObjectId):
         doc_cur = (
             self.db["appletProfile"]
@@ -1404,6 +1476,127 @@ class Mongo:
                 )
             )
         return res
+
+    def get_roles_mapping_from_applet_profile(
+        self, migrated_applet_ids: List[ObjectId]
+    ):
+        applet_collection = self.db["folder"]
+        not_found_users = []
+        not_found_applets = []
+        access_result = []
+        applet_profiles = self.db["appletProfile"].find(
+            {
+                "appletId": {"$in": migrated_applet_ids},
+                "roles": {"$exists": True, "$not": {"$size": 0}},
+            }
+        )
+        owner_count = 0
+        manager_count = 0
+        reviewer_count = 0
+        editor_count = 0
+        coordinator_count = 0
+        respondent_count = 0
+        managerial_applets = []
+
+        for applet_profile in applet_profiles:
+            if applet_profile["userId"] in not_found_users:
+                continue
+            if applet_profile["appletId"] in not_found_applets:
+                continue
+
+            user = User().findOne({"_id": applet_profile["userId"]})
+            if not user:
+                not_found_users.append(applet_profile["userId"])
+                continue
+
+            applet = applet_collection.find_one(
+                {"_id": applet_profile["appletId"]}
+            )
+            if not applet:
+                not_found_applets.append(applet_profile["appletId"])
+                continue
+
+            roles = applet_profile["roles"]
+            roles = roles[-1:] + roles[:1]  # highest and lowest role
+            for role_name in set(roles):
+                if role_name != "user":
+                    managerial_applets.append(applet_profile["appletId"])
+                meta = {}
+                if role_name == Role.REVIEWER:
+                    meta["respondents"] = self.respondents_by_applet_profile(
+                        applet_profile
+                    )
+                    reviewer_count += 1
+                elif role_name == Role.EDITOR:
+                    editor_count += 1
+                elif role_name == Role.COORDINATOR:
+                    coordinator_count += 1
+                elif role_name == Role.OWNER:
+                    owner_count += 1
+                elif role_name == Role.MANAGER:
+                    manager_count += 1
+                elif role_name == "user":
+                    respondent_count += 1
+                    data = self.respondent_metadata_applet_profile(
+                        applet_profile
+                    )
+                    if data:
+                        if applet_profile["appletId"] in managerial_applets:
+                            if data["nick"] == "":
+                                f_name = user["firstName"]
+                                l_name = user["lastName"]
+                                meta["nickname"] = (
+                                    f"{f_name} {l_name}"
+                                    if f_name and l_name
+                                    else f"- -"
+                                )
+                            else:
+                                meta["nickname"] = data["nick"]
+
+                            meta["secretUserId"] = (
+                                f"{str(uuid.uuid4())}"
+                                if data["secret"] == ""
+                                else data["secret"]
+                            )
+                        else:
+                            meta["nickname"] = data["nick"]
+                            meta["secretUserId"] = data["secret"]
+
+                owner_id = self.get_owner_by_applet(applet_profile["appletId"])
+                if not owner_id:
+                    owner_id = mongoid_to_uuid(applet.get("creatorId"))
+                meta["legacyProfileId"] = applet_profile["_id"]
+                inviter_id = self.inviter_id(
+                    applet_profile["userId"], applet_profile["appletId"]
+                )
+                if not inviter_id:
+                    inviter_id = owner_id
+                access = AppletUserDAO(
+                    applet_id=mongoid_to_uuid(applet_profile["appletId"]),
+                    user_id=mongoid_to_uuid(applet_profile["userId"]),
+                    owner_id=owner_id,
+                    inviter_id=inviter_id,
+                    role=convert_role(role_name),
+                    created_at=datetime.datetime.utcnow(),
+                    updated_at=datetime.datetime.utcnow(),
+                    meta=meta,
+                    is_pinned=self.is_pinned(applet_profile["userId"]),
+                    is_deleted=False,
+                )
+                access_result.append(access)
+        prepared = len(access_result)
+        migration_log.warning(f"[ROLES] found: {prepared}")
+        migration_log.warning(
+            f"""[ROLES]
+                Owner:          {owner_count}
+                Manager:        {manager_count}
+                Editor:         {editor_count}
+                Coordinator:    {coordinator_count}
+                Reviewer:       {reviewer_count}
+                Respondent:     {respondent_count}
+        """
+        )
+        return access_result
 
     def get_user_applet_role_mapping(
         self, migrated_applet_ids: List[ObjectId]
@@ -1606,32 +1799,25 @@ class Mongo:
         return now + datetime.timedelta(seconds=order["_pin_order"])
 
     def get_folder_mapping(
-        self, workspace_ids: List[uuid.UUID]
+        self, workspaces: list[tuple[uuid.UUID, uuid.UUID]]
     ) -> Tuple[Set[FolderDAO], Set[FolderAppletDAO]]:
         folders_list = []
         applets_list = []
-        for workspace_id in workspace_ids:
-            profile_id = uuid_to_mongoid(workspace_id)
-            if profile_id is None:
-                # non migrated workspace
-                continue
-            res = self.get_folders_and_applets(profile_id)
+        for workspace in workspaces:
+            workspace_id = workspace[0]
+            workspace_user_id = workspace[1]
+            account_id = uuid_to_mongoid(workspace_id)
+            res = self.get_folders_and_applets(account_id)
             for folder in res["folders"]:
-                creator = AccountProfile().findOne(
-                    query={"applets.owner": {"$in": [folder["_id"]]}}
-                )
-                if creator:
-                    owner_id = creator["userId"]
-                else:
-                    owner_id = folder["creatorId"]
+                creator_id = mongoid_to_uuid(folder["creatorId"])
                 folders_list.append(
                     FolderDAO(
                         id=mongoid_to_uuid(folder["_id"]),
                         created_at=folder["created"],
                         updated_at=folder["updated"],
                         name=folder["name"],
-                        creator_id=mongoid_to_uuid(owner_id),
-                        workspace_id=mongoid_to_uuid(folder["parentId"]),
+                        creator_id=creator_id,
+                        workspace_id=workspace_user_id,
                         migrated_date=datetime.datetime.utcnow(),
                         migrated_update=datetime.datetime.utcnow(),
                         is_deleted=False,

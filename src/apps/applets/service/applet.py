@@ -394,16 +394,16 @@ class AppletService:
     async def _get_next_version(
         self, applet_schema: AppletUpdate, applet_id: uuid.UUID
     ):
-        old_activity_ids = await ActivitiesCRUD(
-            self.session
-        ).get_ids_by_applet_id(applet_id)
-        old_flow_ids = await FlowsCRUD(self.session).get_ids_by_applet_id(
-            applet_id
+        old_activity_ids = set(
+            await ActivitiesCRUD(self.session).get_ids_by_applet_id(applet_id)
         )
-        new_activity_ids = [
+        old_flow_ids = set(
+            await FlowsCRUD(self.session).get_ids_by_applet_id(applet_id)
+        )
+        new_activity_ids = set(
             activity.id for activity in applet_schema.activities
-        ]
-        new_flow_ids = [flow.id for flow in applet_schema.activity_flows]
+        )
+        new_flow_ids = set(flow.id for flow in applet_schema.activity_flows)
 
         if (
             new_activity_ids != old_activity_ids
@@ -411,15 +411,19 @@ class AppletService:
         ):
             return VERSION_DIFFERENCE_ACTIVITY
         else:
-            old_activity_items_ids = await ActivityItemsCRUD(
-                self.session
-            ).get_ids_by_activity_ids(old_activity_ids)
+            old_activity_items_ids = set(
+                await ActivityItemsCRUD(self.session).get_ids_by_activity_ids(
+                    list(old_activity_ids)
+                )
+            )
 
             new_activity_items = []
             for new_activity in applet_schema.activities:
                 new_activity_items.extend(new_activity.items)
 
-            new_activity_items_ids = [item.id for item in new_activity_items]
+            new_activity_items_ids = set(
+                item.id for item in new_activity_items
+            )
             if new_activity_items_ids != old_activity_items_ids:
                 return VERSION_DIFFERENCE_ITEM
             else:
