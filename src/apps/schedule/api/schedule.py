@@ -4,6 +4,8 @@ from copy import deepcopy
 from fastapi import Body, Depends
 from firebase_admin.exceptions import FirebaseError
 
+from apps.answers.errors import UserDoesNotHavePermissionError
+from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.schedule.domain.schedule.filters import EventQueryParams
@@ -21,6 +23,7 @@ from apps.shared.domain import Response, ResponseMulti
 from apps.shared.link import convert_link_key
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
@@ -92,6 +95,20 @@ async def schedule_get_all(
         schedules = await ScheduleService(session).get_all_schedules(
             applet_id, deepcopy(query_params)
         )
+
+    roles: set = set(
+        await UserAppletAccessCRUD(session).get_user_roles_to_applet(
+            user.id, applet_id
+        )
+    )
+    accessed_roles: set = {
+        Role.SUPER_ADMIN.value,
+        Role.OWNER.value,
+        Role.MANAGER.value,
+        Role.COORDINATOR.value,
+    }
+    if not roles & accessed_roles:
+        raise UserDoesNotHavePermissionError()
 
     return ResponseMulti(result=schedules, count=len(schedules))
 
