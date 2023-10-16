@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from fastapi import Body, Depends
@@ -30,8 +31,11 @@ async def get_themes(
 ) -> ResponseMulti[PublicTheme]:
     """Returns all themes."""
     async with atomic(session):
-        themes = await ThemeService(session, user.id).get_all(query_params)
-    return ResponseMulti(result=themes, count=len(themes))
+        service = ThemeService(session, user.id)
+        themes_c = service.get_all(query_params)
+        count_c = service.count()
+        themes, count = await asyncio.gather(themes_c, count_c)
+    return ResponseMulti(result=themes, count=count)
 
 
 async def delete_theme_by_id(
