@@ -1477,6 +1477,15 @@ class Mongo:
             )
         return res
 
+    @staticmethod
+    def get_user_roles(applet_profile: dict) -> list[str]:
+        roles = applet_profile["roles"]
+        if "owner" in roles:
+            return ["owner", "user"]
+        elif "manager" in roles:
+            return ["manager", "user"] if "user" in roles else ["manager"]
+        return roles
+
     def get_roles_mapping_from_applet_profile(
         self, migrated_applet_ids: List[ObjectId]
     ):
@@ -1516,8 +1525,7 @@ class Mongo:
                 not_found_applets.append(applet_profile["appletId"])
                 continue
 
-            roles = applet_profile["roles"]
-            roles = roles[-1:] + roles[:1]  # highest and lowest role
+            roles = self.get_user_roles(applet_profile)
             for role_name in set(roles):
                 if role_name != "user":
                     managerial_applets.append(applet_profile["appletId"])
