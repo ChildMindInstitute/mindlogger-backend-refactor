@@ -96,10 +96,27 @@ def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
             for property in activity["reprolib:terms/addProperties"]:
                 property["reprolib:terms/isVis"] = [{"@value": True}]
 
+    broken_v1_trails_activity_type = [
+        "6276c0fd0a62aa105607838c",
+    ]
+    if applet_id in broken_v1_trails_activity_type:
+        for _index, _activity in enumerate(
+            applet_ld["reprolib:terms/order"][0]["@list"]
+        ):
+            if _activity["@type"][0] == "reprolib:schemas/ABTrails":
+                _activity["@type"][0] = "reprolib:schemas/Activity"
+                _activity["reprolib:terms/activityType"] = [
+                    {
+                        "@type": "http://www.w3.org/2001/XMLSchema#string",
+                        "@value": "TRAILS_MOBILE",
+                    }
+                ]
+
     broken_applet_abtrails = [
         "62768ff20a62aa1056078093",
         "62d06045acd35a1054f106f6",
         "64946e208819c1120b4f9271",
+        "61f3423962485608c74c1f45",
     ]
     if (
         applet_id == "62768ff20a62aa1056078093"
@@ -117,7 +134,7 @@ def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
     }
     if applet_id in broken_applet_abtrails:
         for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
-            if _activity["@id"] == "Flanker_360":
+            if _activity["@id"] in ["Flanker_360", "flanker_schema"]:
                 for _item in _activity["reprolib:terms/order"][0]["@list"]:
                     if "reprolib:terms/inputs" in _item:
                         for _intput in _item["reprolib:terms/inputs"]:
@@ -487,8 +504,6 @@ def patch_broken_applets(
                         _report.pop("reprolib:terms/jsExpression")
 
     duplicated_activity_names = ["640b239b601cdc5212d63e75"]
-    key_pref = "http://www.w3.org/2004/02/skos/core#prefLabel"
-    key_alt = "http://www.w3.org/2004/02/skos/core#altLabel"
     if applet_id in duplicated_activity_names:
         current_names = []
         current_names_indexes = []
@@ -503,6 +518,22 @@ def patch_broken_applets(
             for _index in current_names_indexes:
                 applet_ld["reprolib:terms/order"][0]["@list"].pop(_index)
 
+    broken_v1_trails_activity_type = [
+        "6276c0fd0a62aa105607838c",
+    ]
+    if applet_id in broken_v1_trails_activity_type:
+        for _index, _activity in enumerate(
+            applet_ld["reprolib:terms/order"][0]["@list"]
+        ):
+            if _activity["@type"][0] == "reprolib:schemas/ABTrails":
+                _activity["@type"][0] = "reprolib:schemas/Activity"
+                _activity["reprolib:terms/activityType"] = [
+                    {
+                        "@type": "http://www.w3.org/2001/XMLSchema#string",
+                        "@value": "TRAILS_MOBILE",
+                    }
+                ]
+
     no_ids_flanker_map = {
         "<<<<<": "left-con",
         "<<><<": "right-inc",
@@ -514,10 +545,11 @@ def patch_broken_applets(
     no_ids_flanker_buttons = [
         "62768ff20a62aa1056078093",
         "64946e208819c1120b4f9271",
+        "61f3423962485608c74c1f45",
     ]
     if applet_id in no_ids_flanker_buttons:
         for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
-            if _activity["@id"] == "Flanker_360":
+            if _activity["@id"] in ["Flanker_360", "flanker_schema"]:
                 for _item in _activity["reprolib:terms/order"][0]["@list"]:
                     if "reprolib:terms/inputs" in _item:
                         for _intput in _item["reprolib:terms/inputs"]:
