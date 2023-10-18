@@ -769,13 +769,17 @@ def patch_broken_visability_for_applet(applet: dict) -> None:
         for add_prop in activity.get("reprolib:terms/addProperties", []):
             item_id = add_prop["reprolib:terms/isAbout"][0]["@id"]
             if item_id in item_id_isvis_map:
-                set_isvis(add_prop, item_id_isvis_map[item_id])
+                if isinstance(
+                    add_prop["reprolib:terms/isVis"][0]["@value"], bool
+                ):
+                    set_isvis(add_prop, item_id_isvis_map[item_id])
 
     # update addProperties of applet if they exist, set correct value from map
     for add_prop in applet.get("reprolib:terms/addProperties", []):
         activity_id = add_prop["reprolib:terms/isAbout"][0]["@id"]
         if activity_id in acitivity_id_isvis_map:
-            set_isvis(add_prop, acitivity_id_isvis_map[activity_id])
+            if isinstance(add_prop["reprolib:terms/isVis"][0]["@value"], bool):
+                set_isvis(add_prop, acitivity_id_isvis_map[activity_id])
 
 
 class Mongo:
