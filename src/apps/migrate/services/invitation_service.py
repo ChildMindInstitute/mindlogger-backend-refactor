@@ -1,4 +1,5 @@
 import datetime
+import uuid
 from datetime import date
 
 from bson import ObjectId
@@ -9,6 +10,7 @@ from apps.invitations.db.schemas import InvitationSchema
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.constants import InvitationStatus
 from apps.workspaces.domain.constants import Role
+from apps.migrate.services.mongo import decrypt
 
 
 from apps.migrate.utilities import mongoid_to_uuid
@@ -77,7 +79,11 @@ class InvitationsMigrationService:
         invitation_data: dict = {}
 
         if invitation.userEmail:
-            invitation_data["email"] = invitation.userEmail
+            email = decrypt(invitation.userEmail)
+            if email:
+                invitation_data["email"] = email
+            else:
+                invitation_data["email"] = invitation.userEmail
         invitation_data["applet_id"] = mongoid_to_uuid(invitation.appletId)
         if invitation.role == "user":
             invitation_data["role"] = Role.RESPONDENT
@@ -86,11 +92,14 @@ class InvitationsMigrationService:
         invitation_data["invitor_id"] = mongoid_to_uuid(invitation.inviterId)
         invitation_data["status"] = InvitationStatus.PENDING
         if invitation.firstName:
-            invitation_data["first_name"] = invitation.firstName
+            invitation_data["first_name"] = decrypt(invitation.firstName)
         if invitation.lastName:
-            invitation_data["last_name"] = invitation.lastName
+            invitation_data["last_name"] = decrypt(invitation.lastName)
         invitation_data["created_at"] = invitation.created
         invitation_data["updated_at"] = invitation.updated
+        invitation_data["key"] = uuid.uuid3(
+            mongoid_to_uuid(invitation.id), invitation_data["email"]
+        )
 
         now = datetime.datetime.utcnow()
         invitation = InvitationSchema(
