@@ -491,6 +491,8 @@ class Postgres:
             (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
         migrated, skipped = 0, 0
+        count = 0
+        count_all = len(folders)
         for folder_data in folders:
             try:
                 cursor = self.connection.cursor()
@@ -514,9 +516,18 @@ class Postgres:
                 self.log_pg_err(ex)
             finally:
                 self.connection.commit()
+                count += 1
+                migration_log.warning(f"Saving folder {count}/{count_all}")
         return migrated, skipped
 
+    def clean_folder_applets(self):
+        sql = "delete from public.folder_applets"
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        self.connection.commit()
+
     def save_folders_applet(self, folder_applets: List[FolderAppletDAO]):
+        self.clean_folder_applets()
         migrated, skipped = 0, 0
         sql = """
             INSERT INTO public.folder_applets
@@ -535,7 +546,10 @@ class Postgres:
             (%s, %s, %s, %s, %s, %s, %s, %s, %s)
 
         """
+        current_item = 0
+        size_all = len(folder_applets)
         for folder_applet in folder_applets:
+            migration_log.warning(f"{current_item}/{size_all}")
             try:
                 cursor = self.connection.cursor()
                 cursor.execute(
@@ -558,6 +572,7 @@ class Postgres:
                 self.log_pg_err(ex)
             finally:
                 self.connection.commit()
+                current_item += 1
         return migrated, skipped
 
     def exec_escaped(self, sql: str, values: tuple, log_tag=""):

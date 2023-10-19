@@ -407,6 +407,7 @@ def migrate_folders(workspace_id: str | None, mongo, postgres):
         workspaces = postgres.get_workspace_info(ids)
     else:
         workspaces = postgres.get_migrated_workspaces()
+    migration_log.warning("[FOLDERS] Fetch from Mongo")
     folders_dao, applet_dao = mongo.get_folder_mapping(workspaces)
     migrated, skipped = postgres.save_folders(folders_dao)
     migration_log.warning(f"[FOLDERS] {migrated=}, {skipped=}")
