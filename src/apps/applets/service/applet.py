@@ -54,6 +54,7 @@ from apps.shared.version import (
 )
 from apps.themes.service import ThemeService
 from apps.users.services.user import UserService
+from apps.workspaces.domain.constants import DataRetention
 from apps.workspaces.errors import AppletEncryptionUpdateDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from config import settings
@@ -825,6 +826,10 @@ class AppletService:
         await AppletsCRUD(self.session).set_data_retention(
             applet_id, data_retention
         )
+        if data_retention.retention != DataRetention.INDEFINITELY:
+            await AnswersCRUD(self.session).removing_outdated_answers(
+                applet_id, data_retention.period or 1, data_retention.retention
+            )
 
     async def get_full_applet(self, applet_id: uuid.UUID) -> AppletFull:
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)

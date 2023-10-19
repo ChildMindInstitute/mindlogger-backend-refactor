@@ -5,12 +5,16 @@ import uuid
 
 import sentry_sdk
 from fastapi import UploadFile
+from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.deps.preprocess_arbitrary import get_arbitrary_info
 from apps.answers.domain import ReportServerResponse
+from apps.applets.crud import AppletsCRUD
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.workspaces.domain.constants import DataRetention
 from broker import broker
 from infrastructure.database import session_manager
 
@@ -69,6 +73,32 @@ async def create_report(
                     attachments=[file],
                 )
             )
+    except Exception as e:
+        traceback.print_exception(e)
+        sentry_sdk.capture_exception(e)
+    finally:
+        if not isinstance(session_maker, AsyncSession):
+            await session_maker.remove()
+
+
+@broker.task(
+    task_name="apps.answers.tasks:removing_outdated_answers",
+    schedule=[{"cron": "*/30 * * * *"}],
+)
+async def removing_outdated_answers():
+    session_maker = session_manager.get_session()
+    try:
+        async with session_maker() as session:
+            applets_data: Result = await AppletsCRUD(
+                session
+            ).get_every_non_indefinitely_applet_retentions()
+            for applet_data in applets_data:
+                applet_id, retention_period, retention_type = applet_data
+                retention_type = DataRetention(retention_type)
+                await AnswersCRUD(session).removing_outdated_answers(
+                    applet_id, retention_period, retention_type
+                )
+            await session.commit()
     except Exception as e:
         traceback.print_exception(e)
         sentry_sdk.capture_exception(e)

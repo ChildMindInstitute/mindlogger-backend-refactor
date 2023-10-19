@@ -37,6 +37,7 @@ from apps.shared.searching import Searching
 from apps.users import UserSchema
 from apps.users.db.schemas import UserDeviceSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.domain.constants import DataRetention
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["AppletsCRUD"]
@@ -952,6 +953,22 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.where(access_query.c.role != None)  # noqa
         db_result = await self._execute(select(func.count(query.c.id)))
         return db_result.scalars().first() or 0
+
+    async def get_every_non_indefinitely_applet_retentions(self) -> Result:
+        """returned Result[Row[uuid.UUID, int, str]]
+        Result[Row[applet_id, applet_retention_period, applet_retention_type]]
+        """
+        query: Query = select(
+            AppletSchema.id.label("id"),
+            AppletSchema.retention_period.label("retention_period"),
+            AppletSchema.retention_type.label("retention_type"),
+        )
+        query = query.where(
+            AppletSchema.retention_type != DataRetention.INDEFINITELY
+        )
+        result: Result = await self._execute(query)
+
+        return result
 
     async def clear_report_settings(self, applet_id: uuid.UUID):
         query: Query = update(AppletSchema)
