@@ -1850,8 +1850,6 @@ class Mongo:
         count = 0
         all_count = len(workspaces)
         for workspace in workspaces:
-            if count == 5099:
-                pass
             workspace_id = workspace[0]
             workspace_user_id = workspace[1]
             account_id = uuid_to_mongoid(workspace_id)
