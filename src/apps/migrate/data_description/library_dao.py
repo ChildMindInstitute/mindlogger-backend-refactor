@@ -94,3 +94,10 @@ class ThemeDao:
             self.migrated_date,
             self.migrated_updated,
         )
+
+
+@dataclass
+class AppletTheme:
+    applet_id: uuid.UUID
+    theme_id: uuid.UUID
+    theme_name: str

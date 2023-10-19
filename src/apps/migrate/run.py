@@ -379,9 +379,15 @@ def migrate_library(applet_ids: list[ObjectId] | None, mongo, postgres):
         if success:
             theme_count += 1
             postgres.add_theme_to_applet(theme.applet_id, theme.id)
+
+    applet_themes = mongo.get_applet_theme_mapping()
+    applets_count = postgres.set_applets_themes(applet_themes)
     postgres.apply_default_theme()
-    migration_log.warning(f"[LIBRARY] Migrated {lib_count}")
-    migration_log.warning(f"[THEME] Migrated {theme_count}")
+    msg = postgres.themes_slice()
+    migration_log.info(f"[LIBRARY] Migrated {lib_count}")
+    migration_log.info(f"[THEME] Migrated {theme_count}")
+    migration_log.info(f"[THEME] Applets with themes {applets_count}")
+    migration_log.info(f"[THEME] {msg}")
 
 
 async def migrate_events(
@@ -551,7 +557,7 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
     # # Migrate folders
     # migrate_folders(workspace_id, mongo, postgres)
     # # Migrate library
-    # migrate_library(applets_ids, mongo, postgres)
+    migrate_library(applets_ids, mongo, postgres)
     # Migrate events
     # await migrate_events(applets_ids, mongo, postgres)
 

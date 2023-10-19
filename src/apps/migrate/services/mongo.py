@@ -30,7 +30,11 @@ from apps.jsonld_converter.dependencies import (
 )
 from apps.migrate.data_description.applet_user_access import AppletUserDAO
 from apps.migrate.data_description.folder_dao import FolderAppletDAO, FolderDAO
-from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
+from apps.migrate.data_description.library_dao import (
+    LibraryDao,
+    ThemeDao,
+    AppletTheme,
+)
 from apps.migrate.data_description.public_link import PublicLinkDao
 from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.migrate.exception.exception import (
@@ -1958,4 +1962,32 @@ class Mongo:
                             created_by_bson=user_id,
                         )
                     )
+        return result
+
+    def get_applet_theme_mapping(self) -> list[AppletTheme]:
+        applet_cursor = self.db["folder"].find(
+            {
+                "$and": [
+                    {"meta.applet.themeId": {"$exists": True}},
+                    {"meta.applet.themeId": {"$ne": "None"}},
+                    {"meta.applet.themeId": {"$ne": None}},
+                ]
+            }
+        )
+        result = []
+        for applet_doc in applet_cursor:
+            applet_id = mongoid_to_uuid(applet_doc["_id"])
+            theme_id = mongoid_to_uuid(applet_doc["meta"]["applet"]["themeId"])
+            theme_bson_id = ObjectId(applet_doc["meta"]["applet"]["themeId"])
+            theme = self.db["folder"].find_one({"_id": theme_bson_id})
+            theme_name = (
+                theme["name"] if theme["name"] != "mindlogger" else "Default"
+            )
+            if theme:
+                mapper = AppletTheme(
+                    applet_id=applet_id,
+                    theme_id=theme_id,
+                    theme_name=theme_name,
+                )
+                result.append(mapper)
         return result
