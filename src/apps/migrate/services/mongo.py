@@ -1847,11 +1847,19 @@ class Mongo:
     ) -> Tuple[Set[FolderDAO], Set[FolderAppletDAO]]:
         folders_list = []
         applets_list = []
+        count = 0
+        all_count = len(workspaces)
         for workspace in workspaces:
+            if count == 5099:
+                pass
             workspace_id = workspace[0]
             workspace_user_id = workspace[1]
             account_id = uuid_to_mongoid(workspace_id)
+            if account_id is None:
+                continue
             res = self.get_folders_and_applets(account_id)
+            folder_count = 0
+            all_folder_count = len(res["folders"])
             for folder in res["folders"]:
                 creator_id = mongoid_to_uuid(folder["creatorId"])
                 folders_list.append(
@@ -1866,6 +1874,11 @@ class Mongo:
                         migrated_update=datetime.datetime.utcnow(),
                         is_deleted=False,
                     )
+                )
+                folder_count += 1
+                migration_log.warning(
+                    f"[FOLDERS] "
+                    f"\t fetch folder: {folder_count}/{all_folder_count}"
                 )
                 for applet in folder["applets"]:
                     pinned_at = self.get_folder_pin(folder, applet["_id"])
@@ -1882,7 +1895,10 @@ class Mongo:
                             is_deleted=False,
                         )
                     )
-
+            count += 1
+            migration_log.warning(
+                f"[FOLDERS] Fetch workspace folders {count}/{all_count}"
+            )
         return set(folders_list), set(applets_list)
 
     def get_theme(
