@@ -24,7 +24,7 @@ from apps.schedule.crud.notification import (
     NotificationCRUD,
     ReminderCRUD,
 )
-from apps.schedule.domain.constants import PeriodicityType
+from apps.schedule.domain.constants import PeriodicityType, TimerType
 from apps.girderformindlogger.models.profile import Profile
 
 from infrastructure.database import atomic
@@ -249,12 +249,19 @@ class EventMigrationService:
             event_data["one_time_completion"] = False
 
         if event.data.idleTime and event.data.idleTime.allow:
-            event_data["timer_type"] = TIMER_TYPE[IDLE]
+            event_data["timer_type"] = TimerType.IDLE
             event_data["timer"] = timedelta(
                 minutes=float(event.data.idleTime.minute)
             )
+        elif event.data.timedActivity and event.data.timedActivity.allow:
+            event_data["timer_type"] = TimerType.TIMER
+            event_data["timer"] = timedelta(
+                seconds=float(event.data.timedActivity.second),
+                minutes=float(event.data.timedActivity.minute),
+                hours=float(event.data.timedActivity.hour),
+            )
         else:
-            event_data["timer_type"] = TIMER_TYPE[NOT_SET]
+            event_data["timer_type"] = TimerType.NOT_SET
 
         event_data["applet_id"] = mongoid_to_uuid(event.applet_id)
 
