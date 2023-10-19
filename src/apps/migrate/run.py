@@ -3,6 +3,7 @@ import datetime
 import uuid
 import csv
 import argparse
+import traceback
 
 from bson.objectid import ObjectId
 
@@ -105,7 +106,7 @@ async def migrate_applets(
         except (FormatldException, EmptyAppletException) as e:
             print("Skipped because: ", e.message)
         except Exception as e:
-            skipped_applets.append(applet_id)
+            skipped_applets.append(applet_id, traceback.format_exc())
             print("error: ", applet_id)
     postgres.fix_empty_questions()
     print("error in", len(skipped_applets), "applets:")

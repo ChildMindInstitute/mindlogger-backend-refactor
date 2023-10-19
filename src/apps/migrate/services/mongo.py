@@ -51,6 +51,7 @@ from apps.migrate.utilities import (
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt, get_key
 from apps.workspaces.domain.constants import Role
+from apps.migrate.utilities import migration_log
 
 
 enc = StringEncryptedType(key=get_key())
@@ -1097,11 +1098,12 @@ class Mongo:
                     )
                 else:
                     activity_items_objects.append(item)
-                    print(
-                        "Warning: item ",
-                        item_key,
-                        "presents in order but absent in activity items. activityId:",
-                        str(activity_object["_id"]),
+                    migration_log.warning(
+                        (
+                            f"item {item_key} ",
+                            "presents in order but absent in activity items. "
+                            f"activityId: {activity_object['_id']}",
+                        ),
                     )
 
             activities_by_id[key]["activity"]["reprolib:terms/order"][0][
@@ -1148,11 +1150,12 @@ class Mongo:
                     if item["@id"] in activity_ids_inside_applet:
                         activity_flow_order.append(item)
                     else:
-                        print(
-                            "Warning: item ",
-                            item["@id"],
-                            "presents in flow order but absent in applet activities. activityFlowId:",
-                            str(key),
+                        migration_log.warning(
+                            (
+                                f"item {item['@id']} "
+                                "presents in flow order but absent in applet "
+                                "activities. activityFlowId: {key}",
+                            ),
                         )
                 activity_flow["reprolib:terms/order"][0][
                     "@list"

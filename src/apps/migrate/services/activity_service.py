@@ -15,6 +15,7 @@ from apps.activities.domain.activity_update import (
 from apps.activities.services.activity_item import ActivityItemService
 from apps.migrate.domain.activity_create import ActivityItemMigratedCreate
 from apps.migrate.domain.applet_full import AppletMigratedFull
+from apps.migrate.utilities import prepare_extra_fields_to_save
 
 
 class ActivityMigrationService:
@@ -61,6 +62,9 @@ class ActivityMigrationService:
                     updated_at=applet.updated_at,
                     migrated_date=applet.migrated_date,
                     migrated_updated=applet.migrated_updated,
+                    extra_fields=prepare_extra_fields_to_save(
+                        activity_data.extra_fields
+                    ),
                 )
             )
 
@@ -85,6 +89,9 @@ class ActivityMigrationService:
                         updated_at=applet.updated_at,
                         migrated_date=applet.migrated_date,
                         migrated_updated=applet.migrated_updated,
+                        extra_fields=prepare_extra_fields_to_save(
+                            item.extra_fields
+                        ),
                     )
                 )
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
@@ -113,7 +120,7 @@ class ActivityMigrationService:
     async def update_create(
         self,
         applet: AppletMigratedFull,
-        activities_create: list[ActivityUpdate],
+        activities_create: list[ActivityCreate],
     ) -> list[ActivityFull]:
         schemas = []
         activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()
@@ -149,6 +156,9 @@ class ActivityMigrationService:
                     updated_at=applet.updated_at,
                     migrated_date=applet.migrated_date,
                     migrated_updated=applet.migrated_updated,
+                    extra_fields=prepare_extra_fields_to_save(
+                        activity_data.extra_fields
+                    ),
                 )
             )
 
