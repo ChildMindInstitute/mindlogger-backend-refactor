@@ -4,6 +4,7 @@ from apps.activities.domain.activity_full import (
     ActivityItemFull,
 )
 from apps.migrate.domain.applet_full import AppletMigratedFull
+from apps.migrate.utilities import prepare_extra_fields_to_save
 
 
 class ActivityItemHistoryMigrationService:
@@ -37,6 +38,9 @@ class ActivityItemHistoryMigrationService:
                     updated_at=self._applet.updated_at,
                     migrated_date=self._applet.migrated_date,
                     migrated_updated=self._applet.migrated_updated,
+                    extra_fields=prepare_extra_fields_to_save(
+                        item.extra_fields
+                    ),
                 )
             )
         await ActivityItemHistoriesCRUD(self.session).create_many(schemas)

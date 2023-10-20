@@ -11,9 +11,9 @@ from apps.activity_flows.domain.flow_update import (
     FlowUpdate,
     PreparedFlowItemUpdate,
 )
-from apps.activity_flows.service.flow_item import FlowItemService
 from apps.migrate.domain.applet_full import AppletMigratedFull
 from apps.migrate.services.flow_item_service import FlowItemMigrationService
+from apps.migrate.utilities import prepare_extra_fields_to_save
 
 
 class FlowMigrationService:
@@ -44,6 +44,9 @@ class FlowMigrationService:
                     updated_at=applet.updated_at,
                     migrated_date=applet.migrated_date,
                     migrated_updated=applet.migrated_updated,
+                    extra_fields=prepare_extra_fields_to_save(
+                        flow_create.extra_fields
+                    ),
                 )
             )
             for flow_item_create in flow_create.items:
@@ -76,7 +79,7 @@ class FlowMigrationService:
     async def update_create(
         self,
         applet: AppletMigratedFull,
-        flows_update: list[FlowUpdate],
+        flows_update: list[FlowCreate],
         activity_key_id_map: dict[uuid.UUID, uuid.UUID],
     ) -> list[FlowFull]:
         schemas = list()

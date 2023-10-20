@@ -7,6 +7,7 @@ from apps.migrate.domain.applet_full import AppletMigratedFull
 from apps.migrate.services.flow_item_history_service import (
     FlowItemHistoryMigrationService,
 )
+from apps.migrate.utilities import prepare_extra_fields_to_save
 
 
 class FlowHistoryMigrationService:
@@ -36,6 +37,9 @@ class FlowHistoryMigrationService:
                     updated_at=self.applet.updated_at,
                     migrated_date=self.applet.migrated_date,
                     migrated_updated=self.applet.migrated_updated,
+                    extra_fields=prepare_extra_fields_to_save(
+                        flow.extra_fields
+                    ),
                 )
             )
 

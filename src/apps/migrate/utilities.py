@@ -29,6 +29,7 @@ def get_logger(name) -> logging.Logger:
     formatter = logging.Formatter(f"[{name}] %(levelname)s - %(message)s")
     handler = logging.StreamHandler(stream=sys.stdout)
     handler.setFormatter(formatter)
+    # handler.setLevel(level=logging.ERROR)
     log = logging.getLogger()
     log.addHandler(handler)
     return log
@@ -65,3 +66,12 @@ def get_arguments():
     if workspace and applets:
         raise Exception("Specify either workspace or applets arg")
     return workspace, applets
+
+
+def prepare_extra_fields_to_save(extra_fields: dict | None):
+    if not extra_fields:
+        return extra_fields
+    for key in ("id", "created", "updated"):
+        if key in extra_fields:
+            extra_fields[key] = str(extra_fields[key])
+    return extra_fields

@@ -7,6 +7,7 @@ from apps.migrate.domain.applet_full import AppletMigratedFull
 from apps.migrate.services.activity_item_history_service import (
     ActivityItemHistoryMigrationService,
 )
+from apps.migrate.utilities import prepare_extra_fields_to_save
 
 __all__ = ["ActivityHistoryMigrationService"]
 
@@ -49,6 +50,9 @@ class ActivityHistoryMigrationService:
                     updated_at=self._applet.updated_at,
                     migrated_date=self._applet.migrated_date,
                     migrated_updated=self._applet.migrated_updated,
+                    extra_fields=prepare_extra_fields_to_save(
+                        activity.extra_fields
+                    ),
                 )
             )
 
