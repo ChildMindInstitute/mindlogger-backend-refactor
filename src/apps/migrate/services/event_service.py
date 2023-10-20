@@ -1,3 +1,4 @@
+import copy
 from datetime import date, datetime, timedelta, time
 
 from bson import ObjectId
@@ -404,8 +405,22 @@ class EventMigrationService:
                 # Migrate data to UserEventsSchema (if individualized)
                 if event.individualized:
                     user_ids: list = self._check_user_existence(event)
-                    for user_id in user_ids:
-                        await self._create_user(event, pg_event, user_id)
+
+                    # add individual event for already created (on previous steps) event
+                    await self._create_user(event, pg_event, user_id[0])
+
+                    # create new events for next users
+                    new_events: list = []
+                    for user_id in user_ids[1:]:
+                        # await self._create_user(event, pg_event, user_id)
+                        e = copy.deepcopy(event)
+                        e.id = ObjectId()
+                        e.data.users = [user_id]
+
+                    print(
+                        f"\nWill extend events list. Currents number of events is: {len(self.events)}. New number is: {len(self.events)+len(new_events)}\n"
+                    )
+                    self.events.extend(new_events)
 
             except Exception as e:
                 number_of_errors += 1
