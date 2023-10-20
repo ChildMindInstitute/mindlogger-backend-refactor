@@ -412,10 +412,10 @@ class EventMigrationService:
                     # create new events for next users
                     new_events: list = []
                     for user_id in user_ids[1:]:
-                        # await self._create_user(event, pg_event, user_id)
                         e = copy.deepcopy(event)
                         e.id = ObjectId()
                         e.data.users = [user_id]
+                        new_events.append(e)
 
                     print(
                         f"\nWill extend events list. Currents number of events is: {len(self.events)}. New number is: {len(self.events)+len(new_events)}\n"
