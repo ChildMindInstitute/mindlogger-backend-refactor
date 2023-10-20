@@ -50,6 +50,7 @@ class EncUUID(json.JSONEncoder):
 
 
 migration_log = get_logger("Migration")
+migration_log.setLevel(logging.INFO)
 
 
 def get_arguments():

@@ -13,7 +13,11 @@ from psycopg2.errorcodes import UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION
 from bson import ObjectId
 
 from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
-from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
+from apps.migrate.data_description.library_dao import (
+    LibraryDao,
+    ThemeDao,
+    AppletTheme,
+)
 from apps.migrate.data_description.public_link import PublicLinkDao
 from apps.migrate.services.applet_service import AppletMigrationService
 from apps.migrate.utilities import (
@@ -734,15 +738,16 @@ class Postgres:
             UPDATE applets 
                 SET theme_id = (SELECT id FROM themes WHERE "name"='Default')
             WHERE
-                theme_id NOT IN (SELECT id FROM themes) OR theme_id IS NULL;
+                theme_id IS NULL;
 
             UPDATE applet_histories  
                 SET theme_id = (SELECT id FROM themes WHERE "name"='Default')
             WHERE
-                theme_id NOT IN (SELECT id FROM themes) OR theme_id is null;
+                theme_id is NULL;
         """
         cursor = self.connection.cursor()
         cursor.execute(sql)
+        self.connection.commit()
         cursor.close()
 
     @staticmethod
@@ -812,3 +817,64 @@ class Postgres:
             return []
         finally:
             self.connection.commit()
+
+    def set_applets_themes(self, applet_themes: list[AppletTheme]) -> int:
+        count = 0
+        sql_app = """
+            UPDATE applets 
+            SET theme_id = (
+                SELECT id FROM themes WHERE id = %s
+                UNION
+                SELECT id FROM themes WHERE LOWER(name) = LOWER(%s)
+                LIMIT 1
+            )
+            WHERE id = %s;
+        """
+
+        sql_hist = """
+            UPDATE applet_histories 
+            SET theme_id = (
+                SELECT id FROM themes WHERE id = %s
+                UNION
+                SELECT id FROM themes WHERE LOWER(name) = LOWER(%s)
+                LIMIT 1
+            )
+            WHERE id = %s;
+        """
+        for app_theme in applet_themes:
+            try:
+                cursor = self.connection.cursor()
+                for sql in [sql_app, sql_hist]:
+                    cursor.execute(
+                        sql,
+                        (
+                            str(app_theme.theme_id),
+                            str(app_theme.theme_name),
+                            str(app_theme.applet_id),
+                        ),
+                    )
+                count += 1
+            except Exception as ex:
+                migration_log.error(f"[THEMES] {ex}")
+            finally:
+                msg = (
+                    f"[THEMES] Applet: {app_theme.applet_id} "
+                    f"Theme: {app_theme.theme_name}"
+                )
+                migration_log.info(msg)
+                self.connection.commit()
+        return count
+
+    def themes_slice(self) -> str:
+        sql = """
+            select t."name", count(a.id) 
+            from applets a join themes t on t.id = a.theme_id
+            group by t."name"
+        """
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        s = "\n"
+        for row in rows:
+            s += f"\t{row[0]}: {row[1]}\n"
+        return s
