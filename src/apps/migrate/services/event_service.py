@@ -1,3 +1,4 @@
+import copy
 from datetime import date, datetime, timedelta, time
 
 from bson import ObjectId
@@ -384,10 +385,6 @@ class EventMigrationService:
                 f"Migrate events {i}/{number_of_events_in_mongo}. Working on Event: {event.id}"
             )
             try:
-                user_id = None
-                if event.individualized:
-                    user_id = self._check_user_existence(event)
-
                 # Migrate data to PeriodicitySchema
                 periodicity = await self._create_periodicity(event)
 
@@ -414,7 +411,23 @@ class EventMigrationService:
 
                 # Migrate data to UserEventsSchema (if individualized)
                 if event.individualized:
-                    await self._create_user(event, pg_event, user_id)
+                    user_ids: list = self._check_user_existence(event)
+
+                    # add individual event for already created (on previous steps) event
+                    await self._create_user(event, pg_event, user_id[0])
+
+                    # create new events for next users
+                    new_events: list = []
+                    for user_id in user_ids[1:]:
+                        e = copy.deepcopy(event)
+                        e.id = ObjectId()
+                        e.data.users = [user_id]
+                        new_events.append(e)
+
+                    print(
+                        f"\nWill extend events list. Currents number of events is: {len(self.events)}. New number is: {len(self.events)+len(new_events)}\n"
+                    )
+                    self.events.extend(new_events)
 
             except Exception as e:
                 number_of_errors += 1
@@ -504,12 +517,16 @@ class EventMigrationService:
             raise Exception("Unable to parse start or end tiem")
 
     def _check_user_existence(self, event: dict) -> ObjectId:
-        if event.data.users and event.data.users[0]:
-            user = event.data.users[0]
-        else:
-            raise Exception("No user for individual event")
-        profile = Profile().findOne(query={"_id": ObjectId(user)})
-        if not profile:
-            raise Exception("Unable to find profile by event")
+        ids: list = []
+        if event.data.users:
+            for user in event.data.users:
+                profile = Profile().findOne(query={"_id": ObjectId(user)})
+                if not profile:
+                    print("Unable to find profile by event. Skip")
+                    continue
+                ids.append(profile["userId"])
 
-        return profile["userId"]
+            return ids
+
+        else:
+            raise Exception("No user(s) for individual event")
