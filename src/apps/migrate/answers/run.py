@@ -19,7 +19,13 @@ from apps.migrate.answers.user_applet_access import (
 from apps.migrate.run import get_applets_ids
 
 from apps.migrate.services.mongo import Mongo
-from apps.migrate.utilities import mongoid_to_uuid, get_arguments, intersection
+from apps.migrate.utilities import (
+    configure_report,
+    migration_log,
+    mongoid_to_uuid,
+    get_arguments,
+    intersection,
+)
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from infrastructure.database import session_manager, atomic
 
@@ -79,7 +85,7 @@ class AnswersMigrateFacade:
                 )
                 async with atomic(regular_session):
                     async with atomic(regular_or_arbitary_session):
-                        print(
+                        migration_log.info(
                             f"Starting migration of answer with mongo id: {mongo_answer_id}"
                         )
                         is_assessment = "reviewing" in mongo_answer["meta"]
@@ -175,7 +181,7 @@ class AnswersMigrateFacade:
         self.mongo.close_connection()
 
     async def _wipe_answers_data(self, session, applets_ids):
-        print(f"Wiping responses of {len(applets_ids)} applet(s)")
+        migration_log.info(f"Wiping responses of {len(applets_ids)} applet(s)")
         for applet_id in applets_ids:
             regular_or_arbitary_session = (
                 await self._get_regular_or_arbitary_session(session, applet_id)
@@ -243,7 +249,9 @@ class AnswersMigrateFacade:
 
     async def _migrate_answers_items(self, regular_session, answer_items_data):
         for i, answer_item_data in enumerate(answer_items_data):
-            print(f"Migrating {i} answer_item of {len(answer_items_data)}")
+            migration_log.debug(
+                f"Migrating {i} answer_item of {len(answer_items_data)}"
+            )
             applet_id = answer_item_data["applet_id"]
             original_answer_id = answer_item_data["mongo_answer"]["_id"]
 
@@ -292,25 +300,25 @@ class AnswersMigrateFacade:
             )
 
     def _log_migration_results(self):
-        print(f"Total answers count: {self.total_answers}")
-        print(
+        migration_log.info(f"Total answers count: {self.total_answers}")
+        migration_log.info(
             f"Successfully answers migrated count: {self.successfully_answers_migrated}"
         )
-        print(
+        migration_log.info(
             f"Skipped answers migration count: {self.skipped_answers_migration}"
         )
-        print(
+        migration_log.info(
             f"Error answers migration count: {len(self.error_answers_migration)}"
         )
         if self.error_answers_migration:
-            print(
+            migration_log.info(
                 f"Error asnwers migration data (mongo query, mongo item id, error):"
             )
             for s in self.error_answers_migration:
-                print("#" * 10)
-                print(s)
+                migration_log.info("#" * 10)
+                migration_log.info(s)
 
-        print(
+        migration_log.info(
             f"Anonymous users answers count: {self.anonymous_respondent_answers}"
         )
 
@@ -381,5 +389,6 @@ class AnswersMigrateFacade:
 
 
 if __name__ == "__main__":
-    workspace, applets = get_arguments()
-    asyncio.run(AnswersMigrateFacade().migrate(workspace, applets))
+    args = get_arguments()
+    configure_report(migration_log, args.report_file)
+    asyncio.run(AnswersMigrateFacade().migrate(args.workspace, args.applet))

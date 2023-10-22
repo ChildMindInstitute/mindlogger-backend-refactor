@@ -187,14 +187,14 @@ class Postgres:
                 count += 1
 
             except Exception as e:
-                print(f"Error: {e}")
+                migration_log.debug(f"Error: {e}")
                 self.connection.rollback()
 
         self.connection.commit()
         cursor.close()
 
-        print(f"Errors in {len(users) - count} users")
-        print(f"Successfully migrated {count} users")
+        migration_log.info(f"Errors in {len(users) - count} users")
+        migration_log.info(f"Successfully migrated {count} users")
 
         return results
 
@@ -241,13 +241,15 @@ class Postgres:
                 results.append(user_workspace)
                 count += 1
             except Exception as e:
-                print(f"Error: {e}")
+                migration_log.debug(f"Error: {e}")
                 self.connection.rollback()
 
         self.connection.commit()
         cursor.close()
-        print(f"Errors in {len(workspaces) - count} users_workspace")
-        print(f"Successfully migrated {count} users_workspace")
+        migration_log.info(
+            f"Errors in {len(workspaces) - count} users_workspace"
+        )
+        migration_log.info(f"Successfully migrated {count} users_workspace")
         return results
 
     # def save_applets(
@@ -395,7 +397,7 @@ class Postgres:
                 ),
             )
         except Exception as ex:
-            migration_log.warning(ex)
+            migration_log.debug(ex)
         finally:
             self.connection.commit()
 
@@ -450,7 +452,8 @@ class Postgres:
             VALUES {values}
         """
         rows_count = self.insert_dao_collection(sql, list(user_pin_dao))
-        migration_log.warning(f"Inserted {rows_count} rows")
+
+        return rows_count
 
     def get_migrated_workspaces(self) -> list[tuple[uuid.UUID, uuid.UUID]]:
         sql = "SELECT id, user_id FROM users_workspaces"
@@ -471,9 +474,9 @@ class Postgres:
             # not pg error
             raise ex
         if getattr(ex, "pgcode") == FOREIGN_KEY_VIOLATION:
-            migration_log.warning(f"[FOLDERS] {ex}")
+            migration_log.debug(f"[FOLDERS] {ex}")
         elif getattr(ex, "pgcode") == UNIQUE_VIOLATION:
-            migration_log.warning(f"[FOLDERS] {ex}")
+            migration_log.debug(f"[FOLDERS] {ex}")
         else:
             raise ex
 
@@ -521,7 +524,7 @@ class Postgres:
             finally:
                 self.connection.commit()
                 count += 1
-                migration_log.warning(f"Saving folder {count}/{count_all}")
+                migration_log.debug(f"Saving folder {count}/{count_all}")
         return migrated, skipped
 
     def clean_folder_applets(self):
@@ -553,7 +556,7 @@ class Postgres:
         current_item = 0
         size_all = len(folder_applets)
         for folder_applet in folder_applets:
-            migration_log.warning(f"{current_item}/{size_all}")
+            migration_log.debug(f"{current_item}/{size_all}")
             try:
                 cursor = self.connection.cursor()
                 cursor.execute(
@@ -586,7 +589,7 @@ class Postgres:
             cursor.execute(sql, values)
             success = True
         except Exception as ex:
-            migration_log.warning(f"{log_tag} {ex}")
+            migration_log.debug(f"{log_tag} {ex}")
         finally:
             self.connection.commit()
         return success
@@ -797,7 +800,7 @@ class Postgres:
             cursor = self.connection.cursor()
             cursor.execute(sql)
         except Exception as ex:
-            migration_log.warning(f"[Applets] Empty question not fixed {ex}")
+            migration_log.debug(f"[Applets] Empty question not fixed {ex}")
         finally:
             self.connection.commit()
 
@@ -813,7 +816,7 @@ class Postgres:
             result = cursor.fetchall()
             return result
         except Exception as ex:
-            migration_log.error(f"Can't fetch workspaces info! {ex}")
+            migration_log.debug(f"Can't fetch workspaces info! {ex}")
             return []
         finally:
             self.connection.commit()
@@ -855,13 +858,13 @@ class Postgres:
                     )
                 count += 1
             except Exception as ex:
-                migration_log.error(f"[THEMES] {ex}")
+                migration_log.debug(f"[THEMES] {ex}")
             finally:
                 msg = (
                     f"[THEMES] Applet: {app_theme.applet_id} "
                     f"Theme: {app_theme.theme_name}"
                 )
-                migration_log.info(msg)
+                migration_log.debug(msg)
                 self.connection.commit()
         return count
 

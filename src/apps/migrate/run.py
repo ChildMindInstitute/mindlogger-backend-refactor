@@ -33,6 +33,7 @@ from apps.girderformindlogger.models.item import Item
 
 
 from apps.migrate.utilities import (
+    configure_report,
     migration_log,
     mongoid_to_uuid,
     intersection,
@@ -44,6 +45,7 @@ from infrastructure.database import session_manager
 async def migrate_applets(
     migrating_applets: list[ObjectId], mongo: Mongo, postgres: Postgres
 ):
+    migration_log.info("Applets migration start")
     toSkip = [
         "635d04365cb700431121f8a1",  # chinese texts
     ]
@@ -73,7 +75,7 @@ async def migrate_applets(
     migrating_applets = [str(applet_id) for applet_id in migrating_applets]
 
     appletsCount = len(migrating_applets)
-    print("total", appletsCount)
+    migration_log.info("Applets to migrate total %s", appletsCount)
 
     skipUntil = None
     skipped_applets = []
@@ -82,7 +84,9 @@ async def migrate_applets(
             skipUntil = None
         if skipUntil is not None or applet_id in toSkip:
             continue
-        print("processing", applet_id, index, "/", appletsCount)
+        migration_log.debug(
+            "processing %s %s/%s", applet_id, index, appletsCount
+        )
         try:
             applet: dict | None = await mongo.get_applet(applet_id)
 
@@ -105,14 +109,17 @@ async def migrate_applets(
             await postgres.save_applets(applets, owner_id)
         except (FormatldException, EmptyAppletException) as e:
             skipped_applets.append([applet_id, e])
-            print(str(applet_id), " skipped because: ", e.message)
+            migration_log.debug(
+                "%s skipped because: %s", str(applet_id), e.message
+            )
         except Exception as e:
             skipped_applets.append([applet_id, e])
-            print("error: ", applet_id)
+            migration_log.debug("error: %s", applet_id)
     postgres.fix_empty_questions()
-    print("error in", len(skipped_applets), "applets:")
+    migration_log.info("error in %s applets:", len(skipped_applets))
     for applet_id, e in skipped_applets:
-        print(str(applet_id), ":", str(e))
+        migration_log.info("%s: %s", str(applet_id), str(e))
+    migration_log.info("Applets migration end")
 
 
 async def get_applets_ids() -> list[str]:
@@ -600,65 +607,68 @@ async def get_applets_ids() -> list[str]:
 def migrate_roles(
     applet_ids: list[ObjectId] | None, mongo: Mongo, postgres: Postgres
 ):
-    migration_log.warning("Start Role migration")
+    migration_log.info("Roles migration start")
     anon_id = postgres.get_anon_respondent()
     if not applet_ids:
         applet_ids = postgres.get_migrated_applets()
     roles = mongo.get_roles_mapping_from_applet_profile(applet_ids)
     roles += mongo.get_anons(anon_id)
     postgres.save_user_access_workspace(roles)
-    migration_log.warning("Role has been migrated")
+    migration_log.info("Roles migration end")
 
 
 def migrate_user_pins(
     applets_ids: list | None, mongo: Mongo, postgres: Postgres
 ):
-    migration_log.warning("Start UserPins migration")
+    migration_log.info("User pins migration start")
     pinned_dao = mongo.get_user_pin_mapping(applets_ids)
     migrated_ids = postgres.get_migrated_users_ids()
     to_migrate = []
     skipped = 0
     for profile in pinned_dao:
         if profile.user_id not in migrated_ids:
-            migration_log.warning(
+            migration_log.debug(
                 f"user_id {profile.user_id} not presented in PostgreSQL"
             )
             skipped += 1
             continue
         if profile.pinned_user_id not in migrated_ids:
-            migration_log.warning(
+            migration_log.debug(
                 f"pinned_user_id {profile.user_id} not presented in PostgreSQL"
             )
             skipped += 1
             continue
         if profile.owner_id not in migrated_ids:
-            migration_log.warning(
+            migration_log.debug(
                 f"owner_id {profile.owner_id} not presented in PostgreSQL"
             )
             skipped += 1
             continue
         to_migrate.append(profile)
-    postgres.save_user_pins(to_migrate)
-    migration_log.warning("UserPins has been migrated")
+    rows_count = postgres.save_user_pins(to_migrate)
+    migration_log.info(f"Inserted {rows_count} rows")
+    migration_log.info("User pins migration end")
 
 
 def migrate_folders(workspace_id: str | None, mongo, postgres):
-    migration_log.warning("[FOLDERS] In progress")
+    migration_log.info("Folders migration start")
     if workspace_id:
         ids = [mongoid_to_uuid(workspace_id)]
         workspaces = postgres.get_workspace_info(ids)
     else:
         workspaces = postgres.get_migrated_workspaces()
-    migration_log.warning("[FOLDERS] Fetch from Mongo")
+    migration_log.info("[FOLDERS] Fetch from Mongo")
     folders_dao, applet_dao = mongo.get_folder_mapping(workspaces)
     migrated, skipped = postgres.save_folders(folders_dao)
-    migration_log.warning(f"[FOLDERS] {migrated=}, {skipped=}")
-    migration_log.warning("[FOLDER_APPLETS] In progress")
+    migration_log.info(f"[FOLDERS] {migrated=}, {skipped=}")
+    migration_log.info("[FOLDER_APPLETS] In progress")
     migrated, skipped = postgres.save_folders_applet(applet_dao)
-    migration_log.warning(f"[FOLDER_APPLETS] {migrated=}, {skipped=}")
+    migration_log.info(f"[FOLDER_APPLETS] {migrated=}, {skipped=}")
+    migration_log.info("Folders migration end")
 
 
 def migrate_library(applet_ids: list[ObjectId] | None, mongo, postgres):
+    migration_log.info("Library & themes migration start")
     lib_count = 0
     theme_count = 0
     lib_set, theme_set = mongo.get_library(applet_ids)
@@ -690,11 +700,13 @@ def migrate_library(applet_ids: list[ObjectId] | None, mongo, postgres):
     migration_log.info(f"[THEME] Migrated {theme_count}")
     migration_log.info(f"[THEME] Applets with themes {applets_count}")
     migration_log.info(f"[THEME] {msg}")
+    migration_log.info("Library & themes migration end")
 
 
 async def migrate_events(
     applet_ids: list[ObjectId] | None, mongo: Mongo, postgres: Postgres
 ):
+    migration_log.info("Events migration start")
     events_collection = mongo.db["events"]
     session = session_manager.get_session()
 
@@ -707,18 +719,17 @@ async def migrate_events(
     for event in events_collection.find(query):
         events.append(MongoEvent.parse_obj(event))
 
-    print(f"Total number of events in mongo: {len(events)}")
+    migration_log.info(f"Total number of events in mongo: {len(events)}")
     # assert len(events) == events_collection.estimated_document_count()
 
     await EventMigrationService(session, events).run_events_migration()
+    migration_log.info("Events migration end")
 
 
 async def add_default_events(
     applet_ids: list[ObjectId] | None, postgres: Postgres
 ):
-    migration_log.warning(
-        "Started adding default event to activities and flows"
-    )
+    migration_log.info("Start adding default event to activities and flows")
     applets_ids = [str(mongoid_to_uuid(applet_id)) for applet_id in applet_ids]
     activities_without_events: list[
         tuple[str, str]
@@ -727,10 +738,10 @@ async def add_default_events(
         tuple[str, str]
     ] = postgres.get_flows_without_activity_events(applets_ids)
 
-    migration_log.warning(
+    migration_log.info(
         f"Number of activities without default event: {len(activities_without_events)}"
     )
-    migration_log.warning(
+    migration_log.info(
         f"Number of flows without default event: {len(flows_without_events)}"
     )
 
@@ -739,14 +750,13 @@ async def add_default_events(
         session, activities_without_events, flows_without_events
     ).run_adding_default_event()
 
-    migration_log.warning(
-        "Finished adding default event to activities and flows"
-    )
+    migration_log.info("Finish adding default event to activities and flows")
 
 
 async def migrate_alerts(
     applet_ids: list[ObjectId] | None, mongo: Mongo, postgres: Postgres
 ):
+    migration_log.info("Alerts migration start")
     alerts_collection = mongo.db["responseAlerts"]
     applet_profile_collection = mongo.db["appletProfile"]
     session = session_manager.get_session()
@@ -768,26 +778,28 @@ async def migrate_alerts(
             if version:
                 alert["version"] = version
             else:
-                migration_log.warning(
+                migration_log.debug(
                     f"[ALERTS] Skipped one of alerts because can't get applet version"
                 )
                 continue
             alerts.append(MongoAlert.parse_obj(alert))
         else:
-            migration_log.warning(
+            migration_log.debug(
                 f"[ALERTS] Skipped one of alerts because can't get userId"
             )
 
-    migration_log.warning(
+    migration_log.info(
         f"[ALERTS] Total number of alerts in mongo for {len(applet_ids) if applet_ids else 'all'} applets: {len(alerts)}"
     )
 
     await AlertMigrationService(session, alerts).run_alerts_migration()
+    migration_log.info("Alerts migration end")
 
 
 async def migrate_pending_invitations(
     applet_ids: list[ObjectId] | None, mongo: Mongo, postgres: Postgres
 ):
+    migration_log.info("Pending invitations migration start")
     invitations_collection = mongo.db["invitation"]
     session = session_manager.get_session()
 
@@ -799,21 +811,22 @@ async def migrate_pending_invitations(
     for invitation in invitations_collection.find(query):
         invitations.append(MongoInvitation.parse_obj(invitation))
 
-    migration_log.warning(
+    migration_log.info(
         f"[INVITATIONS] Total number of pending invitations in mongo for {len(applet_ids) if applet_ids else 'all'} applets: {len(invitations)}"
     )
 
     await InvitationsMigrationService(
         session, invitations
     ).run_invitations_migration()
+    migration_log.info("Pending invitations migration end")
 
 
 async def migrate_public_links(postgres: Postgres, mongo: Mongo):
-    migration_log.warning("[PUBLIC LINKS] Started")
+    migration_log.info("Public links migration start")
     applet_mongo_ids = postgres.get_migrated_applets()
     links = mongo.get_public_link_mappings(applet_mongo_ids)
     await postgres.save_public_link(links)
-    migration_log.warning("[PUBLIC LINKS] Finished")
+    migration_log.info("Public links migration start")
 
 
 async def main(workspace_id: str | None, applets_ids: list[str] | None):
@@ -859,7 +872,7 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
     # # Migrate folders
     # migrate_folders(workspace_id, mongo, postgres)
     # # Migrate library
-    migrate_library(applets_ids, mongo, postgres)
+    # migrate_library(applets_ids, mongo, postgres)
     # Migrate events
     # await migrate_events(applets_ids, mongo, postgres)
 
@@ -878,5 +891,6 @@ async def main(workspace_id: str | None, applets_ids: list[str] | None):
 
 
 if __name__ == "__main__":
-    workspace, applets = get_arguments()
-    asyncio.run(main(workspace, applets))
+    args = get_arguments()
+    configure_report(migration_log, args.report_file)
+    asyncio.run(main(args.workspace, args.applet))
