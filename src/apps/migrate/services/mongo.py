@@ -56,6 +56,7 @@ from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt, get_key
 from apps.workspaces.domain.constants import Role
 from apps.migrate.utilities import migration_log
+from apps.shared.version import INITIAL_VERSION
 
 
 enc = StringEncryptedType(key=get_key())
@@ -1232,7 +1233,7 @@ class Mongo:
         converted.extra_fields["created"] = applet["created"]
         converted.extra_fields["updated"] = applet["updated"]
         converted.extra_fields["version"] = applet["meta"]["applet"].get(
-            "version", "0.0.1"
+            "version", INITIAL_VERSION
         )
         if "encryption" in applet["meta"]:
             converted.encryption = Encryption(
