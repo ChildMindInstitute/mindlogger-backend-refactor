@@ -271,7 +271,7 @@ class LogFileService:
 
         key = self.device_key_prefix(device_id)
         files = await self.cdn.list_object(key)
-        files = sorted(files, key=lambda item: item["LastModified"])
+        files = sorted(files, key=lambda item: item["Key"], reverse=True)
         files = list(filter(filter_by_interval, files))
         return files
 
