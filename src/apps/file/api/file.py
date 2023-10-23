@@ -209,7 +209,7 @@ async def logs_download(
     session: AsyncSession = Depends(get_session),
 ):
     user_service = UserService(session)
-    log_user = await user_service.get_by_id(user_email)
+    log_user = await user_service.get_by_email(user_email)
     service = LogFileService(log_user.id, cdn_client)
     try:
         UserAccessService.raise_for_developer_access(user.email_encrypted)

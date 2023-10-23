@@ -85,6 +85,6 @@ class UserService:
             )
             await crud.save(anonymous_respondent)
 
-    async def get_by_id(self, email: str) -> User:
+    async def get_by_email(self, email: str) -> User:
         crud = UsersCRUD(self.session)
         return await crud.get_by_email(email)
