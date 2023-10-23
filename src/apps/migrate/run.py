@@ -11,7 +11,7 @@ from apps.migrate.exception.exception import (
     FormatldException,
     EmptyAppletException,
 )
-from apps.migrate.services.mongo import Mongo
+from apps.migrate.services.mongo import Mongo, decrypt
 from apps.migrate.services.postgres import Postgres
 from apps.migrate.services.event_service import (
     MongoEvent,
@@ -809,7 +809,13 @@ async def migrate_pending_invitations(
 
     invitations: list = []
     for invitation in invitations_collection.find(query):
-        invitations.append(MongoInvitation.parse_obj(invitation))
+        invitation["userEmail"] = decrypt(invitation["userEmail"])
+        try:
+            invitations.append(MongoInvitation.parse_obj(invitation))
+        except ValueError as e:
+            migration_log.warning(
+                f"[INVITATIONS] Skip invitation with id: {invitation['_id']}"
+            )
 
     migration_log.info(
         f"[INVITATIONS] Total number of pending invitations in mongo for {len(applet_ids) if applet_ids else 'all'} applets: {len(invitations)}"
