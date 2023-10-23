@@ -27,6 +27,7 @@ from apps.file.storage import select_storage
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.users.domain import User
+from apps.users.services.user import UserService
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import AnswerViewAccessDenied
@@ -201,12 +202,15 @@ async def logs_upload(
 
 async def logs_download(
     device_id: str,
-    user_id: uuid.UUID,
+    user_email: str,
     days: int,
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_log_bucket),
+    session: AsyncSession = Depends(get_session),
 ):
-    service = LogFileService(user_id, cdn_client)
+    user_service = UserService(session)
+    log_user = await user_service.get_by_email(user_email)
+    service = LogFileService(log_user.id, cdn_client)
     try:
         UserAccessService.raise_for_developer_access(user.email_encrypted)
         end = datetime.datetime.now(tz=pytz.UTC)
