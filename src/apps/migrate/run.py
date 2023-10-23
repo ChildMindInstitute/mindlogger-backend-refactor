@@ -809,12 +809,11 @@ async def migrate_pending_invitations(
 
     invitations: list = []
     for invitation in invitations_collection.find(query):
-        invitation["userEmail"] = decrypt(invitation["userEmail"])
         try:
             invitations.append(MongoInvitation.parse_obj(invitation))
         except ValueError as e:
             migration_log.warning(
-                f"[INVITATIONS] Skip invitation with id: {invitation['_id']}"
+                f"[INVITATIONS] Skip invitation with id: {invitation['_id']} {e}"
             )
 
     migration_log.info(

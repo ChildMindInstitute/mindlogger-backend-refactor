@@ -65,13 +65,13 @@ class InvitationsMigrationService:
                 f"Migrate invitation {i}/{number_of_invitations_in_mongo}. Working on Invitation: {invitation.id}"
             )
             if not invitation.inviterId:
-                migration_log.debug(f"Skipped Invitation: {invitation.id}")
+                migration_log.debug(f"Skipped Invitation: {invitation.id} (no invitation.inviterId)")
                 continue
             try:
                 await self._create_invitation(invitation)
             except IntegrityError as e:
                 number_of_errors += 1
-                migration_log.debug(f"Skipped Invitation: {invitation.id}")
+                migration_log.debug(f"Skipped Invitation: {invitation.id} {e}")
                 continue
         migration_log.info(f"Number of skiped invitations: {number_of_errors}")
 
