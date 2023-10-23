@@ -1,5 +1,6 @@
 from apps.authentication.services import AuthenticationService
 from apps.users import UserSchema, UsersCRUD
+from apps.users.domain import User
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
 from config import settings
@@ -83,3 +84,7 @@ class UserService:
                 is_anonymous_respondent=True,
             )
             await crud.save(anonymous_respondent)
+
+    async def get_by_id(self, email: str) -> User:
+        crud = UsersCRUD(self.session)
+        return await crud.get_by_email(email)
