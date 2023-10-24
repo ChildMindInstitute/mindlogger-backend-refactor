@@ -13,7 +13,7 @@ from apps.schedule.db.schemas import (
     NotificationSchema,
     ReminderSchema,
 )
-from apps.migrate.utilities import mongoid_to_uuid
+from apps.migrate.utilities import migration_log, mongoid_to_uuid
 from apps.schedule.crud.periodicity import PeriodicityCRUD
 from apps.schedule.crud.events import (
     EventCRUD,
@@ -381,7 +381,7 @@ class EventMigrationService:
         number_of_errors: int = 0
         number_of_events_in_mongo: int = len(self.events)
         for i, event in enumerate(self.events, 1):
-            print(
+            migration_log.debug(
                 f"Migrate events {i}/{number_of_events_in_mongo}. Working on Event: {event.id}"
             )
             try:
@@ -431,10 +431,10 @@ class EventMigrationService:
 
             except Exception as e:
                 number_of_errors += 1
-                print(f"Skipped Event: {event.id}", str(e))
+                migration_log.debug(f"Skipped Event: {event.id} %s", str(e))
                 continue
 
-        print(f"Number of skiped events: {number_of_errors}")
+        migration_log.info(f"Number of skiped events: {number_of_errors}")
 
     def _find_date(self, event: MongoEvent):
         if event.data.eventType.upper() == PeriodicityType.WEEKLY:

@@ -55,7 +55,6 @@ from apps.migrate.utilities import (
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt, get_key
 from apps.workspaces.domain.constants import Role
-from apps.migrate.utilities import migration_log
 from apps.shared.version import INITIAL_VERSION
 
 
@@ -914,7 +913,7 @@ class Mongo:
                     )
                     count += 1
             total_documents += 1
-        print(
+        migration_log.info(
             f"Total Users Documents - {total_documents}, "
             f"Successfully prepared for migration - {count}, "
             f"Users with email_aes_encrypted - {encrypted_count}"
@@ -947,7 +946,9 @@ class Mongo:
                 }
             )
             count += 1
-        print(f"Successfully prepared for migration - {count}")
+        migration_log.info(
+            f"Successfully prepared workspaces for migration - {count}"
+        )
 
         return results
 
@@ -1085,7 +1086,7 @@ class Mongo:
         # setup activity items
         for key, value in activities_by_id.items():
             if "items" not in value:
-                print("Warning: activity  ", key, " has no items")
+                migration_log.debug("Warning: activity  %s  has no items", key)
                 continue
 
             activity_items_by_id = value["items"].copy()
@@ -1103,7 +1104,7 @@ class Mongo:
                     )
                 else:
                     activity_items_objects.append(item)
-                    migration_log.warning(
+                    migration_log.debug(
                         (
                             f"item {item_key} ",
                             "presents in order but absent in activity items. "
@@ -1128,10 +1129,9 @@ class Mongo:
                     activities_by_id[activity_id]["activity"]
                 )
             else:
-                print(
-                    "Warning: activity ",
+                migration_log.debug(
+                    "Warning: activity %s presents in order but absent in applet activities.",
                     activity_id,
-                    " presents in order but absent in applet activities.",
                 )
 
         applet["reprolib:terms/order"][0]["@list"] = activity_objects
@@ -1155,7 +1155,7 @@ class Mongo:
                     if item["@id"] in activity_ids_inside_applet:
                         activity_flow_order.append(item)
                     else:
-                        migration_log.warning(
+                        migration_log.debug(
                             (
                                 f"item {item['@id']} "
                                 "presents in flow order but absent in applet "
@@ -1264,7 +1264,7 @@ class Mongo:
 
             old_activities_by_id = {}
             for version, content in result.items():
-                print(version)
+                migration_log.debug(version)
                 if version == last_version:
                     converted_applet_versions[
                         version
@@ -1324,7 +1324,9 @@ class Mongo:
             {"applets.owner": applet_id}
         )
         if not profile:
-            print("Unable to find the account for applet", str(applet_id))
+            migration_log.debug(
+                "Unable to find the account for applet %s", str(applet_id)
+            )
             return self.db
 
         profile_id = str(profile["_id"])
@@ -1350,7 +1352,7 @@ class Mongo:
         try:
             creators_ids = item_collection.find(query).distinct("creatorId")
         except Exception as e:
-            print("Error: mongo is unreachable", str(e))
+            migration_log.debug("Error: mongo is unreachable %s", str(e))
             return []
         result = []
         for creator_id in creators_ids:
@@ -1637,8 +1639,8 @@ class Mongo:
                 )
                 access_result.append(access)
         prepared = len(access_result)
-        migration_log.warning(f"[ROLES] found: {prepared}")
-        migration_log.warning(
+        migration_log.info(f"[ROLES] found: {prepared}")
+        migration_log.info(
             f"""[ROLES]
                 Owner:          {owner_count}
                 Manager:        {manager_count}
@@ -1742,7 +1744,7 @@ class Mongo:
                         is_deleted=False,
                     )
                     access_result.append(access)
-        migration_log.warning(
+        migration_log.info(
             f"[Role] Prepared for migrations {len(access_result)} items"
         )
         return list(set(access_result))
@@ -1882,7 +1884,7 @@ class Mongo:
                     )
                 )
                 folder_count += 1
-                migration_log.warning(
+                migration_log.debug(
                     f"[FOLDERS] "
                     f"\t fetch folder: {folder_count}/{all_folder_count}"
                 )
@@ -1902,7 +1904,7 @@ class Mongo:
                         )
                     )
             count += 1
-            migration_log.warning(
+            migration_log.debug(
                 f"[FOLDERS] Fetch workspace folders {count}/{all_count}"
             )
         return set(folders_list), set(applets_list)
