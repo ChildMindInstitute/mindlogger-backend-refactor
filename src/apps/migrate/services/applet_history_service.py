@@ -12,6 +12,7 @@ from apps.migrate.services.activity_history_service import (
 from apps.migrate.services.flow_history_service import (
     FlowHistoryMigrationService,
 )
+from apps.migrate.utilities import prepare_extra_fields_to_save
 
 
 class AppletMigrationHistoryService:
@@ -50,6 +51,7 @@ class AppletMigrationHistoryService:
                 else applet.updated_at,
                 migrated_date=applet.migrated_date,
                 migrated_updated=applet.migrated_updated,
+                extra_fields=prepare_extra_fields_to_save(applet.extra_fields),
             )
         )
         await ActivityHistoryMigrationService(

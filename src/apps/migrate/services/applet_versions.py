@@ -90,6 +90,7 @@ def get_applet_with_activities(content):
     content = json_util.loads(content)
     activities = content["protocol"].get("activities", {})
     cacheIDToActivity = {}
+    activities_by_id = {}
 
     for activityIRI in dict.keys(activities):
         activity = activities[activityIRI]
@@ -101,7 +102,24 @@ def get_applet_with_activities(content):
                 activity = jsonld_expander.loadCache(cacheId)
                 cacheIDToActivity[cacheId] = activity
 
-            activities[activityIRI] = cacheIDToActivity[cacheId]
+            if "data" in cacheIDToActivity[cacheId]:
+                activity_id = str(
+                    cacheIDToActivity[cacheId]["data"].get("_id")
+                )
+                if activity_id:
+                    activities_by_id[activity_id] = cacheIDToActivity[cacheId]
+                    content["protocol"]["data"]["ui"]["order"] = [
+                        item if item != activityIRI else activity_id
+                        for item in content["protocol"]["data"]["ui"]["order"]
+                    ]
+
+                else:
+                    activities_by_id[activityIRI] = cacheIDToActivity[cacheId]
+            else:
+                activities_by_id[activityIRI] = cacheIDToActivity[cacheId]
+        else:
+            activities_by_id[activityIRI] = activity
+    content["protocol"]["activities"] = activities_by_id
 
     return content
 
@@ -229,6 +247,13 @@ def content_to_jsonld(document, old_activities_by_id):
         act["reprolib:terms/finalSubscale"] = []
         act["reprolib:terms/subScales"] = []
 
-    # print(jsonld)
+    # keep old items and activities
+    for key, old_activity in old_activities_by_id.items():
+        if key not in activities_by_id:
+            activities_by_id[key] = old_activity
+        else:
+            for key_item, old_item in old_activity["items"].items():
+                if key_item not in activities_by_id[key]["items"]:
+                    activities_by_id[key]["items"][key_item] = old_item
 
     return jsonld, activities_by_id

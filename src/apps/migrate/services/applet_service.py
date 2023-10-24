@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from apps.applets.service import AppletService
@@ -17,8 +18,8 @@ from apps.migrate.services.applet_history_service import (
 )
 from apps.migrate.services.flow_service import FlowMigrationService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from apps.migrate.utilities import prepare_extra_fields_to_save
 
-import datetime
 
 __all__ = [
     "AppletMigrationService",
@@ -102,6 +103,9 @@ class AppletMigrationService:
                 migrated_date=datetime.datetime.utcnow(),
                 migrated_updated=datetime.datetime.utcnow(),
                 stream_enabled=create_data.stream_enabled or False,
+                extra_fields=prepare_extra_fields_to_save(
+                    create_data.extra_fields
+                ),
             )
         )
         return AppletMigratedFull.from_orm(schema)
@@ -171,6 +175,9 @@ class AppletMigrationService:
                 migrated_date=datetime.datetime.utcnow(),
                 migrated_updated=datetime.datetime.utcnow(),
                 stream_enabled=update_data.stream_enabled or False,
+                extra_fields=prepare_extra_fields_to_save(
+                    update_data.extra_fields
+                ),
             ),
         )
         return AppletMigratedFull.from_orm(schema)

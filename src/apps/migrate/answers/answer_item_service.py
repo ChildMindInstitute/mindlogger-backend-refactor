@@ -75,16 +75,12 @@ class AnswerItemMigrationService:
             ]
 
         return [
-            str(
-                mongoid_to_uuid(i["_id"])
-                for i in Item().find(
-                    query={
-                        "meta.activityId": mongo_answer["meta"]["activity"][
-                            "@id"
-                        ],
-                        "meta.screen.schema:url": {"$in": responses_keys},
-                    }
-                )
+            str(mongoid_to_uuid(i["_id"]))
+            for i in Item().find(
+                query={
+                    "meta.activityId": mongo_answer["meta"]["activity"]["@id"],
+                    "meta.screen.schema:url": {"$in": responses_keys},
+                }
             )
         ]
 

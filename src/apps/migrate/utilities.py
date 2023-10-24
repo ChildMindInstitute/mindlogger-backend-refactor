@@ -1,8 +1,10 @@
 import argparse
 import json
-import sys
 import uuid
 import logging
+
+from pydantic import BaseModel, validator
+
 from apps.workspaces.domain.constants import Role
 from bson import ObjectId
 
@@ -25,13 +27,30 @@ def convert_role(role: str) -> str:
             return role
 
 
+logger_format = "%(asctime)s %(name)s %(levelname)s - %(message)s"
+logger_format_date = "%Y-%m-%d %H:%M:%S"
+
+
 def get_logger(name) -> logging.Logger:
-    formatter = logging.Formatter(f"[{name}] %(levelname)s - %(message)s")
-    handler = logging.StreamHandler(stream=sys.stdout)
+    formatter = logging.Formatter(logger_format, logger_format_date)
+    handler = logging.StreamHandler()
     handler.setFormatter(formatter)
-    log = logging.getLogger()
+    # handler.setLevel(level=logging.ERROR)
+
+    log = logging.getLogger(name)
     log.addHandler(handler)
+
     return log
+
+
+def configure_report(logger, report_file: str | None = None):
+    if report_file:
+        report_handler = logging.FileHandler(report_file)
+        report_handler.setFormatter(
+            logging.Formatter(logger_format, logger_format_date)
+        )
+        report_handler.setLevel(logging.INFO)
+        logger.addHandler(report_handler)
 
 
 def intersection(lst1, lst2):
@@ -48,20 +67,45 @@ class EncUUID(json.JSONEncoder):
         return super().default(t)
 
 
+logging.basicConfig(
+    level=logging.WARNING, format=logger_format, datefmt=logger_format_date
+)
 migration_log = get_logger("Migration")
+migration_log.setLevel(logging.DEBUG)
 
 
-def get_arguments():
+class Params(BaseModel):
+    class Config:
+        orm_mode = True
+
+    workspace: str | None = None
+    applet: list[str] | None = None
+    report_file: str | None = None
+
+    @validator("applet", pre=True)
+    def to_array(cls, value, values):
+        if isinstance(value, str):
+            return value.split(",")
+
+        return value
+
+
+def get_arguments() -> Params:
     parser = argparse.ArgumentParser()
     parser.add_argument("-w", "--workspace", type=str, required=False)
     parser.add_argument("-a", "--applet", type=str, required=False)
+    parser.add_argument("-r", "--report_file", type=str, required=False)
     args = parser.parse_args()
-    workspace = (
-        args.workspace if "workspace" in args and args.workspace else None
-    )
-    applets = (
-        args.applet.split(",") if "applet" in args and args.applet else None
-    )
-    if workspace and applets:
-        raise Exception("Specify either workspace or applets arg")
-    return workspace, applets
+
+    arguments = Params.from_orm(args)
+
+    return arguments
+
+
+def prepare_extra_fields_to_save(extra_fields: dict | None):
+    if not extra_fields:
+        return extra_fields
+    for key in ("id", "created", "updated"):
+        if key in extra_fields:
+            extra_fields[key] = str(extra_fields[key])
+    return extra_fields

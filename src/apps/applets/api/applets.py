@@ -13,7 +13,7 @@ from apps.activity_flows.domain.flow_update import (
     ActivityFlowReportConfiguration,
 )
 from apps.activity_flows.service.flow import FlowService
-from apps.applets.crud import AppletsCRUD
+from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import (
     AppletFolder,
     AppletName,
@@ -51,6 +51,7 @@ from apps.shared.exception import NotFoundError
 from apps.shared.link import convert_link_key
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database import atomic
@@ -152,11 +153,17 @@ async def applet_create(
         await CheckAccessService(session, user.id).check_applet_create_access(
             owner_id
         )
+        has_editor = await UserAppletAccessCRUD(
+            session
+        ).check_access_by_user_and_owner(
+            user_id=user.id, owner_id=owner_id, roles=[Role.EDITOR]
+        )
+        manager_role = Role.EDITOR if has_editor else None
 
         mail_service = MailingService()
         try:
             applet = await AppletService(session, owner_id).create(
-                schema, user.id
+                schema, user.id, manager_role
             )
         except Exception:
             await mail_service.send(

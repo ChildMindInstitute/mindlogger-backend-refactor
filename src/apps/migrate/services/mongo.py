@@ -30,7 +30,11 @@ from apps.jsonld_converter.dependencies import (
 )
 from apps.migrate.data_description.applet_user_access import AppletUserDAO
 from apps.migrate.data_description.folder_dao import FolderAppletDAO, FolderDAO
-from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
+from apps.migrate.data_description.library_dao import (
+    LibraryDao,
+    ThemeDao,
+    AppletTheme,
+)
 from apps.migrate.data_description.public_link import PublicLinkDao
 from apps.migrate.data_description.user_pins import UserPinsDAO
 from apps.migrate.exception.exception import (
@@ -51,6 +55,7 @@ from apps.migrate.utilities import (
 from apps.shared.domain.base import InternalModel, PublicModel
 from apps.shared.encryption import encrypt, get_key
 from apps.workspaces.domain.constants import Role
+from apps.shared.version import INITIAL_VERSION
 
 
 enc = StringEncryptedType(key=get_key())
@@ -96,10 +101,27 @@ def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
             for property in activity["reprolib:terms/addProperties"]:
                 property["reprolib:terms/isVis"] = [{"@value": True}]
 
+    broken_v1_trails_activity_type = [
+        "6276c0fd0a62aa105607838c",
+    ]
+    if applet_id in broken_v1_trails_activity_type:
+        for _index, _activity in enumerate(
+            applet_ld["reprolib:terms/order"][0]["@list"]
+        ):
+            if _activity["@type"][0] == "reprolib:schemas/ABTrails":
+                _activity["@type"][0] = "reprolib:schemas/Activity"
+                _activity["reprolib:terms/activityType"] = [
+                    {
+                        "@type": "http://www.w3.org/2001/XMLSchema#string",
+                        "@value": "TRAILS_MOBILE",
+                    }
+                ]
+
     broken_applet_abtrails = [
         "62768ff20a62aa1056078093",
         "62d06045acd35a1054f106f6",
         "64946e208819c1120b4f9271",
+        "61f3423962485608c74c1f45",
     ]
     if (
         applet_id == "62768ff20a62aa1056078093"
@@ -117,7 +139,7 @@ def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
     }
     if applet_id in broken_applet_abtrails:
         for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
-            if _activity["@id"] == "Flanker_360":
+            if _activity["@id"] in ["Flanker_360", "flanker_schema"]:
                 for _item in _activity["reprolib:terms/order"][0]["@list"]:
                     if "reprolib:terms/inputs" in _item:
                         for _intput in _item["reprolib:terms/inputs"]:
@@ -487,8 +509,6 @@ def patch_broken_applets(
                         _report.pop("reprolib:terms/jsExpression")
 
     duplicated_activity_names = ["640b239b601cdc5212d63e75"]
-    key_pref = "http://www.w3.org/2004/02/skos/core#prefLabel"
-    key_alt = "http://www.w3.org/2004/02/skos/core#altLabel"
     if applet_id in duplicated_activity_names:
         current_names = []
         current_names_indexes = []
@@ -503,6 +523,22 @@ def patch_broken_applets(
             for _index in current_names_indexes:
                 applet_ld["reprolib:terms/order"][0]["@list"].pop(_index)
 
+    broken_v1_trails_activity_type = [
+        "6276c0fd0a62aa105607838c",
+    ]
+    if applet_id in broken_v1_trails_activity_type:
+        for _index, _activity in enumerate(
+            applet_ld["reprolib:terms/order"][0]["@list"]
+        ):
+            if _activity["@type"][0] == "reprolib:schemas/ABTrails":
+                _activity["@type"][0] = "reprolib:schemas/Activity"
+                _activity["reprolib:terms/activityType"] = [
+                    {
+                        "@type": "http://www.w3.org/2001/XMLSchema#string",
+                        "@value": "TRAILS_MOBILE",
+                    }
+                ]
+
     no_ids_flanker_map = {
         "<<<<<": "left-con",
         "<<><<": "right-inc",
@@ -514,10 +550,11 @@ def patch_broken_applets(
     no_ids_flanker_buttons = [
         "62768ff20a62aa1056078093",
         "64946e208819c1120b4f9271",
+        "61f3423962485608c74c1f45",
     ]
     if applet_id in no_ids_flanker_buttons:
         for _activity in applet_ld["reprolib:terms/order"][0]["@list"]:
-            if _activity["@id"] == "Flanker_360":
+            if _activity["@id"] in ["Flanker_360", "flanker_schema"]:
                 for _item in _activity["reprolib:terms/order"][0]["@list"]:
                     if "reprolib:terms/inputs" in _item:
                         for _intput in _item["reprolib:terms/inputs"]:
@@ -769,13 +806,17 @@ def patch_broken_visability_for_applet(applet: dict) -> None:
         for add_prop in activity.get("reprolib:terms/addProperties", []):
             item_id = add_prop["reprolib:terms/isAbout"][0]["@id"]
             if item_id in item_id_isvis_map:
-                set_isvis(add_prop, item_id_isvis_map[item_id])
+                if isinstance(
+                    add_prop["reprolib:terms/isVis"][0]["@value"], bool
+                ):
+                    set_isvis(add_prop, item_id_isvis_map[item_id])
 
     # update addProperties of applet if they exist, set correct value from map
     for add_prop in applet.get("reprolib:terms/addProperties", []):
         activity_id = add_prop["reprolib:terms/isAbout"][0]["@id"]
         if activity_id in acitivity_id_isvis_map:
-            set_isvis(add_prop, acitivity_id_isvis_map[activity_id])
+            if isinstance(add_prop["reprolib:terms/isVis"][0]["@value"], bool):
+                set_isvis(add_prop, acitivity_id_isvis_map[activity_id])
 
 
 class Mongo:
@@ -872,7 +913,7 @@ class Mongo:
                     )
                     count += 1
             total_documents += 1
-        print(
+        migration_log.info(
             f"Total Users Documents - {total_documents}, "
             f"Successfully prepared for migration - {count}, "
             f"Users with email_aes_encrypted - {encrypted_count}"
@@ -905,7 +946,9 @@ class Mongo:
                 }
             )
             count += 1
-        print(f"Successfully prepared for migration - {count}")
+        migration_log.info(
+            f"Successfully prepared workspaces for migration - {count}"
+        )
 
         return results
 
@@ -1043,7 +1086,7 @@ class Mongo:
         # setup activity items
         for key, value in activities_by_id.items():
             if "items" not in value:
-                print("Warning: activity  ", key, " has no items")
+                migration_log.debug("Warning: activity  %s  has no items", key)
                 continue
 
             activity_items_by_id = value["items"].copy()
@@ -1061,11 +1104,12 @@ class Mongo:
                     )
                 else:
                     activity_items_objects.append(item)
-                    print(
-                        "Warning: item ",
-                        item_key,
-                        "presents in order but absent in activity items. activityId:",
-                        str(activity_object["_id"]),
+                    migration_log.debug(
+                        (
+                            f"item {item_key} ",
+                            "presents in order but absent in activity items. "
+                            f"activityId: {activity_object['_id']}",
+                        ),
                     )
 
             activities_by_id[key]["activity"]["reprolib:terms/order"][0][
@@ -1085,10 +1129,9 @@ class Mongo:
                     activities_by_id[activity_id]["activity"]
                 )
             else:
-                print(
-                    "Warning: activity ",
+                migration_log.debug(
+                    "Warning: activity %s presents in order but absent in applet activities.",
                     activity_id,
-                    " presents in order but absent in applet activities.",
                 )
 
         applet["reprolib:terms/order"][0]["@list"] = activity_objects
@@ -1112,11 +1155,12 @@ class Mongo:
                     if item["@id"] in activity_ids_inside_applet:
                         activity_flow_order.append(item)
                     else:
-                        print(
-                            "Warning: item ",
-                            item["@id"],
-                            "presents in flow order but absent in applet activities. activityFlowId:",
-                            str(key),
+                        migration_log.debug(
+                            (
+                                f"item {item['@id']} "
+                                "presents in flow order but absent in applet "
+                                "activities. activityFlowId: {key}",
+                            ),
                         )
                 activity_flow["reprolib:terms/order"][0][
                     "@list"
@@ -1189,7 +1233,7 @@ class Mongo:
         converted.extra_fields["created"] = applet["created"]
         converted.extra_fields["updated"] = applet["updated"]
         converted.extra_fields["version"] = applet["meta"]["applet"].get(
-            "version", "0.0.1"
+            "version", INITIAL_VERSION
         )
         if "encryption" in applet["meta"]:
             converted.encryption = Encryption(
@@ -1220,7 +1264,7 @@ class Mongo:
 
             old_activities_by_id = {}
             for version, content in result.items():
-                print(version)
+                migration_log.debug(version)
                 if version == last_version:
                     converted_applet_versions[
                         version
@@ -1280,7 +1324,9 @@ class Mongo:
             {"applets.owner": applet_id}
         )
         if not profile:
-            print("Unable to find the account for applet", str(applet_id))
+            migration_log.debug(
+                "Unable to find the account for applet %s", str(applet_id)
+            )
             return self.db
 
         profile_id = str(profile["_id"])
@@ -1306,7 +1352,7 @@ class Mongo:
         try:
             creators_ids = item_collection.find(query).distinct("creatorId")
         except Exception as e:
-            print("Error: mongo is unreachable", str(e))
+            migration_log.debug("Error: mongo is unreachable %s", str(e))
             return []
         result = []
         for creator_id in creators_ids:
@@ -1477,6 +1523,15 @@ class Mongo:
             )
         return res
 
+    @staticmethod
+    def get_user_roles(applet_profile: dict) -> list[str]:
+        roles = applet_profile["roles"]
+        if "owner" in roles:
+            return ["owner", "user"]
+        elif "manager" in roles:
+            return ["manager", "user"] if "user" in roles else ["manager"]
+        return roles
+
     def get_roles_mapping_from_applet_profile(
         self, migrated_applet_ids: List[ObjectId]
     ):
@@ -1516,8 +1571,7 @@ class Mongo:
                 not_found_applets.append(applet_profile["appletId"])
                 continue
 
-            roles = applet_profile["roles"]
-            roles = roles[-1:] + roles[:1]  # highest and lowest role
+            roles = self.get_user_roles(applet_profile)
             for role_name in set(roles):
                 if role_name != "user":
                     managerial_applets.append(applet_profile["appletId"])
@@ -1585,8 +1639,8 @@ class Mongo:
                 )
                 access_result.append(access)
         prepared = len(access_result)
-        migration_log.warning(f"[ROLES] found: {prepared}")
-        migration_log.warning(
+        migration_log.info(f"[ROLES] found: {prepared}")
+        migration_log.info(
             f"""[ROLES]
                 Owner:          {owner_count}
                 Manager:        {manager_count}
@@ -1690,7 +1744,7 @@ class Mongo:
                         is_deleted=False,
                     )
                     access_result.append(access)
-        migration_log.warning(
+        migration_log.info(
             f"[Role] Prepared for migrations {len(access_result)} items"
         )
         return list(set(access_result))
@@ -1789,11 +1843,17 @@ class Mongo:
     def get_folder_pin(
         self, folder: dict, applet_id: ObjectId
     ) -> datetime.datetime | None:
+        def _filter_applet(document):
+            _id = document["_id"]
+            if isinstance(_id, str):
+                _id = ObjectId(_id)
+            return _id == applet_id
+
         meta = folder.get("meta", {})
         applets_order = meta.get("applets", {})
-        order_it = filter(lambda m: m["_id"] == applet_id, applets_order)
+        order_it = filter(_filter_applet, applets_order)
         order = next(order_it, None)
-        if not order or order.get("_pin_order"):
+        if not order or not order.get("_pin_order"):
             return None
         now = datetime.datetime.utcnow()
         return now + datetime.timedelta(seconds=order["_pin_order"])
@@ -1803,11 +1863,17 @@ class Mongo:
     ) -> Tuple[Set[FolderDAO], Set[FolderAppletDAO]]:
         folders_list = []
         applets_list = []
+        count = 0
+        all_count = len(workspaces)
         for workspace in workspaces:
             workspace_id = workspace[0]
             workspace_user_id = workspace[1]
             account_id = uuid_to_mongoid(workspace_id)
+            if account_id is None:
+                continue
             res = self.get_folders_and_applets(account_id)
+            folder_count = 0
+            all_folder_count = len(res["folders"])
             for folder in res["folders"]:
                 creator_id = mongoid_to_uuid(folder["creatorId"])
                 folders_list.append(
@@ -1822,6 +1888,11 @@ class Mongo:
                         migrated_update=datetime.datetime.utcnow(),
                         is_deleted=False,
                     )
+                )
+                folder_count += 1
+                migration_log.debug(
+                    f"[FOLDERS] "
+                    f"\t fetch folder: {folder_count}/{all_folder_count}"
                 )
                 for applet in folder["applets"]:
                     pinned_at = self.get_folder_pin(folder, applet["_id"])
@@ -1838,7 +1909,10 @@ class Mongo:
                             is_deleted=False,
                         )
                     )
-
+            count += 1
+            migration_log.debug(
+                f"[FOLDERS] Fetch workspace folders {count}/{all_count}"
+            )
         return set(folders_list), set(applets_list)
 
     def get_theme(
@@ -1950,4 +2024,32 @@ class Mongo:
                             created_by_bson=user_id,
                         )
                     )
+        return result
+
+    def get_applet_theme_mapping(self) -> list[AppletTheme]:
+        applet_cursor = self.db["folder"].find(
+            {
+                "$and": [
+                    {"meta.applet.themeId": {"$exists": True}},
+                    {"meta.applet.themeId": {"$ne": "None"}},
+                    {"meta.applet.themeId": {"$ne": None}},
+                ]
+            }
+        )
+        result = []
+        for applet_doc in applet_cursor:
+            applet_id = mongoid_to_uuid(applet_doc["_id"])
+            theme_id = mongoid_to_uuid(applet_doc["meta"]["applet"]["themeId"])
+            theme_bson_id = ObjectId(applet_doc["meta"]["applet"]["themeId"])
+            theme = self.db["folder"].find_one({"_id": theme_bson_id})
+            theme_name = (
+                theme["name"] if theme["name"] != "mindlogger" else "Default"
+            )
+            if theme:
+                mapper = AppletTheme(
+                    applet_id=applet_id,
+                    theme_id=theme_id,
+                    theme_name=theme_name,
+                )
+                result.append(mapper)
         return result

@@ -1,3 +1,4 @@
+import copy
 from datetime import date, datetime, timedelta, time
 
 from bson import ObjectId
@@ -12,7 +13,7 @@ from apps.schedule.db.schemas import (
     NotificationSchema,
     ReminderSchema,
 )
-from apps.migrate.utilities import mongoid_to_uuid
+from apps.migrate.utilities import migration_log, mongoid_to_uuid
 from apps.schedule.crud.periodicity import PeriodicityCRUD
 from apps.schedule.crud.events import (
     EventCRUD,
@@ -24,7 +25,7 @@ from apps.schedule.crud.notification import (
     NotificationCRUD,
     ReminderCRUD,
 )
-from apps.schedule.domain.constants import PeriodicityType
+from apps.schedule.domain.constants import PeriodicityType, TimerType
 from apps.girderformindlogger.models.profile import Profile
 
 from infrastructure.database import atomic
@@ -249,12 +250,19 @@ class EventMigrationService:
             event_data["one_time_completion"] = False
 
         if event.data.idleTime and event.data.idleTime.allow:
-            event_data["timer_type"] = TIMER_TYPE[IDLE]
+            event_data["timer_type"] = TimerType.IDLE
             event_data["timer"] = timedelta(
                 minutes=float(event.data.idleTime.minute)
             )
+        elif event.data.timedActivity and event.data.timedActivity.allow:
+            event_data["timer_type"] = TimerType.TIMER
+            event_data["timer"] = timedelta(
+                seconds=float(event.data.timedActivity.second),
+                minutes=float(event.data.timedActivity.minute),
+                hours=float(event.data.timedActivity.hour),
+            )
         else:
-            event_data["timer_type"] = TIMER_TYPE[NOT_SET]
+            event_data["timer_type"] = TimerType.NOT_SET
 
         event_data["applet_id"] = mongoid_to_uuid(event.applet_id)
 
@@ -373,14 +381,10 @@ class EventMigrationService:
         number_of_errors: int = 0
         number_of_events_in_mongo: int = len(self.events)
         for i, event in enumerate(self.events, 1):
-            print(
+            migration_log.debug(
                 f"Migrate events {i}/{number_of_events_in_mongo}. Working on Event: {event.id}"
             )
             try:
-                user_id = None
-                if event.individualized:
-                    user_id = self._check_user_existence(event)
-
                 # Migrate data to PeriodicitySchema
                 periodicity = await self._create_periodicity(event)
 
@@ -407,14 +411,30 @@ class EventMigrationService:
 
                 # Migrate data to UserEventsSchema (if individualized)
                 if event.individualized:
-                    await self._create_user(event, pg_event, user_id)
+                    user_ids: list = self._check_user_existence(event)
+
+                    # add individual event for already created (on previous steps) event
+                    await self._create_user(event, pg_event, user_id[0])
+
+                    # create new events for next users
+                    new_events: list = []
+                    for user_id in user_ids[1:]:
+                        e = copy.deepcopy(event)
+                        e.id = ObjectId()
+                        e.data.users = [user_id]
+                        new_events.append(e)
+
+                    print(
+                        f"\nWill extend events list. Currents number of events is: {len(self.events)}. New number is: {len(self.events)+len(new_events)}\n"
+                    )
+                    self.events.extend(new_events)
 
             except Exception as e:
                 number_of_errors += 1
-                print(f"Skipped Event: {event.id}", str(e))
+                migration_log.debug(f"Skipped Event: {event.id} %s", str(e))
                 continue
 
-        print(f"Number of skiped events: {number_of_errors}")
+        migration_log.info(f"Number of skiped events: {number_of_errors}")
 
     def _find_date(self, event: MongoEvent):
         if event.data.eventType.upper() == PeriodicityType.WEEKLY:
@@ -497,12 +517,16 @@ class EventMigrationService:
             raise Exception("Unable to parse start or end tiem")
 
     def _check_user_existence(self, event: dict) -> ObjectId:
-        if event.data.users and event.data.users[0]:
-            user = event.data.users[0]
-        else:
-            raise Exception("No user for individual event")
-        profile = Profile().findOne(query={"_id": ObjectId(user)})
-        if not profile:
-            raise Exception("Unable to find profile by event")
+        ids: list = []
+        if event.data.users:
+            for user in event.data.users:
+                profile = Profile().findOne(query={"_id": ObjectId(user)})
+                if not profile:
+                    print("Unable to find profile by event. Skip")
+                    continue
+                ids.append(profile["userId"])
 
-        return profile["userId"]
+            return ids
+
+        else:
+            raise Exception("No user(s) for individual event")

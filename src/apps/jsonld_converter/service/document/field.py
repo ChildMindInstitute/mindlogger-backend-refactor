@@ -819,8 +819,8 @@ class ReproFieldSlider(ReproFieldSliderBase):
         response_values = SliderValues(
             min_value=min,
             max_value=max if max > min else max + 1,
-            min_label=first_choice.get("name") or self.slider_option.ld_min_value,  # noqa: E501
-            max_label=last_choice.get("name") or self.slider_option.ld_max_value,  # noqa: E501
+            min_label=self.slider_option.ld_min_value or first_choice.get("name"),  # noqa: E501
+            max_label=self.slider_option.ld_max_value or last_choice.get("name"),  # noqa: E501
             min_image=first_choice.get("image") or self.slider_option.ld_min_value_img,  # noqa: E501
             max_image=last_choice.get("image") or self.slider_option.ld_max_value_img,  # noqa: E501
             scores=scores,

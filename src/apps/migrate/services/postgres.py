@@ -13,7 +13,11 @@ from psycopg2.errorcodes import UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION
 from bson import ObjectId
 
 from apps.migrate.data_description.folder_dao import FolderDAO, FolderAppletDAO
-from apps.migrate.data_description.library_dao import LibraryDao, ThemeDao
+from apps.migrate.data_description.library_dao import (
+    LibraryDao,
+    ThemeDao,
+    AppletTheme,
+)
 from apps.migrate.data_description.public_link import PublicLinkDao
 from apps.migrate.services.applet_service import AppletMigrationService
 from apps.migrate.utilities import (
@@ -183,14 +187,14 @@ class Postgres:
                 count += 1
 
             except Exception as e:
-                print(f"Error: {e}")
+                migration_log.debug(f"Error: {e}")
                 self.connection.rollback()
 
         self.connection.commit()
         cursor.close()
 
-        print(f"Errors in {len(users) - count} users")
-        print(f"Successfully migrated {count} users")
+        migration_log.info(f"Errors in {len(users) - count} users")
+        migration_log.info(f"Successfully migrated {count} users")
 
         return results
 
@@ -237,13 +241,15 @@ class Postgres:
                 results.append(user_workspace)
                 count += 1
             except Exception as e:
-                print(f"Error: {e}")
+                migration_log.debug(f"Error: {e}")
                 self.connection.rollback()
 
         self.connection.commit()
         cursor.close()
-        print(f"Errors in {len(workspaces) - count} users_workspace")
-        print(f"Successfully migrated {count} users_workspace")
+        migration_log.info(
+            f"Errors in {len(workspaces) - count} users_workspace"
+        )
+        migration_log.info(f"Successfully migrated {count} users_workspace")
         return results
 
     # def save_applets(
@@ -391,7 +397,7 @@ class Postgres:
                 ),
             )
         except Exception as ex:
-            migration_log.warning(ex)
+            migration_log.debug(ex)
         finally:
             self.connection.commit()
 
@@ -446,7 +452,8 @@ class Postgres:
             VALUES {values}
         """
         rows_count = self.insert_dao_collection(sql, list(user_pin_dao))
-        migration_log.warning(f"Inserted {rows_count} rows")
+
+        return rows_count
 
     def get_migrated_workspaces(self) -> list[tuple[uuid.UUID, uuid.UUID]]:
         sql = "SELECT id, user_id FROM users_workspaces"
@@ -467,9 +474,9 @@ class Postgres:
             # not pg error
             raise ex
         if getattr(ex, "pgcode") == FOREIGN_KEY_VIOLATION:
-            migration_log.warning(f"[FOLDERS] {ex}")
+            migration_log.debug(f"[FOLDERS] {ex}")
         elif getattr(ex, "pgcode") == UNIQUE_VIOLATION:
-            migration_log.warning(f"[FOLDERS] {ex}")
+            migration_log.debug(f"[FOLDERS] {ex}")
         else:
             raise ex
 
@@ -491,6 +498,8 @@ class Postgres:
             (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
         migrated, skipped = 0, 0
+        count = 0
+        count_all = len(folders)
         for folder_data in folders:
             try:
                 cursor = self.connection.cursor()
@@ -514,9 +523,18 @@ class Postgres:
                 self.log_pg_err(ex)
             finally:
                 self.connection.commit()
+                count += 1
+                migration_log.debug(f"Saving folder {count}/{count_all}")
         return migrated, skipped
 
+    def clean_folder_applets(self):
+        sql = "delete from public.folder_applets"
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        self.connection.commit()
+
     def save_folders_applet(self, folder_applets: List[FolderAppletDAO]):
+        self.clean_folder_applets()
         migrated, skipped = 0, 0
         sql = """
             INSERT INTO public.folder_applets
@@ -535,7 +553,10 @@ class Postgres:
             (%s, %s, %s, %s, %s, %s, %s, %s, %s)
 
         """
+        current_item = 0
+        size_all = len(folder_applets)
         for folder_applet in folder_applets:
+            migration_log.debug(f"{current_item}/{size_all}")
             try:
                 cursor = self.connection.cursor()
                 cursor.execute(
@@ -558,6 +579,7 @@ class Postgres:
                 self.log_pg_err(ex)
             finally:
                 self.connection.commit()
+                current_item += 1
         return migrated, skipped
 
     def exec_escaped(self, sql: str, values: tuple, log_tag=""):
@@ -567,7 +589,7 @@ class Postgres:
             cursor.execute(sql, values)
             success = True
         except Exception as ex:
-            migration_log.warning(f"{log_tag} {ex}")
+            migration_log.debug(f"{log_tag} {ex}")
         finally:
             self.connection.commit()
         return success
@@ -719,15 +741,16 @@ class Postgres:
             UPDATE applets 
                 SET theme_id = (SELECT id FROM themes WHERE "name"='Default')
             WHERE
-                theme_id NOT IN (SELECT id FROM themes) OR theme_id IS NULL;
+                theme_id IS NULL;
 
             UPDATE applet_histories  
                 SET theme_id = (SELECT id FROM themes WHERE "name"='Default')
             WHERE
-                theme_id NOT IN (SELECT id FROM themes) OR theme_id is null;
+                theme_id is NULL;
         """
         cursor = self.connection.cursor()
         cursor.execute(sql)
+        self.connection.commit()
         cursor.close()
 
     @staticmethod
@@ -777,7 +800,7 @@ class Postgres:
             cursor = self.connection.cursor()
             cursor.execute(sql)
         except Exception as ex:
-            migration_log.warning(f"[Applets] Empty question not fixed {ex}")
+            migration_log.debug(f"[Applets] Empty question not fixed {ex}")
         finally:
             self.connection.commit()
 
@@ -793,7 +816,68 @@ class Postgres:
             result = cursor.fetchall()
             return result
         except Exception as ex:
-            migration_log.error(f"Can't fetch workspaces info! {ex}")
+            migration_log.debug(f"Can't fetch workspaces info! {ex}")
             return []
         finally:
             self.connection.commit()
+
+    def set_applets_themes(self, applet_themes: list[AppletTheme]) -> int:
+        count = 0
+        sql_app = """
+            UPDATE applets 
+            SET theme_id = (
+                SELECT id FROM themes WHERE id = %s
+                UNION
+                SELECT id FROM themes WHERE LOWER(name) = LOWER(%s)
+                LIMIT 1
+            )
+            WHERE id = %s;
+        """
+
+        sql_hist = """
+            UPDATE applet_histories 
+            SET theme_id = (
+                SELECT id FROM themes WHERE id = %s
+                UNION
+                SELECT id FROM themes WHERE LOWER(name) = LOWER(%s)
+                LIMIT 1
+            )
+            WHERE id = %s;
+        """
+        for app_theme in applet_themes:
+            try:
+                cursor = self.connection.cursor()
+                for sql in [sql_app, sql_hist]:
+                    cursor.execute(
+                        sql,
+                        (
+                            str(app_theme.theme_id),
+                            str(app_theme.theme_name),
+                            str(app_theme.applet_id),
+                        ),
+                    )
+                count += 1
+            except Exception as ex:
+                migration_log.debug(f"[THEMES] {ex}")
+            finally:
+                msg = (
+                    f"[THEMES] Applet: {app_theme.applet_id} "
+                    f"Theme: {app_theme.theme_name}"
+                )
+                migration_log.debug(msg)
+                self.connection.commit()
+        return count
+
+    def themes_slice(self) -> str:
+        sql = """
+            select t."name", count(a.id) 
+            from applets a join themes t on t.id = a.theme_id
+            group by t."name"
+        """
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        s = "\n"
+        for row in rows:
+            s += f"\t{row[0]}: {row[1]}\n"
+        return s

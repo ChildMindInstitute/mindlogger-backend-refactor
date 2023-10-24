@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from apps.alerts.db.schemas import AlertSchema
 from apps.alerts.crud.alert import AlertCRUD
 
-from apps.migrate.utilities import mongoid_to_uuid
+from apps.migrate.utilities import migration_log, mongoid_to_uuid
 from apps.migrate.services.mongo import decrypt
 
 from infrastructure.database import atomic
@@ -59,17 +59,17 @@ class AlertMigrationService:
         number_of_errors: int = 0
         number_of_alerts_in_mongo: int = len(self.alerts)
         for i, alert in enumerate(self.alerts, 1):
-            print(
+            migration_log.debug(
                 f"Migrate alert {i}/{number_of_alerts_in_mongo}. Working on Alert: {alert.id}"
             )
             try:
                 await self._create_alert(alert)
             except IntegrityError as e:
                 number_of_errors += 1
-                print(f"Skipped Alert: {alert.id}")
+                migration_log.debug(f"Skipped Alert: {alert.id}")
                 # print(f"error is: {e}")
                 continue
-        print(f"Number of skiped alerts: {number_of_errors}")
+        migration_log.info(f"Number of skiped alerts: {number_of_errors}")
 
     async def _create_alert(self, alert: MongoAlert):
         alert_data: dict = {}
