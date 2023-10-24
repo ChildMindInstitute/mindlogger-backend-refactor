@@ -1843,11 +1843,17 @@ class Mongo:
     def get_folder_pin(
         self, folder: dict, applet_id: ObjectId
     ) -> datetime.datetime | None:
+        def _filter_applet(document):
+            _id = document["_id"]
+            if isinstance(_id, str):
+                _id = ObjectId(_id)
+            return _id == applet_id
+
         meta = folder.get("meta", {})
         applets_order = meta.get("applets", {})
-        order_it = filter(lambda m: m["_id"] == applet_id, applets_order)
+        order_it = filter(_filter_applet, applets_order)
         order = next(order_it, None)
-        if not order or order.get("_pin_order"):
+        if not order or not order.get("_pin_order"):
             return None
         now = datetime.datetime.utcnow()
         return now + datetime.timedelta(seconds=order["_pin_order"])
