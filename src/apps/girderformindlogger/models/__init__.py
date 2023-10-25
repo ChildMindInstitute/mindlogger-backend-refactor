@@ -118,7 +118,7 @@ def getDbConnection(
         desc = ""
         if replicaSet:
             desc += ", replica set: %s" % replicaSet
-        logprint.info("Connecting to MongoDB: %s%s" % (dbUriRedacted, desc))
+        logprint.debug("Connecting to MongoDB: %s%s" % (dbUriRedacted, desc))
 
     # Make sure we can connect to the mongo server at startup
     client.server_info()
