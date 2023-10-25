@@ -3,7 +3,7 @@ import uuid
 from datetime import date
 
 from bson import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from sqlalchemy.exc import IntegrityError
 
 from apps.invitations.db.schemas import InvitationSchema
@@ -42,7 +42,7 @@ class PyObjectId(ObjectId):
 
 class MongoInvitation(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
-    userEmail: str | None
+    userEmail: EmailStr
     appletId: PyObjectId = Field(default_factory=PyObjectId)
     role: str
     inviterId: PyObjectId | None = Field(default_factory=PyObjectId)
@@ -65,13 +65,15 @@ class InvitationsMigrationService:
                 f"Migrate invitation {i}/{number_of_invitations_in_mongo}. Working on Invitation: {invitation.id}"
             )
             if not invitation.inviterId:
-                migration_log.debug(f"Skipped Invitation: {invitation.id}")
+                migration_log.debug(
+                    f"Skipped Invitation: {invitation.id} (no invitation.inviterId)"
+                )
                 continue
             try:
                 await self._create_invitation(invitation)
             except IntegrityError as e:
                 number_of_errors += 1
-                migration_log.debug(f"Skipped Invitation: {invitation.id}")
+                migration_log.debug(f"Skipped Invitation: {invitation.id} {e}")
                 continue
         migration_log.info(f"Number of skiped invitations: {number_of_errors}")
 
@@ -79,11 +81,7 @@ class InvitationsMigrationService:
         invitation_data: dict = {}
 
         if invitation.userEmail:
-            email = decrypt(invitation.userEmail)
-            if email:
-                invitation_data["email"] = email
-            else:
-                invitation_data["email"] = invitation.userEmail
+            invitation_data["email"] = invitation.userEmail
         invitation_data["applet_id"] = mongoid_to_uuid(invitation.appletId)
         if invitation.role == "user":
             invitation_data["role"] = Role.RESPONDENT
@@ -100,6 +98,7 @@ class InvitationsMigrationService:
         invitation_data["key"] = uuid.uuid3(
             mongoid_to_uuid(invitation.id), invitation_data["email"]
         )
+        invitation_data["meta"] = {}
 
         now = datetime.datetime.utcnow()
         invitation = InvitationSchema(
