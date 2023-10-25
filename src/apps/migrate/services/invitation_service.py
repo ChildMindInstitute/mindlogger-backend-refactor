@@ -65,7 +65,9 @@ class InvitationsMigrationService:
                 f"Migrate invitation {i}/{number_of_invitations_in_mongo}. Working on Invitation: {invitation.id}"
             )
             if not invitation.inviterId:
-                migration_log.debug(f"Skipped Invitation: {invitation.id} (no invitation.inviterId)")
+                migration_log.debug(
+                    f"Skipped Invitation: {invitation.id} (no invitation.inviterId)"
+                )
                 continue
             try:
                 await self._create_invitation(invitation)

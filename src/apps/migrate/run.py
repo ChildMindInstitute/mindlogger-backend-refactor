@@ -812,7 +812,7 @@ async def migrate_pending_invitations(
         try:
             invitations.append(MongoInvitation.parse_obj(invitation))
         except ValueError as e:
-            migration_log.warning(
+            migration_log.debug(
                 f"[INVITATIONS] Skip invitation with id: {invitation['_id']} {e}"
             )
 
