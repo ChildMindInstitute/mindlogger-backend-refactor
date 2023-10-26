@@ -79,6 +79,29 @@ def decrypt(data):
 
 
 def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
+    broken_conditional_date_item = [
+        "62a8d7d7b90b7f2ba9e1aa43",
+    ]
+    if applet_id in broken_conditional_date_item:
+        for property in applet_ld["reprolib:terms/order"][0]["@list"][0][
+            "reprolib:terms/addProperties"
+        ]:
+            if property["reprolib:terms/isAbout"][0]["@id"] == "EPDSMotherDOB":
+                property["reprolib:terms/isVis"][0]["@value"] = True
+
+    broken_item_flow_order = ["613f6eba6401599f0e495dc5"]
+    if applet_id in broken_item_flow_order:
+        for activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            for prop in activity["reprolib:terms/addProperties"]:
+                prop["reprolib:terms/isVis"][0]["@value"] = True
+        if applet_ld["schema:version"][0]["@value"] == "1.2.2":
+            applet_ld["reprolib:terms/order"][0]["@list"][0][
+                "reprolib:terms/order"
+            ][0]["@list"].pop(26)
+            applet_ld["reprolib:terms/order"][0]["@list"][0][
+                "reprolib:terms/addProperties"
+            ].pop(26)
+
     broken_applet_versions = [
         "6201cc26ace55b10691c0814",
         "6202734eace55b10691c0fc4",
@@ -321,6 +344,35 @@ def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
 def patch_broken_applets(
     applet_id: str, applet_ld: dict, applet_mongo: dict
 ) -> tuple[dict, dict]:
+    broken_report_condition_item = [
+        "6358265b5cb700431121f033",
+        "6358267b5cb700431121f143",
+        "63696d4a52ea02101467671d",
+        "63696e7c52ea021014676784",
+    ]
+    if applet_id in broken_report_condition_item:
+        for report in applet_ld["reprolib:terms/order"][0]["@list"][0][
+            "reprolib:terms/reports"
+        ][0]["@list"]:
+            if report["@id"] == "sumScore_suicidalorselfinjury":
+                report["reprolib:terms/conditionals"][0]["@list"][1][
+                    "reprolib:terms/printItems"
+                ][0]["@list"] = []
+                report["reprolib:terms/conditionals"][0]["@list"][0][
+                    "reprolib:terms/printItems"
+                ][0]["@list"] = []
+
+    broken_conditional_date_item = [
+        "62a8d7d7b90b7f2ba9e1aa43",
+        "62a8d7e5b90b7f2ba9e1aab3",
+    ]
+    if applet_id in broken_conditional_date_item:
+        for property in applet_ld["reprolib:terms/order"][0]["@list"][0][
+            "reprolib:terms/addProperties"
+        ]:
+            if property["reprolib:terms/isAbout"][0]["@id"] == "EPDSMotherDOB":
+                property["reprolib:terms/isVis"][0]["@value"] = True
+
     broken_item_flow = [
         "6522a4753c36ce0d4d6cda4d",
     ]
