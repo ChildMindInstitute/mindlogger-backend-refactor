@@ -63,7 +63,7 @@ class AnswerItemMigrationService:
     def _get_migrated_data(self, identifier):
         if not identifier:
             return None
-        return {"is_identifier_encrypted": True}
+        return {"is_identifier_encrypted": False}
 
     def _get_item_ids(self, mongo_answer):
         responses_keys = list(mongo_answer["meta"]["responses"])

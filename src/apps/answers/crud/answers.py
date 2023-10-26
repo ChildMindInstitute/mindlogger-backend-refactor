@@ -510,6 +510,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.answer,
                 AnswerItemSchema.events,
                 AnswerItemSchema.identifier,
+                AnswerItemSchema.migrated_data,
             )
             .select_from(AnswerSchema)
             .join(

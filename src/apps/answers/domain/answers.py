@@ -446,3 +446,4 @@ class AnswerItemDataEncrypted(InternalModel):
 
 class UserAnswerItemData(AnswerItemDataEncrypted):
     user_public_key: str
+    migrated_data: dict | None
