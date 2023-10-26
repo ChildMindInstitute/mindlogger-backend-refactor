@@ -1975,6 +1975,8 @@ class Mongo:
                 migrated_date=now,
                 migrated_updated=now,
                 is_deleted=False,
+                name=lib_doc["name"],
+                display_name=lib_doc["displayName"],
             )
             theme_id = lib_doc.get("themeId")
             if theme_id:
