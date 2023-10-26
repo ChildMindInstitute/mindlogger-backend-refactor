@@ -9,6 +9,10 @@ from apps.activities.crud import (
     ActivityHistoriesCRUD,
     ActivityItemHistoriesCRUD,
 )
+from apps.activities.domain.custom_validation import (
+    validate_is_performance_task,
+    validate_performance_task_type,
+)
 from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsHistoryCRUD
 from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
 from apps.library.crud import CartCRUD, LibraryCRUD
@@ -167,6 +171,21 @@ class LibraryService:
                 session=self.session
             ).get_by_activity_id_version(activity_id=activity.id_version)
             activity_id_key_maps[activity.id_version] = uuid.uuid4()
+            items = [
+                LibraryItemActivityItem(
+                    name=item.name,
+                    question=item.question,
+                    response_type=item.response_type,
+                    response_values=self._get_response_value_options(
+                        item.response_values
+                    ),
+                    config=item.config,
+                    is_hidden=item.is_hidden,
+                    conditional_logic=item.conditional_logic,
+                    allow_edit=item.allow_edit,
+                )
+                for item in activity_items
+            ]
             library_item_activities.append(
                 LibraryItemActivity(
                     key=activity_id_key_maps[activity.id_version],
@@ -177,25 +196,17 @@ class LibraryService:
                     show_all_at_once=activity.show_all_at_once,
                     is_skippable=activity.is_skippable,
                     is_reviewable=activity.is_reviewable,
+                    is_performance_task=validate_is_performance_task(
+                        False, {"items": items}
+                    ),
+                    performance_task_type=validate_performance_task_type(
+                        None, {"items": items}
+                    ),
                     response_is_editable=activity.response_is_editable,
                     is_hidden=activity.is_hidden,
                     scores_and_reports=activity.scores_and_reports,
                     subscale_setting=activity.subscale_setting,
-                    items=[
-                        LibraryItemActivityItem(
-                            name=item.name,
-                            question=item.question,
-                            response_type=item.response_type,
-                            response_values=self._get_response_value_options(
-                                item.response_values
-                            ),
-                            config=item.config,
-                            is_hidden=item.is_hidden,
-                            conditional_logic=item.conditional_logic,
-                            allow_edit=item.allow_edit,
-                        )
-                        for item in activity_items
-                    ],
+                    items=items,
                 )
             )
         library_item.activities = library_item_activities
