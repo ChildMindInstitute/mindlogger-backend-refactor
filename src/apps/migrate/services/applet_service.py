@@ -106,6 +106,8 @@ class AppletMigrationService:
                 extra_fields=prepare_extra_fields_to_save(
                     create_data.extra_fields
                 ),
+                retention_period=create_data.retention_period,
+                retention_type=create_data.retention_type,
             )
         )
         return AppletMigratedFull.from_orm(schema)
@@ -178,6 +180,8 @@ class AppletMigrationService:
                 extra_fields=prepare_extra_fields_to_save(
                     update_data.extra_fields
                 ),
+                retention_period=update_data.retention_period,
+                retention_type=update_data.retention_type,
             ),
         )
         return AppletMigratedFull.from_orm(schema)
