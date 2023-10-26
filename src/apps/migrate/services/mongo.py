@@ -871,6 +871,15 @@ def patch_broken_visability_for_applet(applet: dict) -> None:
                 set_isvis(add_prop, acitivity_id_isvis_map[activity_id])
 
 
+def patch_library_version(applet_id: str, version: str) -> str:
+    if applet_id == "61f42e5c62485608c74c2a7e":
+        version = "4.2.42"
+    elif applet_id == "623b81c45197b9338bdaea22":
+        version = "2.11.39"
+
+    return version
+
+
 class Mongo:
     def __init__(self) -> None:
         # Setup MongoDB connection
@@ -2009,6 +2018,7 @@ class Mongo:
         for lib_doc in library:
             applet_id = mongoid_to_uuid(lib_doc["appletId"])
             version = lib_doc.get("version")
+            version = patch_library_version(str(lib_doc["appletId"]), version)
             if version:
                 version_id = f"{applet_id}_{version}"
             else:
