@@ -2,6 +2,7 @@ import uuid
 
 from pydantic import BaseModel, Field
 
+from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.shared.domain import InternalModel, PublicModel
 
 
@@ -54,6 +55,8 @@ class LibraryItemActivity(InternalModel):
     show_all_at_once: bool = False
     is_skippable: bool = False
     is_reviewable: bool = False
+    is_performance_task: bool = False
+    performance_task_type: PerformanceTaskType | None = None
     response_is_editable: bool = False
     is_hidden: bool | None = False
     scores_and_reports: dict | None = None
