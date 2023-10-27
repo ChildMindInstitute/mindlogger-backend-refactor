@@ -371,7 +371,7 @@ def patch_broken_applets(
             "reprolib:terms/addProperties"
         ]:
             if property["reprolib:terms/isAbout"][0]["@id"] == "EPDSMotherDOB":
-                property["reprolib:terms/isVis"][0]["@value"] = True
+                property["reprolib:terms/isVis"][0]["@value"] = False
 
     broken_item_flow = [
         "6522a4753c36ce0d4d6cda4d",
@@ -379,7 +379,7 @@ def patch_broken_applets(
     if applet_id in broken_item_flow:
         applet_ld["reprolib:terms/order"][0]["@list"][0][
             "reprolib:terms/addProperties"
-        ][5]["reprolib:terms/isVis"][0] = {"@value": True}
+        ][5]["reprolib:terms/isVis"][0] = {"@value": False}
 
     broken_activity_order = [
         "63d3d579b71996780cdf409a",
@@ -443,7 +443,7 @@ def patch_broken_applets(
                     property["reprolib:terms/isAbout"][0]["@id"]
                     == "IUQ_Wd_Social_Device"
                 ):
-                    property["reprolib:terms/isVis"] = [{"@value": True}]
+                    property["reprolib:terms/isVis"] = [{"@value": False}]
 
     repo_replacements = [
         (
@@ -772,11 +772,7 @@ def patch_broken_applets(
 
     applet_ld = patch_prize_activity(applet_id, applet_ld)
 
-    if (
-        applet_id not in broken_applets
-        and applet_id not in broken_applet_version
-    ):
-        patch_broken_visability_for_applet(applet_ld)
+    patch_broken_visability_for_applet(applet_ld)
     return applet_ld, applet_mongo
 
 
