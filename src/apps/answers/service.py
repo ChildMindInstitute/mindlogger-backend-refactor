@@ -688,19 +688,20 @@ class AnswerService:
         ).get_identifiers_by_activity_id(ids, respondent_id)
         results = []
         for identifier, key, migrated_data in identifiers:
-            if not migrated_data or not migrated_data.get(
-                "is_identifier_encrypted"
+            if (
+                migrated_data
+                and migrated_data.get("is_identifier_encrypted") is False
             ):
                 results.append(
                     Identifier(
                         identifier=identifier,
-                        user_public_key=key,
                     )
                 )
             else:
                 results.append(
                     Identifier(
                         identifier=identifier,
+                        user_public_key=key,
                     )
                 )
         return results
@@ -997,9 +998,16 @@ class AnswerService:
                         decryptor.decrypt(answer.events)
                     )
                 if answer.identifier:
-                    encrypted_identifier = encryptor.encrypt(
-                        decryptor.decrypt(answer.identifier)
-                    )
+                    if (
+                        answer.migrated_data
+                        and answer.migrated_data.get("is_identifier_encrypted")
+                        is False
+                    ):
+                        encrypted_identifier = encrypted_identifier
+                    else:
+                        encrypted_identifier = encryptor.encrypt(
+                            decryptor.decrypt(answer.identifier)
+                        )
 
                 data_to_update.append(
                     AnswerItemDataEncrypted(
