@@ -37,7 +37,8 @@ from apps.answers.filters import (
     SummaryActivityFilter,
 )
 from apps.answers.service import AnswerService
-from apps.applets.service import AppletService
+from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
+from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.deps import get_i18n
 from apps.shared.domain import Response, ResponseMulti
@@ -64,6 +65,12 @@ async def create_answer(
         await CheckAccessService(session, user.id).check_answer_create_access(
             schema.applet_id
         )
+        try:
+            await AppletHistoryService(
+                session, schema.applet_id, schema.version
+            ).get()
+        except NotValidAppletHistory:
+            raise InvalidVersionError()
         service = AnswerService(session, user.id, answer_session)
         async with atomic(answer_session):
             answer = await service.create_answer(schema)
