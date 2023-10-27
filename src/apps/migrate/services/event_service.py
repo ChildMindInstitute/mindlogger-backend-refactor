@@ -391,11 +391,16 @@ class EventMigrationService:
                 # Migrate data to EventSchema
                 pg_event = await self._create_event(event, periodicity)
 
-                # Migrate data to ActivityEventsSchema or FlowEventsSchema
-                if event.data.activity_id:
-                    await self._create_activity(event, pg_event)
-                if event.data.activity_flow_id:
-                    await self._create_flow(event, pg_event)
+                if event.data.activity_id or event.data.activity_flow_id:
+                    # Migrate data to ActivityEventsSchema or FlowEventsSchema
+                    if event.data.activity_id:
+                        await self._create_activity(event, pg_event)
+                    if event.data.activity_flow_id:
+                        await self._create_flow(event, pg_event)
+                else:
+                    raise Exception(
+                        "Mongo event do not have any information about activity and flow"
+                    )
 
                 # Migrate data to NotificationSchema
                 if event.data.notifications:
@@ -414,7 +419,7 @@ class EventMigrationService:
                     user_ids: list = self._check_user_existence(event)
 
                     # add individual event for already created (on previous steps) event
-                    await self._create_user(event, pg_event, user_id[0])
+                    await self._create_user(event, pg_event, user_ids[0])
 
                     # create new events for next users
                     new_events: list = []
@@ -424,9 +429,10 @@ class EventMigrationService:
                         e.data.users = [user_id]
                         new_events.append(e)
 
-                    print(
-                        f"\nWill extend events list. Currents number of events is: {len(self.events)}. New number is: {len(self.events)+len(new_events)}\n"
+                    migration_log.debug(
+                        f"Will extend events list. Currents number of events is: {len(self.events)}. New number is: {len(self.events)+len(new_events)}"
                     )
+                    number_of_events_in_mongo += len(new_events)
                     self.events.extend(new_events)
 
             except Exception as e:
@@ -522,7 +528,9 @@ class EventMigrationService:
             for user in event.data.users:
                 profile = Profile().findOne(query={"_id": ObjectId(user)})
                 if not profile:
-                    print("Unable to find profile by event. Skip")
+                    migration_log.debug(
+                        "Unable to find profile by event. Skip"
+                    )
                     continue
                 ids.append(profile["userId"])
 
