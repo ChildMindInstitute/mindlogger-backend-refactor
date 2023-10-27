@@ -74,12 +74,19 @@ class AnswerItemMigrationService:
                 for k in list(mongo_answer["meta"]["responses"])
             ]
 
+        item_ids_from_url = [url.split("/")[-1] for url in responses_keys]
         return [
             str(mongoid_to_uuid(i["_id"]))
             for i in Item().find(
                 query={
                     "meta.activityId": mongo_answer["meta"]["activity"]["@id"],
-                    "meta.screen.schema:url": {"$in": responses_keys},
+                    # If meta.screen.schema:url exists then try to find by url,
+                    # because meta.screen.@id will start with '/'.
+                    # In other case try to find by last word in url (screen.@id)
+                    "$or": [
+                        {"meta.screen.@id": {"$in": item_ids_from_url}},
+                        {"meta.screen.schema:url": {"$in": responses_keys}},
+                    ],
                 }
             )
         ]
