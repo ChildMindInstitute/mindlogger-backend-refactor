@@ -1404,7 +1404,11 @@ class Mongo:
     def get_answer_migration_queries(self, **kwargs):
         db = self.get_main_or_arbitrary_db(kwargs["applet_id"])
         query = {
-            "meta.responses": {"$exists": True},
+            "meta.responses": {
+                "$exists": True,
+                # Some items have response, but response is empty dict, dont't migrate
+                "$ne": {},
+            },
             "meta.activity.@id": kwargs["activity_id"],
             "meta.applet.@id": kwargs["applet_id"],
             "meta.applet.version": kwargs["version"],
