@@ -92,9 +92,9 @@ router.post(
     },
 )(logs_upload)
 
-router.get("/log-file/{user_id}/{device_id}", status_code=status.HTTP_200_OK)(
-    logs_download
-)
+router.get(
+    "/log-file/{user_email}/{device_id}", status_code=status.HTTP_200_OK
+)(logs_download)
 
 router.post("/log-file/{device_id}/check", status_code=status.HTTP_200_OK)(
     logs_exist_check

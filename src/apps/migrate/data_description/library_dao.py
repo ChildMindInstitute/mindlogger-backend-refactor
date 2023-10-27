@@ -15,6 +15,8 @@ class LibraryDao:
     updated_at: datetime.datetime
     migrated_date: datetime.datetime
     migrated_updated: datetime.datetime
+    display_name: str
+    name: str
     is_deleted: bool = False
 
     def __hash__(self):

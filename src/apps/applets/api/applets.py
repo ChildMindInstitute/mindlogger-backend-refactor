@@ -171,7 +171,7 @@ async def applet_create(
                     recipients=[user.email_encrypted],
                     subject="Applet upload failed!",
                     body=mail_service.get_template(
-                        path="applet_create_success_en",
+                        path="applet_create_failed_en",
                         first_name=user.first_name,
                         applet_name=schema.display_name,
                     ),

@@ -11,7 +11,7 @@ from apps.migrate.exception.exception import (
     FormatldException,
     EmptyAppletException,
 )
-from apps.migrate.services.mongo import Mongo
+from apps.migrate.services.mongo import Mongo, decrypt
 from apps.migrate.services.postgres import Postgres
 from apps.migrate.services.event_service import (
     MongoEvent,
@@ -491,6 +491,10 @@ async def get_applets_ids() -> list[str]:
         "6307d801924264279508777d",
         "6324c0afb7ee9765ba54229f",
         "631aba1db7ee970ffa9009e3",
+        # library
+        "61b384f7d386d628d862eb76",
+        "61df0360bf09cb40db5a2b14",
+        "62b613e0b90b7f2ba9e1d2ae",
     ]
     for applet in applets:
         migrating_applets.append(str(applet["_id"]))
@@ -667,7 +671,9 @@ def migrate_folders(workspace_id: str | None, mongo, postgres):
     migration_log.info("Folders migration end")
 
 
-def migrate_library(applet_ids: list[ObjectId] | None, mongo, postgres):
+def migrate_library(
+    applet_ids: list[ObjectId] | None, mongo: Mongo, postgres: Postgres
+):
     migration_log.info("Library & themes migration start")
     lib_count = 0
     theme_count = 0
@@ -683,8 +689,13 @@ def migrate_library(applet_ids: list[ObjectId] | None, mongo, postgres):
         )
         lib.search_keywords = keywords + lib.keywords
         success = postgres.save_library_item(lib)
+
         if success:
             lib_count += 1
+            if lib.name != lib.display_name:
+                postgres.update_applet_name(
+                    lib.applet_id, lib.name, lib.applet_id_version
+                )
 
     for theme in theme_set:
         success = postgres.save_theme_item(theme)
@@ -809,7 +820,12 @@ async def migrate_pending_invitations(
 
     invitations: list = []
     for invitation in invitations_collection.find(query):
-        invitations.append(MongoInvitation.parse_obj(invitation))
+        try:
+            invitations.append(MongoInvitation.parse_obj(invitation))
+        except ValueError as e:
+            migration_log.debug(
+                f"[INVITATIONS] Skip invitation with id: {invitation['_id']} {e}"
+            )
 
     migration_log.info(
         f"[INVITATIONS] Total number of pending invitations in mongo for {len(applet_ids) if applet_ids else 'all'} applets: {len(invitations)}"
