@@ -389,9 +389,9 @@ class InvitationsService:
         try:
             await UsersCRUD(self.session).get_by_email(schema.email)
         except UserNotFound:
-            path = "invitation_new_user_en"
+            path = f"invitation_new_user_{schema.language}"
         else:
-            path = "invitation_registered_user_en"
+            path = f"invitation_registered_user_{schema.language}"
 
         # Send email to the user
         service = MailingService()
