@@ -677,7 +677,8 @@ def migrate_library(
     migration_log.info("Library & themes migration start")
     lib_count = 0
     theme_count = 0
-    lib_set, theme_set = mongo.get_library(applet_ids)
+    lib_set = mongo.get_library(applet_ids)
+    theme_set = mongo.get_themes()
     for lib in lib_set:
         if lib.applet_id_version is None:
             version = postgres.get_latest_applet_id_version(lib.applet_id)
@@ -701,7 +702,7 @@ def migrate_library(
         success = postgres.save_theme_item(theme)
         if success:
             theme_count += 1
-            postgres.add_theme_to_applet(theme.applet_id, theme.id)
+            # postgres.add_theme_to_applet(theme.applet_id, theme.id)
 
     applet_themes = mongo.get_applet_theme_mapping()
     applets_count = postgres.set_applets_themes(applet_themes)
