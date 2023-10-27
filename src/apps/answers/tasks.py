@@ -95,9 +95,23 @@ async def removing_outdated_answers():
             for applet_data in applets_data:
                 applet_id, retention_period, retention_type = applet_data
                 retention_type = DataRetention(retention_type)
-                await AnswersCRUD(session).removing_outdated_answers(
-                    applet_id, retention_period, retention_type
-                )
+
+                arb_uri = await get_arbitrary_info(applet_id, session)
+                if arb_uri:
+                    arb_session_maker = session_manager.get_session(arb_uri)
+                    try:
+                        async with arb_session_maker() as arb_session:
+                            await AnswersCRUD(
+                                arb_session
+                            ).removing_outdated_answers(
+                                applet_id, retention_period, retention_type
+                            )
+                    finally:
+                        await arb_session_maker.remove()
+                else:
+                    await AnswersCRUD(session).removing_outdated_answers(
+                        applet_id, retention_period, retention_type
+                    )
             await session.commit()
     except Exception as e:
         traceback.print_exception(e)

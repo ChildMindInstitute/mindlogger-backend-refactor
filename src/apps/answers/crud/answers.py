@@ -601,21 +601,19 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             raise AnswerRetentionType()
         border_datetime = datetime.datetime.utcnow() - retention_time
 
-        query = update(AnswerSchema)
+        query: Query = delete(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.created_at < border_datetime)
-        query = query.where(AnswerSchema.soft_exists())
-        query = query.values(is_deleted=True)
         query = query.returning(column("id"))
         deleted_answer_ids: list[uuid.UUID] = [
             x[0] for x in await self._execute(query)
         ]
 
-        query = update(AnswerItemSchema)
-        query = query.where(AnswerItemSchema.answer_id.in_(deleted_answer_ids))
-        query = query.where(AnswerSchema.soft_exists())
-        query = query.values(is_deleted=True)
-        await self._execute(query)
+        item_query: Query = delete(AnswerItemSchema)
+        item_query = item_query.where(
+            AnswerItemSchema.answer_id.in_(deleted_answer_ids)
+        )
+        await self._execute(item_query)
 
     async def update_encrypted_fields(
         self, user_public_key: str, data: list[AnswerItemDataEncrypted]

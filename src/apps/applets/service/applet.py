@@ -12,6 +12,7 @@ from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.service.flow import FlowService
 from apps.answers.crud.answers import AnswersCRUD
+from apps.answers.deps.preprocess_arbitrary import get_arbitrary_info
 from apps.applets.crud import (
     AppletHistoriesCRUD,
     AppletsCRUD,
@@ -58,6 +59,7 @@ from apps.workspaces.domain.constants import DataRetention
 from apps.workspaces.errors import AppletEncryptionUpdateDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from config import settings
+from infrastructure.database import session_manager
 
 __all__ = [
     "AppletService",
@@ -827,9 +829,26 @@ class AppletService:
             applet_id, data_retention
         )
         if data_retention.retention != DataRetention.INDEFINITELY:
-            await AnswersCRUD(self.session).removing_outdated_answers(
-                applet_id, data_retention.period or 1, data_retention.retention
-            )
+            arb_uri = await get_arbitrary_info(applet_id, self.session)
+            if arb_uri:
+                arb_session_maker = session_manager.get_session(arb_uri)
+                try:
+                    async with arb_session_maker() as arb_session:
+                        await AnswersCRUD(
+                            arb_session
+                        ).removing_outdated_answers(
+                            applet_id,
+                            data_retention.period or 10**10,
+                            data_retention.retention,
+                        )
+                finally:
+                    await arb_session_maker.remove()
+            else:
+                await AnswersCRUD(self.session).removing_outdated_answers(
+                    applet_id,
+                    data_retention.period or 10**10,
+                    data_retention.retention,
+                )
 
     async def get_full_applet(self, applet_id: uuid.UUID) -> AppletFull:
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)
