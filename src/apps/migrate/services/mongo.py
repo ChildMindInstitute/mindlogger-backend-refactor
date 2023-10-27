@@ -79,6 +79,29 @@ def decrypt(data):
 
 
 def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
+    broken_conditional_date_item = [
+        "62a8d7d7b90b7f2ba9e1aa43",
+    ]
+    if applet_id in broken_conditional_date_item:
+        for property in applet_ld["reprolib:terms/order"][0]["@list"][0][
+            "reprolib:terms/addProperties"
+        ]:
+            if property["reprolib:terms/isAbout"][0]["@id"] == "EPDSMotherDOB":
+                property["reprolib:terms/isVis"][0]["@value"] = True
+
+    broken_item_flow_order = ["613f6eba6401599f0e495dc5"]
+    if applet_id in broken_item_flow_order:
+        for activity in applet_ld["reprolib:terms/order"][0]["@list"]:
+            for prop in activity["reprolib:terms/addProperties"]:
+                prop["reprolib:terms/isVis"][0]["@value"] = True
+        if applet_ld["schema:version"][0]["@value"] == "1.2.2":
+            applet_ld["reprolib:terms/order"][0]["@list"][0][
+                "reprolib:terms/order"
+            ][0]["@list"].pop(26)
+            applet_ld["reprolib:terms/order"][0]["@list"][0][
+                "reprolib:terms/addProperties"
+            ].pop(26)
+
     broken_applet_versions = [
         "6201cc26ace55b10691c0814",
         "6202734eace55b10691c0fc4",
@@ -321,6 +344,35 @@ def patch_broken_applet_versions(applet_id: str, applet_ld: dict) -> dict:
 def patch_broken_applets(
     applet_id: str, applet_ld: dict, applet_mongo: dict
 ) -> tuple[dict, dict]:
+    broken_report_condition_item = [
+        "6358265b5cb700431121f033",
+        "6358267b5cb700431121f143",
+        "63696d4a52ea02101467671d",
+        "63696e7c52ea021014676784",
+    ]
+    if applet_id in broken_report_condition_item:
+        for report in applet_ld["reprolib:terms/order"][0]["@list"][0][
+            "reprolib:terms/reports"
+        ][0]["@list"]:
+            if report["@id"] == "sumScore_suicidalorselfinjury":
+                report["reprolib:terms/conditionals"][0]["@list"][1][
+                    "reprolib:terms/printItems"
+                ][0]["@list"] = []
+                report["reprolib:terms/conditionals"][0]["@list"][0][
+                    "reprolib:terms/printItems"
+                ][0]["@list"] = []
+
+    broken_conditional_date_item = [
+        "62a8d7d7b90b7f2ba9e1aa43",
+        "62a8d7e5b90b7f2ba9e1aab3",
+    ]
+    if applet_id in broken_conditional_date_item:
+        for property in applet_ld["reprolib:terms/order"][0]["@list"][0][
+            "reprolib:terms/addProperties"
+        ]:
+            if property["reprolib:terms/isAbout"][0]["@id"] == "EPDSMotherDOB":
+                property["reprolib:terms/isVis"][0]["@value"] = True
+
     broken_item_flow = [
         "6522a4753c36ce0d4d6cda4d",
     ]
@@ -817,6 +869,15 @@ def patch_broken_visability_for_applet(applet: dict) -> None:
         if activity_id in acitivity_id_isvis_map:
             if isinstance(add_prop["reprolib:terms/isVis"][0]["@value"], bool):
                 set_isvis(add_prop, acitivity_id_isvis_map[activity_id])
+
+
+def patch_library_version(applet_id: str, version: str) -> str:
+    if applet_id == "61f42e5c62485608c74c2a7e":
+        version = "4.2.42"
+    elif applet_id == "623b81c45197b9338bdaea22":
+        version = "2.11.39"
+
+    return version
 
 
 class Mongo:
@@ -1957,6 +2018,7 @@ class Mongo:
         for lib_doc in library:
             applet_id = mongoid_to_uuid(lib_doc["appletId"])
             version = lib_doc.get("version")
+            version = patch_library_version(str(lib_doc["appletId"]), version)
             if version:
                 version_id = f"{applet_id}_{version}"
             else:
@@ -1975,6 +2037,8 @@ class Mongo:
                 migrated_date=now,
                 migrated_updated=now,
                 is_deleted=False,
+                name=lib_doc["name"],
+                display_name=lib_doc["displayName"],
             )
             theme_id = lib_doc.get("themeId")
             if theme_id:

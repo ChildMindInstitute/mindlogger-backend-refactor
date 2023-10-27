@@ -881,3 +881,42 @@ class Postgres:
         for row in rows:
             s += f"\t{row[0]}: {row[1]}\n"
         return s
+
+    def update_applet_name(
+        self, applet_id: uuid.UUID, name: str, applet_id_version: str
+    ):
+        sql_applet_version = """
+            UPDATE applet_histories 
+            SET display_name = %s
+            WHERE id_version = %s;
+        """
+
+        sql_applet = """
+            UPDATE applets 
+            SET display_name = %s
+            WHERE id = %s AND version = %s;
+        """
+
+        try:
+            cursor = self.connection.cursor()
+
+            cursor.execute(
+                sql_applet_version,
+                (
+                    str(name),
+                    str(applet_id_version),
+                ),
+            )
+            cursor.execute(
+                sql_applet,
+                (
+                    str(name),
+                    str(applet_id),
+                    str(applet_id_version.split("_")[1]),
+                ),
+            )
+            migration_log.debug(f"[LIBRARY] Name changed: {applet_id}")
+        except Exception as ex:
+            migration_log.debug(f"[LIBRARY] Name cannot be changed:  {ex}")
+        finally:
+            self.connection.commit()
