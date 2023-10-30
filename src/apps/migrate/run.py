@@ -108,7 +108,7 @@ async def migrate_applets(
 
             await postgres.save_applets(applets, owner_id)
         except (FormatldException, EmptyAppletException) as e:
-            skipped_applets.append([applet_id, e])
+            # skipped_applets.append([applet_id, e])
             migration_log.debug(
                 "%s skipped because: %s", str(applet_id), e.message
             )
