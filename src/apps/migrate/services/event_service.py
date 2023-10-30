@@ -385,13 +385,13 @@ class EventMigrationService:
                 f"Migrate events {i}/{number_of_events_in_mongo}. Working on Event: {event.id}"
             )
             try:
-                # Migrate data to PeriodicitySchema
-                periodicity = await self._create_periodicity(event)
-
-                # Migrate data to EventSchema
-                pg_event = await self._create_event(event, periodicity)
-
                 if event.data.activity_id or event.data.activity_flow_id:
+                    # Migrate data to PeriodicitySchema
+                    periodicity = await self._create_periodicity(event)
+
+                    # Migrate data to EventSchema
+                    pg_event = await self._create_event(event, periodicity)
+
                     # Migrate data to ActivityEventsSchema or FlowEventsSchema
                     if event.data.activity_id:
                         await self._create_activity(event, pg_event)
