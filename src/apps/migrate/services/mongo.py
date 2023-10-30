@@ -1280,7 +1280,8 @@ class Mongo:
             or applet["meta"]["applet"] == {}
         ):
             raise EmptyAppletException()
-
+        # fetch version
+        applet = self.fetch_applet_version(applet)
         ld_request_schema = self.get_applet_repro_schema(applet)
         ld_request_schema, applet = patch_broken_applets(
             applet_id, ld_request_schema, applet
@@ -1976,41 +1977,36 @@ class Mongo:
             )
         return set(folders_list), set(applets_list)
 
-    def get_theme(
-        self, key: str | ObjectId, applet_id: uuid.UUID
-    ) -> ThemeDao | None:
-        if not isinstance(key, ObjectId):
-            try:
-                theme_id = ObjectId(key)
-            except Exception:
-                return None
-        theme_doc = self.db["folder"].find_one({"_id": theme_id})
-        if theme_doc:
-            meta = theme_doc.get("meta", {})
-            return ThemeDao(
-                id=mongoid_to_uuid(theme_doc["_id"]),
-                creator_id=mongoid_to_uuid(theme_doc["creatorId"]),
-                name=theme_doc["name"],
-                logo=meta.get("logo"),
-                small_logo=meta.get("smallLogo"),
-                background_image=meta.get("backgroundImage"),
-                primary_color=meta.get("primaryColor"),
-                secondary_color=meta.get("secondaryColor"),
-                tertiary_color=meta.get("tertiaryColor"),
-                public=theme_doc["public"],
-                allow_rename=True,
-                created_at=theme_doc["created"],
-                updated_at=theme_doc["updated"],
-                is_default=False,
-                applet_id=applet_id,
-            )
-        return None
+    def get_themes(self) -> list[ThemeDao]:
+        themes = []
+        theme_docs = self.db["folder"].find(
+            {"parentId": ObjectId("61323c0ff7102f0a6e9b3588")}
+        )
+        for theme_doc in theme_docs:
+            if theme_doc:
+                meta = theme_doc.get("meta", {})
+                themes.append(
+                    ThemeDao(
+                        id=mongoid_to_uuid(theme_doc["_id"]),
+                        creator_id=mongoid_to_uuid(theme_doc["creatorId"]),
+                        name=theme_doc["name"],
+                        logo=meta.get("logo"),
+                        small_logo=meta.get("smallLogo"),
+                        background_image=meta.get("backgroundImage"),
+                        primary_color=meta.get("primaryColor"),
+                        secondary_color=meta.get("secondaryColor"),
+                        tertiary_color=meta.get("tertiaryColor"),
+                        public=theme_doc["public"],
+                        allow_rename=True,
+                        created_at=theme_doc["created"],
+                        updated_at=theme_doc["updated"],
+                        is_default=False,
+                    )
+                )
+        return themes
 
-    def get_library(
-        self, applet_ids: list[ObjectId] | None
-    ) -> (LibraryDao, ThemeDao):
+    def get_library(self, applet_ids: list[ObjectId] | None) -> LibraryDao:
         lib_set = set()
-        theme_set = set()
         query = {}
         if applet_ids:
             query["appletId"] = {"$in": applet_ids}
@@ -2040,13 +2036,8 @@ class Mongo:
                 name=lib_doc["name"],
                 display_name=lib_doc["displayName"],
             )
-            theme_id = lib_doc.get("themeId")
-            if theme_id:
-                theme = self.get_theme(theme_id, applet_id)
-                if theme:
-                    theme_set.add(theme)
             lib_set.add(lib)
-        return lib_set, theme_set
+        return lib_set
 
     def get_applets_by_workspace(self, workspace_id: str) -> list[str]:
         items = Profile().find(query={"accountId": ObjectId(workspace_id)})
@@ -2079,7 +2070,7 @@ class Mongo:
                 user_id = applet_profile["userId"]
                 if not isinstance(user_id, ObjectId):
                     user_id = ObjectId(user_id)
-                if link_id and login:
+                if link_id is not None and login is not None:
                     result.append(
                         PublicLinkDao(
                             applet_bson=document["_id"],
@@ -2117,3 +2108,17 @@ class Mongo:
                 )
                 result.append(mapper)
         return result
+
+    def fetch_applet_version(self, applet: dict):
+        if not applet["meta"]["applet"].get("version", None):
+            protocol = self.db["folder"].find_one(
+                {
+                    "_id": ObjectId(
+                        str(applet["meta"]["protocol"]["_id"]).split("/")[1]
+                    )
+                }
+            )
+            applet["meta"]["applet"]["version"] = protocol["meta"]["protocol"][
+                "schema:version"
+            ][0]["@value"]
+        return applet
