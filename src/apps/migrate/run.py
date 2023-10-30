@@ -649,9 +649,13 @@ def migrate_user_pins(
             skipped += 1
             continue
         to_migrate.append(profile)
-    rows_count = postgres.save_user_pins(to_migrate)
-    migration_log.info(f"Inserted {rows_count} rows")
-    migration_log.info("User pins migration end")
+    try:
+        rows_count = postgres.save_user_pins(to_migrate)
+        migration_log.info(f"Inserted {rows_count} rows")
+    except Exception as e:
+        migration_log.error(e)
+    finally:
+        migration_log.info("User pins migration end")
 
 
 def migrate_folders(workspace_id: str | None, mongo, postgres):
@@ -843,7 +847,7 @@ async def migrate_public_links(postgres: Postgres, mongo: Mongo):
     applet_mongo_ids = postgres.get_migrated_applets()
     links = mongo.get_public_link_mappings(applet_mongo_ids)
     await postgres.save_public_link(links)
-    migration_log.info("Public links migration start")
+    migration_log.info("Public links migration end")
 
 
 async def main(workspace_id: str | None, applets_ids: list[str] | None):

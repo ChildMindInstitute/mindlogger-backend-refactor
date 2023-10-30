@@ -1280,7 +1280,8 @@ class Mongo:
             or applet["meta"]["applet"] == {}
         ):
             raise EmptyAppletException()
-
+        # fetch version
+        applet = self.fetch_applet_version(applet)
         ld_request_schema = self.get_applet_repro_schema(applet)
         ld_request_schema, applet = patch_broken_applets(
             applet_id, ld_request_schema, applet
@@ -2069,7 +2070,7 @@ class Mongo:
                 user_id = applet_profile["userId"]
                 if not isinstance(user_id, ObjectId):
                     user_id = ObjectId(user_id)
-                if link_id and login:
+                if link_id is not None and login is not None:
                     result.append(
                         PublicLinkDao(
                             applet_bson=document["_id"],
@@ -2107,3 +2108,17 @@ class Mongo:
                 )
                 result.append(mapper)
         return result
+
+    def fetch_applet_version(self, applet: dict):
+        if not applet["meta"]["applet"].get("version", None):
+            protocol = self.db["folder"].find_one(
+                {
+                    "_id": ObjectId(
+                        str(applet["meta"]["protocol"]["_id"]).split("/")[1]
+                    )
+                }
+            )
+            applet["meta"]["applet"]["version"] = protocol["meta"]["protocol"][
+                "schema:version"
+            ][0]["@value"]
+        return applet
