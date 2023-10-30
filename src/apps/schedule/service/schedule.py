@@ -1102,6 +1102,16 @@ class ScheduleService:
         """Import schedule."""
         events = []
         for schedule in schedules:
+            if schedule.periodicity.type == PeriodicityType.ALWAYS:
+                # delete alwaysAvailable events of this activity or flow,
+                # if new event type is AA
+                await self._delete_by_activity_or_flow(
+                    applet_id=applet_id,
+                    activity_id=schedule.activity_id,
+                    flow_id=schedule.flow_id,
+                    respondent_id=schedule.respondent_id,
+                    only_always_available=True,
+                )
             event = await self.create_schedule(
                 applet_id=applet_id, schedule=schedule
             )
