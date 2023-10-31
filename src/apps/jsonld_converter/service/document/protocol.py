@@ -23,7 +23,6 @@ from apps.jsonld_converter.service.domain import NotEncryptedApplet
 
 
 class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
-
     ld_version: str | None = None
     ld_schema_version: str | None = None
     ld_pref_label: str | None = None
@@ -111,6 +110,9 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         if rs.get("enabled", False):
             self.ld_retention_period = rs.get("period")
             self.ld_retention_type = rs.get("retention")
+            if self.ld_retention_period is not None:
+                if self.ld_retention_period == 0:
+                    self.ld_retention_period = None
 
     def _get_report_configuration(
         self, processed_doc: dict, *, drop=False
