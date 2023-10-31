@@ -2254,15 +2254,15 @@ class Mongo:
         return applet_schema
 
     def fetch_applet_version(self, applet: dict):
-            if not applet["meta"]["applet"].get("version", None):
-                protocol = self.db["folder"].find_one(
-                    {
-                        "_id": ObjectId(
-                            str(applet["meta"]["protocol"]["_id"]).split("/")[1]
-                        )
-                    }
-                )
-                applet["meta"]["applet"]["version"] = protocol["meta"]["protocol"][
-                    "schema:version"
-                ][0]["@value"]
-            return applet
+        if not applet["meta"]["applet"].get("version", None):
+            protocol = self.db["folder"].find_one(
+                {
+                    "_id": ObjectId(
+                        str(applet["meta"]["protocol"]["_id"]).split("/")[1]
+                    )
+                }
+            )
+            applet["meta"]["applet"]["version"] = protocol["meta"]["protocol"][
+                "schema:version"
+            ][0]["@value"]
+        return applet
