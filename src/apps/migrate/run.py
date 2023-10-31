@@ -495,6 +495,8 @@ async def get_applets_ids() -> list[str]:
         "61b384f7d386d628d862eb76",
         "61df0360bf09cb40db5a2b14",
         "62b613e0b90b7f2ba9e1d2ae",
+        "6296531cb90b7f104d02e3f7",
+        "61e6e627bf09cb40db5a35d0",
     ]
     for applet in applets:
         migrating_applets.append(str(applet["_id"]))
