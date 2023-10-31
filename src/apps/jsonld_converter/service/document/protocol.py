@@ -110,6 +110,9 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         if rs.get("enabled", False):
             self.ld_retention_period = rs.get("period")
             self.ld_retention_type = rs.get("retention")
+            if self.ld_retention_period is not None:
+                if self.ld_retention_period == 0:
+                    self.ld_retention_period = None
 
     def _get_report_configuration(
         self, processed_doc: dict, *, drop=False
@@ -233,9 +236,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             # link: uuid.UUID | None
             # require_login: bool | None
             # pinned_at: datetime.datetime | None
-            retention_period=self.ld_retention_period
-            if self.ld_retention_period > 0
-            else None,
+            retention_period=self.ld_retention_period,
             retention_type=self.ld_retention_type,
             report_server_ip=report_cfg.get("serverIp") or "",
             report_public_key=report_cfg.get("publicEncryptionKey") or "",
