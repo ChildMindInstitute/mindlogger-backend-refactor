@@ -23,7 +23,6 @@ from apps.jsonld_converter.service.domain import NotEncryptedApplet
 
 
 class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
-
     ld_version: str | None = None
     ld_schema_version: str | None = None
     ld_pref_label: str | None = None
@@ -234,7 +233,9 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             # link: uuid.UUID | None
             # require_login: bool | None
             # pinned_at: datetime.datetime | None
-            retention_period=self.ld_retention_period,
+            retention_period=self.ld_retention_period
+            if self.ld_retention_period > 0
+            else None,
             retention_type=self.ld_retention_type,
             report_server_ip=report_cfg.get("serverIp") or "",
             report_public_key=report_cfg.get("publicEncryptionKey") or "",
