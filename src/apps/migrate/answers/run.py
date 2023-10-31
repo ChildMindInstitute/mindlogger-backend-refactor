@@ -39,6 +39,31 @@ from apps.activities.db.schemas import (
 )
 
 
+APPLETS_WITH_ISSUES_DONT_MIGRATE_ANSWERS = {
+    "623cd7ee5197b9338bdaf218",
+    "6116c49e66f506a576da4f03",
+    "5fd28283c47c585b7c73354b",
+    "5f0e35523477de8b4a528dd0",
+    "61f3415f62485608c74c1f0b",
+    "61f3423962485608c74c1f45",
+    "623cb24d5197b9338bdaed65",
+    "623ce1695197b9338bdaf388",
+    "61f3419a62485608c74c1f25",
+    "63d3d579b71996780cdf409a",
+    "636533965cb70043112200a9",
+    "636936b352ea02101467640d",
+    "631aba1db7ee970ffa9009e3",
+    "623ce52a5197b9338bdaf4b6",
+    "623dfaf95197b9338bdaf8c5",
+    "62f16366acd35a39e99b57ec",
+    "636425cf5cb700431121fe46",
+    "636532fd5cb700431121ff93",
+    "636936ca52ea021014676437",
+    "636936e652ea02101467645b",
+    "636e942c52ea0234e1f4ec25",
+}
+
+
 class AnswersMigrateFacade:
     anonymous_respondent_answers = 0
     total_answers = 0
@@ -57,7 +82,11 @@ class AnswersMigrateFacade:
         regular_session = session_manager.get_session()
 
         applets_ids = await self._get_allowed_applets_ids(workspace, applets)
-        applets_ids = [mongoid_to_uuid(applet_id) for applet_id in applets_ids]
+        applets_ids = [
+            mongoid_to_uuid(applet_id)
+            for applet_id in applets_ids
+            if applet_id not in APPLETS_WITH_ISSUES_DONT_MIGRATE_ANSWERS
+        ]
 
         await self._wipe_answers_data(regular_session, applets_ids)
 

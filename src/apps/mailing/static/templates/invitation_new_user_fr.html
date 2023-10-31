@@ -1,0 +1,90 @@
+<html style="max-width: 700px" lang="en">
+<body>
+{% include 'header.html' %}
+<table style="padding: 0">
+    <tr>
+        <td style="padding-bottom: 1%">
+            {{ first_name }}!
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Bienvenue dans "{{ applet_name }}"!
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Vous avez été invité à devenir {{ role }} de "{{ applet_name
+            }}", dans l'application MindLogger (voir ci-dessous).
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Pour accepter cette invitation, cliquez ci-dessous et votre
+            navigateur Internet s'ouvrira sur la page d'invitation
+            de "{{ applet_name }}":
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            <a
+                    href="{{ link }}/{{ key }}?lang={{ language }}"
+                    style="padding: 0.4rem 1rem; font-size: 0.8rem; line-height: 1.5; border-radius: 0.3rem; margin-left: 100px; display: inline-block; font-weight: 400; text-align: center; vertical-align: middle; text-decoration: none; color: #ffffff; background-color: rgb(88, 217, 65); border-color: rgb(88, 217, 65);"
+            >
+                Aller à la page d'invitation "{{ applet_name }}".
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Après avoir accepté l'invitation, vous pourrez accéder à
+            "{{ applet_name }}" dans l'application gratuite MindLogger sur votre
+            appareil mobile, en suivant trois étapes simples (voir
+            <a
+                    href="https://mindlogger.org//guides/user-guide.html"
+            >
+                le guide de l'utilisateur
+            </a>pour plus de détails):
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            <ol>
+                <li>
+                    Installez l'application MindLogger sur votre appareil
+                    mobile, si elle n'est pas déjà installée.
+                </li>
+                <li>
+                    Ouvrez l'application MindLogger sur votre appareil mobile et
+                    connectez-vous (si vous avez un compte MindLogger) ou
+                    inscrivez-vous (si vous êtes nouveau sur MindLogger).
+                    Pour vous inscrire, appuyez sur "Nouvel utilisateur" sur
+                    l'écran de connexion et entrez l'adresse email à laquelle
+                    vous avez reçu l'invitation.
+                </li>
+                <li>
+                    Appuyez sur "{{ applet_name }}" sur l'écran d'accueil de
+                    MindLogger et vous êtes prêt ! Si "{{ applet_name }}"
+                    n'apparaît pas, rafraîchissez l'écran en faisant glisser
+                    votre doigt vers le bas à partir du haut, et une roue
+                    devrait apparaître pendant le chargement
+                    de "{{ applet_name }}".
+                </li>
+            </ol>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            Merci d'avoir accepté l'invitation à utiliser "{{ applet_name }}"!
+        </td>
+    </tr>
+    <tr>
+        <td style="padding-bottom: 1%">
+            -L'équipe MindLogger
+        </td>
+    </tr>
+</table>
+{% include 'footers/footer_info_fr.html' %}
+</body>
+
+</html>

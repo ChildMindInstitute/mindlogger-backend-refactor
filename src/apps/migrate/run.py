@@ -649,9 +649,13 @@ def migrate_user_pins(
             skipped += 1
             continue
         to_migrate.append(profile)
-    rows_count = postgres.save_user_pins(to_migrate)
-    migration_log.info(f"Inserted {rows_count} rows")
-    migration_log.info("User pins migration end")
+    try:
+        rows_count = postgres.save_user_pins(to_migrate)
+        migration_log.info(f"Inserted {rows_count} rows")
+    except Exception as e:
+        migration_log.error(e)
+    finally:
+        migration_log.info("User pins migration end")
 
 
 def migrate_folders(workspace_id: str | None, mongo, postgres):
@@ -677,7 +681,8 @@ def migrate_library(
     migration_log.info("Library & themes migration start")
     lib_count = 0
     theme_count = 0
-    lib_set, theme_set = mongo.get_library(applet_ids)
+    lib_set = mongo.get_library(applet_ids)
+    theme_set = mongo.get_themes()
     for lib in lib_set:
         if lib.applet_id_version is None:
             version = postgres.get_latest_applet_id_version(lib.applet_id)
@@ -701,7 +706,7 @@ def migrate_library(
         success = postgres.save_theme_item(theme)
         if success:
             theme_count += 1
-            postgres.add_theme_to_applet(theme.applet_id, theme.id)
+            # postgres.add_theme_to_applet(theme.applet_id, theme.id)
 
     applet_themes = mongo.get_applet_theme_mapping()
     applets_count = postgres.set_applets_themes(applet_themes)
@@ -842,7 +847,7 @@ async def migrate_public_links(postgres: Postgres, mongo: Mongo):
     applet_mongo_ids = postgres.get_migrated_applets()
     links = mongo.get_public_link_mappings(applet_mongo_ids)
     await postgres.save_public_link(links)
-    migration_log.info("Public links migration start")
+    migration_log.info("Public links migration end")
 
 
 async def main(workspace_id: str | None, applets_ids: list[str] | None):

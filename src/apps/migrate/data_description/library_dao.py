@@ -43,7 +43,6 @@ class LibraryDao:
 class ThemeDao:
     id: uuid.UUID
     creator_id: uuid.UUID
-    applet_id: uuid.UUID
     name: str
     logo: str | None
     small_logo: str | None
