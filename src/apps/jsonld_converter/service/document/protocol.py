@@ -20,6 +20,7 @@ from apps.jsonld_converter.service.document.base import (
     LdKeyword,
 )
 from apps.jsonld_converter.service.domain import NotEncryptedApplet
+from apps.workspaces.domain.constants import DataRetention
 
 
 class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
@@ -113,6 +114,17 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             if self.ld_retention_period is not None:
                 if self.ld_retention_period == 0:
                     self.ld_retention_period = None
+            if self.ld_retention_type is not None:
+                if self.ld_retention_type == "year":
+                    self.ld_retention_type = DataRetention.YEARS
+                elif self.ld_retention_type == "month":
+                    self.ld_retention_type = DataRetention.MONTHS
+                elif self.ld_retention_type == "day":
+                    self.ld_retention_type = DataRetention.DAYS
+                elif self.ld_retention_type == "week":
+                    self.ld_retention_type = DataRetention.WEEKS
+                elif self.ld_retention_type == "indefinitely":
+                    self.ld_retention_type = DataRetention.INDEFINITELY
 
     def _get_report_configuration(
         self, processed_doc: dict, *, drop=False
