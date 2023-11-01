@@ -97,16 +97,12 @@ class AppletHistoryService:
         return AppletHistory.from_orm(schema)
 
     async def get_prev_version(self):
-        id_versions = await AppletHistoriesCRUD(
+        versions = await AppletHistoriesCRUD(
             self.session
         ).get_id_versions_by_applet_id(self._applet_id)
-        versions = [v.replace(f"{self._applet_id}_", "") for v in id_versions]
-        versions.sort()
-        prev_version = ""
+        prev_version = INITIAL_VERSION
         if self._version in versions:
             prev_version = versions[max(versions.index(self._version) - 1, 0)]
-        else:
-            prev_version = INITIAL_VERSION
 
         return prev_version
 
