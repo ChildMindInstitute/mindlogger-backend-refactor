@@ -1475,7 +1475,9 @@ class Mongo:
     def get_user_nickname(self, user_profile: dict) -> str:
         nick_name = decrypt(user_profile.get("nickName"))
         if not nick_name:
-            nick_name = ""
+            f_name = decrypt(user_profile.get("firstName"))
+            l_name = decrypt(user_profile.get("lastName"))
+            nick_name = f"{f_name} {l_name}" if f_name and l_name else f""
         return nick_name
 
     def reviewer_meta(
@@ -1595,6 +1597,11 @@ class Mongo:
             return ["manager", "user"] if "user" in roles else ["manager"]
         return roles
 
+    def has_manager_role(self, roles: list[str]):
+        manager_roles = set(Role.managers())
+        exist = bool(set(roles).intersection(manager_roles))
+        return exist
+
     def get_roles_mapping_from_applet_profile(
         self, migrated_applet_ids: List[ObjectId]
     ):
@@ -1614,7 +1621,6 @@ class Mongo:
         editor_count = 0
         coordinator_count = 0
         respondent_count = 0
-        managerial_applets = []
 
         for applet_profile in applet_profiles:
             if applet_profile["userId"] in not_found_users:
@@ -1635,9 +1641,8 @@ class Mongo:
                 continue
 
             roles = self.get_user_roles(applet_profile)
+            has_manager_role = self.has_manager_role(roles)
             for role_name in set(roles):
-                if role_name != "user":
-                    managerial_applets.append(applet_profile["appletId"])
                 meta = {}
                 if role_name == Role.REVIEWER:
                     meta["respondents"] = self.respondents_by_applet_profile(
@@ -1658,7 +1663,7 @@ class Mongo:
                         applet_profile
                     )
                     if data:
-                        if applet_profile["appletId"] in managerial_applets:
+                        if has_manager_role:
                             if data["nick"] == "":
                                 f_name = user["firstName"]
                                 l_name = user["lastName"]
