@@ -52,6 +52,7 @@ class AppletMigrationHistoryService:
                 migrated_date=applet.migrated_date,
                 migrated_updated=applet.migrated_updated,
                 extra_fields=prepare_extra_fields_to_save(applet.extra_fields),
+                stream_enabled=applet.stream_enabled,
             )
         )
         await ActivityHistoryMigrationService(
