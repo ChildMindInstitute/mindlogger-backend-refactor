@@ -38,6 +38,8 @@ class AppletUserDAO:
                 "id", 
                 "migrated_date",
                 "migrated_updated",
+                "created_at",
+                "updated_at",
                 "is_deleted", 
                 "is_pinned",
                 "role", 
@@ -51,6 +53,8 @@ class AppletUserDAO:
                 %s,
                 now() at time zone ('utc'),
                 now() at time zone ('utc'),
+                now() at time zone ('utc'),
+                now() at time zone ('utc'),
                 FALSE,
                 %s, %s, %s, %s, %s, %s, %s
             )
@@ -59,10 +63,15 @@ class AppletUserDAO:
     def update_stmt(self):
         return """
         UPDATE user_applet_accesses 
-            SET meta = jsonb_set(
-                COALESCE(meta, '{}'::jsonb),
-                '{legacyProfileId}',%s, true
-            )
+            SET 
+                meta = jsonb_set(
+                    COALESCE(meta, '{}'::jsonb),
+                    '{legacyProfileId}',%s, true
+                ),
+                "migrated_date" = now() at time zone ('utc'),
+                "migrated_updated" = now() at time zone ('utc'),
+                "created_at" = now() at time zone ('utc'),
+                "updated_at" = now() at time zone ('utc')
         WHERE 
             role = %s AND
             user_id = %s AND
