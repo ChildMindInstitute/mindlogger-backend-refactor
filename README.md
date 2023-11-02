@@ -65,7 +65,7 @@ git clone git@github.com:ChildMindInstitute/mindlogger-backend-refactor.git
 | AUTHENTICATION__ALGORITHM | HS256                                                            | The JWT's algorithm                                                                                                                                                           |
 | AUTHENTICATION__ACCESS_TOKEN_EXPIRATION_TIME | 30                                                               | Time in minutes after which the access token will stop working                                                                                                                |
 | AUTHENTICATION__REFRESH_TOKEN_EXPIRATION_TIME | 30                                                               | Time in minutes after which the refresh token will stop working                                                                                                               |
-| ADMIN_DOMAIN | -                                                                | Admin panel domain                                                                                                                                                            |
+| SERVICE__URLS__FRONTEND__ADMIN_BASE | -                                                                | Admin panel domain                                                                                                                                                            |
 
 ##### ✋ Mandatory:
 
