@@ -1475,9 +1475,10 @@ class Mongo:
     def get_user_nickname(self, user_profile: dict) -> str:
         nick_name = decrypt(user_profile.get("nickName"))
         if not nick_name:
-            f_name = decrypt(user_profile.get("firstName"))
-            l_name = decrypt(user_profile.get("lastName"))
-            nick_name = f"{f_name} {l_name}" if f_name and l_name else f""
+            # f_name = decrypt(user_profile.get("firstName"))
+            # l_name = decrypt(user_profile.get("lastName"))
+            # nick_name = f"{f_name} {l_name}" if f_name and l_name else f""
+            nick_name = ""
         return nick_name
 
     def reviewer_meta(
