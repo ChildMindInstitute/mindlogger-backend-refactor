@@ -1291,6 +1291,7 @@ class Mongo:
 
         converted.extra_fields["created"] = applet["created"]
         converted.extra_fields["updated"] = applet["updated"]
+        converted.extra_fields["creator"] = str(applet.get("creatorId", None))
         converted.extra_fields["version"] = applet["meta"]["applet"].get(
             "version", INITIAL_VERSION
         )
