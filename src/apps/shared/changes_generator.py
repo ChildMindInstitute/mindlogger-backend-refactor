@@ -227,7 +227,7 @@ class ChangeGenerator:
                                     )
                                 )
 
-            elif type(value) == bool:
+            elif isinstance(value, bool):
                 changes.append(
                     self._change_text_generator.set_bool(
                         f"Activity {to_camelcase(field)}",
@@ -455,8 +455,8 @@ class ChangeGenerator:
                                 )
                             )
 
-            elif type(value) == bool:
-                if value and value != old_value:
+            elif isinstance(value, bool):
+                if value != old_value:
                     changes.append(
                         self._change_text_generator.set_bool(
                             f"Activity {to_camelcase(field)}",
@@ -500,7 +500,7 @@ class ChangeGenerator:
                     "activity_id",
                 ]:
                     continue
-                elif type(value) == bool:
+                elif isinstance(value, bool):
                     changes.append(
                         self._change_text_generator.set_bool(
                             f"Item {to_camelcase(field)}",
@@ -523,7 +523,7 @@ class ChangeGenerator:
                     elif field == "config":
                         if value:
                             for key, val in value.items():
-                                if type(val) == bool:
+                                if isinstance(val, bool):
                                     changes.append(
                                         self._change_text_generator.set_bool(
                                             f"Item {to_camelcase(key)}",
@@ -531,9 +531,9 @@ class ChangeGenerator:
                                         )
                                     )
 
-                                elif type(val) == dict:
+                                elif isinstance(val, dict):
                                     for k, v in val.items():
-                                        if type(v) == bool:
+                                        if isinstance(v, bool):
                                             changes.append(
                                                 self._change_text_generator.set_bool(  # noqa: E501
                                                     f"Item {to_camelcase(k)}",
@@ -620,8 +620,8 @@ class ChangeGenerator:
                 "activity_id",
             ]:
                 continue
-            elif type(value) == bool:
-                if value and value != old_value:
+            elif isinstance(value, bool):
+                if value != old_value:
                     changes.append(
                         self._change_text_generator.set_bool(
                             f"Item {to_camelcase(field)}",
@@ -646,7 +646,7 @@ class ChangeGenerator:
                         for key, val in value.items():
                             old_val = getattr(old_value, key, None)
                             if val != old_val:
-                                if type(val) == bool:
+                                if isinstance(val, bool):
                                     changes.append(
                                         self._change_text_generator.set_bool(
                                             f"Item {to_camelcase(key)}",
@@ -654,11 +654,11 @@ class ChangeGenerator:
                                         )
                                     )
 
-                                elif type(val) == dict:
+                                elif isinstance(val, dict):
                                     for k, v in val.items():
                                         old_v = getattr(old_val, k, None)
                                         if v != old_v:
-                                            if type(v) == bool:
+                                            if isinstance(v, bool):
                                                 changes.append(
                                                     self._change_text_generator.set_bool(  # noqa: E501
                                                         f"Item {to_camelcase(k)}",  # noqa: E501
