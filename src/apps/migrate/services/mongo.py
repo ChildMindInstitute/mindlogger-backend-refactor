@@ -1669,11 +1669,9 @@ class Mongo:
                             if data["nick"] == "":
                                 f_name = user["firstName"]
                                 l_name = user["lastName"]
-                                meta["nickname"] = (
-                                    f"{f_name} {l_name}"
-                                    if f_name and l_name
-                                    else f"- -"
-                                )
+                                f_name = f_name if f_name else "-"
+                                l_name = l_name if l_name else "-"
+                                meta["nickname"] = f"{f_name} {l_name}"
                             else:
                                 meta["nickname"] = data["nick"]
 
