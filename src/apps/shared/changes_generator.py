@@ -316,13 +316,12 @@ class ChangeGenerator:
                                                 f'Activity scores {", ".join(deleted_names)}'  # noqa: E501
                                             )
                                         )
-                                else:
-                                    if old_val:
-                                        changes.append(
-                                            self._change_text_generator.removed_text(  # noqa: E501
-                                                "Activity scores"
-                                            )
+                                elif old_val:
+                                    changes.append(
+                                        self._change_text_generator.removed_text(  # noqa: E501
+                                            "Activity scores"
                                         )
+                                    )
 
                             elif key == "sections":
                                 if val:
@@ -362,20 +361,18 @@ class ChangeGenerator:
                                                 f'Activity section {", ".join(deleted_names)}'  # noqa: E501
                                             )
                                         )
-                                else:
-                                    if old_val:
-                                        changes.append(
-                                            self._change_text_generator.removed_text(  # noqa: E501
-                                                "Activity sections"
-                                            )
+                                elif old_val:
+                                    changes.append(
+                                        self._change_text_generator.removed_text(  # noqa: E501
+                                            "Activity sections"
                                         )
-                    else:
-                        if old_value:
-                            changes.append(
-                                self._change_text_generator.removed_text(
-                                    f"Activity {to_camelcase(field)}"
-                                )
+                                    )
+                    elif old_value and not value:
+                        changes.append(
+                            self._change_text_generator.removed_text(
+                                f"Activity {to_camelcase(field)}"
                             )
+                        )
                 elif field == "subscale_setting":
                     if value and value != old_value:
                         for key, val in value.items():
@@ -447,8 +444,7 @@ class ChangeGenerator:
                                                 val,
                                             )
                                         )
-                    else:
-                        if old_value:
+                    elif old_value and not value:
                             changes.append(
                                 self._change_text_generator.removed_text(
                                     f"Activity {to_camelcase(field)}"
@@ -475,7 +471,7 @@ class ChangeGenerator:
                                 f"Activity {to_camelcase(field)}", value
                             )
                         )
-        return changes, bool(changes)
+        return changes
 
     def generate_activity_items_insert(self, items):
         change_items = []
@@ -593,10 +589,10 @@ class ChangeGenerator:
                     )
                 )
             elif new_item and prev_item:
-                changes, has_changes = self._generate_activity_item_update(
+                changes = self._generate_activity_item_update(
                     new_item, prev_item
                 )
-                if has_changes:
+                if changes:
                     change_items.append(
                         ActivityItemHistoryChange(
                             name=self._change_text_generator.updated_text(
@@ -606,7 +602,7 @@ class ChangeGenerator:
                         )
                     )
 
-        return change_items, bool(change_items)
+        return change_items
 
     def _generate_activity_item_update(self, new_item, prev_item):
         changes = list()
@@ -690,4 +686,4 @@ class ChangeGenerator:
                         else f"Item {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, value)}."  # noqa: E501
                     )
 
-        return changes, bool(changes)
+        return changes

@@ -111,25 +111,17 @@ class ActivityHistoryService:
                     )
                 )
             elif new_activity and prev_activity:
-                has_changes = False
-                (
-                    changes,
-                    has_changes,
-                ) = change_activity_generator.generate_activity_update(
+                changes = change_activity_generator.generate_activity_update(
                     new_activity, prev_activity
                 )
-                changes_items = []
-                (
-                    changes_items,
-                    has_changes,
-                ) = change_activity_generator.generate_activity_items_update(
+                changes_items = change_activity_generator.generate_activity_items_update(
                     self._group_and_sort_activities_or_items(
                         getattr(new_activity, "items", [])
                         + getattr(prev_activity, "items", [])
                     ),
                 )
 
-                if has_changes:
+                if changes or changes_items:
                     activity_changes.append(
                         ActivityHistoryChange(
                             name=changes_generator.updated_text(
