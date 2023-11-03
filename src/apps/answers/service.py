@@ -914,7 +914,7 @@ class AnswerService:
         self, applet_id: uuid.UUID, activity_id: str, created_at: int
     ) -> bool:
         answers = await AnswersCRUD(
-            self.session
+            self.answer_session
         ).get_by_applet_activity_created_at(applet_id, activity_id, created_at)
         if not answers:
             return False
