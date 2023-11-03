@@ -168,6 +168,7 @@ class ChangeGenerator:
                 "created_at",
                 "id_version",
                 "applet_id",
+                "extra_fields",
             ]:
                 continue
             elif field in [
@@ -259,6 +260,7 @@ class ChangeGenerator:
                 "created_at",
                 "id_version",
                 "applet_id",
+                "extra_fields",
             ]:
                 continue
             elif field in [
@@ -445,11 +447,11 @@ class ChangeGenerator:
                                             )
                                         )
                     elif old_value and not value:
-                            changes.append(
-                                self._change_text_generator.removed_text(
-                                    f"Activity {to_camelcase(field)}"
-                                )
+                        changes.append(
+                            self._change_text_generator.removed_text(
+                                f"Activity {to_camelcase(field)}"
                             )
+                        )
 
             elif isinstance(value, bool):
                 if value != old_value:
@@ -494,6 +496,7 @@ class ChangeGenerator:
                     "created_at",
                     "id_version",
                     "activity_id",
+                    "extra_fields",
                 ]:
                     continue
                 elif isinstance(value, bool):
@@ -614,6 +617,7 @@ class ChangeGenerator:
                 "created_at",
                 "id_version",
                 "activity_id",
+                "extra_fields",
             ]:
                 continue
             elif isinstance(value, bool):

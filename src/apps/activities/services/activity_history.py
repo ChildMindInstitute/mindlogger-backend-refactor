@@ -114,11 +114,13 @@ class ActivityHistoryService:
                 changes = change_activity_generator.generate_activity_update(
                     new_activity, prev_activity
                 )
-                changes_items = change_activity_generator.generate_activity_items_update(
-                    self._group_and_sort_activities_or_items(
-                        getattr(new_activity, "items", [])
-                        + getattr(prev_activity, "items", [])
-                    ),
+                changes_items = (
+                    change_activity_generator.generate_activity_items_update(
+                        self._group_and_sort_activities_or_items(
+                            getattr(new_activity, "items", [])
+                            + getattr(prev_activity, "items", [])
+                        ),
+                    )
                 )
 
                 if changes or changes_items:
