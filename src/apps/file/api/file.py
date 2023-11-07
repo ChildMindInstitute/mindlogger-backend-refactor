@@ -177,7 +177,7 @@ async def presign(
 ):
     service = await get_presign_service(applet_id, user.id, session)
     links = await service.presign(request.private_urls)
-    return ResponseMulti[str](result=links, count=len(links))
+    return ResponseMulti[str | None](result=links, count=len(links))  # noqa
 
 
 async def logs_upload(
