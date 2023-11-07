@@ -81,6 +81,7 @@ from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.workspace import WorkspaceRespondent
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.logger import logger
 from infrastructure.utility import RedisCache
@@ -1030,6 +1031,19 @@ class AnswerService:
             )
 
         return count
+
+    async def fill_last_activity(
+        self,
+        respondents: list[WorkspaceRespondent],
+        applet_id: uuid.UUID | None = None,
+    ) -> list[WorkspaceRespondent]:
+        respondent_ids = [respondent.id for respondent in respondents]
+        result = await AnswersCRUD(self.answer_session).get_last_activity(
+            respondent_ids, applet_id
+        )
+        for respondent in respondents:
+            respondent.last_seen = result.get(respondent.id)
+        return respondents
 
 
 class ReportServerService:
