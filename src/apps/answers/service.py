@@ -3,6 +3,7 @@ import base64
 import datetime
 import json
 import os
+import time
 import uuid
 from collections import defaultdict
 from json import JSONDecodeError
@@ -1138,15 +1139,23 @@ class ReportServerService:
         )
 
         async with aiohttp.ClientSession() as session:
+            logger.info(f"Sending request to the report server {url}.")
+            start = time.time()
             async with session.post(
                 url,
                 json=dict(payload=encrypted_data),
             ) as resp:
-                response_data = await resp.json()
+                duration = time.time() - start
                 if resp.status == 200:
+                    logger.info(
+                        f"Successful request in {duration:.1f} seconds."
+                    )
+                    response_data = await resp.json()
                     return ReportServerResponse(**response_data)
                 else:
-                    raise ReportServerError(message=str(response_data))
+                    logger.error(f"Failed request in {duration:.1f} seconds.")
+                    error_message = await resp.text()
+                    raise ReportServerError(message=error_message)
 
     def _is_activity_last_in_flow(
         self, applet_full: dict, activity_id: str | None, flow_id: str | None
