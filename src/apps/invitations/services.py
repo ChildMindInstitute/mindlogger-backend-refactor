@@ -99,7 +99,6 @@ class InvitationsService:
     async def send_respondent_invitation(
         self, applet_id: uuid.UUID, schema: InvitationRespondentRequest
     ) -> InvitationDetailForRespondent:
-
         await self._is_validated_role_for_invitation(
             applet_id, Role.RESPONDENT, schema
         )
@@ -216,7 +215,6 @@ class InvitationsService:
     async def send_reviewer_invitation(
         self, applet_id: uuid.UUID, schema: InvitationReviewerRequest
     ) -> InvitationDetailForReviewer:
-
         await self._is_validated_role_for_invitation(
             applet_id, Role.REVIEWER, schema
         )
@@ -329,7 +327,6 @@ class InvitationsService:
     async def send_managers_invitation(
         self, applet_id: uuid.UUID, schema: InvitationManagersRequest
     ) -> InvitationDetailForManagers:
-
         await self._is_validated_role_for_invitation(
             applet_id, schema.role, schema
         )
