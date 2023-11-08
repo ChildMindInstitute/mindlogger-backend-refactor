@@ -181,7 +181,7 @@ class UserAppletAccessService:
         if role == Role.RESPONDENT:
             meta = dict(
                 secretUserId=str(uuid.uuid4()),
-                nickname=f"{user.first_name} {user.last_name}",
+                nickname="",
             )
         else:
             meta = dict()
