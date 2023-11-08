@@ -301,6 +301,17 @@ class WorkspaceService:
         except ValidationError:
             return None
 
+    async def get_arbitrary_info_by_owner_id(
+        self, owner_id: uuid.UUID
+    ) -> WorkspaceArbitrary | None:
+        schema = await UserWorkspaceCRUD(self.session).get_by_user_id(owner_id)
+        if not schema:
+            return None
+        try:
+            return WorkspaceArbitrary.from_orm(schema) if schema else None
+        except ValidationError:
+            return None
+
     async def get_user_answer_db_info(self) -> list[AnswerDbApplets]:
         db_info = await UserWorkspaceCRUD(
             self.session

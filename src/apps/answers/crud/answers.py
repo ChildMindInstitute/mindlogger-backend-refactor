@@ -556,3 +556,18 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
 
             await self._execute(query)
+
+    async def get_last_activity(
+        self, respondent_ids: list[uuid.UUID], applet_id: uuid.UUID | None
+    ) -> dict[uuid.UUID, datetime.datetime]:
+        query: Query = (
+            select(
+                AnswerSchema.respondent_id, func.max(AnswerSchema.created_at)
+            )
+            .group_by(AnswerSchema.respondent_id)
+            .where(AnswerSchema.respondent_id.in_(respondent_ids))
+        )
+        if applet_id:
+            query = query.where(AnswerSchema.applet_id == applet_id)
+        result = await self._execute(query)
+        return {t[0]: t[1] for t in result.all()}

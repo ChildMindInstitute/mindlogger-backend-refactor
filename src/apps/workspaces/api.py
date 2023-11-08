@@ -3,6 +3,10 @@ from copy import deepcopy
 
 from fastapi import Body, Depends, Query
 
+from apps.answers.deps.preprocess_arbitrary import (
+    get_answer_session_by_owner_id,
+)
+from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletService
@@ -273,6 +277,7 @@ async def workspace_respondents_list(
         parse_query_params(WorkspaceUsersQueryParams)
     ),
     session=Depends(get_session),
+    answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMulti[PublicWorkspaceRespondent]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
@@ -284,8 +289,10 @@ async def workspace_respondents_list(
     data, total = await service.get_workspace_respondents(
         owner_id, None, deepcopy(query_params)
     )
-
-    return ResponseMulti(result=data, count=total)
+    respondents = await AnswerService(
+        session=session, arbitrary_session=answer_session
+    ).fill_last_activity(data)
+    return ResponseMulti(result=respondents, count=total)
 
 
 async def workspace_applet_respondents_list(
@@ -296,6 +303,7 @@ async def workspace_applet_respondents_list(
         parse_query_params(WorkspaceUsersQueryParams)
     ),
     session=Depends(get_session),
+    answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMulti[PublicWorkspaceRespondent]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
@@ -307,8 +315,10 @@ async def workspace_applet_respondents_list(
     data, total = await service.get_workspace_respondents(
         owner_id, applet_id, deepcopy(query_params)
     )
-
-    return ResponseMulti(result=data, count=total)
+    respondents = await AnswerService(
+        session=session, arbitrary_session=answer_session
+    ).fill_last_activity(data, applet_id)
+    return ResponseMulti(result=respondents, count=total)
 
 
 async def workspace_managers_list(
