@@ -63,7 +63,7 @@ class S3PresignService:
         else:
             return await self.get_regular_client()
 
-    async def _presign(self, url: str):
+    async def _presign(self, url: str | None):
         if not url:
             return
 
@@ -88,7 +88,7 @@ class S3PresignService:
         else:
             return url
 
-    async def presign(self, urls: List[str]) -> List[str]:
+    async def presign(self, urls: List[str | None]) -> List[str]:
         c_list = []
         for url in urls:
             c_list.append(self._presign(url))
@@ -143,7 +143,7 @@ class GCPPresignService(S3PresignService):
     legacy_file_url_pattern = r"gs:\/\/[a-zA-Z0-9-]+\/[0-9a-fA-F]+\/[0-9a-fA-F]+\/[0-9a-fA-F]+(\/[a-zA-Z0-9.-]*)?"  # noqa
     regular_file_url_pattern = r"gs:\/\/[a-zA-Z0-9.-]+\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+\/[a-f0-9-]+\/[a-f0-9-]+\/[a-zA-Z0-9-]+"  # noqa
 
-    async def _presign(self, url: str):
+    async def _presign(self, url: str | None):
         regular_cdn_client = await select_storage(
             applet_id=self.applet_id, session=self.session
         )
