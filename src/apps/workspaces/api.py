@@ -23,6 +23,7 @@ from apps.workspaces.domain.user_applet_access import (
     RemoveManagerAccess,
     RemoveRespondentAccess,
     RespondentInfo,
+    RespondentInfoPublic,
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
@@ -450,3 +451,22 @@ async def workspace_managers_applet_access_set(
         await UserAccessService(session, user.id).set(
             owner_id, manager_id, accesses
         )
+
+
+async def workspace_applet_get_respondent(
+    owner_id: uuid.UUID,
+    applet_id: uuid.UUID,
+    respondent_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[RespondentInfoPublic]:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+        await CheckAccessService(session, user.id).check_applet_detail_access(
+            applet_id
+        )
+        respondent_info = await UserAppletAccessService(
+            session, user.id, applet_id
+        ).get_respondent_info(respondent_id, applet_id, owner_id)
+        return Response(result=respondent_info)

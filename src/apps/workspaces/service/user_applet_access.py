@@ -7,12 +7,16 @@ from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.domain import InvitationDetailGeneric
+from apps.shared.exception import NotFoundError
 from apps.users import User, UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
 
-from apps.workspaces.domain.user_applet_access import RespondentInfo
+from apps.workspaces.domain.user_applet_access import (
+    RespondentInfo,
+    RespondentInfoPublic,
+)
 from apps.workspaces.errors import (
     UserAppletAccessNotFound,
     UserSecretIdAlreadyExists,
@@ -364,3 +368,23 @@ class UserAppletAccessService:
         return await UserAppletAccessCRUD(self.session).get_user_nickname(
             self._applet_id, self._user_id
         )
+
+    async def get_respondent_info(
+        self,
+        respondent_id: uuid.UUID,
+        applet_id: uuid.UUID,
+        owner_id: uuid.UUID,
+    ) -> RespondentInfoPublic:
+        crud = UserAppletAccessCRUD(self.session)
+        respondent_schema = await crud.get_respondent_by_applet_and_owner(
+            respondent_id, applet_id, owner_id
+        )
+        if not respondent_schema:
+            raise NotFoundError()
+        if respondent_schema.meta:
+            return RespondentInfoPublic(
+                nickname=respondent_schema.meta.get("nickname"),
+                secret_user_id=respondent_schema.meta.get("secretUserId"),
+            )
+        else:
+            return RespondentInfoPublic(nickname=None, secret_user_id=None)

@@ -1285,3 +1285,20 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
         db_result = db_result.first()
         return db_result[0].get("nickname") if db_result else None
+
+    async def get_respondent_by_applet_and_owner(
+        self,
+        respondent_id: uuid.UUID,
+        applet_id: uuid.UUID,
+        owner_id: uuid.UUID,
+    ) -> UserAppletAccessSchema | None:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(
+            UserAppletAccessSchema.owner_id == owner_id,
+            UserAppletAccessSchema.applet_id == applet_id,
+            UserAppletAccessSchema.user_id == respondent_id,
+            UserAppletAccessSchema.role == Role.RESPONDENT,
+        )
+        db_result = await self._execute(query)
+        db_result = db_result.first()  # noqa
+        return db_result[0] if db_result else None
