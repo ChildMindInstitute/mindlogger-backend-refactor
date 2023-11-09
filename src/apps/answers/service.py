@@ -1183,7 +1183,7 @@ class ReportServerService:
             flow_id, _ = initial_answer.flow_history_id.split("_")
 
         url = "{}/send-pdf-report?activityId={}&activityFlowId={}".format(
-            "http://mindlogger-report-server:3001", activity_id, flow_id
+            applet.report_server_ip.rstrip("/"), activity_id, flow_id
         )
 
         async with aiohttp.ClientSession() as session:
