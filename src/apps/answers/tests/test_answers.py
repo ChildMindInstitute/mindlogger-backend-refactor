@@ -435,7 +435,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -514,7 +514,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -629,7 +629,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -692,7 +692,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -793,7 +793,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -846,7 +846,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
@@ -918,7 +918,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
@@ -1014,7 +1014,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
@@ -1146,7 +1146,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -1321,7 +1321,7 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-            version="1.9.9",
+            version="1.0.0",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             answer=dict(
                 user_public_key="user key",
@@ -1360,8 +1360,8 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["name"] == "PHQ2 new"
-        assert response.json()["result"][0]["isPerformanceTask"] is True
-        assert response.json()["result"][0]["hasAnswer"] is True
+        assert response.json()["result"][0]["isPerformanceTask"]
+        assert response.json()["result"][0]["hasAnswer"]
 
     @rollback_with_session
     async def test_store_client_meta(self, **kwargs):
@@ -1518,7 +1518,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -1565,7 +1565,7 @@ class TestAnswerActivityItems(BaseTest):
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-            version="1.9.9",
+            version="1.0.0",
             activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             answer=dict(
                 user_public_key="user key",
