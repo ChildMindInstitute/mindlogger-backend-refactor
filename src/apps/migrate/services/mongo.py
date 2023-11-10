@@ -1286,10 +1286,12 @@ class Mongo:
         ld_request_schema, applet = patch_broken_applets(
             applet_id, ld_request_schema, applet
         )
+        ld_request_schema = self.preprocess_performance_task(ld_request_schema)
         converted = await self.get_converter_result(ld_request_schema)
 
         converted.extra_fields["created"] = applet["created"]
         converted.extra_fields["updated"] = applet["updated"]
+        converted.extra_fields["creator"] = str(applet.get("creatorId", None))
         converted.extra_fields["version"] = applet["meta"]["applet"].get(
             "version", INITIAL_VERSION
         )
@@ -1474,6 +1476,9 @@ class Mongo:
     def get_user_nickname(self, user_profile: dict) -> str:
         nick_name = decrypt(user_profile.get("nickName"))
         if not nick_name:
+            # f_name = decrypt(user_profile.get("firstName"))
+            # l_name = decrypt(user_profile.get("lastName"))
+            # nick_name = f"{f_name} {l_name}" if f_name and l_name else f""
             nick_name = ""
         return nick_name
 
@@ -1594,6 +1599,11 @@ class Mongo:
             return ["manager", "user"] if "user" in roles else ["manager"]
         return roles
 
+    def has_manager_role(self, roles: list[str]):
+        manager_roles = set(Role.managers())
+        exist = bool(set(roles).intersection(manager_roles))
+        return exist
+
     def get_roles_mapping_from_applet_profile(
         self, migrated_applet_ids: List[ObjectId]
     ):
@@ -1613,7 +1623,6 @@ class Mongo:
         editor_count = 0
         coordinator_count = 0
         respondent_count = 0
-        managerial_applets = []
 
         for applet_profile in applet_profiles:
             if applet_profile["userId"] in not_found_users:
@@ -1634,9 +1643,8 @@ class Mongo:
                 continue
 
             roles = self.get_user_roles(applet_profile)
+            has_manager_role = self.has_manager_role(roles)
             for role_name in set(roles):
-                if role_name != "user":
-                    managerial_applets.append(applet_profile["appletId"])
                 meta = {}
                 if role_name == Role.REVIEWER:
                     meta["respondents"] = self.respondents_by_applet_profile(
@@ -1657,15 +1665,13 @@ class Mongo:
                         applet_profile
                     )
                     if data:
-                        if applet_profile["appletId"] in managerial_applets:
+                        if has_manager_role:
                             if data["nick"] == "":
                                 f_name = user["firstName"]
                                 l_name = user["lastName"]
-                                meta["nickname"] = (
-                                    f"{f_name} {l_name}"
-                                    if f_name and l_name
-                                    else f"- -"
-                                )
+                                f_name = f_name if f_name else "-"
+                                l_name = l_name if l_name else "-"
+                                meta["nickname"] = f"{f_name} {l_name}"
                             else:
                                 meta["nickname"] = data["nick"]
 
@@ -2108,6 +2114,149 @@ class Mongo:
                 )
                 result.append(mapper)
         return result
+
+    def get_repro_order(self, schema: dict):
+        act_list = schema.get("reprolib:terms/order", [])
+        result = []
+        for act in act_list:
+            _list_attr = act.get("@list", [])
+            result += _list_attr
+        return result
+
+    @staticmethod
+    def is_has_item_types(
+        _types: list[str], activity_items: list[dict]
+    ) -> bool:
+        for item in activity_items:
+            _inputs = item.get("reprolib:terms/inputType", [])
+            for _input in _inputs:
+                if _input.get("@value") in _types:
+                    return True
+        return False
+
+    def get_activity_names(self, activity_schemas: list[dict]) -> list[str]:
+        names = []
+        for activity in activity_schemas:
+            name_attr = activity.get(
+                "http://www.w3.org/2004/02/skos/core#prefLabel"
+            )
+            name_attr = next(iter(name_attr), {})
+            name = name_attr.get("@value")
+            if name:
+                names.append(name)
+        return names
+
+    def _is_cst(self, activity_items: list[dict], cst_type: str):
+        def _filter_user_input_type(item: dict):
+            _type = next(iter(item.get("@type", [])), None)
+            if not _type or _type != "http://schema.org/Text":
+                return False
+            name = next(iter(item.get("schema:name", [])), {})
+            value = next(iter(item.get("schema:value", [])), {})
+            if (
+                name.get("@value") == "userInputType"
+                and value.get("@value") == cst_type
+            ):
+                return True
+
+        for item in activity_items:
+            _inputs = item.get("reprolib:terms/inputs", [])
+            for _input in _inputs:
+                flt_result = next(
+                    filter(_filter_user_input_type, _inputs), None
+                )
+                if flt_result:
+                    return self.is_has_item_types(
+                        ["stabilityTracker"], activity_items
+                    )
+        return False
+
+    def is_cst(self, activity_items: list[dict]) -> bool:
+        return self._is_cst(activity_items, "touch")
+
+    def is_cst_gyro(self, activity_items: list[dict]) -> bool:
+        return self._is_cst(activity_items, "gyroscope")
+
+    def is_ab_trails(
+        self,
+        applet_schema: dict,
+        activity_items: list[dict],
+        activity_names: list[str],
+    ) -> bool:
+        # Check activity names
+        # Try to find 'Trails_iPad', 'Trails_Mobile' strings as activity name
+        ab_trails_act_names = ["Trails_iPad", "Trails_Mobile"]
+        m = list(map(lambda name: name in ab_trails_act_names, activity_names))
+        if not any(m):
+            return False
+        # Check applet name
+        # Try to find 'A/B Trails' as expected applet name
+        ab_trails_name = "A/B Trails"
+        applet_name = applet_schema.get(
+            "http://www.w3.org/2004/02/skos/core#prefLabel"
+        )
+        applet_name = next(iter(applet_name), {})
+        if applet_name.get("@value") != ab_trails_name:
+            return False
+        # Check activity item types
+        # Try to find items with type 'trail'
+        return self.is_has_item_types(["trail"], activity_items)
+
+    def is_flanker(self, activity_items: list[dict]) -> bool:
+        return self.is_has_item_types(
+            ["visual-stimulus-response"], activity_items
+        )
+
+    def preprocess_performance_task(self, applet_schema) -> dict:
+        # Add activity type by activity items for activities without type
+        activities = self.get_repro_order(applet_schema)
+        activity_names = self.get_activity_names(activities)
+        for activity in activities:
+            activity_type = activity.get("reprolib:terms/activityType")
+            if activity_type is not None:
+                # If activity have activityType it is normal case
+                continue
+            items = self.get_repro_order(activity)
+            if self.is_ab_trails(applet_schema, items, activity_names):
+                name_attr = activity.get(
+                    "http://www.w3.org/2004/02/skos/core#prefLabel"
+                )
+                activity_name = next(iter(name_attr), {})
+                if activity_name.get("@value") == "Trails_Mobile":
+                    name = "TRAILS_MOBILE"
+                else:
+                    name = "TRAILS_IPAD"
+                activity["reprolib:terms/activityType"] = [
+                    {
+                        "@type": "http://www.w3.org/2001/XMLSchema#string",
+                        "@value": name,
+                    }
+                ]
+                continue
+            elif self.is_cst_gyro(items):
+                activity["reprolib:terms/activityType"] = [
+                    {
+                        "@type": "http://www.w3.org/2001/XMLSchema#string",
+                        "@value": "CST_GYRO",
+                    }
+                ]
+            elif self.is_cst(items):
+                activity["reprolib:terms/activityType"] = [
+                    {
+                        "@type": "http://www.w3.org/2001/XMLSchema#string",
+                        "@value": "CST_TOUCH",
+                    }
+                ]
+                continue
+            elif self.is_flanker(items):
+                activity["reprolib:terms/activityType"] = [
+                    {
+                        "@type": "http://www.w3.org/2001/XMLSchema#string",
+                        "@value": "FLANKER",
+                    }
+                ]
+                continue
+        return applet_schema
 
     def fetch_applet_version(self, applet: dict):
         if not applet["meta"]["applet"].get("version", None):

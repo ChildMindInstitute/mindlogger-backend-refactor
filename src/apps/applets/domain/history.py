@@ -25,6 +25,7 @@ class AppletHistory(InternalModel):
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
+    stream_enabled: bool = False
 
 
 class AppletHistoryChange(InternalModel):

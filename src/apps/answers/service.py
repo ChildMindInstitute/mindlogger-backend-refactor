@@ -3,6 +3,7 @@ import base64
 import datetime
 import json
 import os
+import time
 import uuid
 from collections import defaultdict
 from json import JSONDecodeError
@@ -81,6 +82,7 @@ from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.workspace import WorkspaceRespondent
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.logger import logger
 from infrastructure.utility import RedisCache
@@ -1031,6 +1033,19 @@ class AnswerService:
 
         return count
 
+    async def fill_last_activity(
+        self,
+        respondents: list[WorkspaceRespondent],
+        applet_id: uuid.UUID | None = None,
+    ) -> list[WorkspaceRespondent]:
+        respondent_ids = [respondent.id for respondent in respondents]
+        result = await AnswersCRUD(self.answer_session).get_last_activity(
+            respondent_ids, applet_id
+        )
+        for respondent in respondents:
+            respondent.last_seen = result.get(respondent.id)
+        return respondents
+
 
 class ReportServerService:
     def __init__(self, session, arbitrary_session=None):
@@ -1138,15 +1153,23 @@ class ReportServerService:
         )
 
         async with aiohttp.ClientSession() as session:
+            logger.info(f"Sending request to the report server {url}.")
+            start = time.time()
             async with session.post(
                 url,
                 json=dict(payload=encrypted_data),
             ) as resp:
-                response_data = await resp.json()
+                duration = time.time() - start
                 if resp.status == 200:
+                    logger.info(
+                        f"Successful request in {duration:.1f} seconds."
+                    )
+                    response_data = await resp.json()
                     return ReportServerResponse(**response_data)
                 else:
-                    raise ReportServerError(message=str(response_data))
+                    logger.error(f"Failed request in {duration:.1f} seconds.")
+                    error_message = await resp.text()
+                    raise ReportServerError(message=error_message)
 
     def _is_activity_last_in_flow(
         self, applet_full: dict, activity_id: str | None, flow_id: str | None

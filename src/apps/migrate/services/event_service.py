@@ -423,7 +423,7 @@ class EventMigrationService:
 
                     # create new events for next users
                     new_events: list = []
-                    for user_id in user_ids[1:]:
+                    for user_id in event.data.users[1:]:
                         e = copy.deepcopy(event)
                         e.id = ObjectId()
                         e.data.users = [user_id]

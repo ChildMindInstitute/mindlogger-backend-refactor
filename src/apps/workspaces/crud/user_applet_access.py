@@ -624,11 +624,13 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     UserSchema.last_seen_at, UserSchema.created_at
                 ).label("last_seen"),
 
-                func.array_agg(
-                    aggregate_order_by(
-                        func.distinct(field_nickname), field_nickname
-                    )
-                ).label("nicknames"),
+                func.array_remove(
+                    func.array_agg(
+                        aggregate_order_by(
+                            func.distinct(field_nickname),
+                            field_nickname
+                        )
+                    ), None).label("nicknames"),
 
                 func.array_agg(
                     aggregate_order_by(

@@ -78,11 +78,12 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
 
     async def get_id_versions_by_applet_id(
         self, applet_id: uuid.UUID
-    ) -> list[uuid.UUID]:
-        query: Query = select(AppletHistorySchema.id_version)
+    ) -> list[str]:
+        query: Query = select(AppletHistorySchema.version)
         query = query.where(AppletHistorySchema.id == applet_id)
+        query = query.order_by(AppletHistorySchema.created_at.asc())
         result = await self._execute(query)
-        return [id_version for id_version, in result]
+        return result.scalars().all()
 
     async def set_report_configuration(
         self,
