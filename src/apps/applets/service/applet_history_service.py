@@ -60,6 +60,9 @@ class AppletHistoryService:
         changes.activities = await ActivityHistoryService(
             self.session, self._applet_id, self._version
         ).get_changes(prev_version)
+        changes.activity_flows = await FlowHistoryService(
+            self.session, self._applet_id, self._version
+        ).get_changes(prev_version)
         return changes
 
     async def _get_applet_changes(

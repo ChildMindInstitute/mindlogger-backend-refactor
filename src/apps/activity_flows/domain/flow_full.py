@@ -17,7 +17,9 @@ class FlowItemHistoryFull(InternalModel):
     id: uuid.UUID
     activity_flow_id: str
     activity_id: str
+    id_version: str
     order: int
+    name: str | None = None
 
 
 class FlowFull(FlowBase, InternalModel):
