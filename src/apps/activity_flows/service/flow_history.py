@@ -2,10 +2,16 @@ import uuid
 
 from apps.activity_flows.crud import FlowsHistoryCRUD
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
-from apps.activity_flows.domain.flow_full import FlowFull, FlowHistoryFull
+from apps.activity_flows.domain.flow_full import (
+    FlowFull,
+    FlowHistoryFull,
+    FlowItemHistoryFull,
+)
+from apps.activity_flows.domain.flow_history import ActivityFlowHistoryChange
 from apps.activity_flows.service.flow_item_history import (
     FlowItemHistoryService,
 )
+from apps.shared.changes_generator import ChangeGenerator, ChangeTextGenerator
 
 
 class FlowHistoryService:
@@ -64,3 +70,96 @@ class FlowHistoryService:
             flow_map[item.activity_flow_id].items.append(item)
 
         return flows
+
+    async def get_changes(
+        self, prev_version: str
+    ) -> list[ActivityFlowHistoryChange]:
+        old_id_version = f"{self.applet_id}_{prev_version}"
+        return await self._get_changes(old_id_version)
+
+    async def _get_changes(
+        self, old_id_version: str
+    ) -> list[ActivityFlowHistoryChange]:
+        changes_generator = ChangeTextGenerator()
+        change_flow_generator = ChangeGenerator()
+        flow_changes: list[ActivityFlowHistoryChange] = []
+        flow_schemas = await FlowsHistoryCRUD(
+            self.session
+        ).retrieve_by_applet_ids([self.applet_id_version, old_id_version])
+        flows = []
+        for schema in flow_schemas:
+            flow = FlowHistoryFull.from_orm(schema)
+            flow.items = await FlowItemHistoryService(
+                self.session, self.applet_id, self.version
+            ).get_by_flow_id_versions([flow.id_version])
+            flows.append(flow)
+        flow_groups = self._group_and_sort_flows_or_items(flows)
+        for _, (prev, new) in flow_groups.items():
+            if not prev and new:
+                flow_changes.append(
+                    ActivityFlowHistoryChange(
+                        name=changes_generator.added_text(
+                            f"Activity Flow by name {new.name}"
+                        ),
+                        changes=change_flow_generator.generate_flow_insert(
+                            new
+                        ),
+                        items=change_flow_generator.generate_flow_items_insert(
+                            getattr(new, "items", [])
+                        ),
+                    )
+                )
+            elif not new and prev:
+                flow_changes.append(
+                    ActivityFlowHistoryChange(
+                        name=changes_generator.removed_text(
+                            f"Activity Flow by name {prev.name}"
+                        )
+                    )
+                )
+            elif new and prev:
+                changes = change_flow_generator.generate_flow_update(new, prev)
+                changes_items = (
+                    change_flow_generator.generate_flow_items_update(
+                        self._group_and_sort_flows_or_items(
+                            getattr(new, "items", [])
+                            + getattr(prev, "items", [])
+                        ),
+                    )
+                )
+
+                if changes or changes_items:
+                    flow_changes.append(
+                        ActivityFlowHistoryChange(
+                            name=changes_generator.updated_text(
+                                f"Activity Flow {new.name}"
+                            ),
+                            changes=changes,
+                            items=changes_items,
+                        )
+                    )
+        return flow_changes
+
+    def _group_and_sort_flows_or_items(
+        self, items: list[FlowHistoryFull] | list[FlowItemHistoryFull]
+    ) -> dict[
+        uuid.UUID,
+        tuple[FlowHistoryFull | None, FlowHistoryFull | None]
+        | tuple[FlowItemHistoryFull | None, FlowItemHistoryFull | None],
+    ]:
+        groups_map: dict = dict()
+        for item in items:
+            group = groups_map.get(item.id)
+            if not group:
+                if self.version in item.id_version.split("_"):
+                    group = (None, item)
+                else:
+                    group = (item, None)
+            elif group:
+                if self.version in item.id_version.split("_"):
+                    group = (group[0], item)
+                else:
+                    group = (item, group[1])
+            groups_map[item.id] = group
+
+        return groups_map

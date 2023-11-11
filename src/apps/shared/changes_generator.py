@@ -1,6 +1,9 @@
 from apps.activities.domain.activity_item_history import (
     ActivityItemHistoryChange,
 )
+from apps.activity_flows.domain.flow_history import (
+    ActivityFlowItemHistoryChange,
+)
 from apps.shared.domain.base import to_camelcase
 
 __all__ = ["ChangeTextGenerator", "ChangeGenerator"]
@@ -155,9 +158,7 @@ class ChangeGenerator:
     def generate_activity_insert(self, new_activity):
         changes = list()
         for field, value in new_activity.dict().items():
-            if field == "items":
-                continue
-            elif field == "name":
+            if field == "name":
                 changes.append(
                     self._change_text_generator.set_text(
                         f"Activity {to_camelcase(field)}", value
@@ -165,6 +166,7 @@ class ChangeGenerator:
                 )
             elif field in [
                 "id",
+                "items",
                 "created_at",
                 "id_version",
                 "applet_id",
@@ -253,14 +255,13 @@ class ChangeGenerator:
 
         for field, value in new_activity.dict().items():
             old_value = getattr(old_activity, field, None)
-            if field == "items":
-                continue
-            elif field in [
+            if field in [
                 "id",
                 "created_at",
                 "id_version",
                 "applet_id",
                 "extra_fields",
+                "items",
             ]:
                 continue
             elif field in [
@@ -691,3 +692,121 @@ class ChangeGenerator:
                     )
 
         return changes
+
+    def generate_flow_insert(self, flow):
+        changes = list()
+        for field, value in flow.dict().items():
+            if field == "name":
+                changes.append(
+                    self._change_text_generator.set_text(
+                        f"Activity Flow {to_camelcase(field)}", value
+                    )
+                )
+            elif field in [
+                "id",
+                "created_at",
+                "id_version",
+                "activity_flow_id",
+                "activity_id",
+                "applet_id",
+                "items",
+                "extra_fields",
+            ]:
+                continue
+            elif isinstance(value, bool):
+                changes.append(
+                    self._change_text_generator.set_bool(
+                        f"Activity Flow {to_camelcase(field)}",
+                        "enabled" if value else "disabled",
+                    ),
+                )
+            else:
+                if value:
+                    changes.append(
+                        self._change_text_generator.set_text(
+                            f"Activity Flow {to_camelcase(field)}", value
+                        )
+                        if field != "description"
+                        else self._change_text_generator.set_dict(
+                            f"Activity Flow {to_camelcase(field)}", value
+                        ),
+                    )
+        return changes
+
+    def generate_flow_update(self, new_flow, old_flow):
+        changes = list()
+        for field, value in new_flow.dict().items():
+            old_value = getattr(old_flow, field, None)
+            if field in [
+                "id",
+                "created_at",
+                "id_version",
+                "activity_flow_id",
+                "activity_id",
+                "applet_id",
+                "items",
+                "extra_fields",
+            ]:
+                continue
+            elif isinstance(value, bool):
+                if value != old_value:
+                    changes.append(
+                        self._change_text_generator.set_bool(
+                            f"Activity Flow {to_camelcase(field)}",
+                            "enabled" if value else "disabled",
+                        ),
+                    )
+            else:
+                if value != old_value:
+                    if field == "description":
+                        desc_change = f"Activity Flow {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, value)}."  # noqa: E501
+                        changes.append(desc_change)
+                    else:
+                        changes.append(
+                            self._change_text_generator.changed_text(
+                                f"Activity Flow {to_camelcase(field)}", value
+                            )
+                        )
+        return changes
+
+    def generate_flow_items_insert(self, flow_items):
+        change_items = []
+        for item in flow_items:
+            change = ActivityFlowItemHistoryChange(
+                name=self._change_text_generator.added_text(
+                    f"Activity {item.name}"
+                )
+            )
+            changes = []
+            for field, value in item.dict().items():
+                if field == "order":
+                    changes.append(
+                        self._change_text_generator.set_text(
+                            f"Activity {to_camelcase(field)}", value
+                        )
+                    )
+
+            change.changes = changes
+            change_items.append(change)
+
+        return change_items
+
+    def generate_flow_items_update(self, item_groups):
+        change_items = []
+
+        for _, (prev_item, new_item) in item_groups.items():
+            if not prev_item and new_item:
+                change_items.extend(
+                    self.generate_flow_items_insert([new_item])
+                )
+            elif not new_item and prev_item:
+                change_items.append(
+                    ActivityFlowItemHistoryChange(
+                        name=self._change_text_generator.removed_text(
+                            f"Activity {prev_item.name}"
+                        )
+                    )
+                )
+
+        change_items.sort(key=lambda i: i.name, reverse=True)
+        return change_items
