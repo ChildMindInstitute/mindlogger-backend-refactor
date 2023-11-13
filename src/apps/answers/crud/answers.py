@@ -37,7 +37,7 @@ from apps.answers.domain import (
     Version,
 )
 from apps.answers.errors import AnswerNotFoundError
-from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
+from apps.applets.db.schemas import AppletHistorySchema
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
 from infrastructure.database.crud import BaseCRUD
@@ -341,37 +341,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
         db_result = await self._execute(query)
         return db_result.scalars().all()
-
-    async def get_applet_info_by_answer_id(
-        self, answer: AnswerSchema
-    ) -> tuple[AppletHistorySchema, ActivityHistorySchema]:
-        query: Query = select(
-            AppletSchema,
-            ActivityHistorySchema,
-        )
-        query = query.join(
-            AppletHistorySchema,
-            AppletHistorySchema.id == AppletSchema.id,
-            isouter=True,
-        )
-        query = query.join(
-            ActivityHistorySchema,
-            and_(
-                ActivityHistorySchema.applet_id
-                == AppletHistorySchema.id_version,
-                ActivityHistorySchema.id_version == answer.activity_history_id,
-            ),
-            isouter=True,
-        )
-        query = query.where(
-            and_(
-                AppletSchema.id == answer.applet_id,
-                AppletHistorySchema.version == answer.version,
-            )
-        )
-        db_result = await self._execute(query)
-        res = db_result.first()
-        return res
 
     async def get_activities_which_has_answer(
         self, activity_hist_ids: list[str], respondent_id: uuid.UUID | None
