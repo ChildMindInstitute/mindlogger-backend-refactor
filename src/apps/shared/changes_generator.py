@@ -170,7 +170,6 @@ class ChangeGenerator:
                 "created_at",
                 "id_version",
                 "applet_id",
-                "extra_fields",
             ]:
                 continue
             elif field in [
@@ -260,7 +259,6 @@ class ChangeGenerator:
                 "created_at",
                 "id_version",
                 "applet_id",
-                "extra_fields",
                 "items",
             ]:
                 continue
@@ -497,7 +495,6 @@ class ChangeGenerator:
                     "created_at",
                     "id_version",
                     "activity_id",
-                    "extra_fields",
                 ]:
                     continue
                 elif isinstance(value, bool):
@@ -625,7 +622,6 @@ class ChangeGenerator:
                 "created_at",
                 "id_version",
                 "activity_id",
-                "extra_fields",
             ]:
                 continue
             elif isinstance(value, bool):
@@ -736,7 +732,6 @@ class ChangeGenerator:
                 "activity_id",
                 "applet_id",
                 "items",
-                "extra_fields",
             ]:
                 continue
             elif isinstance(value, bool):
@@ -771,7 +766,6 @@ class ChangeGenerator:
                 "activity_id",
                 "applet_id",
                 "items",
-                "extra_fields",
             ]:
                 continue
             elif isinstance(value, bool):

@@ -3,17 +3,10 @@ import uuid
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.db.schemas import ActivitySchema
 
-from apps.activities.domain.activity_create import (
-    ActivityCreate,
-)
-
-from apps.activities.domain.activity_full import ActivityFull
-from apps.activities.domain.activity_update import (
-    ActivityUpdate,
-    PreparedActivityItemUpdate,
-)
+from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.services.activity_item import ActivityItemService
 from apps.migrate.domain.activity_create import ActivityItemMigratedCreate
+from apps.migrate.domain.activity_full import ActivityMigratedFull
 from apps.migrate.domain.applet_full import AppletMigratedFull
 from apps.migrate.utilities import prepare_extra_fields_to_save
 
@@ -27,7 +20,7 @@ class ActivityMigrationService:
         self,
         applet: AppletMigratedFull,
         activities_create: list[ActivityCreate],
-    ) -> list[ActivityFull]:
+    ) -> list[ActivityMigratedFull]:
         schemas = []
         activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()
         activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
@@ -97,23 +90,13 @@ class ActivityMigrationService:
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
             schemas
         )
-        activity_items = await ActivityItemService(self.session).create(
-            prepared_activity_items
-        )
+        await ActivityItemService(self.session).create(prepared_activity_items)
         activities = list()
-
-        activity_id_map: dict[uuid.UUID, ActivityFull] = dict()
 
         for activity_schema in activity_schemas:
             activity_schema.key = activity_id_key_map[activity_schema.id]
-            activity = ActivityFull.from_orm(activity_schema)
+            activity = ActivityMigratedFull.from_orm(activity_schema)
             activities.append(activity)
-            activity_id_map[activity.id] = activity
-
-        for activity_item in activity_items:
-            activity_id_map[activity_item.activity_id].items.append(
-                activity_item
-            )
 
         return activities
 
@@ -121,7 +104,7 @@ class ActivityMigrationService:
         self,
         applet: AppletMigratedFull,
         activities_create: list[ActivityCreate],
-    ) -> list[ActivityFull]:
+    ) -> list[ActivityMigratedFull]:
         schemas = []
         activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()
         activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
@@ -187,23 +170,15 @@ class ActivityMigrationService:
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
             schemas
         )
-        activity_items = await ActivityItemService(self.session).update_create(
+        await ActivityItemService(self.session).update_create(
             prepared_activity_items
         )
         activities = list()
 
-        activity_id_map: dict[uuid.UUID, ActivityFull] = dict()
-
         for activity_schema in activity_schemas:
             activity_schema.key = activity_id_key_map[activity_schema.id]
-            activity = ActivityFull.from_orm(activity_schema)
+            activity = ActivityMigratedFull.from_orm(activity_schema)
             activities.append(activity)
-            activity_id_map[activity.id] = activity
-
-        for activity_item in activity_items:
-            activity_id_map[activity_item.activity_id].items.append(
-                activity_item
-            )
 
         return activities
 

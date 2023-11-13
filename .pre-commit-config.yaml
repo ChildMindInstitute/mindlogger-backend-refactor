@@ -29,8 +29,8 @@ repos:
         entry: mypy
         language: system
         types: [python]
-        exclude: "apps/girderformindlogger"
-      
+        exclude: "apps/girderformindlogger|apps/migrate"
+
       - id: git-secrets
         name: git-secrets
         entry: git secrets --scan

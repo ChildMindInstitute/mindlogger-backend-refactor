@@ -39,7 +39,6 @@ class AppletHistoryService:
                 report_include_user_id=applet.report_include_user_id,
                 report_include_case_id=applet.report_include_case_id,
                 report_email_body=applet.report_email_body,
-                extra_fields=applet.extra_fields,
                 stream_enabled=applet.stream_enabled,
             )
         )
