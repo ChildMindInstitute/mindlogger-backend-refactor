@@ -5,7 +5,8 @@ from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
-    ActivityItemHistorySchema, ActivitySchema,
+    ActivityItemHistorySchema,
+    ActivitySchema,
 )
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
@@ -95,12 +96,9 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
             == ActivityItemHistorySchema.activity_id,
         )
         query = query.join(
-            ActivitySchema,
-            ActivitySchema.id == ActivityHistorySchema.id
+            ActivitySchema, ActivitySchema.id == ActivityHistorySchema.id
         )
-        query = query.where(
-            ActivitySchema.applet_id == applet_id
-        )
+        query = query.where(ActivitySchema.applet_id == applet_id)
         query = query.where(
             ActivityHistorySchema.is_reviewable == True  # noqa: E712
         )

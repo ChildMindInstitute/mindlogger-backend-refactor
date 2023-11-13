@@ -446,7 +446,6 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
         activity_items = await ActivityItemHistoriesCRUD(
             self.session
         ).get_applets_assessments(applet_id)
@@ -477,8 +476,6 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
-        pk = self._generate_history_id(schema.version)
 
         activity_items = await ActivityItemHistoriesCRUD(
             self.session
@@ -518,7 +515,7 @@ class AnswerService:
                     is_assessment=True,
                     start_datetime=datetime.datetime.utcnow(),
                     end_datetime=datetime.datetime.utcnow(),
-                    assessment_activity_id=activity_version_id
+                    assessment_activity_id=activity_version_id,
                 )
             )
         else:
@@ -535,7 +532,7 @@ class AnswerService:
                     end_datetime=now,
                     created_at=now,
                     updated_at=now,
-                    assessment_activity_id=activity_version_id
+                    assessment_activity_id=activity_version_id,
                 )
             )
 
@@ -605,9 +602,6 @@ class AnswerService:
             if answer.activity_history_id:
                 activity_hist_ids.add(answer.activity_history_id)
 
-        reviewer_activities_coro = ActivityHistoriesCRUD(
-            self.session
-        ).get_reviewable_activities(list(applet_assessment_ids))
         flows_coro = FlowsHistoryCRUD(self.session).get_by_id_versions(
             list(flow_hist_ids)
         )
@@ -616,7 +610,6 @@ class AnswerService:
         ).get_respondent_export_data(applet_id, list(respondent_ids))
 
         coros_result = await asyncio.gather(
-            reviewer_activities_coro,
             flows_coro,
             user_map_coro,
             return_exceptions=True,
@@ -625,13 +618,7 @@ class AnswerService:
             if isinstance(res, BaseException):
                 raise res
 
-        reviewer_activities, flows, user_map = coros_result
-
-        reviewer_activity_map = {}
-        for activity in reviewer_activities:  # type: ignore
-            reviewer_activity_map[activity.applet_id] = activity
-            activity_hist_ids.add(activity.id_version)
-
+        flows, user_map = coros_result
         flow_map = {flow.id_version: flow for flow in flows}  # type: ignore
 
         for answer in answers:
@@ -645,12 +632,6 @@ class AnswerService:
             if flow_id := answer.flow_history_id:
                 if flow := flow_map.get(flow_id):
                     answer.flow_name = flow.name
-            # assessment data
-            if answer.reviewed_answer_id:
-                if activity := reviewer_activity_map.get(
-                    answer.applet_history_id
-                ):
-                    answer.activity_history_id = activity.id_version
 
         repo_local = AnswersCRUD(self.session)
         activities_result = []

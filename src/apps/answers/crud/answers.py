@@ -159,7 +159,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
 
         activity_history_id = case(
-            (AnswerItemSchema.is_assessment.is_(True), null()),
+            (
+                AnswerItemSchema.is_assessment.is_(True),
+                AnswerItemSchema.assessment_activity_id,
+            ),
             else_=AnswerSchema.activity_history_id,
         )
 

@@ -1,11 +1,12 @@
 import uuid
 
-from sqlalchemy import any_, exists, select
+from sqlalchemy import exists, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
-    ActivityItemHistorySchema, ActivitySchema,
+    ActivityItemHistorySchema,
+    ActivitySchema,
 )
 from apps.activities.domain.response_type_config import (
     PerformanceTaskType,
@@ -112,17 +113,14 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         return db_result.scalars().first()
 
     async def get_reviewable_activities(
-        self, applet_id_versions: list[str]
+        self, activity_version_ids: list[str]
     ) -> list[ActivityHistorySchema]:
-        if not applet_id_versions:
+        if not activity_version_ids:
             return []
 
         query: Query = (
             select(ActivityHistorySchema)
-            .where(
-                ActivityHistorySchema.applet_id == any_(applet_id_versions),
-                ActivityHistorySchema.is_reviewable.is_(True),
-            )
+            .where(ActivityHistorySchema.id_version.in_(activity_version_ids))
             .order_by(
                 ActivityHistorySchema.applet_id, ActivityHistorySchema.order
             )
@@ -215,18 +213,19 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         return db_result.scalars().all()
 
     async def get_assessment_version_id(self, applet: uuid.UUID) -> str:
-        query: Query = select(
-            ActivityHistorySchema.id_version
-        ).select_from(
-            ActivitySchema
-        ).join(
-            ActivityHistorySchema,
-            ActivityHistorySchema.id == ActivitySchema.id
-        ).where(
-            ActivitySchema.applet_id == applet,
-            ActivitySchema.is_reviewable.is_(True)
-        ).order_by(
-            ActivityHistorySchema.id_version.desc()
-        ).limit(1)
+        query: Query = (
+            select(ActivityHistorySchema.id_version)
+            .select_from(ActivitySchema)
+            .join(
+                ActivityHistorySchema,
+                ActivityHistorySchema.id == ActivitySchema.id,
+            )
+            .where(
+                ActivitySchema.applet_id == applet,
+                ActivitySchema.is_reviewable.is_(True),
+            )
+            .order_by(ActivityHistorySchema.id_version.desc())
+            .limit(1)
+        )
         db_result = await self._execute(query)
         return db_result.scalars().first()
