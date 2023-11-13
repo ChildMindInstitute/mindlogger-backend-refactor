@@ -208,7 +208,8 @@
       "report_email_body": "",
       "id_version": "92917a56-d586-4613-b7aa-991f2c4b15b8_1.1.0",
       "id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
-      "display_name": "Applet0"
+      "display_name": "Applet0",
+      "stream_enabled": false
     },
     "private_key": ""
   },

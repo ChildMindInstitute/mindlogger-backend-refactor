@@ -342,33 +342,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_activity_flow_by_answer_id(
-        self, answer_id: uuid.UUID
-    ) -> bool:
-        query: Query = select(AnswerItemSchema, ActivityFlowHistoriesSchema)
-        query = query.join(
-            AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
-        )
-        query = query.join(
-            ActivityFlowHistoriesSchema,
-            ActivityFlowHistoriesSchema.id_version
-            == AnswerSchema.flow_history_id,
-            isouter=True,
-        )
-        query = query.where(AnswerItemSchema.is_assessment == False)  # noqa
-        query = query.where(AnswerSchema.id == answer_id)
-
-        db_result = await self._execute(query)
-        (
-            _,
-            flow_history_schema,
-        ) = (
-            db_result.first()
-        )  # type: AnswerItemSchema, ActivityFlowHistoriesSchema
-        if not flow_history_schema:
-            return False
-        return flow_history_schema.is_single_report
-
     async def get_applet_info_by_answer_id(
         self, answer: AnswerSchema
     ) -> tuple[AppletHistorySchema, ActivityHistorySchema]:
@@ -556,6 +529,20 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
 
             await self._execute(query)
+
+    async def is_single_report_flow(self, answer_flow_id: str | None) -> bool:
+        query: Query = select(ActivityFlowHistoriesSchema)
+        query = query.where(
+            ActivityFlowHistoriesSchema.id_version == answer_flow_id
+        )
+        db_result = await self._execute(query)
+        db_result = db_result.first()
+        flow_history_schema = (
+            db_result[0] if db_result else None
+        )  # type: ActivityFlowHistoriesSchema | None
+        if not flow_history_schema:
+            return False
+        return flow_history_schema.is_single_report
 
     async def get_last_activity(
         self, respondent_ids: list[uuid.UUID], applet_id: uuid.UUID | None

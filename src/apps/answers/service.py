@@ -224,7 +224,9 @@ class AnswerService:
         return answer
 
     async def create_report_from_answer(self, answer: AnswerSchema):
-        service = ReportServerService(self.session)
+        service = ReportServerService(
+            session=self.session, arbitrary_session=self.answer_session
+        )
         is_reportable = await service.is_reportable(answer)
         if not is_reportable:
             return
@@ -781,7 +783,9 @@ class AnswerService:
         )
         if not answer:
             return None
-        service = ReportServerService(self.session)
+        service = ReportServerService(
+            session=self.session, arbitrary_session=self.answer_session
+        )
         await self._is_report_server_configured(applet_id)
         is_single_flow = await service.is_flows_single_report(answer.id)
         if is_single_flow:
@@ -912,7 +916,7 @@ class AnswerService:
         self, applet_id: uuid.UUID, activity_id: str, created_at: int
     ) -> bool:
         answers = await AnswersCRUD(
-            self.session
+            self.answer_session
         ).get_by_applet_activity_created_at(applet_id, activity_id, created_at)
         if not answers:
             return False
@@ -1058,7 +1062,7 @@ class ReportServerService:
 
     async def is_reportable(self, answer: AnswerSchema):
         applet, activity = await AnswersCRUD(
-            self.answers_session
+            self.session  # Using local session for Applet searching
         ).get_applet_info_by_answer_id(answer)
         if not applet.report_server_ip:
             return False
@@ -1079,10 +1083,12 @@ class ReportServerService:
         """
         Whether check to send flow reports in a single or multiple request
         """
-        result = await AnswersCRUD(
-            self.answers_session
-        ).get_activity_flow_by_answer_id(answer_id)
-        return result
+        answer = await AnswersCRUD(self.answers_session).get_by_id(answer_id)
+        # ActivityFlow a stored in local db
+        is_single_report = await AnswersCRUD(
+            self.session
+        ).is_single_report_flow(answer.flow_history_id)
+        return is_single_report
 
     async def is_flow_finished(
         self, submit_id: uuid.UUID, answer_id: uuid.UUID
