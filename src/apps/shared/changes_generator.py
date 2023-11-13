@@ -554,6 +554,13 @@ class ChangeGenerator:
                                             f"Item  {to_camelcase(key)}"
                                         )
                                     )
+                    else:
+                        if value:
+                            changes.append(
+                                self._change_text_generator.added_text(
+                                    f"Item {to_camelcase(field)}"
+                                )
+                            )
 
                 else:
                     if value:
@@ -680,6 +687,25 @@ class ChangeGenerator:
                                             f"Item  {to_camelcase(key)}"
                                         )
                                     )
+                else:
+                    if value and not old_value:
+                        changes.append(
+                            self._change_text_generator.added_text(
+                                f"Item {to_camelcase(field)}"
+                            )
+                        )
+                    elif not value and old_value:
+                        changes.append(
+                            self._change_text_generator.removed_text(
+                                f"Item {to_camelcase(field)}"
+                            )
+                        )
+                    elif value != old_value:
+                        changes.append(
+                            self._change_text_generator.updated_text(
+                                f"Item {to_camelcase(field)}"
+                            )
+                        )
 
             else:
                 if value and value != old_value:
