@@ -5,7 +5,7 @@ from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
-    ActivityItemHistorySchema,
+    ActivityItemHistorySchema, ActivitySchema,
 )
 from apps.activities.domain.response_type_config import (
     PerformanceTaskType,
@@ -213,3 +213,20 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
 
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_assessment_version_id(self, applet: uuid.UUID) -> str:
+        query: Query = select(
+            ActivityHistorySchema.id_version
+        ).select_from(
+            ActivitySchema
+        ).join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id == ActivitySchema.id
+        ).where(
+            ActivitySchema.applet_id == applet,
+            ActivitySchema.is_reviewable.is_(True)
+        ).order_by(
+            ActivityHistorySchema.id_version.desc()
+        ).limit(1)
+        db_result = await self._execute(query)
+        return db_result.scalars().first()

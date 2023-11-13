@@ -447,11 +447,9 @@ class AnswerService:
 
         await self._validate_answer_access(applet_id, answer_id)
         schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
-        pk = self._generate_history_id(schema.version)
-
         activity_items = await ActivityItemHistoriesCRUD(
             self.session
-        ).get_applets_assessments(pk(applet_id))
+        ).get_applets_assessments(applet_id)
         if len(activity_items) == 0:
             return AssessmentAnswer(items=activity_items)
 
@@ -484,7 +482,7 @@ class AnswerService:
 
         activity_items = await ActivityItemHistoriesCRUD(
             self.session
-        ).get_applets_assessments(pk(applet_id))
+        ).get_applets_assessments(applet_id)
 
         reviews = await AnswerItemsCRUD(
             self.answer_session
@@ -503,6 +501,9 @@ class AnswerService:
         assessment = await AnswerItemsCRUD(self.answer_session).get_assessment(
             answer_id, self.user_id
         )
+        activity_version_id = await ActivityHistoriesCRUD(
+            self.session
+        ).get_assessment_version_id(applet_id)
         if assessment:
             await AnswerItemsCRUD(self.answer_session).update(
                 AnswerItemSchema(
@@ -517,6 +518,7 @@ class AnswerService:
                     is_assessment=True,
                     start_datetime=datetime.datetime.utcnow(),
                     end_datetime=datetime.datetime.utcnow(),
+                    assessment_activity_id=activity_version_id
                 )
             )
         else:
@@ -533,6 +535,7 @@ class AnswerService:
                     end_datetime=now,
                     created_at=now,
                     updated_at=now,
+                    assessment_activity_id=activity_version_id
                 )
             )
 
