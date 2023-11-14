@@ -8,6 +8,7 @@ from apps.activities.domain.activity_full import ActivityItemFull
 from apps.activities.domain.activity_item import (
     ActivityItemDuplicate,
     ActivityItemSingleLanguageDetail,
+    ActivityItemSingleLanguageDetailPublic,
 )
 from apps.activities.domain.activity_update import PreparedActivityItemUpdate
 
@@ -81,6 +82,36 @@ class ActivityItemService:
                 )
             )
         return items
+
+    async def get_single_language_by_activity_ids(
+        self, activity_ids: list[uuid.UUID], language: str
+    ) -> dict[uuid.UUID, list[ActivityItemSingleLanguageDetailPublic]]:
+        """Return all Items in map by event activity_ids."""
+        schemas = await ActivityItemsCRUD(self.session).get_by_activity_ids(
+            activity_ids
+        )
+        items_map: dict[
+            uuid.UUID, list[ActivityItemSingleLanguageDetailPublic]
+        ] = dict()
+        for schema in schemas:
+            items_map.setdefault(schema.activity_id, list())
+            items_map[schema.activity_id].append(
+                ActivityItemSingleLanguageDetailPublic(
+                    id=schema.id,
+                    activity_id=schema.activity_id,
+                    question=self._get_by_language(schema.question, language),
+                    response_type=schema.response_type,
+                    # TODO: get answers by language
+                    config=schema.config,
+                    response_values=schema.response_values,
+                    order=schema.order,
+                    name=schema.name,
+                    conditional_logic=schema.conditional_logic,
+                    allow_edit=schema.allow_edit,
+                    is_hidden=schema.is_hidden,
+                )
+            )
+        return items_map
 
     async def get_items_by_activity_ids(
         self, activity_ids: list[uuid.UUID]

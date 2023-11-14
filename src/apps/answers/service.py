@@ -906,6 +906,21 @@ class AnswerService:
         )
         return result
 
+    async def get_completed_answers_data_list(
+        self,
+        applets_version_map: dict[uuid.UUID, str],
+        from_date: datetime.date,
+    ) -> list[AppletCompletedEntities]:
+        assert self.user_id
+        result = await AnswersCRUD(
+            self.answer_session
+        ).get_completed_answers_data_list(
+            applets_version_map,
+            self.user_id,
+            from_date,
+        )
+        return result
+
     async def is_answers_uploaded(
         self, applet_id: uuid.UUID, activity_id: str, created_at: int
     ) -> bool:

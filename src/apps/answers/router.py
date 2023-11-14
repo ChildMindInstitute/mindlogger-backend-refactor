@@ -13,6 +13,7 @@ from apps.answers.api import (
     applet_answers_export,
     applet_completed_entities,
     applet_submit_date_list,
+    applets_completed_entities,
     create_anonymous_answer,
     create_answer,
     note_add,
@@ -237,6 +238,16 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_completed_entities)
+
+router.get(
+    "/applet/completions",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[AppletCompletedEntities]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applets_completed_entities)
 
 router.post(
     "/check-existence",
