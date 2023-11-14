@@ -1298,6 +1298,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserAppletAccessSchema.applet_id == applet_id,
             UserAppletAccessSchema.user_id == respondent_id,
             UserAppletAccessSchema.role == Role.RESPONDENT,
+            UserAppletAccessSchema.soft_exists(),
         )
         db_result = await self._execute(query)
         db_result = db_result.first()  # noqa
