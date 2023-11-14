@@ -26,7 +26,7 @@ _DICTIONARY = dict(
     )
 )
 
-EMPY_VALUES: tuple = (None, "", 0, dict())
+EMPY_VALUES: tuple = (None, "", 0, dict(), dict(en=""))
 
 
 class ChangeTextGenerator:
