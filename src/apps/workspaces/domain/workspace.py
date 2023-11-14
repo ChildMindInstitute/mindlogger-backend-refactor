@@ -1,16 +1,15 @@
 import datetime
 import uuid
 from typing import Optional
-from sqlalchemy import Unicode
-from apps.shared.encryption import decrypt, encrypt, get_key
-from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 
 from pydantic import Field, root_validator, validator
+from sqlalchemy import Unicode
+from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy_utils import StringEncryptedType
-
 
 from apps.applets.domain.base import Encryption
 from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.encryption import get_key
 
 __all__ = [
     "PublicWorkspace",

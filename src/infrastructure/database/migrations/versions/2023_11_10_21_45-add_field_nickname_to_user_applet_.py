@@ -5,13 +5,13 @@ Revises: 8c59c7363c67
 Create Date: 2023-11-10 21:45:42.636562
 
 """
-from alembic import op
-import sqlalchemy as sa
 import json
 
+import sqlalchemy as sa
+from alembic import op
 from sqlalchemy_utils.types.encrypted.encrypted_type import StringEncryptedType
-from apps.shared.encryption import decrypt, encrypt, get_key
 
+from apps.shared.encryption import get_key
 
 # revision identifiers, used by Alembic.
 revision = "a7faad5855cc"
@@ -44,8 +44,6 @@ def upgrade() -> None:
                 sa.Unicode, get_key
             ).process_bind_param(nickname, dialect=conn.dialect)
             meta["nickname"] = None
-            print(encrypted_field)
-            print(meta)
             conn.execute(
                 sa.text(
                     f"""
@@ -72,17 +70,14 @@ def downgrade() -> None:
             "SELECT id, nickname, meta FROM user_applet_accesses  WHERE role='respondent'"
         )
     )
-    print(result)
     op.drop_column("user_applet_accesses", "nickname")
     for row in result:
         pk, nickname, meta = row
         if nickname is not None:
-            print(nickname)
             decrypted_field = StringEncryptedType(
                 sa.Unicode, get_key
             ).process_result_value(nickname, dialect=conn.dialect)
             meta["nickname"] = decrypted_field
-            print(meta)
             conn.execute(
                 sa.text(
                     f"""

@@ -19,8 +19,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_utils import StringEncryptedType
 
-from apps.shared.encryption import decrypt, encrypt, get_key
-
+from apps.shared.encryption import get_key
 from apps.workspaces.domain.constants import UserPinRole
 from infrastructure.database.base import Base
 

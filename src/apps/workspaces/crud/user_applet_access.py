@@ -6,6 +6,7 @@ from typing import Tuple
 from asyncpg.exceptions import UniqueViolationError
 from pydantic import parse_obj_as
 from sqlalchemy import (
+    Unicode,
     and_,
     any_,
     case,
@@ -18,14 +19,14 @@ from sqlalchemy import (
     select,
     text,
     true,
-    Unicode,
     update,
 )
-from apps.shared.encryption import decrypt, encrypt, get_key
-from sqlalchemy.dialects.postgresql import array, ARRAY
-
-
-from sqlalchemy.dialects.postgresql import UUID, aggregate_order_by, insert
+from sqlalchemy.dialects.postgresql import (
+    ARRAY,
+    UUID,
+    aggregate_order_by,
+    insert,
+)
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
@@ -35,6 +36,7 @@ from sqlalchemy_utils import StringEncryptedType
 from apps.applets.db.schemas import AppletSchema
 from apps.folders.db.schemas import FolderAppletSchema
 from apps.schedule.db.schemas import EventSchema, UserEventsSchema
+from apps.shared.encryption import get_key
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
@@ -632,9 +634,10 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
                 func.array_remove(
                     func.array_agg(
-                            func.distinct(field_nickname) 
-                    )
-                    , None).cast(ARRAY(StringEncryptedType(Unicode, get_key))).label("nicknames"),
+                            func.distinct(field_nickname)
+                    ), None)
+                .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
+                .label("nicknames"),
 
                 func.array_agg(
                     aggregate_order_by(
