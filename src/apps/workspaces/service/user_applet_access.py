@@ -71,6 +71,7 @@ class UserAppletAccessService:
                 owner_id=self._user_id,
                 invitor_id=self._user_id,
                 meta=meta,
+                nickname=meta.get("nickname"),
             )
         )
         return UserAppletAccess.from_orm(access_schema)
@@ -146,6 +147,7 @@ class UserAppletAccessService:
                 owner_id=owner_access.user_id,
                 invitor_id=invitation.invitor_id,
                 meta=meta,
+                nickname=meta.get("nickname"),
             )
         )
 
@@ -164,6 +166,7 @@ class UserAppletAccessService:
                     owner_id=owner_access.user_id,
                     invitor_id=invitation.invitor_id,
                     meta=meta,
+                    nickname=meta.get("nickname"),
                     is_deleted=False,
                 )
 
@@ -217,9 +220,11 @@ class UserAppletAccessService:
         if not access:
             raise UserAppletAccessNotFound()
         await self._validate_secret_user_id(access.id, schema.secret_user_id)
-        for key, val in schema.dict(by_alias=True).items():
-            access.meta[key] = val
-        await crud.update_meta_by_access_id(access.id, access.meta)
+        # change here
+        access.meta["secretUserId"] = schema.secret_user_id
+        await crud.update_meta_by_access_id(
+            access.id, access.meta, nickname=schema.nickname
+        )
 
     async def _validate_secret_user_id(
         self, exclude_id: uuid.UUID, secret_id: str

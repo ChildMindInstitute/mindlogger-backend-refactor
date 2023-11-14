@@ -1,8 +1,13 @@
 import datetime
 import uuid
 from typing import Optional
+from sqlalchemy import Unicode
+from apps.shared.encryption import decrypt, encrypt, get_key
+from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 
 from pydantic import Field, root_validator, validator
+from sqlalchemy_utils import StringEncryptedType
+
 
 from apps.applets.domain.base import Encryption
 from apps.shared.domain import InternalModel, PublicModel
@@ -70,6 +75,17 @@ class WorkspaceRespondentDetails(InternalModel):
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
 
+    @root_validator
+    def decrypt_nickname(cls, values):
+        nickname = values.get("respondent_nickname")
+
+        nickname = StringEncryptedType(Unicode, get_key).process_result_value(
+            nickname, dialect=PGDialect_asyncpg.name
+        )
+        values["respondent_nickname"] = str(nickname)
+
+        return values
+
 
 class WorkspaceRespondent(InternalModel):
     id: uuid.UUID
@@ -136,6 +152,17 @@ class WorkspaceManager(InternalModel):
         return list(applets.values())
 
 
+class PublicWorkspaceRespondentDetails(InternalModel):
+    applet_id: uuid.UUID
+    applet_display_name: str
+    applet_image: str | None
+    access_id: uuid.UUID
+    respondent_nickname: str | None = None
+    respondent_secret_id: str | None = None
+    has_individual_schedule: bool = False
+    encryption: WorkspaceAppletEncryption | None = None
+
+
 class PublicWorkspaceRespondent(PublicModel):
     id: uuid.UUID
     nicknames: list[str] | None
@@ -143,7 +170,7 @@ class PublicWorkspaceRespondent(PublicModel):
     is_anonymous_respondent: bool
     last_seen: datetime.datetime | None
     is_pinned: bool = False
-    details: list[WorkspaceRespondentDetails] | None = None
+    details: list[PublicWorkspaceRespondentDetails] | None = None
 
 
 class PublicWorkspaceManager(PublicModel):

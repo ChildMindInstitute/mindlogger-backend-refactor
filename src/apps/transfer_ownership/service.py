@@ -119,8 +119,8 @@ class TransferService:
                 role=Role.RESPONDENT,
                 meta=dict(
                     secretUserId=str(uuid.uuid4()),
-                    nickname=f"{self._user.first_name} {self._user.last_name}",
                 ),
+                nickname=f"{self._user.first_name} {self._user.last_name}",
                 **roles_data,
             ),
         ]
