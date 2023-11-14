@@ -85,8 +85,6 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
                 UserAppletAccessSchema.applet_id == applet_id,
             )
         )
-        access_subquery = access_subquery.subquery()
-
         query: Query = select(UserWorkspaceSchema)
         query = query.where(UserWorkspaceSchema.user_id.in_(access_subquery))
         db_result = await self._execute(query)

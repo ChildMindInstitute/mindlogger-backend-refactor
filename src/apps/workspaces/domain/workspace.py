@@ -73,7 +73,7 @@ class WorkspaceRespondent(InternalModel):
     nicknames: list[str] | None = None
     secret_ids: list[str] | None = None
     is_anonymous_respondent: bool
-    last_seen: datetime.datetime
+    last_seen: datetime.datetime | None
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None
 
@@ -138,7 +138,7 @@ class PublicWorkspaceRespondent(PublicModel):
     nicknames: list[str] | None
     secret_ids: list[str] | None
     is_anonymous_respondent: bool
-    last_seen: datetime.datetime
+    last_seen: datetime.datetime | None
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None
 
