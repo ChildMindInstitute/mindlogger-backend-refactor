@@ -15,15 +15,19 @@ from apps.workspaces.domain.workspace import (
     AnswerDbApplets,
     WorkspaceApplet,
     WorkspaceArbitrary,
+    WorkspaceArbitraryCreate,
+    WorkspaceArbitraryFields,
     WorkspaceInfo,
     WorkspaceManager,
     WorkspaceRespondent,
     WorkspaceSearchApplet,
 )
 from apps.workspaces.errors import (
+    ArbitraryServerSettingsError,
     InvalidAppletIDFilter,
     WorkspaceAccessDenied,
     WorkspaceDoesNotExistError,
+    WorkspaceNotFoundError,
 )
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.user_access import UserAccessService
@@ -92,9 +96,10 @@ class WorkspaceService:
         if not user_workspace:
             user_workspace = await self.create_workspace_from_user(user)
         if not user_workspace.is_modified and workspace_prefix:
-            await UserWorkspaceCRUD(self.session).update(
-                user,
-                workspace_prefix,
+            user_workspace.workspace_name = workspace_prefix
+            await UserWorkspaceCRUD(self.session).update_by_user_id(
+                user.id,
+                user_workspace,
             )
 
     async def get_workspace_respondents(
@@ -339,3 +344,19 @@ class WorkspaceService:
             return [default_db_applets, *db_applets_map.values()]
 
         return list(db_applets_map.values())
+
+    async def set_arbitrary_server(
+        self, data: WorkspaceArbitraryCreate, *, rewrite=False
+    ):
+        repository = UserWorkspaceCRUD(self.session)
+        schema = await repository.get_by_user_id(self._user_id)
+        if not schema:
+            raise WorkspaceNotFoundError("Workspace not found")
+        arbitrary_data = WorkspaceArbitraryFields.from_orm(schema)
+        if not arbitrary_data.is_arbitrary_empty() and not rewrite:
+            raise ArbitraryServerSettingsError(
+                arbitrary_data, "Arbitrary settings are already set"
+            )
+        for k, v in data.dict(by_alias=False).items():
+            setattr(schema, k, v)
+        await repository.update_by_user_id(schema.user_id, schema)
