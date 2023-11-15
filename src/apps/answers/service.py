@@ -224,7 +224,9 @@ class AnswerService:
         return answer
 
     async def create_report_from_answer(self, answer: AnswerSchema):
-        service = ReportServerService(self.session)
+        service = ReportServerService(
+            session=self.session, arbitrary_session=self.answer_session
+        )
         # First check is flow single report or not, flow single report has
         # another rules to be reportable.
         is_flow_single = await service.is_flows_single_report(answer.id)
@@ -1113,10 +1115,12 @@ class ReportServerService:
         """
         Whether check to send flow reports in a single or multiple request
         """
-        flow = await AnswersCRUD(
-            self.answers_session
-        ).get_activity_flow_by_answer_id(answer_id)
-        return flow.is_single_report if flow else False
+        answer = await AnswersCRUD(self.answers_session).get_by_id(answer_id)
+        # ActivityFlow a stored in local db
+        is_single_report = await AnswersCRUD(
+            self.session
+        ).is_single_report_flow(answer.flow_history_id)
+        return is_single_report
 
     async def is_flow_finished(
         self, submit_id: uuid.UUID, answer_id: uuid.UUID
