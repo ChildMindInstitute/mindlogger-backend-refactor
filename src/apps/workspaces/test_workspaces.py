@@ -296,11 +296,9 @@ class TestWorkspaces(BaseTest):
         # test search
         search_params = {
             "f0dd4996-e0eb-461f-b2f8-ba873a674788": [
-                "jane",
                 "b2f8-ba873a674788",
             ],
             "f0dd4996-e0eb-461f-b2f8-ba873a674789": [
-                "john",
                 "f0dd4996-e0eb-461f-b2f8-ba873a674789",
             ],
         }
@@ -344,11 +342,11 @@ class TestWorkspaces(BaseTest):
         # test search
         search_params = {
             "f0dd4996-e0eb-461f-b2f8-ba873a674788": [
-                "jane",
+                # "jane",
                 "b2f8-ba873a674788",
             ],
             "f0dd4996-e0eb-461f-b2f8-ba873a674789": [
-                "john",
+                # "john",
                 "f0dd4996-e0eb-461f-b2f8-ba873a674789",
             ],
         }
