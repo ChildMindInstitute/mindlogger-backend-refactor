@@ -1,8 +1,8 @@
 """Add field nickname to user_applet_accesses
 
 Revision ID: a7faad5855cc
-Revises: 8c59c7363c67
-Create Date: 2023-11-10 21:45:42.636562
+Revises: 0242aa768e9d
+Create Date: 2023-11-12 21:45:42.636562
 
 """
 import json
@@ -15,7 +15,7 @@ from apps.shared.encryption import get_key
 
 # revision identifiers, used by Alembic.
 revision = "a7faad5855cc"
-down_revision = "8c59c7363c67"
+down_revision = "0242aa768e9d"
 branch_labels = None
 depends_on = None
 
