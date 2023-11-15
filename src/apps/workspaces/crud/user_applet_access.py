@@ -118,7 +118,6 @@ class _WorkspaceRespondentSearch(Searching):
 
 class _AppletRespondentSearch(Searching):
     search_fields = [
-        UserAppletAccessSchema.nickname,
         UserAppletAccessSchema.meta["secretUserId"].astext,
     ]
 

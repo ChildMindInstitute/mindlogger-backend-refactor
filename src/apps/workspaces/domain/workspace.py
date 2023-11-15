@@ -77,11 +77,11 @@ class WorkspaceRespondentDetails(InternalModel):
     @root_validator
     def decrypt_nickname(cls, values):
         nickname = values.get("respondent_nickname")
-
-        nickname = StringEncryptedType(Unicode, get_key).process_result_value(
-            nickname, dialect=PGDialect_asyncpg.name
-        )
-        values["respondent_nickname"] = str(nickname)
+        if nickname:
+            nickname = StringEncryptedType(
+                Unicode, get_key
+            ).process_result_value(nickname, dialect=PGDialect_asyncpg.name)
+            values["respondent_nickname"] = str(nickname)
 
         return values
 
@@ -151,7 +151,7 @@ class WorkspaceManager(InternalModel):
         return list(applets.values())
 
 
-class PublicWorkspaceRespondentDetails(InternalModel):
+class PublicWorkspaceRespondentDetails(PublicModel):
     applet_id: uuid.UUID
     applet_display_name: str
     applet_image: str | None
