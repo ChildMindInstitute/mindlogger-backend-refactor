@@ -2,7 +2,6 @@ from datetime import datetime
 from apps.answers.crud.notes import AnswerNotesCRUD
 from apps.answers.db.schemas import AnswerNoteSchema
 from apps.migrate.utilities import mongoid_to_uuid
-from apps.shared.encryption import encrypt
 from infrastructure.database import atomic
 
 

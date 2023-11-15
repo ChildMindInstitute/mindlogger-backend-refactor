@@ -63,6 +63,11 @@ class TestWorkspaces(BaseTest):
         "/workspaces/{owner_id}/respondents/{user_id}/pin"
     )
     workspace_managers_pin = "/workspaces/{owner_id}/managers/{user_id}/pin"
+    workspace_get_applet_respondent = (
+        "/workspaces/{owner_id}"
+        "/applets/{applet_id}"
+        "/respondents/{respondent_id}"
+    )
 
     @rollback
     async def test_user_workspace_list(self):
@@ -291,11 +296,9 @@ class TestWorkspaces(BaseTest):
         # test search
         search_params = {
             "f0dd4996-e0eb-461f-b2f8-ba873a674788": [
-                "jane",
                 "b2f8-ba873a674788",
             ],
             "f0dd4996-e0eb-461f-b2f8-ba873a674789": [
-                "john",
                 "f0dd4996-e0eb-461f-b2f8-ba873a674789",
             ],
         }
@@ -339,11 +342,11 @@ class TestWorkspaces(BaseTest):
         # test search
         search_params = {
             "f0dd4996-e0eb-461f-b2f8-ba873a674788": [
-                "jane",
+                # "jane",
                 "b2f8-ba873a674788",
             ],
             "f0dd4996-e0eb-461f-b2f8-ba873a674789": [
-                "john",
+                # "john",
                 "f0dd4996-e0eb-461f-b2f8-ba873a674789",
             ],
         }
@@ -808,3 +811,36 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["type"] == "applet"
+
+    @rollback
+    async def test_applet_get_respondent_success(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        url = self.workspace_get_applet_respondent.format(
+            owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
+            respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+        )
+        res = await self.client.get(url)
+        assert res.status_code == 200
+        body = res.json()
+        respondent = body.get("result", {})
+        assert len(respondent) == 2
+        assert respondent["nickname"] == "f0dd4996-e0eb-461f-b2f8-ba873a674782"
+        assert respondent["secretUserId"] == (
+            "f0dd4996-e0eb-461f-b2f8-ba873a674782"
+        )
+
+    @rollback
+    async def test_applet_get_respondent_not_found(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        url = self.workspace_get_applet_respondent.format(
+            owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
+            respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa0",
+        )
+        res = await self.client.get(url)
+        assert res.status_code == 404

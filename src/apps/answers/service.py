@@ -1246,7 +1246,7 @@ class ReportServerService:
         return dict(
             firstName=access.meta.get("firstName"),
             lastName=access.meta.get("lastName"),
-            nickname=access.meta.get("nickname"),
+            nickname=access.nickname,
             secretId=access.meta.get("secretUserId"),
         )
 

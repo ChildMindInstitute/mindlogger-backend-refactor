@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    Unicode,
     UniqueConstraint,
     case,
     func,
@@ -16,7 +17,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy_utils import StringEncryptedType
 
+from apps.shared.encryption import get_key
 from apps.workspaces.domain.constants import UserPinRole
 from infrastructure.database.base import Base
 
@@ -42,6 +45,8 @@ class UserAppletAccessSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     meta = Column(JSONB())
+    nickname = Column(StringEncryptedType(Unicode, get_key))
+
     is_pinned = Column(Boolean(), default=False)
     __table_args__ = (
         Index(
@@ -55,11 +60,11 @@ class UserAppletAccessSchema(Base):
 
     @hybrid_property
     def respondent_nickname(self):
-        return self.meta.get("nickname")
+        return self.nickname
 
     @respondent_nickname.expression  # type: ignore[no-redef]
     def respondent_nickname(cls):
-        return cls.meta[text("'nickname'")].astext
+        return cls.nickname
 
     @hybrid_property
     def respondent_secret_id(self):
