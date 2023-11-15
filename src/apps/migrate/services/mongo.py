@@ -53,7 +53,7 @@ from apps.migrate.utilities import (
     uuid_to_mongoid,
 )
 from apps.shared.domain.base import InternalModel, PublicModel
-from apps.shared.encryption import encrypt, get_key
+from apps.shared.encryption import get_key
 from apps.workspaces.domain.constants import Role
 from apps.shared.version import INITIAL_VERSION
 
