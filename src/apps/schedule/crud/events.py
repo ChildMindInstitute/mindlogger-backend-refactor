@@ -1,10 +1,9 @@
 import uuid
-from typing import Optional
+from datetime import date
 
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import and_, delete, distinct, func, or_, select
-from sqlalchemy.sql.elements import BooleanClauseList
 
 from apps.activities.db.schemas import ActivitySchema
 from apps.activity_flows.db.schemas import ActivityFlowSchema
@@ -225,7 +224,8 @@ class EventCRUD(BaseCRUD[EventSchema]):
         self,
         applet_ids: list[uuid.UUID],
         user_id: uuid.UUID,
-        event_filter: Optional[BooleanClauseList] = None,
+        min_end_date: date | None = None,
+        max_start_date: date | None = None,
     ) -> tuple[dict[uuid.UUID, list[EventFull]], set[uuid.UUID]]:
         """Get events by applet_ids and user_id
         Return {applet_id: [EventFull]}"""
@@ -265,8 +265,16 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         query = query.where(EventSchema.applet_id.in_(applet_ids))
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
-        if event_filter is not None:
-            query = query.where(event_filter)
+        if min_end_date and max_start_date:
+            query = query.where(
+                or_(
+                    PeriodicitySchema.type == PeriodicityType.ALWAYS,
+                    and_(
+                        PeriodicitySchema.start_date <= max_start_date,
+                        PeriodicitySchema.end_date >= min_end_date,
+                    ),
+                )
+            )
 
         db_result = await self._execute(query)
 
@@ -495,7 +503,8 @@ class EventCRUD(BaseCRUD[EventSchema]):
         self,
         applet_ids: list[uuid.UUID],
         user_id: uuid.UUID,
-        event_filter: Optional[BooleanClauseList] = None,
+        min_end_date: date | None = None,
+        max_start_date: date | None = None,
     ) -> tuple[dict[uuid.UUID, list[EventFull]], set[uuid.UUID]]:
         """Get general events by applet_id and user_id"""
         # select flow_ids to exclude
@@ -574,8 +583,16 @@ class EventCRUD(BaseCRUD[EventSchema]):
             )
         )
         query = query.where(UserEventsSchema.user_id == None)  # noqa: E711
-        if event_filter is not None:
-            query = query.where(event_filter)
+        if min_end_date and max_start_date:
+            query = query.where(
+                or_(
+                    PeriodicitySchema.type == PeriodicityType.ALWAYS,
+                    and_(
+                        PeriodicitySchema.start_date <= max_start_date,
+                        PeriodicitySchema.end_date >= min_end_date,
+                    ),
+                )
+            )
 
         db_result = await self._execute(query)
 

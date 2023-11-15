@@ -1,8 +1,6 @@
 import asyncio
 import uuid
-from typing import Optional
-
-from sqlalchemy.sql.elements import BooleanClauseList
+from datetime import date
 
 from apps.activities.crud import ActivitiesCRUD
 from apps.activity_flows.crud import FlowsCRUD
@@ -824,7 +822,8 @@ class ScheduleService:
         self,
         user_id: uuid.UUID,
         applet_ids: list[uuid.UUID],
-        event_filter: Optional[BooleanClauseList] = None,
+        min_end_date: date | None = None,
+        max_start_date: date | None = None,
     ) -> list[PublicEventByUser]:
         """Get all events for user in applets that user is respondent."""
         user_events_map, user_event_ids = await EventCRUD(
@@ -832,14 +831,16 @@ class ScheduleService:
         ).get_all_by_applets_and_user(
             applet_ids=applet_ids,
             user_id=user_id,
-            event_filter=event_filter,
+            min_end_date=min_end_date,
+            max_start_date=max_start_date,
         )
         general_events_map, general_event_ids = await EventCRUD(
             self.session
         ).get_general_events_by_applets_and_user(
             applet_ids=applet_ids,
             user_id=user_id,
-            event_filter=event_filter,
+            min_end_date=min_end_date,
+            max_start_date=max_start_date,
         )
         full_events_map = self._sum_applets_events_map(
             user_events_map, general_events_map
