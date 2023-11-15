@@ -1,0 +1,11 @@
+from gettext import gettext as _
+
+from apps.shared.exception import (
+    AccessDeniedError,
+    NotFoundError,
+    ValidationError,
+)
+
+
+class LorisServerError(ValidationError):
+    message = _("Loris server error {message}.")
