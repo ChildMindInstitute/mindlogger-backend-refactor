@@ -1411,6 +1411,10 @@ class Mongo:
             "meta.activity.@id": kwargs["activity_id"],
             "meta.applet.@id": kwargs["applet_id"],
             "meta.applet.version": kwargs["version"],
+            "created": {
+                "$gte": datetime.datetime(2023, 11, 4, 0, 0, 0),
+                "$lte": datetime.datetime(2023, 11, 5, 0, 0, 0),
+            },
         }
         item_collection = db["item"]
         try:

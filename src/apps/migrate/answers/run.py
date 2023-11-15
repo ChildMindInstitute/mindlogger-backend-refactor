@@ -88,8 +88,6 @@ class AnswersMigrateFacade:
             if applet_id not in APPLETS_WITH_ISSUES_DONT_MIGRATE_ANSWERS
         ]
 
-        await self._wipe_answers_data(regular_session, applets_ids)
-
         async for answer_with_files in self._collect_migratable_answers(
             applets_ids
         ):
@@ -106,12 +104,25 @@ class AnswersMigrateFacade:
             if applet_id not in applets_ids:
                 continue
 
-            try:
-                regular_or_arbitary_session = (
-                    await self._get_regular_or_arbitary_session(
-                        regular_session, applet_id
-                    )
+            pg_answer_id = mongoid_to_uuid(mongo_answer_id)
+
+            regular_or_arbitary_session = (
+                await self._get_regular_or_arbitary_session(
+                    regular_session, applet_id
                 )
+            )
+            is_migrated = await self.answer_migrate_service.is_answer_migrated(
+                session=regular_or_arbitary_session,
+                answer_id=pg_answer_id,
+            )
+            if is_migrated:
+                migration_log.warning(
+                    f"Answer {pg_answer_id} is already in Postgres. "
+                )
+                self.skipped_answers_migration += 1
+                continue
+
+            try:
                 async with atomic(regular_session):
                     async with atomic(regular_or_arbitary_session):
                         migration_log.info(
@@ -128,11 +139,6 @@ class AnswersMigrateFacade:
                             )
 
                         else:
-                            if await self.answer_migrate_service.is_answer_migrated(
-                                session=regular_or_arbitary_session,
-                                answer_id=mongoid_to_uuid(mongo_answer["_id"]),
-                            ):
-                                continue
                             flow_history_id = await self.answer_migrate_service.get_flow_history_id(
                                 session=regular_session,
                                 response=mongo_answer,
