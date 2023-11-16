@@ -385,10 +385,13 @@ class UserAppletAccessService:
         )
         if not respondent_schema:
             raise NotFoundError()
+
         if respondent_schema.meta:
             return RespondentInfoPublic(
-                nickname=respondent_schema.meta.get("nickname"),
+                nickname=respondent_schema.nickname,
                 secret_user_id=respondent_schema.meta.get("secretUserId"),
             )
         else:
-            return RespondentInfoPublic(nickname=None, secret_user_id=None)
+            return RespondentInfoPublic(
+                nickname=respondent_schema.nickname, secret_user_id=None
+            )
