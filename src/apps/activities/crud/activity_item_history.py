@@ -98,7 +98,7 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
                 ActivitySchema.is_reviewable.is_(True),
                 ActivitySchema.applet_id == applet_id,
             )
-            .order_by(ActivityHistorySchema.id_version.desc())
+            .order_by(ActivityHistorySchema.created_at.desc())
             .limit(1)
             .subquery()
         )
