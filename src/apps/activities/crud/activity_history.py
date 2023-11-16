@@ -224,7 +224,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
                 ActivitySchema.applet_id == applet,
                 ActivitySchema.is_reviewable.is_(True),
             )
-            .order_by(ActivityHistorySchema.id_version.desc())
+            .order_by(ActivityHistorySchema.created_at.desc())
             .limit(1)
         )
         db_result = await self._execute(query)
