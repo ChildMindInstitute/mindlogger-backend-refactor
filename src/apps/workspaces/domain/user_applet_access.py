@@ -135,5 +135,5 @@ class RespondentExportData(InternalModel):
 
 
 class RespondentInfoPublic(PublicModel):
-    nickname: str
+    nickname: str | None
     secret_user_id: str
