@@ -827,7 +827,7 @@ class TestWorkspaces(BaseTest):
         body = res.json()
         respondent = body.get("result", {})
         assert len(respondent) == 2
-        assert respondent["nickname"] == "f0dd4996-e0eb-461f-b2f8-ba873a674782"
+        assert respondent["nickname"] == "Mindlogger ChildMindInstitute"
         assert respondent["secretUserId"] == (
             "f0dd4996-e0eb-461f-b2f8-ba873a674782"
         )
