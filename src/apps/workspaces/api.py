@@ -3,6 +3,10 @@ from copy import deepcopy
 
 from fastapi import Body, Depends, Query
 
+from apps.answers.deps.preprocess_arbitrary import (
+    get_answer_session_by_owner_id,
+)
+from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletService
@@ -23,6 +27,7 @@ from apps.workspaces.domain.user_applet_access import (
     RemoveManagerAccess,
     RemoveRespondentAccess,
     RespondentInfo,
+    RespondentInfoPublic,
 )
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
@@ -273,6 +278,7 @@ async def workspace_respondents_list(
         parse_query_params(WorkspaceUsersQueryParams)
     ),
     session=Depends(get_session),
+    answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMulti[PublicWorkspaceRespondent]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
@@ -284,8 +290,10 @@ async def workspace_respondents_list(
     data, total = await service.get_workspace_respondents(
         owner_id, None, deepcopy(query_params)
     )
-
-    return ResponseMulti(result=data, count=total)
+    respondents = await AnswerService(
+        session=session, arbitrary_session=answer_session
+    ).fill_last_activity(data)
+    return ResponseMulti(result=respondents, count=total)
 
 
 async def workspace_applet_respondents_list(
@@ -296,6 +304,7 @@ async def workspace_applet_respondents_list(
         parse_query_params(WorkspaceUsersQueryParams)
     ),
     session=Depends(get_session),
+    answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMulti[PublicWorkspaceRespondent]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
@@ -307,8 +316,10 @@ async def workspace_applet_respondents_list(
     data, total = await service.get_workspace_respondents(
         owner_id, applet_id, deepcopy(query_params)
     )
-
-    return ResponseMulti(result=data, count=total)
+    respondents = await AnswerService(
+        session=session, arbitrary_session=answer_session
+    ).fill_last_activity(data, applet_id)
+    return ResponseMulti(result=respondents, count=total)
 
 
 async def workspace_managers_list(
@@ -450,3 +461,22 @@ async def workspace_managers_applet_access_set(
         await UserAccessService(session, user.id).set(
             owner_id, manager_id, accesses
         )
+
+
+async def workspace_applet_get_respondent(
+    owner_id: uuid.UUID,
+    applet_id: uuid.UUID,
+    respondent_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[RespondentInfoPublic]:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+        await CheckAccessService(session, user.id).check_applet_detail_access(
+            applet_id
+        )
+        respondent_info = await UserAppletAccessService(
+            session, user.id, applet_id
+        ).get_respondent_info(respondent_id, applet_id, owner_id)
+        return Response(result=respondent_info)

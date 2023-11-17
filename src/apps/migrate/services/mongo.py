@@ -53,7 +53,7 @@ from apps.migrate.utilities import (
     uuid_to_mongoid,
 )
 from apps.shared.domain.base import InternalModel, PublicModel
-from apps.shared.encryption import encrypt, get_key
+from apps.shared.encryption import get_key
 from apps.workspaces.domain.constants import Role
 from apps.shared.version import INITIAL_VERSION
 
@@ -1580,7 +1580,8 @@ class Mongo:
                     created_at=datetime.datetime.utcnow(),
                     updated_at=datetime.datetime.utcnow(),
                     meta={
-                        "nickname": "Mindlogger ChildMindInstitute",
+                        # nickname is encrypted version of 'Mindlogger ChildMindInstitute'
+                        "nickname": "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA=",
                         "secretUserId": "Guest Account Submission",
                         "legacyProfileId": str(applet_profile["_id"]),
                     },
@@ -1683,6 +1684,12 @@ class Mongo:
                         else:
                             meta["nickname"] = data["nick"]
                             meta["secretUserId"] = data["secret"]
+                        if "nickname" in meta:
+                            nickname = meta.pop("nickname")
+                            if nickname != "":
+                                meta["nickname"] = enc.process_bind_param(
+                                    nickname, String
+                                )
 
                 owner_id = self.get_owner_by_applet(applet_profile["appletId"])
                 if not owner_id:

@@ -6,6 +6,7 @@ from typing import Tuple
 from asyncpg.exceptions import UniqueViolationError
 from pydantic import parse_obj_as
 from sqlalchemy import (
+    Unicode,
     and_,
     any_,
     case,
@@ -20,15 +21,22 @@ from sqlalchemy import (
     true,
     update,
 )
-from sqlalchemy.dialects.postgresql import UUID, aggregate_order_by, insert
+from sqlalchemy.dialects.postgresql import (
+    ARRAY,
+    UUID,
+    aggregate_order_by,
+    insert,
+)
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
+from sqlalchemy_utils import StringEncryptedType
 
 from apps.applets.db.schemas import AppletSchema
 from apps.folders.db.schemas import FolderAppletSchema
 from apps.schedule.db.schemas import EventSchema, UserEventsSchema
+from apps.shared.encryption import get_key
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
@@ -103,14 +111,13 @@ class _AppletRespondentOrdering(Ordering):
 
 class _WorkspaceRespondentSearch(Searching):
     search_fields = [
-        func.array_agg(UserAppletAccessSchema.meta["nickname"].astext),
+        func.array_agg(UserAppletAccessSchema.nickname),
         func.array_agg(UserAppletAccessSchema.meta["secretUserId"].astext),
     ]
 
 
 class _AppletRespondentSearch(Searching):
     search_fields = [
-        UserAppletAccessSchema.meta["nickname"].astext,
         UserAppletAccessSchema.meta["secretUserId"].astext,
     ]
 
@@ -624,11 +631,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     UserSchema.last_seen_at, UserSchema.created_at
                 ).label("last_seen"),
 
-                func.array_agg(
-                    aggregate_order_by(
-                        func.distinct(field_nickname), field_nickname
-                    )
-                ).label("nicknames"),
+                func.array_remove(
+                    func.array_agg(
+                            func.distinct(field_nickname)
+                    ), None)
+                .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
+                .label("nicknames"),
 
                 func.array_agg(
                     aggregate_order_by(
@@ -1022,6 +1030,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         query: Query = select(
             UserAppletAccessSchema.meta,
+            UserAppletAccessSchema.nickname,
             AppletSchema.id,
             AppletSchema.display_name,
             AppletSchema.image,
@@ -1043,6 +1052,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         results = db_result.all()
         for (
             meta,
+            nickname,
             applet_id,
             display_name,
             image,
@@ -1055,7 +1065,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     applet_name=display_name,
                     applet_image=image,
                     secret_user_id=meta.get("secretUserId", ""),
-                    nickname=meta.get("nickname", ""),
+                    nickname=nickname,
                     has_individual_schedule=has_individual,
                     encryption=encryption,
                 )
@@ -1188,11 +1198,13 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         await self._execute(query)
 
-    async def update_meta_by_access_id(self, access_id: uuid.UUID, meta: dict):
+    async def update_meta_by_access_id(
+        self, access_id: uuid.UUID, meta: dict, nickname: str
+    ):
         query: Query = update(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.id == access_id)
-        query = query.values(meta=meta)
+        query = query.values(meta=meta, nickname=nickname)
 
         await self._execute(query)
 
@@ -1276,7 +1288,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     async def get_user_nickname(
         self, applet_id: uuid.UUID, user_id: uuid.UUID
     ) -> str | None:
-        query: Query = select(UserAppletAccessSchema.meta)
+        query: Query = select(UserAppletAccessSchema.nickname)
         query = query.where(
             UserAppletAccessSchema.applet_id == applet_id,
             UserAppletAccessSchema.user_id == user_id,
@@ -1284,4 +1296,22 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         )
         db_result = await self._execute(query)
         db_result = db_result.first()
-        return db_result[0].get("nickname") if db_result else None
+        return db_result[0] if db_result else None
+
+    async def get_respondent_by_applet_and_owner(
+        self,
+        respondent_id: uuid.UUID,
+        applet_id: uuid.UUID,
+        owner_id: uuid.UUID,
+    ) -> UserAppletAccessSchema | None:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(
+            UserAppletAccessSchema.owner_id == owner_id,
+            UserAppletAccessSchema.applet_id == applet_id,
+            UserAppletAccessSchema.user_id == respondent_id,
+            UserAppletAccessSchema.role == Role.RESPONDENT,
+            UserAppletAccessSchema.soft_exists(),
+        )
+        db_result = await self._execute(query)
+        db_result = db_result.first()  # noqa
+        return db_result[0] if db_result else None

@@ -6,13 +6,12 @@ from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
 from apps.applets.db.schemas import AppletSchema
-from apps.users import User
 from apps.workspaces.db.schemas import (
     UserAppletAccessSchema,
     UserWorkspaceSchema,
 )
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.domain.workspace import UserAnswersDBInfo, UserWorkspace
+from apps.workspaces.domain.workspace import UserAnswersDBInfo
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["UserWorkspaceCRUD"]
@@ -48,23 +47,6 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         """Return UserWorkspace instance."""
         return await self._create(schema)
 
-    async def update(self, user: User, workspace_prefix: str) -> UserWorkspace:
-        # Update UserWorkspace in database
-        instance = await self._update_one(
-            lookup="user_id",
-            value=user.id,
-            schema=UserWorkspaceSchema(
-                user_id=user.id,
-                workspace_name=workspace_prefix,
-                is_modified=True,
-            ),
-        )
-
-        # Create internal data model
-        user_workspace = UserWorkspace.from_orm(instance)
-
-        return user_workspace
-
     async def update_by_user_id(
         self, user_id: uuid.UUID, schema: UserWorkspaceSchema
     ) -> UserWorkspaceSchema:
@@ -85,8 +67,6 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
                 UserAppletAccessSchema.applet_id == applet_id,
             )
         )
-        access_subquery = access_subquery.subquery()
-
         query: Query = select(UserWorkspaceSchema)
         query = query.where(UserWorkspaceSchema.user_id.in_(access_subquery))
         db_result = await self._execute(query)

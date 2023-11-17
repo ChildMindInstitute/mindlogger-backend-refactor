@@ -168,6 +168,7 @@ class ChangeGenerator:
                 "created_at",
                 "id_version",
                 "applet_id",
+                "extra_fields",
             ]:
                 continue
             elif field in [
@@ -227,7 +228,7 @@ class ChangeGenerator:
                                     )
                                 )
 
-            elif type(value) == bool:
+            elif isinstance(value, bool):
                 changes.append(
                     self._change_text_generator.set_bool(
                         f"Activity {to_camelcase(field)}",
@@ -259,6 +260,7 @@ class ChangeGenerator:
                 "created_at",
                 "id_version",
                 "applet_id",
+                "extra_fields",
             ]:
                 continue
             elif field in [
@@ -316,13 +318,12 @@ class ChangeGenerator:
                                                 f'Activity scores {", ".join(deleted_names)}'  # noqa: E501
                                             )
                                         )
-                                else:
-                                    if old_val:
-                                        changes.append(
-                                            self._change_text_generator.removed_text(  # noqa: E501
-                                                "Activity scores"
-                                            )
+                                elif old_val:
+                                    changes.append(
+                                        self._change_text_generator.removed_text(  # noqa: E501
+                                            "Activity scores"
                                         )
+                                    )
 
                             elif key == "sections":
                                 if val:
@@ -362,20 +363,18 @@ class ChangeGenerator:
                                                 f'Activity section {", ".join(deleted_names)}'  # noqa: E501
                                             )
                                         )
-                                else:
-                                    if old_val:
-                                        changes.append(
-                                            self._change_text_generator.removed_text(  # noqa: E501
-                                                "Activity sections"
-                                            )
+                                elif old_val:
+                                    changes.append(
+                                        self._change_text_generator.removed_text(  # noqa: E501
+                                            "Activity sections"
                                         )
-                    else:
-                        if old_value:
-                            changes.append(
-                                self._change_text_generator.removed_text(
-                                    f"Activity {to_camelcase(field)}"
-                                )
+                                    )
+                    elif old_value and not value:
+                        changes.append(
+                            self._change_text_generator.removed_text(
+                                f"Activity {to_camelcase(field)}"
                             )
+                        )
                 elif field == "subscale_setting":
                     if value and value != old_value:
                         for key, val in value.items():
@@ -447,16 +446,15 @@ class ChangeGenerator:
                                                 val,
                                             )
                                         )
-                    else:
-                        if old_value:
-                            changes.append(
-                                self._change_text_generator.removed_text(
-                                    f"Activity {to_camelcase(field)}"
-                                )
+                    elif old_value and not value:
+                        changes.append(
+                            self._change_text_generator.removed_text(
+                                f"Activity {to_camelcase(field)}"
                             )
+                        )
 
-            elif type(value) == bool:
-                if value and value != old_value:
+            elif isinstance(value, bool):
+                if value != old_value:
                     changes.append(
                         self._change_text_generator.set_bool(
                             f"Activity {to_camelcase(field)}",
@@ -475,7 +473,7 @@ class ChangeGenerator:
                                 f"Activity {to_camelcase(field)}", value
                             )
                         )
-        return changes, bool(changes)
+        return changes
 
     def generate_activity_items_insert(self, items):
         change_items = []
@@ -498,9 +496,10 @@ class ChangeGenerator:
                     "created_at",
                     "id_version",
                     "activity_id",
+                    "extra_fields",
                 ]:
                     continue
-                elif type(value) == bool:
+                elif isinstance(value, bool):
                     changes.append(
                         self._change_text_generator.set_bool(
                             f"Item {to_camelcase(field)}",
@@ -523,7 +522,7 @@ class ChangeGenerator:
                     elif field == "config":
                         if value:
                             for key, val in value.items():
-                                if type(val) == bool:
+                                if isinstance(val, bool):
                                     changes.append(
                                         self._change_text_generator.set_bool(
                                             f"Item {to_camelcase(key)}",
@@ -531,9 +530,9 @@ class ChangeGenerator:
                                         )
                                     )
 
-                                elif type(val) == dict:
+                                elif isinstance(val, dict):
                                     for k, v in val.items():
-                                        if type(v) == bool:
+                                        if isinstance(v, bool):
                                             changes.append(
                                                 self._change_text_generator.set_bool(  # noqa: E501
                                                     f"Item {to_camelcase(k)}",
@@ -593,10 +592,10 @@ class ChangeGenerator:
                     )
                 )
             elif new_item and prev_item:
-                changes, has_changes = self._generate_activity_item_update(
+                changes = self._generate_activity_item_update(
                     new_item, prev_item
                 )
-                if has_changes:
+                if changes:
                     change_items.append(
                         ActivityItemHistoryChange(
                             name=self._change_text_generator.updated_text(
@@ -606,7 +605,7 @@ class ChangeGenerator:
                         )
                     )
 
-        return change_items, bool(change_items)
+        return change_items
 
     def _generate_activity_item_update(self, new_item, prev_item):
         changes = list()
@@ -618,10 +617,11 @@ class ChangeGenerator:
                 "created_at",
                 "id_version",
                 "activity_id",
+                "extra_fields",
             ]:
                 continue
-            elif type(value) == bool:
-                if value and value != old_value:
+            elif isinstance(value, bool):
+                if value != old_value:
                     changes.append(
                         self._change_text_generator.set_bool(
                             f"Item {to_camelcase(field)}",
@@ -646,7 +646,7 @@ class ChangeGenerator:
                         for key, val in value.items():
                             old_val = getattr(old_value, key, None)
                             if val != old_val:
-                                if type(val) == bool:
+                                if isinstance(val, bool):
                                     changes.append(
                                         self._change_text_generator.set_bool(
                                             f"Item {to_camelcase(key)}",
@@ -654,11 +654,11 @@ class ChangeGenerator:
                                         )
                                     )
 
-                                elif type(val) == dict:
+                                elif isinstance(val, dict):
                                     for k, v in val.items():
                                         old_v = getattr(old_val, k, None)
                                         if v != old_v:
-                                            if type(v) == bool:
+                                            if isinstance(v, bool):
                                                 changes.append(
                                                     self._change_text_generator.set_bool(  # noqa: E501
                                                         f"Item {to_camelcase(k)}",  # noqa: E501
@@ -690,4 +690,4 @@ class ChangeGenerator:
                         else f"Item {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, value)}."  # noqa: E501
                     )
 
-        return changes, bool(changes)
+        return changes

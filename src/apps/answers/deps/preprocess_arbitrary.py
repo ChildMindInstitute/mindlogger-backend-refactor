@@ -50,3 +50,23 @@ async def get_answer_session(url=Depends(preprocess_arbitrary_url)):
             yield session
     else:
         yield None
+
+
+async def get_answer_session_by_owner_id(
+    owner_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    service = WorkspaceService(session, uuid.uuid4())
+    server_info = await service.get_arbitrary_info_by_owner_id(owner_id)
+    if server_info and server_info.use_arbitrary:
+        url = server_info.database_uri
+        session_maker = session_manager.get_session(url) if url else None
+        if settings.env == "testing":
+            yield session_maker
+        elif session_maker:
+            async with session_maker() as session:
+                yield session
+        else:
+            yield None
+    else:
+        yield None

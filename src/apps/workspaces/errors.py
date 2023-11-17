@@ -15,7 +15,11 @@ __all__ = [
     "AccessDeniedToUpdateOwnAccesses",
     "RemoveOwnPermissionAccessDenied",
     "UserAccessAlreadyExists",
+    "ArbitraryServerSettingsError",
+    "WorkspaceNotFoundError",
 ]
+
+from apps.workspaces.domain.workspace import WorkspaceArbitraryFields
 
 
 class WorkspaceDoesNotExistError(NotFoundError):
@@ -125,3 +129,13 @@ class AnswerCheckAccessDenied(AccessDeniedError):
 
 class UserAccessAlreadyExists(ValidationError):
     message = _("User Access already exists.")
+
+
+class WorkspaceNotFoundError(Exception):
+    ...
+
+
+class ArbitraryServerSettingsError(Exception):
+    def __init__(self, data: WorkspaceArbitraryFields, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.data = data

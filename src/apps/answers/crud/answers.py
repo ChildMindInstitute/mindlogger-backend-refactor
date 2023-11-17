@@ -37,7 +37,7 @@ from apps.answers.domain import (
     Version,
 )
 from apps.answers.errors import AnswerNotFoundError
-from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
+from apps.applets.db.schemas import AppletHistorySchema
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
 from infrastructure.database.crud import BaseCRUD
@@ -345,64 +345,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_activity_flow_by_answer_id(
-        self, answer_id: uuid.UUID
-    ) -> bool:
-        query: Query = select(AnswerItemSchema, ActivityFlowHistoriesSchema)
-        query = query.join(
-            AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
-        )
-        query = query.join(
-            ActivityFlowHistoriesSchema,
-            ActivityFlowHistoriesSchema.id_version
-            == AnswerSchema.flow_history_id,
-            isouter=True,
-        )
-        query = query.where(AnswerItemSchema.is_assessment == False)  # noqa
-        query = query.where(AnswerSchema.id == answer_id)
-
-        db_result = await self._execute(query)
-        (
-            _,
-            flow_history_schema,
-        ) = (
-            db_result.first()
-        )  # type: AnswerItemSchema, ActivityFlowHistoriesSchema
-        if not flow_history_schema:
-            return False
-        return flow_history_schema.is_single_report
-
-    async def get_applet_info_by_answer_id(
-        self, answer: AnswerSchema
-    ) -> tuple[AppletHistorySchema, ActivityHistorySchema]:
-        query: Query = select(
-            AppletSchema,
-            ActivityHistorySchema,
-        )
-        query = query.join(
-            AppletHistorySchema,
-            AppletHistorySchema.id == AppletSchema.id,
-            isouter=True,
-        )
-        query = query.join(
-            ActivityHistorySchema,
-            and_(
-                ActivityHistorySchema.applet_id
-                == AppletHistorySchema.id_version,
-                ActivityHistorySchema.id_version == answer.activity_history_id,
-            ),
-            isouter=True,
-        )
-        query = query.where(
-            and_(
-                AppletSchema.id == answer.applet_id,
-                AppletHistorySchema.version == answer.version,
-            )
-        )
-        db_result = await self._execute(query)
-        res = db_result.first()
-        return res
-
     async def get_activities_which_has_answer(
         self, activity_hist_ids: list[str], respondent_id: uuid.UUID | None
     ) -> list[str]:
@@ -559,3 +501,32 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
 
             await self._execute(query)
+
+    async def is_single_report_flow(self, answer_flow_id: str | None) -> bool:
+        query: Query = select(ActivityFlowHistoriesSchema)
+        query = query.where(
+            ActivityFlowHistoriesSchema.id_version == answer_flow_id
+        )
+        db_result = await self._execute(query)
+        db_result = db_result.first()
+        flow_history_schema = (
+            db_result[0] if db_result else None
+        )  # type: ActivityFlowHistoriesSchema | None
+        if not flow_history_schema:
+            return False
+        return flow_history_schema.is_single_report
+
+    async def get_last_activity(
+        self, respondent_ids: list[uuid.UUID], applet_id: uuid.UUID | None
+    ) -> dict[uuid.UUID, datetime.datetime]:
+        query: Query = (
+            select(
+                AnswerSchema.respondent_id, func.max(AnswerSchema.created_at)
+            )
+            .group_by(AnswerSchema.respondent_id)
+            .where(AnswerSchema.respondent_id.in_(respondent_ids))
+        )
+        if applet_id:
+            query = query.where(AnswerSchema.applet_id == applet_id)
+        result = await self._execute(query)
+        return {t[0]: t[1] for t in result.all()}
