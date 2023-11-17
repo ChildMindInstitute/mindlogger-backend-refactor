@@ -19,6 +19,7 @@ from apps.workspaces.api import (
     search_workspace_applets,
     user_workspaces,
     workspace_applet_detail,
+    workspace_applet_get_respondent,
     workspace_applet_managers_list,
     workspace_applet_respondent_update,
     workspace_applet_respondents_list,
@@ -144,6 +145,15 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_applet_respondent_update)
+
+router.get(
+    "/{owner_id}/applets/{applet_id}/respondents/{respondent_id}",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_applet_get_respondent)
 
 router.post(
     "/{owner_id}/applets",

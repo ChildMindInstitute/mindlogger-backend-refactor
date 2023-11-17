@@ -47,6 +47,7 @@ class AppletUserDAO:
                 "applet_id",
                 "owner_id",
                 "invitor_id",
+                "nickname",
                 "meta"
             )
             VALUES (
@@ -56,7 +57,7 @@ class AppletUserDAO:
                 now() at time zone ('utc'),
                 now() at time zone ('utc'),
                 FALSE,
-                %s, %s, %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s, %s
             )
         """
 
@@ -80,6 +81,8 @@ class AppletUserDAO:
         """
 
     def values(self) -> tuple:
+        nickname = self.meta.pop("nickname", None)
+
         return (
             str(uuid.uuid4()),
             self.is_pinned,
@@ -88,6 +91,7 @@ class AppletUserDAO:
             str(self.applet_id),
             str(self.owner_id),
             str(self.inviter_id),
+            nickname,
             self.dump_meta(),
         )
 

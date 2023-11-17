@@ -78,12 +78,12 @@
       "user_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
       "workspace_name": "eRPtCowGI0bcq4BEzB3lGA==",
       "is_modified": false,
-      "database_uri": "postgresql+asyncpg://postgres:postgres@localhost:5432/test_arbitrary",
-      "storage_type": "key",
-      "storage_access_key": "key",
-      "storage_secret_key": "DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=youraccountkey;EndpointSuffix=core.windows.net",
-      "storage_region": "region",
-      "storage_url": "url",
+      "database_uri": "ehwQOnQu9X8higAEDMzDhH9HB5a0jO4FsgU/awOCwMgFccefd2//Ek6e0bKAwvauf6pwAS+PWDChFns1WIyL/z4oH52gEIKpYsBjUmznqYc=",
+      "storage_type": "gEkn6yn8U2jb0U+Ln1KSAw==",
+      "storage_access_key": "gEkn6yn8U2jb0U+Ln1KSAw==",
+      "storage_secret_key": "ww3Y0xCDnjCMQk2Kbmzoh0PGFmo4B1FGaaO7w7h0cUDoLgzFgpIJyoko/xTilJzIMINMa1j4V722KLW1NugxGkjqb+f9bWXJ2ytObwgbw8z6RbqZsJNOp6GFzT+az9Wpq7IW82Lyjok7ctS7R63oGTdDXbOpKzIJtu0/YAGCaNE=",
+      "storage_region": "5yruV8O3eukVP4fK/A5M6g==",
+      "storage_url": "KJ3yVM/QBmlmDQXx3CuuTw==",
       "use_arbitrary": true
     },
     "note": {
@@ -142,7 +142,8 @@
       "meta": {
         "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674781",
         "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674781"
-      }
+      },
+      "nickname": "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA="
     }
   },
   {
@@ -180,7 +181,8 @@
       "meta": {
         "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674781",
         "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674781"
-      }
+      },
+      "nickname": "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA="
     }
   },
   {

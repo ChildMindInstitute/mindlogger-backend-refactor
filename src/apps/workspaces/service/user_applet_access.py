@@ -7,12 +7,16 @@ from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.domain import InvitationDetailGeneric
+from apps.shared.exception import NotFoundError
 from apps.users import UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
 
-from apps.workspaces.domain.user_applet_access import RespondentInfo
+from apps.workspaces.domain.user_applet_access import (
+    RespondentInfo,
+    RespondentInfoPublic,
+)
 from apps.workspaces.errors import (
     UserAppletAccessNotFound,
     UserSecretIdAlreadyExists,
@@ -71,6 +75,7 @@ class UserAppletAccessService:
                 owner_id=self._user_id,
                 invitor_id=self._user_id,
                 meta=meta,
+                nickname=meta.get("nickname"),
             )
         )
         return UserAppletAccess.from_orm(access_schema)
@@ -146,6 +151,7 @@ class UserAppletAccessService:
                 owner_id=owner_access.user_id,
                 invitor_id=invitation.invitor_id,
                 meta=meta,
+                nickname=meta.get("nickname"),
             )
         )
 
@@ -164,6 +170,7 @@ class UserAppletAccessService:
                     owner_id=owner_access.user_id,
                     invitor_id=invitation.invitor_id,
                     meta=meta,
+                    nickname=meta.get("nickname"),
                     is_deleted=False,
                 )
 
@@ -217,9 +224,11 @@ class UserAppletAccessService:
         if not access:
             raise UserAppletAccessNotFound()
         await self._validate_secret_user_id(access.id, schema.secret_user_id)
-        for key, val in schema.dict(by_alias=True).items():
-            access.meta[key] = val
-        await crud.update_meta_by_access_id(access.id, access.meta)
+        # change here
+        access.meta["secretUserId"] = schema.secret_user_id
+        await crud.update_meta_by_access_id(
+            access.id, access.meta, nickname=schema.nickname
+        )
 
     async def _validate_secret_user_id(
         self, exclude_id: uuid.UUID, secret_id: str
@@ -363,3 +372,26 @@ class UserAppletAccessService:
         return await UserAppletAccessCRUD(self.session).get_user_nickname(
             self._applet_id, self._user_id
         )
+
+    async def get_respondent_info(
+        self,
+        respondent_id: uuid.UUID,
+        applet_id: uuid.UUID,
+        owner_id: uuid.UUID,
+    ) -> RespondentInfoPublic:
+        crud = UserAppletAccessCRUD(self.session)
+        respondent_schema = await crud.get_respondent_by_applet_and_owner(
+            respondent_id, applet_id, owner_id
+        )
+        if not respondent_schema:
+            raise NotFoundError()
+
+        if respondent_schema.meta:
+            return RespondentInfoPublic(
+                nickname=respondent_schema.nickname,
+                secret_user_id=respondent_schema.meta.get("secretUserId"),
+            )
+        else:
+            return RespondentInfoPublic(
+                nickname=respondent_schema.nickname, secret_user_id=None
+            )

@@ -132,3 +132,8 @@ class RespondentExportData(InternalModel):
     secret_id: str | None
     legacy_profile_id: str | None
     is_manager: bool
+
+
+class RespondentInfoPublic(PublicModel):
+    nickname: str | None
+    secret_user_id: str
