@@ -151,7 +151,7 @@ class UserAppletAccessService:
                 owner_id=owner_access.user_id,
                 invitor_id=invitation.invitor_id,
                 meta=meta,
-                nickname=meta.get("nickname"),
+                nickname=invitation.nickname,
             )
         )
 

@@ -42,11 +42,11 @@ def upgrade() -> None:
             encrypted_field = StringEncryptedType(
                 sa.Unicode, get_key
             ).process_bind_param(nickname, dialect=conn.dialect)
-            meta["nickname"] = None
+            meta.pop("nickname")
             conn.execute(
                 sa.text(
                     f"""
-                        UPDATE invitations 
+                        UPDATE invitations
                         SET nickname = :encrypted_field, meta= :meta
                         WHERE id = :pk
                     """

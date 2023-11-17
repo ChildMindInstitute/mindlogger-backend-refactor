@@ -191,6 +191,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     first_name=invitation.first_name,
                     last_name=invitation.last_name,
                     created_at=invitation.created_at,
+                    nickname=invitation.nickname,
                 )
             )
         return results
@@ -270,6 +271,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         if invitation.role == Role.RESPONDENT:
             return InvitationDetailRespondent(
                 meta=invitation.meta,
+                nickname=invitation.nickname,
                 **invitation_detail_base.dict(),
             )
         elif invitation.role == Role.REVIEWER:
