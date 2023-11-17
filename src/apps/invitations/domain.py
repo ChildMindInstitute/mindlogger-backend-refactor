@@ -202,6 +202,7 @@ class InvitationDetailReviewer(InvitationDetailBase):
     """
 
     meta: ReviewerMeta
+    nickname: str | None
 
 
 class _InvitationDetail(InternalModel):
