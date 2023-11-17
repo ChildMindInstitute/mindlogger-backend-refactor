@@ -363,6 +363,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             "role": schema.role,
             "is_deleted": schema.is_deleted,
             "meta": schema.meta,
+            "nickname": schema.nickname,
         }
         stmt = insert(UserAppletAccessSchema).values(values)
         stmt = stmt.on_conflict_do_update(
@@ -381,6 +382,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow(),
                 "meta": stmt.excluded.meta,
+                "nickname": stmt.excluded.nickname,
             },
             where=where,
         ).returning(UserAppletAccessSchema)
