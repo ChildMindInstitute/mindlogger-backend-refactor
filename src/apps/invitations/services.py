@@ -156,7 +156,7 @@ class InvitationsService:
         if not payload:
             meta = RespondentMeta(
                 secret_user_id=schema.secret_user_id,
-                nickname=schema.nickname,
+                # nickname=schema.nickname,
             )
 
             payload = success_invitation_schema | {"meta": meta.dict()}
