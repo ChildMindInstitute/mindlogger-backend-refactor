@@ -115,6 +115,11 @@ class RespondentMeta(InternalModel):
     # nickname: str
 
 
+class RespondentInfo(InternalModel):
+    nickname: str | None
+    meta: RespondentMeta
+
+
 class ReviewerMeta(InternalModel):
     """This model is used for internal needs
     for representation reviewer meta information.
