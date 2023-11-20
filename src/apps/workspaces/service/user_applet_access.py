@@ -134,6 +134,7 @@ class UserAppletAccessService:
             self.session
         ).get_applet_owner(invitation.applet_id)
         meta: dict = dict()
+        respondent_nickname = invitation.dict().get("nickname", None)
 
         if invitation.role in [Role.RESPONDENT, Role.REVIEWER]:
             meta = invitation.meta.dict(by_alias=True)  # type: ignore
@@ -151,7 +152,7 @@ class UserAppletAccessService:
                 owner_id=owner_access.user_id,
                 invitor_id=invitation.invitor_id,
                 meta=meta,
-                nickname=meta.get("nickname"),
+                nickname=respondent_nickname,
             )
         )
 
