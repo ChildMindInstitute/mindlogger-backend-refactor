@@ -26,6 +26,7 @@ from apps.invitations.domain import (
     InvitationReviewer,
     InvitationReviewerRequest,
     PrivateInvitationDetail,
+    RespondentInfo,
     RespondentMeta,
     ReviewerMeta,
     _InvitationRequest,
@@ -137,11 +138,19 @@ class InvitationsService:
         payload = None
         invitation_schema = None
         for invitation in invitations:
-            meta = RespondentMeta.from_orm(invitation.meta)
+            respondent_info = RespondentInfo(
+                meta=RespondentMeta(
+                    secret_user_id=invitation.meta.secret_user_id
+                ),
+                nickname=invitation.nickname,
+            )
             if invitation.status == InvitationStatus.PENDING and (
-                meta.secret_user_id == schema.secret_user_id
+                respondent_info.meta.secret_user_id == schema.secret_user_id
             ):
-                payload = success_invitation_schema | {"meta": meta.dict()}
+                payload = success_invitation_schema | {
+                    "meta": respondent_info.meta.dict(),
+                    "nickname": invitation.nickname,
+                }
                 invitation_schema = await self.invitations_crud.update(
                     lookup="id",
                     value=invitation.id,
@@ -149,17 +158,23 @@ class InvitationsService:
                 )
                 break
             elif invitation.status == InvitationStatus.APPROVED and (
-                meta.secret_user_id == schema.secret_user_id
+                respondent_info.meta.secret_user_id == schema.secret_user_id
             ):
                 raise InvitationAlreadyProcesses
 
         if not payload:
-            meta = RespondentMeta(
-                secret_user_id=schema.secret_user_id,
+            respondent_info = RespondentInfo(
+                meta=RespondentMeta(
+                    secret_user_id=schema.secret_user_id,
+                    # nickname=schema.nickname,
+                ),
                 nickname=schema.nickname,
             )
 
-            payload = success_invitation_schema | {"meta": meta.dict()}
+            payload = success_invitation_schema | {
+                "meta": respondent_info.meta.dict(),
+                "nickname": respondent_info.nickname,
+            }
             invitation_schema = await self.invitations_crud.save(
                 InvitationSchema(**payload)
             )

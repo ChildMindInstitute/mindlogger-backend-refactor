@@ -7,7 +7,7 @@ name = "pypi"
 aioredis = "~=2.0.1"
 alembic = "~=1.8.1"
 asyncpg = "~=0.27.0"
-asynctest = "*"
+asynctest = "==0.13.0"
 boto3 = "==1.26.10"
 fastapi = "==0.87.0"
 # The latest version of the fastapi is not taken because of the issue
@@ -24,18 +24,19 @@ pydantic = {extras = ["email"], version = "~=1.10.2"}
 python-jose = {version = "~=3.3.0", extras = ["cryptography"]}
 python-multipart = "~=0.0.5"
 sentry-sdk = "~=1.6"
-sqlalchemy = {extras = ["asyncio"], version = "~=1.4.46"}
+sqlalchemy = {extras = ["asyncio"], version = "==1.4.49"}
 uvicorn = {extras = ["standard"], version = "==0.19"}
-aiohttp = "*"
-firebase-admin = "*"
-aio-pika = "*"
-pyld = "*"
-azure-storage-blob = "*"
-taskiq-fastapi = "*"
-taskiq-redis = "*"
-taskiq-aio-pika = "*"
+taskiq = {extras = ["reload"], version = "==0.9.1"}
+aiohttp = "==3.8.5"
+firebase-admin = "==6.2.0"
+aio-pika = "==9.3.0"
+pyld = "==2.0.3"
+azure-storage-blob = "==12.18.2"
+taskiq-fastapi = "==0.3.0"
+taskiq-redis = "==0.5.0"
+taskiq-aio-pika = "==0.4.0"
 sqlalchemy-utils = "==0.41.1"
-typer = {extras = ["all"], version = "*"}
+typer = {extras = ["all"], version = "==0.9.0"}
 
 [dev-packages]
 black = "~=22.6"
@@ -79,9 +80,8 @@ pycryptodomex = "==3.9.7"
 psycopg2-binary = "==2.9.6"
 cachetools = "==5.3.0"
 pyld = "==2.0.3"
-types-requests = "*"
-taskiq = {extras = ["reload"], version = "*"}
-types-pytz = "*"
+types-requests = "==2.31.0.10"
+types-pytz = "==2023.3.1.1"
 
 [requires]
 python_version = "3.10"

@@ -134,6 +134,7 @@ class UserAppletAccessService:
             self.session
         ).get_applet_owner(invitation.applet_id)
         meta: dict = dict()
+        respondent_nickname = invitation.dict().get("nickname", None)
 
         if invitation.role in [Role.RESPONDENT, Role.REVIEWER]:
             meta = invitation.meta.dict(by_alias=True)  # type: ignore
@@ -151,7 +152,7 @@ class UserAppletAccessService:
                 owner_id=owner_access.user_id,
                 invitor_id=invitation.invitor_id,
                 meta=meta,
-                nickname=meta.get("nickname"),
+                nickname=respondent_nickname,
             )
         )
 
@@ -385,10 +386,13 @@ class UserAppletAccessService:
         )
         if not respondent_schema:
             raise NotFoundError()
+
         if respondent_schema.meta:
             return RespondentInfoPublic(
-                nickname=respondent_schema.meta.get("nickname"),
+                nickname=respondent_schema.nickname,
                 secret_user_id=respondent_schema.meta.get("secretUserId"),
             )
         else:
-            return RespondentInfoPublic(nickname=None, secret_user_id=None)
+            return RespondentInfoPublic(
+                nickname=respondent_schema.nickname, secret_user_id=None
+            )
