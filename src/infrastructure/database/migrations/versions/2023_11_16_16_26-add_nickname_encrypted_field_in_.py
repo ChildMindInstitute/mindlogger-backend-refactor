@@ -37,7 +37,7 @@ def upgrade() -> None:
     )
     for row in result:
         pk, meta = row
-        nickname = meta.get("nickname")
+        nickname = meta.get("nickname", None)
         if nickname and nickname != "":
             encrypted_field = StringEncryptedType(
                 sa.Unicode, get_key
