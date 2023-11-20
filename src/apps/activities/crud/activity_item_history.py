@@ -87,7 +87,8 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         return db_result.scalars().all()
 
     async def get_applets_assessments(
-        self, applet_id: uuid.UUID
+        self,
+        applet_id: uuid.UUID,
     ) -> list[ActivityItemHistorySchema]:
         subquery: Query = (
             select(ActivityHistorySchema.id_version)
@@ -120,6 +121,28 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         query = query.order_by(ActivityItemHistorySchema.order.asc())
         db_result = await self._execute(query)
 
+        res = db_result.scalars().all()
+        return res
+
+    async def get_assessment_activity_items(
+        self, id_version: str | None
+    ) -> list[ActivityItemHistorySchema | None]:
+        if not id_version:
+            return []
+        query: Query = select(ActivityItemHistorySchema)
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == ActivityItemHistorySchema.activity_id,
+        )
+        query = query.join(
+            ActivitySchema, ActivitySchema.id == ActivityHistorySchema.id
+        )
+        query = query.where(
+            ActivityHistorySchema.is_reviewable == True,  # noqa: E712
+            ActivityHistorySchema.id_version == id_version,
+        )
+        db_result = await self._execute(query)
         res = db_result.scalars().all()
         return res
 

@@ -112,6 +112,7 @@ class AssessmentAnswerCreate(InternalModel):
     answer: str
     item_ids: list[uuid.UUID]
     reviewer_public_key: str
+    assessment_version_id: str
 
 
 class AnswerDate(InternalModel):
@@ -180,7 +181,11 @@ class AssessmentAnswer(InternalModel):
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
+    items_last: list[PublicActivityItemFull] | None = Field(
+        default_factory=list
+    )
     is_edited: bool = False
+    versions: list[str] = []
 
 
 class Reviewer(InternalModel):
@@ -235,6 +240,10 @@ class AssessmentAnswerPublic(PublicModel):
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
+    items_last: list[PublicActivityItemFull] | None = Field(
+        default_factory=list
+    )
+    versions: list[str]
 
 
 class AnswerNote(InternalModel):

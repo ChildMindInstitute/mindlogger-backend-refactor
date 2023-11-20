@@ -455,28 +455,64 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        activity_items = await ActivityItemHistoriesCRUD(
-            self.session
-        ).get_applets_assessments(applet_id)
-        if len(activity_items) == 0:
-            return AssessmentAnswer(items=activity_items)
-
         assessment_answer = await AnswerItemsCRUD(
             self.answer_session
         ).get_assessment(answer_id, self.user_id)
 
-        answer = AssessmentAnswer(
-            reviewer_public_key=assessment_answer.user_public_key
-            if assessment_answer
-            else None,
-            answer=assessment_answer.answer if assessment_answer else None,
-            item_ids=assessment_answer.item_ids if assessment_answer else [],
-            items=activity_items,
-            is_edited=assessment_answer.created_at
-            != assessment_answer.updated_at  # noqa
-            if assessment_answer
-            else False,
-        )
+        items_crud = ActivityItemHistoriesCRUD(self.session)
+        last = items_crud.get_applets_assessments(applet_id)
+        if assessment_answer:
+            current = items_crud.get_assessment_activity_items(
+                assessment_answer.assessment_activity_id
+            )
+            items_last, items_current = await asyncio.gather(last, current)
+        else:
+            items_last = await last
+            items_current = None
+
+        if len(items_last) == 0:
+            return AssessmentAnswer(items=items_last)
+
+        if items_last == items_current and assessment_answer:
+            answer = AssessmentAnswer(
+                reviewer_public_key=assessment_answer.user_public_key
+                if assessment_answer
+                else None,
+                answer=assessment_answer.answer if assessment_answer else None,
+                item_ids=assessment_answer.item_ids
+                if assessment_answer
+                else [],
+                items=items_last,
+                is_edited=assessment_answer.created_at
+                != assessment_answer.updated_at  # noqa
+                if assessment_answer
+                else False,
+                versions=[assessment_answer.assessment_activity_id],
+            )
+        else:
+            if assessment_answer:
+                versions = [
+                    assessment_answer.assessment_activity_id,
+                    items_last[0].activity_id,
+                ]
+            else:
+                versions = [items_last[0].activity_id]
+            answer = AssessmentAnswer(
+                reviewer_public_key=assessment_answer.user_public_key
+                if assessment_answer
+                else None,
+                answer=assessment_answer.answer if assessment_answer else None,
+                item_ids=assessment_answer.item_ids
+                if assessment_answer
+                else [],
+                items=items_current if assessment_answer else items_last,
+                items_last=items_last if assessment_answer else None,
+                is_edited=assessment_answer.created_at
+                != assessment_answer.updated_at  # noqa
+                if assessment_answer
+                else False,
+                versions=versions,
+            )
         return answer
 
     async def get_reviews_by_answer_id(
@@ -507,9 +543,6 @@ class AnswerService:
         assessment = await AnswerItemsCRUD(self.answer_session).get_assessment(
             answer_id, self.user_id
         )
-        activity_version_id = await ActivityHistoriesCRUD(
-            self.session
-        ).get_assessment_version_id(applet_id)
         if assessment:
             await AnswerItemsCRUD(self.answer_session).update(
                 AnswerItemSchema(
@@ -524,7 +557,7 @@ class AnswerService:
                     is_assessment=True,
                     start_datetime=datetime.datetime.utcnow(),
                     end_datetime=datetime.datetime.utcnow(),
-                    assessment_activity_id=activity_version_id,
+                    assessment_activity_id=schema.assessment_version_id,
                 )
             )
         else:
@@ -541,7 +574,7 @@ class AnswerService:
                     end_datetime=now,
                     created_at=now,
                     updated_at=now,
-                    assessment_activity_id=activity_version_id,
+                    assessment_activity_id=schema.assessment_version_id,
                 )
             )
 
