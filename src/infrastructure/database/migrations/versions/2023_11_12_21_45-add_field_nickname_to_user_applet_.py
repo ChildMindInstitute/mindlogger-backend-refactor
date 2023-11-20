@@ -25,7 +25,7 @@ def upgrade() -> None:
     conn = op.get_bind()
     result = conn.execute(
         sa.text(
-            "SELECT id, meta FROM user_applet_accesses WHERE role='respondent'"
+            "SELECT id, meta FROM user_applet_accesses WHERE role='respondent' and meta is NOT NULL"
         )
     )
     op.add_column(
@@ -38,7 +38,7 @@ def upgrade() -> None:
     )
     for row in result:
         pk, meta = row
-        nickname = meta.get("nickname", None)
+        nickname = meta.get("nickname")
         if nickname and nickname != "":
             encrypted_field = StringEncryptedType(
                 sa.Unicode, get_key
