@@ -176,7 +176,6 @@ class InvitationDetailBase(InternalModel):
     first_name: str
     last_name: str
     created_at: datetime
-    nickname: str | None
 
 
 class InvitationDetail(InvitationDetailBase):
@@ -185,6 +184,7 @@ class InvitationDetail(InvitationDetailBase):
     """
 
     meta: dict
+    nickname: str | None
 
 
 class InvitationDetailRespondent(InvitationDetailBase):
@@ -193,6 +193,7 @@ class InvitationDetailRespondent(InvitationDetailBase):
     """
 
     meta: RespondentMeta
+    nickname: str | None
 
 
 class InvitationDetailReviewer(InvitationDetailBase):
