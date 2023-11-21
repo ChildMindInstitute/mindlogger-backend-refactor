@@ -408,6 +408,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "role": schema.role,
                 "is_deleted": schema.is_deleted,
                 "meta": schema.meta,
+                "nickname": schema.nickname,
             }
             for schema in schemas
         ]
@@ -425,6 +426,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "role": stmt.excluded.role,
                 "is_deleted": stmt.excluded.is_deleted,
                 "meta": stmt.excluded.meta,
+                "nickname": stmt.excluded.nickname,
             },
         )
 

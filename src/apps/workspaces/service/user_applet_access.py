@@ -98,7 +98,7 @@ class UserAppletAccessService:
             meta = await self._get_default_role_meta_for_anonymous_respondent(
                 anonymous_respondent.id,
             )
-
+            nickname = meta.pop("nickname")
             access_schema = await UserAppletAccessCRUD(self.session).save(
                 UserAppletAccessSchema(
                     user_id=anonymous_respondent.id,
@@ -107,6 +107,7 @@ class UserAppletAccessService:
                     owner_id=self._user_id,
                     invitor_id=self._user_id,
                     meta=meta,
+                    nickname=nickname,
                 )
             )
             return UserAppletAccess.from_orm(access_schema)
