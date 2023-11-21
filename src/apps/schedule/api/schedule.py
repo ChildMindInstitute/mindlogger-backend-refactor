@@ -288,8 +288,8 @@ async def schedule_get_all_by_respondent_user(
     session=Depends(get_session),
 ) -> ResponseMulti[PublicEventByUser]:
     """Get all the respondent's schedules for the next 2 weeks."""
-    max_date_from_event_delta_days = 14
-    min_date_to_event_delta_days = 1
+    max_date_from_event_delta_days = 15
+    min_date_to_event_delta_days = 2
     today: date = date.today()
     max_start_date: date = today + timedelta(
         days=max_date_from_event_delta_days
