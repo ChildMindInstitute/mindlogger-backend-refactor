@@ -283,7 +283,6 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     ),
                     and_(
                         PeriodicitySchema.type == PeriodicityType.ONCE,
-                        PeriodicitySchema.selected_date.is_(None),
                         PeriodicitySchema.selected_date <= max_start_date,
                         PeriodicitySchema.selected_date >= min_end_date,
                     ),
@@ -602,8 +601,21 @@ class EventCRUD(BaseCRUD[EventSchema]):
                 or_(
                     PeriodicitySchema.type == PeriodicityType.ALWAYS,
                     and_(
+                        PeriodicitySchema.type != PeriodicityType.ONCE,
                         PeriodicitySchema.start_date <= max_start_date,
                         PeriodicitySchema.end_date >= min_end_date,
+                    ),
+                    and_(
+                        PeriodicitySchema.type != PeriodicityType.ONCE,
+                        or_(
+                            PeriodicitySchema.start_date.is_(None),
+                            PeriodicitySchema.end_date.is_(None),
+                        ),
+                    ),
+                    and_(
+                        PeriodicitySchema.type == PeriodicityType.ONCE,
+                        PeriodicitySchema.selected_date <= max_start_date,
+                        PeriodicitySchema.selected_date >= min_end_date,
                     ),
                 )
             )
