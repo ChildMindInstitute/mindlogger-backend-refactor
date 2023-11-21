@@ -89,10 +89,14 @@ class UserAppletAccessService:
         if anonymous_respondent:
             access_schema = await UserAppletAccessCRUD(
                 self.session
-            ).get_applet_role_by_user_id(
+            ).get_applet_role_by_user_id_exist(
                 self._applet_id, anonymous_respondent.id, Role.RESPONDENT
             )
             if access_schema:
+                if access_schema.is_deleted:
+                    await UserAppletAccessCRUD(self.session).restore(
+                        "id", access_schema.id
+                    )
                 return UserAppletAccess.from_orm(access_schema)
 
             meta = await self._get_default_role_meta_for_anonymous_respondent(
