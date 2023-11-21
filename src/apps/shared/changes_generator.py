@@ -1,6 +1,7 @@
 from apps.activities.domain.activity_item_history import (
     ActivityItemHistoryChange,
 )
+from apps.activities.domain.response_type_config import ResponseType
 from apps.activity_flows.domain.flow_history import (
     ActivityFlowItemHistoryChange,
 )
@@ -13,16 +14,16 @@ Dictionary to generate needed text in one format
 """
 _DICTIONARY = dict(
     en=dict(
-        added='"{0}" is added.',
-        removed='"{0}" is removed.',
-        changed='"{0}" is changed to "{1}".',
-        cleared='"{0}" is cleared.',
-        filled='"{0}" is updated to "{1}".',
-        updated='"{0}" is updated.',
-        changed_dict='For {0} language "{1}" is changed to "{2}".',
-        set_to='"{0}" is set to "{1}".',
-        set_dict='For {0} language "{1}" is set to "{2}".',
-        set_bool='"{0}" option was "{1}".',
+        added="{0} is added.",
+        removed="{0} is removed.",
+        changed="{0} is changed to {1}.",
+        cleared="{0} is cleared.",
+        filled="{0} is updated to {1}.",
+        updated="{0} is updated.",
+        changed_dict="For {0} language {1} is changed to {2}.",
+        set_to="{0} is set to {1}.",
+        set_dict="For {0} language {1} is set to {2}.",
+        set_bool="{0} option was {1}.",
     )
 )
 
@@ -511,12 +512,45 @@ class ChangeGenerator:
                     "conditional_logic",
                 ]:
                     if field == "response_values":
-                        if value:
-                            changes.append(
-                                self._change_text_generator.added_text(
-                                    f"Item {field}"
+                        if item.response_type in (
+                            ResponseType.SINGLESELECT.value,
+                            ResponseType.MULTISELECT.value,
+                        ):
+                            options = value.get("options", [])
+                            for option in value["options"]:
+                                changes.append(
+                                    self._change_text_generator.added_text(
+                                        f"{option['text']} | {option['value']} option"  # noqa: E501
+                                    )
                                 )
-                            )
+                        elif (
+                            item.response_type == ResponseType.SLIDERROWS.value
+                        ):
+                            rows = value.get("rows", [])
+                            for row in rows:
+                                changes.append(
+                                    self._change_text_generator.added_text(
+                                        f"Row {row['label']}"
+                                    )
+                                )
+                        elif item.response_type in (
+                            ResponseType.SINGLESELECTROWS.value,
+                            ResponseType.MULTISELECTROWS.value,
+                        ):
+                            rows = value.get("rows", [])
+                            for row in rows:
+                                changes.append(
+                                    self._change_text_generator.added_text(
+                                        f"Row {row['row_name']}"
+                                    )
+                                )
+                            options = value.get("options", [])
+                            for option in options:
+                                changes.append(
+                                    self._change_text_generator.added_text(
+                                        f"{option['text']} option"
+                                    )
+                                )
                     elif field == "config":
                         if value:
                             for key, val in value.items():
@@ -548,7 +582,7 @@ class ChangeGenerator:
                                 else:
                                     changes.append(
                                         self._change_text_generator.added_text(
-                                            f"Item  {to_camelcase(key)}"
+                                            f"Item {to_camelcase(key)}"
                                         )
                                     )
                     else:
@@ -639,12 +673,130 @@ class ChangeGenerator:
                 "conditional_logic",
             ]:
                 if field == "response_values":
-                    if value and value != old_value:
-                        changes.append(
-                            self._change_text_generator.added_text(
-                                f"Item {field}"
-                            )
-                        )
+                    if new_item.response_type in (
+                        ResponseType.SINGLESELECT,
+                        ResponseType.MULTISELECT,
+                    ):
+                        old_options = old_value.options
+                        options = {
+                            o["id"]: o for o in value.get("options", [])
+                        }
+                        old_options = {o.id: o for o in old_value.options}
+                        for k, v in old_options.items():
+                            new = options.get(k)
+                            if not new:
+                                changes.append(
+                                    self._change_text_generator.removed_text(
+                                        f"{v.text} | {v.value} option"
+                                    )
+                                )
+                        for k, v in options.items():
+                            old = old_options.get(k)
+                            if not old:
+                                changes.append(
+                                    self._change_text_generator.added_text(
+                                        f"{v['text']} | {v['value']} option"
+                                    )
+                                )
+                            elif old.text != v["text"]:
+                                changes.append(
+                                    self._change_text_generator.set_text(
+                                        f"{old.text} | {old.value} option",
+                                        f"{v['text']} | {v['value']}",
+                                    )
+                                )
+                    elif (
+                        new_item.response_type == ResponseType.SLIDERROWS.value
+                    ):
+                        new_rows = {
+                            row["id"]: row["label"]
+                            for row in value.get("rows", [])
+                        }
+                        old_rows = {
+                            row.id: row.label for row in old_value.rows
+                        }
+                        for k, v in new_rows.items():
+                            old_label = old_rows.get(k)
+                            if not old_label:
+                                changes.append(
+                                    self._change_text_generator.added_text(
+                                        f"Row {v}"
+                                    )
+                                )
+                            elif old_label != v:
+                                changes.append(
+                                    self._change_text_generator.set_text(
+                                        f"Row label {old_label}", v
+                                    )
+                                )
+                        for k, v in old_rows.items():
+                            new_label = new_rows.get(k)
+                            if not new_label:
+                                changes.append(
+                                    self._change_text_generator.removed_text(
+                                        f"Row {v}"
+                                    )
+                                )
+                    elif new_item.response_type in (
+                        ResponseType.SINGLESELECTROWS.value,
+                        ResponseType.MULTISELECTROWS.value,
+                    ):
+                        new_rows = {
+                            row["id"]: row["row_name"]
+                            for row in value.get("rows", [])
+                        }
+                        old_rows = {
+                            row.id: row.row_name for row in old_value.rows
+                        }
+                        new_options = {
+                            o["id"]: o["text"]
+                            for o in value.get("options", [])
+                        }
+                        old_options = {o.id: o.text for o in old_value.options}
+                        for k, v in new_rows.items():
+                            old_row_name = old_rows.get(k)
+                            if not old_row_name:
+                                changes.append(
+                                    self._change_text_generator.added_text(
+                                        f"Row {v}"
+                                    )
+                                )
+                            elif old_row_name != v:
+                                changes.append(
+                                    self._change_text_generator.set_text(
+                                        f"Row name {old_row_name}", v
+                                    )
+                                )
+                        for k, v in old_rows.items():
+                            new_row_name = new_rows.get(k)
+                            if not new_row_name:
+                                changes.append(
+                                    self._change_text_generator.removed_text(
+                                        f"Row {v}"
+                                    )
+                                )
+                        for k, v in new_options.items():
+                            old_text = old_options.get(k)
+                            if not old_text:
+                                changes.append(
+                                    self._change_text_generator.added_text(
+                                        f"{v} option"
+                                    )
+                                )
+                            elif old_text != v:
+                                changes.append(
+                                    self._change_text_generator.set_text(
+                                        f"Option name {old_text}", v
+                                    )
+                                )
+                        for k, v in old_options.items():
+                            new_text = new_options.get(k)
+                            if not new_text:
+                                changes.append(
+                                    self._change_text_generator.removed_text(
+                                        f"{v} option"
+                                    )
+                                )
                 elif field == "config":
                     if value and value != old_value:
                         for key, val in value.items():
@@ -683,6 +835,7 @@ class ChangeGenerator:
                                             f"Item  {to_camelcase(key)}"
                                         )
                                     )
+                # Conditional logic is here now
                 else:
                     if value and not old_value:
                         changes.append(
@@ -710,7 +863,7 @@ class ChangeGenerator:
                             f"Item {to_camelcase(field)}", value
                         )
                         if field not in ["question"]
-                        else f"Item {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, value)}."  # noqa: E501
+                        else f"Item {to_camelcase(field)} updated: {self._change_text_generator.changed_dict(old_value, value)}"  # noqa: E501
                     )
 
         return changes

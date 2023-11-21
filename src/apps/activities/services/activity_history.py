@@ -92,7 +92,7 @@ class ActivityHistoryService:
                 activity_changes.append(
                     ActivityHistoryChange(
                         name=changes_generator.added_text(
-                            f"activity by name {new_activity.name}"
+                            f"Activity {new_activity.name}"
                         ),
                         changes=change_activity_generator.generate_activity_insert(  # noqa: E501
                             new_activity
@@ -106,7 +106,7 @@ class ActivityHistoryService:
                 activity_changes.append(
                     ActivityHistoryChange(
                         name=changes_generator.removed_text(
-                            f"activity by name {prev_activity.name}"
+                            f"Activity {prev_activity.name}"
                         )
                     )
                 )
