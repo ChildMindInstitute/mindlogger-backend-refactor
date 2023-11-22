@@ -1,5 +1,6 @@
 import uuid
 
+from apps.activity_flows.change_generator import ActivityFlowChangeGenerator
 from apps.activity_flows.crud import FlowsHistoryCRUD
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.activity_flows.domain.flow_full import (
@@ -11,7 +12,7 @@ from apps.activity_flows.domain.flow_history import ActivityFlowHistoryChange
 from apps.activity_flows.service.flow_item_history import (
     FlowItemHistoryService,
 )
-from apps.shared.changes_generator import ChangeGenerator, ChangeTextGenerator
+from apps.shared.changes_generator import ChangeTextGenerator
 
 
 class FlowHistoryService:
@@ -80,7 +81,7 @@ class FlowHistoryService:
         self, old_id_version: str
     ) -> list[ActivityFlowHistoryChange]:
         changes_generator = ChangeTextGenerator()
-        change_flow_generator = ChangeGenerator()
+        change_flow_generator = ActivityFlowChangeGenerator()
         flow_changes: list[ActivityFlowHistoryChange] = []
         flow_schemas = await FlowsHistoryCRUD(
             self.session

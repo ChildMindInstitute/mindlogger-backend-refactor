@@ -1,6 +1,7 @@
 import uuid
 from typing import Optional
 
+from apps.activities.change_generator import ActivityChangeGenerator
 from apps.activities.crud import ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activities.domain import (
@@ -13,7 +14,7 @@ from apps.activities.domain.activity_item_history import ActivityItemHistory
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
-from apps.shared.changes_generator import ChangeGenerator, ChangeTextGenerator
+from apps.shared.changes_generator import ChangeTextGenerator
 
 __all__ = ["ActivityHistoryService"]
 
@@ -69,7 +70,7 @@ class ActivityHistoryService:
         self, old_applet_id_version: str
     ) -> list[ActivityHistoryChange]:
         changes_generator = ChangeTextGenerator()
-        change_activity_generator = ChangeGenerator()
+        change_activity_generator = ActivityChangeGenerator()
 
         activity_changes: list[ActivityHistoryChange] = []
         activity_schemas = await ActivityHistoriesCRUD(
