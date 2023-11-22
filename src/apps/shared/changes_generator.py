@@ -27,7 +27,7 @@ _DICTIONARY = dict(
     )
 )
 
-EMPY_VALUES: tuple = (None, "", 0, dict(), dict(en=""))
+EMPTY_VALUES: tuple = (None, "", 0, dict(), dict(en=""))
 
 
 class ChangeTextGenerator:
@@ -40,7 +40,7 @@ class ChangeTextGenerator:
 
     @classmethod
     def is_considered_empty(cls, value) -> bool:
-        return value in EMPY_VALUES
+        return value in EMPTY_VALUES
 
     def added_text(self, object_name: str) -> str:
         """
