@@ -680,8 +680,15 @@ class AnswerService:
                     activity.items.append(item)
             activities_result = list(activity_map.values())
 
+        activities_exist = list(map(lambda a: a.id_version, activities_result))
+        answers_result = list(
+            filter(
+                lambda a: a.activity_history_id in activities_exist, answers
+            )
+        )
+
         return AnswerExport(
-            answers=answers,
+            answers=answers_result,
             activities=activities_result,
             total_answers=total,
         )
