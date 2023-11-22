@@ -432,6 +432,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserAppletAccessSchema.role,
             ],
             set_={
+                "invitor_id": stmt.excluded.invitor_id,
+                "owner_id": stmt.excluded.owner_id,
                 "user_id": stmt.excluded.user_id,
                 "applet_id": stmt.excluded.applet_id,
                 "role": stmt.excluded.role,
