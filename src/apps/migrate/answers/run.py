@@ -79,7 +79,7 @@ class AnswersMigrateFacade:
         self.answer_item_migrate_service = AnswerItemMigrationService()
         self.answer_note_migrate_service = AnswerNoteMigrateService()
 
-    async def migrate(self, workspace, applets, assessments_only, drop_data):
+    async def migrate(self, workspace, applets, assessments_only, update_data):
         regular_session = session_manager.get_session()
 
         applets_ids = await self._get_allowed_applets_ids(workspace, applets)
@@ -89,7 +89,7 @@ class AnswersMigrateFacade:
             if applet_id not in APPLETS_WITH_ISSUES_DONT_MIGRATE_ANSWERS
         ]
 
-        if not drop_data:
+        if not update_data:
             await self._wipe_answers_data(regular_session, applets_ids)
 
         async for answer_with_files in self._collect_migratable_answers(
@@ -453,6 +453,9 @@ if __name__ == "__main__":
     configure_report(migration_log, args.report_file)
     asyncio.run(
         AnswersMigrateFacade().migrate(
-            args.workspace, args.applet, args.assessments_only, args.drop_data
+            args.workspace,
+            args.applet,
+            args.assessments_only,
+            args.update_data,
         )
     )

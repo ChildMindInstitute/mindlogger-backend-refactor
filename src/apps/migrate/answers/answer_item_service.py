@@ -114,41 +114,36 @@ class AnswerItemMigrationService:
         assessment = await crud.get_assessment(
             answer_id=kwargs["answer_id"], user_id=respondent_id
         )
+        identifier = mongo_answer["meta"]["subject"].get("identifier", "")
+        data = dict(
+            created_at=mongo_answer["created"],
+            updated_at=mongo_answer["updated"],
+            answer_id=kwargs["answer_id"],
+            answer=mongo_answer["meta"]["dataSource"],
+            item_ids=self._get_item_ids(mongo_answer),
+            events=mongo_answer["meta"].get("events", ""),
+            respondent_id=respondent_id,
+            identifier=mongo_answer["meta"]["subject"].get("identifier", None),
+            user_public_key=str(mongo_answer["meta"]["userPublicKey"]),
+            scheduled_datetime=self._fromtimestamp(
+                mongo_answer["meta"].get("scheduledTime")
+            ),
+            start_datetime=self._fromtimestamp(
+                mongo_answer["meta"].get("responseStarted")
+            ),
+            end_datetime=self._fromtimestamp(
+                mongo_answer["meta"].get("responseCompleted")
+            ),
+            is_assessment=kwargs["is_assessment"],
+            migrated_data=self._get_migrated_data(identifier),
+            assessment_activity_id=mongo_answer["activity_id_version"],
+        )
         if not assessment:
-            await self.create_item(
-                regular_session=regular_session,
-                regular_or_arbitary_session=regular_or_arbitary_session,
-                mongo_answer=mongo_answer,
-                **kwargs,
-            )
+            data["migrated_date"] = datetime.utcnow()
+            await crud.create(AnswerItemSchema(**data))
+
         else:
-            identifier = mongo_answer["meta"]["subject"].get("identifier", "")
-            schema = AnswerItemSchema(
-                id=assessment.id,
-                created_at=mongo_answer["created"],
-                updated_at=mongo_answer["updated"],
-                answer_id=kwargs["answer_id"],
-                answer=mongo_answer["meta"]["dataSource"],
-                item_ids=self._get_item_ids(mongo_answer),
-                events=mongo_answer["meta"].get("events", ""),
-                respondent_id=respondent_id,
-                identifier=mongo_answer["meta"]["subject"].get(
-                    "identifier", None
-                ),
-                user_public_key=str(mongo_answer["meta"]["userPublicKey"]),
-                scheduled_datetime=self._fromtimestamp(
-                    mongo_answer["meta"].get("scheduledTime")
-                ),
-                start_datetime=self._fromtimestamp(
-                    mongo_answer["meta"].get("responseStarted")
-                ),
-                end_datetime=self._fromtimestamp(
-                    mongo_answer["meta"].get("responseCompleted")
-                ),
-                is_assessment=kwargs["is_assessment"],
-                migrated_date=assessment.migrated_date,
-                migrated_data=self._get_migrated_data(identifier),
-                migrated_updated=datetime.utcnow(),
-                assessment_activity_id=mongo_answer["activity_id_version"],
-            )
-            await crud.update(schema)
+            data["id"] = assessment.id
+            data["migrated_date"] = assessment.migrated_date
+            data["migrated_updated"] = datetime.utcnow()
+            await crud.update(AnswerItemSchema(**data))

@@ -11,7 +11,7 @@ class Params(BaseModel):
     applet: list[str] | None = None
     report_file: str | None = None
     assessments_only: bool = False
-    drop_data: bool = True
+    update_data: bool = True
 
     @validator("applet", pre=True)
     def to_array(cls, value, values):
@@ -27,7 +27,7 @@ def get_arguments() -> Params:
     parser.add_argument("-a", "--applet", type=str, required=False)
     parser.add_argument("-r", "--report_file", type=str, required=False)
     parser.add_argument("--assessments_only", type=bool, required=False)
-    parser.add_argument("--drop_data", type=bool, required=False)
+    parser.add_argument("--update_data", type=bool, required=False)
     args = parser.parse_args()
     arguments = Params.from_orm(args)
     return arguments
@@ -36,6 +36,6 @@ def get_arguments() -> Params:
     def assessments_only_to_bool(values):
         return bool(values)
 
-    @validator("drop_data")
-    def drop_data_to_bool(values):
+    @validator("update_data")
+    def update_data_to_bool(values):
         return bool(values)
