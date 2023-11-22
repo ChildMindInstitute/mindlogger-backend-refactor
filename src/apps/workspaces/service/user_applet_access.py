@@ -66,6 +66,7 @@ class UserAppletAccessService:
             return UserAppletAccess.from_orm(access_schema)
 
         meta = await self._get_default_role_meta(role, user_id)
+        nickname = meta.pop("nickname", None)
 
         access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
@@ -75,7 +76,7 @@ class UserAppletAccessService:
                 owner_id=self._user_id,
                 invitor_id=self._user_id,
                 meta=meta,
-                nickname=meta.get("nickname"),
+                nickname=nickname,
             )
         )
         return UserAppletAccess.from_orm(access_schema)
@@ -135,9 +136,10 @@ class UserAppletAccessService:
             self.session
         ).get_applet_owner(invitation.applet_id)
         meta: dict = dict()
-
+        nickname = None
         if invitation.role in [Role.RESPONDENT, Role.REVIEWER]:
             meta = invitation.meta.dict(by_alias=True)  # type: ignore
+            nickname = meta.pop("nickname", None)
 
         if invitation.role == Role.MANAGER:
             await UserAppletAccessCRUD(self.session).delete_user_roles(
@@ -152,7 +154,7 @@ class UserAppletAccessService:
                 owner_id=owner_access.user_id,
                 invitor_id=invitation.invitor_id,
                 meta=meta,
-                nickname=meta.get("nickname"),
+                nickname=nickname,
             )
         )
 
@@ -164,6 +166,7 @@ class UserAppletAccessService:
                 meta = await self._get_default_role_meta(
                     Role.RESPONDENT, self._user_id
                 )
+                nickname = meta.pop("nickname", None)
                 schema = UserAppletAccessSchema(
                     user_id=self._user_id,
                     applet_id=invitation.applet_id,
@@ -171,7 +174,7 @@ class UserAppletAccessService:
                     owner_id=owner_access.user_id,
                     invitor_id=invitation.invitor_id,
                     meta=meta,
-                    nickname=meta.get("nickname"),
+                    nickname=nickname,
                     is_deleted=False,
                 )
 
