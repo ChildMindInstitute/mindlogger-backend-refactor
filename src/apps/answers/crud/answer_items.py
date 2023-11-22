@@ -106,9 +106,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(AnswerItemSchema.respondent_id == user_id)
         query = query.where(AnswerItemSchema.is_assessment == True)  # noqa
-
         db_result = await self._execute(query)
-
         return db_result.scalars().first()
 
     async def get_reviews_by_answer_id(
@@ -124,7 +122,6 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         )
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(AnswerItemSchema.is_assessment == True)  # noqa
-
         db_result = await self._execute(query)
         results = []
         for schema, first_name, last_name in db_result.all():
@@ -223,3 +220,16 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
             )
         db_result = await self._execute(query)
         return db_result.all()
+
+    async def get_assessment_activity_id(
+        self, answer_id: uuid.UUID
+    ) -> str | None:
+        query: Query = select(AnswerItemSchema.assessment_activity_id)
+        query = query.where(
+            AnswerItemSchema.answer_id == answer_id,
+            AnswerItemSchema.is_assessment.is_(True),
+        )
+        query = query.limit(1)
+        db_result = await self._execute(query)
+        result = db_result.first()
+        return result[0] if result else None
