@@ -289,7 +289,7 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         data = response.json()
-        assert data["count"] == 3
+        assert data["count"] == 4
         assert data["result"][0]["nicknames"]
         assert data["result"][0]["secretIds"]
 
@@ -827,7 +827,7 @@ class TestWorkspaces(BaseTest):
         body = res.json()
         respondent = body.get("result", {})
         assert len(respondent) == 2
-        assert respondent["nickname"] == "f0dd4996-e0eb-461f-b2f8-ba873a674782"
+        assert respondent["nickname"] == "Mindlogger ChildMindInstitute"
         assert respondent["secretUserId"] == (
             "f0dd4996-e0eb-461f-b2f8-ba873a674782"
         )
@@ -844,3 +844,16 @@ class TestWorkspaces(BaseTest):
         )
         res = await self.client.get(url)
         assert res.status_code == 404
+
+    @rollback
+    async def test_applet_get_respondent_access_denied_for_respondent_role(
+        self,
+    ):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        url = self.workspace_get_applet_respondent.format(
+            owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b2",
+            respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa0",
+        )
+        res = await self.client.get(url)
+        assert res.status_code == 403
