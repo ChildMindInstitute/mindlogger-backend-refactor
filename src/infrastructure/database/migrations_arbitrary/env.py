@@ -4,10 +4,12 @@ from logging.config import fileConfig
 
 from alembic import context
 from alembic.config import Config
-from sqlalchemy import MetaData, engine_from_config, pool, text
+from sqlalchemy import MetaData, Unicode, engine_from_config, pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy_utils import StringEncryptedType
 
+from apps.shared.encryption import get_key
 from config import settings
 from infrastructure.database.migrations.base import Base
 
@@ -33,7 +35,15 @@ async def get_all_servers(connection):
         """
         )
         rows = await connection.execute(query)
-        urls = list(map(lambda r: r[0], rows.fetchall()))
+        urls_encrypted = map(lambda r: r[0], rows.fetchall())
+        urls = list(
+            map(
+                lambda enc_value: StringEncryptedType(
+                    Unicode, get_key
+                ).process_result_value(enc_value, dialect=connection.dialect),
+                urls_encrypted,
+            )
+        )
     except Exception as ex:
         print(ex)
         urls = []
