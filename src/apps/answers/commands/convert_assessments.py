@@ -31,13 +31,27 @@ async def convert(
 ):
     try:
         if database_uri:
-            session_maker = session_manager.get_session(database_uri)
+            local_or_arb = session_manager.get_session(database_uri)
         else:
-            session_maker = session_manager.get_session()
-        async with session_maker() as session:
+            local_or_arb = session_manager.get_session()
+        # Going to arbitrary or local db to get assessments
+        async with local_or_arb() as session:
+            crud = AssessmentCRUD(session)
+            assessments = await crud.get_all_assessments_data()
+
+        # Going to local db to find activity id
+        local = session_manager.get_session()
+        async with local() as session:
             async with atomic(session):
-                crud = AssessmentCRUD(session_maker)
-                assessments = await crud.get_all_assessments_data()
-                await crud.update_assessment(assessments)
+                crud = AssessmentCRUD(session)
+                answers = await crud.get_updated_assessment(assessments)
+
+        # Return to arbitrary or local to update
+        async with local_or_arb() as session:
+            async with atomic(session):
+                crud = AssessmentCRUD(session)
+                for answer in answers:
+                    await crud.update(answer)
+
     except Exception as ex:
         print(f"[bold red] {ex}")

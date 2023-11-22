@@ -1,6 +1,5 @@
 import uuid
 
-from rich import print
 from sqlalchemy import select
 from sqlalchemy.orm import Query
 
@@ -43,9 +42,10 @@ class AssessmentCRUD(AnswerItemsCRUD):
             return False
         return schema.is_reviewable
 
-    async def update_assessment(
+    async def get_updated_assessment(
         self, answer_data: list[tuple[AnswerItemSchema, uuid.UUID, str]]
-    ):
+    ) -> list[AnswerSchema]:
+        answers = []
         for data in answer_data:
             answer, applet_id, version = data
             activity_id = await self._get_assessment_by_applet(applet_id)
@@ -57,7 +57,6 @@ class AssessmentCRUD(AnswerItemsCRUD):
                 )
                 continue
             answer.assessment_activity_id = activity_id_version
-            await self.update(answer)
-            print(
-                f"[bold green] {answer.id=} {applet_id=} {activity_id_version}"
-            )
+            print(f"{answer.id=} {applet_id=} {activity_id_version}")
+            answers.append(answer)
+        return answers
