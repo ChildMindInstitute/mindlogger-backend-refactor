@@ -1,3 +1,9 @@
+import uuid
+
+from apps.activity_flows.domain.flow_full import (
+    FlowHistoryFull,
+    FlowItemHistoryFull,
+)
 from apps.activity_flows.domain.flow_history import (
     ActivityFlowItemHistoryChange,
 )
@@ -16,7 +22,7 @@ NOT_TRACKED_FIELDS = (
 
 
 class ActivityFlowChangeGenerator(BaseChangeGenerator):
-    def generate_flow_insert(self, flow):
+    def generate_flow_insert(self, flow: FlowHistoryFull) -> list[str]:
         changes = list()
         for field, value in flow.dict().items():
             if field in NOT_TRACKED_FIELDS:
@@ -30,19 +36,21 @@ class ActivityFlowChangeGenerator(BaseChangeGenerator):
                 )
             elif field == "description":
                 changes.append(
-                    self._change_text_generator.set_text(
+                    self._change_text_generator.set_dict(
                         f"Activity Flow {to_camelcase(field)}", value
                     )
                 )
             elif value:
                 changes.append(
-                    self._change_text_generator.set_dict(
+                    self._change_text_generator.set_text(
                         f"Activity Flow {to_camelcase(field)}", value
                     ),
                 )
         return changes
 
-    def generate_flow_update(self, new_flow, old_flow):
+    def generate_flow_update(
+        self, new_flow: FlowHistoryFull, old_flow: FlowHistoryFull
+    ) -> list[str]:
         changes = list()
         for field, value in new_flow.dict().items():
             old_value = getattr(old_flow, field, None)
@@ -69,7 +77,9 @@ class ActivityFlowChangeGenerator(BaseChangeGenerator):
                     )
         return changes
 
-    def generate_flow_items_insert(self, flow_items):
+    def generate_flow_items_insert(
+        self, flow_items: list[FlowItemHistoryFull]
+    ) -> list[ActivityFlowItemHistoryChange]:
         change_items = []
         for item in flow_items:
             change = ActivityFlowItemHistoryChange(
@@ -91,8 +101,14 @@ class ActivityFlowChangeGenerator(BaseChangeGenerator):
 
         return change_items
 
-    def generate_flow_items_update(self, item_groups):
-        change_items = []
+    def generate_flow_items_update(
+        self,
+        item_groups: dict[
+            uuid.UUID,
+            tuple[FlowItemHistoryFull | None, FlowItemHistoryFull | None],
+        ],
+    ) -> list[ActivityFlowItemHistoryChange]:
+        change_items: list[ActivityFlowItemHistoryChange] = []
 
         for _, (prev_item, new_item) in item_groups.items():
             if not prev_item and new_item:
@@ -108,5 +124,4 @@ class ActivityFlowChangeGenerator(BaseChangeGenerator):
                     )
                 )
 
-        change_items.sort(key=lambda i: i.name, reverse=True)
         return change_items

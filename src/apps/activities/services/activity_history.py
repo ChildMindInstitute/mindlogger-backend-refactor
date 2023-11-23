@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 
 from apps.activities.change_generator import ActivityChangeGenerator
 from apps.activities.crud import ActivityHistoriesCRUD
@@ -9,8 +8,10 @@ from apps.activities.domain import (
     ActivityHistoryChange,
     ActivityHistoryFull,
 )
-from apps.activities.domain.activity_full import ActivityFull
-from apps.activities.domain.activity_item_history import ActivityItemHistory
+from apps.activities.domain.activity_full import (
+    ActivityFull,
+    ActivityItemHistoryFull,
+)
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
@@ -95,7 +96,7 @@ class ActivityHistoryService:
                             f"Activity {new_activity.name}"
                         ),
                         changes=change_activity_generator.generate_activity_insert(  # noqa: E501
-                            new_activity
+                            new_activity  # type: ignore
                         ),
                         items=change_activity_generator.generate_activity_items_insert(  # noqa: E501
                             getattr(new_activity, "items", [])
@@ -112,15 +113,13 @@ class ActivityHistoryService:
                 )
             elif new_activity and prev_activity:
                 changes = change_activity_generator.generate_activity_update(
-                    new_activity, prev_activity
+                    new_activity, prev_activity  # type: ignore
                 )
-                changes_items = (
-                    change_activity_generator.generate_activity_items_update(
-                        self._group_and_sort_activities_or_items(
-                            getattr(new_activity, "items", [])
-                            + getattr(prev_activity, "items", [])
-                        ),
-                    )
+                changes_items = change_activity_generator.generate_activity_items_update(  # noqa: E501
+                    self._group_and_sort_activities_or_items(
+                        getattr(new_activity, "items", [])
+                        + getattr(prev_activity, "items", [])
+                    ),  # type: ignore
                 )
 
                 if changes or changes_items:
@@ -136,11 +135,14 @@ class ActivityHistoryService:
         return activity_changes
 
     def _group_and_sort_activities_or_items(
-        self, items: list[ActivityHistoryFull] | list[ActivityItemHistory]
+        self, items: list[ActivityHistoryFull] | list[ActivityItemHistoryFull]
     ) -> dict[
         uuid.UUID,
-        tuple[Optional[ActivityHistoryFull], Optional[ActivityHistoryFull]]
-        | tuple[Optional[ActivityItemHistory], Optional[ActivityItemHistory]],
+        tuple[ActivityHistoryFull | None, ActivityHistoryFull | None]
+        | tuple[
+            ActivityItemHistoryFull | None,
+            ActivityItemHistoryFull | None,
+        ],
     ]:
         groups_map: dict = dict()
         for item in items:

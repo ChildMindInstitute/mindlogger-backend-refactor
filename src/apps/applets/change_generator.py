@@ -1,9 +1,12 @@
+from apps.applets.domain import AppletHistory
 from apps.shared.changes_generator import BaseChangeGenerator
 from apps.shared.domain.base import to_camelcase
 
 
 class AppletChangeGenerator(BaseChangeGenerator):
-    def generate_applet_changes(self, new_applet, old_applet):
+    def generate_applet_changes(
+        self, new_applet: AppletHistory, old_applet: AppletHistory
+    ) -> list[str]:
         changes = []
         for field, old_value in old_applet.dict().items():
             new_value = getattr(new_applet, field, None)

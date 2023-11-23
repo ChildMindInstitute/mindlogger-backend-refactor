@@ -102,7 +102,7 @@ class FlowHistoryService:
                             f"Activity Flow by name {new.name}"
                         ),
                         changes=change_flow_generator.generate_flow_insert(
-                            new
+                            new  # type: ignore
                         ),
                         items=change_flow_generator.generate_flow_items_insert(
                             getattr(new, "items", [])
@@ -118,14 +118,14 @@ class FlowHistoryService:
                     )
                 )
             elif new and prev:
-                changes = change_flow_generator.generate_flow_update(new, prev)
-                changes_items = (
-                    change_flow_generator.generate_flow_items_update(
-                        self._group_and_sort_flows_or_items(
-                            getattr(new, "items", [])
-                            + getattr(prev, "items", [])
-                        ),
-                    )
+                changes = change_flow_generator.generate_flow_update(
+                    new,  # type: ignore
+                    prev,  # type: ignore
+                )
+                changes_items = change_flow_generator.generate_flow_items_update(  # noqa: E501
+                    self._group_and_sort_flows_or_items(
+                        getattr(new, "items", []) + getattr(prev, "items", [])
+                    ),  # type: ignore
                 )
 
                 if changes or changes_items:
