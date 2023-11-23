@@ -22,3 +22,4 @@ class InvitationSchema(Base):
     first_name = Column(StringEncryptedType(Unicode, get_key))
     last_name = Column(StringEncryptedType(Unicode, get_key))
     meta = Column(JSONB())
+    nickname = Column(StringEncryptedType(Unicode, get_key))

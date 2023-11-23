@@ -137,3 +137,12 @@ class BaseCRUD(Generic[ConcreteSchema]):
         query = query.exists()
         db_result = await self._execute(select(query))
         return db_result.scalars().first() or False
+
+    async def restore(self, key: str, val: typing.Any) -> None:
+        field = getattr(self.schema_class, key)
+        query: Query = update(self.schema_class)
+        query = query.where(field == val)
+        query = query.values(is_deleted=False)
+        await self._execute(query)
+
+        return None

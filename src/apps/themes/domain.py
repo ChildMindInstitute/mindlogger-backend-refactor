@@ -79,6 +79,52 @@ class PublicTheme(ThemeBase, PublicModel):
     allow_rename: bool
 
 
+class PublicThemeMobile(PublicModel):
+    id: uuid.UUID
+    name: str = Field(
+        ...,
+        description="Name of the theme",
+        example="My theme",
+        max_length=100,
+    )
+    logo: str | None = Field(
+        ...,
+        description="URL to logo image",
+        example="https://example.com/logo.png",
+    )
+    background_image: str | None = Field(
+        ...,
+        description="URL to background image",
+        example="https://example.com/background.png",
+    )
+    primary_color: Color = Field(
+        ...,
+        description="Primary color",
+        example="#FFFFFF",
+    )
+    secondary_color: Color = Field(
+        ...,
+        description="Secondary color",
+        example="#FFFFFF",
+    )
+    tertiary_color: Color = Field(
+        ...,
+        description="Tertiary color",
+        example="#FFFFFF",
+    )
+
+    def __str__(self) -> str:
+        return self.name
+
+    @validator("logo", "background_image")
+    def validate_image(cls, value):
+        return validate_image(value) if value else value
+
+    @validator("primary_color", "secondary_color", "tertiary_color")
+    def validate_color(cls, value):
+        return validate_color(value) if value else value
+
+
 class ThemeRequest(ThemeBase, PublicModel):
     pass
 

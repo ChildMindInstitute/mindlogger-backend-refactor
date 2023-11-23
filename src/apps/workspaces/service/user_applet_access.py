@@ -90,10 +90,14 @@ class UserAppletAccessService:
         if anonymous_respondent:
             access_schema = await UserAppletAccessCRUD(
                 self.session
-            ).get_applet_role_by_user_id(
+            ).get_applet_role_by_user_id_exist(
                 self._applet_id, anonymous_respondent.id, Role.RESPONDENT
             )
             if access_schema:
+                if access_schema.is_deleted:
+                    await UserAppletAccessCRUD(self.session).restore(
+                        "id", access_schema.id
+                    )
                 return UserAppletAccess.from_orm(access_schema)
 
             meta = await self._get_default_role_meta_for_anonymous_respondent(
@@ -136,10 +140,10 @@ class UserAppletAccessService:
             self.session
         ).get_applet_owner(invitation.applet_id)
         meta: dict = dict()
-        nickname = None
+        respondent_nickname = invitation.dict().get("nickname", None)
+
         if invitation.role in [Role.RESPONDENT, Role.REVIEWER]:
             meta = invitation.meta.dict(by_alias=True)  # type: ignore
-            nickname = meta.pop("nickname", None)
 
         if invitation.role == Role.MANAGER:
             await UserAppletAccessCRUD(self.session).delete_user_roles(
@@ -154,7 +158,7 @@ class UserAppletAccessService:
                 owner_id=owner_access.user_id,
                 invitor_id=invitation.invitor_id,
                 meta=meta,
-                nickname=nickname,
+                nickname=respondent_nickname,
             )
         )
 
