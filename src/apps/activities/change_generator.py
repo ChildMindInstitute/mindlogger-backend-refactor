@@ -1,3 +1,9 @@
+import uuid
+
+from apps.activities.domain.activity_history import (
+    ActivityHistoryFull,
+    ActivityItemHistoryFull,
+)
 from apps.activities.domain.activity_item_history import (
     ActivityItemHistoryChange,
 )
@@ -11,12 +17,15 @@ NOT_TRACKED_FIELDS = (
     "created_at",
     "id_version",
     "applet_id",
+    "activity_id",
 )
 
 
 class ActivityChangeGenerator(BaseChangeGenerator):
-    def generate_activity_insert(self, new_activity):
-        changes = list()
+    def generate_activity_insert(
+        self, new_activity: ActivityHistoryFull
+    ) -> list[str]:
+        changes: list[str] = list()
         for field, value in new_activity.dict().items():
             if field in NOT_TRACKED_FIELDS:
                 continue
@@ -89,8 +98,12 @@ class ActivityChangeGenerator(BaseChangeGenerator):
                 )
         return changes
 
-    def generate_activity_update(self, new_activity, old_activity):
-        changes = list()
+    def generate_activity_update(
+        self,
+        new_activity: ActivityHistoryFull,
+        old_activity: ActivityHistoryFull,
+    ) -> list[str]:
+        changes: list[str] = list()
 
         for field, value in new_activity.dict().items():
             old_value = getattr(old_activity, field, None)
@@ -130,7 +143,7 @@ class ActivityChangeGenerator(BaseChangeGenerator):
                                         )
                                     else:
                                         if (
-                                            getattr(old_val, k, None).dict()
+                                            getattr(old_val, k, None).dict()  # type: ignore # noqa: E501
                                             != v.dict()
                                         ):
                                             changes.append(
@@ -173,7 +186,7 @@ class ActivityChangeGenerator(BaseChangeGenerator):
                                         )
                                     else:
                                         if (
-                                            getattr(old_val, k, None).dict()
+                                            getattr(old_val, k, None).dict()  # type: ignore # noqa: E501
                                             != v.dict()
                                         ):
                                             changes.append(
@@ -223,16 +236,15 @@ class ActivityChangeGenerator(BaseChangeGenerator):
                                                 f'Activity subscale {v["name"]}'  # noqa: E501
                                             )
                                         )
-                                    else:
-                                        if (
-                                            getattr(old_val, k, None).dict()
-                                            != v.dict()
-                                        ):
-                                            changes.append(
-                                                self._change_text_generator.changed_text(  # noqa: E501
-                                                    f'Activity subscale {v["name"]}'  # noqa: E501
-                                                )
+                                    elif (
+                                        getattr(old_val, k, None).dict()  # type: ignore # noqa: E501
+                                        != v.dict()
+                                    ):
+                                        changes.append(
+                                            self._change_text_generator.changed_text(  # noqa: E501
+                                                f'Activity subscale {v["name"]}'  # noqa: E501
                                             )
+                                        )
 
                                 if deleted_names:
                                     changes.append(
@@ -297,7 +309,9 @@ class ActivityChangeGenerator(BaseChangeGenerator):
                     )
         return changes
 
-    def generate_activity_items_insert(self, items):
+    def generate_activity_items_insert(
+        self, items: list[ActivityItemHistoryFull]
+    ) -> list[ActivityItemHistoryChange]:
         change_items = []
         for item in items:
             change = ActivityItemHistoryChange(
@@ -412,17 +426,21 @@ class ActivityChangeGenerator(BaseChangeGenerator):
 
         return change_items
 
-    def generate_activity_items_update(self, item_groups):
-        change_items = []
+    def generate_activity_items_update(
+        self,
+        item_groups: dict[
+            uuid.UUID,
+            tuple[
+                ActivityItemHistoryFull | None, ActivityItemHistoryFull | None
+            ],
+        ],
+    ) -> list[ActivityItemHistoryChange]:
+        change_items: list[ActivityItemHistoryChange] = []
 
         for _, (prev_item, new_item) in item_groups.items():
             if not prev_item and new_item:
                 change_items.extend(
-                    self.generate_activity_items_insert(
-                        [
-                            new_item,
-                        ]
-                    )
+                    self.generate_activity_items_insert([new_item])
                 )
             elif not new_item and prev_item:
                 change_items.append(
@@ -448,8 +466,12 @@ class ActivityChangeGenerator(BaseChangeGenerator):
 
         return change_items
 
-    def _generate_activity_item_update(self, new_item, prev_item):
-        changes = list()
+    def _generate_activity_item_update(
+        self,
+        new_item: ActivityItemHistoryFull,
+        prev_item: ActivityItemHistoryFull,
+    ) -> list[str]:
+        changes: list[str] = list()
 
         for field, value in new_item.dict().items():
             old_value = getattr(prev_item, field, None)
@@ -468,9 +490,9 @@ class ActivityChangeGenerator(BaseChangeGenerator):
                     ResponseType.SINGLESELECT,
                     ResponseType.MULTISELECT,
                 ):
-                    old_options = old_value.options
+                    old_options = old_value.options  # type: ignore
                     options = {o["id"]: o for o in value.get("options", [])}
-                    old_options = {o.id: o for o in old_value.options}
+                    old_options = {o.id: o for o in old_value.options}  # type: ignore # noqa: E501
                     for k, v in old_options.items():
                         new = options.get(k)
                         if not new:
@@ -499,7 +521,7 @@ class ActivityChangeGenerator(BaseChangeGenerator):
                         row["id"]: row["label"]
                         for row in value.get("rows", [])
                     }
-                    old_rows = {row.id: row.label for row in old_value.rows}
+                    old_rows = {row.id: row.label for row in old_value.rows}  # type: ignore # noqa: E501
                     for k, v in new_rows.items():
                         old_label = old_rows.get(k)
                         if not old_label:
@@ -530,11 +552,11 @@ class ActivityChangeGenerator(BaseChangeGenerator):
                         row["id"]: row["row_name"]
                         for row in value.get("rows", [])
                     }
-                    old_rows = {row.id: row.row_name for row in old_value.rows}
+                    old_rows = {row.id: row.row_name for row in old_value.rows}  # type: ignore # noqa: E501
                     new_options = {
                         o["id"]: o["text"] for o in value.get("options", [])
                     }
-                    old_options = {o.id: o.text for o in old_value.options}
+                    old_options = {o.id: o.text for o in old_value.options}  # type: ignore # noqa: E501
                     for k, v in new_rows.items():
                         old_row_name = old_rows.get(k)
                         if not old_row_name:
