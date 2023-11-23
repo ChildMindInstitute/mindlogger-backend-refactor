@@ -130,7 +130,9 @@
       "meta": {
         "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674786",
         "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674786",
-        "respondents": ["7484f34a-3acc-4ee6-8a94-fd7299502fa1"]
+        "respondents": [
+          "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+        ]
       }
     }
   },
@@ -205,7 +207,6 @@
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "respondent",
       "meta": {
-        "nickname": "respondent Jane Doe",
         "secretUserId": "f0dd4996-e0eb-461f-b2f8-ba873a674788"
       },
       "nickname": "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA="
@@ -290,7 +291,7 @@
       }
     }
   },
-    {
+  {
     "table": "user_applet_accesses",
     "fields": {
       "id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
@@ -304,7 +305,9 @@
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "reviewer",
       "meta": {
-        "respondents": ["7484f34a-3acc-4ee6-8a94-fd7299502fa6"]
+        "respondents": [
+          "7484f34a-3acc-4ee6-8a94-fd7299502fa6"
+        ]
       }
     }
   },

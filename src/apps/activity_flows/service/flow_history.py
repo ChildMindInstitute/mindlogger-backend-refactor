@@ -1,6 +1,5 @@
 import uuid
 
-from apps.activity_flows.change_generator import ActivityFlowChangeGenerator
 from apps.activity_flows.crud import FlowsHistoryCRUD
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.activity_flows.domain.flow_full import (
@@ -9,6 +8,10 @@ from apps.activity_flows.domain.flow_full import (
     FlowItemHistoryFull,
 )
 from apps.activity_flows.domain.flow_history import ActivityFlowHistoryChange
+from apps.activity_flows.service.flow_change import (
+    ActivityFlowChangeService,
+    ActivityFlowItemChangeService,
+)
 from apps.activity_flows.service.flow_item_history import (
     FlowItemHistoryService,
 )
@@ -81,7 +84,8 @@ class FlowHistoryService:
         self, old_id_version: str
     ) -> list[ActivityFlowHistoryChange]:
         changes_generator = ChangeTextGenerator()
-        change_flow_generator = ActivityFlowChangeGenerator()
+        flow_change_service = ActivityFlowChangeService()
+        flow_item_change_service = ActivityFlowItemChangeService()
         flow_changes: list[ActivityFlowHistoryChange] = []
         flow_schemas = await FlowsHistoryCRUD(
             self.session
@@ -101,10 +105,10 @@ class FlowHistoryService:
                         name=changes_generator.added_text(
                             f"Activity Flow by name {new.name}"
                         ),
-                        changes=change_flow_generator.generate_flow_insert(
+                        changes=flow_change_service.generate_flow_insert(
                             new  # type: ignore
                         ),
-                        items=change_flow_generator.generate_flow_items_insert(
+                        items=flow_item_change_service.generate_flow_items_insert(  # noqa E501
                             getattr(new, "items", [])
                         ),
                     )
@@ -118,11 +122,11 @@ class FlowHistoryService:
                     )
                 )
             elif new and prev:
-                changes = change_flow_generator.generate_flow_update(
+                changes = flow_change_service.generate_flow_update(
                     new,  # type: ignore
                     prev,  # type: ignore
                 )
-                changes_items = change_flow_generator.generate_flow_items_update(  # noqa: E501
+                changes_items = flow_item_change_service.generate_flow_items_update(  # noqa: E501
                     self._group_and_sort_flows_or_items(
                         getattr(new, "items", []) + getattr(prev, "items", [])
                     ),  # type: ignore

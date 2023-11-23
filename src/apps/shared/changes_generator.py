@@ -3,20 +3,22 @@ Dictionary to generate needed text in one format
 """
 _DICTIONARY = dict(
     en=dict(
-        added="{0} is added.",
-        removed="{0} is removed.",
-        changed="{0} is changed to {1}.",
-        cleared="{0} is cleared.",
-        filled="{0} is updated to {1}.",
-        updated="{0} is updated.",
-        changed_dict="For {0} language {1} is changed to {2}.",
-        set_to="{0} is set to {1}.",
-        set_dict="For {0} language {1} is set to {2}.",
-        set_bool="{0} option was {1}.",
+        added="{0} was added",
+        removed="{0} was removed",
+        changed="{0} was changed to {1}",
+        cleared="{0} was cleared",
+        filled="{0} was changed to {1}",
+        updated="{0} was updated",
+        changed_dict="For {0} language {1} was changed to {2}",
+        set_to="{0} was set to {1}",
+        set_dict="For {0} language {1} was set to {2}",
+        set_bool="{0} option was {1}",
+        bool_enabled="{0} was enabled",
+        bool_disabled="{0} was disabled",
     )
 )
 
-EMPTY_VALUES: tuple = (None, "", 0, dict(), dict(en=""))
+EMPTY_VALUES: tuple = (None, "", 0, dict(), dict(en=""), [])
 
 
 class ChangeTextGenerator:
@@ -43,38 +45,31 @@ class ChangeTextGenerator:
         """
         return self._dictionary["removed"].format(object_name)
 
-    def changed_text(self, from_, to_) -> str:
+    def changed_text(
+        self,
+        field: str,
+        value: str | dict[str, str] | list[str],
+        is_initial=False,
+    ) -> str:
         """
-        Generates text for value updating.
+        Generates text for value chaning or setting if it is initial value.
         """
-        return self._dictionary["changed"].format(str(from_), str(to_))
-
-    def changed_dict(self, from_, to_) -> str:
-        """
-        Generates text of dicts for value updating.
-        """
-        changes = ""
-
-        # get all keys from both dicts, in set
-        keys = set(from_.keys()) | set(to_.keys())
-        for key in keys:
-            changes += self._dictionary["changed_dict"].format(
-                key, from_.get(key, None), to_.get(key, None)
-            )
-
-        return changes
+        # We don't support translations yet
+        if isinstance(value, dict):
+            v = list(value.values())[0]
+        elif isinstance(value, list):
+            v = ", ".join(value)
+        else:
+            v = value
+        if is_initial:
+            return self._dictionary["set_to"].format(field, v)
+        return self._dictionary["filled"].format(field, v)
 
     def cleared_text(self, field: str) -> str:
         """
         Generates text for clearing field value.
         """
         return self._dictionary["cleared"].format(field)
-
-    def filled_text(self, field: str, value: str) -> str:
-        """
-        Generates text for setting value.
-        """
-        return self._dictionary["filled"].format(field, value)
 
     def updated_text(self, field: str) -> str:
         """
@@ -88,26 +83,13 @@ class ChangeTextGenerator:
         """
         return self._dictionary["set_to"].format(field, value)
 
-    def set_dict(self, field, value) -> str:
+    def set_bool(self, field_name: str, value: bool) -> str:
         """
         Generates text for setting value.
         """
-        changes = ""
-
-        # get all keys from both dicts, in set
-        keys = set(value.keys())
-        for key in keys:
-            changes += self._dictionary["set_dict"].format(
-                key, field, value.get(key, None)
-            )
-
-        return changes
-
-    def set_bool(self, field: str, value: str) -> str:
-        """
-        Generates text for setting value.
-        """
-        return self._dictionary["set_bool"].format(field, value)
+        if value:
+            return self._dictionary["bool_enabled"].format(field_name)
+        return self._dictionary["bool_disabled"].format(field_name)
 
 
 class BaseChangeGenerator:
