@@ -1,6 +1,5 @@
 import uuid
 
-from apps.activities.change_generator import ActivityChangeGenerator
 from apps.activities.crud import ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activities.domain import (
@@ -11,6 +10,10 @@ from apps.activities.domain import (
 from apps.activities.domain.activity_full import (
     ActivityFull,
     ActivityItemHistoryFull,
+)
+from apps.activities.services.activity_change import ActivityChangeService
+from apps.activities.services.activity_item_change import (
+    ActivityItemChangeService,
 )
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
@@ -72,7 +75,8 @@ class ActivityHistoryService:
         self, old_applet_id_version: str
     ) -> list[ActivityHistoryChange]:
         changes_generator = ChangeTextGenerator()
-        change_activity_generator = ActivityChangeGenerator()
+        activity_change_servcie = ActivityChangeService()
+        item_change_service = ActivityItemChangeService()
 
         activity_changes: list[ActivityHistoryChange] = []
         activity_schemas = await ActivityHistoriesCRUD(
@@ -89,37 +93,37 @@ class ActivityHistoryService:
             ).get_by_activity_id_versions([activity.id_version])
 
         activity_groups = self._group_and_sort_activities_or_items(activities)
-        for _, (prev_activity, new_activity) in activity_groups.items():
-            if not prev_activity and new_activity:
+        for _, (old_activity, new_activity) in activity_groups.items():
+            if not old_activity and new_activity:
                 activity_changes.append(
                     ActivityHistoryChange(
                         name=changes_generator.added_text(
                             f"Activity {new_activity.name}"
                         ),
-                        changes=change_activity_generator.generate_activity_insert(  # noqa: E501
+                        changes=activity_change_servcie.generate_activity_insert(  # noqa: E501
                             new_activity  # type: ignore
                         ),
-                        items=change_activity_generator.generate_activity_items_insert(  # noqa: E501
-                            getattr(new_activity, "items", [])
+                        items=item_change_service.generate_activity_items_insert(  # noqa: E501
+                            new_activity.items  # type: ignore
                         ),
                     )
                 )
-            elif not new_activity and prev_activity:
+            elif not new_activity and old_activity:
                 activity_changes.append(
                     ActivityHistoryChange(
                         name=changes_generator.removed_text(
-                            f"Activity {prev_activity.name}"
+                            f"Activity {old_activity.name}"
                         )
                     )
                 )
-            elif new_activity and prev_activity:
-                changes = change_activity_generator.generate_activity_update(
-                    new_activity, prev_activity  # type: ignore
+            elif new_activity and old_activity:
+                changes = activity_change_servcie.generate_activity_update(
+                    old_activity, new_activity  # type: ignore
                 )
-                changes_items = change_activity_generator.generate_activity_items_update(  # noqa: E501
+                changes_items = item_change_service.generate_activity_items_update(  # noqa: E501
                     self._group_and_sort_activities_or_items(
-                        getattr(new_activity, "items", [])
-                        + getattr(prev_activity, "items", [])
+                        getattr(old_activity, "items", [])
+                        + getattr(new_activity, "items", [])
                     ),  # type: ignore
                 )
 

@@ -2,12 +2,12 @@ import uuid
 
 from apps.activities.services import ActivityHistoryService
 from apps.activity_flows.service.flow_history import FlowHistoryService
-from apps.applets.change_generator import AppletChangeGenerator
 from apps.applets.crud import AppletHistoriesCRUD
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain import AppletHistory, AppletHistoryChange
 from apps.applets.domain.applet_full import AppletFull, AppletHistoryFull
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
+from apps.applets.service.applet_change import AppletChangeService
 from apps.shared.version import INITIAL_VERSION
 
 __all__ = ["AppletHistoryService"]
@@ -77,16 +77,15 @@ class AppletHistoryService:
 
         new_history: AppletHistory = AppletHistory.from_orm(new_schema)
         old_history: AppletHistory = AppletHistory.from_orm(old_schema)
+        change_service = AppletChangeService()
         if old_id_version == self._id_version:
             changes.display_name = (
                 f"New applet {new_history.display_name} added"
             )
-
-            return changes
-        changes.display_name = f"Applet {new_history.display_name} updated "
-        changes.changes = AppletChangeGenerator().generate_applet_changes(
-            new_history, old_history
-        )
+            changes.changes = change_service.compare(None, new_history)
+        else:
+            changes.display_name = f"Applet {new_history.display_name} updated"
+            changes.changes = change_service.compare(old_history, new_history)
 
         return changes
 
