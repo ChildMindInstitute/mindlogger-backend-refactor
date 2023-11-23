@@ -1,11 +1,13 @@
 import uuid
 from copy import deepcopy
+from datetime import date, timedelta
 
 from fastapi import Body, Depends
 from firebase_admin.exceptions import FirebaseError
 
 from apps.answers.errors import UserDoesNotHavePermissionError
-from apps.applets.crud import UserAppletAccessCRUD
+from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.applets.db.schemas import AppletSchema
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.schedule.domain.schedule.filters import EventQueryParams
@@ -279,6 +281,45 @@ async def schedule_get_all_by_user(
             user_id=user.id
         )
     return ResponseMulti(result=schedules, count=count)
+
+
+async def schedule_get_all_by_respondent_user(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> ResponseMulti[PublicEventByUser]:
+    """Get all the respondent's schedules for the next 2 weeks."""
+    max_date_from_event_delta_days = 15
+    min_date_to_event_delta_days = 2
+    today: date = date.today()
+    max_start_date: date = today + timedelta(
+        days=max_date_from_event_delta_days
+    )
+    min_end_date: date = today - timedelta(days=min_date_to_event_delta_days)
+
+    async with atomic(session):
+        # applets for this endpoint must be equal to
+        # applets from /applets?roles=respondent endpoint
+        query_params: QueryParams = QueryParams(
+            filters={"roles": Role.RESPONDENT, "flat_list": False},
+            limit=10000,
+        )
+        applets: list[AppletSchema] = await AppletsCRUD(
+            session
+        ).get_applets_by_roles(
+            user_id=user.id,
+            roles=[Role.RESPONDENT],
+            query_params=query_params,
+            exclude_without_encryption=True,
+        )
+        applet_ids: list[uuid.UUID] = [applet.id for applet in applets]
+
+        schedules = await ScheduleService(session).get_upcoming_events_by_user(
+            user_id=user.id,
+            applet_ids=applet_ids,
+            min_end_date=min_end_date,
+            max_start_date=max_start_date,
+        )
+    return ResponseMulti(result=schedules, count=len(schedules))
 
 
 async def schedule_get_by_user(

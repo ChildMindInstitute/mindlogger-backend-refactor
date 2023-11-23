@@ -1,6 +1,7 @@
 from apps.applets.domain.applet import (  # noqa: F401, F403
     AppletName,
     AppletSingleLanguageDetail,
+    AppletSingleLanguageDetailMobilePublic,
     AppletSingleLanguageInfo,
     AppletUniqueName,
 )

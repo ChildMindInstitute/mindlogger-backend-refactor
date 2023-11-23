@@ -28,6 +28,15 @@ async def get_arbitrary_info(
     return None
 
 
+async def get_arbitraries_map(
+    applet_ids: list[uuid.UUID], session: AsyncSession
+) -> dict[str | None, list[uuid.UUID]]:
+    """Returning map {"arbitrary_uri": [applet_ids]}"""
+    return await WorkspaceService(session, uuid.uuid4()).get_arbitraries_map(
+        applet_ids
+    )
+
+
 async def preprocess_arbitrary_url(
     applet_id: uuid.UUID | None = None,
     schema: ArbitraryPreprocessor | None = None,
