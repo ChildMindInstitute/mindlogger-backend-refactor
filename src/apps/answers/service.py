@@ -224,22 +224,30 @@ class AnswerService:
         return answer
 
     async def create_report_from_answer(self, answer: AnswerSchema):
-        service = ReportServerService(self.session)
-        is_reportable = await service.is_reportable(answer)
-        if not is_reportable:
-            return
-
+        service = ReportServerService(
+            session=self.session, arbitrary_session=self.answer_session
+        )
+        # First check is flow single report or not, flow single report has
+        # another rules to be reportable.
         is_flow_single = await service.is_flows_single_report(answer.id)
-        if not is_flow_single:
-            await create_report.kiq(
-                answer.applet_id, answer.submit_id, answer.id
-            )
-        else:
+        if is_flow_single:
             is_flow_finished = await service.is_flow_finished(
                 answer.submit_id, answer.id
             )
             if is_flow_finished:
-                await create_report.kiq(answer.applet_id, answer.submit_id)
+                is_reportable = await service.is_reportable(
+                    answer, is_flow_single
+                )
+                if is_reportable:
+                    await create_report.kiq(answer.applet_id, answer.submit_id)
+        else:
+            is_reportable = await service.is_reportable(answer)
+            if is_reportable:
+                await create_report.kiq(
+                    answer.applet_id,
+                    answer.submit_id,
+                    answer.id,
+                )
 
     async def get_review_activities(
         self,
@@ -912,7 +920,7 @@ class AnswerService:
         self, applet_id: uuid.UUID, activity_id: str, created_at: int
     ) -> bool:
         answers = await AnswersCRUD(
-            self.session
+            self.answer_session
         ).get_by_applet_activity_created_at(applet_id, activity_id, created_at)
         if not answers:
             return False
@@ -1056,33 +1064,63 @@ class ReportServerService:
     def answers_session(self):
         return self._answers_session if self._answers_session else self.session
 
-    async def is_reportable(self, answer: AnswerSchema):
-        applet, activity = await AnswersCRUD(
-            self.answers_session
-        ).get_applet_info_by_answer_id(answer)
-        if not applet.report_server_ip:
-            return False
-        elif not applet.report_public_key:
-            return False
-        elif not applet.report_recipients:
-            return False
-        elif not activity.scores_and_reports:
-            return False
-        elif not activity.scores_and_reports.get("generate_report", False):
-            return False
+    async def is_reportable(
+        self, answer: AnswerSchema, is_single_report_flow=False
+    ) -> bool:
+        """Check is report available for answer or not.
 
-        if not activity.scores_and_reports.get("reports"):
-            return False
-        return True
+        First check applet report related fields. All fields must be filled.
+        Second check activities report related fields. If it is flow single
+        report then one of activities must be reportable (have filled all
+        reportable fields). If it is not flow single report then answers
+        activity must have filled reportable fields.
+        """
+        # It is simpler to use AppletHistoryService to get all required data.
+        # It allows to reduce repeatable logic for single report flow and
+        # for general case.
+        applet = await AppletHistoryService(
+            self.session, answer.applet_id, answer.version
+        ).get_full()
+        _is_reportable = False
+        if not (
+            applet.report_server_ip
+            and applet.report_public_key
+            and applet.report_recipients
+        ):
+            return _is_reportable
+
+        flow_activities = []
+        if is_single_report_flow:
+            flow = next(
+                i
+                for i in applet.activity_flows
+                if i.id_version == answer.flow_history_id
+            )
+            flow_activities = [i.activity_id for i in flow.items]
+        for activity in applet.activities:
+            if (
+                activity.scores_and_reports is not None
+                and activity.scores_and_reports.generate_report
+                and activity.scores_and_reports.reports
+                and (
+                    answer.activity_history_id in flow_activities
+                    or answer.activity_history_id == activity.id_version
+                )
+            ):
+                _is_reportable = True
+                break
+        return _is_reportable
 
     async def is_flows_single_report(self, answer_id: uuid.UUID) -> bool:
         """
         Whether check to send flow reports in a single or multiple request
         """
-        result = await AnswersCRUD(
-            self.answers_session
-        ).get_activity_flow_by_answer_id(answer_id)
-        return result
+        answer = await AnswersCRUD(self.answers_session).get_by_id(answer_id)
+        # ActivityFlow a stored in local db
+        is_single_report = await AnswersCRUD(
+            self.session
+        ).is_single_report_flow(answer.flow_history_id)
+        return is_single_report
 
     async def is_flow_finished(
         self, submit_id: uuid.UUID, answer_id: uuid.UUID
@@ -1100,10 +1138,10 @@ class ReportServerService:
         applet_full = await self._prepare_applet_data(
             initial_answer.applet_id, initial_answer.version, applet.encryption
         )
-        activity_id, version = initial_answer.activity_history_id.split("_")
-        flow_id, version = "", ""
+        activity_id, _ = initial_answer.activity_history_id.split("_")
+        flow_id = ""
         if initial_answer.flow_history_id:
-            flow_id, version = initial_answer.flow_history_id.split("_")
+            flow_id, _ = initial_answer.flow_history_id.split("_")
 
         return self._is_activity_last_in_flow(
             applet_full, activity_id, flow_id
@@ -1143,10 +1181,10 @@ class ReportServerService:
         )
         encrypted_data = encryption.encrypt(data)
 
-        activity_id, version = initial_answer.activity_history_id.split("_")
-        flow_id, version = "", ""
+        activity_id, _ = initial_answer.activity_history_id.split("_")
+        flow_id = ""
         if initial_answer.flow_history_id:
-            flow_id, version = initial_answer.flow_history_id.split("_")
+            flow_id, _ = initial_answer.flow_history_id.split("_")
 
         url = "{}/send-pdf-report?activityId={}&activityFlowId={}".format(
             applet.report_server_ip.rstrip("/"), activity_id, flow_id
@@ -1187,22 +1225,7 @@ class ReportServerService:
         if not flow or "items" not in flow or len(flow["items"]) == 0:
             return False
 
-        allowed_activities = []
-        for a in applet_full["activities"]:
-            if "scoresAndReports" in a and isinstance(
-                a["scoresAndReports"], dict
-            ):
-                if a["scoresAndReports"].get("generateReport", False):
-                    allowed_activities.append(a)
-
-        activity = next(
-            (a for a in allowed_activities if str(a["id"]) == activity_id),
-            None,
-        )
-        if not activity or "idVersion" not in activity:
-            return False
-
-        return activity["idVersion"] == str(flow["items"][-1]["activityId"])
+        return activity_id == flow["items"][-1]["activityId"].split("_")[0]
 
     async def _prepare_applet_data(
         self, applet_id: uuid.UUID, version: str, encryption: dict
@@ -1223,7 +1246,7 @@ class ReportServerService:
         return dict(
             firstName=access.meta.get("firstName"),
             lastName=access.meta.get("lastName"),
-            nickname=access.meta.get("nickname"),
+            nickname=access.nickname,
             secretId=access.meta.get("secretUserId"),
         )
 

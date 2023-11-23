@@ -471,7 +471,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="6cde911e-8a57-47c0-b6b2-685b3664f418",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -552,7 +552,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="6cde911e-8a57-47c0-b6b2-685b3664f418",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -670,7 +670,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="6cde911e-8a57-47c0-b6b2-685b3664f418",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -734,7 +734,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="6cde911e-8a57-47c0-b6b2-685b3664f418",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -833,7 +833,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="6cde911e-8a57-47c0-b6b2-685b3664f418",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -926,7 +926,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="6cde911e-8a57-47c0-b6b2-685b3664f418",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
@@ -1289,7 +1289,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
             dict(
                 respondentId="6cde911e-8a57-47c0-b6b2-685b3664f418",
-                createdDate=datetime.date.today(),
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 

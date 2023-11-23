@@ -34,7 +34,7 @@ class MigrateUserAppletAccessService(UserAppletAccessService):
                 self._applet_id,
                 Role.RESPONDENT.value,
             )
-
+            nickname = meta.pop("nickname", None)
             if not access_schema:
                 access_schema = await UserAppletAccessCRUD(self.session).save(
                     UserAppletAccessSchema(
@@ -44,6 +44,7 @@ class MigrateUserAppletAccessService(UserAppletAccessService):
                         owner_id=self._user_id,
                         invitor_id=self._user_id,
                         meta=meta,
+                        nickname=nickname,
                     )
                 )
 

@@ -2,10 +2,14 @@ import datetime
 import uuid
 from typing import Optional
 
-from pydantic import Field, validator
+from pydantic import Field, root_validator, validator
+from sqlalchemy import Unicode
+from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
+from sqlalchemy_utils import StringEncryptedType
 
 from apps.applets.domain.base import Encryption
 from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.encryption import get_key
 
 __all__ = [
     "PublicWorkspace",
@@ -17,8 +21,11 @@ __all__ = [
     "WorkspaceInfo",
     "PublicWorkspaceInfo",
     "WorkspaceArbitrary",
+    "WorkspaceArbitraryCreate",
+    "WorkspaceArbitraryFields",
 ]
 
+from apps.workspaces.constants import StorageType
 from apps.workspaces.domain.constants import Role
 
 
@@ -66,6 +73,17 @@ class WorkspaceRespondentDetails(InternalModel):
     respondent_secret_id: str | None = None
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
+
+    @root_validator
+    def decrypt_nickname(cls, values):
+        nickname = values.get("respondent_nickname")
+        if nickname:
+            nickname = StringEncryptedType(
+                Unicode, get_key
+            ).process_result_value(nickname, dialect=PGDialect_asyncpg.name)
+            values["respondent_nickname"] = str(nickname)
+
+        return values
 
 
 class WorkspaceRespondent(InternalModel):
@@ -133,6 +151,17 @@ class WorkspaceManager(InternalModel):
         return list(applets.values())
 
 
+class PublicWorkspaceRespondentDetails(PublicModel):
+    applet_id: uuid.UUID
+    applet_display_name: str
+    applet_image: str | None
+    access_id: uuid.UUID
+    respondent_nickname: str | None = None
+    respondent_secret_id: str | None = None
+    has_individual_schedule: bool = False
+    encryption: WorkspaceAppletEncryption | None = None
+
+
 class PublicWorkspaceRespondent(PublicModel):
     id: uuid.UUID
     nicknames: list[str] | None
@@ -140,7 +169,7 @@ class PublicWorkspaceRespondent(PublicModel):
     is_anonymous_respondent: bool
     last_seen: datetime.datetime | None
     is_pinned: bool = False
-    details: list[WorkspaceRespondentDetails] | None = None
+    details: list[PublicWorkspaceRespondentDetails] | None = None
 
 
 class PublicWorkspaceManager(PublicModel):
@@ -235,17 +264,67 @@ class AppletRoles(InternalModel):
     roles: list[Role]
 
 
-class WorkspaceArbitrary(InternalModel):
+class WorkspaceArbitraryFields(InternalModel):
+    database_uri: str | None = None
+    storage_type: str | None = None
+    storage_url: str | None = None
+    storage_access_key: str | None = None
+    storage_secret_key: str | None = None
+    storage_region: str | None = None
+    storage_bucket: str | None = None
+    use_arbitrary: bool
+
+    def is_arbitrary_empty(self):
+        return not any(
+            [
+                self.database_uri,
+                self.storage_access_key,
+                self.storage_secret_key,
+                self.storage_region,
+                self.storage_type,
+                self.storage_url,
+                self.storage_bucket,
+                self.use_arbitrary,
+            ]
+        )
+
+    @validator("use_arbitrary", always=True, pre=True)
+    def to_bool(cls, value):
+        if value is None:
+            return False
+
+        return value
+
+
+class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
+    database_uri: str
+    storage_secret_key: str
+    storage_type: StorageType
+
+    @root_validator()
+    def validate_storage_settings(cls, values):
+        storage_type = values["storage_type"]
+        required = []
+        if storage_type == StorageType.AWS:
+            required = ["storage_access_key", "storage_region"]
+        elif storage_type == StorageType.GCP:
+            required = ["storage_url", "storage_bucket", "storage_access_key"]
+
+        if required and not all((values[itm] is not None) for itm in required):
+            raise ValueError(
+                f"{', '.join(required)} are required "
+                f"for {storage_type} storage"
+            )
+
+        return values
+
+
+class WorkspaceArbitrary(WorkspaceArbitraryFields):
     id: uuid.UUID
     database_uri: str
-    storage_access_key: str
     storage_secret_key: str
-    storage_region: str
     storage_type: str
-    storage_url: Optional[str] = None
-    storage_bucket: Optional[str] = None
     storage_bucket_answer: Optional[str] = None
-    use_arbitrary: bool
 
 
 class AnswerDbApplet(InternalModel):
