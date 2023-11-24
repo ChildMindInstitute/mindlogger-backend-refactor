@@ -266,7 +266,9 @@ class TestActivities(BaseTest):
         assert result["appletDetail"]["activities"][0]["splashScreen"] == ""
         assert result["appletDetail"]["activityFlows"] == []
 
-        assert result["respondentMeta"] == {"nickname": "respondent Jane Doe"}
+        assert result["respondentMeta"] == {
+            "nickname": "Mindlogger ChildMindInstitute"
+        }
 
     @rollback
     async def test_public_activity_detail(self):

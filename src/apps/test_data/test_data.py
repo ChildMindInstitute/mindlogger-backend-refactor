@@ -1,7 +1,5 @@
 import uuid
 
-import pytest
-
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -10,6 +8,7 @@ class TestData(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
         "folders/fixtures/folders.json",
+        "themes/fixtures/themes.json",
     ]
 
     login_url = "/auth/login"
@@ -17,7 +16,6 @@ class TestData(BaseTest):
     generate_applet_url = f"{generating_url}/generate_applet"
     applet_list_url = "applets"
 
-    @pytest.mark.skip
     @rollback
     async def test_generate_applet(self):
         await self.client.login(
