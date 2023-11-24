@@ -177,11 +177,10 @@ class FlowService:
 
             respondents_with_indvdl_schdl = []
             for respondent in respondents_in_applet:
-                respondent = uuid.UUID(respondent)
                 number_of_indvdl_events = await EventCRUD(
                     self.session
                 ).count_individual_events_by_user(
-                    applet_id=applet_id, user_id=respondent
+                    applet_id=applet_id, user_id=uuid.UUID(respondent)
                 )
                 if number_of_indvdl_events > 0:
                     respondents_with_indvdl_schdl.append(respondent)
@@ -194,7 +193,7 @@ class FlowService:
                         applet_id=applet_id,
                         activity_ids=list(new_flows),
                         is_activity=False,
-                        respondent_id=respondent,
+                        respondent_id=uuid.UUID(respondent),
                     )
             else:
                 await ScheduleService(self.session).create_default_schedules(
