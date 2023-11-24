@@ -15,6 +15,7 @@ from apps.users import UserNotFound, UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from config import settings
+from apps.transfer_ownership.constants import TransferOwnershipStatus
 
 
 class TransferService:
@@ -39,6 +40,7 @@ class TransferService:
             email=transfer_request.email,
             applet_id=applet_id,
             key=uuid.uuid4(),
+            status=TransferOwnershipStatus.PENDING,
         )
         await TransferCRUD(self.session).create(transfer)
         try:
@@ -100,8 +102,8 @@ class TransferService:
         await AnswersCRUD(self.session).delete_by_applet_user(
             applet_id=transfer.applet_id
         )
-
-        await TransferCRUD(self.session).delete_all_by_applet_id(
+        await TransferCRUD(self.session).approve_by_key(key=key)
+        await TransferCRUD(self.session).decline_all_pending_by_applet_id(
             applet_id=transfer.applet_id
         )
 
@@ -148,4 +150,4 @@ class TransferService:
             raise PermissionsError()
 
         # delete transfer
-        await TransferCRUD(self.session).delete_by_key(key=key)
+        await TransferCRUD(self.session).decline_by_key(key=key)

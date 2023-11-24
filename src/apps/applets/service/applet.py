@@ -129,7 +129,7 @@ class AppletService:
         manager_id: uuid.UUID | None = None,
         manager_role: Role | None = None,
     ) -> AppletFull:
-        applet = await self._create(create_data)
+        applet = await self._create(create_data, manager_id)
 
         await self._create_applet_accesses(applet.id, manager_id, manager_role)
 
@@ -149,7 +149,9 @@ class AppletService:
 
         return applet
 
-    async def _create(self, create_data: AppletCreate) -> AppletFull:
+    async def _create(
+        self, create_data: AppletCreate, creator_id: uuid.UUID
+    ) -> AppletFull:
         applet_id = uuid.uuid4()
         await self._validate_applet_name(create_data.display_name)
         if not create_data.theme_id:
@@ -177,6 +179,7 @@ class AppletService:
                 if create_data.encryption
                 else None,
                 extra_fields=create_data.extra_fields,
+                creator_id=creator_id,
             )
         )
         return AppletFull.from_orm(schema)
@@ -250,7 +253,7 @@ class AppletService:
             applet_exist, new_name, encryption
         )
 
-        applet = await self._create(create_data)
+        applet = await self._create(create_data, self.user_id)
         # TODO: move to api level
         await UserAppletAccessService(
             self.session, applet_owner.user_id, applet.id
