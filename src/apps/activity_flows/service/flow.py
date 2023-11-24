@@ -18,8 +18,10 @@ from apps.activity_flows.domain.flow_update import (
     PreparedFlowItemUpdate,
 )
 from apps.activity_flows.service.flow_item import FlowItemService
-from apps.schedule.crud.events import FlowEventsCRUD
+from apps.applets.crud import UserAppletAccessCRUD
+from apps.schedule.crud.events import EventCRUD, FlowEventsCRUD
 from apps.schedule.service.schedule import ScheduleService
+from apps.workspaces.domain.constants import Role
 
 
 class FlowService:
@@ -166,11 +168,40 @@ class FlowService:
 
         # Create default events for new activities
         if new_flows:
-            await ScheduleService(self.session).create_default_schedules(
+            respondents_in_applet = await UserAppletAccessCRUD(
+                self.session
+            ).get_user_id_applet_and_role(
                 applet_id=applet_id,
-                activity_ids=list(new_flows),
-                is_activity=False,
+                role=Role.RESPONDENT,
             )
+
+            respondents_with_indvdl_schdl = []
+            for respondent in respondents_in_applet:
+                respondent = uuid.UUID(respondent)
+                number_of_indvdl_events = await EventCRUD(
+                    self.session
+                ).count_individual_events_by_user(
+                    applet_id=applet_id, user_id=respondent
+                )
+                if number_of_indvdl_events > 0:
+                    respondents_with_indvdl_schdl.append(respondent)
+
+            if respondents_with_indvdl_schdl:
+                for respondent in respondents_with_indvdl_schdl:
+                    await ScheduleService(
+                        self.session
+                    ).create_default_schedules(
+                        applet_id=applet_id,
+                        activity_ids=list(new_flows),
+                        is_activity=False,
+                        respondent_id=respondent,
+                    )
+            else:
+                await ScheduleService(self.session).create_default_schedules(
+                    applet_id=applet_id,
+                    activity_ids=list(new_flows),
+                    is_activity=False,
+                )
 
         return flows
 
