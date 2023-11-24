@@ -115,7 +115,11 @@ class ActivityService:
         # add default schedule for activities
         await ScheduleService(self.session).create_default_schedules(
             applet_id=applet_id,
-            activity_ids=[activity.id for activity in activities],
+            activity_ids=[
+                activity.id
+                for activity in activities
+                if not activity.is_reviewable
+            ],
             is_activity=True,
         )
 
