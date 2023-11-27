@@ -1165,8 +1165,11 @@ class ReportServerService:
     async def create_report(
         self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
     ) -> ReportServerResponse | None:
+        # Performance tasks are not used in reports. So we should not send
+        # answers on performance task to the report server because decryption
+        # takes much time and CPU time is wasted on report server.
         answers = await AnswersCRUD(self.answers_session).get_by_submit_id(
-            submit_id, answer_id
+            submit_id, answer_id, exclude_performance_tasks=True
         )
         if not answers:
             return None
