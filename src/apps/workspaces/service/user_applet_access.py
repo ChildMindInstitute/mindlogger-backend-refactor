@@ -104,12 +104,15 @@ class UserAppletAccessService:
                 anonymous_respondent.id,
             )
             nickname = meta.pop("nickname")
+            owner_access = await UserAppletAccessCRUD(
+                self.session
+            ).get_applet_owner(applet_id=self._applet_id)
             access_schema = await UserAppletAccessCRUD(self.session).save(
                 UserAppletAccessSchema(
                     user_id=anonymous_respondent.id,
                     applet_id=self._applet_id,
                     role=Role.RESPONDENT,
-                    owner_id=self._user_id,
+                    owner_id=owner_access.user_id,
                     invitor_id=self._user_id,
                     meta=meta,
                     nickname=nickname,
