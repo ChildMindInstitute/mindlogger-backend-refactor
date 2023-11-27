@@ -24,9 +24,10 @@ from apps.activities.errors import (
     ActivityDoeNotExist,
 )
 from apps.activities.services.activity_item import ActivityItemService
-from apps.applets.crud import AppletsCRUD
-from apps.schedule.crud.events import ActivityEventsCRUD
+from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.schedule.crud.events import ActivityEventsCRUD, EventCRUD
 from apps.schedule.service.schedule import ScheduleService
+from apps.workspaces.domain.constants import Role
 
 
 class ActivityService:
@@ -227,11 +228,39 @@ class ActivityService:
 
         # Create default events for new activities
         if new_activities:
-            await ScheduleService(self.session).create_default_schedules(
+            respondents_in_applet = await UserAppletAccessCRUD(
+                self.session
+            ).get_user_id_applet_and_role(
                 applet_id=applet_id,
-                activity_ids=list(new_activities),
-                is_activity=True,
+                role=Role.RESPONDENT,
             )
+
+            respondents_with_indvdl_schdl = []
+            for respondent in respondents_in_applet:
+                number_of_indvdl_events = await EventCRUD(
+                    self.session
+                ).count_individual_events_by_user(
+                    applet_id=applet_id, user_id=uuid.UUID(respondent)
+                )
+                if number_of_indvdl_events > 0:
+                    respondents_with_indvdl_schdl.append(respondent)
+
+            if respondents_with_indvdl_schdl:
+                for respondent in respondents_with_indvdl_schdl:
+                    await ScheduleService(
+                        self.session
+                    ).create_default_schedules(
+                        applet_id=applet_id,
+                        activity_ids=list(new_activities),
+                        is_activity=True,
+                        respondent_id=uuid.UUID(respondent),
+                    )
+            else:
+                await ScheduleService(self.session).create_default_schedules(
+                    applet_id=applet_id,
+                    activity_ids=list(new_activities),
+                    is_activity=True,
+                )
 
         return activities
 
