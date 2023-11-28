@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import any_, exists, select
+from sqlalchemy import any_, distinct, exists, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
@@ -222,25 +222,34 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         answers on performance task to the report server because decryption
         takes much time and CPU time is wasted on report server.
         """
-        query: Query = select(ActivityHistorySchema.id_version)
-        query = query.join(
+        is_perf_task_query: Query = select(ActivityHistorySchema.id)
+        is_perf_task_query = is_perf_task_query.join(
             ActivityItemHistorySchema,
             ActivityItemHistorySchema.activity_id
             == ActivityHistorySchema.id_version,
         )
-        query = query.where(
+        is_perf_task_query = is_perf_task_query.where(
             ActivityHistorySchema.applet_id == applet_id_version
         )
-        query = query.where(
-            ActivityItemHistorySchema.response_type.not_in(
+        is_perf_task_query = is_perf_task_query.where(
+            ActivityItemHistorySchema.response_type.in_(
                 [
                     PerformanceTaskType.FLANKER,
+                    # NOTE: response type Gyroscope and Touch are not sent
+                    # by frontent when applet is creating/updating
                     PerformanceTaskType.GYROSCOPE,
                     PerformanceTaskType.TOUCH,
                     PerformanceTaskType.ABTRAILS,
                     ResponseType.STABILITYTRACKER,
                 ]
             )
+        )
+        query: Query = select(distinct(ActivityHistorySchema.id_version))
+        query = query.where(
+            ActivityHistorySchema.applet_id == applet_id_version
+        )
+        query = query.where(
+            ActivityHistorySchema.id.not_in(is_perf_task_query)
         )
         db_result = await self._execute(query)
         return db_result.scalars().all()
