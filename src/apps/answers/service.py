@@ -1170,8 +1170,18 @@ class ReportServerService:
         )
         if not answers:
             return None
-        answer_map = dict((answer.id, answer) for answer in answers)
-        initial_answer = answers[0]
+        applet_id_version: str = answers[0].applet_history_id
+        available_activities = await ActivityHistoriesCRUD(
+            self.session
+        ).get_activity_id_versions_for_report(applet_id_version)
+        answers_for_report = [
+            i for i in answers if i.activity_history_id in available_activities
+        ]
+        # If answers only on performance tasks
+        if not answers_for_report:
+            return None
+        answer_map = dict((answer.id, answer) for answer in answers_for_report)
+        initial_answer = answers_for_report[0]
 
         applet = await AppletsCRUD(self.session).get_by_id(
             initial_answer.applet_id
