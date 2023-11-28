@@ -213,3 +213,34 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
 
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_activity_id_versions_for_report(
+        self, applet_id_version: str
+    ) -> list[str]:
+        """Return list of available id_version of activities for report.
+        Performance tasks are not used in PDF reports. So we should not send
+        answers on performance task to the report server because decryption
+        takes much time and CPU time is wasted on report server.
+        """
+        query: Query = select(ActivityHistorySchema.id_version)
+        query = query.join(
+            ActivityItemHistorySchema,
+            ActivityItemHistorySchema.activity_id
+            == ActivityHistorySchema.id_version,
+        )
+        query = query.where(
+            ActivityHistorySchema.applet_id == applet_id_version
+        )
+        query = query.where(
+            ActivityItemHistorySchema.response_type.not_in(
+                [
+                    PerformanceTaskType.FLANKER,
+                    PerformanceTaskType.GYROSCOPE,
+                    PerformanceTaskType.TOUCH,
+                    PerformanceTaskType.ABTRAILS,
+                    ResponseType.STABILITYTRACKER,
+                ]
+            )
+        )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
