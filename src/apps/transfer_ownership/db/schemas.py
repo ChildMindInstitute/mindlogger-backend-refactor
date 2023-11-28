@@ -4,6 +4,7 @@ from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
 from infrastructure.database import Base
+from apps.transfer_ownership.constants import TransferOwnershipStatus
 
 
 class TransferSchema(Base):
@@ -14,4 +15,4 @@ class TransferSchema(Base):
         ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
     )
     key = Column(UUID(as_uuid=True))
-    status = Column(String())
+    status = Column(String(), server_default=TransferOwnershipStatus.PENDING)
