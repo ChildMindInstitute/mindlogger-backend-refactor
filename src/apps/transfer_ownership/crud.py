@@ -1,13 +1,12 @@
 import uuid
 
-from sqlalchemy import delete, update
+from sqlalchemy import select, update
 
+from apps.transfer_ownership.constants import TransferOwnershipStatus
 from apps.transfer_ownership.db.schemas import TransferSchema
 from apps.transfer_ownership.domain import Transfer
 from apps.transfer_ownership.errors import TransferNotFoundError
 from infrastructure.database.crud import BaseCRUD
-from apps.transfer_ownership.constants import TransferOwnershipStatus
-
 
 __all__ = ["TransferCRUD"]
 
@@ -19,7 +18,14 @@ class TransferCRUD(BaseCRUD[TransferSchema]):
         return await self._create(TransferSchema(**transfer.dict()))
 
     async def get_by_key(self, key: uuid.UUID) -> TransferSchema:
-        if not (instance := await self._get(key="key", value=key)):
+        query = select(self.schema_class)
+        query = query.where(self.schema_class.key == key)
+        query = query.where(
+            self.schema_class.status == TransferOwnershipStatus.PENDING
+        )
+        result = await self._execute(query)
+        instance = result.scalars().first()
+        if not instance:
             raise TransferNotFoundError()
 
         return instance

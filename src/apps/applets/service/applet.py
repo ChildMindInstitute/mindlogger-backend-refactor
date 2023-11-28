@@ -129,7 +129,7 @@ class AppletService:
         manager_id: uuid.UUID | None = None,
         manager_role: Role | None = None,
     ) -> AppletFull:
-        applet = await self._create(create_data, manager_id)
+        applet = await self._create(create_data, manager_id or self.user_id)
 
         await self._create_applet_accesses(applet.id, manager_id, manager_role)
 

@@ -3,8 +3,8 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
-from infrastructure.database import Base
 from apps.transfer_ownership.constants import TransferOwnershipStatus
+from infrastructure.database import Base
 
 
 class TransferSchema(Base):

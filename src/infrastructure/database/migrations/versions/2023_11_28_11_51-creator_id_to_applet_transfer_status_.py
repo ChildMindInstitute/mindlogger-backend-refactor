@@ -11,8 +11,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 from sqlalchemy_utils.types.encrypted.encrypted_type import StringEncryptedType
-from apps.shared.encryption import get_key
 
+from apps.shared.encryption import get_key
 
 # revision identifiers, used by Alembic.
 revision = "75c9ca1f506b"
@@ -126,7 +126,7 @@ def downgrade() -> None:
         )
     )
     op.alter_column(
-        "transfer_ownership", "email", type_=sa.Text(), default=None
+        "transfer_ownership", "email", type_=sa.String(), default=None
     )
     for row in result_emails:
         pk, email = row

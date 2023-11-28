@@ -8,6 +8,7 @@ from apps.authentication.errors import PermissionsError
 from apps.invitations.services import InvitationsService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.transfer_ownership.constants import TransferOwnershipStatus
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.domain import InitiateTransfer, Transfer
 from apps.transfer_ownership.errors import TransferEmailError
@@ -15,7 +16,6 @@ from apps.users import UserNotFound, UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from config import settings
-from apps.transfer_ownership.constants import TransferOwnershipStatus
 
 
 class TransferService:
