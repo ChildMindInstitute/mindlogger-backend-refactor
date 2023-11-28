@@ -1165,16 +1165,23 @@ class ReportServerService:
     async def create_report(
         self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
     ) -> ReportServerResponse | None:
-        # Performance tasks are not used in reports. So we should not send
-        # answers on performance task to the report server because decryption
-        # takes much time and CPU time is wasted on report server.
         answers = await AnswersCRUD(self.answers_session).get_by_submit_id(
-            submit_id, answer_id, exclude_performance_tasks=True
+            submit_id, answer_id
         )
         if not answers:
             return None
-        answer_map = dict((answer.id, answer) for answer in answers)
-        initial_answer = answers[0]
+        applet_id_version: str = answers[0].applet_history_id
+        available_activities = await ActivityHistoriesCRUD(
+            self.session
+        ).get_activity_id_versions_for_report(applet_id_version)
+        answers_for_report = [
+            i for i in answers if i.activity_history_id in available_activities
+        ]
+        # If answers only on performance tasks
+        if not answers_for_report:
+            return None
+        answer_map = dict((answer.id, answer) for answer in answers_for_report)
+        initial_answer = answers_for_report[0]
 
         applet = await AppletsCRUD(self.session).get_by_id(
             initial_answer.applet_id
