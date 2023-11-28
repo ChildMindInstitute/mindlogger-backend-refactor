@@ -97,9 +97,33 @@ services:
     container_name: mindlogger_mongo
     volumes:
       - db_data:/data/db
-    
+
+  minio:
+    image: minio/minio
+    container_name: mindlogger_minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioaccess
+      MINIO_ROOT_PASSWORD: miniosecret
+    volumes:
+      - datastore:/data
+    command: server --console-address ":9001" /data
+
+  createbuckets:
+    image: minio/mc
+    container_name: mindlogger_minio_mc
+    environment:
+      CDN__BUCKET: "${CDN__BUCKET:-media}"
+    depends_on:
+      - minio
+    volumes:
+      - './compose/minio:/etc/minio'
+    entrypoint: /etc/minio/create_bucket.sh
+
 
 volumes:
   pg_data: {}
   db_data: {}
-  
+  datastore: {}

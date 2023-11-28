@@ -18,6 +18,7 @@ from infrastructure.utility.cdn_config import CdnConfig
 
 async def get_media_bucket() -> CDNClient:
     config = CdnConfig(
+        endpoint_url=settings.cdn.endpoint_url,
         region=settings.cdn.region,
         bucket=settings.cdn.bucket,
         secret_key=settings.cdn.secret_key,

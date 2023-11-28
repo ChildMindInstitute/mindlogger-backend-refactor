@@ -31,6 +31,7 @@ class CDNClient:
         if config.access_key and config.secret_key:
             return boto3.client(
                 "s3",
+                endpoint_url=config.endpoint_url,
                 region_name=config.region,
                 aws_access_key_id=config.access_key,
                 aws_secret_access_key=config.secret_key,
