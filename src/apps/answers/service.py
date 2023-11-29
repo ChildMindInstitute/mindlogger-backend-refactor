@@ -573,7 +573,13 @@ class AnswerService:
         if not access:
             allowed_respondents = [self.user_id]
         elif access.role == Role.REVIEWER:
-            allowed_respondents = access.reviewer_respondents  # type: ignore[assignment] # noqa: E501
+            if (
+                isinstance(access.reviewer_respondents, list)
+                and len(access.reviewer_respondents) > 0
+            ):
+                allowed_respondents = access.reviewer_respondents  # noqa: E501
+            else:
+                allowed_respondents = [self.user_id]
         else:  # [Role.OWNER, Role.MANAGER]
             assessments_allowed = True
 
