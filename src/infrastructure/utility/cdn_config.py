@@ -2,6 +2,7 @@ from pydantic import BaseSettings
 
 
 class CdnConfig(BaseSettings):
+    endpoint_url: str | None = None
     region: str | None
     bucket: str | None
     secret_key: str | None

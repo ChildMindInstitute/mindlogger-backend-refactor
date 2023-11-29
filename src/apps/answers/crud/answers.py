@@ -27,10 +27,6 @@ from apps.activities.db.schemas import (
 )
 from apps.activities.domain import ActivityHistory
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
-from apps.activities.domain.response_type_config import (
-    PerformanceTaskType,
-    ResponseType,
-)
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import (
@@ -324,30 +320,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return db_result.scalars().first()
 
     async def get_by_submit_id(
-        self,
-        submit_id: uuid.UUID,
-        answer_id: uuid.UUID | None = None,
-        exclude_performance_tasks: bool = False,
+        self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
     ) -> list[AnswerSchema] | None:
         query: Query = select(AnswerSchema)
-        if exclude_performance_tasks:
-            query = query.join(
-                ActivityItemHistorySchema,
-                AnswerSchema.activity_history_id
-                == ActivityItemHistorySchema.activity_id,
-            )
-            query = query.where(
-                ActivityItemHistorySchema.response_type.not_in(
-                    [
-                        PerformanceTaskType.FLANKER,
-                        PerformanceTaskType.GYROSCOPE,
-                        PerformanceTaskType.TOUCH,
-                        PerformanceTaskType.ABTRAILS,
-                        ResponseType.STABILITYTRACKER,
-                    ]
-                )
-            )
-
         query = query.where(AnswerSchema.submit_id == submit_id)
         if answer_id:
             query = query.where(AnswerSchema.id == answer_id)
