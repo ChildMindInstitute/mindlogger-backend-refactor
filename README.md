@@ -20,7 +20,7 @@ And
 - ✅ [The 12-Factor App](https://12factor.net)
 - ✅ [Domain driven design](https://www.amazon.com/Domain-Driven-Design-Tackling-Complexity-Software-ebook/dp/B00794TAUG)
 
-</br>
+<br/>
 
 🔌 **Code quality tools:**
 - ✅ [flake8](https://github.com/pycqa/flake8)
@@ -29,7 +29,7 @@ And
 - ✅ [mypy](https://github.com/python/mypy)
 - ✅ [pytest](https://github.com/pytest-dev/pytest)
 
-</br>
+<br/>
 
 ## ✋ <span style="color:#9DB7FF">Mandatory steps</span>
 
@@ -51,7 +51,7 @@ git clone git@github.com:ChildMindInstitute/mindlogger-backend-refactor.git
 #### 2.1 Description 📜
 | Key | Default value                                                    | Description                                                                                                                                                                   |
 | --- |------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| PYTHONPATH | src/                                                             | This variable makes all folders inside `src/` reachable in a runtime. </br> ***NOTE:*** You don't need to do this if you use Docker as far as it is hardcoded in `Dockerfile` |
+| PYTHONPATH | src/                                                             | This variable makes all folders inside `src/` reachable in a runtime. <br/> ***NOTE:*** You don't need to do this if you use Docker as far as it is hardcoded in `Dockerfile` |
 | DATABASE__HOST | postgres                                                         | Database Host                                                                                                                                                                 |
 | DATABASE__USER | postgres                                                         | User name for Postgresql Database user                                                                                                                                        |
 | DATABASE__PASSWORD | postgres                                                         | Password for Postgresql Database user                                                                                                                                         |
@@ -82,7 +82,7 @@ cp .env.default .env
 ```
 
 
-</br>
+<br/>
 
 
 ## 👨‍🦯 <span style="color:#9DB7FF">Local development</span>
@@ -115,7 +115,7 @@ pipenv shell
 pipenv sync --dev
 ```
 
-</br>
+<br/>
 
 > 🛑 **NOTE:** if you don't use `pipenv` for some reason remember that you will not have automatically exported variables from your `.env` file.
 >
@@ -136,7 +136,7 @@ set -o allexport; source .env; set +o allexport
 
 > 🛑 **NOTE:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
 
-</br>
+<br/>
 
 
 ### 3. Provide code quality ✨
@@ -177,7 +177,7 @@ P.S. You don't need to do this additional step if you run application via Docker
 uvicorn src.main:app --proxy-headers --port {PORT} --reload
 ```
 
-</br>
+<br/>
 
 ### 5. Running Tests ▶️
 
@@ -216,8 +216,18 @@ psql# create user test;
 # Set password for the user
 psql# alter user test with password 'test';
 ```
-</br>
-</br>
+
+#### Test coverage
+
+To correctly calculate test coverage, you need to run the coverage with the `--concurrency=thread,gevent` parameter:
+
+```bash
+coverage run --concurrency=thread,gevent -m pytest
+coverage report -m
+```
+
+<br/>
+<br/>
 
 ## 🐳 <span style="color:#9DB7FF">Docker development</span>
 
