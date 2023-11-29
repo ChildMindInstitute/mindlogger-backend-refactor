@@ -11,6 +11,7 @@ class TestReusableItem(BaseTest):
     create_url = "activities/item_choices"
     update_url = "activities/item_choices"
     delete_url = "activities/item_choices/{id}"
+    retrieve_url = "activities/item_choices"
 
     @rollback
     async def test_create_item_choice(self):
@@ -111,3 +112,24 @@ class TestReusableItem(BaseTest):
 
         res_data = response.json()
         assert response.status_code == 422, res_data
+
+    @rollback
+    async def test_retrieve_item_choice(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = dict(
+            token_name="Average age 3",
+            token_value="21",
+            input_type="radiobutton",
+        )
+
+        response = await self.client.post(self.create_url, data=create_data)
+        created_data = response.json()["result"]
+        assert response.status_code == 201, response.json()
+        assert response.json()["result"]["id"]
+
+        response = await self.client.get(self.retrieve_url)
+        assert response.status_code == 200, response.json()
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0] == created_data
