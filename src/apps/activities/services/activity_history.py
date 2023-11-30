@@ -11,6 +11,9 @@ from apps.activities.domain.activity_full import (
     ActivityFull,
     ActivityItemHistoryFull,
 )
+from apps.activities.domain.activity_item_history import (
+    ActivityItemHistoryChange,
+)
 from apps.activities.services.activity_change import ActivityChangeService
 from apps.activities.services.activity_item_change import (
     ActivityItemChangeService,
@@ -66,7 +69,9 @@ class ActivityHistoryService:
             self.session, self._applet_id, self._version
         ).add(activity_items)
 
-    async def get_changes(self, prev_version: str):
+    async def get_changes(
+        self, prev_version: str
+    ) -> list[ActivityHistoryChange]:
         old_id_version = f"{self._applet_id}_{prev_version}"
         return await self._get_activity_changes(old_id_version)
 
@@ -94,6 +99,13 @@ class ActivityHistoryService:
         activity_groups = self._group_and_sort_activities_or_items(activities)
         for _, (old_activity, new_activity) in activity_groups.items():
             if not old_activity and new_activity:
+                changes_items: list[ActivityItemHistoryChange] = []
+                for item in new_activity.items:  # type: ignore
+                    change = item_change_service.init_change(item.name)
+                    change.changes = item_change_service.generate_activity_items_insert(  # noqa: E501
+                        item
+                    )
+                    changes_items.append(change)
                 activity_changes.append(
                     ActivityHistoryChange(
                         name=changes_generator.added_text(
@@ -102,9 +114,7 @@ class ActivityHistoryService:
                         changes=activity_change_servcie.generate_activity_insert(  # noqa: E501
                             new_activity  # type: ignore
                         ),
-                        items=item_change_service.generate_activity_items_insert(  # noqa: E501
-                            new_activity.items  # type: ignore
-                        ),
+                        items=changes_items,
                     )
                 )
             elif not new_activity and old_activity:
@@ -119,11 +129,10 @@ class ActivityHistoryService:
                 changes = activity_change_servcie.generate_activity_update(
                     old_activity, new_activity  # type: ignore
                 )
-                changes_items = item_change_service.generate_activity_items_update(  # noqa: E501
+                changes_items = item_change_service.get_changes(
                     self._group_and_sort_activities_or_items(
-                        getattr(old_activity, "items", [])
-                        + getattr(new_activity, "items", [])
-                    ),  # type: ignore
+                        old_activity.items, new_activity.items  # type: ignore
+                    ),
                 )
 
                 if changes or changes_items:
