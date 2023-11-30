@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import datetime
 import json
 import os
@@ -12,10 +11,6 @@ from typing import List
 import aiohttp
 import pydantic
 import sentry_sdk
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
@@ -1193,18 +1188,15 @@ class ReportServerService:
             initial_answer.applet_id, initial_answer.version, applet.encryption
         )
 
-        encryption = ReportServerEncryption(applet.report_public_key)
         responses, user_public_keys = await self._prepare_responses(answer_map)
 
         data = dict(
             responses=responses,
-            userPublicKeys=user_public_keys,
             userPublicKey=user_public_keys[0],
             now=datetime.datetime.utcnow().strftime("%x"),
             user=user_info,
             applet=applet_full,
         )
-        encrypted_data = encryption.encrypt(data)
 
         activity_id, _ = initial_answer.activity_history_id.split("_")
         flow_id = ""
@@ -1219,8 +1211,7 @@ class ReportServerService:
             logger.info(f"Sending request to the report server {url}.")
             start = time.time()
             async with session.post(
-                url,
-                json=dict(payload=encrypted_data),
+                url, data=json.dumps(dict(payload=data), default=str)
             ) as resp:
                 duration = time.time() - start
                 if resp.status == 200:
@@ -1290,39 +1281,6 @@ class ReportServerService:
                 dict(activityId=activity_id, answer=answer_item.answer)
             )
         return responses, [ai.user_public_key for ai in answer_items]
-
-
-class ReportServerEncryption:
-    _rate = 0.58
-
-    def __init__(self, key: str):
-        self.encryption = load_pem_public_key(
-            key.encode(), backend=default_backend()
-        )
-
-    def encrypt(self, data: dict):
-        str_data = json.dumps(data, default=str)
-        key_size = getattr(self.encryption, "key_size", 0)
-        encrypt = getattr(self.encryption, "encrypt", lambda x, y: x)
-        chunk_size = int(key_size / 8 * self._rate)
-        chunks = []
-        for i in range(len(str_data) // chunk_size + 1):
-            beg = i * chunk_size
-            end = beg + chunk_size
-            encrypted_chunk = encrypt(
-                str_data[beg:end].encode(),
-                self._get_padding(),
-            )
-            chunks.append(base64.b64encode(encrypted_chunk).decode())
-
-        return chunks
-
-    def _get_padding(self):
-        return padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA1()),
-            algorithm=hashes.SHA1(),
-            label=None,
-        )
 
 
 class AnswerEncryptor:
