@@ -164,6 +164,7 @@ class UserAppletAccessService:
                 invitor_id=invitation.invitor_id,
                 meta=meta,
                 nickname=respondent_nickname,
+                is_deleted=False,
             ),
             where=UserAppletAccessSchema.soft_exists(exists=False),
         )
