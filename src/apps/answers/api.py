@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import datetime
 import uuid
@@ -7,7 +8,10 @@ from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
 from apps.activities.services import ActivityHistoryService
-from apps.answers.deps.preprocess_arbitrary import get_answer_session
+from apps.answers.deps.preprocess_arbitrary import (
+    get_answer_session,
+    get_arbitraries_map,
+)
 from apps.answers.domain import (
     ActivityAnswerPublic,
     AnswerExistenceResponse,
@@ -18,6 +22,7 @@ from apps.answers.domain import (
     AnswersCheck,
     AppletActivityAnswerPublic,
     AppletAnswerCreate,
+    AppletCompletedEntities,
     AssessmentAnswerCreate,
     AssessmentAnswerPublic,
     IdentifierPublic,
@@ -37,6 +42,8 @@ from apps.answers.filters import (
     SummaryActivityFilter,
 )
 from apps.answers.service import AnswerService
+from apps.applets.crud import AppletsCRUD
+from apps.applets.db.schemas import AppletSchema
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
@@ -50,8 +57,9 @@ from apps.shared.query_params import (
 )
 from apps.users import UsersCRUD
 from apps.users.domain import User
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
-from infrastructure.database import atomic
+from infrastructure.database import atomic, session_manager
 from infrastructure.database.deps import get_session
 
 
@@ -502,6 +510,91 @@ async def applet_completed_entities(
         ).get_completed_answers_data(applet_id, version, from_date)
 
     return Response(result=data)
+
+
+async def _get_arbitrary_answer(
+    session,
+    from_date: datetime.date,
+    arb_uri: str,
+    applets_version_map: dict[uuid.UUID, str],
+    user_id: uuid.UUID | None = None,
+) -> list[AppletCompletedEntities]:
+    arb_session_maker = session_manager.get_session(arb_uri)
+    try:
+        async with arb_session_maker() as arb_session:
+            data = await AnswerService(
+                session,
+                user_id=user_id,
+                arbitrary_session=arb_session,
+            ).get_completed_answers_data_list(applets_version_map, from_date)
+    finally:
+        await arb_session_maker.remove()
+
+    return data
+
+
+async def applets_completed_entities(
+    from_date: datetime.date = Query(..., alias="fromDate"),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> ResponseMulti[AppletCompletedEntities]:
+    async with atomic(session):
+        # applets for this endpoint must be equal to
+        # applets from /applets?roles=respondent endpoint
+        query_params: QueryParams = QueryParams(
+            filters={"roles": Role.RESPONDENT, "flat_list": False},
+            limit=10000,
+        )
+        applets: list[AppletSchema] = await AppletsCRUD(
+            session
+        ).get_applets_by_roles(
+            user_id=user.id,
+            roles=[Role.RESPONDENT],
+            query_params=query_params,
+            exclude_without_encryption=True,
+        )
+
+        applets_version_map: dict[uuid.UUID, str] = dict()
+        for applet in applets:
+            applets_version_map[applet.id] = applet.version
+        applet_ids: list[uuid.UUID] = list(applets_version_map.keys())
+
+        arb_uri_applet_ids_map: dict[
+            str | None, list[uuid.UUID]
+        ] = await get_arbitraries_map(applet_ids, session)
+
+        data_future_list = []
+        for arb_uri, arb_applet_ids in arb_uri_applet_ids_map.items():
+            applets_version_arb_map: dict[uuid.UUID, str] = dict()
+            for applet_id in arb_applet_ids:
+                applets_version_arb_map[applet_id] = applets_version_map[
+                    applet_id
+                ]
+
+            if arb_uri:
+                data = _get_arbitrary_answer(
+                    session,
+                    from_date,
+                    arb_uri,
+                    applets_version_arb_map,
+                    user_id=user.id,
+                )
+            else:
+                data = AnswerService(
+                    session, user_id=user.id
+                ).get_completed_answers_data_list(
+                    applets_version_arb_map, from_date
+                )
+            data_future_list.append(data)
+
+        entities_lists = await asyncio.gather(*data_future_list)
+        entities = []
+
+        for entities_list in entities_lists:
+            if entities_list:
+                entities += entities_list
+
+    return ResponseMulti(result=entities, count=len(entities))
 
 
 async def answers_existence_check(

@@ -4,7 +4,9 @@ from apps.activities.crud import ActivitiesCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain.activity import (
     ActivityDuplicate,
+    ActivityLanguageWithItemsMobileDetailPublic,
     ActivitySingleLanguageDetail,
+    ActivitySingleLanguageMobileDetailPublic,
     ActivitySingleLanguageWithItemsDetail,
 )
 from apps.activities.domain.activity_create import (
@@ -268,6 +270,74 @@ class ActivityService:
                     report_included_item_name=schema.report_included_item_name,
                 )
             )
+        return activities
+
+    async def get_single_language_by_applet_id_mobile(
+        self, applet_id: uuid.UUID, language: str
+    ) -> list[ActivitySingleLanguageMobileDetailPublic]:
+        schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
+            applet_id, is_reviewable=False
+        )
+        activities = []
+        for schema in schemas:
+            activities.append(
+                ActivitySingleLanguageMobileDetailPublic(
+                    id=schema.id,
+                    name=schema.name,
+                    description=self._get_by_language(
+                        schema.description, language
+                    ),
+                    image=schema.image,
+                    is_reviewable=schema.is_reviewable,
+                    is_skippable=schema.is_skippable,
+                    show_all_at_once=schema.show_all_at_once,
+                    is_hidden=schema.is_hidden,
+                    response_is_editable=schema.response_is_editable,
+                    order=schema.order,
+                    splash_screen=schema.splash_screen,
+                )
+            )
+        return activities
+
+    async def get_single_language_with_items_by_applet_id(
+        self, applet_id: uuid.UUID, language: str
+    ) -> list[ActivityLanguageWithItemsMobileDetailPublic]:
+        schemas = await ActivitiesCRUD(
+            self.session
+        ).get_mobile_with_items_by_applet_id(applet_id, is_reviewable=False)
+
+        activities = []
+        activity_ids = []
+        for schema in schemas:
+            activity = ActivityLanguageWithItemsMobileDetailPublic(
+                id=schema.id,
+                name=schema.name,
+                description=self._get_by_language(
+                    schema.description, language
+                ),
+                splash_screen=schema.splash_screen,
+                image=schema.image,
+                show_all_at_once=schema.show_all_at_once,
+                is_skippable=schema.is_skippable,
+                is_reviewable=schema.is_reviewable,
+                is_hidden=schema.is_hidden,
+                response_is_editable=schema.response_is_editable,
+                order=schema.order,
+                scores_and_reports=schema.scores_and_reports,
+            )
+
+            activities.append(activity)
+            activity_ids.append(activity.id)
+
+        activity_items_map = await ActivityItemService(
+            self.session
+        ).get_single_language_by_activity_ids(
+            activity_ids=activity_ids, language=language
+        )
+
+        for activity in activities:
+            activity.items = activity_items_map.get(activity.id, [])
+
         return activities
 
     async def get_full_activities(

@@ -273,6 +273,17 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return db_result.scalars().first()
 
+    async def get_applet_role_by_user_id_exist(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
+    ) -> UserAppletAccessSchema | None:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.role == role)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first()
+
     def user_applet_ids_query(self, user_id: uuid.UUID) -> Query:
         query: Query = select(UserAppletAccessSchema.applet_id)
         query = query.where(UserAppletAccessSchema.soft_exists())

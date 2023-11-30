@@ -317,6 +317,14 @@ class WorkspaceService:
         except ValidationError:
             return None
 
+    async def get_arbitraries_map(
+        self, applet_ids: list[uuid.UUID]
+    ) -> dict[str | None, list[uuid.UUID]]:
+        """Returning map {"arbitrary_uri": [applet_ids]}"""
+        return await UserWorkspaceCRUD(
+            self.session
+        ).get_arbitraries_map_by_applet_ids(applet_ids)
+
     async def get_user_answer_db_info(self) -> list[AnswerDbApplets]:
         db_info = await UserWorkspaceCRUD(
             self.session

@@ -1,4 +1,6 @@
+import asyncio
 import uuid
+from datetime import date
 
 from apps.activities.crud import ActivitiesCRUD
 from apps.activity_flows.crud import FlowsCRUD
@@ -815,6 +817,73 @@ class ScheduleService:
             )
 
         return events
+
+    async def get_upcoming_events_by_user(
+        self,
+        user_id: uuid.UUID,
+        applet_ids: list[uuid.UUID],
+        min_end_date: date | None = None,
+        max_start_date: date | None = None,
+    ) -> list[PublicEventByUser]:
+        """Get all events for user in applets that user is respondent."""
+        user_events_map, user_event_ids = await EventCRUD(
+            self.session
+        ).get_all_by_applets_and_user(
+            applet_ids=applet_ids,
+            user_id=user_id,
+            min_end_date=min_end_date,
+            max_start_date=max_start_date,
+        )
+        general_events_map, general_event_ids = await EventCRUD(
+            self.session
+        ).get_general_events_by_applets_and_user(
+            applet_ids=applet_ids,
+            user_id=user_id,
+            min_end_date=min_end_date,
+            max_start_date=max_start_date,
+        )
+        full_events_map = self._sum_applets_events_map(
+            user_events_map, general_events_map
+        )
+
+        event_ids = user_event_ids | general_event_ids
+        notifications_map_c = NotificationCRUD(
+            self.session
+        ).get_all_by_event_ids(event_ids)
+        reminders_map_c = ReminderCRUD(self.session).get_by_event_ids(
+            event_ids
+        )
+        notifications_map, reminders_map = await asyncio.gather(
+            notifications_map_c, reminders_map_c
+        )
+
+        events: list[PublicEventByUser] = []
+        for applet_id, all_events in full_events_map.items():
+            events.append(
+                PublicEventByUser(
+                    applet_id=applet_id,
+                    events=[
+                        self._convert_to_dto(
+                            event=event,
+                            notifications=notifications_map.get(event.id),
+                            reminder=reminders_map.get(event.id),
+                        )
+                        for event in all_events
+                    ],
+                )
+            )
+
+        return events
+
+    @staticmethod
+    def _sum_applets_events_map(m1: dict, m2: dict):
+        result = dict()
+        for k, v in m1.items():
+            result[k] = v
+        for k, v in m2.items():
+            result.setdefault(k, list())
+            result[k] += v
+        return result
 
     def _convert_to_dto(
         self,

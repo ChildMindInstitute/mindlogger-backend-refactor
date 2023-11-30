@@ -1184,6 +1184,10 @@ class TestApplet(BaseTest):
     async def test_applet_list_with_invalid_token(self):
         from config import settings
 
+        current_access_token_expiration = (
+            settings.authentication.access_token.expiration
+        )
+
         settings.authentication.access_token.expiration = 0.05
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -1191,6 +1195,9 @@ class TestApplet(BaseTest):
         await asyncio.sleep(4)
         response = await self.client.get(self.applet_list_url)
 
+        settings.authentication.access_token.expiration = (
+            current_access_token_expiration
+        )
         assert response.status_code == 401, response.json()
 
     @rollback
