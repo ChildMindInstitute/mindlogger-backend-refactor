@@ -14,3 +14,6 @@ class Match(str, Enum):
 class ConditionalLogic(PublicModel):
     match: Match = Field(default=Match.ALL)
     conditions: list[Condition]
+
+    def get_condition(self):
+        pass

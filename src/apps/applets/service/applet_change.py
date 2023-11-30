@@ -1,5 +1,5 @@
 from apps.applets.domain import AppletHistory
-from apps.shared.changes_generator import BaseChangeGenerator
+from apps.shared.changes_generator import EMPTY_VALUES, BaseChangeGenerator
 
 
 class AppletChangeService(BaseChangeGenerator):
@@ -30,7 +30,11 @@ class AppletChangeService(BaseChangeGenerator):
             old_value = getattr(old_applet, field_name) if old_applet else None
             new_value = getattr(new_applet, field_name)
             # First just check that something was changed
-            if not any([old_value, new_value]) or new_value == old_value:
+            if (
+                old_value in EMPTY_VALUES
+                and new_value in EMPTY_VALUES
+                or new_value == old_value
+            ):
                 continue
             if isinstance(new_value, bool):
                 changes.append(

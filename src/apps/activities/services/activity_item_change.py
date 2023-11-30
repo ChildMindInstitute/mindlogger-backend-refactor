@@ -4,6 +4,13 @@ from apps.activities.domain.activity_history import ActivityItemHistoryFull
 from apps.activities.domain.activity_item_history import (
     ActivityItemHistoryChange,
 )
+from apps.activities.domain.conditional_logic import ConditionalLogic
+from apps.activities.domain.conditions import (
+    Condition,
+    MinMaxPayload,
+    OptionPayload,
+    ValuePayload,
+)
 from apps.activities.domain.response_type_config import (
     AdditionalResponseOption,
     ResponseType,
@@ -46,7 +53,7 @@ class ConfigChangeService(BaseChangeGenerator):
         "set_alerts": "Set Alerts",
         "add_tooltip": "Add Tooltips",
         "set_palette": "Set Color Palette",
-        "add_tokens": "tokens",
+        "add_tokens": "Tokens",
         # Additional options
         "text_input_option": "Add Text Input Option",
         "text_input_required": "Input Required",
@@ -85,7 +92,7 @@ class ConfigChangeService(BaseChangeGenerator):
                     for k, v in val:
                         old_v = getattr(old_val, k)
                         if v != old_v:
-                            vn = self.field_name_verbose_name_map[key]
+                            vn = self.field_name_verbose_name_map[k]
                             if isinstance(v, bool):
                                 _process_bool(vn, v, changes)
                 elif val != old_val:
@@ -102,16 +109,13 @@ class ResponseOptionChangeService(BaseChangeGenerator):
         value,
         changes,
     ) -> None:
-        if type_ in (
-            ResponseType.SINGLESELECT.value,
-            ResponseType.MULTISELECT.value,
-        ):
+        if type_ in (ResponseType.SINGLESELECT, ResponseType.MULTISELECT):
             self.__process_container_attr(value, "options", "text", changes)
         elif type_ == ResponseType.SLIDERROWS.value:
             self.__process_container_attr(value, "rows", "label", changes)
-        if type_ in (
-            ResponseType.SINGLESELECTROWS.value,
-            ResponseType.MULTISELECTROWS.value,
+        elif type_ in (
+            ResponseType.SINGLESELECTROWS,
+            ResponseType.MULTISELECTROWS,
         ):
             self.__process_container_attr(value, "rows", "row_name", changes)
             self.__process_container_attr(value, "options", "text", changes)
@@ -119,14 +123,11 @@ class ResponseOptionChangeService(BaseChangeGenerator):
     def check_changes_update(
         self,
         type_,
-        new_value,
         old_value,
+        new_value,
         changes,
     ) -> None:
-        if type_ in (
-            ResponseType.SINGLESELECT.value,
-            ResponseType.MULTISELECT.value,
-        ):
+        if type_ in (ResponseType.SINGLESELECT, ResponseType.MULTISELECT):
             old_options = old_value.options
             options = {o.id: o for o in new_value.options}
             old_options = {o.id: o for o in old_value.options}
@@ -148,8 +149,8 @@ class ResponseOptionChangeService(BaseChangeGenerator):
                     )
                 elif old.text != v.text:
                     changes.append(
-                        self._change_text_generator.set_text(
-                            f"{old.text} | {old.value} option",
+                        self._change_text_generator.changed_text(
+                            f"{old.text} | {old.value} option text",
                             f"{v.text} | {v.value}",
                         )
                     )
@@ -164,7 +165,7 @@ class ResponseOptionChangeService(BaseChangeGenerator):
                     )
                 elif old_label != v:
                     changes.append(
-                        self._change_text_generator.set_text(
+                        self._change_text_generator.changed_text(
                             f"Row label {old_label}", v
                         )
                     )
@@ -174,9 +175,9 @@ class ResponseOptionChangeService(BaseChangeGenerator):
                     changes.append(
                         self._change_text_generator.removed_text(f"Row {v}")
                     )
-        if type_ in (
-            ResponseType.SINGLESELECTROWS.value,
-            ResponseType.MULTISELECTROWS.value,
+        elif type_ in (
+            ResponseType.SINGLESELECTROWS,
+            ResponseType.MULTISELECTROWS,
         ):
             new_rows = {row.id: row.row_name for row in new_value.rows}
             old_rows = {row.id: row.row_name for row in old_value.rows}
@@ -190,7 +191,7 @@ class ResponseOptionChangeService(BaseChangeGenerator):
                     )
                 elif old_row_name != v:
                     changes.append(
-                        self._change_text_generator.set_text(
+                        self._change_text_generator.changed_text(
                             f"Row name {old_row_name}", v
                         )
                     )
@@ -208,8 +209,8 @@ class ResponseOptionChangeService(BaseChangeGenerator):
                     )
                 elif old_text != v:
                     changes.append(
-                        self._change_text_generator.set_text(
-                            f"Option name {old_text}", v
+                        self._change_text_generator.changed_text(
+                            f"Option text {old_text}", v
                         )
                     )
             for k, v in old_options.items():
@@ -232,11 +233,65 @@ class ResponseOptionChangeService(BaseChangeGenerator):
             val = getattr(i, "value", None)
             if container_attr_name == "rows":
                 text = f"Row {name}"
-            elif val:
+            elif val is not None:
                 text = f"{name} | {val} option"
             else:
                 text = f"{name}"
             changes.append(self._change_text_generator.added_text(text))
+
+
+class ConditionalLogicChangeService(BaseChangeGenerator):
+    def check_changes(
+        self,
+        parent_field: str,
+        value: ConditionalLogic,
+        changes: list[str],
+        method_name="added_text",
+    ) -> None:
+        message = f"{parent_field}: If {value.match.capitalize()}: "
+        conds: list[str] = []
+        for condition in value.conditions:
+            condition_type = condition.type.lower().replace("_", " ")
+            conds.append(
+                f"{condition.item_name} {condition_type} {self.__get_payload(condition)}"  # noqa: E501
+            )
+        message = message + ", ".join(conds)
+        changes.append(
+            getattr(self._change_text_generator, method_name)(message)
+        )
+
+    def check_update_changes(
+        self,
+        parent_field: str,
+        old_value: ConditionalLogic | None,
+        new_value: ConditionalLogic | None,
+        changes: list[str],
+    ) -> None:
+        if new_value and not old_value:
+            self.check_changes(parent_field, new_value, changes)
+        elif not new_value and old_value:
+            changes.append(
+                self._change_text_generator.removed_text(parent_field)
+            )
+        # Because we can not check conditional logic identity (there are no
+        # any ids or other unique fields) we just write that logic was update
+        # to the new value.
+        elif new_value != old_value:
+            self.check_changes(
+                parent_field, new_value, changes, method_name="updated_text"  # type: ignore [arg-type] # noqa: E501
+            )
+
+    @staticmethod
+    def __get_payload(condition: Condition) -> str:
+        if isinstance(condition.payload, OptionPayload):
+            return condition.payload.option_value
+        elif isinstance(condition.payload, ValuePayload):
+            return str(condition.payload.value)
+        elif isinstance(condition.payload, MinMaxPayload):
+            min_value = condition.payload.min_value
+            max_value = condition.payload.max_value
+            return f"{min_value} and {max_value}"
+        return "true" if condition.payload.value else "false"
 
 
 class ActivityItemChangeService(BaseChangeGenerator):
@@ -254,54 +309,52 @@ class ActivityItemChangeService(BaseChangeGenerator):
     def __init__(self) -> None:
         self._conf_change_service = ConfigChangeService()
         self._resp_vals_change_service = ResponseOptionChangeService()
+        self._cond_logic_change_service = ConditionalLogicChangeService()
         super().__init__()
 
-    def _init_change(self, item_name: str) -> ActivityItemHistoryChange:
+    def init_change(
+        self, item_name: str, updated: bool = False
+    ) -> ActivityItemHistoryChange:
+        method_name = "updated_text" if updated else "added_text"
         return ActivityItemHistoryChange(
-            name=self._change_text_generator.added_text(f"Item {item_name}")
+            name=getattr(self._change_text_generator, method_name)(
+                (f"Item {item_name}")
+            )
         )
 
     def generate_activity_items_insert(
-        self, items: list[ActivityItemHistoryFull]
-    ) -> list[ActivityItemHistoryChange]:
-        change_items: list[ActivityItemHistoryChange] = []
-        for item in items:
-            change = self._init_change(item.name)
-            changes: list[str] = []
-            for (
-                field_name,
-                verbose_name,
-            ) in self.field_name_verbose_name_map.items():
-                value = getattr(item, field_name)
-                if isinstance(value, bool):
-                    _process_bool(verbose_name, value, changes)
-                elif field_name == "response_values":
-                    self._resp_vals_change_service.check_changes(
-                        item.response_type, value, changes
+        self, item: ActivityItemHistoryFull
+    ) -> list[str]:
+        changes: list[str] = []
+        for (
+            field_name,
+            verbose_name,
+        ) in self.field_name_verbose_name_map.items():
+            value = getattr(item, field_name)
+            if isinstance(value, bool):
+                _process_bool(verbose_name, value, changes)
+            elif field_name == "response_values":
+                self._resp_vals_change_service.check_changes(
+                    item.response_type, value, changes
+                )
+            # Check name, because type of value can be different
+            elif field_name == "config":
+                self._conf_change_service.check_changes(value, changes)
+            elif field_name == "conditional_logic":
+                if value:
+                    self._cond_logic_change_service.check_changes(
+                        verbose_name, value, changes
                     )
-                # Check name, because type of value can be different
-                elif field_name == "config":
-                    self._conf_change_service.check_changes(value, changes)
-                elif field_name == "conditional_logic":
-                    if value:
-                        changes.append(
-                            self._change_text_generator.added_text(
-                                verbose_name
-                            )
-                        )
-                elif value:
-                    changes.append(
-                        self._change_text_generator.changed_text(
-                            verbose_name, value, is_initial=True
-                        )
+            elif value:
+                changes.append(
+                    self._change_text_generator.changed_text(
+                        verbose_name, value, is_initial=True
                     )
+                )
 
-            change.changes = changes
-            change_items.append(change)
+        return changes
 
-        return change_items
-
-    def generate_activity_items_update(
+    def get_changes(
         self,
         item_groups: dict[
             uuid.UUID,
@@ -314,7 +367,9 @@ class ActivityItemChangeService(BaseChangeGenerator):
 
         for _, (old_item, new_item) in item_groups.items():
             if not old_item and new_item:
-                change_items += self.generate_activity_items_insert([new_item])
+                change = self.init_change(new_item.name)
+                change.changes = self.generate_activity_items_insert(new_item)
+                change_items.append(change)
             elif not new_item and old_item:
                 change_items.append(
                     ActivityItemHistoryChange(
@@ -324,25 +379,18 @@ class ActivityItemChangeService(BaseChangeGenerator):
                     )
                 )
             elif new_item and old_item:
-                changes = self._generate_activity_item_update(
-                    new_item, old_item
-                )
+                changes = self.compare_items(old_item, new_item)
                 if changes:
-                    change_items.append(
-                        ActivityItemHistoryChange(
-                            name=self._change_text_generator.updated_text(
-                                f"Item {new_item.name}",
-                            ),
-                            changes=changes,
-                        )
-                    )
+                    change = self.init_change(new_item.name, updated=True)
+                    change.changes = changes
+                    change_items.append(change)
 
         return change_items
 
-    def _generate_activity_item_update(
+    def compare_items(
         self,
-        new_item: ActivityItemHistoryFull,
         old_item: ActivityItemHistoryFull,
+        new_item: ActivityItemHistoryFull,
     ) -> list[str]:
         changes: list[str] = list()
 
@@ -357,26 +405,16 @@ class ActivityItemChangeService(BaseChangeGenerator):
                     _process_bool(verbose_name, value, changes)
             elif field_name == "response_values":
                 self._resp_vals_change_service.check_changes_update(
-                    new_item.response_type, value, old_value, changes
+                    new_item.response_type, old_value, value, changes
                 )
             elif field_name == "config":
                 self._conf_change_service.check_update_changes(
                     old_value, value, changes
                 )
             elif field_name == "conditional_logic":
-                if value and not old_value:
-                    changes.append(
-                        self._change_text_generator.added_text(verbose_name)
-                    )
-                elif not value and old_value:
-                    changes.append(
-                        self._change_text_generator.removed_text(verbose_name)
-                    )
-                elif value != old_value:
-                    changes.append(
-                        self._change_text_generator.updated_text(verbose_name)
-                    )
-
+                self._cond_logic_change_service.check_update_changes(
+                    verbose_name, old_value, value, changes
+                )
             elif value and value != old_value:
                 changes.append(
                     self._change_text_generator.changed_text(

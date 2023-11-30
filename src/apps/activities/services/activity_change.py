@@ -53,12 +53,17 @@ class ScoresAndReportsChangeService(BaseChangeGenerator):
     def check_update_changes(
         self,
         parent_field_name: str,
-        value: ScoresAndReports | None,
         old_value: ScoresAndReports | None,
+        value: ScoresAndReports | None,
         changes: list[str],
     ) -> None:
-        if not old_value:
+        if value and not old_value:
             self.check_changes(value, changes)
+        # Possible this case is not allowed from UI, but need to be ready
+        elif not value and old_value:
+            changes.append(
+                self._change_text_generator.removed_text(parent_field_name)
+            )
         elif value and value != old_value:
             for key, val in value:
                 old_val = getattr(old_value, key)
@@ -68,11 +73,6 @@ class ScoresAndReportsChangeService(BaseChangeGenerator):
                 elif key == "reports":
                     self.__check_for_changes(val, old_val, "score", changes)
                     self.__check_for_changes(val, old_val, "section", changes)
-        # Possible this case is not allowed from UI, but need to be ready
-        elif old_value:
-            changes.append(
-                self._change_text_generator.removed_text(parent_field_name)
-            )
 
     def __check_for_changes(
         self,
@@ -142,12 +142,16 @@ class SubscaleSettingChangeService(BaseChangeGenerator):
     def check_update_changes(
         self,
         parent_field_name: str,
-        value: SubscaleSetting | None,
         old_value: SubscaleSetting | None,
+        value: SubscaleSetting | None,
         changes: list[str],
     ) -> None:
-        if not old_value:
+        if value and not old_value:
             self.check_changes(value, changes)
+        elif not value and old_value:
+            changes.append(
+                self._change_text_generator.removed_text(parent_field_name)
+            )
         elif value and value != old_value:
             for key, val in value:
                 old_val = getattr(old_value, key)
@@ -204,10 +208,6 @@ class SubscaleSettingChangeService(BaseChangeGenerator):
                         changes.append(
                             self._change_text_generator.removed_text(vn)
                         )
-        elif old_value:
-            changes.append(
-                self._change_text_generator.removed_text(parent_field_name)
-            )
 
 
 class ActivityChangeService(BaseChangeGenerator):
@@ -223,7 +223,7 @@ class ActivityChangeService(BaseChangeGenerator):
         "response_is_editable": "Disable the respondent's ability to change the response",  # noqa E501
         "report_included_item_name": "Report's name included item name",
         "order": "Activity Order",
-        # NOTE: this should be inverted
+        # NOTE: is_hidden should be inverted
         "is_hidden": "Activity Visibility",
         "scores_and_reports": "Scores & Reports option",
         "subscale_setting": "Subscale Setting option",
@@ -271,11 +271,11 @@ class ActivityChangeService(BaseChangeGenerator):
             old_value = getattr(old_activity, field_name)
             if field_name == "scores_and_reports":
                 self._sar_service.check_update_changes(
-                    verbose_name, value, old_value, changes
+                    verbose_name, old_value, value, changes
                 )
             elif field_name == "subscale_setting":
                 self._scale_service.check_update_changes(
-                    verbose_name, value, old_value, changes
+                    verbose_name, old_value, value, changes
                 )
             elif isinstance(value, bool):
                 if value != old_value:

@@ -18,8 +18,12 @@ __all__ = ["AppletHistory", "AppletHistoryChange", "PublicAppletHistoryChange"]
 
 class AppletHistory(InternalModel):
     display_name: str
-    description: dict[Language, str] = Field(default_factory=dict)
-    about: dict[Language, str] = Field(default_factory=dict)
+    description: dict[Language, str] = Field(
+        default_factory=lambda: {Language.ENGLISH: ""}
+    )
+    about: dict[Language, str] = Field(
+        default_factory=lambda: {Language.ENGLISH: ""}
+    )
     image: str = ""
     watermark: str = ""
     theme_id: uuid.UUID | None = None
