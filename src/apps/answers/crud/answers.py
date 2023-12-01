@@ -58,7 +58,10 @@ class _AnswersExportFilter(Filtering):
         AnswerSchema.activity_history_id, Comparisons.IN
     )
     from_date = FilterField(
-        AnswerItemSchema.created_at, Comparisons.GREAT_OR_EQUAL
+        func.date(AnswerItemSchema.created_at), Comparisons.GREAT_OR_EQUAL
+    )
+    to_date = FilterField(
+        func.date(AnswerItemSchema.created_at), Comparisons.LESS_OR_EQUAL
     )
 
 
