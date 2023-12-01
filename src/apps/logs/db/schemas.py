@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, String
+from sqlalchemy import Boolean, Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
 
 from infrastructure.database.base import Base
@@ -16,3 +16,24 @@ class NotificationLogSchema(Base):
     notification_descriptions_updated = Column(Boolean(), nullable=False)
     notifications_in_queue_updated = Column(Boolean(), nullable=False)
     scheduled_notifications_updated = Column(Boolean(), nullable=False)
+
+
+class UserActivityLogSchema(Base):
+    __tablename__ = "user_activity_logs"
+
+    user_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    device_id = Column(String(), nullable=True)
+    event_type = Column(String(), nullable=False)
+    event = Column(String(), nullable=False)
+    user_agent = Column(String(), nullable=True)
+    mindlogger_content = Column(String(), nullable=False)
+
+    def __repr__(self):
+        return (
+            f"UserActivityLogSchema(id='{self.id}', user_id='{self.user_id}',"
+            f" target='{self.target}', action='{self.action}')"
+        )

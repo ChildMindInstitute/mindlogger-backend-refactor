@@ -5,6 +5,7 @@ from fastapi import Body, Depends
 from jose import JWTError, jwt
 from pydantic import ValidationError
 
+from apps.authentication.api.auth_utils import auth_user
 from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.login import UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest
@@ -16,17 +17,13 @@ from apps.authentication.domain.token import (
     TokenPayload,
     TokenPurpose,
 )
-from apps.authentication.errors import (
-    AuthenticationError,
-    InvalidCredentials,
-    InvalidRefreshToken,
-)
+from apps.authentication.errors import AuthenticationError, InvalidRefreshToken
 from apps.authentication.services.security import AuthenticationService
+from apps.logs.user_activity_log import user_activity_login_log
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
 from apps.users.domain import PublicUser, User
-from apps.users.errors import UserNotFound
 from apps.users.services.user_device import UserDeviceService
 from config import settings
 from infrastructure.database import atomic
@@ -36,20 +33,15 @@ from infrastructure.database.deps import get_session
 async def get_token(
     user_login_schema: UserLoginRequest = Body(...),
     session=Depends(get_session),
+    user=Depends(auth_user),
+    user_activity_log=Depends(user_activity_login_log),
 ) -> Response[UserLogin]:
     """Generate the JWT access token."""
     async with atomic(session):
-        try:
-            user: User = await AuthenticationService(
-                session
-            ).authenticate_user(user_login_schema)
-            if user_login_schema.device_id:
-                await UserDeviceService(session, user.id).add_device(
-                    user_login_schema.device_id
-                )
-        except UserNotFound:
-            raise InvalidCredentials(email=user_login_schema.email)
-
+        if user_login_schema.device_id:
+            await UserDeviceService(session, user.id).add_device(
+                user_login_schema.device_id
+            )
         if user.email_encrypted != user_login_schema.email:
             user = await UsersCRUD(session).update_encrypted_email(
                 user, user_login_schema.email
