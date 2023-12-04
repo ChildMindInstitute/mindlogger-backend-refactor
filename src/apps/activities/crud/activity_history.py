@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import any_, distinct, exists, select
+from sqlalchemy import distinct, exists, select
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
