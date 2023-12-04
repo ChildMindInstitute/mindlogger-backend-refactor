@@ -43,6 +43,31 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
+    async def get_mobile_with_items_by_applet_id(
+        self, applet_id: uuid.UUID, is_reviewable=None
+    ) -> list:
+        query: Query = select(
+            ActivitySchema.id,
+            ActivitySchema.name,
+            ActivitySchema.description,
+            ActivitySchema.splash_screen,
+            ActivitySchema.image,
+            ActivitySchema.show_all_at_once,
+            ActivitySchema.is_skippable,
+            ActivitySchema.is_reviewable,
+            ActivitySchema.is_hidden,
+            ActivitySchema.response_is_editable,
+            ActivitySchema.order,
+            ActivitySchema.scores_and_reports,
+        )
+        query = query.where(ActivitySchema.applet_id == applet_id)
+        if isinstance(is_reviewable, bool):
+            query = query.where(ActivitySchema.is_reviewable == is_reviewable)
+        query = query.order_by(ActivitySchema.order.asc())
+        result = await self._execute(query)
+
+        return result.all()
+
     async def get_by_id(self, activity_id: uuid.UUID) -> ActivitySchema:
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.id == activity_id)

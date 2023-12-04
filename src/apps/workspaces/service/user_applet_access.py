@@ -66,6 +66,7 @@ class UserAppletAccessService:
             return UserAppletAccess.from_orm(access_schema)
 
         meta = await self._get_default_role_meta(role, user_id)
+        nickname = meta.pop("nickname", None)
 
         access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
@@ -75,7 +76,7 @@ class UserAppletAccessService:
                 owner_id=self._user_id,
                 invitor_id=self._user_id,
                 meta=meta,
-                nickname=meta.get("nickname"),
+                nickname=nickname,
             )
         )
         return UserAppletAccess.from_orm(access_schema)
@@ -89,24 +90,32 @@ class UserAppletAccessService:
         if anonymous_respondent:
             access_schema = await UserAppletAccessCRUD(
                 self.session
-            ).get_applet_role_by_user_id(
+            ).get_applet_role_by_user_id_exist(
                 self._applet_id, anonymous_respondent.id, Role.RESPONDENT
             )
             if access_schema:
+                if access_schema.is_deleted:
+                    await UserAppletAccessCRUD(self.session).restore(
+                        "id", access_schema.id
+                    )
                 return UserAppletAccess.from_orm(access_schema)
 
             meta = await self._get_default_role_meta_for_anonymous_respondent(
                 anonymous_respondent.id,
             )
-
+            nickname = meta.pop("nickname")
+            owner_access = await UserAppletAccessCRUD(
+                self.session
+            ).get_applet_owner(applet_id=self._applet_id)
             access_schema = await UserAppletAccessCRUD(self.session).save(
                 UserAppletAccessSchema(
                     user_id=anonymous_respondent.id,
                     applet_id=self._applet_id,
                     role=Role.RESPONDENT,
-                    owner_id=self._user_id,
+                    owner_id=owner_access.user_id,
                     invitor_id=self._user_id,
                     meta=meta,
+                    nickname=nickname,
                 )
             )
             return UserAppletAccess.from_orm(access_schema)
@@ -144,8 +153,10 @@ class UserAppletAccessService:
                 invitation.applet_id, self._user_id, manager_included_roles
             )
 
-        access_schema = await UserAppletAccessCRUD(self.session).save(
-            UserAppletAccessSchema(
+        access_schema = await UserAppletAccessCRUD(
+            self.session
+        ).upsert_user_applet_access(
+            schema=UserAppletAccessSchema(
                 user_id=self._user_id,
                 applet_id=invitation.applet_id,
                 role=invitation.role,
@@ -153,7 +164,9 @@ class UserAppletAccessService:
                 invitor_id=invitation.invitor_id,
                 meta=meta,
                 nickname=respondent_nickname,
-            )
+                is_deleted=False,
+            ),
+            where=UserAppletAccessSchema.soft_exists(exists=False),
         )
 
         if invitation.role != Role.RESPONDENT:
@@ -164,6 +177,7 @@ class UserAppletAccessService:
                 meta = await self._get_default_role_meta(
                     Role.RESPONDENT, self._user_id
                 )
+                nickname = meta.pop("nickname", None)
                 schema = UserAppletAccessSchema(
                     user_id=self._user_id,
                     applet_id=invitation.applet_id,
@@ -171,7 +185,7 @@ class UserAppletAccessService:
                     owner_id=owner_access.user_id,
                     invitor_id=invitation.invitor_id,
                     meta=meta,
-                    nickname=meta.get("nickname"),
+                    nickname=nickname,
                     is_deleted=False,
                 )
 
@@ -179,7 +193,7 @@ class UserAppletAccessService:
                     self.session
                 ).upsert_user_applet_access(schema)
 
-        return UserAppletAccess.from_orm(access_schema)
+        return UserAppletAccess.from_orm(access_schema[0])
 
     async def add_role_by_private_invitation(self, role: Role):
         owner_access = await UserAppletAccessCRUD(

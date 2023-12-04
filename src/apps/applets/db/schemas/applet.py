@@ -50,6 +50,9 @@ class AppletSchema(_BaseAppletSchema, Base):
     retention_period = Column(Integer(), nullable=True)
     retention_type = Column(String(20), nullable=True)
     is_published = Column(Boolean(), default=False)
+    creator_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
+    )
 
 
 class HistoryMixin:

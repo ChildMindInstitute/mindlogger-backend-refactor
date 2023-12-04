@@ -25,7 +25,9 @@ def upgrade() -> None:
 
     conn = op.get_bind()
     result = conn.execute(
-        sa.text("SELECT id, meta FROM invitations WHERE role='respondent'")
+        sa.text(
+            "SELECT id, meta FROM invitations WHERE role='respondent' and meta is NOT NULL"
+        )
     )
     op.add_column(
         "invitations",

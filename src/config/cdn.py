@@ -19,7 +19,11 @@ class CDNSettings(BaseModel):
     ttl_signed_urls: int = 3600
 
     gcp_endpoint_url = "https://storage.googleapis.com"
+    endpoint_url: str | None = None
+    storage_address: str | None = None
 
     @property
     def url(self):
-        return f"https://{self.domain}/{{key}}"
+        if self.domain:
+            return f"https://{self.domain}/{{key}}"
+        return f"{self.storage_address}/{self.bucket}/{{key}}"

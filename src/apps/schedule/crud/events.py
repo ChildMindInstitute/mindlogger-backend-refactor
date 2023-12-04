@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import Query
@@ -219,6 +220,105 @@ class EventCRUD(BaseCRUD[EventSchema]):
             )
         return events
 
+    async def get_all_by_applets_and_user(
+        self,
+        applet_ids: list[uuid.UUID],
+        user_id: uuid.UUID,
+        min_end_date: date | None = None,
+        max_start_date: date | None = None,
+    ) -> tuple[dict[uuid.UUID, list[EventFull]], set[uuid.UUID]]:
+        """Get events by applet_ids and user_id
+        Return {applet_id: [EventFull]}"""
+
+        query: Query = select(
+            EventSchema,
+            PeriodicitySchema.start_date,
+            PeriodicitySchema.end_date,
+            PeriodicitySchema.selected_date,
+            PeriodicitySchema.type,
+            ActivityEventsSchema.activity_id,
+            FlowEventsSchema.flow_id,
+        )
+        query = query.join(
+            UserEventsSchema,
+            and_(
+                EventSchema.id == UserEventsSchema.event_id,
+                UserEventsSchema.user_id == user_id,
+            ),
+        )
+
+        query = query.join(
+            PeriodicitySchema,
+            PeriodicitySchema.id == EventSchema.periodicity_id,
+        )
+
+        query = query.join(
+            FlowEventsSchema,
+            FlowEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+        query = query.join(
+            ActivityEventsSchema,
+            ActivityEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+
+        query = query.where(EventSchema.applet_id.in_(applet_ids))
+        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        if min_end_date and max_start_date:
+            query = query.where(
+                or_(
+                    PeriodicitySchema.type == PeriodicityType.ALWAYS,
+                    and_(
+                        PeriodicitySchema.type != PeriodicityType.ONCE,
+                        or_(
+                            PeriodicitySchema.start_date.is_(None),
+                            PeriodicitySchema.start_date <= max_start_date,
+                        ),
+                        or_(
+                            PeriodicitySchema.end_date.is_(None),
+                            PeriodicitySchema.end_date >= min_end_date,
+                        ),
+                    ),
+                    and_(
+                        PeriodicitySchema.type == PeriodicityType.ONCE,
+                        PeriodicitySchema.selected_date <= max_start_date,
+                        PeriodicitySchema.selected_date >= min_end_date,
+                    ),
+                )
+            )
+
+        db_result = await self._execute(query)
+
+        events_map: dict[uuid.UUID, list[EventFull]] = dict()
+        event_ids: set[uuid.UUID] = set()
+        for row in db_result:
+            event_ids.add(row.EventSchema.id)
+            events_map.setdefault(row.EventSchema.applet_id, list())
+            events_map[row.EventSchema.applet_id].append(
+                EventFull(
+                    id=row.EventSchema.id,
+                    start_time=row.EventSchema.start_time,
+                    end_time=row.EventSchema.end_time,
+                    access_before_schedule=row.EventSchema.access_before_schedule,  # noqa: E501
+                    one_time_completion=row.EventSchema.one_time_completion,
+                    timer=row.EventSchema.timer,
+                    timer_type=row.EventSchema.timer_type,
+                    user_id=user_id,
+                    periodicity=Periodicity(
+                        id=row.EventSchema.periodicity_id,
+                        type=row.type,
+                        start_date=row.start_date,
+                        end_date=row.end_date,
+                        selected_date=row.selected_date,
+                    ),
+                    activity_id=row.activity_id,
+                    flow_id=row.flow_id,
+                )
+            )
+
+        return events_map, event_ids
+
     async def delete_by_ids(self, ids: list[uuid.UUID]) -> None:
         """Delete event by event ids."""
         query: Query = delete(EventSchema)
@@ -410,6 +510,144 @@ class EventCRUD(BaseCRUD[EventSchema]):
                 )
             )
         return events
+
+    async def get_general_events_by_applets_and_user(
+        self,
+        applet_ids: list[uuid.UUID],
+        user_id: uuid.UUID,
+        min_end_date: date | None = None,
+        max_start_date: date | None = None,
+    ) -> tuple[dict[uuid.UUID, list[EventFull]], set[uuid.UUID]]:
+        """Get general events by applet_id and user_id"""
+        # select flow_ids to exclude
+        flow_ids = (
+            select(distinct(FlowEventsSchema.flow_id))
+            .select_from(FlowEventsSchema)
+            .join(
+                UserEventsSchema,
+                UserEventsSchema.event_id == FlowEventsSchema.event_id,
+            )
+            .join(
+                EventSchema,
+                EventSchema.id == FlowEventsSchema.event_id,
+            )
+            .where(UserEventsSchema.user_id == user_id)
+            .where(EventSchema.applet_id.in_(applet_ids))
+        )
+        activity_ids = (
+            select(distinct(ActivityEventsSchema.activity_id))
+            .select_from(ActivityEventsSchema)
+            .join(
+                UserEventsSchema,
+                UserEventsSchema.event_id == ActivityEventsSchema.event_id,
+            )
+            .join(
+                EventSchema,
+                EventSchema.id == ActivityEventsSchema.event_id,
+            )
+            .where(UserEventsSchema.user_id == user_id)
+            .where(EventSchema.applet_id.in_(applet_ids))
+        )
+
+        query: Query = select(
+            EventSchema,
+            PeriodicitySchema.start_date,
+            PeriodicitySchema.end_date,
+            PeriodicitySchema.selected_date,
+            PeriodicitySchema.type,
+            ActivityEventsSchema.activity_id,
+            FlowEventsSchema.flow_id,
+        )
+
+        query = query.join(
+            PeriodicitySchema,
+            PeriodicitySchema.id == EventSchema.periodicity_id,
+        )
+
+        query = query.join(
+            FlowEventsSchema,
+            FlowEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+        query = query.join(
+            ActivityEventsSchema,
+            ActivityEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+        query = query.join(
+            UserEventsSchema,
+            UserEventsSchema.event_id == EventSchema.id,
+            isouter=True,
+        )
+
+        query = query.where(EventSchema.applet_id.in_(applet_ids))
+        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        query = query.where(
+            or_(
+                FlowEventsSchema.flow_id.is_(None),
+                FlowEventsSchema.flow_id.not_in(flow_ids),
+            )
+        )
+        query = query.where(
+            or_(
+                ActivityEventsSchema.activity_id.is_(None),
+                ActivityEventsSchema.activity_id.not_in(activity_ids),
+            )
+        )
+        query = query.where(UserEventsSchema.user_id == None)  # noqa: E711
+        if min_end_date and max_start_date:
+            query = query.where(
+                or_(
+                    PeriodicitySchema.type == PeriodicityType.ALWAYS,
+                    and_(
+                        PeriodicitySchema.type != PeriodicityType.ONCE,
+                        or_(
+                            PeriodicitySchema.start_date.is_(None),
+                            PeriodicitySchema.start_date <= max_start_date,
+                        ),
+                        or_(
+                            PeriodicitySchema.end_date.is_(None),
+                            PeriodicitySchema.end_date >= min_end_date,
+                        ),
+                    ),
+                    and_(
+                        PeriodicitySchema.type == PeriodicityType.ONCE,
+                        PeriodicitySchema.selected_date <= max_start_date,
+                        PeriodicitySchema.selected_date >= min_end_date,
+                    ),
+                )
+            )
+
+        db_result = await self._execute(query)
+
+        events_map: dict[uuid.UUID, list[EventFull]] = dict()
+        event_ids: set[uuid.UUID] = set()
+        for row in db_result:
+            event_ids.add(row.EventSchema.id)
+            events_map.setdefault(row.EventSchema.applet_id, list())
+            events_map[row.EventSchema.applet_id].append(
+                EventFull(
+                    id=row.EventSchema.id,
+                    start_time=row.EventSchema.start_time,
+                    end_time=row.EventSchema.end_time,
+                    access_before_schedule=row.EventSchema.access_before_schedule,  # noqa: E501
+                    one_time_completion=row.EventSchema.one_time_completion,
+                    timer=row.EventSchema.timer,
+                    timer_type=row.EventSchema.timer_type,
+                    user_id=user_id,
+                    periodicity=Periodicity(
+                        id=row.EventSchema.periodicity_id,
+                        type=row.type,
+                        start_date=row.start_date,
+                        end_date=row.end_date,
+                        selected_date=row.selected_date,
+                    ),
+                    activity_id=row.activity_id,
+                    flow_id=row.flow_id,
+                )
+            )
+
+        return events_map, event_ids
 
     async def count_general_events_by_user(
         self, applet_id: uuid.UUID, user_id: uuid.UUID

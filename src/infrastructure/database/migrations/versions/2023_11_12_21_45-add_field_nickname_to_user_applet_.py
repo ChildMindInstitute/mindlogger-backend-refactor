@@ -25,7 +25,7 @@ def upgrade() -> None:
     conn = op.get_bind()
     result = conn.execute(
         sa.text(
-            "SELECT id, meta FROM user_applet_accesses WHERE role='respondent'"
+            "SELECT id, meta FROM user_applet_accesses WHERE role='respondent' and meta is NOT NULL"
         )
     )
     op.add_column(

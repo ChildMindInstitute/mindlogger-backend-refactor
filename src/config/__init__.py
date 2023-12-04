@@ -17,7 +17,7 @@ from config.secret import SecretSettings
 from config.sentry import SentrySettings
 from config.service import JsonLdConverterSettings, ServiceSettings
 from config.superuser import SuperAdmin
-from config.task import AnswerEncryption
+from config.task import AnswerEncryption, AudioFileConvert
 
 
 # NOTE: Settings powered by pydantic
@@ -79,8 +79,13 @@ class Settings(BaseSettings):
     anonymous_respondent = AnonymousRespondent()
 
     task_answer_encryption = AnswerEncryption()
+    task_audio_file_convert = AudioFileConvert()
 
     logs: Logs = Logs()
+
+    @property
+    def uploads_dir(self):
+        return self.root_dir.parent / "uploads"
 
     class Config:
         env_nested_delimiter = "__"

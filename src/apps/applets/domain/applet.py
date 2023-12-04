@@ -4,13 +4,16 @@ import uuid
 from pydantic import Field, PositiveInt, root_validator
 
 from apps.activities.domain.activity import (
+    ActivityLanguageWithItemsMobileDetailPublic,
     ActivitySingleLanguageDetail,
     ActivitySingleLanguageDetailPublic,
+    ActivitySingleLanguageMobileDetailPublic,
 )
 from apps.activities.errors import PeriodIsRequiredError
 from apps.activity_flows.domain.flow import (
     FlowSingleLanguageDetail,
     FlowSingleLanguageDetailPublic,
+    FlowSingleLanguageMobileDetailPublic,
 )
 from apps.applets.domain.base import (
     AppletBaseInfo,
@@ -18,7 +21,7 @@ from apps.applets.domain.base import (
     Encryption,
 )
 from apps.shared.domain import InternalModel, PublicModel, Response
-from apps.themes.domain import PublicTheme, Theme
+from apps.themes.domain import PublicTheme, PublicThemeMobile, Theme
 from apps.workspaces.domain.constants import DataRetention
 
 
@@ -58,6 +61,25 @@ class AppletSingleLanguageDetailPublic(AppletFetchBase, PublicModel):
         default_factory=list
     )
     theme: PublicTheme | None = None
+
+
+class AppletSingleLanguageDetailMobilePublic(PublicModel):
+    id: uuid.UUID
+    display_name: str
+    version: str
+    description: str
+    about: str
+    image: str = ""
+    watermark: str = ""
+    theme: PublicThemeMobile | None = None
+    activities: list[ActivitySingleLanguageMobileDetailPublic] = Field(
+        default_factory=list
+    )
+    activity_flows: list[FlowSingleLanguageMobileDetailPublic] = Field(
+        default_factory=list
+    )
+    encryption: Encryption | None
+    stream_enabled: bool | None
 
 
 class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
@@ -118,4 +140,12 @@ class AppletDataRetention(InternalModel):
 
 
 class AppletRetrieveResponse(Response[AppletSingleLanguageDetailPublic]):
+    respondent_meta: dict | None = None
+
+
+class AppletActivitiesDetailsPublic(PublicModel):
+    activities_details: list[
+        ActivityLanguageWithItemsMobileDetailPublic
+    ] = Field(default_factory=list)
+    applet_detail: AppletSingleLanguageDetailMobilePublic
     respondent_meta: dict | None = None

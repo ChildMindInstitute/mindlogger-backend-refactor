@@ -19,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import Values
+from sqlalchemy.sql.elements import BooleanClauseList
 
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
@@ -435,6 +436,97 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             activities=activities,
             activity_flows=flows,
         )
+
+    async def get_completed_answers_data_list(
+        self,
+        applets_version_map: dict[uuid.UUID, str],
+        respondent_id: uuid.UUID,
+        from_date: datetime.date,
+    ) -> list[AppletCompletedEntities]:
+        is_completed = or_(
+            AnswerSchema.is_flow_completed,
+            AnswerSchema.flow_history_id.is_(None),
+        )
+
+        applet_version_filter_list: list[BooleanClauseList] = list()
+        for applet_id, version in applets_version_map.items():
+            applet_version_filter_list.append(
+                and_(
+                    AnswerSchema.applet_id == applet_id,
+                    AnswerSchema.version == version,
+                )
+            )
+        applet_version_filter: BooleanClauseList = or_(
+            *applet_version_filter_list
+        )
+
+        query: Query = (
+            select(
+                AnswerSchema.id.label("answer_id"),
+                AnswerSchema.applet_id,
+                AnswerSchema.submit_id,
+                AnswerSchema.activity_history_id,
+                AnswerSchema.flow_history_id,
+                AnswerItemSchema.scheduled_event_id,
+                AnswerItemSchema.local_end_date,
+                AnswerItemSchema.local_end_time,
+            )
+            .join(
+                AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
+            )
+            .where(
+                AnswerSchema.respondent_id == respondent_id,
+                AnswerItemSchema.local_end_date >= from_date,
+                is_completed,
+            )
+            .where(applet_version_filter)
+            .order_by(
+                AnswerSchema.activity_history_id,
+                AnswerSchema.flow_history_id,
+                AnswerItemSchema.scheduled_event_id,
+                AnswerItemSchema.local_end_date.desc(),
+                AnswerItemSchema.local_end_time.desc(),
+            )
+            .distinct(
+                AnswerSchema.activity_history_id,
+                AnswerSchema.flow_history_id,
+                AnswerItemSchema.scheduled_event_id,
+            )
+        )
+
+        db_result = await self._execute(query)
+        data = db_result.all()
+
+        applet_activities_flows_map: dict[uuid.UUID, dict[str, list]] = dict()
+        for row in data:
+            applet_activities_flows_map.setdefault(
+                row.applet_id, {"activities": [], "flows": []}
+            )
+            if row.flow_history_id:
+                applet_activities_flows_map[row.applet_id]["flows"].append(
+                    CompletedEntity(**row, id=row.flow_history_id)
+                )
+            else:
+                applet_activities_flows_map[row.applet_id][
+                    "activities"
+                ].append(CompletedEntity(**row, id=row.activity_history_id))
+
+        result_list: list[AppletCompletedEntities] = list()
+        for applet_id, version in applets_version_map.items():
+            result_list.append(
+                AppletCompletedEntities(
+                    id=applet_id,
+                    version=version,
+                    activities=applet_activities_flows_map.get(
+                        applet_id, {"activities": [], "flows": []}
+                    )["activities"],
+                    activity_flows=applet_activities_flows_map.get(
+                        applet_id, {"activities": [], "flows": []}
+                    )["flows"],
+                )
+            )
+
+        return result_list
 
     async def get_latest_applet_version(self, applet_id: uuid.UUID) -> str:
         query: Query = select(AnswerSchema.applet_history_id)
