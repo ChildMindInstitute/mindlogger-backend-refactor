@@ -1,3 +1,4 @@
+import datetime
 import json
 import uuid
 
@@ -66,6 +67,7 @@ class PublicNotificationLog(_NotificationLogBase, PublicModel):
     notification_descriptions: list
     notification_in_queue: list
     scheduled_notifications: list
+    created_at: datetime.datetime
 
     @validator(
         "notification_descriptions",
