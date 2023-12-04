@@ -273,6 +273,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             UserAppletAccessSchema.applet_id == AppletSchema.id,
         )
         query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
         if exclude_applet_id:
             query = query.where(AppletSchema.id != exclude_applet_id)
         query = query.where(

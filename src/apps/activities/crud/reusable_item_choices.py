@@ -39,7 +39,6 @@ class ReusableItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
     async def get_item_templates_count(self, user_id_: uuid.UUID) -> int:
         query: Query = select(count(ReusableItemChoiceSchema.id))
         query = query.where(ReusableItemChoiceSchema.user_id == user_id_)
-        query = query.order_by(ReusableItemChoiceSchema.id)
         db_result = await self._execute(query)
 
         return db_result.scalars().first() or 0

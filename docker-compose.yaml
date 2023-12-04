@@ -1,9 +1,12 @@
-version: "3"
+version: "3.4"
 
 services:
 
   postgres:
-    image: postgres:14
+    build:
+      context: .
+      dockerfile: ./compose/postgres/Dockerfile
+    image: mindlogger_postgres
     container_name: mindlogger_postgres
     environment:
       POSTGRES_HOST: ${DATABASE__HOST}
@@ -35,6 +38,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
+      target: base
     container_name: mindlogger_app
     entrypoint: /fastapi-entrypoint
     command: /fastapi-start
@@ -47,11 +51,13 @@ services:
       - 8000:80
     volumes:
       - ./:/app/
+      - ./uploads/:/app/uploads/
 
   worker:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
+      target: worker
     image: mindlogger_worker
     container_name: mindlogger_worker
     entrypoint: /fastapi-entrypoint
@@ -94,10 +100,33 @@ services:
     container_name: mindlogger_mongo
     volumes:
       - db_data:/data/db
-    
-    
+
+  minio:
+    image: minio/minio
+    container_name: mindlogger_minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioaccess
+      MINIO_ROOT_PASSWORD: miniosecret
+    volumes:
+      - datastore:/data
+    command: server --console-address ":9001" /data
+
+  createbuckets:
+    image: minio/mc
+    container_name: mindlogger_minio_mc
+    environment:
+      CDN__BUCKET: "${CDN__BUCKET:-media}"
+    depends_on:
+      - minio
+    volumes:
+      - './compose/minio:/etc/minio'
+    entrypoint: /etc/minio/create_bucket.sh
+
 
 volumes:
   pg_data: {}
   db_data: {}
-  
+  datastore: {}
