@@ -34,6 +34,7 @@ class AppletHistory(InternalModel):
     report_include_case_id: bool = False
     report_email_body: str = ""
     stream_enabled: bool | None = None
+    version: str
 
 
 class AppletHistoryChange(InternalModel):
@@ -44,7 +45,7 @@ class AppletHistoryChange(InternalModel):
     """
 
     display_name: str | None = None
-    changes: list[str] | None = Field(default_factory=list)
+    changes: list[str] = Field(default_factory=list)
     activities: list[ActivityHistoryChange] = Field(default_factory=list)
     activity_flows: list[ActivityFlowHistoryChange] = Field(
         default_factory=list

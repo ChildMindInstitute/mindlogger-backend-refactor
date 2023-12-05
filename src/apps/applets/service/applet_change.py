@@ -1,4 +1,4 @@
-from apps.applets.domain import AppletHistory
+from apps.applets.domain import AppletHistory, AppletHistoryChange
 from apps.shared.changes_generator import EMPTY_VALUES, BaseChangeGenerator
 
 
@@ -14,12 +14,23 @@ class AppletChangeService(BaseChangeGenerator):
         # Ask better verbose name
         "report_recipients": "Email recipients",
         "report_include_user_id": "Include respondent in the Subject and Attachment",  # noqa E501
-        # Where is this field
         "report_email_body": "Email Body",
         "stream_enabled": "Enable streaming of response data",
     }
 
     def compare(
+        self, old_applet: AppletHistory, new_applet: AppletHistory
+    ) -> AppletHistoryChange:
+        change = AppletHistoryChange()
+        if old_applet.version == new_applet.version:
+            change.display_name = f"New applet {new_applet.display_name} added"
+            change.changes = self.get_changes(None, new_applet)
+        else:
+            change.display_name = f"Applet {new_applet.display_name} updated"
+            change.changes = self.get_changes(old_applet, new_applet)
+        return change
+
+    def get_changes(
         self, old_applet: AppletHistory | None, new_applet: AppletHistory
     ) -> list[str]:
         changes = []
@@ -58,5 +69,4 @@ class AppletChangeService(BaseChangeGenerator):
                         verbose_name, new_value
                     )
                 )
-
         return changes
