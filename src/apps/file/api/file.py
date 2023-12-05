@@ -49,7 +49,7 @@ async def upload(
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_media_bucket),
 ) -> Response[ContentUploadedFile]:
-    converters = [convert_not_supported_audio, convert_not_supported_image]
+    converters = [convert_not_supported_audio]
 
     to_close = []
     to_delete = []
@@ -181,15 +181,42 @@ async def answer_upload(
     ):
         raise AnswerViewAccessDenied()
 
-    cdn_client = await select_storage(applet_id, session)
-    unique = f"{user.id}/{applet_id}"
-    cleaned_file_id = (
-        file_id.strip() if file_id else f"{uuid.uuid4()}/{file.filename}"
-    )
-    key = cdn_client.generate_key(
-        FileScopeEnum.ANSWER, unique, cleaned_file_id
-    )
-    await cdn_client.upload(key, file.file)
+    converters = [convert_not_supported_image]
+
+    to_close = []
+    to_delete = []
+    try:
+        res = None
+        for converter in converters:
+            if (res := await converter(file)) is not None:
+                break
+
+        if res is not None:
+            filename, fout = res
+            to_delete.append(fout)
+
+            reader = open(fout, "rb")
+            to_close.append(reader)
+        else:
+            filename = file.filename
+            reader = file.file  # type: ignore[assignment]
+
+        cdn_client = await select_storage(applet_id, session)
+        unique = f"{user.id}/{applet_id}"
+        cleaned_file_id = (
+            file_id.strip() if file_id else f"{uuid.uuid4()}/{filename}"
+        )
+        key = cdn_client.generate_key(
+            FileScopeEnum.ANSWER, unique, cleaned_file_id
+        )
+        await cdn_client.upload(key, reader)
+    finally:
+        for f in to_close:
+            f.close()
+
+        for path in to_delete:
+            os.remove(path)
+
     result = AnswerUploadedFile(
         key=key,
         url=cdn_client.generate_private_url(key),
