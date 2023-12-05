@@ -42,7 +42,7 @@ async def preprocess_arbitrary_url(
     schema: ArbitraryPreprocessor | None = None,
     session=Depends(get_session),
 ) -> Optional[str]:
-    if schema:
+    if schema and schema.applet_id:
         return await get_arbitrary_info(schema.applet_id, session)
     elif applet_id:
         return await get_arbitrary_info(applet_id, session)

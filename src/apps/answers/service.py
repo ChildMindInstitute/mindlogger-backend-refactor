@@ -498,7 +498,28 @@ class AnswerService:
         reviews = await AnswerItemsCRUD(
             self.answer_session
         ).get_reviews_by_answer_id(answer_id, activity_items)
-        return reviews
+
+        user_ids = [rev.respondent_id for rev in reviews]
+        users = await UsersCRUD(self.session).get_by_ids(user_ids)
+        results = []
+        for schema in reviews:
+            user = next(
+                filter(lambda u: u.id == schema.respondent_id, users), None
+            )
+            if not user:
+                continue
+            results.append(
+                AnswerReview(
+                    reviewer_public_key=schema.user_public_key,
+                    answer=schema.answer,
+                    item_ids=schema.item_ids,
+                    items=activity_items,
+                    reviewer=dict(
+                        first_name=user.first_name, last_name=user.last_name
+                    ),
+                )
+            )
+        return results
 
     async def create_assessment_answer(
         self,
