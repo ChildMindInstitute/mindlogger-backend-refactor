@@ -1,34 +1,28 @@
-import uuid
 import time
+import uuid
 
 import aiohttp
-
 from fastapi import Body, Depends
-from starlette import status
-from starlette.responses import Response as HTTPResponse
 
+from apps.authentication.deps import get_current_user
 from apps.integrations.loris.domain import (
-    UnencryptedApplet,
     LorisServerResponse,
+    UnencryptedApplet,
 )
 from apps.integrations.loris.errors import LorisServerError
 
-from apps.applets.filters import AppletQueryParams
-from apps.applets.service import AppletHistoryService, AppletService
-from apps.authentication.deps import get_current_user
-from apps.mailing.domain import MessageSchema
-from apps.mailing.services import MailingService
-from apps.shared.domain.response import Response
+# from apps.shared.domain.response import Response
 from apps.users.domain import User
-from apps.workspaces.service.check_access import CheckAccessService
-from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
+from infrastructure.logger import logger
+
+# from starlette import status
+# from starlette.responses import Response as HTTPResponse
+
 
 __all__ = [
     "send_applet_data_to_loris",
 ]
-
-from infrastructure.logger import logger
 
 
 # TODO move to env and config
