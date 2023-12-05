@@ -1226,3 +1226,18 @@ class ScheduleService:
             applet_id,
             QueryParams(filters={"respondent_id": respondent_id}),
         )
+
+    async def create_default_schedules_if_not_exist(
+        self,
+        applet_id: uuid.UUID,
+        activity_ids: list[uuid.UUID],
+    ) -> None:
+        """Create default schedules for applet."""
+        activities_without_events = await ActivityEventsCRUD(
+            self.session
+        ).get_missing_events(activity_ids)
+        await self.create_default_schedules(
+            applet_id=applet_id,
+            activity_ids=activities_without_events,
+            is_activity=True,
+        )

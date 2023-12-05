@@ -946,6 +946,22 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
             for activity_event in activity_events
         ]
 
+    async def get_missing_events(
+        self, activity_ids: list[uuid.UUID]
+    ) -> list[uuid.UUID]:
+        query: Query = select(ActivityEventsSchema.activity_id)
+        query.join(
+            ActivitySchema,
+            and_(
+                ActivitySchema.id == ActivityEventsSchema.activity_id,
+                ActivitySchema.is_reviewable.is_(False),
+            ),
+        )
+        query.where(ActivityEventsSchema.activity_id.in_(activity_ids))
+        res = await self._execute(query)
+        db_result = res.scalars().all()
+        return list(set(activity_ids) - set(db_result))
+
 
 class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
     schema_class = FlowEventsSchema
