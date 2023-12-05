@@ -521,14 +521,16 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        activity_version_id = await AnswerItemsCRUD(
+        reviewer_activity_version = await AnswerItemsCRUD(
             self.answer_session
         ).get_assessment_activity_id(answer_id)
-        if not activity_version_id:
+        if not reviewer_activity_version:
             return []
+
+        activity_versions = [t[1] for t in reviewer_activity_version]
         activity_items = await ActivityItemHistoriesCRUD(
             self.session
-        ).get_by_activity_id_version(activity_version_id)
+        ).get_by_activity_id_versions(activity_versions)
 
         reviews = await AnswerItemsCRUD(
             self.answer_session

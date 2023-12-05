@@ -125,12 +125,18 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         db_result = await self._execute(query)
         results = []
         for schema, first_name, last_name in db_result.all():
+            current_version_items = list(
+                filter(
+                    lambda ah: ah.activity_id == schema.assessment_activity_id,
+                    activity_items,
+                )
+            )
             results.append(
                 AnswerReview(
                     reviewer_public_key=schema.user_public_key,
                     answer=schema.answer,
                     item_ids=schema.item_ids,
-                    items=activity_items,
+                    items=current_version_items,
                     reviewer=dict(first_name=first_name, last_name=last_name),
                 )
             )
@@ -223,13 +229,14 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
 
     async def get_assessment_activity_id(
         self, answer_id: uuid.UUID
-    ) -> str | None:
-        query: Query = select(AnswerItemSchema.assessment_activity_id)
+    ) -> list[tuple[uuid.UUID, str]] | None:
+        query: Query = select(
+            AnswerItemSchema.respondent_id,
+            AnswerItemSchema.assessment_activity_id,
+        )
         query = query.where(
             AnswerItemSchema.answer_id == answer_id,
             AnswerItemSchema.is_assessment.is_(True),
         )
-        query = query.limit(1)
         db_result = await self._execute(query)
-        result = db_result.first()
-        return result[0] if result else None
+        return db_result.all()  # noqa
