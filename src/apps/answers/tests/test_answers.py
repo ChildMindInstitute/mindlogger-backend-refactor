@@ -243,6 +243,10 @@ class TestAnswerActivityItems(BaseTest):
             answer=dict(
                 start_time=1690188679657,
                 end_time=1690188731636,
+                itemIds=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0012",
+                ],
             ),
             client=dict(
                 appId="mindlogger-mobile",
@@ -378,6 +382,10 @@ class TestAnswerActivityItems(BaseTest):
             answer=dict(
                 start_time=1690188679657,
                 end_time=1690188731636,
+                itemIds=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0012",
+                ],
             ),
             client=dict(
                 appId="mindlogger-mobile",
