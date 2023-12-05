@@ -9,7 +9,7 @@ from apps.activities.domain.activity_item import (
     ActivityItemSingleLanguageDetail,
     ActivityItemSingleLanguageDetailPublic,
 )
-from apps.activities.domain.scores_reports import ScoresAndReportsMobile
+from apps.activities.domain.scores_reports import ScoresAndReports
 from apps.shared.domain import InternalModel, PublicModel
 
 
@@ -91,4 +91,4 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
     items: list[ActivityItemSingleLanguageDetailPublic] = Field(
         default_factory=list
     )
-    scores_and_reports: ScoresAndReportsMobile | None = None
+    scores_and_reports: ScoresAndReports | None = None
