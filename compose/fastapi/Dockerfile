@@ -45,6 +45,6 @@ USER code
 FROM base as worker
 
 USER root
-RUN apt-get install -y --no-install-recommends ffmpeg
+RUN apt-get install -y --no-install-recommends ffmpeg && apt-get install -y imagemagick
 
 USER code
