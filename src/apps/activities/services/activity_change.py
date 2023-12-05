@@ -1,10 +1,18 @@
-from apps.activities.domain.activity_history import ActivityHistoryFull
+from apps.activities.domain.activity_history import (
+    ActivityHistoryChange,
+    ActivityHistoryFull,
+)
 from apps.activities.domain.scores_reports import (
     Score,
     ScoresAndReports,
     Section,
     SubscaleCalculationType,
     SubscaleSetting,
+)
+from apps.activities.services.activity_item_change import (
+    ActivityItemChangeService,
+    ChangeStatusEnum,
+    group,
 )
 from apps.shared.changes_generator import (
     EMPTY_VALUES,
@@ -229,12 +237,63 @@ class ActivityChangeService(BaseChangeGenerator):
         "subscale_setting": "Subscale Setting option",
     }
 
-    def __init__(self) -> None:
+    def __init__(self, old_version: str, new_version: str) -> None:
         self._sar_service = ScoresAndReportsChangeService()
         self._scale_service = SubscaleSettingChangeService()
+        self._old_version = old_version
+        self._new_version = new_version
         super().__init__()
 
-    def generate_activity_insert(
+    def init_change(self, name: str, state: str) -> ActivityHistoryChange:
+        match state:
+            case ChangeStatusEnum.ADDED:
+                method = self._change_text_generator.added_text
+            case ChangeStatusEnum.UPDATED:
+                method = self._change_text_generator.updated_text
+            case ChangeStatusEnum.REMOVED:
+                method = self._change_text_generator.removed_text
+            case _:
+                raise ValueError("Not Suppported State")
+        return ActivityHistoryChange(name=method((f"Activity {name}")))
+
+    def get_changes(
+        self, activities: list[ActivityHistoryFull]
+    ) -> list[ActivityHistoryChange]:
+        grouped = group(activities, self._new_version)
+        item_service = ActivityItemChangeService(
+            self._old_version, self._new_version
+        )
+        result: list[ActivityHistoryChange] = []
+        for _, (old_activity, new_activity) in grouped.items():
+            if not old_activity and new_activity:
+                change = self.init_change(
+                    new_activity.name, ChangeStatusEnum.ADDED
+                )
+                change.changes = self.get_changes_insert(new_activity)
+                change.items = item_service.get_changes(new_activity.items)
+                result.append(change)
+            elif not new_activity and old_activity:
+                change = self.init_change(
+                    old_activity.name, ChangeStatusEnum.REMOVED
+                )
+                result.append(change)
+            elif new_activity and old_activity:
+                changes = self.get_changes_update(old_activity, new_activity)
+                changes_items = item_service.get_changes(
+                    old_activity.items + new_activity.items
+                )
+
+                if changes or changes_items:
+                    change = self.init_change(
+                        new_activity.name,
+                        ChangeStatusEnum.UPDATED,
+                    )
+                    change.changes = changes
+                    change.items = changes_items
+                    result.append(change)
+        return result
+
+    def get_changes_insert(
         self, new_activity: ActivityHistoryFull
     ) -> list[str]:
         changes: list[str] = list()
@@ -257,7 +316,7 @@ class ActivityChangeService(BaseChangeGenerator):
                 )
         return changes
 
-    def generate_activity_update(
+    def get_changes_update(
         self,
         old_activity: ActivityHistoryFull,
         new_activity: ActivityHistoryFull,

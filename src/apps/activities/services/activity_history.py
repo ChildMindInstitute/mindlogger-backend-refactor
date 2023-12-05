@@ -7,21 +7,11 @@ from apps.activities.domain import (
     ActivityHistoryChange,
     ActivityHistoryFull,
 )
-from apps.activities.domain.activity_full import (
-    ActivityFull,
-    ActivityItemHistoryFull,
-)
-from apps.activities.domain.activity_item_history import (
-    ActivityItemHistoryChange,
-)
+from apps.activities.domain.activity_full import ActivityFull
 from apps.activities.services.activity_change import ActivityChangeService
-from apps.activities.services.activity_item_change import (
-    ActivityItemChangeService,
-)
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
 )
-from apps.shared.changes_generator import ChangeTextGenerator
 
 __all__ = ["ActivityHistoryService"]
 
@@ -73,17 +63,8 @@ class ActivityHistoryService:
     async def get_changes(
         self, prev_version: str
     ) -> list[ActivityHistoryChange]:
-        old_id_version = f"{self._applet_id}_{prev_version}"
-        return await self._get_activity_changes(old_id_version)
+        old_applet_id_version = f"{self._applet_id}_{prev_version}"
 
-    async def _get_activity_changes(
-        self, old_applet_id_version: str
-    ) -> list[ActivityHistoryChange]:
-        changes_generator = ChangeTextGenerator()
-        activity_change_servcie = ActivityChangeService()
-        item_change_service = ActivityItemChangeService()
-
-        activity_changes: list[ActivityHistoryChange] = []
         activity_schemas = await ActivityHistoriesCRUD(
             self.session
         ).retrieve_by_applet_ids(
@@ -96,84 +77,8 @@ class ActivityHistoryService:
             activity.items = await ActivityItemHistoryService(
                 self.session, self._applet_id, self._version
             ).get_by_activity_id_versions([activity.id_version])
-
-        activity_groups = self._group_and_sort_activities_or_items(activities)
-        for _, (old_activity, new_activity) in activity_groups.items():
-            if not old_activity and new_activity:
-                changes_items: list[ActivityItemHistoryChange] = []
-                for item in new_activity.items:  # type: ignore
-                    change = item_change_service.init_change(item.name)
-                    change.changes = item_change_service.generate_activity_items_insert(  # noqa: E501
-                        item
-                    )
-                    changes_items.append(change)
-                activity_changes.append(
-                    ActivityHistoryChange(
-                        name=changes_generator.added_text(
-                            f"Activity {new_activity.name}"
-                        ),
-                        changes=activity_change_servcie.generate_activity_insert(  # noqa: E501
-                            new_activity  # type: ignore
-                        ),
-                        items=changes_items,
-                    )
-                )
-            elif not new_activity and old_activity:
-                activity_changes.append(
-                    ActivityHistoryChange(
-                        name=changes_generator.removed_text(
-                            f"Activity {old_activity.name}"
-                        )
-                    )
-                )
-            elif new_activity and old_activity:
-                changes = activity_change_servcie.generate_activity_update(
-                    old_activity, new_activity  # type: ignore
-                )
-                changes_items = item_change_service.get_changes(
-                    self._group_and_sort_activities_or_items(
-                        old_activity.items + new_activity.items  # type: ignore
-                    ),
-                )
-
-                if changes or changes_items:
-                    activity_changes.append(
-                        ActivityHistoryChange(
-                            name=changes_generator.updated_text(
-                                f"Activity {new_activity.name}"
-                            ),
-                            changes=changes,
-                            items=changes_items,
-                        )
-                    )
-        return activity_changes
-
-    def _group_and_sort_activities_or_items(
-        self, items: list[ActivityHistoryFull] | list[ActivityItemHistoryFull]
-    ) -> dict[
-        uuid.UUID,
-        tuple[ActivityHistoryFull | None, ActivityHistoryFull | None]
-        | tuple[
-            ActivityItemHistoryFull | None,
-            ActivityItemHistoryFull | None,
-        ],
-    ]:
-        groups_map: dict = dict()
-        for item in items:
-            group = groups_map.get(item.id)
-            if not group:
-                if self._version in item.id_version.split("_"):
-                    group = (None, item)
-                else:
-                    group = (item, None)
-            elif group:
-                if self._version in item.id_version.split("_"):
-                    group = (group[0], item)
-                else:
-                    group = (item, group[1])
-            groups_map[item.id] = group
-
-        return groups_map
+        service = ActivityChangeService(prev_version, self._version)
+        return service.get_changes(activities)
 
     async def get_by_history_ids(
         self, activity_ids: list[str]

@@ -1,6 +1,11 @@
+import enum
 import uuid
+from typing import TypeVar
 
-from apps.activities.domain.activity_history import ActivityItemHistoryFull
+from apps.activities.domain.activity_history import (
+    ActivityHistoryFull,
+    ActivityItemHistoryFull,
+)
 from apps.activities.domain.activity_item_history import (
     ActivityItemHistoryChange,
 )
@@ -22,8 +27,38 @@ from apps.shared.changes_generator import (
 
 Generator = ChangeTextGenerator()
 
+GT = TypeVar("GT", ActivityHistoryFull, ActivityItemHistoryFull)
+RGT = TypeVar("RGT", None, ActivityHistoryFull, ActivityItemHistoryFull)
 
-def _process_bool(field_name: str, value: bool, changes: list[str]):
+
+class ChangeStatusEnum(str, enum.Enum):
+    ADDED = "added"
+    UPDATED = "updated"
+    REMOVED = "removed"
+
+
+def group(
+    items: list[GT], new_version: str
+) -> dict[uuid.UUID, tuple[RGT, RGT]]:
+    groups_map: dict = dict()
+    for item in items:
+        group = groups_map.get(item.id)
+        if not group:
+            if new_version in item.id_version.split("_"):
+                group = (None, item)
+            else:
+                group = (item, None)
+        elif group:
+            if new_version in item.id_version.split("_"):
+                group = (group[0], item)
+            else:
+                group = (item, group[1])
+        groups_map[item.id] = group
+
+    return groups_map
+
+
+def _process_bool(field_name: str, value: bool, changes: list[str]) -> None:
     # Invert value for hidden because on UI it will be visibility
     if field_name in ("Activity Visibility", "Item Visibility"):
         value = not value
@@ -306,25 +341,27 @@ class ActivityItemChangeService(BaseChangeGenerator):
         "config": "Settings",
     }
 
-    def __init__(self) -> None:
+    def __init__(self, old_version: str, new_version: str) -> None:
         self._conf_change_service = ConfigChangeService()
         self._resp_vals_change_service = ResponseOptionChangeService()
         self._cond_logic_change_service = ConditionalLogicChangeService()
+        self._old_version = old_version
+        self._new_version = new_version
         super().__init__()
 
-    def init_change(
-        self, item_name: str, updated: bool = False
-    ) -> ActivityItemHistoryChange:
-        method_name = "updated_text" if updated else "added_text"
-        return ActivityItemHistoryChange(
-            name=getattr(self._change_text_generator, method_name)(
-                (f"Item {item_name}")
-            )
-        )
+    def init_change(self, name: str, state: str) -> ActivityItemHistoryChange:
+        match state:
+            case ChangeStatusEnum.ADDED:
+                method = self._change_text_generator.added_text
+            case ChangeStatusEnum.UPDATED:
+                method = self._change_text_generator.updated_text
+            case ChangeStatusEnum.REMOVED:
+                method = self._change_text_generator.removed_text
+            case _:
+                raise ValueError("Not Suppported State")
+        return ActivityItemHistoryChange(name=method((f"Item {name}")))
 
-    def generate_activity_items_insert(
-        self, item: ActivityItemHistoryFull
-    ) -> list[str]:
+    def get_changes_insert(self, item: ActivityItemHistoryFull) -> list[str]:
         changes: list[str] = []
         for (
             field_name,
@@ -337,7 +374,6 @@ class ActivityItemChangeService(BaseChangeGenerator):
                 self._resp_vals_change_service.check_changes(
                     item.response_type, value, changes
                 )
-            # Check name, because type of value can be different
             elif field_name == "config":
                 self._conf_change_service.check_changes(value, changes)
             elif field_name == "conditional_logic":
@@ -355,39 +391,34 @@ class ActivityItemChangeService(BaseChangeGenerator):
         return changes
 
     def get_changes(
-        self,
-        item_groups: dict[
-            uuid.UUID,
-            tuple[
-                ActivityItemHistoryFull | None, ActivityItemHistoryFull | None
-            ],
-        ],
+        self, items: list[ActivityItemHistoryFull]
     ) -> list[ActivityItemHistoryChange]:
-        change_items: list[ActivityItemHistoryChange] = []
+        grouped = group(items, self._new_version)
 
-        for _, (old_item, new_item) in item_groups.items():
+        result: list[ActivityItemHistoryChange] = []
+        for _, (old_item, new_item) in grouped.items():
             if not old_item and new_item:
-                change = self.init_change(new_item.name)
-                change.changes = self.generate_activity_items_insert(new_item)
-                change_items.append(change)
+                change = self.init_change(
+                    new_item.name, ChangeStatusEnum.ADDED
+                )
+                change.changes = self.get_changes_insert(new_item)
+                result.append(change)
             elif not new_item and old_item:
-                change_items.append(
-                    ActivityItemHistoryChange(
-                        name=self._change_text_generator.removed_text(
-                            f"Item {old_item.name}"
-                        )
-                    )
+                change = self.init_change(
+                    old_item.name, ChangeStatusEnum.REMOVED
                 )
             elif new_item and old_item:
-                changes = self.compare_items(old_item, new_item)
+                changes = self.get_changes_update(old_item, new_item)
                 if changes:
-                    change = self.init_change(new_item.name, updated=True)
+                    change = self.init_change(
+                        new_item.name, ChangeStatusEnum.UPDATED
+                    )
                     change.changes = changes
-                    change_items.append(change)
+                    result.append(change)
 
-        return change_items
+        return result
 
-    def compare_items(
+    def get_changes_update(
         self,
         old_item: ActivityItemHistoryFull,
         new_item: ActivityItemHistoryFull,

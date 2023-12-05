@@ -46,6 +46,11 @@ def new_version() -> str:
 
 
 @pytest.fixture
+def item_change_service(old_version, new_version) -> ActivityItemChangeService:
+    return ActivityItemChangeService(old_version, new_version)
+
+
+@pytest.fixture
 def old_id_version(old_version: str) -> str:
     return f"{TEST_UUID}_{old_version}"
 
@@ -505,6 +510,7 @@ def test_single_selection_config_timer_was_added(
 
 def test_initial_version_changes(
     new_item: ActivityItemHistoryFull,
+    item_change_service: ActivityItemChangeService,
 ) -> None:
     # NOTE: for another response types initial changes can be different
     single_select_exp_changes = [
@@ -525,26 +531,25 @@ def test_initial_version_changes(
         "Add Text Input Option was disabled",
         "Input Required was disabled",
     ]
-    service = ActivityItemChangeService()
-    changes = service.generate_activity_items_insert(new_item)
+    changes = item_change_service.get_changes_insert(new_item)
     assert changes == single_select_exp_changes
 
 
 def test_no_changes_in_versions(
     old_item: ActivityItemHistoryFull,
     new_item: ActivityItemHistoryFull,
+    item_change_service: ActivityItemChangeService,
 ) -> None:
-    service = ActivityItemChangeService()
-    changes = service.compare_items(old_item, new_item)
+    changes = item_change_service.get_changes_update(old_item, new_item)
     assert not changes
 
 
 def test_initial_item_is_hidden_true(
     new_item: ActivityItemHistoryFull,
+    item_change_service: ActivityItemChangeService,
 ) -> None:
     new_item.is_hidden = True
-    service = ActivityItemChangeService()
-    changes = service.generate_activity_items_insert(new_item)
+    changes = item_change_service.get_changes_insert(new_item)
     assert "Item Visibility was disabled" in changes
 
 
@@ -568,12 +573,12 @@ def test_initial_item_is_hidden_true(
 def test_field_changed(
     old_item: ActivityItemHistoryFull,
     new_item: ActivityItemHistoryFull,
+    item_change_service: ActivityItemChangeService,
     field: str,
     value: Any,
     exp_change_msg: str,
 ) -> None:
     setattr(new_item, field, value)
-    service = ActivityItemChangeService()
-    changes = service.compare_items(old_item, new_item)
+    changes = item_change_service.get_changes_update(old_item, new_item)
     assert len(changes) == 1
     assert changes[0] == exp_change_msg
