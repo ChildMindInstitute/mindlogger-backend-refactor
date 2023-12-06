@@ -179,10 +179,12 @@ class ActivityHistoryService:
         )
         return ActivityHistory.from_orm(schema)
 
-    async def get_full(self) -> list[ActivityHistoryFull]:
+    async def get_full(
+        self, non_performance=False
+    ) -> list[ActivityHistoryFull]:
         schemas = await ActivityHistoriesCRUD(
             self.session
-        ).get_by_applet_id_version(self._applet_id_version)
+        ).get_by_applet_id_version(self._applet_id_version, non_performance)
         activities = []
         activity_ids = []
         activity_map = dict()

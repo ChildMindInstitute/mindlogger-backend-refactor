@@ -1217,7 +1217,10 @@ class ReportServerService:
             initial_answer.respondent_id, initial_answer.applet_id
         )
         applet_full = await self._prepare_applet_data(
-            initial_answer.applet_id, initial_answer.version, applet.encryption
+            initial_answer.applet_id,
+            initial_answer.version,
+            applet.encryption,
+            non_performance=True,
         )
 
         encryption = ReportServerEncryption(applet.report_public_key)
@@ -1280,11 +1283,15 @@ class ReportServerService:
         return activity_id == flow["items"][-1]["activityId"].split("_")[0]
 
     async def _prepare_applet_data(
-        self, applet_id: uuid.UUID, version: str, encryption: dict
+        self,
+        applet_id: uuid.UUID,
+        version: str,
+        encryption: dict,
+        non_performance: bool = False,
     ):
         applet_full = await AppletHistoryService(
             self.session, applet_id, version
-        ).get_full()
+        ).get_full(non_performance)
         applet_full.encryption = Encryption(**encryption)
         return applet_full.dict(by_alias=True)
 
