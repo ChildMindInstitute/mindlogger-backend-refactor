@@ -219,36 +219,23 @@ def validate_subscales(values: dict):
     return values
 
 
-def validate_is_performance_task(value: bool, values: dict):
-    # if items type is performance task type or contains part of the name
-    # of some performance task, then is_performance_task must be set
-    items = values.get("items", [])
-    for item in items:
-        for performance_task_type in list(PerformanceTaskType):
-            if performance_task_type in item.response_type:
-                return True
-            if item.response_type == ResponseType.STABILITYTRACKER:
-                return True
-    return value
+def validate_is_performance_task(values: dict):
+    return values["performance_task_type"] in PerformanceTaskType.get_values()
 
 
-def validate_performance_task_type(value: str | None, values: dict):
+def validate_performance_task_type(values: dict):
     # if items type is performance task type or contains part of the name
     # of some performance task, then performance task type must be set
     items = values.get("items", [])
     for item in items:
         if item.response_type == ResponseType.STABILITYTRACKER:
-            for performance_task_type in list(PerformanceTaskType):
-                value = item.dict()["config"]["user_input_type"]
-                if value == performance_task_type:
-                    return value
-    value = next(
-        (
-            performance_task_type
-            for item in items
-            for performance_task_type in list(PerformanceTaskType)
-            if performance_task_type in item.response_type
-        ),
-        None,
-    )
-    return value
+            value = item.dict()["config"]["user_input_type"]
+            for v in PerformanceTaskType.get_values():
+                if value == v:
+                    values["performance_task_type"] = value
+        elif item.response_type in (
+            ResponseType.FLANKER,
+            ResponseType.ABTRAILS,
+        ):
+            values["performance_task_type"] = item.response_type
+    return values

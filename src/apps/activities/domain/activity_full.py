@@ -7,7 +7,6 @@ from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_item_base import BaseActivityItem
 from apps.activities.domain.custom_validation import (
     validate_is_performance_task,
-    validate_performance_task_type,
 )
 from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.shared.domain import InternalModel, PublicModel
@@ -46,13 +45,9 @@ class PublicActivityFull(ActivityBase, PublicModel):
     id: uuid.UUID
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     created_at: datetime
-    is_performance_task: bool = False
     performance_task_type: PerformanceTaskType | None = None
+    is_performance_task: bool = False
 
     @validator("is_performance_task", always=True)
     def validate_is_performance_task_full(cls, value, values):
-        return validate_is_performance_task(value, values)
-
-    @validator("performance_task_type", always=True)
-    def validate_performance_task_type_full(cls, value, values):
-        return validate_performance_task_type(value, values)
+        return validate_is_performance_task(values)

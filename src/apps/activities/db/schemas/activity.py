@@ -23,6 +23,7 @@ class _BaseActivitySchema:
     extra_fields = Column(
         JSONB(), default=dict, server_default=text("'{}'::jsonb")
     )
+    performance_task_type = Column(String(255), nullable=True)
 
 
 class ActivitySchema(Base, _BaseActivitySchema):

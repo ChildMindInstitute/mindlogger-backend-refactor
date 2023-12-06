@@ -5,7 +5,6 @@ from pydantic import Field, validator
 from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.domain.custom_validation import (
     validate_is_performance_task,
-    validate_performance_task_type,
 )
 from apps.activities.domain.response_type_config import (
     PerformanceTaskType,
@@ -47,17 +46,13 @@ class Activity(PublicModel):
     items: list[ActivityItem] = Field(default_factory=list)
     scores_and_reports: ScoresAndReports | None = None
     subscale_setting: SubscaleSetting | None = None
-    is_performance_task: bool = False
     performance_task_type: PerformanceTaskType | None = None
     report_included_item_name: str | None = None
+    is_performance_task: bool = False
 
     @validator("is_performance_task", always=True)
     def validate_is_performance_task(cls, value, values):
-        return validate_is_performance_task(value, values)
-
-    @validator("performance_task_type", always=True)
-    def validate_performance_task_type(cls, value, values):
-        return validate_performance_task_type(value, values)
+        return validate_is_performance_task(values)
 
 
 class ActivityFlowItem(PublicModel):

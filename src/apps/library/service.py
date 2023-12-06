@@ -11,7 +11,6 @@ from apps.activities.crud import (
 )
 from apps.activities.domain.custom_validation import (
     validate_is_performance_task,
-    validate_performance_task_type,
 )
 from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsHistoryCRUD
 from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
@@ -197,11 +196,11 @@ class LibraryService:
                     is_skippable=activity.is_skippable,
                     is_reviewable=activity.is_reviewable,
                     is_performance_task=validate_is_performance_task(
-                        False, {"items": items}
+                        {
+                            "performance_task_type": activity.performance_task_type  # noqa: E501
+                        },
                     ),
-                    performance_task_type=validate_performance_task_type(
-                        None, {"items": items}
-                    ),
+                    performance_task_type=activity.performance_task_type,
                     response_is_editable=activity.response_is_editable,
                     is_hidden=activity.is_hidden,
                     scores_and_reports=activity.scores_and_reports,

@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.activities.domain.scores_reports import (
     ScoresAndReports,
     SubscaleSetting,
@@ -20,3 +21,4 @@ class ActivityBase(BaseModel):
     scores_and_reports: ScoresAndReports | None = None
     subscale_setting: SubscaleSetting | None = None
     report_included_item_name: str | None = None
+    performance_task_type: PerformanceTaskType | None = None
