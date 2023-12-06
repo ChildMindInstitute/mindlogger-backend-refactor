@@ -186,7 +186,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         return schemas
 
     async def get_by_applet_id_version(
-        self, applet_id_version: str
+        self, applet_id_version: str, non_performance=False
     ) -> ActivityHistorySchema:
         query: Query = select(ActivityHistorySchema)
         query = query.where(
@@ -195,6 +195,24 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query = query.where(
             ActivityHistorySchema.is_reviewable == False  # noqa
         )
+        if non_performance:
+            activity_types_query: Query = select(ActivityItemHistorySchema.id)
+            activity_types_query = activity_types_query.where(
+                ActivityItemHistorySchema.response_type.in_(
+                    [
+                        PerformanceTaskType.FLANKER,
+                        PerformanceTaskType.GYROSCOPE,
+                        PerformanceTaskType.TOUCH,
+                        PerformanceTaskType.ABTRAILS,
+                        ResponseType.STABILITYTRACKER,
+                    ]
+                )
+            )
+            activity_types_query = activity_types_query.where(
+                ActivityItemHistorySchema.activity_id
+                == ActivityHistorySchema.id_version
+            )
+            query.where(~exists(activity_types_query))
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
