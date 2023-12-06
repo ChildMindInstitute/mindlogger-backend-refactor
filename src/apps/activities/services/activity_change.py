@@ -14,20 +14,7 @@ from apps.activities.services.activity_item_change import (
     ChangeStatusEnum,
     group,
 )
-from apps.shared.changes_generator import (
-    EMPTY_VALUES,
-    BaseChangeGenerator,
-    ChangeTextGenerator,
-)
-
-Generator = ChangeTextGenerator()
-
-
-def _process_bool(field_name: str, value: bool, changes: list[str]):
-    # Invert value for hidden because on UI it will be visibility
-    if field_name in ("Activity Visibility", "Item Visibility"):
-        value = not value
-    changes.append(Generator.set_bool(field_name, value))
+from apps.shared.changes_generator import EMPTY_VALUES, BaseChangeGenerator
 
 
 class ScoresAndReportsChangeService(BaseChangeGenerator):
@@ -51,7 +38,7 @@ class ScoresAndReportsChangeService(BaseChangeGenerator):
         for key, val in value:
             if isinstance(val, bool):
                 verbose_name = self.field_name_verbose_name_map[key]
-                _process_bool(verbose_name, val, changes)
+                self._populate_bool_changes(verbose_name, val, changes)
             else:
                 for rep in val:
                     verbose_name = self.field_name_verbose_name_map[rep.type]
@@ -77,7 +64,7 @@ class ScoresAndReportsChangeService(BaseChangeGenerator):
                 old_val = getattr(old_value, key)
                 if isinstance(val, bool):
                     vn = self.field_name_verbose_name_map[key]
-                    _process_bool(vn, val, changes)
+                    self._populate_bool_changes(vn, val, changes)
                 elif key == "reports":
                     self.__check_for_changes(val, old_val, "score", changes)
                     self.__check_for_changes(val, old_val, "section", changes)
@@ -307,7 +294,7 @@ class ActivityChangeService(BaseChangeGenerator):
             elif isinstance(value, SubscaleSetting):
                 self._scale_service.check_changes(value, changes)
             elif isinstance(value, bool):
-                _process_bool(verbose_name, value, changes)
+                self._populate_bool_changes(verbose_name, value, changes)
             elif value not in EMPTY_VALUES:
                 changes.append(
                     self._change_text_generator.changed_text(
@@ -338,7 +325,7 @@ class ActivityChangeService(BaseChangeGenerator):
                 )
             elif isinstance(value, bool):
                 if value != old_value:
-                    _process_bool(verbose_name, value, changes)
+                    self._populate_bool_changes(verbose_name, value, changes)
             elif value != old_value:
                 is_initial = old_value in EMPTY_VALUES
                 changes.append(

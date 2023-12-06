@@ -95,3 +95,12 @@ class ChangeTextGenerator:
 class BaseChangeGenerator:
     def __init__(self):
         self._change_text_generator = ChangeTextGenerator()
+
+    def _populate_bool_changes(
+        self, field_name: str, value: bool, changes: list[str]
+    ) -> None:
+        # Invert value for hidden (UI name contains visibility) because on UI
+        # it will be visibility
+        if "Visibility" in field_name:
+            value = not value
+        changes.append(self._change_text_generator.set_bool(field_name, value))

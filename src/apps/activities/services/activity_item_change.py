@@ -20,12 +20,7 @@ from apps.activities.domain.response_type_config import (
     AdditionalResponseOption,
     ResponseType,
 )
-from apps.shared.changes_generator import (
-    BaseChangeGenerator,
-    ChangeTextGenerator,
-)
-
-Generator = ChangeTextGenerator()
+from apps.shared.changes_generator import BaseChangeGenerator
 
 GT = TypeVar("GT", ActivityHistoryFull, ActivityItemHistoryFull)
 RGT = TypeVar("RGT", None, ActivityHistoryFull, ActivityItemHistoryFull)
@@ -56,13 +51,6 @@ def group(
         groups_map[item.id] = group
 
     return groups_map
-
-
-def _process_bool(field_name: str, value: bool, changes: list[str]) -> None:
-    # Invert value for hidden because on UI it will be visibility
-    if field_name in ("Activity Visibility", "Item Visibility"):
-        value = not value
-    changes.append(Generator.set_bool(field_name, value))
 
 
 class ConfigChangeService(BaseChangeGenerator):
@@ -100,12 +88,12 @@ class ConfigChangeService(BaseChangeGenerator):
         for key, val in value:
             if isinstance(val, bool):
                 verbose_name = self.field_name_verbose_name_map[key]
-                _process_bool(verbose_name, val, changes)
+                self._populate_bool_changes(verbose_name, val, changes)
 
             elif isinstance(val, AdditionalResponseOption):
                 for k, v in val:
                     verbose_name = self.field_name_verbose_name_map[k]
-                    _process_bool(verbose_name, v, changes)
+                    self._populate_bool_changes(verbose_name, v, changes)
             elif val:
                 verbose_name = self.field_name_verbose_name_map[key]
                 changes.append(
@@ -122,14 +110,14 @@ class ConfigChangeService(BaseChangeGenerator):
             if val != old_val:
                 if isinstance(val, bool):
                     vn = self.field_name_verbose_name_map[key]
-                    _process_bool(vn, val, changes)
+                    self._populate_bool_changes(vn, val, changes)
                 elif isinstance(val, AdditionalResponseOption):
                     for k, v in val:
                         old_v = getattr(old_val, k)
                         if v != old_v:
                             vn = self.field_name_verbose_name_map[k]
                             if isinstance(v, bool):
-                                _process_bool(vn, v, changes)
+                                self._populate_bool_changes(vn, v, changes)
                 elif val != old_val:
                     vn = self.field_name_verbose_name_map[key]
                     changes.append(
@@ -369,7 +357,7 @@ class ActivityItemChangeService(BaseChangeGenerator):
         ) in self.field_name_verbose_name_map.items():
             value = getattr(item, field_name)
             if isinstance(value, bool):
-                _process_bool(verbose_name, value, changes)
+                self._populate_bool_changes(verbose_name, value, changes)
             elif field_name == "response_values":
                 self._resp_vals_change_service.check_changes(
                     item.response_type, value, changes
@@ -433,7 +421,7 @@ class ActivityItemChangeService(BaseChangeGenerator):
             old_value = getattr(old_item, field_name)
             if isinstance(value, bool):
                 if value != old_value:
-                    _process_bool(verbose_name, value, changes)
+                    self._populate_bool_changes(verbose_name, value, changes)
             elif field_name == "response_values":
                 self._resp_vals_change_service.check_changes_update(
                     new_item.response_type, old_value, value, changes
