@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     apps_dir: Path
     locale_dir: Path
     default_language: str = "en"
-    content_length_limit: int | None = 16 * 1024 * 1024
+    content_length_limit: int | None = 150 * 1024 * 1024
 
     debug: bool = True
     commit_id: str = "Not assigned"
