@@ -280,7 +280,9 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         subquery = subquery.subquery()
 
         query = update(ActivityHistorySchema)
-        query = query.where(ActivityHistorySchema.id_version.in_(subquery))
+        query = query.where(
+            ActivityHistorySchema.id_version.in_(select([subquery]))
+        )
         query = query.values(**values)
         query = query.returning(ActivityHistorySchema)
         await self._execute(query)
