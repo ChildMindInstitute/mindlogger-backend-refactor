@@ -61,6 +61,7 @@ from apps.answers.errors import (
     ActivityIsNotAssessment,
     AnswerAccessDeniedError,
     AnswerNoteAccessDeniedError,
+    AnswerNotFoundError,
     NonPublicAppletError,
     ReportServerError,
     ReportServerIsNotConfigured,
@@ -346,6 +347,8 @@ class AnswerService:
         answer_items = await AnswerItemsCRUD(
             self.answer_session
         ).get_by_answer_and_activity(answer_id, [pk(activity_id)])
+        if not answer_items:
+            raise AnswerNotFoundError()
         answer_item = answer_items[0]
 
         activity_items = await ActivityItemHistoryService(
