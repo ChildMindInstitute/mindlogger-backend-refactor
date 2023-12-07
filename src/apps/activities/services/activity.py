@@ -1,6 +1,6 @@
 import uuid
 
-from apps.activities.crud import ActivitiesCRUD
+from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain.activity import (
     ActivityDuplicate,
@@ -511,6 +511,11 @@ class ActivityService:
     async def update_report(
         self, activity_id: uuid.UUID, schema: ActivityReportConfiguration
     ):
-        await ActivitiesCRUD(self.session).update_by_id(
-            activity_id, **schema.dict(by_alias=False, exclude_unset=True)
-        )
+        crud_list: list[type[ActivitiesCRUD] | type[ActivityHistoriesCRUD]] = [
+            ActivitiesCRUD,
+            ActivityHistoriesCRUD,
+        ]
+        for crud in crud_list:
+            await crud(self.session).update_by_id(
+                activity_id, **schema.dict(by_alias=False, exclude_unset=True)
+            )
