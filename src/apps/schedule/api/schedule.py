@@ -54,8 +54,8 @@ async def schedule_create(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[schedule.respondent_id]
             if schedule.respondent_id
@@ -147,8 +147,8 @@ async def schedule_delete_all(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
         )
     except FirebaseError as e:
@@ -177,8 +177,8 @@ async def schedule_delete_by_id(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[respondent_id] if respondent_id else None,
         )
@@ -209,8 +209,8 @@ async def schedule_update(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[schedule.respondent_id]
             if schedule.respondent_id
@@ -258,8 +258,8 @@ async def schedule_delete_by_user(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[respondent_id],
         )
@@ -356,8 +356,8 @@ async def schedule_remove_individual_calendar(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[respondent_id],
         )
@@ -409,8 +409,8 @@ async def schedule_create_individual(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[respondent_id],
         )
