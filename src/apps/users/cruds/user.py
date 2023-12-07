@@ -148,6 +148,6 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
     async def get_by_ids(self, ids: Collection[uuid.UUID]) -> List[UserSchema]:
         query: Query = select(UserSchema)
-        query.where(UserSchema.id.in_(ids))
+        query = query.where(UserSchema.id.in_(ids))
         db_result = await self._execute(query)
         return db_result.scalars().all()  # noqa

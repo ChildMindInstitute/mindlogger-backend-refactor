@@ -22,6 +22,7 @@ async def select_storage(
     info = await service.get_arbitrary_info(applet_id)
     if not info:
         config_cdn = CdnConfig(
+            endpoint_url=settings.cdn.endpoint_url,
             region=settings.cdn.region,
             bucket=settings.cdn.bucket_answer,
             ttl_signed_urls=settings.cdn.ttl_signed_urls,

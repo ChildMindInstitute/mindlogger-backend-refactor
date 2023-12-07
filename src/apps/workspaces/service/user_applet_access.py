@@ -153,8 +153,10 @@ class UserAppletAccessService:
                 invitation.applet_id, self._user_id, manager_included_roles
             )
 
-        access_schema = await UserAppletAccessCRUD(self.session).save(
-            UserAppletAccessSchema(
+        access_schema = await UserAppletAccessCRUD(
+            self.session
+        ).upsert_user_applet_access(
+            schema=UserAppletAccessSchema(
                 user_id=self._user_id,
                 applet_id=invitation.applet_id,
                 role=invitation.role,
@@ -162,7 +164,9 @@ class UserAppletAccessService:
                 invitor_id=invitation.invitor_id,
                 meta=meta,
                 nickname=respondent_nickname,
-            )
+                is_deleted=False,
+            ),
+            where=UserAppletAccessSchema.soft_exists(exists=False),
         )
 
         if invitation.role != Role.RESPONDENT:
@@ -189,7 +193,7 @@ class UserAppletAccessService:
                     self.session
                 ).upsert_user_applet_access(schema)
 
-        return UserAppletAccess.from_orm(access_schema)
+        return UserAppletAccess.from_orm(access_schema[0])
 
     async def add_role_by_private_invitation(self, role: Role):
         owner_access = await UserAppletAccessCRUD(
