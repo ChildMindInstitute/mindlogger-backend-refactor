@@ -400,7 +400,8 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
-        query = query.where(UserEventsSchema.user_id == respondent_id)
+        if respondent_id:
+            query = query.where(UserEventsSchema.user_id == respondent_id)
 
         result = await self._execute(query)
         return result.scalars().all()
