@@ -1,6 +1,6 @@
 from typing import Callable
 
-from cachetools import LRUCache  # type: ignore[import]
+from cachetools import LRUCache
 from fastapi import Depends
 from pyld import ContextResolver
 from pyld.jsonld import requests_document_loader
@@ -19,7 +19,7 @@ def get_document_loader() -> Callable:
 def get_context_resolver(
     document_loader: Callable = Depends(get_document_loader),
 ) -> ContextResolver:
-    _resolved_context_cache = LRUCache(maxsize=100)
+    _resolved_context_cache: LRUCache = LRUCache(maxsize=100)
     return ContextResolver(_resolved_context_cache, document_loader)
 
 
