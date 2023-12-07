@@ -1150,7 +1150,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["name"] == "PHQ2"
-        assert response.json()["result"][0]["hasAnswer"] is True
+        assert response.json()["result"][0]["hasAnswer"]
 
     @rollback_with_session
     async def test_store_client_meta(self, **kwargs):
