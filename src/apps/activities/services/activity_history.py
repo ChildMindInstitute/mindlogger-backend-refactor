@@ -54,6 +54,7 @@ class ActivityHistoryService:
                     else None,
                     report_included_item_name=activity.report_included_item_name,  # noqa: E501
                     extra_fields=activity.extra_fields,
+                    performance_task_type=activity.performance_task_type,
                 )
             )
 

@@ -201,7 +201,6 @@ class AppletService:
             self.session, self.user_id
         ).remove_applet_activities(applet_id)
         applet = await self._update(applet_id, update_data, next_version)
-
         applet.activities = await ActivityService(
             self.session, self.user_id
         ).update_create(applet_id, update_data.activities)

@@ -179,8 +179,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query = query.distinct(ActivityHistorySchema.id)
         db_result = await self._execute(query)
         schemas = []
-        for activity_history_schema, is_performance in db_result.all():
-            activity_history_schema.is_performance_task = is_performance
+        for activity_history_schema, _ in db_result.all():
             schemas.append(activity_history_schema)
 
         return schemas

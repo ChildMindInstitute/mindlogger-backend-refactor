@@ -6,6 +6,7 @@ from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_item_base import BaseActivityItem
 from apps.activities.domain.custom_validation import (
     validate_item_flow,
+    validate_performance_task_type,
     validate_score_and_sections,
     validate_subscales,
 )
@@ -29,10 +30,10 @@ class ActivityUpdate(ActivityBase, InternalModel):
 
     @root_validator()
     def validate_existing_ids_for_duplicate(cls, values):
-        items = values.get("items", [])
+        items: list[ActivityItemUpdate] = values.get("items", [])
 
         item_names = set()
-        for item in items:  # type:ActivityItemUpdate
+        for item in items:
             if item.name in item_names:
                 raise DuplicateActivityItemNameNameError()
             item_names.add(item.name)
@@ -49,6 +50,10 @@ class ActivityUpdate(ActivityBase, InternalModel):
     @root_validator()
     def validate_subscales(cls, values):
         return validate_subscales(values)
+
+    @root_validator()
+    def validate_performance_task_type(cls, values):
+        return validate_performance_task_type(values)
 
 
 class ActivityReportConfiguration(PublicModel):

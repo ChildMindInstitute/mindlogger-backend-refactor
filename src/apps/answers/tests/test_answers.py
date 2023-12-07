@@ -1318,9 +1318,9 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["count"] == 1
-        assert response.json()["result"][0]["name"] == "PHQ2 new"
-        assert response.json()["result"][0]["isPerformanceTask"] is True
-        assert response.json()["result"][0]["hasAnswer"] is False
+        assert response.json()["result"][0]["name"] == "Flanker"
+        assert response.json()["result"][0]["isPerformanceTask"]
+        assert not response.json()["result"][0]["hasAnswer"]
 
     @rollback
     async def test_get_summary_activities_after_submitted_answer(self):
@@ -1369,7 +1369,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["count"] == 1
-        assert response.json()["result"][0]["name"] == "PHQ2 new"
+        assert response.json()["result"][0]["name"] == "Flanker"
         assert response.json()["result"][0]["isPerformanceTask"]
         assert response.json()["result"][0]["hasAnswer"]
 

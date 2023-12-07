@@ -70,6 +70,7 @@ class ActivityService:
                     order=index + 1,
                     report_included_item_name=activity_data.report_included_item_name,  # noqa: E501
                     extra_fields=activity_data.extra_fields,
+                    performance_task_type=activity_data.performance_task_type,
                 )
             )
 
@@ -179,6 +180,7 @@ class ActivityService:
                     report_included_item_name=(
                         activity_data.report_included_item_name
                     ),
+                    performance_task_type=activity_data.performance_task_type,
                 )
             )
 
@@ -302,6 +304,7 @@ class ActivityService:
                     subscale_setting=schema.subscale_setting,
                     created_at=schema.created_at,
                     report_included_item_name=schema.report_included_item_name,
+                    performance_task_type=schema.performance_task_type,
                 )
             )
         return activities
@@ -421,6 +424,7 @@ class ActivityService:
                 is_hidden=schema.is_hidden,
                 scores_and_reports=schema.scores_and_reports,
                 subscale_setting=schema.subscale_setting,
+                performance_task_type=schema.performance_task_type,
             )
             activity_map[activity.id] = activity
             activities.append(activity)
