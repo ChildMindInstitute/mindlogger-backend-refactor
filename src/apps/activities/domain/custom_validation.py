@@ -219,10 +219,6 @@ def validate_subscales(values: dict):
     return values
 
 
-def validate_is_performance_task(values: dict):
-    return values["performance_task_type"] in PerformanceTaskType.get_values()
-
-
 def validate_performance_task_type(values: dict):
     # if items type is performance task type or contains part of the name
     # of some performance task, then performance task type must be set

@@ -22,3 +22,4 @@ class ActivityBase(BaseModel):
     subscale_setting: SubscaleSetting | None = None
     report_included_item_name: str | None = None
     performance_task_type: PerformanceTaskType | None = None
+    is_performance_task: bool = False

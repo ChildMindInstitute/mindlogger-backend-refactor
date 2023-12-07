@@ -9,9 +9,6 @@ from apps.activities.crud import (
     ActivityHistoriesCRUD,
     ActivityItemHistoriesCRUD,
 )
-from apps.activities.domain.custom_validation import (
-    validate_is_performance_task,
-)
 from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsHistoryCRUD
 from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
 from apps.library.crud import CartCRUD, LibraryCRUD
@@ -195,11 +192,7 @@ class LibraryService:
                     show_all_at_once=activity.show_all_at_once,
                     is_skippable=activity.is_skippable,
                     is_reviewable=activity.is_reviewable,
-                    is_performance_task=validate_is_performance_task(
-                        {
-                            "performance_task_type": activity.performance_task_type  # noqa: E501
-                        },
-                    ),
+                    is_performance_task=activity.is_performance_task,
                     performance_task_type=activity.performance_task_type,
                     response_is_editable=activity.response_is_editable,
                     is_hidden=activity.is_hidden,

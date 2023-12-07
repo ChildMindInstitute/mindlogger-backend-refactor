@@ -1,11 +1,8 @@
 import uuid
 
-from pydantic import Field, validator
+from pydantic import Field
 
 from apps.activities.domain.conditional_logic import ConditionalLogic
-from apps.activities.domain.custom_validation import (
-    validate_is_performance_task,
-)
 from apps.activities.domain.response_type_config import (
     PerformanceTaskType,
     ResponseTypeConfig,
@@ -49,10 +46,6 @@ class Activity(PublicModel):
     performance_task_type: PerformanceTaskType | None = None
     report_included_item_name: str | None = None
     is_performance_task: bool = False
-
-    @validator("is_performance_task", always=True)
-    def validate_is_performance_task(cls, value, values):
-        return validate_is_performance_task(values)
 
 
 class ActivityFlowItem(PublicModel):

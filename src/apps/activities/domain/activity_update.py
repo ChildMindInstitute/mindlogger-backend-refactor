@@ -10,7 +10,6 @@ from apps.activities.domain.custom_validation import (
     validate_score_and_sections,
     validate_subscales,
 )
-from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.activities.errors import DuplicateActivityItemNameNameError
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -28,7 +27,6 @@ class ActivityUpdate(ActivityBase, InternalModel):
     id: uuid.UUID | None
     key: uuid.UUID
     items: list[ActivityItemUpdate]
-    performance_task_type: PerformanceTaskType | None = None
 
     @root_validator()
     def validate_existing_ids_for_duplicate(cls, values):

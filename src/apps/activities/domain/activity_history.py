@@ -100,8 +100,6 @@ class ActivityHistoryTranslatedExport(ActivityBase, PublicModel):
     version: str | None = None
     description: str  # type: ignore[assignment]
     created_at: datetime.datetime
-    performance_task_type: PerformanceTaskType | None = None
-    is_performance_task: bool = False
     items: list[ActivityItemSingleLanguageDetailPublic] = Field(
         default_factory=list
     )

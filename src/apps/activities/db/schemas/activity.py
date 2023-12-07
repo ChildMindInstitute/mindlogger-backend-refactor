@@ -1,6 +1,8 @@
 from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.ext.hybrid import hybrid_property
 
+from apps.activities.domain.response_type_config import PerformanceTaskType
 from infrastructure.database.base import Base
 
 __all__ = ["ActivitySchema", "ActivityHistorySchema"]
@@ -24,6 +26,14 @@ class _BaseActivitySchema:
         JSONB(), default=dict, server_default=text("'{}'::jsonb")
     )
     performance_task_type = Column(String(255), nullable=True)
+
+    @hybrid_property
+    def is_performance_task(self) -> bool:
+        return self.performance_task_type in PerformanceTaskType.get_values()
+
+    @is_performance_task.expression  # type: ignore[no-redef]
+    def is_performance_task(cls) -> bool:
+        return cls.performance_task_type.in_(PerformanceTaskType.get_values())
 
 
 class ActivitySchema(Base, _BaseActivitySchema):
