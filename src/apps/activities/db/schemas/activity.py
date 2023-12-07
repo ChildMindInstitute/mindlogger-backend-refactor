@@ -1,4 +1,13 @@
-from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text, text
+from sqlalchemy import (
+    REAL,
+    Boolean,
+    Column,
+    ForeignKey,
+    String,
+    Text,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -33,7 +42,9 @@ class _BaseActivitySchema:
 
     @is_performance_task.expression  # type: ignore[no-redef]
     def is_performance_task(cls) -> bool:
-        return cls.performance_task_type.in_(PerformanceTaskType.get_values())
+        return func.coalesce(cls.performance_task_type, "").in_(
+            PerformanceTaskType.get_values()
+        )
 
 
 class ActivitySchema(Base, _BaseActivitySchema):
