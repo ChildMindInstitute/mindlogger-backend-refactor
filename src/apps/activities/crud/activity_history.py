@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import any_, distinct, exists, select
+from sqlalchemy import any_, distinct, exists, select, update
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
@@ -271,3 +271,16 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         )
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def update_by_id(self, id_, **values):
+        subquery: Query = select(ActivityHistorySchema.id_version)
+        subquery = subquery.where(ActivityHistorySchema.id == id_)
+        subquery = subquery.limit(1)
+        subquery = subquery.order_by(ActivityHistorySchema.created_at.desc())
+        subquery = subquery.subquery()
+
+        query = update(ActivityHistorySchema)
+        query = query.where(ActivityHistorySchema.id_version.in_(subquery))
+        query = query.values(**values)
+        query = query.returning(ActivityHistorySchema)
+        await self._execute(query)
