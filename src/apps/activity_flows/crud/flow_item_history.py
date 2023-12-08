@@ -1,10 +1,13 @@
+from pydantic import parse_obj_as
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Query
 
+from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activity_flows.db.schemas import (
     ActivityFlowHistoriesSchema,
     ActivityFlowItemHistorySchema,
 )
+from apps.activity_flows.domain.flow_full import FlowItemHistoryFull
 from infrastructure.database import BaseCRUD
 
 __all__ = ["FlowItemHistoriesCRUD"]
@@ -74,3 +77,27 @@ class FlowItemHistoriesCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
         query = query.where(or_(*filters))
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_by_flow_id_versions(
+        self, id_versions: list[str]
+    ) -> list[FlowItemHistoryFull]:
+        query: Query = select(
+            ActivityFlowItemHistorySchema.id,
+            ActivityFlowItemHistorySchema.activity_flow_id,
+            ActivityFlowItemHistorySchema.activity_id,
+            ActivityFlowItemHistorySchema.id_version,
+            ActivityFlowItemHistorySchema.order,
+            ActivityHistorySchema.name,
+        )
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == ActivityFlowItemHistorySchema.activity_id,
+        )
+        query = query.where(
+            ActivityFlowItemHistorySchema.activity_flow_id.in_(id_versions)
+        )
+        query = query.order_by(ActivityFlowItemHistorySchema.order.asc())
+        db_result = await self._execute(query)
+        res = db_result.all()
+        return [parse_obj_as(FlowItemHistoryFull, row) for row in res]

@@ -1,10 +1,6 @@
-import uuid
-
 from apps.activity_flows.crud import FlowItemHistoriesCRUD
 from apps.activity_flows.db.schemas import ActivityFlowItemHistorySchema
-from apps.activity_flows.domain.flow_full import (
-    ActivityFlowItemFull,
-)
+from apps.activity_flows.domain.flow_full import ActivityFlowItemFull
 from apps.migrate.domain.applet_full import AppletMigratedFull
 
 

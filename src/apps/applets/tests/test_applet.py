@@ -1883,7 +1883,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 200
         assert (
             response.json()["result"]["displayName"]
-            == "Applet User daily behave updated updated "
+            == "Applet User daily behave updated updated"
         )
         assert len(response.json()["result"]["activities"]) == 4
 

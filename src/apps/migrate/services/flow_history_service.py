@@ -2,7 +2,7 @@ import uuid
 
 from apps.activity_flows.crud import FlowsHistoryCRUD
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
-from apps.activity_flows.domain.flow_full import FlowFull
+from apps.migrate.domain.flow_full import FlowMigratedFull
 from apps.migrate.domain.applet_full import AppletMigratedFull
 from apps.migrate.services.flow_item_history_service import (
     FlowItemHistoryMigrationService,
@@ -17,7 +17,7 @@ class FlowHistoryMigrationService:
         self.applet_id_version = f"{applet.id}_{version}"
         self.session = session
 
-    async def add(self, flows: list[FlowFull]):
+    async def add(self, flows: list[FlowMigratedFull]):
         flow_items = []
         schemas = []
 
