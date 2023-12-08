@@ -358,7 +358,8 @@ class EventCRUD(BaseCRUD[EventSchema]):
             )
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
-        query = query.where(UserEventsSchema.user_id == respondent_id)
+        if respondent_id:
+            query = query.where(UserEventsSchema.user_id == respondent_id)
 
         result = await self._execute(query)
         return result.scalars().all()
@@ -399,7 +400,8 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
-        query = query.where(UserEventsSchema.user_id == respondent_id)
+        if respondent_id:
+            query = query.where(UserEventsSchema.user_id == respondent_id)
 
         result = await self._execute(query)
         return result.scalars().all()
@@ -945,6 +947,22 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
             ActivityEvent.from_orm(activity_event)
             for activity_event in activity_events
         ]
+
+    async def get_missing_events(
+        self, activity_ids: list[uuid.UUID]
+    ) -> list[uuid.UUID]:
+        query: Query = select(ActivityEventsSchema.activity_id)
+        query.join(
+            ActivitySchema,
+            and_(
+                ActivitySchema.id == ActivityEventsSchema.activity_id,
+                ActivitySchema.is_reviewable.is_(False),
+            ),
+        )
+        query.where(ActivityEventsSchema.activity_id.in_(activity_ids))
+        res = await self._execute(query)
+        db_result = res.scalars().all()
+        return list(set(activity_ids) - set(db_result))
 
 
 class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):

@@ -55,7 +55,7 @@ ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
 class ItemAnswerCreate(InternalModel):
     answer: str | None
     events: str | None
-    item_ids: list[uuid.UUID] | None
+    item_ids: list[uuid.UUID]
     identifier: str | None
     scheduled_time: datetime.datetime | None
     start_time: datetime.datetime

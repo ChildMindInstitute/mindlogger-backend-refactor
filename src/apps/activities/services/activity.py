@@ -1,6 +1,6 @@
 import uuid
 
-from apps.activities.crud import ActivitiesCRUD
+from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain.activity import (
     ActivityDuplicate,
@@ -70,6 +70,7 @@ class ActivityService:
                     order=index + 1,
                     report_included_item_name=activity_data.report_included_item_name,  # noqa: E501
                     extra_fields=activity_data.extra_fields,
+                    performance_task_type=activity_data.performance_task_type,
                 )
             )
 
@@ -116,7 +117,11 @@ class ActivityService:
         # add default schedule for activities
         await ScheduleService(self.session).create_default_schedules(
             applet_id=applet_id,
-            activity_ids=[activity.id for activity in activities],
+            activity_ids=[
+                activity.id
+                for activity in activities
+                if not activity.is_reviewable
+            ],
             is_activity=True,
         )
 
@@ -175,6 +180,7 @@ class ActivityService:
                     report_included_item_name=(
                         activity_data.report_included_item_name
                     ),
+                    performance_task_type=activity_data.performance_task_type,
                 )
             )
 
@@ -298,6 +304,7 @@ class ActivityService:
                     subscale_setting=schema.subscale_setting,
                     created_at=schema.created_at,
                     report_included_item_name=schema.report_included_item_name,
+                    performance_task_type=schema.performance_task_type,
                 )
             )
         return activities
@@ -417,6 +424,7 @@ class ActivityService:
                 is_hidden=schema.is_hidden,
                 scores_and_reports=schema.scores_and_reports,
                 subscale_setting=schema.subscale_setting,
+                performance_task_type=schema.performance_task_type,
             )
             activity_map[activity.id] = activity
             activities.append(activity)
@@ -503,6 +511,11 @@ class ActivityService:
     async def update_report(
         self, activity_id: uuid.UUID, schema: ActivityReportConfiguration
     ):
-        await ActivitiesCRUD(self.session).update_by_id(
-            activity_id, **schema.dict(by_alias=False, exclude_unset=True)
-        )
+        crud_list: list[type[ActivitiesCRUD] | type[ActivityHistoriesCRUD]] = [
+            ActivitiesCRUD,
+            ActivityHistoriesCRUD,
+        ]
+        for crud in crud_list:
+            await crud(self.session).update_by_id(
+                activity_id, **schema.dict(by_alias=False, exclude_unset=True)
+            )

@@ -5,10 +5,8 @@ from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import Query
 
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
-from apps.answers.domain import AnswerReview
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.query_params import QueryParams
-from apps.users import UserSchema
 from infrastructure.database.crud import BaseCRUD
 
 
@@ -111,36 +109,13 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
 
     async def get_reviews_by_answer_id(
         self, answer_id: uuid.UUID, activity_items: list
-    ) -> list[AnswerReview]:
-        query: Query = select(
-            AnswerItemSchema,
-            UserSchema.first_name,
-            UserSchema.last_name,
-        )
-        query = query.join(
-            UserSchema, UserSchema.id == AnswerItemSchema.respondent_id
-        )
+    ) -> list[AnswerItemSchema]:
+        query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
-        query = query.where(AnswerItemSchema.is_assessment == True)  # noqa
+        query = query.where(AnswerItemSchema.is_assessment.is_(True))
+
         db_result = await self._execute(query)
-        results = []
-        for schema, first_name, last_name in db_result.all():
-            current_version_items = list(
-                filter(
-                    lambda ah: ah.activity_id == schema.assessment_activity_id,
-                    activity_items,
-                )
-            )
-            results.append(
-                AnswerReview(
-                    reviewer_public_key=schema.user_public_key,
-                    answer=schema.answer,
-                    item_ids=schema.item_ids,
-                    items=current_version_items,
-                    reviewer=dict(first_name=first_name, last_name=last_name),
-                )
-            )
-        return results
+        return db_result.scalars().all()  # noqa
 
     async def get_respondent_answer(
         self, answer_id: uuid.UUID

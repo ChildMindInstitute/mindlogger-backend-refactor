@@ -60,6 +60,9 @@ class _AnswersExportFilter(Filtering):
     from_date = FilterField(
         AnswerItemSchema.created_at, Comparisons.GREAT_OR_EQUAL
     )
+    to_date = FilterField(
+        AnswerItemSchema.created_at, Comparisons.LESS_OR_EQUAL
+    )
 
 
 class AnswersCRUD(BaseCRUD[AnswerSchema]):
@@ -148,7 +151,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         limit=None,
         **filters,
     ) -> tuple[list[RespondentAnswerData], int]:
-
         reviewed_answer_id = case(
             (AnswerItemSchema.is_assessment.is_(True), AnswerSchema.id),
             else_=null(),

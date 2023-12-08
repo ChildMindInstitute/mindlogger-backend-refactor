@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import distinct, exists, select
+from sqlalchemy import distinct, exists, select, update
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import (
@@ -177,14 +177,13 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query = query.distinct(ActivityHistorySchema.id)
         db_result = await self._execute(query)
         schemas = []
-        for activity_history_schema, is_performance in db_result.all():
-            activity_history_schema.is_performance_task = is_performance
+        for activity_history_schema, _ in db_result.all():
             schemas.append(activity_history_schema)
 
         return schemas
 
     async def get_by_applet_id_version(
-        self, applet_id_version: str
+        self, applet_id_version: str, non_performance=False
     ) -> ActivityHistorySchema:
         query: Query = select(ActivityHistorySchema)
         query = query.where(
@@ -193,6 +192,24 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query = query.where(
             ActivityHistorySchema.is_reviewable == False  # noqa
         )
+        if non_performance:
+            activity_types_query: Query = select(ActivityItemHistorySchema.id)
+            activity_types_query = activity_types_query.where(
+                ActivityItemHistorySchema.response_type.in_(
+                    [
+                        PerformanceTaskType.FLANKER,
+                        PerformanceTaskType.GYROSCOPE,
+                        PerformanceTaskType.TOUCH,
+                        PerformanceTaskType.ABTRAILS,
+                        ResponseType.STABILITYTRACKER,
+                    ]
+                )
+            )
+            activity_types_query = activity_types_query.where(
+                ActivityItemHistorySchema.activity_id
+                == ActivityHistorySchema.id_version
+            )
+            query.where(~exists(activity_types_query))
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
@@ -251,6 +268,21 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         )
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def update_by_id(self, id_, **values):
+        subquery: Query = select(ActivityHistorySchema.id_version)
+        subquery = subquery.where(ActivityHistorySchema.id == id_)
+        subquery = subquery.limit(1)
+        subquery = subquery.order_by(ActivityHistorySchema.created_at.desc())
+        subquery = subquery.subquery()
+
+        query = update(ActivityHistorySchema)
+        query = query.where(
+            ActivityHistorySchema.id_version.in_(select([subquery]))
+        )
+        query = query.values(**values)
+        query = query.returning(ActivityHistorySchema)
+        await self._execute(query)
 
     async def get_assessment_version_id(self, applet: uuid.UUID) -> str:
         query: Query = (

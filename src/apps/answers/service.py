@@ -61,6 +61,7 @@ from apps.answers.errors import (
     ActivityIsNotAssessment,
     AnswerAccessDeniedError,
     AnswerNoteAccessDeniedError,
+    AnswerNotFoundError,
     NonPublicAppletError,
     ReportServerError,
     ReportServerIsNotConfigured,
@@ -346,6 +347,8 @@ class AnswerService:
         answer_items = await AnswerItemsCRUD(
             self.answer_session
         ).get_by_answer_and_activity(answer_id, [pk(activity_id)])
+        if not answer_items:
+            raise AnswerNotFoundError()
         answer_item = answer_items[0]
 
         activity_items = await ActivityItemHistoryService(
@@ -535,7 +538,28 @@ class AnswerService:
         reviews = await AnswerItemsCRUD(
             self.answer_session
         ).get_reviews_by_answer_id(answer_id, activity_items)
-        return reviews
+
+        user_ids = [rev.respondent_id for rev in reviews]
+        users = await UsersCRUD(self.session).get_by_ids(user_ids)
+        results = []
+        for schema in reviews:
+            user = next(
+                filter(lambda u: u.id == schema.respondent_id, users), None
+            )
+            if not user:
+                continue
+            results.append(
+                AnswerReview(
+                    reviewer_public_key=schema.user_public_key,
+                    answer=schema.answer,
+                    item_ids=schema.item_ids,
+                    items=activity_items,
+                    reviewer=dict(
+                        first_name=user.first_name, last_name=user.last_name
+                    ),
+                )
+            )
+        return results
 
     async def create_assessment_answer(
         self,
@@ -1219,7 +1243,10 @@ class ReportServerService:
             initial_answer.respondent_id, initial_answer.applet_id
         )
         applet_full = await self._prepare_applet_data(
-            initial_answer.applet_id, initial_answer.version, applet.encryption
+            initial_answer.applet_id,
+            initial_answer.version,
+            applet.encryption,
+            non_performance=True,
         )
 
         encryption = ReportServerEncryption(applet.report_public_key)
@@ -1282,11 +1309,15 @@ class ReportServerService:
         return activity_id == flow["items"][-1]["activityId"].split("_")[0]
 
     async def _prepare_applet_data(
-        self, applet_id: uuid.UUID, version: str, encryption: dict
+        self,
+        applet_id: uuid.UUID,
+        version: str,
+        encryption: dict,
+        non_performance: bool = False,
     ):
         applet_full = await AppletHistoryService(
             self.session, applet_id, version
-        ).get_full()
+        ).get_full(non_performance)
         applet_full.encryption = Encryption(**encryption)
         return applet_full.dict(by_alias=True)
 

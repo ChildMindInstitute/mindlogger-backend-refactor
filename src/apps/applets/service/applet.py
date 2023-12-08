@@ -44,6 +44,7 @@ from apps.applets.errors import (
 )
 from apps.applets.service.applet_history_service import AppletHistoryService
 from apps.folders.crud import FolderAppletCRUD, FolderCRUD
+from apps.schedule.service import ScheduleService
 from apps.shared.version import (
     INITIAL_VERSION,
     VERSION_DIFFERENCE_ACTIVITY,
@@ -200,13 +201,17 @@ class AppletService:
             self.session, self.user_id
         ).remove_applet_activities(applet_id)
         applet = await self._update(applet_id, update_data, next_version)
-
         applet.activities = await ActivityService(
             self.session, self.user_id
         ).update_create(applet_id, update_data.activities)
         activity_key_id_map = dict()
+        activity_ids = []
+        assessment_id = None
         for activity in applet.activities:
             activity_key_id_map[activity.key] = activity.id
+            activity_ids.append(activity.id)
+            if activity.is_reviewable:
+                assessment_id = activity.id
         applet.activity_flows = await FlowService(self.session).update_create(
             applet_id, update_data.activity_flows, activity_key_id_map
         )
@@ -215,6 +220,19 @@ class AppletService:
             self.session, applet.id, applet.version
         ).add_history(self.user_id, applet)
 
+        event_serv = ScheduleService(self.session)
+        to_await = []
+        if assessment_id:
+            to_await.append(
+                event_serv.delete_by_activity_ids(applet_id, [assessment_id])
+            )
+        to_await.append(
+            event_serv.create_default_schedules_if_not_exist(
+                applet_id=applet.id,
+                activity_ids=activity_ids,
+            )
+        )
+        await asyncio.gather(*to_await)
         return applet
 
     async def update_encryption(

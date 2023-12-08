@@ -106,14 +106,14 @@ class AppletHistoryService:
 
         return prev_version
 
-    async def get_full(self) -> AppletHistoryFull:
+    async def get_full(self, non_performance=False) -> AppletHistoryFull:
         schema = await AppletHistoriesCRUD(self.session).get_by_id_version(
             self._id_version
         )
         applet = AppletHistoryFull.from_orm(schema)
         applet.activities = await ActivityHistoryService(
             self.session, self._applet_id, self._version
-        ).get_full()
+        ).get_full(non_performance)
         applet.activity_flows = await FlowHistoryService(
             self.session, self._applet_id, self._version
         ).get_full()

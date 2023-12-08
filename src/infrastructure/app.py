@@ -64,6 +64,13 @@ routers: Iterable[APIRouter] = (
 
 # Declare your middlewares here
 middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
+    (
+        middlewares_.ContentLengthLimitMiddleware,
+        dict(
+            content_length_limit=settings.content_length_limit,
+            methods=["POST"],
+        ),
+    ),
     (middlewares_.InternalizationMiddleware, {}),
     (middlewares_.CORSMiddleware, middlewares_.cors_options),
 )
