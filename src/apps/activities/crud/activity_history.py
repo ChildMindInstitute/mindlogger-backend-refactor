@@ -285,3 +285,11 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query = query.values(**values)
         query = query.returning(ActivityHistorySchema)
         await self._execute(query)
+
+    async def get_by_activity_id(
+        self, activity_id: uuid.UUID
+    ) -> ActivityHistorySchema:
+        schema = await self._get("id", activity_id)
+        if not schema:
+            raise ActivityHistoryDoeNotExist()
+        return schema

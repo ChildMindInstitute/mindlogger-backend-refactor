@@ -22,6 +22,7 @@ from apps.activities.crud import (
     ActivityItemHistoriesCRUD,
 )
 from apps.activities.domain.activity_history import ActivityHistoryFull
+from apps.activities.errors import ActivityHistoryDoeNotExist
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
@@ -155,6 +156,14 @@ class AnswerService:
                 raise WrongAnswerGroupVersion()
             elif existed_answer.respondent_id != self.user_id:
                 raise WrongRespondentForAnswerGroup()
+
+        activity_history = await ActivityHistoriesCRUD(
+            self.session
+        ).get_by_activity_id(activity_id=applet_answer.activity_id)
+        if not activity_history.applet_id.startswith(
+            f"{applet_answer.applet_id}"
+        ):
+            raise ActivityHistoryDoeNotExist()
 
     async def _validate_applet_for_anonymous_response(
         self, applet_id: uuid.UUID, version: str
