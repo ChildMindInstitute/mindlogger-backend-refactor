@@ -157,9 +157,11 @@ class AnswerService:
             elif existed_answer.respondent_id != self.user_id:
                 raise WrongRespondentForAnswerGroup()
 
-        activity_history = await ActivityHistoriesCRUD(
-            self.session
-        ).get_by_activity_id(activity_id=applet_answer.activity_id)
+        pk = self._generate_history_id(applet_answer.version)
+        activity_history = await ActivityHistoriesCRUD(self.session).get_by_id(
+            pk(applet_answer.activity_id)
+        )
+
         if not activity_history.applet_id.startswith(
             f"{applet_answer.applet_id}"
         ):
