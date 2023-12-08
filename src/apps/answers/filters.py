@@ -33,8 +33,8 @@ class AppletSubmitDateFilter(BaseQueryParams):
 
 class AnswerExportFilters(BaseQueryParams):
     respondent_ids: list[uuid.UUID] | None = Field(Query(None))
-    from_date: datetime.date | None = None
-    to_date: datetime.date | None = None
+    from_date: datetime.datetime | None = None
+    to_date: datetime.datetime | None = None
     limit: int = 10000
 
 

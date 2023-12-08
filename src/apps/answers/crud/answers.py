@@ -58,10 +58,10 @@ class _AnswersExportFilter(Filtering):
         AnswerSchema.activity_history_id, Comparisons.IN
     )
     from_date = FilterField(
-        func.date(AnswerItemSchema.created_at), Comparisons.GREAT_OR_EQUAL
+        AnswerItemSchema.created_at, Comparisons.GREAT_OR_EQUAL
     )
     to_date = FilterField(
-        func.date(AnswerItemSchema.created_at), Comparisons.LESS_OR_EQUAL
+        AnswerItemSchema.created_at, Comparisons.LESS_OR_EQUAL
     )
 
 
@@ -151,7 +151,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         limit=None,
         **filters,
     ) -> tuple[list[RespondentAnswerData], int]:
-
         reviewed_answer_id = case(
             (AnswerItemSchema.is_assessment.is_(True), AnswerSchema.id),
             else_=null(),
