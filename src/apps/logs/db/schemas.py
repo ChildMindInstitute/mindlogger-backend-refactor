@@ -26,7 +26,7 @@ class UserActivityLogSchema(Base):
         nullable=False,
         index=True,
     )
-    device_id = Column(String(), nullable=True)
+    firebase_token_id = Column(String(), nullable=True)
     event_type = Column(String(), nullable=False)
     event = Column(String(), nullable=False)
     user_agent = Column(String(), nullable=True)
@@ -35,5 +35,5 @@ class UserActivityLogSchema(Base):
     def __repr__(self):
         return (
             f"UserActivityLogSchema(id='{self.id}', user_id='{self.user_id}',"
-            f" target='{self.target}', action='{self.action}')"
+            f" event_type='{self.event_type}', event='{self.event}')"
         )

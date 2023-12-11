@@ -1,8 +1,8 @@
 """add-user-activity-logs
 
-Revision ID: bc2fcc0b0cd1
-Revises: 75c9ca1f506b
-Create Date: 2023-11-30 10:41:15.308713
+Revision ID: c4e7691b4fc4
+Revises: 186481f0c0cc
+Create Date: 2023-12-11 13:28:43.125626
 
 """
 import sqlalchemy as sa
@@ -10,8 +10,8 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "bc2fcc0b0cd1"
-down_revision = "75c9ca1f506b"
+revision = "c4e7691b4fc4"
+down_revision = "186481f0c0cc"
 branch_labels = None
 depends_on = None
 
@@ -42,7 +42,7 @@ def upgrade() -> None:
         sa.Column("migrated_updated", sa.DateTime(), nullable=True),
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("device_id", sa.String(), nullable=True),
+        sa.Column("firebase_token_id", sa.String(), nullable=True),
         sa.Column("event_type", sa.String(), nullable=False),
         sa.Column("event", sa.String(), nullable=False),
         sa.Column("user_agent", sa.String(), nullable=True),

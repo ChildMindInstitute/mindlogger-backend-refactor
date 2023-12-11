@@ -26,7 +26,7 @@ async def user_activity_login_log(
 
     schema = UserActivityLogSchema(
         user_id=user.id,
-        device_id=user_login_schema.device_id,
+        firebase_token_id=user_login_schema.device_id,
         event_type=UserActivityEventType.LOGIN,
         event=UserActivityEvent.LOGIN,
         user_agent=request.headers.get("user-agent"),
