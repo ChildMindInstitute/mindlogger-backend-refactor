@@ -151,6 +151,16 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         return db_result.scalars().first() is not None
 
+    async def exist_by_ids(self, ids: list[uuid.UUID]) -> bool:
+        query: Query = select(AppletSchema)
+        query = query.where(AppletSchema.id.in_(ids))
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
+
+        query = query.exists()
+        db_result = await self._execute(select(query))
+
+        return db_result.scalars().first() or False
+
     async def get_by_key(
         self, key: uuid.UUID, require_login=False
     ) -> AppletSchema:
