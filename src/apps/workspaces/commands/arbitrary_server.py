@@ -1,6 +1,7 @@
 import asyncio
 import uuid
 from functools import wraps
+from typing import Optional
 
 import typer
 from pydantic import ValidationError
@@ -156,19 +157,30 @@ async def add(
 @app.command(short_help="Show arbitrary server settings")
 @coro
 async def show(
-    owner_id: uuid.UUID = typer.Argument(..., help="Workspace owner id"),
+    owner_id: Optional[uuid.UUID] = typer.Argument(
+        None, help="Workspace owner id"
+    ),
 ):
     session_maker = session_manager.get_session()
     try:
         async with session_maker() as session:
-            data = await WorkspaceService(
-                session, owner_id
-            ).get_arbitrary_info_by_owner_id(owner_id)
-            if not data:
-                print(
-                    "[bold green]Arbitrary server not configured[/bold green]"
-                )
-                return
-            print_data_table(WorkspaceArbitraryFields.from_orm(data))
+            if owner_id:
+                data = await WorkspaceService(
+                    session, owner_id
+                ).get_arbitrary_info_by_owner_id(owner_id)
+                if not data:
+                    print(
+                        "[bold green]"
+                        "Arbitrary server not configured"
+                        "[/bold green]"
+                    )
+                    return
+                print_data_table(WorkspaceArbitraryFields.from_orm(data))
+            else:
+                workspaces = await WorkspaceService(
+                    session, uuid.uuid4()
+                ).get_arbitrary_list()
+                for data in workspaces:
+                    print_data_table(WorkspaceArbitraryFields.from_orm(data))
     finally:
         await session_maker.remove()
