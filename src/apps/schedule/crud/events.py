@@ -744,11 +744,6 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
     async def get_all(self, applet_id: uuid.UUID) -> list[EventSchema]:
         query: Query = select(EventSchema)
-        query = query.join(
-            UserEventsSchema,
-            UserEventsSchema.event_id == EventSchema.id,
-            isouter=True,
-        )
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted.is_(False))
         result = await self._execute(query)
