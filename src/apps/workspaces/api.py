@@ -454,6 +454,9 @@ async def workspace_managers_applet_access_set(
 ):
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+        await AppletService(session, user.id).exist_by_ids(
+            [access.applet_id for access in accesses.accesses]
+        )
         await CheckAccessService(
             session, user.id
         ).check_workspace_manager_accesses_access(owner_id)
