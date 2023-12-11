@@ -128,17 +128,10 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
     async def get_by_applet_id_for_summary(
         self, applet_id: uuid.UUID
     ) -> list[ActivityHistorySchema]:
-        app_version_query: Query = select([AppletHistorySchema.id_version])
-        app_version_query = app_version_query.where(
-            AppletHistorySchema.id == applet_id
-        )
         query: Query = select(ActivityHistorySchema)
         query = query.join(
             AppletHistorySchema,
             AppletHistorySchema.id_version == ActivityHistorySchema.applet_id,
-        )
-        query = query.where(
-            ActivityHistorySchema.applet_id.in_(app_version_query)
         )
         query = query.where(AppletHistorySchema.id == applet_id)
         query = query.where(ActivityHistorySchema.is_reviewable == false())
@@ -146,6 +139,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
             ActivityHistorySchema.id.desc(),
             ActivityHistorySchema.created_at.desc(),
         )
+        # For each activity get only last version
         query = query.distinct(ActivityHistorySchema.id)
         db_result = await self._execute(query)
         return db_result.scalars().all()
