@@ -1,17 +1,9 @@
 import uuid
 
-from sqlalchemy import distinct, exists, select, update
+from sqlalchemy import distinct, false, select, update
 from sqlalchemy.orm import Query
 
-from apps.activities.db.schemas import (
-    ActivityHistorySchema,
-    ActivityItemHistorySchema,
-    ActivitySchema,
-)
-from apps.activities.domain.response_type_config import (
-    PerformanceTaskType,
-    ResponseType,
-)
+from apps.activities.db.schemas import ActivityHistorySchema, ActivitySchema
 from apps.activities.errors import ActivityHistoryDoeNotExist
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
