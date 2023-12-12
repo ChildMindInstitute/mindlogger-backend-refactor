@@ -5,7 +5,7 @@ from typing import Optional
 import typer
 from rich import print
 
-from apps.answers.commands.crud import AssessmentCRUD
+from apps.answers.crud.assessment_crud import AssessmentCRUD
 from infrastructure.database import atomic, session_manager
 
 app = typer.Typer()
@@ -45,6 +45,7 @@ async def convert(
             async with atomic(session):
                 crud = AssessmentCRUD(session)
                 answers = await crud.get_updated_assessment(assessments)
+        await local.remove()
 
         # Return to arbitrary or local to update
         async with local_or_arb() as session:
@@ -52,6 +53,7 @@ async def convert(
                 crud = AssessmentCRUD(session)
                 for answer in answers:
                     await crud.update(answer)
+        await local_or_arb.remove()
 
     except Exception as ex:
         print(f"[bold red] {ex}")
