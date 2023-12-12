@@ -305,6 +305,7 @@ class ActivityService:
                     created_at=schema.created_at,
                     report_included_item_name=schema.report_included_item_name,
                     performance_task_type=schema.performance_task_type,
+                    is_performance_task=schema.is_performance_task,
                 )
             )
         return activities
@@ -425,6 +426,7 @@ class ActivityService:
                 scores_and_reports=schema.scores_and_reports,
                 subscale_setting=schema.subscale_setting,
                 performance_task_type=schema.performance_task_type,
+                is_performance_task=schema.is_performance_task,
             )
             activity_map[activity.id] = activity
             activities.append(activity)
