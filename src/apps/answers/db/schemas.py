@@ -59,3 +59,4 @@ class AnswerItemSchema(Base):
     local_end_time = Column(Time, nullable=True)
     is_assessment = Column(Boolean())
     migrated_data = Column(JSONB())
+    assessment_activity_id = Column(Text(), nullable=True, index=True)

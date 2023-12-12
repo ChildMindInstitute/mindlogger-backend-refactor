@@ -767,6 +767,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["f0ccc10a-2388-48da-a5a1-35e9b19cde5d"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.1.0"
+                ),
             ),
         )
 
@@ -797,6 +800,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.1.0"
+                ),
             ),
         )
 
@@ -957,6 +963,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.1.0"
+                ),
             ),
         )
 
@@ -1320,6 +1329,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.1.0"
+                ),
             ),
         )
 

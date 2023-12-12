@@ -368,3 +368,9 @@ class WorkspaceService:
         for k, v in data.dict(by_alias=False).items():
             setattr(schema, k, v)
         await repository.update_by_user_id(schema.user_id, schema)
+
+    async def get_arbitrary_list(self) -> list[WorkspaceArbitrary]:
+        schemas = await UserWorkspaceCRUD(self.session).get_arbitrary_list()
+        if not schemas:
+            return []
+        return [WorkspaceArbitrary.from_orm(schema) for schema in schemas]
