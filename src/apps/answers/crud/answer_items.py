@@ -104,9 +104,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(AnswerItemSchema.respondent_id == user_id)
         query = query.where(AnswerItemSchema.is_assessment == True)  # noqa
-
         db_result = await self._execute(query)
-
         return db_result.scalars().first()
 
     async def get_reviews_by_answer_id(
@@ -203,3 +201,17 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
             )
         db_result = await self._execute(query)
         return db_result.all()
+
+    async def get_assessment_activity_id(
+        self, answer_id: uuid.UUID
+    ) -> list[tuple[uuid.UUID, str]] | None:
+        query: Query = select(
+            AnswerItemSchema.respondent_id,
+            AnswerItemSchema.assessment_activity_id,
+        )
+        query = query.where(
+            AnswerItemSchema.answer_id == answer_id,
+            AnswerItemSchema.is_assessment.is_(True),
+        )
+        db_result = await self._execute(query)
+        return db_result.all()  # noqa
