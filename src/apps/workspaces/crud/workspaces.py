@@ -185,4 +185,4 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         query: Query = select(UserWorkspaceSchema)
         query = query.where(UserWorkspaceSchema.database_uri.isnot(None))
         result: Result = await self._execute(query)
-        return result.scalars().one_or_none()
+        return result.scalars().all()
