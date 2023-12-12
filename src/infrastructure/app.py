@@ -23,6 +23,7 @@ import apps.themes.router as themes
 import apps.transfer_ownership.router as transfer_ownership
 import apps.users.router as users
 import apps.workspaces.router as workspaces
+import apps.integrations.loris.router as loris
 import middlewares as middlewares_
 from apps.shared.exception import BaseError
 from config import settings
@@ -60,6 +61,7 @@ routers: Iterable[APIRouter] = (
     library.router,
     library.applet_router,
     ws_alerts.router,
+    loris.router,
 )
 
 # Declare your middlewares here

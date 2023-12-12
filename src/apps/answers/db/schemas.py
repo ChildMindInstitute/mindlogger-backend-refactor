@@ -19,6 +19,7 @@ class AnswerSchema(Base):
     respondent_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     is_flow_completed = Column(Boolean(), nullable=True)
     migrated_data = Column(JSONB())
+    is_data_share = Column(Boolean(), default=False)
 
 
 class AnswerNoteSchema(Base):
