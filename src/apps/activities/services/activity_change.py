@@ -1,4 +1,7 @@
-from apps.activities.domain.activity_history import ActivityHistoryFull
+from apps.activities.domain.activity_history import (
+    ActivityHistoryChange,
+    ActivityHistoryFull,
+)
 from apps.activities.domain.scores_reports import (
     Score,
     ScoresAndReports,
@@ -6,20 +9,12 @@ from apps.activities.domain.scores_reports import (
     SubscaleCalculationType,
     SubscaleSetting,
 )
-from apps.shared.changes_generator import (
-    EMPTY_VALUES,
-    BaseChangeGenerator,
-    ChangeTextGenerator,
+from apps.activities.services.activity_item_change import (
+    ActivityItemChangeService,
+    ChangeStatusEnum,
+    group,
 )
-
-Generator = ChangeTextGenerator()
-
-
-def _process_bool(field_name: str, value: bool, changes: list[str]):
-    # Invert value for hidden because on UI it will be visibility
-    if field_name in ("Activity Visibility", "Item Visibility"):
-        value = not value
-    changes.append(Generator.set_bool(field_name, value))
+from apps.shared.changes_generator import EMPTY_VALUES, BaseChangeGenerator
 
 
 class ScoresAndReportsChangeService(BaseChangeGenerator):
@@ -43,7 +38,7 @@ class ScoresAndReportsChangeService(BaseChangeGenerator):
         for key, val in value:
             if isinstance(val, bool):
                 verbose_name = self.field_name_verbose_name_map[key]
-                _process_bool(verbose_name, val, changes)
+                self._populate_bool_changes(verbose_name, val, changes)
             else:
                 for rep in val:
                     verbose_name = self.field_name_verbose_name_map[rep.type]
@@ -53,26 +48,26 @@ class ScoresAndReportsChangeService(BaseChangeGenerator):
     def check_update_changes(
         self,
         parent_field_name: str,
-        value: ScoresAndReports | None,
         old_value: ScoresAndReports | None,
+        value: ScoresAndReports | None,
         changes: list[str],
     ) -> None:
-        if not old_value:
+        if value and not old_value:
             self.check_changes(value, changes)
+        # Possible this case is not allowed from UI, but need to be ready
+        elif not value and old_value:
+            changes.append(
+                self._change_text_generator.removed_text(parent_field_name)
+            )
         elif value and value != old_value:
             for key, val in value:
                 old_val = getattr(old_value, key)
                 if isinstance(val, bool):
                     vn = self.field_name_verbose_name_map[key]
-                    _process_bool(vn, val, changes)
+                    self._populate_bool_changes(vn, val, changes)
                 elif key == "reports":
                     self.__check_for_changes(val, old_val, "score", changes)
                     self.__check_for_changes(val, old_val, "section", changes)
-        # Possible this case is not allowed from UI, but need to be ready
-        elif old_value:
-            changes.append(
-                self._change_text_generator.removed_text(parent_field_name)
-            )
 
     def __check_for_changes(
         self,
@@ -142,12 +137,16 @@ class SubscaleSettingChangeService(BaseChangeGenerator):
     def check_update_changes(
         self,
         parent_field_name: str,
-        value: SubscaleSetting | None,
         old_value: SubscaleSetting | None,
+        value: SubscaleSetting | None,
         changes: list[str],
     ) -> None:
-        if not old_value:
+        if value and not old_value:
             self.check_changes(value, changes)
+        elif not value and old_value:
+            changes.append(
+                self._change_text_generator.removed_text(parent_field_name)
+            )
         elif value and value != old_value:
             for key, val in value:
                 old_val = getattr(old_value, key)
@@ -204,10 +203,6 @@ class SubscaleSettingChangeService(BaseChangeGenerator):
                         changes.append(
                             self._change_text_generator.removed_text(vn)
                         )
-        elif old_value:
-            changes.append(
-                self._change_text_generator.removed_text(parent_field_name)
-            )
 
 
 class ActivityChangeService(BaseChangeGenerator):
@@ -223,18 +218,69 @@ class ActivityChangeService(BaseChangeGenerator):
         "response_is_editable": "Disable the respondent's ability to change the response",  # noqa E501
         "report_included_item_name": "Report's name included item name",
         "order": "Activity Order",
-        # NOTE: this should be inverted
+        # NOTE: is_hidden should be inverted
         "is_hidden": "Activity Visibility",
         "scores_and_reports": "Scores & Reports option",
         "subscale_setting": "Subscale Setting option",
     }
 
-    def __init__(self) -> None:
+    def __init__(self, old_version: str, new_version: str) -> None:
         self._sar_service = ScoresAndReportsChangeService()
         self._scale_service = SubscaleSettingChangeService()
+        self._old_version = old_version
+        self._new_version = new_version
         super().__init__()
 
-    def generate_activity_insert(
+    def init_change(self, name: str, state: str) -> ActivityHistoryChange:
+        match state:
+            case ChangeStatusEnum.ADDED:
+                method = self._change_text_generator.added_text
+            case ChangeStatusEnum.UPDATED:
+                method = self._change_text_generator.updated_text
+            case ChangeStatusEnum.REMOVED:
+                method = self._change_text_generator.removed_text
+            case _:
+                raise ValueError("Not Suppported State")
+        return ActivityHistoryChange(name=method((f"Activity {name}")))
+
+    def get_changes(
+        self, activities: list[ActivityHistoryFull]
+    ) -> list[ActivityHistoryChange]:
+        grouped = group(activities, self._new_version)
+        item_service = ActivityItemChangeService(
+            self._old_version, self._new_version
+        )
+        result: list[ActivityHistoryChange] = []
+        for _, (old_activity, new_activity) in grouped.items():
+            if not old_activity and new_activity:
+                change = self.init_change(
+                    new_activity.name, ChangeStatusEnum.ADDED
+                )
+                change.changes = self.get_changes_insert(new_activity)
+                change.items = item_service.get_changes(new_activity.items)
+                result.append(change)
+            elif not new_activity and old_activity:
+                change = self.init_change(
+                    old_activity.name, ChangeStatusEnum.REMOVED
+                )
+                result.append(change)
+            elif new_activity and old_activity:
+                changes = self.get_changes_update(old_activity, new_activity)
+                changes_items = item_service.get_changes(
+                    old_activity.items + new_activity.items
+                )
+
+                if changes or changes_items:
+                    change = self.init_change(
+                        new_activity.name,
+                        ChangeStatusEnum.UPDATED,
+                    )
+                    change.changes = changes
+                    change.items = changes_items
+                    result.append(change)
+        return result
+
+    def get_changes_insert(
         self, new_activity: ActivityHistoryFull
     ) -> list[str]:
         changes: list[str] = list()
@@ -248,7 +294,7 @@ class ActivityChangeService(BaseChangeGenerator):
             elif isinstance(value, SubscaleSetting):
                 self._scale_service.check_changes(value, changes)
             elif isinstance(value, bool):
-                _process_bool(verbose_name, value, changes)
+                self._populate_bool_changes(verbose_name, value, changes)
             elif value not in EMPTY_VALUES:
                 changes.append(
                     self._change_text_generator.changed_text(
@@ -257,7 +303,7 @@ class ActivityChangeService(BaseChangeGenerator):
                 )
         return changes
 
-    def generate_activity_update(
+    def get_changes_update(
         self,
         old_activity: ActivityHistoryFull,
         new_activity: ActivityHistoryFull,
@@ -271,15 +317,15 @@ class ActivityChangeService(BaseChangeGenerator):
             old_value = getattr(old_activity, field_name)
             if field_name == "scores_and_reports":
                 self._sar_service.check_update_changes(
-                    verbose_name, value, old_value, changes
+                    verbose_name, old_value, value, changes
                 )
             elif field_name == "subscale_setting":
                 self._scale_service.check_update_changes(
-                    verbose_name, value, old_value, changes
+                    verbose_name, old_value, value, changes
                 )
             elif isinstance(value, bool):
                 if value != old_value:
-                    _process_bool(verbose_name, value, changes)
+                    self._populate_bool_changes(verbose_name, value, changes)
             elif value != old_value:
                 is_initial = old_value in EMPTY_VALUES
                 changes.append(

@@ -1,5 +1,5 @@
-from apps.applets.domain import AppletHistory
-from apps.shared.changes_generator import BaseChangeGenerator
+from apps.applets.domain import AppletHistory, AppletHistoryChange
+from apps.shared.changes_generator import EMPTY_VALUES, BaseChangeGenerator
 
 
 class AppletChangeService(BaseChangeGenerator):
@@ -14,12 +14,23 @@ class AppletChangeService(BaseChangeGenerator):
         # Ask better verbose name
         "report_recipients": "Email recipients",
         "report_include_user_id": "Include respondent in the Subject and Attachment",  # noqa E501
-        # Where is this field
         "report_email_body": "Email Body",
         "stream_enabled": "Enable streaming of response data",
     }
 
     def compare(
+        self, old_applet: AppletHistory, new_applet: AppletHistory
+    ) -> AppletHistoryChange:
+        change = AppletHistoryChange()
+        if old_applet.version == new_applet.version:
+            change.display_name = f"New applet {new_applet.display_name} added"
+            change.changes = self.get_changes(None, new_applet)
+        else:
+            change.display_name = f"Applet {new_applet.display_name} updated"
+            change.changes = self.get_changes(old_applet, new_applet)
+        return change
+
+    def get_changes(
         self, old_applet: AppletHistory | None, new_applet: AppletHistory
     ) -> list[str]:
         changes = []
@@ -30,7 +41,11 @@ class AppletChangeService(BaseChangeGenerator):
             old_value = getattr(old_applet, field_name) if old_applet else None
             new_value = getattr(new_applet, field_name)
             # First just check that something was changed
-            if not any([old_value, new_value]) or new_value == old_value:
+            if (
+                old_value in EMPTY_VALUES
+                and new_value in EMPTY_VALUES
+                or new_value == old_value
+            ):
                 continue
             if isinstance(new_value, bool):
                 changes.append(
@@ -54,5 +69,4 @@ class AppletChangeService(BaseChangeGenerator):
                         verbose_name, new_value
                     )
                 )
-
         return changes

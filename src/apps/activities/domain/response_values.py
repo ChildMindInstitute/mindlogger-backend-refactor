@@ -62,13 +62,13 @@ class ABTrailsValues(PublicModel):
 class _SingleSelectionValue(PublicModel):
     id: str | None = None
     text: str
-    image: str | None
-    score: int | None
-    tooltip: str | None
+    image: str | None = None
+    score: int | None = None
+    tooltip: str | None = None
     is_hidden: bool = Field(default=False)
-    color: Color | None
-    alert: str | None
-    value: int | None
+    color: Color | None = None
+    alert: str | None = None
+    value: int
 
     @validator("image")
     def validate_image(cls, value):
@@ -131,10 +131,10 @@ class SliderValues(PublicModel):
     max_label: str | None = Field(..., max_length=100)
     min_value: NonNegativeInt = Field(default=0, max_value=11)
     max_value: NonNegativeInt = Field(default=12, max_value=12)
-    min_image: str | None
-    max_image: str | None
-    scores: list[int] | None
-    alerts: list[SliderValueAlert] | None
+    min_image: str | None = None
+    max_image: str | None = None
+    scores: list[int] | None = None
+    alerts: list[SliderValueAlert] | None = None
 
     @validator("min_image", "max_image")
     def validate_image(cls, value):
@@ -197,8 +197,8 @@ class SliderRowsValues(PublicModel):
 class _SingleSelectionOption(PublicModel):
     id: str | None = None
     text: str = Field(..., max_length=100)
-    image: str | None
-    tooltip: str | None
+    image: str | None = None
+    tooltip: str | None = None
 
     @validator("image")
     def validate_image(cls, value):
@@ -214,8 +214,8 @@ class _SingleSelectionOption(PublicModel):
 class _SingleSelectionRow(PublicModel):
     id: str | None = None
     row_name: str = Field(..., max_length=100)
-    row_image: str | None
-    tooltip: str | None
+    row_image: str | None = None
+    tooltip: str | None = None
 
     @validator("row_image")
     def validate_image(cls, value):
@@ -230,9 +230,9 @@ class _SingleSelectionRow(PublicModel):
 
 class _SingleSelectionDataOption(PublicModel):
     option_id: str
-    score: int | None
-    alert: str | None
-    value: int | None
+    score: int | None = None
+    alert: str | None = None
+    value: int | None = None
 
 
 class _SingleSelectionDataRow(PublicModel):
@@ -247,7 +247,7 @@ class _SingleSelectionDataRow(PublicModel):
 class SingleSelectionRowsValues(PublicModel):
     rows: list[_SingleSelectionRow]
     options: list[_SingleSelectionOption]
-    data_matrix: list[_SingleSelectionDataRow] | None
+    data_matrix: list[_SingleSelectionDataRow] | None = None
 
     @validator("data_matrix")
     def validate_data_matrix(cls, value, values):

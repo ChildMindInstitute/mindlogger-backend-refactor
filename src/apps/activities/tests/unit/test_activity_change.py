@@ -21,11 +21,6 @@ from apps.activities.services.activity_change import ActivityChangeService
 from apps.shared.enums import Language
 
 
-@pytest.fixture(scope="module")
-def activity_change_service() -> ActivityChangeService:
-    return ActivityChangeService()
-
-
 @pytest.fixture
 def activity_history_id() -> uuid.UUID:
     return uuid.UUID("00000000-0000-0000-0000-000000000000")
@@ -49,6 +44,11 @@ def old_applet_id(old_version: str) -> str:
 @pytest.fixture
 def new_applet_id(new_version: str) -> str:
     return f"00000000-0000-0000-0000-000000000000_{new_version}"
+
+
+@pytest.fixture
+def activity_change_service(old_version, new_version) -> ActivityChangeService:
+    return ActivityChangeService(old_version, new_version)
 
 
 @pytest.fixture
@@ -159,7 +159,7 @@ def test_initial_activity_activity_changes(
         "Disable the respondent's ability to change the response was disabled",
         "Activity Visibility was enabled",
     ]
-    changes = activity_change_service.generate_activity_insert(new_activity)
+    changes = activity_change_service.get_changes_insert(new_activity)
     assert len(changes) == len(initial_changes)
     assert set(changes) == set(changes)
 
@@ -169,7 +169,7 @@ def test_initial_activity_hidden_activity_change(
     activity_change_service: ActivityChangeService,
 ):
     new_activity.is_hidden = True
-    changes = activity_change_service.generate_activity_insert(new_activity)
+    changes = activity_change_service.get_changes_insert(new_activity)
     assert changes
     assert "Activity Visibility was disabled" in changes
 
@@ -179,7 +179,7 @@ def test_initial_activity_bool_value_is_enabled(
     activity_change_service: ActivityChangeService,
 ):
     new_activity.show_all_at_once = True
-    changes = activity_change_service.generate_activity_insert(new_activity)
+    changes = activity_change_service.get_changes_insert(new_activity)
     assert changes
     assert "Show all questions at once was enabled" in changes
 
@@ -189,7 +189,7 @@ def test_initial_activity_description_was_set(
     activity_change_service: ActivityChangeService,
 ):
     new_activity.description = {Language.ENGLISH: "HELLO"}
-    changes = activity_change_service.generate_activity_insert(new_activity)
+    changes = activity_change_service.get_changes_insert(new_activity)
     assert changes
     assert "Activity Description was set to HELLO" in changes
 
@@ -225,7 +225,7 @@ def test_initial_activity_complex_fields_are_set(
     fixture = request.getfixturevalue(fixture_name)
     # We can use fixture name like attribute
     setattr(new_activity, fixture_name, fixture)
-    changes = activity_change_service.generate_activity_insert(new_activity)
+    changes = activity_change_service.get_changes_insert(new_activity)
     for change in exp_changes:
         assert change in changes
 
@@ -235,7 +235,7 @@ def test_new_activity_version_no_changes(
     new_activity: ActivityHistoryFull,
     activity_change_service: ActivityChangeService,
 ):
-    changes = activity_change_service.generate_activity_update(
+    changes = activity_change_service.get_changes_update(
         old_activity, new_activity
     )
     assert not changes
@@ -247,7 +247,7 @@ def test_new_activity_version_is_hidden(
     activity_change_service: ActivityChangeService,
 ):
     new_activity.is_hidden = True
-    changes = activity_change_service.generate_activity_update(
+    changes = activity_change_service.get_changes_update(
         old_activity, new_activity
     )
     assert len(changes) == 1
@@ -260,7 +260,7 @@ def test_new_activity_version_bool_field_enabled(
     activity_change_service: ActivityChangeService,
 ):
     new_activity.show_all_at_once = True
-    changes = activity_change_service.generate_activity_update(
+    changes = activity_change_service.get_changes_update(
         old_activity, new_activity
     )
     assert len(changes) == 1
@@ -273,7 +273,7 @@ def test_new_activity_order_was_changed(
     activity_change_service: ActivityChangeService,
 ):
     new_activity.order = 2
-    changes = activity_change_service.generate_activity_update(
+    changes = activity_change_service.get_changes_update(
         old_activity, new_activity
     )
     assert len(changes) == 1
@@ -286,7 +286,7 @@ def test_new_activity_description_was_set(
     activity_change_service: ActivityChangeService,
 ):
     new_activity.description = {Language.ENGLISH: "BOOM"}
-    changes = activity_change_service.generate_activity_update(
+    changes = activity_change_service.get_changes_update(
         old_activity, new_activity
     )
     assert len(changes) == 1
@@ -300,7 +300,7 @@ def test_new_activity_description_was_changed(
 ):
     old_activity.description = {Language.ENGLISH: "old"}
     new_activity.description = {Language.ENGLISH: "new"}
-    changes = activity_change_service.generate_activity_update(
+    changes = activity_change_service.get_changes_update(
         old_activity, new_activity
     )
     assert len(changes) == 1
@@ -314,7 +314,7 @@ def test_new_activity_scores_and_reports_is_none(
     scores_and_reports: ScoresAndReports,
 ):
     old_activity.scores_and_reports = scores_and_reports
-    changes = activity_change_service.generate_activity_update(
+    changes = activity_change_service.get_changes_update(
         old_activity, new_activity
     )
     assert len(changes) == 1
@@ -338,7 +338,7 @@ def test_new_activity_scores_and_reports_was_removed(
         "Scores & Reports: Score testscore was removed",
         "Scores & Reports: Section testsection was removed",
     ]
-    changes = activity_change_service.generate_activity_update(
+    changes = activity_change_service.get_changes_update(
         old_activity, new_activity
     )
     assert len(changes) == len(exp_changes)
@@ -352,7 +352,7 @@ def test_new_activity_subscale_setting_is_none(
     subscale_setting: SubscaleSetting,
 ):
     old_activity.subscale_setting = subscale_setting
-    changes = activity_change_service.generate_activity_update(
+    changes = activity_change_service.get_changes_update(
         old_activity, new_activity
     )
     assert len(changes) == 1
@@ -374,7 +374,7 @@ def test_new_activity_subscale_setting_was_removed(
         "Subscale Configuration: Calculate total score was removed",
         "Subscale Configuration: Subscale test was removed",
     ]
-    changes = activity_change_service.generate_activity_update(
+    changes = activity_change_service.get_changes_update(
         old_activity, new_activity
     )
     assert len(changes) == len(exp_changes)

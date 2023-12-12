@@ -7,19 +7,7 @@ from apps.activity_flows.domain.flow_full import (
 from apps.activity_flows.domain.flow_history import (
     ActivityFlowItemHistoryChange,
 )
-from apps.shared.changes_generator import (
-    BaseChangeGenerator,
-    ChangeTextGenerator,
-)
-
-Generator = ChangeTextGenerator()
-
-
-def _process_bool(field_name: str, value: bool, changes: list[str]):
-    # Invert value for hidden because on UI it will be visibility
-    if field_name == "Activity Flow Visibility":
-        value = not value
-    changes.append(Generator.set_bool(field_name, value))
+from apps.shared.changes_generator import BaseChangeGenerator
 
 
 class ActivityFlowChangeService(BaseChangeGenerator):
@@ -39,7 +27,7 @@ class ActivityFlowChangeService(BaseChangeGenerator):
         ) in self.field_name_verbose_name_map.items():
             value = getattr(flow, field_name)
             if isinstance(value, bool):
-                _process_bool(verbose_name, value, changes)
+                self._populate_bool_changes(verbose_name, value, changes)
             elif value:
                 changes.append(
                     self._change_text_generator.changed_text(
@@ -60,7 +48,9 @@ class ActivityFlowChangeService(BaseChangeGenerator):
             old_value = getattr(old_flow, field_name)
             if isinstance(new_value, bool):
                 if new_value != old_value:
-                    _process_bool(verbose_name, new_value, changes)
+                    self._populate_bool_changes(
+                        verbose_name, new_value, changes
+                    )
             elif new_value != old_value:
                 changes.append(
                     self._change_text_generator.changed_text(

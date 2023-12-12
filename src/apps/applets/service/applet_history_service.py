@@ -67,7 +67,6 @@ class AppletHistoryService:
     async def _get_applet_changes(
         self, old_id_version: str
     ) -> AppletHistoryChange:
-        changes = AppletHistoryChange()
         new_schema = await AppletHistoriesCRUD(
             self.session
         ).fetch_by_id_version(self._id_version)
@@ -78,16 +77,7 @@ class AppletHistoryService:
         new_history: AppletHistory = AppletHistory.from_orm(new_schema)
         old_history: AppletHistory = AppletHistory.from_orm(old_schema)
         change_service = AppletChangeService()
-        if old_id_version == self._id_version:
-            changes.display_name = (
-                f"New applet {new_history.display_name} added"
-            )
-            changes.changes = change_service.compare(None, new_history)
-        else:
-            changes.display_name = f"Applet {new_history.display_name} updated"
-            changes.changes = change_service.compare(old_history, new_history)
-
-        return changes
+        return change_service.compare(old_history, new_history)
 
     async def get(self) -> AppletHistory:
         schema = await AppletHistoriesCRUD(self.session).get_by_id_version(

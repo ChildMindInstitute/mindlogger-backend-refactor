@@ -22,7 +22,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d3",
@@ -31,7 +32,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d4",
@@ -40,7 +42,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d5",
@@ -49,7 +52,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -93,7 +97,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66e3",
@@ -102,7 +107,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66e4",
@@ -111,7 +117,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66e5",
@@ -120,7 +127,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -164,7 +172,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66f3",
@@ -173,7 +182,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66f4",
@@ -182,7 +192,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66f5",
@@ -191,7 +202,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -235,7 +247,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66g3",
@@ -244,7 +257,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66g4",
@@ -253,7 +267,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66g5",
@@ -262,7 +277,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -306,7 +322,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66h3",
@@ -315,7 +332,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66h4",
@@ -324,7 +342,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66h5",
@@ -333,7 +352,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -377,7 +397,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66i3",
@@ -386,7 +407,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66i4",
@@ -395,7 +417,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66i5",
@@ -404,7 +427,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -448,7 +472,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66j3",
@@ -457,7 +482,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66j4",
@@ -466,7 +492,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66j5",
@@ -475,7 +502,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -519,7 +547,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66k3",
@@ -528,7 +557,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66k4",
@@ -537,7 +567,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66k5",
@@ -546,7 +577,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -590,7 +622,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66l3",
@@ -599,7 +632,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66l4",
@@ -608,7 +642,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66l5",
@@ -617,7 +652,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -661,7 +697,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66m3",
@@ -670,7 +707,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66m4",
@@ -679,7 +717,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66m5",
@@ -688,7 +727,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -732,7 +772,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66n3",
@@ -741,7 +782,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66n4",
@@ -750,7 +792,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66n5",
@@ -759,7 +802,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -803,7 +847,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66o3",
@@ -812,7 +857,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66o4",
@@ -821,7 +867,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66o5",
@@ -830,7 +877,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -874,7 +922,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66p3",
@@ -883,7 +932,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66p4",
@@ -892,7 +942,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66p5",
@@ -901,7 +952,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -945,7 +997,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66q3",
@@ -954,7 +1007,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66q4",
@@ -963,7 +1017,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66q5",
@@ -972,7 +1027,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1016,7 +1072,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66r3",
@@ -1025,7 +1082,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66r4",
@@ -1034,7 +1092,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66r5",
@@ -1043,7 +1102,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1087,7 +1147,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66s3",
@@ -1096,7 +1157,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66s4",
@@ -1105,7 +1167,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66s5",
@@ -1114,7 +1177,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1158,7 +1222,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66t3",
@@ -1167,7 +1232,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66t4",
@@ -1176,7 +1242,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66t5",
@@ -1185,7 +1252,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1229,7 +1297,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66u3",
@@ -1238,7 +1307,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66u4",
@@ -1247,7 +1317,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66u5",
@@ -1256,7 +1327,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1300,7 +1372,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66v3",
@@ -1309,7 +1382,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66v4",
@@ -1318,7 +1392,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66v5",
@@ -1327,7 +1402,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1371,7 +1447,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66w3",
@@ -1380,7 +1457,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66w4",
@@ -1389,7 +1467,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66w5",
@@ -1398,7 +1477,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1442,7 +1522,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66x3",
@@ -1451,7 +1532,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66x4",
@@ -1460,7 +1542,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66x5",
@@ -1469,7 +1552,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1513,7 +1597,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66y3",
@@ -1522,7 +1607,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66y4",
@@ -1531,7 +1617,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66y5",
@@ -1540,7 +1627,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1584,7 +1672,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66z3",
@@ -1593,7 +1682,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66z4",
@@ -1602,7 +1692,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66z5",
@@ -1611,7 +1702,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1655,7 +1747,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db67d3",
@@ -1664,7 +1757,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db67d4",
@@ -1673,7 +1767,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db67d5",
@@ -1682,7 +1777,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1726,7 +1822,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db68d3",
@@ -1735,7 +1832,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db68d4",
@@ -1744,7 +1842,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db68d5",
@@ -1753,7 +1852,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1797,7 +1897,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db69d3",
@@ -1806,7 +1907,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db69d4",
@@ -1815,7 +1917,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db69d5",
@@ -1824,7 +1927,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1868,7 +1972,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db61d3",
@@ -1877,7 +1982,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db61d4",
@@ -1886,7 +1992,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db61d5",
@@ -1895,7 +2002,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -1939,7 +2047,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db62d3",
@@ -1948,7 +2057,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db62d4",
@@ -1957,7 +2067,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db62d5",
@@ -1966,7 +2077,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },

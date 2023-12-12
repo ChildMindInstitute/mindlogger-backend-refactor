@@ -5,16 +5,20 @@ import pytest
 from apps.applets.domain import AppletHistory
 from apps.applets.service.applet_change import AppletChangeService
 from apps.shared.enums import Language
+from apps.shared.version import INITIAL_VERSION
+
+# Just change minor
+NEW_VERSION = INITIAL_VERSION.replace("0", "1")
 
 
 @pytest.fixture
-def old_applet_history() -> AppletHistory:
-    return AppletHistory(display_name="Applet")
+def applet() -> AppletHistory:
+    return AppletHistory(display_name="Applet", version=INITIAL_VERSION)
 
 
 @pytest.fixture
-def new_applet_history() -> AppletHistory:
-    return AppletHistory(display_name="Applet")
+def new_applet() -> AppletHistory:
+    return AppletHistory(display_name="Applet", version=NEW_VERSION)
 
 
 @pytest.fixture
@@ -22,52 +26,43 @@ def applet_change_service(scope="module") -> AppletChangeService:
     return AppletChangeService()
 
 
-def test_theme_id_is_not_tracked(
-    old_applet_history: AppletHistory,
-    new_applet_history: AppletHistory,
+def test_get_changes_theme_id_is_not_tracked(
+    applet: AppletHistory,
+    new_applet: AppletHistory,
     applet_change_service: AppletChangeService,
-):
-    new_applet_history.theme_id = uuid.uuid4()
-    changes = applet_change_service.compare(
-        new_applet_history, old_applet_history
-    )
+) -> None:
+    new_applet.theme_id = uuid.uuid4()
+    changes = applet_change_service.get_changes(applet, new_applet)
     assert not changes
 
 
-def test_not_set_fields_are_not_tracked(
-    old_applet_history: AppletHistory,
-    new_applet_history: AppletHistory,
+def test_get_changes_not_set_fields_are_not_tracked(
+    applet: AppletHistory,
+    new_applet: AppletHistory,
     applet_change_service: AppletChangeService,
-):
-    changes = applet_change_service.compare(
-        new_applet_history, old_applet_history
-    )
+) -> None:
+    changes = applet_change_service.get_changes(applet, new_applet)
     assert not changes
 
 
-def test_the_same_values_are_not_tracked(
-    old_applet_history: AppletHistory,
-    new_applet_history: AppletHistory,
+def test_get_changes_the_same_values_are_not_tracked(
+    applet: AppletHistory,
+    new_applet: AppletHistory,
     applet_change_service: AppletChangeService,
 ):
-    old_applet_history.image = "test"
-    new_applet_history.image = "test"
-    changes = applet_change_service.compare(
-        new_applet_history, old_applet_history
-    )
+    applet.image = "test"
+    new_applet.image = "test"
+    changes = applet_change_service.get_changes(applet, new_applet)
     assert not changes
 
 
-def test_is_initial_applet_only_with_name(
-    new_applet_history: AppletHistory,
+def test_get_changes_is_initial_applet_only_with_name(
+    new_applet: AppletHistory,
     applet_change_service: AppletChangeService,
 ):
-    changes = applet_change_service.compare(None, new_applet_history)
+    changes = applet_change_service.get_changes(None, new_applet)
     assert len(changes) == 1
-    assert (
-        changes[0]
-        == f"Applet Name was set to {new_applet_history.display_name}"
-    )
+    assert changes[0] == f"Applet Name was set to {new_applet.display_name}"
 
 
 @pytest.mark.parametrize(
@@ -121,15 +116,15 @@ def test_is_initial_applet_only_with_name(
         ),
     ),
 )
-def test_is_initial_version(
-    new_applet_history: AppletHistory,
+def test_get_changes_is_initial_version(
+    new_applet: AppletHistory,
     applet_change_service: AppletChangeService,
     field_name: str,
     value: str | dict | bool,
     change: str,
 ):
-    setattr(new_applet_history, field_name, value)
-    changes = applet_change_service.compare(None, new_applet_history)
+    setattr(new_applet, field_name, value)
+    changes = applet_change_service.get_changes(None, new_applet)
     assert len(changes) == 2
     assert changes[1] == change
 
@@ -185,34 +180,30 @@ def test_is_initial_version(
         ),
     ),
 )
-def test_applet_updated(
-    old_applet_history: AppletHistory,
-    new_applet_history: AppletHistory,
+def test_get_changes_applet_updated(
+    applet: AppletHistory,
+    new_applet: AppletHistory,
     applet_change_service: AppletChangeService,
     field_name: str,
     value: str | dict | bool,
     change: str,
 ):
-    setattr(new_applet_history, field_name, value)
-    changes = applet_change_service.compare(
-        old_applet_history, new_applet_history
-    )
+    setattr(new_applet, field_name, value)
+    changes = applet_change_service.get_changes(applet, new_applet)
     assert len(changes) == 1
     assert changes[0] == change
 
 
-def test_new_applet_bool_fields_disabled(
-    old_applet_history: AppletHistory,
-    new_applet_history: AppletHistory,
+def test_get_changes_new_applet_bool_fields_disabled(
+    applet: AppletHistory,
+    new_applet: AppletHistory,
     applet_change_service: AppletChangeService,
 ):
-    old_applet_history.report_include_user_id = True
-    old_applet_history.stream_enabled = True
-    new_applet_history.report_include_user_id = False
-    new_applet_history.stream_enabled = False
-    changes = applet_change_service.compare(
-        old_applet_history, new_applet_history
-    )
+    applet.report_include_user_id = True
+    applet.stream_enabled = True
+    new_applet.report_include_user_id = False
+    new_applet.stream_enabled = False
+    changes = applet_change_service.get_changes(applet, new_applet)
     assert len(changes) == 2
     exp_changes = [
         "Enable streaming of response data was disabled",
@@ -222,29 +213,36 @@ def test_new_applet_bool_fields_disabled(
         assert change in changes
 
 
-def test_new_applet_text_field_is_cleared(
-    old_applet_history: AppletHistory,
-    new_applet_history: AppletHistory,
+def test_get_changes_new_applet_text_field_is_cleared(
+    applet: AppletHistory,
+    new_applet: AppletHistory,
     applet_change_service: AppletChangeService,
 ):
-    old_applet_history.description = {Language.ENGLISH: "Description"}
-    new_applet_history.description = {Language.ENGLISH: ""}
-    changes = applet_change_service.compare(
-        old_applet_history, new_applet_history
-    )
+    applet.description = {Language.ENGLISH: "Description"}
+    new_applet.description = {Language.ENGLISH: ""}
+    changes = applet_change_service.get_changes(applet, new_applet)
     assert len(changes) == 1
     assert changes[0] == "Applet Description was cleared"
 
 
-def test_new_applet_text_field_was_changed(
-    old_applet_history: AppletHistory,
-    new_applet_history: AppletHistory,
+def test_get_changes_new_applet_text_field_was_changed(
+    applet: AppletHistory,
+    new_applet: AppletHistory,
     applet_change_service: AppletChangeService,
 ):
-    old_applet_history.description = {Language.ENGLISH: "Description"}
-    new_applet_history.description = {Language.ENGLISH: "New"}
-    changes = applet_change_service.compare(
-        old_applet_history, new_applet_history
-    )
+    applet.description = {Language.ENGLISH: "Description"}
+    new_applet.description = {Language.ENGLISH: "New"}
+    changes = applet_change_service.get_changes(applet, new_applet)
     assert len(changes) == 1
     assert changes[0] == "Applet Description was changed to New"
+
+
+def test_compare_two_applets(
+    applet: AppletHistory, applet_change_service: AppletChangeService
+):
+    change = applet_change_service.compare(applet, applet)
+    assert change.display_name == f"New applet {applet.display_name} added"
+    assert change.changes == [f"Applet Name was set to {applet.display_name}"]
+    # For this test we can avoid business rule that activities are required
+    assert not change.activities
+    assert not change.activity_flows
