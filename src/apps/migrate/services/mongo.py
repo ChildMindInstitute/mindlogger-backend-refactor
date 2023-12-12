@@ -1412,6 +1412,8 @@ class Mongo:
             "meta.applet.@id": kwargs["applet_id"],
             "meta.applet.version": kwargs["version"],
         }
+        if kwargs.get("assessments_only"):
+            query["meta.reviewing"] = {"$exists": True}
         item_collection = db["item"]
         try:
             creators_ids = item_collection.find(query).distinct("creatorId")
