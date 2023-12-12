@@ -9,6 +9,7 @@ from sqlalchemy import (
     String,
     Text,
     text,
+    ARRAY,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
@@ -53,6 +54,7 @@ class AppletSchema(_BaseAppletSchema, Base):
     creator_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
     )
+    integrations = Column(ARRAY(String(32)))
 
 
 class HistoryMixin:

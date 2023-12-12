@@ -36,6 +36,7 @@ class AppletBaseInfo(BaseModel):
     retention_period: int | None
     retention_type: str | None
     stream_enabled: bool | None
+    integrations: list[str]
 
 
 class AppletBase(AppletBaseInfo):

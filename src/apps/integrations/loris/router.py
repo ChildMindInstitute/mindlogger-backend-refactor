@@ -1,7 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.integrations.loris.api import send_applet_data_to_loris
+from apps.integrations.loris.api import start_transmit_process
 from apps.integrations.loris.api.consent import (
     consent_create,
     consent_get_by_id,
@@ -16,20 +16,19 @@ from apps.shared.domain.response import (
     NO_CONTENT_ERROR_RESPONSES,
 )
 
-router = APIRouter(
-    prefix="/integrations/loris", tags=["Integrations", "Loris"]
-)
+router = APIRouter(prefix="/integrations/loris", tags=["Loris"])
 
 
 router.post(
-    "/{applet_id}/data",
-    description="This endpoint is used to retrieve unencrypted applet data",
+    "/publish",
+    description="This endpoint is used to start transmit process from\
+          ML to LORIS",
     status_code=status.HTTP_202_ACCEPTED,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(send_applet_data_to_loris)
+)(start_transmit_process)
 
 
 router.post(
