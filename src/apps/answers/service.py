@@ -546,6 +546,12 @@ class AnswerService:
             user = next(
                 filter(lambda u: u.id == schema.respondent_id, users), None
             )
+            current_activity_items = list(
+                filter(
+                    lambda i: i.activity_id == schema.assessment_activity_id,
+                    activity_items,
+                )
+            )
             if not user:
                 continue
             results.append(
@@ -553,7 +559,7 @@ class AnswerService:
                     reviewer_public_key=schema.user_public_key,
                     answer=schema.answer,
                     item_ids=schema.item_ids,
-                    items=activity_items,
+                    items=current_activity_items,
                     reviewer=dict(
                         first_name=user.first_name, last_name=user.last_name
                     ),
