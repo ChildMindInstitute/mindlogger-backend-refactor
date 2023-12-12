@@ -639,8 +639,8 @@ class TestActivityItems(BaseTest):
                             response_values=dict(
                                 palette_name="palette1",
                                 options=[
-                                    {"text": "option1"},
-                                    {"text": "option2"},
+                                    {"text": "option1", "value": 0},
+                                    {"text": "option2", "value": 1},
                                 ],
                             ),
                             config=dict(
@@ -1984,10 +1984,12 @@ class TestActivityItems(BaseTest):
                                     {
                                         "text": "option1",
                                         "alert": "alert1",
+                                        "value": 0,
                                     },
                                     {
                                         "text": "option2",
                                         "alert": "alert2",
+                                        "value": 1,
                                     },
                                 ],
                             ),

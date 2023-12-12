@@ -68,7 +68,7 @@ class _SingleSelectionValue(PublicModel):
     is_hidden: bool = Field(default=False)
     color: Color | None = None
     alert: str | None = None
-    value: int | None = None
+    value: int
 
     @validator("image")
     def validate_image(cls, value):
