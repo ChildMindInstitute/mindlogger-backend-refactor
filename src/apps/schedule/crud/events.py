@@ -742,6 +742,13 @@ class EventCRUD(BaseCRUD[EventSchema]):
         db_result = await self._execute(query)
         return db_result.scalar()
 
+    async def get_all(self, applet_id: uuid.UUID) -> list[EventSchema]:
+        query: Query = select(EventSchema)
+        query = query.where(EventSchema.applet_id == applet_id)
+        query = query.where(EventSchema.is_deleted.is_(False))
+        result = await self._execute(query)
+        return result.scalars().all()
+
 
 class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
     schema_class = UserEventsSchema
