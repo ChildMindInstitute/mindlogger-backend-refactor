@@ -104,6 +104,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     first_name=invitation.first_name,
                     last_name=invitation.last_name,
                     created_at=invitation.created_at,
+                    nickname=invitation.nickname,
                 )
             )
         return results

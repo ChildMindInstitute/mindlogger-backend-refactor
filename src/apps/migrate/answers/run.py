@@ -16,6 +16,7 @@ from apps.migrate.answers.crud import AnswersMigrateCRUD, MigrateUsersMCRUD
 from apps.migrate.answers.user_applet_access import (
     MigrateUserAppletAccessService,
 )
+from apps.migrate.answers.utills import get_arguments
 from apps.migrate.run import get_applets_ids
 
 from apps.migrate.services.mongo import Mongo
@@ -23,7 +24,6 @@ from apps.migrate.utilities import (
     configure_report,
     migration_log,
     mongoid_to_uuid,
-    get_arguments,
     intersection,
 )
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -32,6 +32,7 @@ from infrastructure.database import session_manager, atomic
 from apps.activities.crud import (
     ActivityHistoriesCRUD,
     ActivityItemHistoriesCRUD,
+    ActivitiesCRUD,
 )
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
@@ -78,7 +79,7 @@ class AnswersMigrateFacade:
         self.answer_item_migrate_service = AnswerItemMigrationService()
         self.answer_note_migrate_service = AnswerNoteMigrateService()
 
-    async def migrate(self, workspace, applets):
+    async def migrate(self, workspace, applets, assessments_only, update_data):
         regular_session = session_manager.get_session()
 
         applets_ids = await self._get_allowed_applets_ids(workspace, applets)
@@ -88,10 +89,11 @@ class AnswersMigrateFacade:
             if applet_id not in APPLETS_WITH_ISSUES_DONT_MIGRATE_ANSWERS
         ]
 
-        await self._wipe_answers_data(regular_session, applets_ids)
+        if not update_data:
+            await self._wipe_answers_data(regular_session, applets_ids)
 
         async for answer_with_files in self._collect_migratable_answers(
-            applets_ids
+            applets_ids, assessments_only
         ):
             self.total_answers += 1
             query = answer_with_files["query"]
@@ -124,7 +126,7 @@ class AnswersMigrateFacade:
                                 mongo_answer["meta"]["reviewing"]["responseId"]
                             )
                             await self._create_reviewer_assessment(
-                                regular_session, mongo_answer
+                                regular_session, mongo_answer, assessments_only
                             )
 
                         else:
@@ -202,7 +204,7 @@ class AnswersMigrateFacade:
 
         async with atomic(regular_session):
             await self._migrate_answers_items(
-                regular_session, self.answer_items_data
+                regular_session, self.answer_items_data, assessments_only
             )
 
         self._log_migration_results()
@@ -250,7 +252,9 @@ class AnswersMigrateFacade:
             return arbitary_session
         return session
 
-    async def _collect_migratable_answers(self, applets_ids: list[uuid.UUID]):
+    async def _collect_migratable_answers(
+        self, applets_ids: list[uuid.UUID], assessments_only: bool = False
+    ):
         migratable_data_count = 0
 
         regular_session = session_manager.get_session()
@@ -261,8 +265,12 @@ class AnswersMigrateFacade:
             ).get_answers_migration_params(applets_ids)
 
         for answer_migration_params in answers_migration_params:
+            kwargs = {
+                **answer_migration_params,
+                "assessments_only": assessments_only,
+            }
             answer_migration_queries = self.mongo.get_answer_migration_queries(
-                **answer_migration_params
+                **kwargs
             )
 
             anwswers_with_files = self.mongo.get_answers_with_files(
@@ -276,7 +284,9 @@ class AnswersMigrateFacade:
 
                 migratable_data_count += 1
 
-    async def _migrate_answers_items(self, regular_session, answer_items_data):
+    async def _migrate_answers_items(
+        self, regular_session, answer_items_data, assessments_only
+    ):
         for i, answer_item_data in enumerate(answer_items_data):
             migration_log.debug(
                 f"Migrating {i} answer_item of {len(answer_items_data)}"
@@ -300,11 +310,18 @@ class AnswersMigrateFacade:
             )
             try:
                 async with atomic(regular_or_arbitary_session):
-                    await self.answer_item_migrate_service.create_item(
-                        regular_session=regular_session,
-                        regular_or_arbitary_session=regular_or_arbitary_session,
-                        **answer_item_data,
-                    )
+                    if assessments_only:
+                        await self.answer_item_migrate_service.create_or_update_assessment(
+                            regular_session=regular_session,
+                            regular_or_arbitary_session=regular_or_arbitary_session,
+                            **answer_item_data,
+                        )
+                    else:
+                        await self.answer_item_migrate_service.create_item(
+                            regular_session=regular_session,
+                            regular_or_arbitary_session=regular_or_arbitary_session,
+                            **answer_item_data,
+                        )
             except Exception as e:
                 self.error_answers_migration.append((answer_item_data, str(e)))
                 continue
@@ -351,7 +368,12 @@ class AnswersMigrateFacade:
             f"Anonymous users answers count: {self.anonymous_respondent_answers}"
         )
 
-    async def _create_reviewer_assessment(self, regular_session, mongo_answer):
+    async def _create_reviewer_assessment(
+        self,
+        regular_session,
+        mongo_answer,
+        assessment_only,
+    ):
         # check if reviewer assessment activity for this answers applet version exists
         original_answer = self.mongo.db["item"].find_one(
             {"_id": mongo_answer["meta"]["reviewing"]["responseId"]}
@@ -362,13 +384,9 @@ class AnswersMigrateFacade:
         )
         original_applet_version = original_answer["meta"]["applet"]["version"]
 
-        all_assessment_activities = await ActivityHistoriesCRUD(
+        all_assessment_activities = await ActivitiesCRUD(
             regular_session
-        ).retrieve_by_applet_ids(
-            [
-                f"{original_applet_id}_{original_applet_version}",
-            ]
-        )
+        ).get_by_applet_id(original_applet_id)
         reviewer_assessment_activities = [
             _a for _a in all_assessment_activities if _a.is_reviewable
         ]
@@ -381,7 +399,7 @@ class AnswersMigrateFacade:
             )
 
         # if not, create it
-        if not reviewer_assessment_activities:
+        if not reviewer_assessment_activities and not assessment_only:
             missing_applet_version = mongo_answer["meta"]["applet"]["version"]
 
             duplicating_activity_res = await ActivityHistoriesCRUD(
@@ -415,9 +433,29 @@ class AnswersMigrateFacade:
                     item = await ActivityItemHistoriesCRUD(
                         regular_session
                     )._create(ActivityItemHistorySchema(**item))
+        elif assessment_only and reviewer_assessment_activities:
+            activity = reviewer_assessment_activities[0]
+            id_version = f"{activity.id}_{original_applet_version}"
+            activity_hist = await ActivityHistoriesCRUD(
+                regular_session
+            ).get_by_id(id_version)
+            if activity_hist:
+                mongo_answer["activity_id_version"] = activity_hist.id_version
+            else:
+                raise Exception(
+                    f"Assessment activity history {id_version} does not "
+                    f"exist for applet {original_applet_id}"
+                )
 
 
 if __name__ == "__main__":
     args = get_arguments()
     configure_report(migration_log, args.report_file)
-    asyncio.run(AnswersMigrateFacade().migrate(args.workspace, args.applet))
+    asyncio.run(
+        AnswersMigrateFacade().migrate(
+            args.workspace,
+            args.applet,
+            args.assessments_only,
+            args.update_data,
+        )
+    )

@@ -264,6 +264,13 @@ class TestAnswerActivityItems(BaseTest):
             answer=dict(
                 start_time=1690188679657,
                 end_time=1690188731636,
+                itemIds=[
+                    "f0ccc10a-2388-48da-a5a1-35e9b19cde5d",
+                    "c6fd4e75-c5c1-4a99-89db-4044526b6ad5",
+                    "f698d5c6-3861-46a1-a6e7-3bdae7228bce",
+                    "8e5ef149-ce10-4590-bc03-594e5200ecb9",
+                    "2bcf1de2-aff8-494e-af28-d1ce2602585f",
+                ],
             ),
             client=dict(
                 appId="mindlogger-mobile",
@@ -408,6 +415,13 @@ class TestAnswerActivityItems(BaseTest):
             answer=dict(
                 start_time=1690188679657,
                 end_time=1690188731636,
+                itemIds=[
+                    "f0ccc10a-2388-48da-a5a1-35e9b19cde5d",
+                    "c6fd4e75-c5c1-4a99-89db-4044526b6ad5",
+                    "f698d5c6-3861-46a1-a6e7-3bdae7228bce",
+                    "8e5ef149-ce10-4590-bc03-594e5200ecb9",
+                    "2bcf1de2-aff8-494e-af28-d1ce2602585f",
+                ],
             ),
             client=dict(
                 appId="mindlogger-mobile",
@@ -753,6 +767,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["f0ccc10a-2388-48da-a5a1-35e9b19cde5d"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.1.0"
+                ),
             ),
         )
 
@@ -783,6 +800,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.1.0"
+                ),
             ),
         )
 
@@ -943,6 +963,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.1.0"
+                ),
             ),
         )
 
@@ -1306,6 +1329,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.1.0"
+                ),
             ),
         )
 

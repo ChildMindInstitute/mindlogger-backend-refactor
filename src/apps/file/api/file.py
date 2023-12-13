@@ -6,7 +6,7 @@ import uuid
 from functools import partial
 from urllib.parse import quote
 
-import aiofiles  # type: ignore[import]
+import aiofiles
 import pytz
 from botocore.exceptions import ClientError
 from fastapi import Body, Depends, File, Query, UploadFile

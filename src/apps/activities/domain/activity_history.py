@@ -52,6 +52,7 @@ class ActivityHistory(InternalModel):
     is_hidden: bool | None = False
     scores_and_reports: ScoresAndReports | None = None
     subscale_setting: SubscaleSetting | None = None
+    performance_task_type: PerformanceTaskType | None = None
 
 
 class ActivityHistoryChange(InternalModel):
@@ -99,8 +100,6 @@ class ActivityHistoryTranslatedExport(ActivityBase, PublicModel):
     version: str | None = None
     description: str  # type: ignore[assignment]
     created_at: datetime.datetime
-    is_performance_task: bool = False
-    performance_task_type: PerformanceTaskType | None = None
     items: list[ActivityItemSingleLanguageDetailPublic] = Field(
         default_factory=list
     )

@@ -243,6 +243,10 @@ class TestAnswerActivityItems(BaseTest):
             answer=dict(
                 start_time=1690188679657,
                 end_time=1690188731636,
+                itemIds=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0012",
+                ],
             ),
             client=dict(
                 appId="mindlogger-mobile",
@@ -378,6 +382,10 @@ class TestAnswerActivityItems(BaseTest):
             answer=dict(
                 start_time=1690188679657,
                 end_time=1690188731636,
+                itemIds=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0012",
+                ],
             ),
             client=dict(
                 appId="mindlogger-mobile",
@@ -713,6 +721,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.0.0"
+                ),
             ),
         )
 
@@ -743,6 +754,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.0.0"
+                ),
             ),
         )
 
@@ -1165,6 +1179,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.0.0"
+                ),
             ),
         )
 
@@ -1310,9 +1327,9 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["count"] == 1
-        assert response.json()["result"][0]["name"] == "PHQ2 new"
-        assert response.json()["result"][0]["isPerformanceTask"] is True
-        assert response.json()["result"][0]["hasAnswer"] is False
+        assert response.json()["result"][0]["name"] == "Flanker"
+        assert response.json()["result"][0]["isPerformanceTask"]
+        assert not response.json()["result"][0]["hasAnswer"]
 
     @rollback
     async def test_get_summary_activities_after_submitted_answer(self):
@@ -1361,7 +1378,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["count"] == 1
-        assert response.json()["result"][0]["name"] == "PHQ2 new"
+        assert response.json()["result"][0]["name"] == "Flanker"
         assert response.json()["result"][0]["isPerformanceTask"]
         assert response.json()["result"][0]["hasAnswer"]
 

@@ -338,7 +338,7 @@ class ScheduleService:
 
         event_schemas: list[EventSchema] = await EventCRUD(
             self.session
-        ).get_all_by_applet_id_with_filter(applet_id, None)
+        ).get_all(applet_id)
         event_ids = [event_schema.id for event_schema in event_schemas]
         periodicity_ids = [
             event_schema.periodicity_id for event_schema in event_schemas
@@ -1225,4 +1225,19 @@ class ScheduleService:
         return await self.get_all_schedules(
             applet_id,
             QueryParams(filters={"respondent_id": respondent_id}),
+        )
+
+    async def create_default_schedules_if_not_exist(
+        self,
+        applet_id: uuid.UUID,
+        activity_ids: list[uuid.UUID],
+    ) -> None:
+        """Create default schedules for applet."""
+        activities_without_events = await ActivityEventsCRUD(
+            self.session
+        ).get_missing_events(activity_ids)
+        await self.create_default_schedules(
+            applet_id=applet_id,
+            activity_ids=activities_without_events,
+            is_activity=True,
         )

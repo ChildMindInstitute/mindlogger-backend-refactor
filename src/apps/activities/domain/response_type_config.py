@@ -364,6 +364,10 @@ class PerformanceTaskType(str, Enum):
     TOUCH = "touch"
     ABTRAILS = "ABTrails"
 
+    @classmethod
+    def get_values(cls) -> list[str]:
+        return [i.value for i in cls]
+
 
 ResponseTypeConfigOptions = [
     TextConfig,

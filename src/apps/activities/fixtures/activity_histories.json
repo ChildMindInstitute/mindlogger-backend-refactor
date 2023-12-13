@@ -25,7 +25,7 @@
         "reports": [
           {
             "type": "score",
-            "name":"Score 1",
+            "name": "Score 1",
             "id": "score_1",
             "calculation_type": "sum"
           }
@@ -173,10 +173,10 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1_1.9.9",
-      "name": "PHQ2 new",
+      "name": "Flanker",
       "description": {
-        "en": "PHQ2",
-        "fr": "PHQ2"
+        "en": "It is flanker because it has items with flanker response type",
+        "fr": "It is flanker because it has items with flanker response type"
       },
       "splash_screen": "",
       "image": "",
@@ -196,7 +196,8 @@
             "calculation_type": "sum"
           }
         ]
-      }
+      },
+      "performance_task_type": "flanker"
     }
   }
 ]

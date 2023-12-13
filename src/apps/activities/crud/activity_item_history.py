@@ -6,6 +6,7 @@ from sqlalchemy.orm import Query
 from apps.activities.db.schemas import (
     ActivityHistorySchema,
     ActivityItemHistorySchema,
+    ActivitySchema,
 )
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
@@ -86,24 +87,64 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         return db_result.scalars().all()
 
     async def get_applets_assessments(
-        self, applet_id_version: str
+        self,
+        applet_id: uuid.UUID,
     ) -> list[ActivityItemHistorySchema]:
+        subquery: Query = (
+            select(ActivityHistorySchema.id_version)
+            .join(
+                ActivitySchema, ActivitySchema.id == ActivityHistorySchema.id
+            )
+            .where(
+                ActivitySchema.is_reviewable.is_(True),
+                ActivitySchema.applet_id == applet_id,
+            )
+            .order_by(ActivityHistorySchema.created_at.desc())
+            .limit(1)
+            .subquery()
+        )
+
         query: Query = select(ActivityItemHistorySchema)
         query = query.join(
             ActivityHistorySchema,
             ActivityHistorySchema.id_version
             == ActivityItemHistorySchema.activity_id,
         )
-        query = query.where(
-            ActivityHistorySchema.applet_id == applet_id_version
+        query = query.join(
+            ActivitySchema, ActivitySchema.id == ActivityHistorySchema.id
         )
+        query = query.where(ActivitySchema.applet_id == applet_id)
         query = query.where(
-            ActivityHistorySchema.is_reviewable == True  # noqa: E712
+            ActivityHistorySchema.is_reviewable == True,  # noqa: E712
+            ActivityHistorySchema.id_version.in_(subquery),
         )
         query = query.order_by(ActivityItemHistorySchema.order.asc())
         db_result = await self._execute(query)
 
-        return db_result.scalars().all()
+        res = db_result.scalars().all()
+        return res
+
+    async def get_assessment_activity_items(
+        self, id_version: str | None
+    ) -> list[ActivityItemHistorySchema | None]:
+        if not id_version:
+            return []
+        query: Query = select(ActivityItemHistorySchema)
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityHistorySchema.id_version
+            == ActivityItemHistorySchema.activity_id,
+        )
+        query = query.join(
+            ActivitySchema, ActivitySchema.id == ActivityHistorySchema.id
+        )
+        query = query.where(
+            ActivityHistorySchema.is_reviewable == True,  # noqa: E712
+            ActivityHistorySchema.id_version == id_version,
+        )
+        db_result = await self._execute(query)
+        res = db_result.scalars().all()
+        return res
 
     async def get_activity_items(
         self, activity_id: uuid.UUID, versions: list[str] | None

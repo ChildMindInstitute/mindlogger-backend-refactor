@@ -180,3 +180,9 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         res = db_result.all()
 
         return parse_obj_as(list[UserAnswersDBInfo], res)
+
+    async def get_arbitrary_list(self) -> UserWorkspaceSchema:
+        query: Query = select(UserWorkspaceSchema)
+        query = query.where(UserWorkspaceSchema.database_uri.isnot(None))
+        result: Result = await self._execute(query)
+        return result.scalars().all()
