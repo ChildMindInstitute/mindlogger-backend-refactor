@@ -90,13 +90,22 @@ class ActivityMigrationService:
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
             schemas
         )
-        await ActivityItemService(self.session).create(prepared_activity_items)
+        activity_items = await ActivityItemService(self.session).create(
+            prepared_activity_items
+        )
         activities = list()
+        activity_id_map: dict[uuid.UUID, ActivityMigratedFull] = dict()
 
         for activity_schema in activity_schemas:
             activity_schema.key = activity_id_key_map[activity_schema.id]
             activity = ActivityMigratedFull.from_orm(activity_schema)
             activities.append(activity)
+            activity_id_map[activity.id] = activity
+
+        for activity_item in activity_items:
+            activity_id_map[activity_item.activity_id].items.append(
+                activity_item
+            )
 
         return activities
 
@@ -170,15 +179,22 @@ class ActivityMigrationService:
         activity_schemas = await ActivitiesCRUD(self.session).create_many(
             schemas
         )
-        await ActivityItemService(self.session).update_create(
+        activity_items = await ActivityItemService(self.session).update_create(
             prepared_activity_items
         )
         activities = list()
+        activity_id_map: dict[uuid.UUID, ActivityMigratedFull] = dict()
 
         for activity_schema in activity_schemas:
             activity_schema.key = activity_id_key_map[activity_schema.id]
             activity = ActivityMigratedFull.from_orm(activity_schema)
             activities.append(activity)
+            activity_id_map[activity.id] = activity
+
+        for activity_item in activity_items:
+            activity_id_map[activity_item.activity_id].items.append(
+                activity_item
+            )
 
         return activities
 
