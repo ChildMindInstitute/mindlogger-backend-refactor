@@ -22,7 +22,10 @@ from apps.activities.crud import (
     ActivityItemHistoriesCRUD,
 )
 from apps.activities.domain.activity_history import ActivityHistoryFull
-from apps.activities.errors import ActivityHistoryDoeNotExist
+from apps.activities.errors import (
+    ActivityDoeNotExist,
+    ActivityHistoryDoeNotExist,
+)
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
@@ -822,6 +825,13 @@ class AnswerService:
     ) -> ReportServerResponse | None:
         act_crud = ActivityHistoriesCRUD(self.session)
         activity_hsts = await act_crud.get_activities(activity_id, None)
+        if not activity_hsts:
+            activity_error_exception = ActivityDoeNotExist()
+            activity_error_exception.message = (
+                f"No such activity_id={activity_id}"
+            )
+            raise activity_error_exception
+
         act_versions = set(
             map(lambda act_hst: act_hst.id_version, activity_hsts)
         )
@@ -829,7 +839,14 @@ class AnswerService:
             applet_id, act_versions, respondent_id
         )
         if not answer:
-            return None
+            answer_error_exception = AnswerNotFoundError()
+            answer_error_exception.message = (
+                f"No such answer with applet_id=${applet_id},"
+                f" activity_id={activity_id}"
+                f" and respondent_id={respondent_id}"
+            )
+            raise answer_error_exception
+
         service = ReportServerService(self.session)
         await self._is_report_server_configured(applet_id)
         is_single_flow = await service.is_flows_single_report(answer.id)
