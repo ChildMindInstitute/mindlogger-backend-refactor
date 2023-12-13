@@ -116,7 +116,7 @@ class InvalidAppletIDFilter(FieldError):
 
 
 class UserSecretIdAlreadyExists(ValidationError):
-    message = _("Secret id already exists.")
+    message = _("Secret User ID already exists")
 
 
 class UserSecretIdAlreadyExistsInInvitation(ValidationError):
