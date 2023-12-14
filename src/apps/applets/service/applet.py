@@ -427,6 +427,7 @@ class AppletService:
                     stream_enabled=schema.stream_enabled,
                     stream_ip_address=schema.stream_ip_address,
                     stream_port=schema.stream_port,
+                    # integrations=schema.integrations,
                 )
             )
         return applets
@@ -471,6 +472,7 @@ class AppletService:
             stream_enabled=schema.stream_enabled,
             stream_ip_address=schema.stream_ip_address,
             stream_port=schema.stream_port,
+            integrations=schema.integrations,
         )
         activities = ActivityService(self.session, self.user_id).get_single_language_by_applet_id(applet_id, language)
         activity_flows = FlowService(self.session).get_single_language_by_applet_id(applet_id, language)

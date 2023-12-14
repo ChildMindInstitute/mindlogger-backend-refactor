@@ -40,7 +40,7 @@ class PublicWorkspace(PublicModel):
         "which is consists of 'first name', 'last name' of user "
         "which is applet owner and prefix",
     )
-    integrations: list[str] = Field(
+    integrations: list[str] | None = Field(
         description="This field represents the list of "
         "integrations in which the workspace participates"
     )
@@ -59,7 +59,7 @@ class UserWorkspace(InternalModel):
         "which is consists of 'first name', 'last name' of user "
         "which is applet owner and prefix",
     )
-    integrations: list[str] = Field(
+    integrations: list[str] | None = Field(
         description="This field represents the list of "
         "integrations in which the workspace participates"
     )

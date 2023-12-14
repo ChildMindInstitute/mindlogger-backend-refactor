@@ -60,6 +60,7 @@ async def user_workspaces(
             PublicWorkspace(
                 owner_id=workspace.user_id,
                 workspace_name=workspace.workspace_name,
+                integrations=workspace.integrations,
             )
             for workspace in workspaces
         ],
