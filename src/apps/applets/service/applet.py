@@ -181,6 +181,7 @@ class AppletService:
                 else None,
                 extra_fields=create_data.extra_fields,
                 creator_id=creator_id,
+                integrations=create_data.integrations,
             )
         )
         return AppletFull.from_orm(schema)
@@ -393,6 +394,7 @@ class AppletService:
                 theme_id=update_data.theme_id,
                 version=version,
                 stream_enabled=update_data.stream_enabled,
+                integrations=update_data.integrations,
             ),
         )
         return AppletFull.from_orm(schema)
