@@ -105,3 +105,4 @@ class Applet(PublicModel):
     activities: list[Activity] = Field(default_factory=list)
     activity_flows: list[ActivityFlow] = Field(default_factory=list)
     encryption: Encryption | None
+    integrations: list[str] | None

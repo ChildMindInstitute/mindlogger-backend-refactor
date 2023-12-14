@@ -516,6 +516,7 @@ class AppletService:
                     created_at=schema.created_at,
                     updated_at=schema.updated_at,
                     stream_enabled=schema.stream_enabled,
+                    # integrations=schema.integrations,
                 )
             )
         return applets
@@ -564,6 +565,7 @@ class AppletService:
             retention_type=schema.retention_type,
             is_published=schema.is_published,
             stream_enabled=schema.stream_enabled,
+            integrations=schema.integrations,
         )
         activities = ActivityService(
             self.session, self.user_id
