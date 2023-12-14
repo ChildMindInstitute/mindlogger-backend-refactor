@@ -160,6 +160,7 @@ class AppletService:
                 stream_enabled=create_data.stream_enabled,
                 stream_ip_address=create_data.stream_ip_address,
                 stream_port=create_data.stream_port,
+                integrations=create_data.integrations,
             )
         )
         return AppletFull.from_orm(schema)
@@ -324,6 +325,7 @@ class AppletService:
                 stream_enabled=update_data.stream_enabled,
                 stream_ip_address=update_data.stream_ip_address,
                 stream_port=update_data.stream_port,
+                integrations=update_data.integrations,
             ),
         )
         return AppletFull.from_orm(schema)

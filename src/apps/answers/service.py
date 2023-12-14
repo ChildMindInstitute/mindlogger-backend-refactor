@@ -170,7 +170,10 @@ class AnswerService:
                 activity_history_id=pk(applet_answer.activity_id),
                 respondent_id=self.user_id,
                 client=applet_answer.client.dict(),
-                is_flow_completed=bool(applet_answer.is_flow_completed) if applet_answer.flow_id else None,
+                is_flow_completed=bool(applet_answer.is_flow_completed)
+                if applet_answer.flow_id
+                else None,
+                is_data_share=applet_answer.is_data_share,
             )
         )
         item_answer = applet_answer.answer
