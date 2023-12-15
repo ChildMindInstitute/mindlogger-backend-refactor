@@ -8,6 +8,7 @@ from apps.shared.exception import (
 
 
 class ThemeNotFoundError(NotFoundError):
+    message_is_template: bool = True
     message = _("No such theme with {key}={value}.")
 
 

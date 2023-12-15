@@ -29,10 +29,12 @@ class InvalidVersionError(ValidationError):
 
 
 class IncorrectConfigError(FieldError):
+    message_is_template: bool = True
     message = _("config must be of type {type}.")
 
 
 class IncorrectResponseValueError(FieldError):
+    message_is_template: bool = True
     message = _("response_values must be of type {type}.")
 
 

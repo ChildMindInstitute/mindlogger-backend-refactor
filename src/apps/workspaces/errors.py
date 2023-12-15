@@ -43,6 +43,7 @@ class WorkspaceFolderManipulationAccessDenied(AccessDeniedError):
 
 
 class UserAppletAccessesNotFound(NotFoundError):
+    message_is_template: bool = True
     message = _("No such UserAppletAccess with id={id_}.")
 
 

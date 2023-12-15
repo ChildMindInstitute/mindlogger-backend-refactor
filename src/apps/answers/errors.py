@@ -56,6 +56,7 @@ class ActivityIsNotAssessment(ValidationError):
 
 
 class ReportServerError(ValidationError):
+    message_is_template: bool = True
     message = _("Report server error {message}.")
 
 
