@@ -80,6 +80,7 @@ class AppletSingleLanguageDetailMobilePublic(PublicModel):
     )
     encryption: Encryption | None
     stream_enabled: bool | None
+    integrations: list[str] | None
 
 
 class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
