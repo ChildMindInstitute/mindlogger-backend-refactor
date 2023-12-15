@@ -1,6 +1,7 @@
 import uuid
 
 from sqlalchemy import (
+    ARRAY,
     Boolean,
     Column,
     DateTime,
@@ -9,7 +10,6 @@ from sqlalchemy import (
     String,
     Text,
     text,
-    ARRAY,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utils.types import IPAddressType

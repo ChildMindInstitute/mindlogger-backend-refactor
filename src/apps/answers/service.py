@@ -1199,10 +1199,10 @@ class ReportServerService:
 
     async def decrypt_data_for_loris(
         self, applet_id: uuid.UUID
-        ) -> ReportServerResponse | None:
-        answers = await AnswersCRUD(self.answers_session).get_by_applet_id_and_readiness_to_share_data(
-            applet_id=applet_id
-        )
+    ) -> ReportServerResponse | None:
+        answers = await AnswersCRUD(
+            self.answers_session
+        ).get_by_applet_id_and_readiness_to_share_data(applet_id=applet_id)
         if not answers:
             return None
         applet_id_version: str = answers[0].applet_history_id
@@ -1218,9 +1218,7 @@ class ReportServerService:
         answer_map = dict((answer.id, answer) for answer in answers_for_loris)
         initial_answer = answers_for_loris[0]
 
-        applet = await AppletsCRUD(self.session).get_by_id(
-            applet_id
-        )
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         user_info = await self._get_user_info(
             initial_answer.respondent_id, applet_id
         )
@@ -1244,10 +1242,14 @@ class ReportServerService:
         )
         encrypted_data = encryption.encrypt(data)
 
-        url: str = "{}/decrypt-user-responses".format(applet.report_server_ip.rstrip("/"))
+        url: str = "{}/decrypt-user-responses".format(
+            applet.report_server_ip.rstrip("/")
+        )
 
         async with aiohttp.ClientSession() as session:
-            logger.info(f"Sending request to the report server for LORIS {url}.")
+            logger.info(
+                f"Sending request to the report server for LORIS {url}."
+            )
             start = time.time()
             async with session.post(
                 url,
@@ -1256,13 +1258,17 @@ class ReportServerService:
                 duration = time.time() - start
                 if resp.status == 200:
                     logger.info(
-                        f"Successful request (for LORIS) in {duration:.1f} seconds."
+                        f"Successful request (for LORIS) in {duration:.1f}\
+                              seconds."
                     )
                     response_data = await resp.json()
                     # return ReportServerResponse(**response_data)
                     return response_data
                 else:
-                    logger.error(f"Failed request (for LORIS) in {duration:.1f} seconds.")
+                    logger.error(
+                        f"Failed request (for LORIS) in {duration:.1f}\
+                              seconds."
+                    )
                     error_message = await resp.text()
                     raise ReportServerError(message=error_message)
 

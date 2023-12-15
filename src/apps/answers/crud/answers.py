@@ -554,7 +554,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_by_applet_id_and_readiness_to_share_data(
         self, applet_id: uuid.UUID
-        ) -> list[AnswerSchema] | None:
+    ) -> list[AnswerSchema] | None:
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.is_data_share.is_(True))
