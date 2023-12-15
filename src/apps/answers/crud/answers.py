@@ -551,3 +551,13 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.applet_id == applet_id)
         result = await self._execute(query)
         return {t[0]: t[1] for t in result.all()}
+
+    async def get_by_applet_id_and_readiness_to_share_data(
+        self, applet_id: uuid.UUID
+        ) -> list[AnswerSchema] | None:
+        query: Query = select(AnswerSchema)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(AnswerSchema.is_data_share.is_(True))
+        query = query.order_by(AnswerSchema.created_at.asc())
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
