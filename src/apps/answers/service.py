@@ -1197,6 +1197,75 @@ class ReportServerService:
             responses.append(dict(activityId=activity_id, answer=answer_item.answer))
         return responses, [ai.user_public_key for ai in answer_items]
 
+    async def decrypt_data_for_loris(
+        self, applet_id: uuid.UUID
+        ) -> ReportServerResponse | None:
+        answers = await AnswersCRUD(self.answers_session).get_by_applet_id_and_readiness_to_share_data(
+            applet_id=applet_id
+        )
+        if not answers:
+            return None
+        applet_id_version: str = answers[0].applet_history_id
+        available_activities = await ActivityHistoriesCRUD(
+            self.session
+        ).get_activity_id_versions_for_report(applet_id_version)
+        answers_for_loris = [
+            i for i in answers if i.activity_history_id in available_activities
+        ]
+        # If answers only on performance tasks
+        if not answers_for_loris:
+            return None
+        answer_map = dict((answer.id, answer) for answer in answers_for_loris)
+        initial_answer = answers_for_loris[0]
+
+        applet = await AppletsCRUD(self.session).get_by_id(
+            applet_id
+        )
+        user_info = await self._get_user_info(
+            initial_answer.respondent_id, applet_id
+        )
+        applet_full = await self._prepare_applet_data(
+            applet_id,
+            initial_answer.version,
+            applet.encryption,
+            non_performance=True,
+        )
+
+        encryption = ReportServerEncryption(applet.report_public_key)
+        responses, user_public_keys = await self._prepare_responses(answer_map)
+
+        data = dict(
+            responses=responses,
+            userPublicKeys=user_public_keys,
+            userPublicKey=user_public_keys[0],
+            now=datetime.datetime.utcnow().strftime("%x"),
+            user=user_info,
+            applet=applet_full,
+        )
+        encrypted_data = encryption.encrypt(data)
+
+        url: str = "{}/decrypt-user-responses".format(applet.report_server_ip.rstrip("/"))
+
+        async with aiohttp.ClientSession() as session:
+            logger.info(f"Sending request to the report server for LORIS {url}.")
+            start = time.time()
+            async with session.post(
+                url,
+                json=dict(payload=encrypted_data),
+            ) as resp:
+                duration = time.time() - start
+                if resp.status == 200:
+                    logger.info(
+                        f"Successful request (for LORIS) in {duration:.1f} seconds."
+                    )
+                    response_data = await resp.json()
+                    # return ReportServerResponse(**response_data)
+                    return response_data
+                else:
+                    logger.error(f"Failed request (for LORIS) in {duration:.1f} seconds.")
+                    error_message = await resp.text()
+                    raise ReportServerError(message=error_message)
+
 
 class ReportServerEncryption:
     _rate = 0.58
