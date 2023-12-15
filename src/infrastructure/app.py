@@ -14,6 +14,7 @@ import apps.authentication.router as auth
 import apps.file.router as files
 import apps.folders.router as folders
 import apps.healthcheck.router as healthcheck
+import apps.integrations.loris.router as loris
 import apps.invitations.router as invitations
 import apps.library.router as library
 import apps.logs.router as logs
@@ -23,7 +24,6 @@ import apps.themes.router as themes
 import apps.transfer_ownership.router as transfer_ownership
 import apps.users.router as users
 import apps.workspaces.router as workspaces
-import apps.integrations.loris.router as loris
 import middlewares as middlewares_
 from apps.shared.exception import BaseError
 from config import settings

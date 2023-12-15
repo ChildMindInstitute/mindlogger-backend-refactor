@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Unicode, String, ARRAY
+from sqlalchemy import ARRAY, Boolean, Column, ForeignKey, String, Unicode
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
