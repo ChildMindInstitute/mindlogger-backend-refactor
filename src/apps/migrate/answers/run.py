@@ -90,7 +90,9 @@ class AnswersMigrateFacade:
         ]
 
         if not update_data:
-            await self._wipe_answers_data(regular_session, applets_ids)
+            answer = input("Please type 'delete' to delete all answers data")
+            if answer == "delete":
+                await self._wipe_answers_data(regular_session, applets_ids)
 
         async for answer_with_files in self._collect_migratable_answers(
             applets_ids, assessments_only
