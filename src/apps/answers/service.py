@@ -861,7 +861,6 @@ class AnswerService:
                 message=f"No such respondent with id={respondent_exist}."
             )
 
-        service = ReportServerService(self.session)
         await self._is_report_server_configured(applet_id)
 
         act_crud = ActivityHistoriesCRUD(self.session)
@@ -882,6 +881,7 @@ class AnswerService:
         if not answer:
             return None
 
+        service = ReportServerService(self.session)
         is_single_flow = await service.is_flows_single_report(answer.id)
         if is_single_flow:
             report = await service.create_report(answer.submit_id)
