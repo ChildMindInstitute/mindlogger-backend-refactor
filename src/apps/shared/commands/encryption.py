@@ -52,6 +52,8 @@ TABLE_NAME_COLUMN_NAME_MAP = {
     "invitations": ["email", "first_name", "last_name", "nickname"],
 }
 
+ROWS_PER_SELECT_LIMIT = 1000
+
 
 def print_data_table() -> None:
     table = Table(
@@ -86,7 +88,12 @@ async def reencrypt(
         "-e",
         help="Hex of secret key to encrypt data, " "if not key specified, default settings key will be used.",
     ),
-    tables: Optional[list[str]] = typer.Argument(None, help="table where to reencrypt data"),
+    tables: Optional[list[str]] = typer.Argument(
+        None,
+        help="Tables which data need to reencrypt, "
+        "if no table names are provided data in ALL allowed tables "
+        "will be reencrypted.",
+    ),
 ) -> None:
     session_maker = session_manager.get_session()
     decrypt_key = bytes.fromhex(decrypt_secret_key) if decrypt_secret_key else get_key()
@@ -101,26 +108,47 @@ async def reencrypt(
                 if not columns:
                     print("[red]" f"[bold]{table_name}[/bold] table does not have " "encrypted columns. Skipped[red]")
                     continue
-                cols = ", ".join(columns)
-                result = await session.execute(f"select id, {cols} from {table_name}")
-                for row in result:
-                    id_ = row.id
-                    to_update = {}
-                    for col in columns:
-                        value = getattr(row, col)
-                        if value:
-                            decrypted_value = decryptor.process_result_value(value, session.bind.dialect)
-                            encrypted_value = encryptor.process_bind_param(decrypted_value, session.bind.dialect)
-                            to_update[col] = encrypted_value
-                    if to_update:
-                        cols = ", ".join([f"{col} = :{col}" for col in to_update.keys()])
-                        to_update["id"] = id_
-                        await session.execute(
-                            f"update {table_name} set {cols} where id = :id",  # noqa: E501
-                            to_update,
-                        )
-                print(
-                    "[green]"
-                    f"Data in [bold]{table_name}[/bold] table is reencrypted."  # noqa: E501
-                    "[green]"
-                )
+                select_cols = ", ".join(columns)
+                cnds = " or ".join([f"{col} is not null" for col in columns])
+                limit = ROWS_PER_SELECT_LIMIT
+                page = 1
+                reencrypted = 0
+                while True:
+                    offset = (page - 1) * limit
+                    sql = f"""
+                        select
+                            id,
+                            {select_cols}
+                        from {table_name}
+                        where {cnds}
+                        order by created_at, id
+                        limit {limit} offset {offset}
+                        for update
+                    """
+                    result = await session.execute(sql)
+                    rows = result.all()
+                    if not rows:
+                        break
+                    for row in rows:
+                        id_ = row.id
+                        to_update = {}
+                        for col in columns:
+                            value = getattr(row, col)
+                            if value:
+                                decrypted_value = decryptor.process_result_value(value, session.bind.dialect)
+                                encrypted_value = encryptor.process_bind_param(
+                                    decrypted_value,
+                                    session.bind.dialect,
+                                )
+                                to_update[col] = encrypted_value
+                        if to_update:
+                            cols = ", ".join([f"{col} = :{col}" for col in to_update.keys()])
+                            to_update["id"] = id_
+                            await session.execute(f"update {table_name} set {cols} where id = :id", to_update)
+                            reencrypted += 1
+                    print(f"Batch {page} of rows in the table {table_name} was processed.")
+                    if len(rows) < limit:
+                        break
+                    # Get next rows
+                    page += 1
+                print("[green]" f"{reencrypted} rows in [bold]{table_name}[/bold] table were reencrypted." "[green]")
