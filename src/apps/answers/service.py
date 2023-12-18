@@ -84,6 +84,7 @@ from apps.shared.encryption import decrypt_cbc, encrypt_cbc
 from apps.shared.exception import EncryptionError
 from apps.shared.query_params import QueryParams
 from apps.users import User, UserSchema, UsersCRUD
+from apps.users.errors import UserNotFound
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -852,12 +853,23 @@ class AnswerService:
         activity_id: uuid.UUID,
         respondent_id: uuid.UUID,
     ) -> ReportServerResponse | None:
+        respondent_exist = await UsersCRUD(self.session).exist_by_id(
+            id_=respondent_id
+        )
+        if not respondent_exist:
+            raise UserNotFound(
+                message=f"No such respondent with id={respondent_exist}."
+            )
+
+        service = ReportServerService(self.session)
+        await self._is_report_server_configured(applet_id)
+
         act_crud = ActivityHistoriesCRUD(self.session)
         activity_hsts = await act_crud.get_activities(activity_id, None)
         if not activity_hsts:
             activity_error_exception = ActivityDoeNotExist()
             activity_error_exception.message = (
-                f"No such activity_id={activity_id}"
+                f"No such activity with id=${activity_id}"
             )
             raise activity_error_exception
 
@@ -868,16 +880,8 @@ class AnswerService:
             applet_id, act_versions, respondent_id
         )
         if not answer:
-            answer_error_exception = AnswerNotFoundError()
-            answer_error_exception.message = (
-                f"No such answer with applet_id=${applet_id},"
-                f" activity_id={activity_id}"
-                f" and respondent_id={respondent_id}"
-            )
-            raise answer_error_exception
+            return None
 
-        service = ReportServerService(self.session)
-        await self._is_report_server_configured(applet_id)
         is_single_flow = await service.is_flows_single_report(answer.id)
         if is_single_flow:
             report = await service.create_report(answer.submit_id)
