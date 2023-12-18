@@ -881,7 +881,9 @@ class AnswerService:
         if not answer:
             return None
 
-        service = ReportServerService(self.session)
+        service = ReportServerService(
+            self.session, arbitrary_session=self.answer_session
+        )
         is_single_flow = await service.is_flows_single_report(answer.id)
         if is_single_flow:
             report = await service.create_report(answer.submit_id)
