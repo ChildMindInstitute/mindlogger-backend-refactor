@@ -20,8 +20,8 @@ class Item(BaseModel):
     id: uuid.UUID
     question: str
     responseType: str
-    responseValues: dict
-    config: dict
+    responseValues: dict | None
+    config: dict | None
     name: str
     isHidden: bool | None
     conditionalLogic: ConditionalLogic | None
@@ -48,12 +48,12 @@ class UnencryptedApplet(BaseModel):
     id: uuid.UUID
     displayName: str
     description: str
-    about: str
-    image: str = ""
-    watermark: str = ""
-    version: str
-    createdAt: datetime.datetime
-    respondent_nickname: str
+    # about: str
+    # image: str = ""
+    # watermark: str = ""
+    # version: str
+    # createdAt: datetime.datetime
+    # respondent_nickname: str
     activities: list[Activitie]
 
 
