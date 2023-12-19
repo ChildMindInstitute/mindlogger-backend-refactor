@@ -1742,7 +1742,7 @@ class TestApplet(BaseTest):
                                 max_value=5,
                                 min_image=None,
                                 max_image=None,
-                                scores=None,
+                                scores=[0, 1, 2, 3, 4],
                             ),
                             config=dict(
                                 add_scores=True,
