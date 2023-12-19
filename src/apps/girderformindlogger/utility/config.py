@@ -12,8 +12,8 @@ def loadConfig():
         "server.max_request_body_size": 209715200,
     }
     cherrypy.config["database"] = {
-        # "uri": f"mongodb://{os.getenv('MONGO__HOST')}:{int(os.getenv('MONGO__PORT'))}/{os.getenv('MONGO__DB')}",
-        "uri": f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}/{os.getenv('MONGO__DB')}",
+        "uri": f"mongodb://{os.getenv('MONGO__HOST')}:{int(os.getenv('MONGO__PORT'))}/{os.getenv('MONGO__DB')}",
+        # "uri": f"mongodb+srv://{os.getenv('MONGO__USER')}:{os.getenv('MONGO__PASSWORD')}@{os.getenv('MONGO__HOST')}/{os.getenv('MONGO__DB')}",
         "replica_set": None,
     }
     cherrypy.config["server"] = {

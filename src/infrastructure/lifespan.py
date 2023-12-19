@@ -6,7 +6,7 @@ from broker import broker
 async def startup_taskiq() -> None:
     if not broker.is_worker_process:
         print("Brocker startup")
-        await broker.startup()
+        # await broker.startup()
 
 
 async def shutdown_taskiq() -> None:
