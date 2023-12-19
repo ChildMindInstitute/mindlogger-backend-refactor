@@ -26,6 +26,10 @@ class PasswordRecoveryKeyNotFound(NotFoundError):
     message = _("Password recovery key not found.")
 
 
+class PasswordHasSpacesError(NotFoundError):
+    message = _("Password should not contain blank spaces")
+
+
 class UserIsDeletedError(NotFoundError):
     message = _("User is deleted.")
 
