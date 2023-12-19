@@ -13,7 +13,7 @@ from apps.users.domain import (
     UserCreateRequest,
     UserUpdateRequest,
 )
-from apps.users.errors import EmailAddressNotValid
+from apps.users.errors import EmailAddressNotValid, PasswordHasSpacesError
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
 from infrastructure.database.core import atomic
@@ -24,6 +24,8 @@ async def user_create(
     user_create_schema: UserCreateRequest = Body(...),
     session=Depends(get_session),
 ) -> Response[PublicUser]:
+    if " " in user_create_schema.password:
+        raise PasswordHasSpacesError()
     async with atomic(session):
         email_hash = hash_sha224(user_create_schema.email)
         user_schema = await UsersCRUD(session).save(

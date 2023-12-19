@@ -8,7 +8,9 @@ class UserNotFound(NotFoundError):
 
 
 class UserAlreadyExistError(ValidationError):
-    message = _("That email is already registered in the system.")
+    message = _(
+        "That email address is already associated with a MindLogger account."
+    )
 
 
 class EmailAddressError(ValidationError):
@@ -16,11 +18,16 @@ class EmailAddressError(ValidationError):
 
 
 class EmailAddressNotValid(ValidationError):
+    message_is_template: bool = True
     message = _("Email address: {email} is not valid.")
 
 
 class PasswordRecoveryKeyNotFound(NotFoundError):
     message = _("Password recovery key not found.")
+
+
+class PasswordHasSpacesError(NotFoundError):
+    message = _("Password should not contain blank spaces")
 
 
 class UserIsDeletedError(NotFoundError):
@@ -32,6 +39,7 @@ class UserDeviceNotFound(NotFoundError):
 
 
 class UsersError(ValidationError):
+    message_is_template: bool = True
     message = _("Can not make the looking up by {key} {value}.")
 
 
