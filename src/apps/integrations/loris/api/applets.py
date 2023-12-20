@@ -46,7 +46,7 @@ async def integration(applet_id: uuid.UUID, session):
         decrypted_answers = await report_service.decrypt_data_for_loris(
             applet_id
         )
-        # logger.info(f"decrypted_answers: {decrypted_answers}")
+        logger.info(f"decrypted_answers: {decrypted_answers}")
     except ReportServerError as e:
         logger.info(f"error during request to report server: {e}")
         return
@@ -101,7 +101,7 @@ async def integration(applet_id: uuid.UUID, session):
             }
         )
     loris_data["activities"] = activities
-    # logger.info(f"loris_data: {loris_data}")
+    logger.info(f"loris_data: {loris_data}")
 
     timeout = aiohttp.ClientTimeout(total=20)
     async with aiohttp.ClientSession(timeout=timeout) as session:
