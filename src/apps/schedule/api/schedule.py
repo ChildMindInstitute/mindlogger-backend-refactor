@@ -20,6 +20,7 @@ from apps.schedule.domain.schedule.requests import (
     EventRequest,
     EventUpdateRequest,
 )
+from apps.schedule.errors import StartEndTimeEqualError
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.link import convert_link_key
@@ -43,6 +44,10 @@ async def schedule_create(
 ) -> Response[PublicEvent]:
     """Create a new event for an applet."""
     applet_service = AppletService(session, user.id)
+
+    if schema.start_time == schema.end_time:
+        raise StartEndTimeEqualError
+
     async with atomic(session):
         await applet_service.exist_by_id(applet_id)
         await CheckAccessService(
