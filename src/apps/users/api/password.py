@@ -19,7 +19,11 @@ from apps.users.domain import (
     User,
     UserChangePassword,
 )
-from apps.users.errors import ReencryptionInProgressError, UserNotFound
+from apps.users.errors import (
+    PasswordHasSpacesError,
+    ReencryptionInProgressError,
+    UserNotFound,
+)
 from apps.users.services import PasswordRecoveryCache, PasswordRecoveryService
 from apps.users.tasks import reencrypt_answers
 from config import settings
@@ -37,6 +41,9 @@ async def password_update(
     session=Depends(get_session),
 ) -> Response[PublicUser]:
     """General endpoint for update password for signin."""
+    if " " in schema.password:
+        raise PasswordHasSpacesError()
+
     reencryption_in_progress = await JobService(
         session, user.id
     ).is_job_in_progress("reencrypt_answers")

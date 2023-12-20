@@ -19,6 +19,7 @@ from apps.shared.exception import (
 
 
 class AppletNotFoundError(NotFoundError):
+    message_is_template: bool = True
     message = _("No such applets with {key}={value}.")
 
 
@@ -31,6 +32,7 @@ class NotValidAppletHistory(NotFoundError):
 
 
 class AppletLinkNotFoundError(NotFoundError):
+    message_is_template: bool = True
     message = _("No such applet link for id={applet_id}.")
 
 
@@ -43,6 +45,7 @@ class AppletsFolderAccessDenied(AccessDeniedError):
 
 
 class AppletsError(ValidationError):
+    message_is_template: bool = True
     message = _("Can not make the looking up applets by {key} {value}.")
 
 

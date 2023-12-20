@@ -24,13 +24,15 @@ class BaseError(Exception):
 
     def __init__(self, *args, **kwargs):
         self.kwargs = kwargs
-        if args and not self.message_is_template:
-            self.message = args[0]
-
+        self.updated_message = None
+        if self.args and not self.message_is_template:
+            self.updated_message = args[0]
         super().__init__(self.message.format(**kwargs))
 
     @property
     def error(self):
+        if self.updated_message:
+            return self.updated_message
         return _(self.message).format(**self.kwargs)
 
 

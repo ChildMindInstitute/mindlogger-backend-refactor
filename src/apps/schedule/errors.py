@@ -10,14 +10,17 @@ from apps.shared.exception import (
 
 
 class EventNotFoundError(NotFoundError):
+    message_is_template: bool = True
     message = _("No such event with {key}={value}.")
 
 
 class PeriodicityNotFoundError(NotFoundError):
+    message_is_template: bool = True
     message = _("No such periodicity with {key}={value}.")
 
 
 class AppletScheduleNotFoundError(NotFoundError):
+    message_is_template: bool = True
     message = _("No schedules found for applet {applet_id}")
 
 
@@ -42,16 +45,19 @@ class EventError(InternalServerError):
 
 
 class UserEventAlreadyExists(ValidationError):
+    message_is_template: bool = True
     message = _("The event {event_id} for user {user_id} already exists.")
 
 
 class ActivityEventAlreadyExists(ValidationError):
+    message_is_template: bool = True
     message = _(
         "The event {event_id} for activity {activity_id} already exists."
     )
 
 
 class FlowEventAlreadyExists(ValidationError):
+    message_is_template: bool = True
     message = _("The event {event_id} for flow {flow_id} already exists.")
 
 
