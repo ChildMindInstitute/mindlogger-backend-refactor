@@ -204,10 +204,19 @@ class TestAnswerActivityItems(BaseTest):
             self.latest_report_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
-                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa8",
             ),
         )
         assert response.status_code == 200
+
+        response = await self.client.post(
+            self.latest_report_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8",
+                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3618",
+                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            ),
+        )
+        assert response.status_code == 404
 
     @rollback
     async def test_public_answer_activity_items_create_for_respondent(self):

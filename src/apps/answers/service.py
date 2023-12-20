@@ -857,9 +857,7 @@ class AnswerService:
             id_=respondent_id
         )
         if not respondent_exist:
-            raise UserNotFound(
-                message=f"No such respondent with id={respondent_exist}."
-            )
+            raise UserNotFound(f"No such respondent with id={respondent_id}.")
 
         await self._is_report_server_configured(applet_id)
 
