@@ -1,23 +1,24 @@
+import json
 import time
 import uuid
-import json
 
 import aiohttp
 from fastapi import BackgroundTasks, Depends
 from starlette import status
 from starlette.responses import Response as HTTPResponse
 
+from apps.activities.crud.activity import ActivitiesCRUD
+from apps.activities.crud.activity_item import ActivityItemsCRUD
+from apps.answers.errors import ReportServerError
 from apps.answers.service import ReportServerService
+from apps.applets.crud.applets import AppletsCRUD
 from apps.authentication.deps import get_current_user
 from apps.integrations.loris.domain import (
-    UnencryptedApplet,
     LorisServerResponse,
+    UnencryptedApplet,
 )
 from apps.integrations.loris.errors import LorisServerError
 from apps.users.domain import User
-from apps.activities.crud.activity import ActivitiesCRUD
-from apps.activities.crud.activity_item import ActivityItemsCRUD
-from apps.applets.crud.applets import AppletsCRUD
 from infrastructure.database.deps import get_session
 from infrastructure.logger import logger
 
@@ -40,8 +41,15 @@ LORIS_LOGIN_DATA = {
 
 
 async def integration(applet_id: uuid.UUID, session):
-    report_service = ReportServerService(session)
-    decrypted_answers = await report_service.decrypt_data_for_loris(applet_id)
+    try:
+        report_service = ReportServerService(session)
+        decrypted_answers = await report_service.decrypt_data_for_loris(
+            applet_id
+        )
+        # logger.info(f"decrypted_answers: {decrypted_answers}")
+    except ReportServerError as e:
+        logger.info(f"error during request to report server: {e}")
+        return
 
     activities_crud = ActivitiesCRUD(session)
     activities_items_crud = ActivityItemsCRUD(session)
@@ -89,12 +97,13 @@ async def integration(applet_id: uuid.UUID, session):
                 "order": _activitie.order,
                 "createdAt": _activitie.created_at,
                 "items": items,
-                # "results": activitie["data"],
+                "results": activitie["data"],
             }
         )
     loris_data["activities"] = activities
-    timeout = aiohttp.ClientTimeout(total=20)
+    # logger.info(f"loris_data: {loris_data}")
 
+    timeout = aiohttp.ClientTimeout(total=20)
     async with aiohttp.ClientSession(timeout=timeout) as session:
         logger.info(
             f"Sending LOGIN request to the loris server {LORIS_LOGIN_URL}."
