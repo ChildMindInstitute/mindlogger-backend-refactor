@@ -22,7 +22,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d3",
@@ -31,7 +32,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d4",
@@ -40,7 +42,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d5",
@@ -49,7 +52,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -94,7 +98,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66e3",
@@ -103,7 +108,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66e4",
@@ -112,7 +118,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66e5",
@@ -121,7 +128,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },
@@ -195,7 +203,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d3",
@@ -204,7 +213,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d4",
@@ -213,7 +223,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d5",
@@ -222,7 +233,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },

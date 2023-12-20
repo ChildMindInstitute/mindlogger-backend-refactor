@@ -87,6 +87,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "backing",
                                         "color": "#123",
+                                        "value": 0,
                                     },
                                     {
                                         "text": "bad",
@@ -95,6 +96,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "Generic",
                                         "color": "#456",
+                                        "value": 1,
                                     },
                                     {
                                         "text": "normally",
@@ -103,6 +105,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "Gasoline",
                                         "color": "#789",
+                                        "value": 2,
                                     },
                                     {
                                         "text": "perfect",
@@ -111,6 +114,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "payment",
                                         "color": "#234",
+                                        "value": 3,
                                     },
                                 ]
                             },
@@ -141,6 +145,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "Music",
                                         "color": "#567",
+                                        "value": 0,
                                     },
                                     {
                                         "text": "bad",
@@ -149,6 +154,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "East",
                                         "color": "#876",
+                                        "value": 1,
                                     },
                                     {
                                         "text": "normally",
@@ -157,6 +163,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "Sodium",
                                         "color": "#923",
+                                        "value": 2,
                                     },
                                     {
                                         "text": "perfect",
@@ -165,6 +172,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "Electronics",
                                         "color": "#567",
+                                        "value": 3,
                                     },
                                 ]
                             },
@@ -1883,7 +1891,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 200
         assert (
             response.json()["result"]["displayName"]
-            == "Applet User daily behave updated updated "
+            == "Applet User daily behave updated updated"
         )
         assert len(response.json()["result"]["activities"]) == 4
 

@@ -1,4 +1,3 @@
-import logging
 import traceback
 
 from fastapi.encoders import jsonable_encoder
@@ -9,8 +8,7 @@ from starlette.responses import JSONResponse
 
 from apps.shared.domain import ErrorResponse, ErrorResponseMulti
 from apps.shared.exception import BaseError
-
-logger = logging.getLogger("mindlogger_backend")
+from infrastructure.logger import logger
 
 
 def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
@@ -24,8 +22,6 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
             )
         ]
     )
-
-    logger.error(response)
 
     return JSONResponse(
         response.dict(by_alias=True),
@@ -41,7 +37,11 @@ def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
         result=[ErrorResponse(message=f"Unhandled error: {error_message}")]
     )
 
-    logger.error(response)
+    # NOTE: replace error with warning because application can still work
+    # Also it stops sending duplicate of error to the sentry.
+    # (Default logging level for sending events to the sentry is ERROR.
+    # It means that each logger.error sends additional event to the sentry).
+    logger.warning(response)
 
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),
@@ -63,8 +63,6 @@ def pydantic_validation_errors_handler(
             for err in error.errors()
         ]
     )
-
-    logger.error(response)
 
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),

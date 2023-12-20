@@ -230,6 +230,7 @@ class TestDataService:
                         "tooltip": None,
                         "is_hidden": False,
                         "color": None,
+                        "value": 0,
                     },
                     {
                         "id": str(uuid.uuid4()),
@@ -239,6 +240,7 @@ class TestDataService:
                         "tooltip": None,
                         "is_hidden": False,
                         "color": None,
+                        "value": 1,
                     },
                 ]
             }
@@ -269,6 +271,7 @@ class TestDataService:
                         "tooltip": None,
                         "is_hidden": False,
                         "color": None,
+                        "value": 0,
                     },
                     {
                         "id": str(uuid.uuid4()),
@@ -278,6 +281,7 @@ class TestDataService:
                         "tooltip": None,
                         "is_hidden": False,
                         "color": None,
+                        "value": 1,
                     },
                 ]
             }

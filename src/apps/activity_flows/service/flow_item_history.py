@@ -47,3 +47,10 @@ class FlowItemHistoryService:
             [f"{pk}_{self.version}" for pk in flow_ids]
         )
         return [FlowItemHistoryFull.from_orm(schema) for schema in schemas]
+
+    async def get_by_flow_id_versions(
+        self, activity_id_versions: list[str]
+    ) -> list[FlowItemHistoryFull]:
+        return await FlowItemHistoriesCRUD(
+            self.session
+        ).get_by_flow_id_versions(activity_id_versions)

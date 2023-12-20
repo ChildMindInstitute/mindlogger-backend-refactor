@@ -22,6 +22,10 @@ from apps.activities.crud import (
     ActivityItemHistoriesCRUD,
 )
 from apps.activities.domain.activity_history import ActivityHistoryFull
+from apps.activities.errors import (
+    ActivityDoeNotExist,
+    ActivityHistoryDoeNotExist,
+)
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
@@ -80,6 +84,7 @@ from apps.shared.encryption import decrypt_cbc, encrypt_cbc
 from apps.shared.exception import EncryptionError
 from apps.shared.query_params import QueryParams
 from apps.users import User, UserSchema, UsersCRUD
+from apps.users.errors import UserNotFound
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -155,6 +160,16 @@ class AnswerService:
                 raise WrongAnswerGroupVersion()
             elif existed_answer.respondent_id != self.user_id:
                 raise WrongRespondentForAnswerGroup()
+
+        pk = self._generate_history_id(applet_answer.version)
+        activity_history = await ActivityHistoriesCRUD(self.session).get_by_id(
+            pk(applet_answer.activity_id)
+        )
+
+        if not activity_history.applet_id.startswith(
+            f"{applet_answer.applet_id}"
+        ):
+            raise ActivityHistoryDoeNotExist()
 
     async def _validate_applet_for_anonymous_response(
         self, applet_id: uuid.UUID, version: str
@@ -838,8 +853,23 @@ class AnswerService:
         activity_id: uuid.UUID,
         respondent_id: uuid.UUID,
     ) -> ReportServerResponse | None:
+        respondent_exist = await UsersCRUD(self.session).exist_by_id(
+            id_=respondent_id
+        )
+        if not respondent_exist:
+            raise UserNotFound(f"No such respondent with id={respondent_id}.")
+
+        await self._is_report_server_configured(applet_id)
+
         act_crud = ActivityHistoriesCRUD(self.session)
         activity_hsts = await act_crud.get_activities(activity_id, None)
+        if not activity_hsts:
+            activity_error_exception = ActivityDoeNotExist()
+            activity_error_exception.message = (
+                f"No such activity with id=${activity_id}"
+            )
+            raise activity_error_exception
+
         act_versions = set(
             map(lambda act_hst: act_hst.id_version, activity_hsts)
         )
@@ -848,8 +878,10 @@ class AnswerService:
         )
         if not answer:
             return None
-        service = ReportServerService(self.session)
-        await self._is_report_server_configured(applet_id)
+
+        service = ReportServerService(
+            self.session, arbitrary_session=self.answer_session
+        )
         is_single_flow = await service.is_flows_single_report(answer.id)
         if is_single_flow:
             report = await service.create_report(answer.submit_id)

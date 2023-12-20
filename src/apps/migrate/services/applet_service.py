@@ -8,10 +8,7 @@ from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import (
     Role,
 )
-from apps.applets.domain.applet_create_update import (
-    AppletCreate,
-    AppletUpdate,
-)
+from apps.applets.domain.applet_create_update import AppletCreate
 from apps.migrate.domain.applet_full import AppletMigratedFull
 from apps.migrate.services.applet_history_service import (
     AppletMigrationHistoryService,

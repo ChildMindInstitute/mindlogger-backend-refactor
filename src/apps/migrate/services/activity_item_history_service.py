@@ -1,7 +1,7 @@
 from apps.activities.crud import ActivityItemHistoriesCRUD
 from apps.activities.db.schemas import ActivityItemHistorySchema
-from apps.activities.domain.activity_full import (
-    ActivityItemFull,
+from apps.migrate.domain.activity_full import (
+    ActivityItemMigratedFull,
 )
 from apps.migrate.domain.applet_full import AppletMigratedFull
 from apps.migrate.utilities import prepare_extra_fields_to_save
@@ -13,7 +13,7 @@ class ActivityItemHistoryMigrationService:
         self.session = session
         self._applet = applet
 
-    async def add(self, activity_items: list[ActivityItemFull]):
+    async def add(self, activity_items: list[ActivityItemMigratedFull]):
         schemas = []
 
         for item in activity_items:
@@ -38,9 +38,7 @@ class ActivityItemHistoryMigrationService:
                     updated_at=self._applet.updated_at,
                     migrated_date=self._applet.migrated_date,
                     migrated_updated=self._applet.migrated_updated,
-                    extra_fields=prepare_extra_fields_to_save(
-                        item.extra_fields
-                    ),
+                    extra_fields={},
                 )
             )
         await ActivityItemHistoriesCRUD(self.session).create_many(schemas)

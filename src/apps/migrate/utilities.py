@@ -15,7 +15,9 @@ def mongoid_to_uuid(id_):
     return uuid.UUID(str(id_) + "00000000")
 
 
-def uuid_to_mongoid(uid: uuid.UUID) -> None | ObjectId:
+def uuid_to_mongoid(uid: uuid.UUID | str) -> None | ObjectId:
+    if isinstance(uid, str):
+        uid = uuid.UUID(uid)
     return ObjectId(uid.hex[:-8]) if uid.hex[-8:] == "0" * 8 else None
 
 

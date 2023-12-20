@@ -1,6 +1,9 @@
+import uuid
+
 from apps.authentication.services import AuthenticationService
 from apps.users import UserSchema, UsersCRUD
 from apps.users.domain import User
+from apps.users.errors import UserNotFound
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
 from config import settings
@@ -88,3 +91,8 @@ class UserService:
     async def get_by_email(self, email: str) -> User:
         crud = UsersCRUD(self.session)
         return await crud.get_by_email(email)
+
+    async def exists_by_id(self, user_id: uuid.UUID):
+        user_exist = await UsersCRUD(self.session).exist_by_id(id_=user_id)
+        if not user_exist:
+            raise UserNotFound()
