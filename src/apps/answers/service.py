@@ -1332,47 +1332,46 @@ class ReportServerService:
     async def decrypt_data_for_loris(
         self, applet_id: uuid.UUID
     ) -> ReportServerResponse | None:
+        # data = {
+        #     "message": "ok",
+        #     "result": [
+        #         {
+        #             "activityId": "8c7397b6-5420-4673-9602-71d7eebb62f0",
+        #             "data": [{"value": 0, "text": None}],
+        #         },
+        #         {
+        #             "activityId": "8c7397b6-5420-4673-9602-71d7eebb62f0",
+        #             "data": [
+        #                 {"value": 0, "text": None},
+        #                 "test not encrypted text",
+        #             ],
+        #         },
+        #     ],
+        # }
+        # return data
+
         answers = await AnswersCRUD(
             self.answers_session
         ).get_by_applet_id_and_readiness_to_share_data(applet_id=applet_id)
         if not answers:
             return None
-        applet_id_version: str = answers[0].applet_history_id
-        available_activities = await ActivityHistoriesCRUD(
-            self.session
-        ).get_activity_id_versions_for_report(applet_id_version)
-        answers_for_loris = [
-            i for i in answers if i.activity_history_id in available_activities
-        ]
-        # If answers only on performance tasks
-        if not answers_for_loris:
-            return None
-        answer_map = dict((answer.id, answer) for answer in answers_for_loris)
-        initial_answer = answers_for_loris[0]
+
+        answer_map = dict((answer.id, answer) for answer in answers)
 
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
-        user_info = await self._get_user_info(
-            initial_answer.respondent_id, applet_id
-        )
-        applet_full = await self._prepare_applet_data(
-            applet_id,
-            initial_answer.version,
-            applet.encryption,
-            non_performance=True,
-        )
-
-        encryption = ReportServerEncryption(applet.report_public_key)
         responses, user_public_keys = await self._prepare_responses(answer_map)
 
         data = dict(
             responses=responses,
-            userPublicKeys=user_public_keys,
+            appletEncryption=dict(
+                accountId=applet.encryption["account_id"],
+                base=applet.encryption["base"],
+                prime=applet.encryption["prime"],
+                publicKey=applet.encryption["public_key"],
+            ),
             userPublicKey=user_public_keys[0],
-            now=datetime.datetime.utcnow().strftime("%x"),
-            user=user_info,
-            applet=applet_full,
+            appletId=str(applet_id),
         )
-        encrypted_data = encryption.encrypt(data)
 
         url: str = "{}/decrypt-user-responses".format(
             applet.report_server_ip.rstrip("/")
@@ -1385,7 +1384,7 @@ class ReportServerService:
             start = time.time()
             async with session.post(
                 url,
-                json=dict(payload=encrypted_data),
+                json=data,
             ) as resp:
                 duration = time.time() - start
                 if resp.status == 200:
