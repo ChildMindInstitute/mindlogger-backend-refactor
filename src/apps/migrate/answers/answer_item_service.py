@@ -139,6 +139,7 @@ class AnswerItemMigrationService:
             assessment_activity_id=mongo_answer["activity_id_version"],
         )
         if not assessment:
+            data["id"] = mongoid_to_uuid(mongo_answer["_id"])
             data["migrated_date"] = datetime.utcnow()
             await crud.create(AnswerItemSchema(**data))
 
