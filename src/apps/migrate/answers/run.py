@@ -89,8 +89,10 @@ class AnswersMigrateFacade:
             if applet_id not in APPLETS_WITH_ISSUES_DONT_MIGRATE_ANSWERS
         ]
 
-        if not update_data:
-            await self._wipe_answers_data(regular_session, applets_ids)
+        # if not update_data:
+        #     answer = input("Please type 'delete' to delete all answers data")
+        #     if answer == "delete":
+        #         await self._wipe_answers_data(regular_session, applets_ids)
 
         async for answer_with_files in self._collect_migratable_answers(
             applets_ids, assessments_only
@@ -435,7 +437,9 @@ class AnswersMigrateFacade:
                     )._create(ActivityItemHistorySchema(**item))
         elif assessment_only and reviewer_assessment_activities:
             activity = reviewer_assessment_activities[0]
-            id_version = f"{activity.id}_{original_applet_version}"
+            id_version = (
+                f"{activity.id}_{mongo_answer['meta']['applet']['version']}"
+            )
             activity_hist = await ActivityHistoriesCRUD(
                 regular_session
             ).get_by_id(id_version)
