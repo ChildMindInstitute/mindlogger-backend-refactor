@@ -25,8 +25,8 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         query: Query = (
             select(self.schema_class)
             .where(
-                self.schema_class.user_id == query_set.user_id
-                and self.schema_class.device_id == query_set.device_id
+                self.schema_class.user_id == query_set.user_id,
+                self.schema_class.device_id == query_set.device_id,
             )
             .order_by(self.schema_class.created_at.desc())
             .limit(query_set.limit)
@@ -46,33 +46,29 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         notif_in_queue_upd = True
         sched_notif_upd = True
 
-        logs = await self.filter(
-            NotificationLogQuery(
-                user_id=schema.user_id,
-                device_id=schema.device_id,
-                limit=1,
-            )
-        )
-
-        previous = dict()
-        if logs:
-            previous = logs[0].dict()
+        previous = await self.get_previous(schema.user_id, schema.device_id)
 
         if not schema.notification_descriptions:
-            schema.notification_descriptions = previous.get(
-                "notification_descriptions", json.dumps(None)
+            schema.notification_descriptions = (
+                json.dumps(previous.notification_descriptions)
+                if previous
+                else json.dumps(None)
             )
             notif_desc_upd = False
 
         if not schema.notification_in_queue:
-            schema.notification_in_queue = previous.get(
-                "notifications_in_queue", json.dumps(None)
+            schema.notification_in_queue = (
+                json.dumps(previous.notification_in_queue)
+                if previous
+                else json.dumps(None)
             )
             notif_in_queue_upd = False
 
         if not schema.scheduled_notifications:
-            schema.scheduled_notifications = previous.get(
-                "scheduled_notifications", json.dumps(None)
+            schema.scheduled_notifications = (
+                json.dumps(previous.scheduled_notifications)
+                if previous
+                else json.dumps(None)
             )
             sched_notif_upd = False
 
@@ -91,3 +87,16 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
             return notification_log
         except Exception:
             raise NotificationLogError()
+
+    async def get_previous(
+        self, user_id: str, device_id: str
+    ) -> NotificationLogSchema | None:
+        query: Query = select(NotificationLogSchema)
+        query = query.where(
+            NotificationLogSchema.user_id == user_id,
+            NotificationLogSchema.device_id == device_id,
+        )
+        query = query.order_by(NotificationLogSchema.created_at.desc())
+        query = query.limit(1)
+        res = await self._execute(query)
+        return res.scalars().one_or_none()
