@@ -1,1 +1,1 @@
-from apps.shared.commands.patch import app as patch  # noqa: F401
+from apps.shared.commands.patch_commands import app as patch  # noqa: F401
