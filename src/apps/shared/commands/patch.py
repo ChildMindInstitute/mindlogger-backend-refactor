@@ -28,27 +28,9 @@ class Patch:
 
 Patch.register(
     PatchRegister(
-        file_path="sample.py",
-        task_id="M2-4444",
-        description="Sample2",
-        order=2,
-    )
-)
-
-Patch.register(
-    PatchRegister(
-        file_path="sample.sql",
-        task_id="M2-4444",
-        description="Sample",
-        order=1,
-    )
-)
-
-Patch.register(
-    PatchRegister(
-        file_path="sample2.sql",
-        task_id="M2-5555",
-        description="Sample arbitrary",
+        file_path="slider_tickmark_label.py",
+        task_id="M2-3781",
+        description="Slider tick marks and labels fix",
         order=1,
     )
 )
