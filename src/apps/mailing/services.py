@@ -60,7 +60,7 @@ class MailingService:
         if settings.env == "testing":
             mailing_class = TestMail
         fm = mailing_class(self._connection)
-        # await fm.send_message(message)
+        await fm.send_message(message)
 
     def get_template(self, path: str, **kwargs):
         template = self.env.get_template(f"{path}.html")
