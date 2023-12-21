@@ -1,0 +1,1 @@
+update public.invitations set is_deleted = True where is_deleted = True;
