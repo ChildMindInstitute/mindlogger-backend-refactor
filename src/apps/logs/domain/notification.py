@@ -65,9 +65,9 @@ class PublicNotificationLog(_NotificationLogBase, PublicModel):
     """Public NotificationLog model."""
 
     id: uuid.UUID
-    notification_descriptions: list
-    notification_in_queue: list
-    scheduled_notifications: list
+    notification_descriptions: list | None
+    notification_in_queue: list | None
+    scheduled_notifications: list | None
     created_at: datetime.datetime
 
     @validator(
