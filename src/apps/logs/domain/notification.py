@@ -38,7 +38,8 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
     )
     def validate_json(cls, v):
         try:
-            return json.loads(v)
+            if v is not None:
+                return json.loads(v)
         except json.JSONDecodeError:
             raise ValueError("Invalid JSON")
 
