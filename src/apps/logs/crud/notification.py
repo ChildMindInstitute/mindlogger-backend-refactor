@@ -1,7 +1,8 @@
 import json
 
 from sqlalchemy import select
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import InstrumentedAttribute, Query
+from sqlalchemy.sql.operators import ColumnOperators
 
 from apps.logs.db.schemas import NotificationLogSchema
 from apps.logs.domain import (
@@ -46,29 +47,24 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         notif_in_queue_upd = True
         sched_notif_upd = True
 
-        previous = await self.get_previous(schema.user_id, schema.device_id)
-
         if not schema.notification_descriptions:
+            description = await self.get_previous_description(schema)
             schema.notification_descriptions = (
-                json.dumps(previous.notification_descriptions)
-                if previous
-                else json.dumps(None)
+                json.dumps(description) if description else json.dumps(None)
             )
             notif_desc_upd = False
 
         if not schema.notification_in_queue:
+            in_queue = await self.get_previous_in_queue(schema)
             schema.notification_in_queue = (
-                json.dumps(previous.notification_in_queue)
-                if previous
-                else json.dumps(None)
+                json.dumps(in_queue) if in_queue else json.dumps(None)
             )
             notif_in_queue_upd = False
 
         if not schema.scheduled_notifications:
+            scheduled = await self.get_previous_scheduled_notifications(schema)
             schema.scheduled_notifications = (
-                json.dumps(previous.scheduled_notifications)
-                if previous
-                else json.dumps(None)
+                json.dumps(scheduled) if scheduled else json.dumps(None)
             )
             sched_notif_upd = False
 
@@ -88,15 +84,50 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         except Exception:
             raise NotificationLogError()
 
-    async def get_previous(
-        self, user_id: str, device_id: str
+    async def _get_previous(
+        self,
+        user_id: str,
+        device_id: str,
+        field: list[InstrumentedAttribute],
+        flt: list[ColumnOperators],
     ) -> NotificationLogSchema | None:
-        query: Query = select(NotificationLogSchema)
+        query: Query = select(field)
         query = query.where(
             NotificationLogSchema.user_id == user_id,
             NotificationLogSchema.device_id == device_id,
+            *flt,
         )
         query = query.order_by(NotificationLogSchema.created_at.desc())
         query = query.limit(1)
         res = await self._execute(query)
         return res.scalars().one_or_none()
+
+    async def get_previous_description(
+        self, schema: NotificationLogCreate
+    ) -> NotificationLogSchema | None:
+        return await self._get_previous(
+            schema.user_id,
+            schema.device_id,
+            [NotificationLogSchema.notification_descriptions],
+            [NotificationLogSchema.notification_descriptions.isnot(None)],
+        )
+
+    async def get_previous_in_queue(
+        self, schema: NotificationLogCreate
+    ) -> NotificationLogSchema | None:
+        return await self._get_previous(
+            schema.user_id,
+            schema.device_id,
+            [NotificationLogSchema.notification_in_queue],
+            [NotificationLogSchema.notification_in_queue.isnot(None)],
+        )
+
+    async def get_previous_scheduled_notifications(
+        self, schema: NotificationLogCreate
+    ) -> NotificationLogSchema | None:
+        return await self._get_previous(
+            schema.user_id,
+            schema.device_id,
+            [NotificationLogSchema.scheduled_notifications],
+            [NotificationLogSchema.scheduled_notifications.isnot(None)],
+        )

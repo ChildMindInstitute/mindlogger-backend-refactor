@@ -32,4 +32,6 @@ async def notification_log_retrieve(
     async with atomic(session):
         notification_logs = await NotificationLogCRUD(session).filter(query)
 
-    return ResponseMulti(result=notification_logs)
+    return ResponseMulti(
+        result=notification_logs, count=len(notification_logs)
+    )
