@@ -1195,7 +1195,7 @@ class ScheduleService:
         # get list of activity ids
         activity_ids = []
         activities = await ActivitiesCRUD(self.session).get_by_applet_id(
-            applet_id
+            applet_id, is_reviewable=False
         )
         activity_ids = [
             activity.id for activity in activities if not activity.is_hidden
