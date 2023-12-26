@@ -7,6 +7,7 @@ from apps.logs.domain import (
     PublicNotificationLog,
 )
 from apps.shared.domain import Response, ResponseMulti
+from apps.users.services.user import UserService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 
@@ -17,8 +18,13 @@ async def notification_log_create(
 ) -> Response[PublicNotificationLog]:
     """Creates a new NotificationLog."""
     async with atomic(session):
+        # TODO: when mobile is ready for authentication, we will have to get
+        # user info from get_current_user dependency. For now keep user_id
+        # as email
+        email = schema.user_id
+        user = await UserService(session).get_by_email(email)
         notification_log = await NotificationLogCRUD(session).save(
-            schema=schema
+            schema=schema, user_id=str(user.id)
         )
 
     return Response(result=notification_log)
@@ -30,7 +36,12 @@ async def notification_log_retrieve(
 ) -> ResponseMulti[PublicNotificationLog]:
     """Returns NotificationLogs of user and device"""
     async with atomic(session):
-        notification_logs = await NotificationLogCRUD(session).filter(query)
+        # TODO: Remove query.user_id when mobile change user_id -> email.
+        email = query.email if query.email else query.user_id
+        user = await UserService(session).get_by_email(email)
+        notification_logs = await NotificationLogCRUD(session).filter(
+            query, user_id=str(user.id)
+        )
 
     return ResponseMulti(
         result=notification_logs, count=len(notification_logs)
