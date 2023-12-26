@@ -1514,6 +1514,7 @@ class TestActivityItems(BaseTest):
         )
         assert response.status_code == 200
 
+    @pytest.mark.run
     @rollback
     async def test_creating_applet_with_activity_items_condition(self):
         await self.client.login(
@@ -1634,9 +1635,9 @@ class TestActivityItems(BaseTest):
                         showScoreSummary=True,
                         reports=[
                             dict(
-                                name="activity_item_singleselect",
+                                name="activity_item_singleselect_score",
                                 type="score",
-                                id="activity_item_singleselect",
+                                id="activity_item_singleselect_score",
                                 calculationType="sum",
                                 minScore=0,
                                 maxScore=3,
@@ -1651,7 +1652,7 @@ class TestActivityItems(BaseTest):
                                 conditionalLogic=[
                                     dict(
                                         name="score1_condition1",
-                                        id="activity_item_singleselect",
+                                        id="activity_item_singleselect_score",
                                         flagScore=True,
                                         message="Hello2",
                                         match="any",
@@ -1659,7 +1660,7 @@ class TestActivityItems(BaseTest):
                                             dict(
                                                 item_name=(
                                                     "activity_item_"
-                                                    "singleselect"
+                                                    "singleselect_score"
                                                 ),
                                                 type="GREATER_THAN",
                                                 payload=dict(
@@ -1669,11 +1670,11 @@ class TestActivityItems(BaseTest):
                                             dict(
                                                 item_name=(
                                                     "activity_item_"
-                                                    "singleselect"
+                                                    "singleselect_score"
                                                 ),
                                                 type="GREATER_THAN",
                                                 payload=dict(
-                                                    value=2,
+                                                    value=1,
                                                 ),
                                             ),
                                         ],
@@ -1695,7 +1696,7 @@ class TestActivityItems(BaseTest):
                                     conditions=[
                                         dict(
                                             item_name=(
-                                                "activity_item_singleselect"
+                                                "activity_item_singleselect_score"
                                             ),
                                             type="GREATER_THAN",
                                             payload=dict(
@@ -1704,9 +1705,27 @@ class TestActivityItems(BaseTest):
                                         ),
                                         dict(
                                             item_name=(
-                                                "activity_item_singleselect"  # noqa E501
+                                                "activity_item_singleselect_score"  # noqa E501
                                             ),
                                             type="EQUAL_TO_OPTION",
+                                            payload=dict(
+                                                option_value="1",  # noqa E501
+                                            ),
+                                        ),
+                                        dict(
+                                            item_name=(
+                                                "activity_item_singleselect_score"  # noqa E501
+                                            ),
+                                            type="NOT_EQUAL_TO_OPTION",
+                                            payload=dict(
+                                                option_value="2",  # noqa E501
+                                            ),
+                                        ),
+                                        dict(
+                                            item_name=(
+                                                "activity_item_multiselect"  # noqa E501
+                                            ),
+                                            type="NOT_INCLUDES_OPTION",
                                             payload=dict(
                                                 option_value="1",  # noqa E501
                                             ),
@@ -1734,6 +1753,42 @@ class TestActivityItems(BaseTest):
                                         "text": "option2",
                                         "score": 2,
                                         "id": "26e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
+                                        "value": "2",
+                                    },
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=False,
+                                add_scores=True,
+                                set_alerts=False,
+                                timer=1,
+                                add_tooltip=False,
+                                set_palette=False,
+                                randomize_options=False,
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                            ),
+                        ),
+                        dict(
+                            name="activity_item_singleselect_2",
+                            question={"en": "What is your name?"},
+                            response_type="singleSelect",
+                            response_values=dict(
+                                palette_name="palette1",
+                                options=[
+                                    {
+                                        "text": "option1",
+                                        "score": 1,
+                                        "id": "25e69155-22cd-4484-8a49-364779fa9de1",  # noqa E501
+                                        "value": "1",
+                                    },
+                                    {
+                                        "text": "option2",
+                                        "score": 2,
+                                        "id": "26e69155-22cd-4484-8a49-364779fa9de1",  # noqa E501
                                         "value": "2",
                                     },
                                 ],
@@ -1788,7 +1843,69 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
+                            name="activity_item_multiselect_2",
+                            question={"en": "Option 2?"},
+                            response_type="multiSelect",
+                            response_values=dict(
+                                palette_name="palette1",
+                                options=[
+                                    {
+                                        "text": "option1",
+                                        "id": "27e69155-22cd-4484-8a49-364779eb9de1",  # noqa E501
+                                        "value": "1",
+                                    },
+                                    {
+                                        "text": "option2",
+                                        "id": "28e69155-22cd-4484-8a49-364779eb9de1",  # noqa E501
+                                        "value": "2",
+                                    },
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=False,
+                                add_scores=False,
+                                set_alerts=False,
+                                timer=1,
+                                add_tooltip=False,
+                                set_palette=False,
+                                randomize_options=False,
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                            ),
+                        ),
+                        dict(
                             name="activity_item_slideritem",
+                            question={"en": "What is your name?"},
+                            response_type="slider",
+                            response_values=dict(
+                                min_value=0,
+                                max_value=10,
+                                min_label="min_label",
+                                max_label="max_label",
+                                min_image=None,
+                                max_image=None,
+                                scores=None,
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=False,
+                                add_scores=False,
+                                set_alerts=False,
+                                timer=1,
+                                show_tick_labels=False,
+                                show_tick_marks=False,
+                                continuous_slider=False,
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                            ),
+                        ),
+                        dict(
+                            name="activity_item_slideritem_2",
                             question={"en": "What is your name?"},
                             response_type="slider",
                             response_values=dict(
@@ -1844,6 +1961,13 @@ class TestActivityItems(BaseTest):
                                         ),
                                     ),
                                     dict(
+                                        item_name="activity_item_singleselect_2",
+                                        type="NOT_EQUAL_TO_OPTION",
+                                        payload=dict(
+                                            option_value="2"  # noqa E501
+                                        ),
+                                    ),
+                                    dict(
                                         item_name="activity_item_multiselect",
                                         type="INCLUDES_OPTION",
                                         payload=dict(
@@ -1851,10 +1975,25 @@ class TestActivityItems(BaseTest):
                                         ),
                                     ),
                                     dict(
+                                        item_name="activity_item_multiselect_2",
+                                        type="NOT_INCLUDES_OPTION",
+                                        payload=dict(
+                                            option_value="2"  # noqa E501
+                                        ),
+                                    ),
+                                    dict(
                                         item_name="activity_item_slideritem",
                                         type="GREATER_THAN",
                                         payload=dict(
                                             value=5,
+                                        ),
+                                    ),
+                                    dict(
+                                        item_name="activity_item_slideritem_2",
+                                        type="OUTSIDE_OF",
+                                        payload=dict(
+                                            min_value=5,
+                                            max_value=10,
                                         ),
                                     ),
                                 ],
@@ -1963,7 +2102,7 @@ class TestActivityItems(BaseTest):
         assert response.status_code == 201, response.json()
         assert (
             type(
-                response.json()["result"]["activities"][0]["items"][3][
+                response.json()["result"]["activities"][0]["items"][6][
                     "conditionalLogic"
                 ]
             )
@@ -1990,7 +2129,7 @@ class TestActivityItems(BaseTest):
         )
         assert response.status_code == 200
         assert (
-            type(response.json()["result"]["items"][3]["conditionalLogic"])
+            type(response.json()["result"]["items"][6]["conditionalLogic"])
             == dict
         )
 
