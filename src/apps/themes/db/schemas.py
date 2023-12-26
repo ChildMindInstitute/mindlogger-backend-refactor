@@ -14,8 +14,6 @@ class ThemeSchema(Base):
     tertiary_color = Column(String(length=100))
     public = Column(Boolean(), default=False)
     allow_rename = Column(Boolean(), default=False)
-    creator_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
-    )
+    creator_id = Column(ForeignKey("users.id", ondelete="RESTRICT"))
     small_logo = Column(Text())
     is_default = Column(Boolean(), default=False, nullable=False)
