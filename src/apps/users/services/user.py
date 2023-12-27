@@ -96,3 +96,6 @@ class UserService:
         user_exist = await UsersCRUD(self.session).exist_by_id(id_=user_id)
         if not user_exist:
             raise UserNotFound()
+
+    async def get(self, user_id: uuid.UUID) -> User | None:
+        return await UsersCRUD(self.session).get_by_id(user_id)

@@ -141,6 +141,7 @@ class Invitation(InternalModel):
     first_name: str
     last_name: str
     created_at: datetime
+    is_deleted: bool
 
 
 class InvitationRespondent(Invitation):

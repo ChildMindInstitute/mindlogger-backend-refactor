@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from typing import Any, Collection
 
 from sqlalchemy import delete, select, text, update
 from sqlalchemy.engine import Result
@@ -386,6 +386,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             InvitationSchema.applet_id == applet_id,
             InvitationSchema.role == role,
             InvitationSchema.status == InvitationStatus.APPROVED,
+            InvitationSchema.soft_exists(),
         )
         db_result: Result = await self._execute(query)
         return bool(db_result.scalars().first())
@@ -399,6 +400,24 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             InvitationSchema.applet_id == applet_id,
             InvitationSchema.status == InvitationStatus.APPROVED,
             InvitationSchema.role.in_(Role.managers()),
+            InvitationSchema.soft_exists(),
         )
         db_result: Result = await self._execute(query)
         return bool(db_result.scalars().first())
+
+    async def soft_delete(
+        self,
+        email: str | None,
+        applet_ids: Collection[uuid.UUID],
+        roles: list[Role],
+    ):
+        query: Query = update(InvitationSchema)
+        query = query.where(
+            InvitationSchema.email == email,
+            InvitationSchema.applet_id.in_(applet_ids),
+            InvitationSchema.status == InvitationStatus.APPROVED,
+            InvitationSchema.role.in_(roles),
+            InvitationSchema.soft_exists(),
+        )
+        query = query.values(is_deleted=True)  # noqa
+        await self._execute(query)

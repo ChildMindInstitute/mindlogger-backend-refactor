@@ -401,3 +401,10 @@ class UserAppletAccessService:
             return RespondentInfoPublic(
                 nickname=respondent_schema.nickname, secret_user_id=None
             )
+
+    async def get_management_applets(
+        self, applet_ids: list[uuid.UUID]
+    ) -> list[uuid.UUID]:
+        return await UserAppletAccessCRUD(self.session).get_management_applets(
+            self._user_id, applet_ids
+        )
