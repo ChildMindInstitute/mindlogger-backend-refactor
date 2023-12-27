@@ -23,7 +23,7 @@ async def main(session: AsyncSession, *args, **kwargs):
     res = await session.execute(query)
     slider_items: list[ActivityItemSchema] = res.scalars().all()
     for item in slider_items:
-        item.config["show_tick_marks"] = False
+        item.config["show_tick_marks"] = True
         item.config["show_tick_labels"] = True
 
         await session.execute(
