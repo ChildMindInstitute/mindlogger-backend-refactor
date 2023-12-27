@@ -1330,29 +1330,13 @@ class ReportServerService:
         return responses, [ai.user_public_key for ai in answer_items]
 
     async def decrypt_data_for_loris(
-        self, applet_id: uuid.UUID
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID
     ) -> ReportServerResponse | None:
-        # data = {
-        #     "message": "ok",
-        #     "result": [
-        #         {
-        #             "activityId": "8c7397b6-5420-4673-9602-71d7eebb62f0",
-        #             "data": [{"value": 0, "text": None}],
-        #         },
-        #         {
-        #             "activityId": "8c7397b6-5420-4673-9602-71d7eebb62f0",
-        #             "data": [
-        #                 {"value": 0, "text": None},
-        #                 "test not encrypted text",
-        #             ],
-        #         },
-        #     ],
-        # }
-        # return data
-
         answers = await AnswersCRUD(
             self.answers_session
-        ).get_by_applet_id_and_readiness_to_share_data(applet_id=applet_id)
+        ).get_by_applet_id_and_readiness_to_share_data(
+            applet_id=applet_id, respondent_id=respondent_id
+        )
         if not answers:
             return None
 
