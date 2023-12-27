@@ -22,6 +22,10 @@ from apps.activities.crud import (
     ActivityItemHistoriesCRUD,
 )
 from apps.activities.domain.activity_history import ActivityHistoryFull
+from apps.activities.errors import (
+    ActivityDoeNotExist,
+    ActivityHistoryDoeNotExist,
+)
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity_item_history import (
     ActivityItemHistoryService,
@@ -61,6 +65,7 @@ from apps.answers.errors import (
     ActivityIsNotAssessment,
     AnswerAccessDeniedError,
     AnswerNoteAccessDeniedError,
+    AnswerNotFoundError,
     NonPublicAppletError,
     ReportServerError,
     ReportServerIsNotConfigured,
@@ -79,6 +84,7 @@ from apps.shared.encryption import decrypt_cbc, encrypt_cbc
 from apps.shared.exception import EncryptionError
 from apps.shared.query_params import QueryParams
 from apps.users import User, UserSchema, UsersCRUD
+from apps.users.errors import UserNotFound
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -154,6 +160,16 @@ class AnswerService:
                 raise WrongAnswerGroupVersion()
             elif existed_answer.respondent_id != self.user_id:
                 raise WrongRespondentForAnswerGroup()
+
+        pk = self._generate_history_id(applet_answer.version)
+        activity_history = await ActivityHistoriesCRUD(self.session).get_by_id(
+            pk(applet_answer.activity_id)
+        )
+
+        if not activity_history.applet_id.startswith(
+            f"{applet_answer.applet_id}"
+        ):
+            raise ActivityHistoryDoeNotExist()
 
     async def _validate_applet_for_anonymous_response(
         self, applet_id: uuid.UUID, version: str
@@ -346,6 +362,8 @@ class AnswerService:
         answer_items = await AnswerItemsCRUD(
             self.answer_session
         ).get_by_answer_and_activity(answer_id, [pk(activity_id)])
+        if not answer_items:
+            raise AnswerNotFoundError()
         answer_item = answer_items[0]
 
         activity_items = await ActivityItemHistoryService(
@@ -455,31 +473,64 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
-        pk = self._generate_history_id(schema.version)
-
-        activity_items = await ActivityItemHistoriesCRUD(
-            self.session
-        ).get_applets_assessments(pk(applet_id))
-        if len(activity_items) == 0:
-            return AssessmentAnswer(items=activity_items)
-
         assessment_answer = await AnswerItemsCRUD(
             self.answer_session
         ).get_assessment(answer_id, self.user_id)
 
-        answer = AssessmentAnswer(
-            reviewer_public_key=assessment_answer.user_public_key
-            if assessment_answer
-            else None,
-            answer=assessment_answer.answer if assessment_answer else None,
-            item_ids=assessment_answer.item_ids if assessment_answer else [],
-            items=activity_items,
-            is_edited=assessment_answer.created_at
-            != assessment_answer.updated_at  # noqa
-            if assessment_answer
-            else False,
-        )
+        items_crud = ActivityItemHistoriesCRUD(self.session)
+        last = items_crud.get_applets_assessments(applet_id)
+        if assessment_answer:
+            current = items_crud.get_assessment_activity_items(
+                assessment_answer.assessment_activity_id
+            )
+            items_last, items_current = await asyncio.gather(last, current)
+        else:
+            items_last = await last
+            items_current = None
+
+        if len(items_last) == 0:
+            return AssessmentAnswer(items=items_last)
+
+        if items_last == items_current and assessment_answer:
+            answer = AssessmentAnswer(
+                reviewer_public_key=assessment_answer.user_public_key
+                if assessment_answer
+                else None,
+                answer=assessment_answer.answer if assessment_answer else None,
+                item_ids=assessment_answer.item_ids
+                if assessment_answer
+                else [],
+                items=items_last,
+                is_edited=assessment_answer.created_at
+                != assessment_answer.updated_at  # noqa
+                if assessment_answer
+                else False,
+                versions=[assessment_answer.assessment_activity_id],
+            )
+        else:
+            if assessment_answer:
+                versions = [
+                    assessment_answer.assessment_activity_id,
+                    items_last[0].activity_id,
+                ]
+            else:
+                versions = [items_last[0].activity_id]
+            answer = AssessmentAnswer(
+                reviewer_public_key=assessment_answer.user_public_key
+                if assessment_answer
+                else None,
+                answer=assessment_answer.answer if assessment_answer else None,
+                item_ids=assessment_answer.item_ids
+                if assessment_answer
+                else [],
+                items=items_current if assessment_answer else items_last,
+                items_last=items_last if assessment_answer else None,
+                is_edited=assessment_answer.created_at
+                != assessment_answer.updated_at  # noqa
+                if assessment_answer
+                else False,
+                versions=versions,
+            )
         return answer
 
     async def get_reviews_by_answer_id(
@@ -488,17 +539,48 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
-        pk = self._generate_history_id(schema.version)
+        reviewer_activity_version = await AnswerItemsCRUD(
+            self.answer_session
+        ).get_assessment_activity_id(answer_id)
+        if not reviewer_activity_version:
+            return []
 
+        activity_versions = [t[1] for t in reviewer_activity_version]
         activity_items = await ActivityItemHistoriesCRUD(
             self.session
-        ).get_applets_assessments(pk(applet_id))
+        ).get_by_activity_id_versions(activity_versions)
 
         reviews = await AnswerItemsCRUD(
             self.answer_session
         ).get_reviews_by_answer_id(answer_id, activity_items)
-        return reviews
+
+        user_ids = [rev.respondent_id for rev in reviews]
+        users = await UsersCRUD(self.session).get_by_ids(user_ids)
+        results = []
+        for schema in reviews:
+            user = next(
+                filter(lambda u: u.id == schema.respondent_id, users), None
+            )
+            current_activity_items = list(
+                filter(
+                    lambda i: i.activity_id == schema.assessment_activity_id,
+                    activity_items,
+                )
+            )
+            if not user:
+                continue
+            results.append(
+                AnswerReview(
+                    reviewer_public_key=schema.user_public_key,
+                    answer=schema.answer,
+                    item_ids=schema.item_ids,
+                    items=current_activity_items,
+                    reviewer=dict(
+                        first_name=user.first_name, last_name=user.last_name
+                    ),
+                )
+            )
+        return results
 
     async def create_assessment_answer(
         self,
@@ -526,6 +608,7 @@ class AnswerService:
                     is_assessment=True,
                     start_datetime=datetime.datetime.utcnow(),
                     end_datetime=datetime.datetime.utcnow(),
+                    assessment_activity_id=schema.assessment_version_id,
                 )
             )
         else:
@@ -542,6 +625,7 @@ class AnswerService:
                     end_datetime=now,
                     created_at=now,
                     updated_at=now,
+                    assessment_activity_id=schema.assessment_version_id,
                 )
             )
 
@@ -573,7 +657,13 @@ class AnswerService:
         if not access:
             allowed_respondents = [self.user_id]
         elif access.role == Role.REVIEWER:
-            allowed_respondents = access.reviewer_respondents  # type: ignore[assignment] # noqa: E501
+            if (
+                isinstance(access.reviewer_respondents, list)
+                and len(access.reviewer_respondents) > 0
+            ):
+                allowed_respondents = access.reviewer_respondents  # noqa: E501
+            else:
+                allowed_respondents = [self.user_id]
         else:  # [Role.OWNER, Role.MANAGER]
             assessments_allowed = True
 
@@ -611,9 +701,6 @@ class AnswerService:
             if answer.activity_history_id:
                 activity_hist_ids.add(answer.activity_history_id)
 
-        reviewer_activities_coro = ActivityHistoriesCRUD(
-            self.session
-        ).get_reviewable_activities(list(applet_assessment_ids))
         flows_coro = FlowsHistoryCRUD(self.session).get_by_id_versions(
             list(flow_hist_ids)
         )
@@ -622,7 +709,6 @@ class AnswerService:
         ).get_respondent_export_data(applet_id, list(respondent_ids))
 
         coros_result = await asyncio.gather(
-            reviewer_activities_coro,
             flows_coro,
             user_map_coro,
             return_exceptions=True,
@@ -631,13 +717,7 @@ class AnswerService:
             if isinstance(res, BaseException):
                 raise res
 
-        reviewer_activities, flows, user_map = coros_result
-
-        reviewer_activity_map = {}
-        for activity in reviewer_activities:  # type: ignore
-            reviewer_activity_map[activity.applet_id] = activity
-            activity_hist_ids.add(activity.id_version)
-
+        flows, user_map = coros_result
         flow_map = {flow.id_version: flow for flow in flows}  # type: ignore
 
         for answer in answers:
@@ -651,12 +731,6 @@ class AnswerService:
             if flow_id := answer.flow_history_id:
                 if flow := flow_map.get(flow_id):
                     answer.flow_name = flow.name
-            # assessment data
-            if answer.reviewed_answer_id:
-                if activity := reviewer_activity_map.get(
-                    answer.applet_history_id
-                ):
-                    answer.activity_history_id = activity.id_version
 
         repo_local = AnswersCRUD(self.session)
         activities_result = []
@@ -779,8 +853,23 @@ class AnswerService:
         activity_id: uuid.UUID,
         respondent_id: uuid.UUID,
     ) -> ReportServerResponse | None:
+        respondent_exist = await UsersCRUD(self.session).exist_by_id(
+            id_=respondent_id
+        )
+        if not respondent_exist:
+            raise UserNotFound(f"No such respondent with id={respondent_id}.")
+
+        await self._is_report_server_configured(applet_id)
+
         act_crud = ActivityHistoriesCRUD(self.session)
         activity_hsts = await act_crud.get_activities(activity_id, None)
+        if not activity_hsts:
+            activity_error_exception = ActivityDoeNotExist()
+            activity_error_exception.message = (
+                f"No such activity with id=${activity_id}"
+            )
+            raise activity_error_exception
+
         act_versions = set(
             map(lambda act_hst: act_hst.id_version, activity_hsts)
         )
@@ -789,8 +878,10 @@ class AnswerService:
         )
         if not answer:
             return None
-        service = ReportServerService(self.session)
-        await self._is_report_server_configured(applet_id)
+
+        service = ReportServerService(
+            self.session, arbitrary_session=self.answer_session
+        )
         is_single_flow = await service.is_flows_single_report(answer.id)
         if is_single_flow:
             report = await service.create_report(answer.submit_id)
@@ -916,11 +1007,26 @@ class AnswerService:
         )
         return result
 
+    async def get_completed_answers_data_list(
+        self,
+        applets_version_map: dict[uuid.UUID, str],
+        from_date: datetime.date,
+    ) -> list[AppletCompletedEntities]:
+        assert self.user_id
+        result = await AnswersCRUD(
+            self.answer_session
+        ).get_completed_answers_data_list(
+            applets_version_map,
+            self.user_id,
+            from_date,
+        )
+        return result
+
     async def is_answers_uploaded(
         self, applet_id: uuid.UUID, activity_id: str, created_at: int
     ) -> bool:
         answers = await AnswersCRUD(
-            self.session
+            self.answer_session
         ).get_by_applet_activity_created_at(applet_id, activity_id, created_at)
         if not answers:
             return False
@@ -1155,8 +1261,18 @@ class ReportServerService:
         )
         if not answers:
             return None
-        answer_map = dict((answer.id, answer) for answer in answers)
-        initial_answer = answers[0]
+        applet_id_version: str = answers[0].applet_history_id
+        available_activities = await ActivityHistoriesCRUD(
+            self.session
+        ).get_activity_id_versions_for_report(applet_id_version)
+        answers_for_report = [
+            i for i in answers if i.activity_history_id in available_activities
+        ]
+        # If answers only on performance tasks
+        if not answers_for_report:
+            return None
+        answer_map = dict((answer.id, answer) for answer in answers_for_report)
+        initial_answer = answers_for_report[0]
 
         applet = await AppletsCRUD(self.session).get_by_id(
             initial_answer.applet_id
@@ -1165,7 +1281,10 @@ class ReportServerService:
             initial_answer.respondent_id, initial_answer.applet_id
         )
         applet_full = await self._prepare_applet_data(
-            initial_answer.applet_id, initial_answer.version, applet.encryption
+            initial_answer.applet_id,
+            initial_answer.version,
+            applet.encryption,
+            non_performance=True,
         )
 
         encryption = ReportServerEncryption(applet.report_public_key)
@@ -1228,11 +1347,15 @@ class ReportServerService:
         return activity_id == flow["items"][-1]["activityId"].split("_")[0]
 
     async def _prepare_applet_data(
-        self, applet_id: uuid.UUID, version: str, encryption: dict
+        self,
+        applet_id: uuid.UUID,
+        version: str,
+        encryption: dict,
+        non_performance: bool = False,
     ):
         applet_full = await AppletHistoryService(
             self.session, applet_id, version
-        ).get_full()
+        ).get_full(non_performance)
         applet_full.encryption = Encryption(**encryption)
         return applet_full.dict(by_alias=True)
 

@@ -18,6 +18,7 @@ from apps.shared.query_params import (
     parse_query_params,
 )
 from apps.users.domain import User
+from apps.users.services.user import UserService
 
 # from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role, UserPinRole
@@ -454,9 +455,13 @@ async def workspace_managers_applet_access_set(
 ):
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+        await AppletService(session, user.id).exist_by_ids(
+            [access.applet_id for access in accesses.accesses]
+        )
         await CheckAccessService(
             session, user.id
         ).check_workspace_manager_accesses_access(owner_id)
+        await UserService(session).exists_by_id(manager_id)
 
         await UserAccessService(session, user.id).set(
             owner_id, manager_id, accesses
@@ -473,9 +478,10 @@ async def workspace_applet_get_respondent(
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(
-            applet_id
-        )
+        await CheckAccessService(
+            session, user.id
+        ).check_applet_respondent_list_access(applet_id)
+
         respondent_info = await UserAppletAccessService(
             session, user.id, applet_id
         ).get_respondent_info(respondent_id, applet_id, owner_id)

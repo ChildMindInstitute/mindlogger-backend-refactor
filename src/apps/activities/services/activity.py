@@ -1,10 +1,12 @@
 import uuid
 
-from apps.activities.crud import ActivitiesCRUD
+from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain.activity import (
     ActivityDuplicate,
+    ActivityLanguageWithItemsMobileDetailPublic,
     ActivitySingleLanguageDetail,
+    ActivitySingleLanguageMobileDetailPublic,
     ActivitySingleLanguageWithItemsDetail,
 )
 from apps.activities.domain.activity_create import (
@@ -22,9 +24,10 @@ from apps.activities.errors import (
     ActivityDoeNotExist,
 )
 from apps.activities.services.activity_item import ActivityItemService
-from apps.applets.crud import AppletsCRUD
-from apps.schedule.crud.events import ActivityEventsCRUD
+from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.schedule.crud.events import ActivityEventsCRUD, EventCRUD
 from apps.schedule.service.schedule import ScheduleService
+from apps.workspaces.domain.constants import Role
 
 
 class ActivityService:
@@ -67,6 +70,7 @@ class ActivityService:
                     order=index + 1,
                     report_included_item_name=activity_data.report_included_item_name,  # noqa: E501
                     extra_fields=activity_data.extra_fields,
+                    performance_task_type=activity_data.performance_task_type,
                 )
             )
 
@@ -113,7 +117,11 @@ class ActivityService:
         # add default schedule for activities
         await ScheduleService(self.session).create_default_schedules(
             applet_id=applet_id,
-            activity_ids=[activity.id for activity in activities],
+            activity_ids=[
+                activity.id
+                for activity in activities
+                if not activity.is_reviewable
+            ],
             is_activity=True,
         )
 
@@ -172,6 +180,7 @@ class ActivityService:
                     report_included_item_name=(
                         activity_data.report_included_item_name
                     ),
+                    performance_task_type=activity_data.performance_task_type,
                 )
             )
 
@@ -225,11 +234,40 @@ class ActivityService:
 
         # Create default events for new activities
         if new_activities:
-            await ScheduleService(self.session).create_default_schedules(
+            respondents_in_applet = await UserAppletAccessCRUD(
+                self.session
+            ).get_user_id_applet_and_role(
                 applet_id=applet_id,
-                activity_ids=list(new_activities),
-                is_activity=True,
+                role=Role.RESPONDENT,
             )
+
+            respondents_with_indvdl_schdl: list[uuid.UUID] = []
+            for respondent in respondents_in_applet:
+                respondent_uuid = uuid.UUID(f"{respondent}")
+                number_of_indvdl_events = await EventCRUD(
+                    self.session
+                ).count_individual_events_by_user(
+                    applet_id=applet_id, user_id=respondent_uuid
+                )
+                if number_of_indvdl_events > 0:
+                    respondents_with_indvdl_schdl.append(respondent_uuid)
+
+            if respondents_with_indvdl_schdl:
+                for respondent_uuid in respondents_with_indvdl_schdl:
+                    await ScheduleService(
+                        self.session
+                    ).create_default_schedules(
+                        applet_id=applet_id,
+                        activity_ids=list(new_activities),
+                        is_activity=True,
+                        respondent_id=respondent_uuid,
+                    )
+            else:
+                await ScheduleService(self.session).create_default_schedules(
+                    applet_id=applet_id,
+                    activity_ids=list(new_activities),
+                    is_activity=True,
+                )
 
         return activities
 
@@ -266,8 +304,78 @@ class ActivityService:
                     subscale_setting=schema.subscale_setting,
                     created_at=schema.created_at,
                     report_included_item_name=schema.report_included_item_name,
+                    performance_task_type=schema.performance_task_type,
+                    is_performance_task=schema.is_performance_task,
                 )
             )
+        return activities
+
+    async def get_single_language_by_applet_id_mobile(
+        self, applet_id: uuid.UUID, language: str
+    ) -> list[ActivitySingleLanguageMobileDetailPublic]:
+        schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
+            applet_id, is_reviewable=False
+        )
+        activities = []
+        for schema in schemas:
+            activities.append(
+                ActivitySingleLanguageMobileDetailPublic(
+                    id=schema.id,
+                    name=schema.name,
+                    description=self._get_by_language(
+                        schema.description, language
+                    ),
+                    image=schema.image,
+                    is_reviewable=schema.is_reviewable,
+                    is_skippable=schema.is_skippable,
+                    show_all_at_once=schema.show_all_at_once,
+                    is_hidden=schema.is_hidden,
+                    response_is_editable=schema.response_is_editable,
+                    order=schema.order,
+                    splash_screen=schema.splash_screen,
+                )
+            )
+        return activities
+
+    async def get_single_language_with_items_by_applet_id(
+        self, applet_id: uuid.UUID, language: str
+    ) -> list[ActivityLanguageWithItemsMobileDetailPublic]:
+        schemas = await ActivitiesCRUD(
+            self.session
+        ).get_mobile_with_items_by_applet_id(applet_id, is_reviewable=False)
+
+        activities = []
+        activity_ids = []
+        for schema in schemas:
+            activity = ActivityLanguageWithItemsMobileDetailPublic(
+                id=schema.id,
+                name=schema.name,
+                description=self._get_by_language(
+                    schema.description, language
+                ),
+                splash_screen=schema.splash_screen,
+                image=schema.image,
+                show_all_at_once=schema.show_all_at_once,
+                is_skippable=schema.is_skippable,
+                is_reviewable=schema.is_reviewable,
+                is_hidden=schema.is_hidden,
+                response_is_editable=schema.response_is_editable,
+                order=schema.order,
+                scores_and_reports=schema.scores_and_reports,
+            )
+
+            activities.append(activity)
+            activity_ids.append(activity.id)
+
+        activity_items_map = await ActivityItemService(
+            self.session
+        ).get_single_language_by_activity_ids(
+            activity_ids=activity_ids, language=language
+        )
+
+        for activity in activities:
+            activity.items = activity_items_map.get(activity.id, [])
+
         return activities
 
     async def get_full_activities(
@@ -317,6 +425,8 @@ class ActivityService:
                 is_hidden=schema.is_hidden,
                 scores_and_reports=schema.scores_and_reports,
                 subscale_setting=schema.subscale_setting,
+                performance_task_type=schema.performance_task_type,
+                is_performance_task=schema.is_performance_task,
             )
             activity_map[activity.id] = activity
             activities.append(activity)
@@ -403,6 +513,11 @@ class ActivityService:
     async def update_report(
         self, activity_id: uuid.UUID, schema: ActivityReportConfiguration
     ):
-        await ActivitiesCRUD(self.session).update_by_id(
-            activity_id, **schema.dict(by_alias=False, exclude_unset=True)
-        )
+        crud_list: list[type[ActivitiesCRUD] | type[ActivityHistoriesCRUD]] = [
+            ActivitiesCRUD,
+            ActivityHistoriesCRUD,
+        ]
+        for crud in crud_list:
+            await crud(self.session).update_by_id(
+                activity_id, **schema.dict(by_alias=False, exclude_unset=True)
+            )

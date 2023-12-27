@@ -73,6 +73,59 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         res = db_result.scalars().first()
         return res
 
+    async def get_arbitraries_map_by_applet_ids(
+        self, applet_ids: list[uuid.UUID]
+    ) -> dict[str | None, list[uuid.UUID]]:
+        """Returning map {"arbitrary_uri": [applet_ids]}"""
+        applet_owner_map = await self._get_applet_owners_map_by_applet_ids(
+            applet_ids
+        )
+        owner_ids = set(applet_owner_map.values())
+
+        query: Query = select(UserWorkspaceSchema)
+        query = query.where(UserWorkspaceSchema.user_id.in_(owner_ids))
+        db_result = await self._execute(query)
+        res = db_result.scalars().all()
+
+        user_arb_uri_map: dict[uuid.UUID, str] = dict()
+        for user_workspace in res:
+            user_arb_uri_map[user_workspace.user_id] = (
+                user_workspace.database_uri
+                if user_workspace.use_arbitrary
+                else None
+            )
+
+        arb_uri_applet_ids_map: dict[str | None, list[uuid.UUID]] = dict()
+        for applet_id in applet_ids:
+            user_id = applet_owner_map[applet_id]
+            arb_uri = user_arb_uri_map[user_id]
+            arb_uri_applet_ids_map.setdefault(arb_uri, list())
+            arb_uri_applet_ids_map[arb_uri].append(applet_id)
+
+        return arb_uri_applet_ids_map
+
+    async def _get_applet_owners_map_by_applet_ids(
+        self, applet_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, uuid.UUID]:
+        """Returning map {"applet_id": owner_id(user_id)}"""
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(
+            and_(
+                UserAppletAccessSchema.role == Role.OWNER,
+                UserAppletAccessSchema.applet_id.in_(applet_ids),
+            )
+        )
+        db_result = await self._execute(query)
+        res = db_result.scalars().all()
+
+        applet_owner_map: dict[uuid.UUID, uuid.UUID] = dict()
+        for user_applet_access in res:
+            applet_owner_map[
+                user_applet_access.applet_id
+            ] = user_applet_access.owner_id
+
+        return applet_owner_map
+
     async def get_bucket_info(self, applet_id: uuid.UUID):
         query: Query = select(
             UserWorkspaceSchema.storage_access_key,
@@ -127,3 +180,9 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         res = db_result.all()
 
         return parse_obj_as(list[UserAnswersDBInfo], res)
+
+    async def get_arbitrary_list(self) -> UserWorkspaceSchema:
+        query: Query = select(UserWorkspaceSchema)
+        query = query.where(UserWorkspaceSchema.database_uri.isnot(None))
+        result: Result = await self._execute(query)
+        return result.scalars().all()

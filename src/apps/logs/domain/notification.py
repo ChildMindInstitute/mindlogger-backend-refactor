@@ -1,3 +1,4 @@
+import datetime
 import json
 import uuid
 
@@ -20,7 +21,11 @@ class _NotificationLogBase(BaseModel):
 
 
 class NotificationLogQuery(BaseModel):
+    # TODO: remove user_id field in the future and make email field required
+    # currently we are supporting both (email is optional) while mobile is not
+    # ready
     user_id: str
+    email: str | None
     device_id: str
     limit: PositiveInt = 1
 
@@ -37,7 +42,8 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
     )
     def validate_json(cls, v):
         try:
-            return json.loads(v)
+            if v is not None:
+                return json.loads(v)
         except json.JSONDecodeError:
             raise ValueError("Invalid JSON")
 
@@ -63,9 +69,10 @@ class PublicNotificationLog(_NotificationLogBase, PublicModel):
     """Public NotificationLog model."""
 
     id: uuid.UUID
-    notification_descriptions: list
-    notification_in_queue: list
-    scheduled_notifications: list
+    notification_descriptions: list | None
+    notification_in_queue: list | None
+    scheduled_notifications: list | None
+    created_at: datetime.datetime
 
     @validator(
         "notification_descriptions",

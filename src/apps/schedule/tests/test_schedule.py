@@ -27,6 +27,10 @@ class TestSchedule(BaseTest):
     schedule_user_url = "users/me/events"
     schedule_detail_user_url = f"{schedule_user_url}/{{applet_id}}"
 
+    erspondent_schedules_user_two_weeks_url = (
+        "/users/me/respondent/current_events"
+    )
+
     schedule_url = f"{applet_detail_url}/events"
     schedule_import_url = f"{applet_detail_url}/events/import"
     schedule_create_individual = (
@@ -45,6 +49,46 @@ class TestSchedule(BaseTest):
     count_url = "applets/{applet_id}/events/count"
 
     public_events_url = "public/applets/{key}/events"
+
+    @rollback
+    async def test_schedule_create_with_equal_start_end_time(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = {
+            "start_time": "08:00:00",
+            "end_time": "08:00:00",
+            "access_before_schedule": False,
+            "one_time_completion": False,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "periodicity": {
+                "type": "ONCE",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
+            },
+            "respondent_id": None,
+            "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            "flow_id": None,
+            "notification": {
+                "notifications": [
+                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
+                ],
+                "reminder": {
+                    "activity_incomplete": 1,
+                    "reminder_time": "08:30:00",
+                },
+            },
+        }
+
+        response = await self.client.post(
+            self.schedule_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=create_data,
+        )
+        assert response.status_code == 422
 
     @rollback
     async def test_schedule_create_with_activity(self):
@@ -366,6 +410,66 @@ class TestSchedule(BaseTest):
         assert response.status_code == 204
 
     @rollback
+    async def test_schedule_update_with_equal_start_end_time(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        create_data = {
+            "start_time": "08:00:00",
+            "end_time": "09:00:00",
+            "access_before_schedule": True,
+            "one_time_completion": True,
+            "timer": "00:00:00",
+            "timer_type": "NOT_SET",
+            "periodicity": {
+                "type": "MONTHLY",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
+            },
+            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "activity_id": None,
+            "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
+            "notification": {
+                "notifications": [
+                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
+                ],
+                "reminder": {
+                    "activity_incomplete": 1,
+                    "reminder_time": "08:30:00",
+                },
+            },
+        }
+
+        response = await self.client.post(
+            self.schedule_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=create_data,
+        )
+        event = response.json()["result"]
+
+        update_data = {
+            "start_time": "00:00:15",
+            "end_time": "00:00:15",
+            "periodicity": {
+                "type": "MONTHLY",
+                "start_date": "2021-09-01",
+                "end_date": "2021-09-01",
+                "selected_date": "2023-09-01",
+            },
+        }
+
+        response = await self.client.put(
+            self.schedule_detail_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                event_id=event["id"],
+            ),
+            data=update_data,
+        )
+        assert response.status_code == 422
+
+    @rollback
     async def test_schedule_update(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -580,6 +684,80 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["count"] == 6
+
+    @rollback
+    async def test_respondent_schedules_get_user_two_weeks(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.erspondent_schedules_user_two_weeks_url
+        )
+
+        assert response.status_code == 200
+        assert response.json()["count"] == 2
+
+        data = sorted(response.json()["result"], key=lambda x: x["appletId"])
+        apppet_0 = data[0]
+        apppet_1 = data[1]
+        assert set(apppet_0.keys()) == {
+            "appletId",
+            "events",
+        }
+
+        apppet_0["appletId"] = "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        assert len(apppet_0["events"]) == 3
+        events_data = sorted(apppet_0["events"], key=lambda x: x["id"])
+        assert set(events_data[0].keys()) == {
+            "id",
+            "entityId",
+            "availability",
+            "selectedDate",
+            "timers",
+            "availabilityType",
+            "notificationSettings",
+        }
+        assert set(events_data[0]["availability"].keys()) == {
+            "oneTimeCompletion",
+            "periodicityType",
+            "timeFrom",
+            "timeTo",
+            "allowAccessBeforeFromTime",
+            "startDate",
+            "endDate",
+        }
+        events_data[0]["id"] = "04c93c4a-2cd4-45ce-9aec-b1912f330584"
+        events_data[0]["entityId"] = "09e3dbf0-aefb-4d0e-9177-bdb321bf3612"
+        events_data[1]["id"] = "04c93c4a-2cd4-45ce-9aec-b1912f330583"
+        events_data[1]["entityId"] = "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
+        events_data[2]["id"] = "04c93c4a-2cd4-45ce-9aec-b1912f330582"
+        events_data[2]["entityId"] = "3013dfb1-9202-4577-80f2-ba7450fb5832"
+
+        apppet_1["appletId"] = "92917a56-d586-4613-b7aa-991f2c4b15b2"
+        assert len(apppet_1["events"]) == 1
+        # events_data = sorted(apppet_1["events"], key=lambda x: x["id"])
+        events_data = apppet_1["events"]
+        assert set(events_data[0].keys()) == {
+            "id",
+            "entityId",
+            "availability",
+            "selectedDate",
+            "timers",
+            "availabilityType",
+            "notificationSettings",
+        }
+        assert set(events_data[0]["availability"].keys()) == {
+            "oneTimeCompletion",
+            "periodicityType",
+            "timeFrom",
+            "timeTo",
+            "allowAccessBeforeFromTime",
+            "startDate",
+            "endDate",
+        }
+        events_data[0]["id"] = "04c93c4a-2cd4-45ce-9aec-b1912f330584"
+        events_data[0]["entityId"] = "09e3dbf0-aefb-4d0e-9177-bdb321bf3612"
 
     @rollback
     async def test_schedule_get_user_by_applet(self):

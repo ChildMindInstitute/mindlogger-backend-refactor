@@ -317,6 +317,14 @@ class WorkspaceService:
         except ValidationError:
             return None
 
+    async def get_arbitraries_map(
+        self, applet_ids: list[uuid.UUID]
+    ) -> dict[str | None, list[uuid.UUID]]:
+        """Returning map {"arbitrary_uri": [applet_ids]}"""
+        return await UserWorkspaceCRUD(
+            self.session
+        ).get_arbitraries_map_by_applet_ids(applet_ids)
+
     async def get_user_answer_db_info(self) -> list[AnswerDbApplets]:
         db_info = await UserWorkspaceCRUD(
             self.session
@@ -360,3 +368,9 @@ class WorkspaceService:
         for k, v in data.dict(by_alias=False).items():
             setattr(schema, k, v)
         await repository.update_by_user_id(schema.user_id, schema)
+
+    async def get_arbitrary_list(self) -> list[WorkspaceArbitrary]:
+        schemas = await UserWorkspaceCRUD(self.session).get_arbitrary_list()
+        if not schemas:
+            return []
+        return [WorkspaceArbitrary.from_orm(schema) for schema in schemas]

@@ -151,6 +151,16 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         return db_result.scalars().first() is not None
 
+    async def exist_by_ids(self, ids: list[uuid.UUID]) -> bool:
+        query: Query = select(AppletSchema)
+        query = query.where(AppletSchema.id.in_(ids))
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
+
+        query = query.exists()
+        db_result = await self._execute(select(query))
+
+        return db_result.scalars().first() or False
+
     async def get_by_key(
         self, key: uuid.UUID, require_login=False
     ) -> AppletSchema:
@@ -273,6 +283,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             UserAppletAccessSchema.applet_id == AppletSchema.id,
         )
         query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
         if exclude_applet_id:
             query = query.where(AppletSchema.id != exclude_applet_id)
         query = query.where(
@@ -937,3 +948,17 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.where(access_query.c.role != None)  # noqa
         db_result = await self._execute(select(func.count(query.c.id)))
         return db_result.scalars().first() or 0
+
+    async def clear_report_settings(self, applet_id: uuid.UUID):
+        query: Query = update(AppletSchema)
+        query = query.where(AppletSchema.id == applet_id)
+        query = query.values(
+            report_server_ip="",
+            report_public_key="",
+            report_recipients=text("'[]'"),
+            report_include_user_id=False,
+            report_include_case_id=False,
+            report_email_body="",
+        )
+
+        await self._execute(query)

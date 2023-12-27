@@ -12,15 +12,13 @@
 - ✅ [Redis](https://redis.io)
 - ✅ [Docker](https://docs.docker.com/get-docker/)
 - ✅ [Pydantic](https://pydantic-docs.helpmanual.io)
-- ✅ [FastAPI](https://fastapi.tiangolo.com/)
 - ✅ [SQLAlchemy](https://www.sqlalchemy.org/)
 
 And
 
 - ✅ [The 12-Factor App](https://12factor.net)
-- ✅ [Domain driven design](https://www.amazon.com/Domain-Driven-Design-Tackling-Complexity-Software-ebook/dp/B00794TAUG)
 
-</br>
+<br/>
 
 🔌 **Code quality tools:**
 - ✅ [flake8](https://github.com/pycqa/flake8)
@@ -29,7 +27,7 @@ And
 - ✅ [mypy](https://github.com/python/mypy)
 - ✅ [pytest](https://github.com/pytest-dev/pytest)
 
-</br>
+<br/>
 
 ## ✋ <span style="color:#9DB7FF">Mandatory steps</span>
 
@@ -49,23 +47,22 @@ git clone git@github.com:ChildMindInstitute/mindlogger-backend-refactor.git
 
 
 #### 2.1 Description 📜
-| Key | Default value                                                    | Description                                                                                                                                                                   |
-| --- |------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| PYTHONPATH | src/                                                             | This variable makes all folders inside `src/` reachable in a runtime. </br> ***NOTE:*** You don't need to do this if you use Docker as far as it is hardcoded in `Dockerfile` |
-| DATABASE__HOST | postgres                                                         | Database Host                                                                                                                                                                 |
-| DATABASE__USER | postgres                                                         | User name for Postgresql Database user                                                                                                                                        |
-| DATABASE__PASSWORD | postgres                                                         | Password for Postgresql Database user                                                                                                                                         |
-| DATABASE__DB | mindlogger_backend                                               | Database name                                                                                                                                                                 |
-| CORS__ALLOW_ORIGINS | `*`                                                              | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000`                                        |
-| CORS__ALLOW_CREDENTIALS | true                                                             | Set the `Access-Control-Allow-Credentials` header                                                                                                                             |
-| CORS__ALLOW_METHODS | `*`                                                              | Set the `Access-Control-Allow-Methods` header                                                                                                                                 |
-| CORS__ALLOW_HEADERS | `*`                                                              | Set the `Access-Control-Allow-Headers` header                                                                                                                                 |
-| AUTHENTICATION__SECRET_KEY | e51bcf5f4cb8550ff3f6a8bb4dfe112a                                 | Access token's salt                                                                                                                                                           |
-| AUTHENTICATION__REFRESH_SECRET_KEY | 5da342d54ed5659f123cdd1cefe439c5aaf7e317a0aba1405375c07d32e097cc | Refresh token salt                                                                                                                                                            |
-| AUTHENTICATION__ALGORITHM | HS256                                                            | The JWT's algorithm                                                                                                                                                           |
-| AUTHENTICATION__ACCESS_TOKEN_EXPIRATION_TIME | 30                                                               | Time in minutes after which the access token will stop working                                                                                                                |
-| AUTHENTICATION__REFRESH_TOKEN_EXPIRATION_TIME | 30                                                               | Time in minutes after which the refresh token will stop working                                                                                                               |
-| ADMIN_DOMAIN | -                                                                | Admin panel domain                                                                                                                                                            |
+| Key | Default value      | Description                                                                                                                                                                   |
+| --- |--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| DATABASE__HOST | postgres           | Database Host                                                                                                                                                                 |
+| DATABASE__USER | postgres           | User name for Postgresql Database user                                                                                                                                        |
+| DATABASE__PASSWORD | postgres           | Password for Postgresql Database user                                                                                                                                         |
+| DATABASE__DB | mindlogger_backend | Database name                                                                                                                                                                 |
+| CORS__ALLOW_ORIGINS | `*`                | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000`                                        |
+| CORS__ALLOW_CREDENTIALS | true               | Set the `Access-Control-Allow-Credentials` header                                                                                                                             |
+| CORS__ALLOW_METHODS | `*`                | Set the `Access-Control-Allow-Methods` header                                                                                                                                 |
+| CORS__ALLOW_HEADERS | `*`                | Set the `Access-Control-Allow-Headers` header                                                                                                                                 |
+| AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY | secret1            | Access token's salt                                                                                                                                                           |
+| AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY | secret2            | Refresh token salt                                                                                                                                                            |
+| AUTHENTICATION__ALGORITHM | HS256              | The JWT's algorithm                                                                                                                                                           |
+| AUTHENTICATION__ACCESS_TOKEN__EXPIRATION | 30                 | Time in minutes after which the access token will stop working                                                                                                                |
+| AUTHENTICATION__REFRESH_TOKEN__EXPIRATION | 30                 | Time in minutes after which the refresh token will stop working                                                                                                               |
+| ADMIN_DOMAIN | -                  | Admin panel domain                                                                                                                                                            |
 
 ##### ✋ Mandatory:
 
@@ -82,7 +79,7 @@ cp .env.default .env
 ```
 
 
-</br>
+<br/>
 
 
 ## 👨‍🦯 <span style="color:#9DB7FF">Local development</span>
@@ -115,7 +112,7 @@ pipenv shell
 pipenv sync --dev
 ```
 
-</br>
+<br/>
 
 > 🛑 **NOTE:** if you don't use `pipenv` for some reason remember that you will not have automatically exported variables from your `.env` file.
 >
@@ -136,7 +133,7 @@ set -o allexport; source .env; set +o allexport
 
 > 🛑 **NOTE:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
 
-</br>
+<br/>
 
 
 ### 3. Provide code quality ✨
@@ -177,7 +174,7 @@ P.S. You don't need to do this additional step if you run application via Docker
 uvicorn src.main:app --proxy-headers --port {PORT} --reload
 ```
 
-</br>
+<br/>
 
 ### 5. Running Tests ▶️
 
@@ -216,8 +213,18 @@ psql# create user test;
 # Set password for the user
 psql# alter user test with password 'test';
 ```
-</br>
-</br>
+
+#### Test coverage
+
+To correctly calculate test coverage, you need to run the coverage with the `--concurrency=thread,gevent` parameter:
+
+```bash
+coverage run --concurrency=thread,gevent -m pytest
+coverage report -m
+```
+
+<br/>
+<br/>
 
 ## 🐳 <span style="color:#9DB7FF">Docker development</span>
 

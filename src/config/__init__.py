@@ -17,7 +17,7 @@ from config.secret import SecretSettings
 from config.sentry import SentrySettings
 from config.service import JsonLdConverterSettings, ServiceSettings
 from config.superuser import SuperAdmin
-from config.task import AnswerEncryption
+from config.task import AnswerEncryption, AudioFileConvert, ImageConvert
 
 
 # NOTE: Settings powered by pydantic
@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     apps_dir: Path
     locale_dir: Path
     default_language: str = "en"
+    content_length_limit: int | None = 150 * 1024 * 1024
 
     debug: bool = True
     commit_id: str = "Not assigned"
@@ -79,8 +80,14 @@ class Settings(BaseSettings):
     anonymous_respondent = AnonymousRespondent()
 
     task_answer_encryption = AnswerEncryption()
+    task_audio_file_convert = AudioFileConvert()
+    task_image_convert = ImageConvert()
 
     logs: Logs = Logs()
+
+    @property
+    def uploads_dir(self):
+        return self.root_dir.parent / "uploads"
 
     class Config:
         env_nested_delimiter = "__"

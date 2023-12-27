@@ -43,6 +43,7 @@ class WorkspaceFolderManipulationAccessDenied(AccessDeniedError):
 
 
 class UserAppletAccessesNotFound(NotFoundError):
+    message_is_template: bool = True
     message = _("No such UserAppletAccess with id={id_}.")
 
 
@@ -116,7 +117,7 @@ class InvalidAppletIDFilter(FieldError):
 
 
 class UserSecretIdAlreadyExists(ValidationError):
-    message = _("Secret id already exists.")
+    message = _("Secret User ID already exists")
 
 
 class UserSecretIdAlreadyExistsInInvitation(ValidationError):

@@ -1,4 +1,4 @@
-FROM --platform=linux/x86_64 python:3.10.8-slim
+FROM --platform=linux/x86_64 python:3.10.8-slim as base
 
 ARG PIPENV_EXTRA_ARGS
 
@@ -7,11 +7,9 @@ ENV PYTHONPATH="src/"
 
 WORKDIR /app/
 
-RUN apt-get update \
+RUN apt-get -y update && apt-get -y upgrade \
     # dependencies for building Python packages
-    && apt-get install -y build-essential curl \
-    # cleaning up unused files
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y build-essential curl
 
 # Add local non-root user to avoid issue with files
 # created inside a container being owned by root.
@@ -41,4 +39,12 @@ COPY --chown=code:code ./compose/fastapi/start /fastapi-start
 RUN sed -i 's/\r$//g' /fastapi-start && chmod +x /fastapi-start
 
 # Select internal user
+USER code
+
+# worker instructions
+FROM base as worker
+
+USER root
+RUN apt-get install -y --no-install-recommends ffmpeg && apt-get install -y imagemagick
+
 USER code

@@ -1,13 +1,18 @@
 import asyncio
+import logging
 import os
+import uuid
+from logging import getLogger
 from logging.config import fileConfig
 
 from alembic import context
 from alembic.config import Config
-from sqlalchemy import MetaData, engine_from_config, pool, text
+from sqlalchemy import MetaData, Unicode, engine_from_config, pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy_utils import StringEncryptedType
 
+from apps.shared.encryption import get_key
 from config import settings
 from infrastructure.database.migrations.base import Base
 
@@ -20,47 +25,58 @@ target_metadata = Base.metadata
 
 # Override alembic.ini option
 config.set_main_option("sqlalchemy.url", settings.database.url)
-arbitrary_urls = []
+arbitrary_data = []
+
+migration_log = getLogger("alembic.arbitrary")
+migration_log.level = logging.INFO
 
 
 async def get_all_servers(connection):
     try:
         query = text(
             """
-            SELECT uw.database_uri
+            SELECT uw.database_uri, uw.user_id
             FROM users_workspaces as uw
-            WHERE uw.database_uri is not null
+            WHERE uw.database_uri is not null and uw.database_uri <> ''
         """
         )
         rows = await connection.execute(query)
-        urls = list(map(lambda r: r[0], rows.fetchall()))
+        rows = rows.fetchall()
+        data = []
+        for row in rows:
+            url = StringEncryptedType(Unicode, get_key).process_result_value(
+                row[0], dialect=connection.dialect
+            )
+            data.append((url, row[1]))
+
     except Exception as ex:
         print(ex)
-        urls = []
+        data = []
     if os.environ.get("PYTEST_APP_TESTING"):
         arbitrary_db_name = os.environ["ARBITRARY_DB"]
         url = settings.database.url.replace("/test", f"/{arbitrary_db_name}")
-        urls.append(url)
-    return urls
+        data.append((url, uuid.uuid4()))
+    return data
 
 
 async def get_urls():
-    global arbitrary_urls
+    global arbitrary_data
     connectable = create_async_engine(url=settings.database.url)
     async with connectable.connect() as connection:
-        arbitrary_urls = await get_all_servers(connection)
+        arbitrary_data = await get_all_servers(connection)
     await connectable.dispose()
 
 
 async def migrate_arbitrary():
-    global arbitrary_urls
+    global arbitrary_data
     arbitrary_meta = MetaData()
     arbitrary_tables = [
         Base.metadata.tables["answers"],
         Base.metadata.tables["answers_items"],
     ]
     arbitrary_meta.tables = arbitrary_tables
-    for url in arbitrary_urls:
+    for url, owner_id in arbitrary_data:
+        migration_log.info(f"Migrating server for owner: {owner_id}")
         config.set_main_option("sqlalchemy.url", url)
         connectable = AsyncEngine(
             engine_from_config(

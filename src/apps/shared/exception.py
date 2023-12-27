@@ -15,18 +15,24 @@ class ExceptionTypes(str, Enum):
 
 
 class BaseError(Exception):
+    message_is_template: bool = False
     message = _("Oops, something went wrong.")
     fallback_language = Language.ENGLISH
 
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     type = ExceptionTypes.UNDEFINED
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.kwargs = kwargs
+        self.updated_message = None
+        if self.args and not self.message_is_template:
+            self.updated_message = args[0]
         super().__init__(self.message.format(**kwargs))
 
     @property
     def error(self):
+        if self.updated_message:
+            return self.updated_message
         return _(self.message).format(**self.kwargs)
 
 

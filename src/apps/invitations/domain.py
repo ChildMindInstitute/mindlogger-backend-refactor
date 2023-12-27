@@ -112,7 +112,12 @@ class RespondentMeta(InternalModel):
     """
 
     secret_user_id: str
-    nickname: str
+    # nickname: str
+
+
+class RespondentInfo(InternalModel):
+    nickname: str | None
+    meta: RespondentMeta
 
 
 class ReviewerMeta(InternalModel):
@@ -142,6 +147,7 @@ class InvitationRespondent(Invitation):
     """This is an invitation representation for internal needs."""
 
     meta: RespondentMeta
+    nickname: str | None
 
 
 class InvitationReviewer(Invitation):
@@ -178,6 +184,7 @@ class InvitationDetail(InvitationDetailBase):
     """
 
     meta: dict
+    nickname: str | None
 
 
 class InvitationDetailRespondent(InvitationDetailBase):
@@ -186,6 +193,7 @@ class InvitationDetailRespondent(InvitationDetailBase):
     """
 
     meta: RespondentMeta
+    nickname: str | None
 
 
 class InvitationDetailReviewer(InvitationDetailBase):
@@ -259,6 +267,7 @@ class InvitationResponse(PublicModel):
     last_name: str
     created_at: datetime
     meta: dict
+    nickname: str | None
 
 
 class _InvitationResponse(PublicModel):

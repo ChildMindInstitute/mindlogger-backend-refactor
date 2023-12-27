@@ -17,7 +17,9 @@ class FlowItemHistoryFull(InternalModel):
     id: uuid.UUID
     activity_flow_id: str
     activity_id: str
+    id_version: str
     order: int
+    name: str | None = None
 
 
 class FlowFull(FlowBase, InternalModel):
@@ -25,7 +27,6 @@ class FlowFull(FlowBase, InternalModel):
     items: list[ActivityFlowItemFull] = Field(default_factory=list)
     order: int
     created_at: datetime
-    extra_fields: dict = Field(default_factory=dict)
 
 
 class FlowHistoryFull(FlowBase, InternalModel):
@@ -34,7 +35,6 @@ class FlowHistoryFull(FlowBase, InternalModel):
     items: list[FlowItemHistoryFull] = Field(default_factory=list)
     order: int
     created_at: datetime
-    extra_fields: dict = Field(default_factory=dict)
 
 
 class PublicActivityFlowItemFull(FlowItemBase, PublicModel):

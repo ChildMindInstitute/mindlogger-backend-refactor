@@ -87,6 +87,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "backing",
                                         "color": "#123",
+                                        "value": 0,
                                     },
                                     {
                                         "text": "bad",
@@ -95,6 +96,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "Generic",
                                         "color": "#456",
+                                        "value": 1,
                                     },
                                     {
                                         "text": "normally",
@@ -103,6 +105,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "Gasoline",
                                         "color": "#789",
+                                        "value": 2,
                                     },
                                     {
                                         "text": "perfect",
@@ -111,6 +114,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "payment",
                                         "color": "#234",
+                                        "value": 3,
                                     },
                                 ]
                             },
@@ -141,6 +145,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "Music",
                                         "color": "#567",
+                                        "value": 0,
                                     },
                                     {
                                         "text": "bad",
@@ -149,6 +154,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "East",
                                         "color": "#876",
+                                        "value": 1,
                                     },
                                     {
                                         "text": "normally",
@@ -157,6 +163,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "Sodium",
                                         "color": "#923",
+                                        "value": 2,
                                     },
                                     {
                                         "text": "perfect",
@@ -165,6 +172,7 @@ class TestApplet(BaseTest):
                                         "image": "image.jpg",
                                         "tooltip": "Electronics",
                                         "color": "#567",
+                                        "value": 3,
                                     },
                                 ]
                             },
@@ -1184,6 +1192,10 @@ class TestApplet(BaseTest):
     async def test_applet_list_with_invalid_token(self):
         from config import settings
 
+        current_access_token_expiration = (
+            settings.authentication.access_token.expiration
+        )
+
         settings.authentication.access_token.expiration = 0.05
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -1191,6 +1203,9 @@ class TestApplet(BaseTest):
         await asyncio.sleep(4)
         response = await self.client.get(self.applet_list_url)
 
+        settings.authentication.access_token.expiration = (
+            current_access_token_expiration
+        )
         assert response.status_code == 401, response.json()
 
     @rollback
@@ -1876,7 +1891,7 @@ class TestApplet(BaseTest):
         assert response.status_code == 200
         assert (
             response.json()["result"]["displayName"]
-            == "Applet User daily behave updated updated "
+            == "Applet User daily behave updated updated"
         )
         assert len(response.json()["result"]["activities"]) == 4
 

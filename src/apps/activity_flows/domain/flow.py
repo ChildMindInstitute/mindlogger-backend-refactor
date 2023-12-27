@@ -11,7 +11,6 @@ class Flow(FlowBase, InternalModel):
     id: uuid.UUID
     applet_id: uuid.UUID
     order: int
-    extra_fields: dict | None = Field(default_factory=dict)
 
 
 class FlowPublic(FlowBase, PublicModel):
@@ -33,6 +32,17 @@ class FlowSingleLanguageDetailPublic(FlowPublic):
     description: str  # type: ignore[assignment]
     activity_ids: list[uuid.UUID] = Field(default_factory=list)
     created_at: datetime
+
+
+class FlowSingleLanguageMobileDetailPublic(InternalModel):
+    id: uuid.UUID
+    name: str
+    description: str
+    hide_badge: bool = False
+    is_single_report: bool = False
+    order: int
+    is_hidden: bool | None = False
+    activity_ids: list[uuid.UUID] = Field(default_factory=list)
 
 
 class FlowDuplicate(FlowBase, InternalModel):

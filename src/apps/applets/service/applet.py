@@ -44,6 +44,7 @@ from apps.applets.errors import (
 )
 from apps.applets.service.applet_history_service import AppletHistoryService
 from apps.folders.crud import FolderAppletCRUD, FolderCRUD
+from apps.schedule.service import ScheduleService
 from apps.shared.version import (
     INITIAL_VERSION,
     VERSION_DIFFERENCE_ACTIVITY,
@@ -82,6 +83,11 @@ class AppletService:
         exists = await AppletsCRUD(self.session).exist_by_key("id", applet_id)
         if not exists:
             raise AppletNotFoundError(key="id", value=str(applet_id))
+
+    async def exist_by_ids(self, applet_ids: list[uuid.UUID]):
+        exists = await AppletsCRUD(self.session).exist_by_ids(ids=applet_ids)
+        if not exists:
+            raise AppletNotFoundError(key="id", value=str(applet_ids))
 
     async def get(self, applet_id: uuid.UUID):
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
@@ -129,7 +135,7 @@ class AppletService:
         manager_id: uuid.UUID | None = None,
         manager_role: Role | None = None,
     ) -> AppletFull:
-        applet = await self._create(create_data)
+        applet = await self._create(create_data, manager_id or self.user_id)
 
         await self._create_applet_accesses(applet.id, manager_id, manager_role)
 
@@ -149,7 +155,9 @@ class AppletService:
 
         return applet
 
-    async def _create(self, create_data: AppletCreate) -> AppletFull:
+    async def _create(
+        self, create_data: AppletCreate, creator_id: uuid.UUID
+    ) -> AppletFull:
         applet_id = uuid.uuid4()
         await self._validate_applet_name(create_data.display_name)
         if not create_data.theme_id:
@@ -177,6 +185,7 @@ class AppletService:
                 if create_data.encryption
                 else None,
                 extra_fields=create_data.extra_fields,
+                creator_id=creator_id,
             )
         )
         return AppletFull.from_orm(schema)
@@ -197,13 +206,17 @@ class AppletService:
             self.session, self.user_id
         ).remove_applet_activities(applet_id)
         applet = await self._update(applet_id, update_data, next_version)
-
         applet.activities = await ActivityService(
             self.session, self.user_id
         ).update_create(applet_id, update_data.activities)
         activity_key_id_map = dict()
+        activity_ids = []
+        assessment_id = None
         for activity in applet.activities:
             activity_key_id_map[activity.key] = activity.id
+            activity_ids.append(activity.id)
+            if activity.is_reviewable:
+                assessment_id = activity.id
         applet.activity_flows = await FlowService(self.session).update_create(
             applet_id, update_data.activity_flows, activity_key_id_map
         )
@@ -212,6 +225,19 @@ class AppletService:
             self.session, applet.id, applet.version
         ).add_history(self.user_id, applet)
 
+        event_serv = ScheduleService(self.session)
+        to_await = []
+        if assessment_id:
+            to_await.append(
+                event_serv.delete_by_activity_ids(applet_id, [assessment_id])
+            )
+        to_await.append(
+            event_serv.create_default_schedules_if_not_exist(
+                applet_id=applet.id,
+                activity_ids=activity_ids,
+            )
+        )
+        await asyncio.gather(*to_await)
         return applet
 
     async def update_encryption(
@@ -250,7 +276,7 @@ class AppletService:
             applet_exist, new_name, encryption
         )
 
-        applet = await self._create(create_data)
+        applet = await self._create(create_data, self.user_id)
         # TODO: move to api level
         await UserAppletAccessService(
             self.session, applet_owner.user_id, applet.id

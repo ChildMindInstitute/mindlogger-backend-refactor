@@ -26,6 +26,7 @@ class TestAnswerActivityItems(BaseTest):
         "activities/fixtures/activity_item_histories.json",
         "activity_flows/fixtures/activity_flow_histories.json",
         "activity_flows/fixtures/activity_flow_item_histories.json",
+        "workspaces/fixtures/workspaces.json",
     ]
 
     login_url = "/auth/login"
@@ -43,6 +44,7 @@ class TestAnswerActivityItems(BaseTest):
     )
     applet_answers_export_url = "/answers/applet/{applet_id}/data"
     applet_answers_completions_url = "/answers/applet/{applet_id}/completions"
+    applets_answers_completions_url = "/answers/applet/completions"
     applet_submit_dates_url = "/answers/applet/{applet_id}/dates"
 
     activity_answers_url = (
@@ -241,6 +243,10 @@ class TestAnswerActivityItems(BaseTest):
             answer=dict(
                 start_time=1690188679657,
                 end_time=1690188731636,
+                itemIds=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0012",
+                ],
             ),
             client=dict(
                 appId="mindlogger-mobile",
@@ -376,6 +382,10 @@ class TestAnswerActivityItems(BaseTest):
             answer=dict(
                 start_time=1690188679657,
                 end_time=1690188731636,
+                itemIds=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0012",
+                ],
             ),
             client=dict(
                 appId="mindlogger-mobile",
@@ -711,6 +721,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.0.0"
+                ),
             ),
         )
 
@@ -741,6 +754,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.0.0"
+                ),
             ),
         )
 
@@ -1163,6 +1179,9 @@ class TestAnswerActivityItems(BaseTest):
                 answer="some answer",
                 item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
                 reviewer_public_key="some public key",
+                assessment_version_id=(
+                    "09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.0.0"
+                ),
             ),
         )
 
@@ -1308,9 +1327,9 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["count"] == 1
-        assert response.json()["result"][0]["name"] == "PHQ2 new"
-        assert response.json()["result"][0]["isPerformanceTask"] is True
-        assert response.json()["result"][0]["hasAnswer"] is False
+        assert response.json()["result"][0]["name"] == "Flanker"
+        assert response.json()["result"][0]["isPerformanceTask"]
+        assert not response.json()["result"][0]["hasAnswer"]
 
     @rollback
     async def test_get_summary_activities_after_submitted_answer(self):
@@ -1359,7 +1378,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["count"] == 1
-        assert response.json()["result"][0]["name"] == "PHQ2 new"
+        assert response.json()["result"][0]["name"] == "Flanker"
         assert response.json()["result"][0]["isPerformanceTask"]
         assert response.json()["result"][0]["hasAnswer"]
 
@@ -1553,6 +1572,109 @@ class TestAnswerActivityItems(BaseTest):
         }
         assert activity_answer_data["answerId"] == answer_id
         assert activity_answer_data["localEndTime"] == "12:35:00"
+
+    @rollback
+    async def test_applets_completions(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        # create answer
+        create_data = dict(
+            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            version="1.0.0",
+            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+            answer=dict(
+                user_public_key="user key",
+                answer=json.dumps(
+                    dict(
+                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                ],
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
+                scheduledEventId="eventId",
+                localEndDate="2022-10-01",
+                localEndTime="12:35:00",
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
+        )
+
+        response = await self.client.post(self.answer_url, data=create_data)
+
+        assert response.status_code == 201
+
+        # get answer id
+        response = await self.client.get(
+            self.review_activities_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            dict(
+                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                createdDate=datetime.datetime.utcnow().date(),
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
+
+        # test completions
+        response = await self.client.get(
+            url=self.applets_answers_completions_url,
+            query={"fromDate": "2022-10-01"},
+        )
+
+        assert response.status_code == 200, response.json()
+        data = sorted(response.json()["result"], key=lambda x: x["id"])
+
+        assert len(data) == 2
+        apppet_0 = data[0]
+        apppet_1 = data[1]
+
+        assert set(apppet_0.keys()) == {
+            "id",
+            "version",
+            "activities",
+            "activityFlows",
+        }
+        assert apppet_0["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        assert apppet_0["version"] == "1.0.0"
+        assert len(apppet_0["activities"]) == 1
+        activity_answer_data = apppet_0["activities"][0]
+        assert set(activity_answer_data.keys()) == {
+            "id",
+            "answerId",
+            "submitId",
+            "scheduledEventId",
+            "localEndDate",
+            "localEndTime",
+        }
+        assert activity_answer_data["answerId"] == answer_id
+        assert activity_answer_data["scheduledEventId"] == "eventId"
+        assert activity_answer_data["localEndDate"] == "2022-10-01"
+        assert activity_answer_data["localEndTime"] == "12:35:00"
+
+        assert set(apppet_1.keys()) == {
+            "id",
+            "version",
+            "activities",
+            "activityFlows",
+        }
+        assert apppet_1["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b2"
+        assert apppet_1["version"] == "2.0.1"
+        assert len(apppet_1["activities"]) == 0
 
     @rollback
     async def test_summary_restricted_for_reviewer_if_external_respondent(

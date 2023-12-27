@@ -6,11 +6,8 @@ from apps.activity_flows.domain.flow_create import (
     FlowCreate,
     PreparedFlowItemCreate,
 )
-from apps.activity_flows.domain.flow_full import FlowFull
-from apps.activity_flows.domain.flow_update import (
-    FlowUpdate,
-    PreparedFlowItemUpdate,
-)
+from apps.activity_flows.domain.flow_update import PreparedFlowItemUpdate
+from apps.migrate.domain.flow_full import FlowMigratedFull
 from apps.migrate.domain.applet_full import AppletMigratedFull
 from apps.migrate.services.flow_item_service import FlowItemMigrationService
 from apps.migrate.utilities import prepare_extra_fields_to_save
@@ -25,7 +22,7 @@ class FlowMigrationService:
         applet: AppletMigratedFull,
         flows_create: list[FlowCreate],
         activity_key_id_map: dict[uuid.UUID, uuid.UUID],
-    ) -> list[FlowFull]:
+    ) -> list[FlowMigratedFull]:
         schemas = list()
         prepared_flow_items = list()
         for index, flow_create in enumerate(flows_create):
@@ -67,7 +64,7 @@ class FlowMigrationService:
         flow_id_map = dict()
 
         for flow_schema in flow_schemas:
-            flow = FlowFull.from_orm(flow_schema)
+            flow = FlowMigratedFull.from_orm(flow_schema)
             flows.append(flow)
             flow_id_map[flow.id] = flow
 
@@ -81,7 +78,7 @@ class FlowMigrationService:
         applet: AppletMigratedFull,
         flows_update: list[FlowCreate],
         activity_key_id_map: dict[uuid.UUID, uuid.UUID],
-    ) -> list[FlowFull]:
+    ) -> list[FlowMigratedFull]:
         schemas = list()
         prepared_flow_items = list()
 
@@ -124,7 +121,7 @@ class FlowMigrationService:
         flow_id_map = dict()
 
         for flow_schema in flow_schemas:
-            flow = FlowFull.from_orm(flow_schema)
+            flow = FlowMigratedFull.from_orm(flow_schema)
             flows.append(flow)
             flow_id_map[flow.id] = flow
 

@@ -9,6 +9,7 @@ from apps.activities.domain.activity_item import (
     ActivityItemSingleLanguageDetail,
     ActivityItemSingleLanguageDetailPublic,
 )
+from apps.activities.domain.scores_reports import ScoresAndReports
 from apps.shared.domain import InternalModel, PublicModel
 
 
@@ -43,6 +44,20 @@ class ActivitySingleLanguageDetailPublic(ActivityBase, PublicModel):
     created_at: datetime
 
 
+class ActivitySingleLanguageMobileDetailPublic(InternalModel):
+    id: uuid.UUID
+    name: str
+    description: str
+    image: str = ""
+    is_reviewable: bool = False
+    is_skippable: bool = False
+    show_all_at_once: bool = False
+    is_hidden: bool | None = False
+    response_is_editable: bool = False
+    order: int
+    splash_screen: str = ""
+
+
 class ActivitySingleLanguageWithItemsDetail(ActivityBase, InternalModel):
     id: uuid.UUID
     order: int
@@ -59,3 +74,21 @@ class ActivitySingleLanguageWithItemsDetailPublic(ActivityBase, PublicModel):
         default_factory=list
     )
     created_at: datetime
+
+
+class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
+    id: uuid.UUID
+    name: str
+    description: str
+    splash_screen: str = ""
+    image: str = ""
+    show_all_at_once: bool = False
+    is_skippable: bool = False
+    is_reviewable: bool = False
+    is_hidden: bool | None = False
+    response_is_editable: bool = False
+    order: int
+    items: list[ActivityItemSingleLanguageDetailPublic] = Field(
+        default_factory=list
+    )
+    scores_and_reports: ScoresAndReports | None = None

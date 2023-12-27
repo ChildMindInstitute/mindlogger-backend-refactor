@@ -1,11 +1,13 @@
 import uuid
 from copy import deepcopy
+from datetime import date, timedelta
 
 from fastapi import Body, Depends
 from firebase_admin.exceptions import FirebaseError
 
 from apps.answers.errors import UserDoesNotHavePermissionError
-from apps.applets.crud import UserAppletAccessCRUD
+from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.applets.db.schemas import AppletSchema
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.schedule.domain.schedule.filters import EventQueryParams
@@ -52,8 +54,8 @@ async def schedule_create(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[schedule.respondent_id]
             if schedule.respondent_id
@@ -145,8 +147,8 @@ async def schedule_delete_all(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
         )
     except FirebaseError as e:
@@ -175,8 +177,8 @@ async def schedule_delete_by_id(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[respondent_id] if respondent_id else None,
         )
@@ -207,8 +209,8 @@ async def schedule_update(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[schedule.respondent_id]
             if schedule.respondent_id
@@ -256,8 +258,8 @@ async def schedule_delete_by_user(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[respondent_id],
         )
@@ -279,6 +281,45 @@ async def schedule_get_all_by_user(
             user_id=user.id
         )
     return ResponseMulti(result=schedules, count=count)
+
+
+async def schedule_get_all_by_respondent_user(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> ResponseMulti[PublicEventByUser]:
+    """Get all the respondent's schedules for the next 2 weeks."""
+    max_date_from_event_delta_days = 15
+    min_date_to_event_delta_days = 2
+    today: date = date.today()
+    max_start_date: date = today + timedelta(
+        days=max_date_from_event_delta_days
+    )
+    min_end_date: date = today - timedelta(days=min_date_to_event_delta_days)
+
+    async with atomic(session):
+        # applets for this endpoint must be equal to
+        # applets from /applets?roles=respondent endpoint
+        query_params: QueryParams = QueryParams(
+            filters={"roles": Role.RESPONDENT, "flat_list": False},
+            limit=10000,
+        )
+        applets: list[AppletSchema] = await AppletsCRUD(
+            session
+        ).get_applets_by_roles(
+            user_id=user.id,
+            roles=[Role.RESPONDENT],
+            query_params=query_params,
+            exclude_without_encryption=True,
+        )
+        applet_ids: list[uuid.UUID] = [applet.id for applet in applets]
+
+        schedules = await ScheduleService(session).get_upcoming_events_by_user(
+            user_id=user.id,
+            applet_ids=applet_ids,
+            min_end_date=min_end_date,
+            max_start_date=max_start_date,
+        )
+    return ResponseMulti(result=schedules, count=len(schedules))
 
 
 async def schedule_get_by_user(
@@ -315,8 +356,8 @@ async def schedule_remove_individual_calendar(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[respondent_id],
         )
@@ -368,8 +409,8 @@ async def schedule_create_individual(
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
-            "Schedules are updated",
-            "Schedules are updated",
+            "Your schedule has been changed, click to update.",
+            "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[respondent_id],
         )

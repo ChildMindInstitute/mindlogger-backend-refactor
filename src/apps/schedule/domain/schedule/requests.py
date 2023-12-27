@@ -16,6 +16,7 @@ from apps.schedule.errors import (
     ActivityOrFlowRequiredError,
     OneTimeCompletionCaseError,
     StartEndTimeAccessBeforeScheduleCaseError,
+    StartEndTimeEqualError,
     UnavailableActivityOrFlowError,
 )
 from apps.shared.domain import InternalModel, PublicModel
@@ -85,10 +86,10 @@ class EventUpdateRequest(BaseEvent, InternalModel):
                         if (
                             notification.trigger_type
                             == NotificationTriggerType.FIXED
-                            and not (
-                                values.get("start_time")
-                                <= notification.at_time
-                                <= values.get("end_time")  # noqa: E501
+                            and (
+                                values.get("start_time") is None
+                                or values.get("end_time") is None
+                                or notification.at_time is None  # noqa: E501
                             )
                         ):
                             raise UnavailableActivityOrFlowError()
@@ -96,21 +97,26 @@ class EventUpdateRequest(BaseEvent, InternalModel):
                         if (
                             notification.trigger_type
                             == NotificationTriggerType.RANDOM
-                            and not (
-                                values.get("start_time")
-                                <= notification.from_time
-                                <= notification.to_time
-                                <= values.get("end_time")  # noqa: E501
+                            and (
+                                values.get("start_time") is None
+                                or values.get("end_time") is None
+                                or notification.from_time is None
+                                or notification.to_time is None  # noqa: E501
                             )
                         ):
                             raise UnavailableActivityOrFlowError()
                 if values.get("notification").reminder:
-                    if not (
-                        values.get("start_time")
-                        <= values.get("notification").reminder.reminder_time
-                        <= values.get("end_time")
+                    if (
+                        values.get("start_time") is None
+                        or values.get("end_time") is None
+                        or values.get("notification").reminder.reminder_time
+                        is None
                     ):
                         raise UnavailableActivityOrFlowError()
+
+        if values.get("start_time") == values.get("end_time"):
+            raise StartEndTimeEqualError()
+
         return values
 
 

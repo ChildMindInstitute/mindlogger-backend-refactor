@@ -55,7 +55,9 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(
             or_(
-                UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER]),
+                UserAppletAccessSchema.role.in_(
+                    [Role.OWNER, Role.MANAGER, Role.RESPONDENT]
+                ),
                 and_(
                     UserAppletAccessSchema.role == Role.REVIEWER,
                     func.json_array_length(

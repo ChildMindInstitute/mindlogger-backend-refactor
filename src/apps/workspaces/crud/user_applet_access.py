@@ -273,6 +273,17 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return db_result.scalars().first()
 
+    async def get_applet_role_by_user_id_exist(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
+    ) -> UserAppletAccessSchema | None:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.role == role)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().first()
+
     def user_applet_ids_query(self, user_id: uuid.UUID) -> Query:
         query: Query = select(UserAppletAccessSchema.applet_id)
         query = query.where(UserAppletAccessSchema.soft_exists())
@@ -363,6 +374,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             "role": schema.role,
             "is_deleted": schema.is_deleted,
             "meta": schema.meta,
+            "nickname": schema.nickname,
         }
         stmt = insert(UserAppletAccessSchema).values(values)
         stmt = stmt.on_conflict_do_update(
@@ -381,6 +393,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow(),
                 "meta": stmt.excluded.meta,
+                "nickname": stmt.excluded.nickname,
             },
             where=where,
         ).returning(UserAppletAccessSchema)
@@ -406,6 +419,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "role": schema.role,
                 "is_deleted": schema.is_deleted,
                 "meta": schema.meta,
+                "nickname": schema.nickname,
             }
             for schema in schemas
         ]
@@ -418,11 +432,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserAppletAccessSchema.role,
             ],
             set_={
+                "invitor_id": stmt.excluded.invitor_id,
+                "owner_id": stmt.excluded.owner_id,
                 "user_id": stmt.excluded.user_id,
                 "applet_id": stmt.excluded.applet_id,
                 "role": stmt.excluded.role,
                 "is_deleted": stmt.excluded.is_deleted,
                 "meta": stmt.excluded.meta,
+                "nickname": stmt.excluded.nickname,
             },
         )
 

@@ -3,6 +3,7 @@ from starlette import status
 
 from apps.activities.api.activities import (
     activity_retrieve,
+    applet_activities,
     public_activity_retrieve,
 )
 from apps.activities.api.reusable_item_choices import (
@@ -16,6 +17,7 @@ from apps.activities.domain.activity import (
 from apps.activities.domain.reusable_item_choices import (
     PublicReusableItemChoice,
 )
+from apps.applets.domain.applet import AppletActivitiesDetailsPublic
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -79,3 +81,13 @@ public_router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(public_activity_retrieve)
+
+router.get(
+    "/applet/{applet_id}",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[AppletActivitiesDetailsPublic]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(applet_activities)

@@ -1,7 +1,183 @@
 import uuid
 
+import pytest
+
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
+
+
+@pytest.fixture
+def activity_flanker_data():
+    return dict(
+        name="Activity_flanker",
+        key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+        description=dict(
+            en="Description Activity flanker.",
+            fr="Description Activity flanker.",
+        ),
+        items=[
+            dict(
+                name="Flanker_VSR_instructionsn",
+                # Nobody knows for what we need so big description
+                question=dict(
+                    en="## General Instructions\n\n\n You will "
+                    "see arrows presented at the center of the "
+                    "screen that point either to the left ‘<’ "
+                    "or right ‘>’.\n Press the left button "
+                    "if the arrow is pointing to the left ‘<’ "
+                    "or press the right button if the arrow is "
+                    "pointing to the right ‘>’.\n These arrows "
+                    "will appear in the center of a line of "
+                    "other items. Sometimes, these other items "
+                    "will be arrows pointing in the same "
+                    "direction, e.g.. ‘> > > > >’, or in the "
+                    "opposite direction, e.g. ‘< < > < <’.\n "
+                    "Your job is to respond to the central "
+                    "arrow, no matter what direction the other "
+                    "arrows are pointing.\n For example, you "
+                    "would press the left button for both "
+                    "‘< < < < <’, and ‘> > < > >’ because the "
+                    "middle arrow points to the left.\n "
+                    "Finally, in some trials dashes ‘ - ’ "
+                    "will appear beside the central arrow.\n "
+                    "Again, respond only to the direction "
+                    "of the central arrow. Please respond "
+                    "as quickly and accurately as possible.",
+                    fr="Flanker General instruction text.",
+                ),
+                response_type="message",
+                response_values=None,
+                config=dict(
+                    remove_back_button=False,
+                    timer=None,
+                ),
+            ),
+            dict(
+                name="Flanker_Practice_instructions_1",
+                question=dict(
+                    en="## Instructions\n\nNow you will have a "
+                    "chance to practice the task before moving "
+                    "on to the test phase.\nRemember to "
+                    "respond only to the central arrow\n",
+                    fr="Flanker Сalibration/Practice " "instruction 1 text.",
+                ),
+                response_type="message",
+                response_values=None,
+                config=dict(
+                    remove_back_button=False,
+                    timer=None,
+                ),
+            ),
+            dict(
+                name="Flanker_Practise_1",
+                question=dict(
+                    en="Flanker_Practise_1",
+                    fr="Flanker_Practise_1",
+                ),
+                response_type="flanker",
+                response_values=None,
+                config=dict(
+                    stimulusTrials=[
+                        {
+                            "id": "1",
+                            "image": "https://600.jpg",
+                            "text": "left-con",
+                            "value": 0,
+                            "weight": 10,
+                        },
+                        {
+                            "id": "2",
+                            "image": "https://600.jpg",
+                            "text": "right-inc",
+                            "value": 1,
+                            "weight": 10,
+                        },
+                        {
+                            "id": "3",
+                            "image": "https://600.jpg",
+                            "text": "left-inc",
+                            "value": 0,
+                            "weight": 10,
+                        },
+                        {
+                            "id": "4",
+                            "image": "https://600.jpg",
+                            "text": "right-con",
+                            "value": 1,
+                            "weight": 10,
+                        },
+                        {
+                            "id": "5",
+                            "image": "https://600.jpg",
+                            "text": "left-neut",
+                            "value": 0,
+                            "weight": 10,
+                        },
+                        {
+                            "id": "6",
+                            "image": "https://600.jpg",
+                            "text": "right-neut",
+                            "value": 1,
+                            "weight": 10,
+                        },
+                    ],
+                    blocks=[
+                        {
+                            "name": "Block 1",
+                            "order": [
+                                "left-con",
+                                "right-con",
+                                "left-inc",
+                                "right-inc",
+                                "left-neut",
+                                "right-neut",
+                            ],
+                        },
+                        {
+                            "name": "Block 2",
+                            "order": [
+                                "left-con",
+                                "right-con",
+                                "left-inc",
+                                "right-inc",
+                                "left-neut",
+                                "right-neut",
+                            ],
+                        },
+                    ],
+                    buttons=[
+                        {
+                            "text": "Button_1_name_<",
+                            "image": "https://1.jpg",
+                            "value": 0,
+                        },
+                        {
+                            "text": "Button_2_name_>",
+                            "image": "https://2.jpg",
+                            "value": 1,
+                        },
+                    ],
+                    nextButton="OK",
+                    fixationDuration=500,
+                    fixationScreen={
+                        "value": "FixationScreen_value",
+                        "image": "https://fixation-screen.jpg",
+                    },
+                    minimumAccuracy=75,
+                    sampleSize=1,
+                    samplingMethod="randomize-order",
+                    showFeedback=True,
+                    showFixation=True,
+                    showResults=False,
+                    trialDuration=3000,
+                    isLastPractice=False,
+                    isFirstPractice=True,
+                    isLastTest=False,
+                    blockType="practice",
+                ),
+            ),
+        ],
+    )
 
 
 class TestActivityItems(BaseTest):
@@ -463,8 +639,8 @@ class TestActivityItems(BaseTest):
                             response_values=dict(
                                 palette_name="palette1",
                                 options=[
-                                    {"text": "option1"},
-                                    {"text": "option2"},
+                                    {"text": "option1", "value": 0},
+                                    {"text": "option2", "value": 1},
                                 ],
                             ),
                             config=dict(
@@ -1111,228 +1287,6 @@ class TestActivityItems(BaseTest):
                                 preview_step_gap=100,
                                 dimension_count=1,
                                 max_rad=0.26167,
-                            ),
-                        ),
-                    ],
-                ),
-            ],
-            activity_flows=[
-                dict(
-                    name="name_activityFlow",
-                    description=dict(
-                        en="description activityFlow",
-                        fr="description activityFlow",
-                    ),
-                    items=[
-                        dict(
-                            activity_key="577dbbda-3afc-"
-                            "4962-842b-8d8d11588bfe"
-                        )
-                    ],
-                )
-            ],
-        )
-        response = await self.client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
-            data=create_data,
-        )
-        assert response.status_code == 201, response.json()
-
-        response = await self.client.get(
-            self.applet_detail_url.format(pk=response.json()["result"]["id"])
-        )
-        assert response.status_code == 200
-
-    @rollback
-    async def test_creating_applet_with_flanker_activity_items(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        create_data = dict(
-            display_name="flanker_activity_applet",
-            encryption=dict(
-                public_key=uuid.uuid4().hex,
-                prime=uuid.uuid4().hex,
-                base=uuid.uuid4().hex,
-                account_id=str(uuid.uuid4()),
-            ),
-            description=dict(
-                en="Performance Tasks flanker Applet",
-                fr="Performance Tasks flanker Applet",
-            ),
-            about=dict(
-                en="Applet flanker Task Builder Activity",
-                fr="Applet flanker Task Builder Activity",
-            ),
-            activities=[
-                dict(
-                    name="Activity_flanker",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                    description=dict(
-                        en="Description Activity flanker.",
-                        fr="Description Activity flanker.",
-                    ),
-                    items=[
-                        dict(
-                            name="Flanker_VSR_instructionsn",
-                            question=dict(
-                                en="## General Instructions\n\n\n You will "
-                                "see arrows presented at the center of the "
-                                "screen that point either to the left ‘<’ "
-                                "or right ‘>’.\n Press the left button "
-                                "if the arrow is pointing to the left ‘<’ "
-                                "or press the right button if the arrow is "
-                                "pointing to the right ‘>’.\n These arrows "
-                                "will appear in the center of a line of "
-                                "other items. Sometimes, these other items "
-                                "will be arrows pointing in the same "
-                                "direction, e.g.. ‘> > > > >’, or in the "
-                                "opposite direction, e.g. ‘< < > < <’.\n "
-                                "Your job is to respond to the central "
-                                "arrow, no matter what direction the other "
-                                "arrows are pointing.\n For example, you "
-                                "would press the left button for both "
-                                "‘< < < < <’, and ‘> > < > >’ because the "
-                                "middle arrow points to the left.\n "
-                                "Finally, in some trials dashes ‘ - ’ "
-                                "will appear beside the central arrow.\n "
-                                "Again, respond only to the direction "
-                                "of the central arrow. Please respond "
-                                "as quickly and accurately as possible.",
-                                fr="Flanker General instruction text.",
-                            ),
-                            response_type="message",
-                            response_values=None,
-                            config=dict(
-                                remove_back_button=False,
-                                timer=None,
-                            ),
-                        ),
-                        dict(
-                            name="Flanker_Practice_instructions_1",
-                            question=dict(
-                                en="## Instructions\n\nNow you will have a "
-                                "chance to practice the task before moving "
-                                "on to the test phase.\nRemember to "
-                                "respond only to the central arrow\n",
-                                fr="Flanker Сalibration/Practice "
-                                "instruction 1 text.",
-                            ),
-                            response_type="message",
-                            response_values=None,
-                            config=dict(
-                                remove_back_button=False,
-                                timer=None,
-                            ),
-                        ),
-                        dict(
-                            name="Flanker_Practise_1",
-                            question=dict(
-                                en="Flanker_Practise_1",
-                                fr="Flanker_Practise_1",
-                            ),
-                            response_type="flanker",
-                            response_values=None,
-                            config=dict(
-                                stimulusTrials=[
-                                    {
-                                        "id": "1",
-                                        "image": "https://600.jpg",
-                                        "text": "left-con",
-                                        "value": 0,
-                                        "weight": 10,
-                                    },
-                                    {
-                                        "id": "2",
-                                        "image": "https://600.jpg",
-                                        "text": "right-inc",
-                                        "value": 1,
-                                        "weight": 10,
-                                    },
-                                    {
-                                        "id": "3",
-                                        "image": "https://600.jpg",
-                                        "text": "left-inc",
-                                        "value": 0,
-                                        "weight": 10,
-                                    },
-                                    {
-                                        "id": "4",
-                                        "image": "https://600.jpg",
-                                        "text": "right-con",
-                                        "value": 1,
-                                        "weight": 10,
-                                    },
-                                    {
-                                        "id": "5",
-                                        "image": "https://600.jpg",
-                                        "text": "left-neut",
-                                        "value": 0,
-                                        "weight": 10,
-                                    },
-                                    {
-                                        "id": "6",
-                                        "image": "https://600.jpg",
-                                        "text": "right-neut",
-                                        "value": 1,
-                                        "weight": 10,
-                                    },
-                                ],
-                                blocks=[
-                                    {
-                                        "name": "Block 1",
-                                        "order": [
-                                            "left-con",
-                                            "right-con",
-                                            "left-inc",
-                                            "right-inc",
-                                            "left-neut",
-                                            "right-neut",
-                                        ],
-                                    },
-                                    {
-                                        "name": "Block 2",
-                                        "order": [
-                                            "left-con",
-                                            "right-con",
-                                            "left-inc",
-                                            "right-inc",
-                                            "left-neut",
-                                            "right-neut",
-                                        ],
-                                    },
-                                ],
-                                buttons=[
-                                    {
-                                        "text": "Button_1_name_<",
-                                        "image": "https://1.jpg",
-                                        "value": 0,
-                                    },
-                                    {
-                                        "text": "Button_2_name_>",
-                                        "image": "https://2.jpg",
-                                        "value": 1,
-                                    },
-                                ],
-                                nextButton="OK",
-                                fixationDuration=500,
-                                fixationScreen={
-                                    "value": "FixationScreen_value",
-                                    "image": "https://fixation-screen.jpg",
-                                },
-                                minimumAccuracy=75,
-                                sampleSize=1,
-                                samplingMethod="randomize-order",
-                                showFeedback=True,
-                                showFixation=True,
-                                showResults=False,
-                                trialDuration=3000,
-                                isLastPractice=False,
-                                isFirstPractice=True,
-                                isLastTest=False,
-                                blockType="practice",
                             ),
                         ),
                     ],
@@ -2030,10 +1984,12 @@ class TestActivityItems(BaseTest):
                                     {
                                         "text": "option1",
                                         "alert": "alert1",
+                                        "value": 0,
                                     },
                                     {
                                         "text": "option2",
                                         "alert": "alert2",
+                                        "value": 1,
                                     },
                                 ],
                             ),
@@ -2135,41 +2091,86 @@ class TestActivityItems(BaseTest):
         assert response.status_code == 200
 
     @rollback
-    async def test_create_applet_with_preformance_activity_item(self):
+    async def test_create_applet_with_flanker_preformance_task(
+        self, activity_flanker_data
+    ):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
 
         create_data = dict(
-            display_name="User daily behave",
+            display_name="Flanker",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
                 prime=uuid.uuid4().hex,
                 base=uuid.uuid4().hex,
                 account_id=str(uuid.uuid4()),
             ),
-            description=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
+            description=dict(en="Flanker", fr="Flanker"),
+            about=dict(en="Flanker", fr="Flanker"),
+            activities=[activity_flanker_data],
+            # Empty, but required
+            activity_flows=[],
+        )
+
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
-            about=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
+            data=create_data,
+        )
+        assert response.status_code == 201, response.json()
+
+        assert response.json()["result"]["activities"][0]["isPerformanceTask"]
+        assert (
+            response.json()["result"]["activities"][0]["performanceTaskType"]
+            == "flanker"
+        )
+
+        # Check that the 'get' after creating new applet returns correct data
+        response = await self.client.get(
+            self.applet_workspace_detail_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                pk=response.json()["result"]["id"],
+            )
+        )
+        assert response.status_code == 200
+        assert response.json()["result"]["activities"][0]["isPerformanceTask"]
+        assert (
+            response.json()["result"]["activities"][0]["performanceTaskType"]
+            == "flanker"
+        )
+
+    @rollback
+    async def test_applet_add_performance_task_to_the_applet(
+        self, activity_flanker_data
+    ):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        create_data = dict(
+            display_name="Add flanker to existing applet",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
             ),
+            description=dict(en="Add flanker to existing applet"),
+            about=dict(en="Add flanker to existing applet"),
             activities=[
                 dict(
                     name="Morning activity",
                     key="577dbbda-3afc-4962-842b-8d8d11588bfe",
                     description=dict(
                         en="Understand morning feelings.",
-                        fr="Understand morning feelings.",
                     ),
                     items=[
                         dict(
                             name="activity_item_text",
                             question=dict(
                                 en="How had you slept?",
-                                fr="How had you slept?",
                             ),
                             response_type="text",
                             response_values=None,
@@ -2187,226 +2188,23 @@ class TestActivityItems(BaseTest):
                     ],
                 ),
             ],
-            activity_flows=[
-                dict(
-                    name="Morning questionnaire",
-                    description=dict(
-                        en="Understand how was the morning",
-                        fr="Understand how was the morning",
-                    ),
-                    items=[
-                        dict(
-                            activity_key="577dbbda-3afc-"
-                            "4962-842b-8d8d11588bfe"
-                        )
-                    ],
-                )
-            ],
+            # Empty, but required
+            activity_flows=[],
         )
+
         response = await self.client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
             data=create_data,
         )
-        assert response.status_code == 201, response.json()
-        assert (
-            response.json()["result"]["activities"][0]["isPerformanceTask"]
-            is False
-        )
-        assert (
-            response.json()["result"]["activities"][0]["performanceTaskType"]
-            is None
-        )
-
-        create_data["activities"] = [
-            dict(
-                name="Activity_flanker",
-                key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                description=dict(
-                    en="Description Activity flanker.",
-                    fr="Description Activity flanker.",
-                ),
-                items=[
-                    dict(
-                        name="Flanker_VSR_instructionsn",
-                        question=dict(
-                            en="## General Instructions\n\n\n You will "
-                            "see arrows presented at the center of the "
-                            "screen that point either to the left ‘<’ "
-                            "or right ‘>’.\n Press the left button "
-                            "if the arrow is pointing to the left ‘<’ "
-                            "or press the right button if the arrow is "
-                            "pointing to the right ‘>’.\n These arrows "
-                            "will appear in the center of a line of "
-                            "other items. Sometimes, these other items "
-                            "will be arrows pointing in the same "
-                            "direction, e.g.. ‘> > > > >’, or in the "
-                            "opposite direction, e.g. ‘< < > < <’.\n "
-                            "Your job is to respond to the central "
-                            "arrow, no matter what direction the other "
-                            "arrows are pointing.\n For example, you "
-                            "would press the left button for both "
-                            "‘< < < < <’, and ‘> > < > >’ because the "
-                            "middle arrow points to the left.\n "
-                            "Finally, in some trials dashes ‘ - ’ "
-                            "will appear beside the central arrow.\n "
-                            "Again, respond only to the direction "
-                            "of the central arrow. Please respond "
-                            "as quickly and accurately as possible.",
-                            fr="Flanker General instruction text.",
-                        ),
-                        response_type="message",
-                        response_values=None,
-                        config=dict(
-                            remove_back_button=False,
-                            timer=None,
-                        ),
-                    ),
-                    dict(
-                        name="Flanker_Practice_instructions_1",
-                        question=dict(
-                            en="## Instructions\n\nNow you will have a "
-                            "chance to practice the task before moving "
-                            "on to the test phase.\nRemember to "
-                            "respond only to the central arrow\n",
-                            fr="Flanker Сalibration/Practice "
-                            "instruction 1 text.",
-                        ),
-                        response_type="message",
-                        response_values=None,
-                        config=dict(
-                            remove_back_button=False,
-                            timer=None,
-                        ),
-                    ),
-                    dict(
-                        name="Flanker_Practise_1",
-                        question=dict(
-                            en="Flanker_Practise_1",
-                            fr="Flanker_Practise_1",
-                        ),
-                        response_type="flanker",
-                        response_values=None,
-                        config=dict(
-                            stimulusTrials=[
-                                {
-                                    "id": "1",
-                                    "image": "https://600.jpg",
-                                    "text": "left-con",
-                                    "value": 0,
-                                    "weight": 10,
-                                },
-                                {
-                                    "id": "2",
-                                    "image": "https://600.jpg",
-                                    "text": "right-inc",
-                                    "value": 1,
-                                    "weight": 10,
-                                },
-                                {
-                                    "id": "3",
-                                    "image": "https://600.jpg",
-                                    "text": "left-inc",
-                                    "value": 0,
-                                    "weight": 10,
-                                },
-                                {
-                                    "id": "4",
-                                    "image": "https://600.jpg",
-                                    "text": "right-con",
-                                    "value": 1,
-                                    "weight": 10,
-                                },
-                                {
-                                    "id": "5",
-                                    "image": "https://600.jpg",
-                                    "text": "left-neut",
-                                    "value": 0,
-                                    "weight": 10,
-                                },
-                                {
-                                    "id": "6",
-                                    "image": "https://600.jpg",
-                                    "text": "right-neut",
-                                    "value": 1,
-                                    "weight": 10,
-                                },
-                            ],
-                            blocks=[
-                                {
-                                    "name": "Block 1",
-                                    "order": [
-                                        "left-con",
-                                        "right-con",
-                                        "left-inc",
-                                        "right-inc",
-                                        "left-neut",
-                                        "right-neut",
-                                    ],
-                                },
-                                {
-                                    "name": "Block 2",
-                                    "order": [
-                                        "left-con",
-                                        "right-con",
-                                        "left-inc",
-                                        "right-inc",
-                                        "left-neut",
-                                        "right-neut",
-                                    ],
-                                },
-                            ],
-                            buttons=[
-                                {
-                                    "text": "Button_1_name_<",
-                                    "image": "https://1.jpg",
-                                    "value": 0,
-                                },
-                                {
-                                    "text": "Button_2_name_>",
-                                    "image": "https://2.jpg",
-                                    "value": 1,
-                                },
-                            ],
-                            nextButton="OK",
-                            fixationDuration=500,
-                            fixationScreen={
-                                "value": "FixationScreen_value",
-                                "image": "https://fixation-screen.jpg",
-                            },
-                            minimumAccuracy=75,
-                            sampleSize=1,
-                            samplingMethod="randomize-order",
-                            showFeedback=True,
-                            showFixation=True,
-                            showResults=False,
-                            trialDuration=3000,
-                            isLastPractice=False,
-                            isFirstPractice=True,
-                            isLastTest=False,
-                            blockType="practice",
-                        ),
-                    ),
-                ],
-            ),
-        ]
-
-        response = await self.client.put(
-            self.applet_detail_url.format(pk=response.json()["result"]["id"]),
-            data=create_data,
-        )
-        assert response.status_code == 200
-
-        assert (
-            response.json()["result"]["activities"][0]["isPerformanceTask"]
-            is True
-        )
-        assert (
-            response.json()["result"]["activities"][0]["performanceTaskType"]
-            == "flanker"
-        )
-
+        assert response.status_code == 201
+        activity = response.json()["result"]["activities"][0]
+        assert not activity["isPerformanceTask"]
+        assert not activity["performanceTaskType"]
+        # Test that get after creating new applet returns correct data
+        # Generaly we don't need to test, tested data, but for now let leave
+        # it here
         response = await self.client.get(
             self.applet_workspace_detail_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -2414,11 +2212,30 @@ class TestActivityItems(BaseTest):
             )
         )
         assert response.status_code == 200
-        assert (
-            response.json()["result"]["activities"][0]["isPerformanceTask"]
-            is True
+        activity = response.json()["result"]["activities"][0]
+        assert not activity["isPerformanceTask"]
+        assert not activity["performanceTaskType"]
+
+        # Add flanker performance task
+        create_data["activities"].append(activity_flanker_data)
+
+        response = await self.client.put(
+            self.applet_detail_url.format(pk=response.json()["result"]["id"]),
+            data=create_data,
         )
-        assert (
-            response.json()["result"]["activities"][0]["performanceTaskType"]
-            == "flanker"
+        assert response.status_code == 200
+        flanker = response.json()["result"]["activities"][1]
+        assert flanker["isPerformanceTask"]
+        assert flanker["performanceTaskType"] == "flanker"
+
+        # Check the 'get' method
+        response = await self.client.get(
+            self.applet_workspace_detail_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                pk=response.json()["result"]["id"],
+            )
         )
+        assert response.status_code == 200
+        flanker = response.json()["result"]["activities"][1]
+        assert flanker["isPerformanceTask"]
+        assert flanker["performanceTaskType"] == "flanker"

@@ -146,6 +146,14 @@ class ScoresAndReports(PublicModel):
         return value
 
 
+class ScoreConditionalLogicMobile(PublicModel):
+    id: str
+    name: str
+    flag_score: bool = False
+    match: Match = Field(default=Match.ALL)
+    conditions: list[ScoreCondition]
+
+
 class SubscaleCalculationType(str, Enum):
     SUM = "sum"
     AVERAGE = "average"
