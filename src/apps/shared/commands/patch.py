@@ -1,36 +1,44 @@
-from apps.shared.commands.domain import PatchRegister
+from apps.shared.commands.domain import Patch
 
 
-class Patch:
-    patches: list[PatchRegister] | None = None
+class PatchRegister:
+    patches: list[Patch] | None = None
 
     @classmethod
-    def register(self, patch: PatchRegister):
+    def register(
+        self,
+        file_path: str,
+        task_id: str,
+        description: str,
+        manage_session: bool,
+    ):
         self.patches = self.patches or []
-        self.patches.append(patch)
+        # check if task_id already exist
+        found_patch = next(
+            (p for p in self.patches if p.task_id == task_id), None
+        )
+        if found_patch:
+            raise ValueError(f"Patch with task_id {task_id} already exist")
+        self.patches.append(
+            Patch(
+                file_path=file_path,
+                task_id=task_id,
+                description=description,
+                manage_session=manage_session,
+            )
+        )
 
     @classmethod
     def get_all(self):
         return self.patches or []
 
     @classmethod
-    def get_all_by_task_id(self, task_id: str):
+    def get_by_task_id(self, task_id: str):
         if not self.patches:
             return []
-        found_patches = [
-            patch for patch in self.patches if patch.task_id == task_id
-        ]
-        # if found patches are more than 1, order by patch.order
-        if len(found_patches) > 1:
-            found_patches.sort(key=lambda patch: patch.order)
-        return found_patches
+        # find patch by task_id
+        found_patch = next(
+            (p for p in self.patches if p.task_id == task_id), None
+        )
 
-
-Patch.register(
-    PatchRegister(
-        file_path="slider_tickmark_label.py",
-        task_id="M2-3781",
-        description="Slider tick marks and labels fix",
-        order=1,
-    )
-)
+        return found_patch
