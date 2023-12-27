@@ -21,11 +21,7 @@ class _NotificationLogBase(BaseModel):
 
 
 class NotificationLogQuery(BaseModel):
-    # TODO: remove user_id field in the future and make email field required
-    # currently we are supporting both (email is optional) while mobile is not
-    # ready
-    user_id: str
-    email: str | None
+    email: str
     device_id: str
     limit: PositiveInt = 1
 

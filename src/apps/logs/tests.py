@@ -48,7 +48,7 @@ class TestNotificationLogs(BaseTest):
     @rollback
     async def test_retrieve_log(self):
         query = dict(
-            user_id="tom@mindlogger.com",
+            email="tom@mindlogger.com",
             device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
         )
 
@@ -71,7 +71,7 @@ class TestNotificationLogs(BaseTest):
         assert response.json()["result"]["id"]
 
         query = dict(
-            user_id="tom@mindlogger.com",
+            email="tom@mindlogger.com",
             device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             limit=10,
         )
