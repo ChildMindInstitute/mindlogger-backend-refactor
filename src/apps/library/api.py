@@ -36,7 +36,7 @@ async def library_share_applet(
 
         library_item: AppletLibraryFull = await LibraryService(
             session
-        ).share_applet(schema)
+        ).share_applet(schema, user.id)
 
     return Response(result=library_item)
 

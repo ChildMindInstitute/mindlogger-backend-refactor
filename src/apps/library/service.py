@@ -48,7 +48,9 @@ class LibraryService:
         if name_exists:
             raise AppletNameExistsError()
 
-    async def share_applet(self, schema: AppletLibraryCreate):
+    async def share_applet(
+        self, schema: AppletLibraryCreate, user_id: uuid.UUID
+    ) -> AppletLibraryFull:
         """Share applet to library."""
 
         # check if applet with this name is already in library
@@ -87,6 +89,8 @@ class LibraryService:
             applet_id_version=f"{schema.applet_id}_{applet.version}",
             keywords=schema.keywords,
             search_keywords=search_keywords,
+            created_by=user_id,
+            updated_by=user_id,
         )
         library_item = await LibraryCRUD(self.session).save(library_item)
 
@@ -261,7 +265,7 @@ class LibraryService:
         library_id: uuid.UUID,
         schema: AppletLibraryUpdate,
         user_id: uuid.UUID,
-    ):
+    ) -> AppletLibraryFull:
         library = await LibraryCRUD(self.session).get_by_id(id=library_id)
         if not library:
             raise LibraryItemDoesNotExistError()
@@ -297,6 +301,7 @@ class LibraryService:
             applet_id_version=new_applet_version,
             keywords=schema.keywords,
             search_keywords=search_keywords,
+            updated_by=user_id,
         )
         library_item = await LibraryCRUD(self.session).update(
             library_item, library_id

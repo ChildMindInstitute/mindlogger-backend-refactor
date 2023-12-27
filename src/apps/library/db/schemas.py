@@ -13,6 +13,12 @@ class LibrarySchema(Base):
     )
     keywords = Column(ARRAY(String))
     search_keywords = Column(ARRAY(String))
+    created_by = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
+    )
+    updated_by = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
+    )
 
 
 class CartSchema(Base):
