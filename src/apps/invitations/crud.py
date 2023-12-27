@@ -268,6 +268,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             first_name=invitation.first_name,
             last_name=invitation.last_name,
             created_at=invitation.created_at,
+            user_id=invitation.user_id,
         )
         if invitation.role == Role.RESPONDENT:
             return InvitationDetailRespondent(
@@ -328,17 +329,17 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             InvitationManagers.from_orm(invitation) for invitation in results
         ]
 
-    async def approve_by_id(self, id_: uuid.UUID):
+    async def approve_by_id(self, id_: uuid.UUID, user_id: uuid.UUID):
         query = update(InvitationSchema)
         query = query.where(InvitationSchema.id == id_)
-        query = query.values(status=InvitationStatus.APPROVED)
+        query = query.values(status=InvitationStatus.APPROVED, user_id=user_id)
 
         await self._execute(query)
 
-    async def decline_by_id(self, id_: uuid.UUID):
+    async def decline_by_id(self, id_: uuid.UUID, user_id: uuid.UUID):
         query = update(InvitationSchema)
         query = query.where(InvitationSchema.id == id_)
-        query = query.values(status=InvitationStatus.DECLINED)
+        query = query.values(status=InvitationStatus.DECLINED, user_id=user_id)
 
         await self._execute(query)
 
