@@ -42,7 +42,6 @@ class Activitie(BaseModel):
     createdAt: datetime.datetime
     # items: list[BaseActivityItem]
     items: list[Item]
-    results: list
 
 
 class UnencryptedApplet(BaseModel):
