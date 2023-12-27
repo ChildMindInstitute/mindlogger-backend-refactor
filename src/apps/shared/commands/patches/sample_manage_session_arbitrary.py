@@ -1,6 +1,3 @@
-import uuid
-
-
 from infrastructure.database import atomic
 
 

@@ -16,7 +16,6 @@ from apps.workspaces.errors import WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 
-
 PatchRegister.register(
     file_path="slider_tickmark_label.py",
     task_id="M2-3781",
@@ -159,7 +158,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
                     async with session_maker() as session:
                         async with atomic(session):
                             if arbitrary_session_maker:
-                                async with arbitrary_session_maker() as arbitrary_session:
+                                async with arbitrary_session_maker() as arbitrary_session:  # noqa: E501
                                     async with atomic(arbitrary_session):
                                         await patch_file.main(
                                             session, arbitrary_session
