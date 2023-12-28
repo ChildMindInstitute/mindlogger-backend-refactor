@@ -558,7 +558,11 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         orderings = type(
             "_Ordering",
             (Ordering,),
-            {"display_name": cte.c.name, "created_at": cte.c.created_at},
+            {
+                "display_name": cte.c.name,
+                "created_at": cte.c.created_at,
+                "updated_at": cte.c.updated_at,
+            },
         )()
 
         query = query.order_by(
