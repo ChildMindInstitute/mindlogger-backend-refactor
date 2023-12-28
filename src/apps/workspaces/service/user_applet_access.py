@@ -9,6 +9,7 @@ from apps.invitations.crud import InvitationCRUD
 from apps.invitations.domain import InvitationDetailGeneric
 from apps.shared.exception import NotFoundError
 from apps.users import UserNotFound, UsersCRUD
+from apps.users.services.user import UserService
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
@@ -408,3 +409,28 @@ class UserAppletAccessService:
         return await UserAppletAccessCRUD(self.session).get_management_applets(
             self._user_id, applet_ids
         )
+
+    async def has_role_by_email(
+        self,
+        email: str,
+        role: str,
+    ) -> bool:
+        user_serv = UserService(self.session)
+        try:
+            user = await user_serv.get_by_email(email)
+            manager_roles = set(Role.managers())
+            is_manager = role in manager_roles
+            if user:
+                current_roles = await UserAppletAccessCRUD(
+                    self.session
+                ).get_user_roles_to_applet(user.id, self._applet_id)
+                if not is_manager:
+                    return role in current_roles
+                else:
+                    user_roles = set(current_roles)
+                    return role in manager_roles and bool(
+                        user_roles.intersection(manager_roles)
+                    )
+            return False
+        except UserNotFound:
+            return False

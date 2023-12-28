@@ -44,7 +44,7 @@ class TestInvite(BaseTest):
         response = await self.client.get(self.invitation_list)
         assert response.status_code == 200
 
-        assert len(response.json()["result"]) == 3
+        assert len(response.json()["result"]) == 4
 
     @rollback
     async def test_applets_invitation_list(self):
@@ -58,7 +58,7 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 200
 
-        assert len(response.json()["result"]) == 2
+        assert len(response.json()["result"]) == 3
 
     @rollback
     async def test_invitation_retrieve(self):
@@ -554,8 +554,8 @@ class TestInvite(BaseTest):
             ),
             request_data,
         )
-        assert response.status_code == 200
-        assert len(TestMail.mails) == 2
+        assert response.status_code == 422
+        assert len(TestMail.mails) == 1
 
     @rollback
     async def test_admin_invite_respondent_fail_if_duplicate_email(self):

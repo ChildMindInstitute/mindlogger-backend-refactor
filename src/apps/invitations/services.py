@@ -371,14 +371,8 @@ class InvitationsService:
         payload = None
         invitation_schema = None
         for invitation in invitations:
-            if invitation.status == InvitationStatus.PENDING or (
-                invitation.status == InvitationStatus.APPROVED
-                and invitation.is_deleted
-            ):
-                payload = success_invitation_schema | {
-                    "meta": {},
-                    "is_deleted": False,
-                }
+            if invitation.status == InvitationStatus.PENDING:
+                payload = success_invitation_schema | {"meta": {}}
                 invitation_schema = await self.invitations_crud.update(
                     lookup="id",
                     value=invitation.id,
@@ -624,24 +618,22 @@ class InvitationsService:
             if is_exist:
                 raise RespondentInvitationExist()
 
-    async def soft_delete_for_managers(
-        self, applet_ids: Collection[uuid.UUID]
-    ):
+    async def delete_for_managers(self, applet_ids: Collection[uuid.UUID]):
         roles = [
             Role.MANAGER,
             Role.COORDINATOR,
             Role.EDITOR,
             Role.REVIEWER,
         ]
-        await InvitationCRUD(self.session).soft_delete(
+        await InvitationCRUD(self.session).delete_by_applet_ids(
             self._user.email_encrypted, applet_ids, roles
         )
 
-    async def soft_delete_for_respondents(self, applet_ids: list[uuid.UUID]):
+    async def delete_for_respondents(self, applet_ids: list[uuid.UUID]):
         roles = [
             Role.RESPONDENT,
         ]
-        await InvitationCRUD(self.session).soft_delete(
+        await InvitationCRUD(self.session).delete_by_applet_ids(
             self._user.email, applet_ids, roles
         )
 

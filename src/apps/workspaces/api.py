@@ -267,9 +267,9 @@ async def workspace_remove_manager_access(
                 session, schema.user_id, uuid.uuid4()
             ).get_management_applets(schema.applet_ids)
             ids_to_remove = set(schema.applet_ids) - set(management_applets)
-            await InvitationsService(
-                session, ex_admin
-            ).soft_delete_for_managers(ids_to_remove)
+            await InvitationsService(session, ex_admin).delete_for_managers(
+                ids_to_remove
+            )
 
 
 async def applet_remove_respondent_access(
@@ -283,9 +283,9 @@ async def applet_remove_respondent_access(
         )
         ex_resp = await UserService(session).get(schema.user_id)
         if ex_resp:
-            await InvitationsService(
-                session, ex_resp
-            ).soft_delete_for_respondents(schema.applet_ids)
+            await InvitationsService(session, ex_resp).delete_for_respondents(
+                schema.applet_ids
+            )
 
 
 async def workspace_respondents_list(

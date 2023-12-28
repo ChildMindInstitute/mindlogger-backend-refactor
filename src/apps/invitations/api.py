@@ -16,6 +16,10 @@ from apps.invitations.domain import (
     InvitationReviewerResponse,
     PrivateInvitationResponse,
 )
+from apps.invitations.errors import (
+    ManagerInvitationExist,
+    RespondentInvitationExist,
+)
 from apps.invitations.filters import InvitationQueryParams
 from apps.invitations.services import (
     InvitationsService,
@@ -26,6 +30,7 @@ from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 
@@ -132,6 +137,11 @@ async def invitation_respondent_send(
             applet_id
         )
         invitation_srv = InvitationsService(session, user)
+        is_role_exist = await UserAppletAccessService(
+            session, uuid.uuid4(), applet_id
+        ).has_role_by_email(invitation_schema.email, Role.RESPONDENT)
+        if is_role_exist:
+            raise RespondentInvitationExist()
         await invitation_srv.check_for_duplicates(
             applet_id, invitation_schema.email, Role.RESPONDENT
         )
@@ -161,6 +171,11 @@ async def invitation_reviewer_send(
             applet_id
         )
         invitation_srv = InvitationsService(session, user)
+        is_role_exist = await UserAppletAccessService(
+            session, uuid.uuid4(), applet_id
+        ).has_role_by_email(invitation_schema.email, Role.REVIEWER)
+        if is_role_exist:
+            raise ManagerInvitationExist()
         await invitation_srv.check_for_duplicates(
             applet_id, invitation_schema.email, Role.REVIEWER
         )
@@ -193,8 +208,13 @@ async def invitation_managers_send(
             applet_id
         )
         invitation_srv = InvitationsService(session, user)
+        is_role_exist = await UserAppletAccessService(
+            session, uuid.uuid4(), applet_id
+        ).has_role_by_email(invitation_schema.email, invitation_schema.role)
+        if is_role_exist:
+            raise ManagerInvitationExist()
         await invitation_srv.check_for_duplicates(
-            applet_id, invitation_schema.email, invitation_schema.role
+            applet_id, invitation_schema.email, Role.REVIEWER
         )
         invitation = await invitation_srv.send_managers_invitation(
             applet_id, invitation_schema
