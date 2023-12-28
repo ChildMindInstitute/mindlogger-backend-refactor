@@ -151,3 +151,8 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         query = query.where(UserSchema.id.in_(ids))
         db_result = await self._execute(query)
         return db_result.scalars().all()  # noqa
+
+    async def get_user_or_none_by_email(self, email: str) -> UserSchema | None:
+        email_hash = hash_sha224(email)
+        user = await self._get("email", email_hash)
+        return user
