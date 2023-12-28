@@ -11,6 +11,7 @@ from apps.activities.domain.response_type_config import (
 from apps.activities.domain.response_values import SingleSelectionValues
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
+from apps.activities.errors import IncorrectConditionItemIndexError
 
 
 @pytest.fixture
@@ -1773,6 +1774,73 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
+                            name="activity_item_text",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="text",
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                            conditional_logic=dict(
+                                match="any",
+                                conditions=[
+                                    dict(
+                                        item_name="activity_item_singleselect",
+                                        type="EQUAL_TO_OPTION",
+                                        payload=dict(
+                                            option_value="1"  # noqa E501
+                                        ),
+                                    ),
+                                    dict(
+                                        item_name="activity_item_singleselect_2",
+                                        type="NOT_EQUAL_TO_OPTION",
+                                        payload=dict(
+                                            option_value="2"  # noqa E501
+                                        ),
+                                    ),
+                                    dict(
+                                        item_name="activity_item_multiselect",
+                                        type="INCLUDES_OPTION",
+                                        payload=dict(
+                                            option_value="1"  # noqa E501
+                                        ),
+                                    ),
+                                    dict(
+                                        item_name="activity_item_multiselect_2",
+                                        type="NOT_INCLUDES_OPTION",
+                                        payload=dict(
+                                            option_value="2"  # noqa E501
+                                        ),
+                                    ),
+                                    dict(
+                                        item_name="activity_item_slideritem",
+                                        type="GREATER_THAN",
+                                        payload=dict(
+                                            value=5,
+                                        ),
+                                    ),
+                                    dict(
+                                        item_name="activity_item_slideritem_2",
+                                        type="OUTSIDE_OF",
+                                        payload=dict(
+                                            min_value=5,
+                                            max_value=10,
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        dict(
                             name="activity_item_singleselect_2",
                             question={"en": "What is your name?"},
                             response_type="singleSelect",
@@ -1933,73 +2001,6 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
-                            name="activity_item_text",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                            conditional_logic=dict(
-                                match="any",
-                                conditions=[
-                                    dict(
-                                        item_name="activity_item_singleselect",
-                                        type="EQUAL_TO_OPTION",
-                                        payload=dict(
-                                            option_value="1"  # noqa E501
-                                        ),
-                                    ),
-                                    dict(
-                                        item_name="activity_item_singleselect_2",
-                                        type="NOT_EQUAL_TO_OPTION",
-                                        payload=dict(
-                                            option_value="2"  # noqa E501
-                                        ),
-                                    ),
-                                    dict(
-                                        item_name="activity_item_multiselect",
-                                        type="INCLUDES_OPTION",
-                                        payload=dict(
-                                            option_value="1"  # noqa E501
-                                        ),
-                                    ),
-                                    dict(
-                                        item_name="activity_item_multiselect_2",
-                                        type="NOT_INCLUDES_OPTION",
-                                        payload=dict(
-                                            option_value="2"  # noqa E501
-                                        ),
-                                    ),
-                                    dict(
-                                        item_name="activity_item_slideritem",
-                                        type="GREATER_THAN",
-                                        payload=dict(
-                                            value=5,
-                                        ),
-                                    ),
-                                    dict(
-                                        item_name="activity_item_slideritem_2",
-                                        type="OUTSIDE_OF",
-                                        payload=dict(
-                                            min_value=5,
-                                            max_value=10,
-                                        ),
-                                    ),
-                                ],
-                            ),
-                        ),
-                        dict(
                             name="activity_item_time_range",
                             question={"en": "What is your name?"},
                             response_type="timeRange",
@@ -2093,6 +2094,23 @@ class TestActivityItems(BaseTest):
                 )
             ],
         )
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
+        )
+        assert response.status_code == 400
+        assert (
+            response.json()["result"][0]["message"]
+            == IncorrectConditionItemIndexError.message
+        )
+
+        text_item = create_data["activities"][0]["items"][1]
+        slider_item_2 = create_data["activities"][0]["items"][6]
+        create_data["activities"][0]["items"][1] = slider_item_2
+        create_data["activities"][0]["items"][6] = text_item
+
         response = await self.client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
