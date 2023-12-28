@@ -42,7 +42,7 @@ from apps.answers.filters import (
     SummaryActivityFilter,
 )
 from apps.answers.service import AnswerService
-from apps.applets.crud import AppletsCRUD
+from apps.applets.crud import AppletExportTrackingCRUD, AppletsCRUD
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.applets.service import AppletHistoryService, AppletService
@@ -486,6 +486,8 @@ async def applet_answers_export(
                 session, applet.id, applet.version
             ).get_full()
             data.activities = activities
+    async with atomic(session):
+        await AppletExportTrackingCRUD(session).create(applet_id, user.id)
     return PublicAnswerExportResponse(
         result=PublicAnswerExport.from_orm(data).translate(i18n),
         count=total_answers,

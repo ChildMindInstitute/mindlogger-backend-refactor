@@ -1,13 +1,19 @@
 import datetime
 import json
+import uuid
 
 from asynctest import CoroutineMock, patch
 from sqlalchemy import select
 
 from apps.answers.db.schemas import AnswerSchema
+from apps.applets.crud import AppletExportTrackingCRUD
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback, rollback_with_session
+from infrastructure.database import (
+    rollback,
+    rollback_with_session,
+    session_manager,
+)
 from infrastructure.utility import RedisCacheTest
 
 
@@ -1768,3 +1774,22 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         assert response.status_code == 201, response.json()
+
+    @rollback
+    async def test_export_data_track_record_exists(self) -> None:
+        resp = await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        user_id = resp.json()["result"]["user"]["id"]
+        applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        response = await self.client.get(
+            self.applet_answers_export_url.format(applet_id=applet_id)
+        )
+        assert response.status_code == 200
+        # We don't have any endpoint to get applet_export_tracking data
+        # so, just check in database
+        session = session_manager.get_session()
+        record = await AppletExportTrackingCRUD(session).get_by_(
+            uuid.UUID(applet_id), uuid.UUID(user_id)
+        )
+        assert record

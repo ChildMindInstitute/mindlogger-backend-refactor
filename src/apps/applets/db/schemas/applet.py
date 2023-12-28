@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from infrastructure.database.base import Base
 
-__all__ = ["AppletSchema", "AppletHistorySchema"]
+__all__ = ["AppletSchema", "AppletHistorySchema", "AppletExportTrackingSchema"]
 
 
 class _BaseAppletSchema:
@@ -76,6 +76,17 @@ class AppletHistorySchema(_BaseAppletSchema, HistoryMixin, Base):
     id = Column(UUID(as_uuid=True))
     display_name = Column(String(length=100))
 
+    user_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+
+
+class AppletExportTrackingSchema(Base):
+    __tablename__ = "applet_export_tracking"
+
+    applet_id = Column(
+        ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
+    )
     user_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
