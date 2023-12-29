@@ -637,6 +637,25 @@ class InvitationsService:
             if is_exist:
                 raise RespondentInvitationExist()
 
+    async def delete_for_managers(self, applet_ids: list[uuid.UUID]):
+        roles = [
+            Role.MANAGER,
+            Role.COORDINATOR,
+            Role.EDITOR,
+            Role.REVIEWER,
+        ]
+        await InvitationCRUD(self.session).delete_by_applet_ids(
+            self._user.email_encrypted, applet_ids, roles
+        )
+
+    async def delete_for_respondents(self, applet_ids: list[uuid.UUID]):
+        roles = [
+            Role.RESPONDENT,
+        ]
+        await InvitationCRUD(self.session).delete_by_applet_ids(
+            self._user.email, applet_ids, roles
+        )
+
 
 class PrivateInvitationService:
     def __init__(self, session):

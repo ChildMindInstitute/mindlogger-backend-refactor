@@ -386,7 +386,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             InvitationSchema.email == email,
             InvitationSchema.applet_id == applet_id,
             InvitationSchema.role == role,
-            InvitationSchema.status == InvitationStatus.APPROVED,
+            InvitationSchema.status == InvitationStatus.PENDING,
+            InvitationSchema.soft_exists(),
         )
         db_result: Result = await self._execute(query)
         return bool(db_result.scalars().first())
@@ -398,8 +399,25 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(
             InvitationSchema.email == email,
             InvitationSchema.applet_id == applet_id,
-            InvitationSchema.status == InvitationStatus.APPROVED,
+            InvitationSchema.status == InvitationStatus.PENDING,
             InvitationSchema.role.in_(Role.managers()),
+            InvitationSchema.soft_exists(),
         )
         db_result: Result = await self._execute(query)
         return bool(db_result.scalars().first())
+
+    async def delete_by_applet_ids(
+        self,
+        email: str | None,
+        applet_ids: list[uuid.UUID],
+        roles: list[Role],
+    ):
+        query: Query = delete(InvitationSchema)
+        query = query.where(
+            InvitationSchema.email == email,
+            InvitationSchema.applet_id.in_(applet_ids),
+            InvitationSchema.status == InvitationStatus.APPROVED,
+            InvitationSchema.role.in_(roles),
+            InvitationSchema.soft_exists(),
+        )
+        await self._execute(query)

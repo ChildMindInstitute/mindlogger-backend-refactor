@@ -11,6 +11,7 @@ from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
+from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import (
     BaseQueryParams,
@@ -259,6 +260,16 @@ async def workspace_remove_manager_access(
     """Remove manager access from a specific user."""
     async with atomic(session):
         await UserAccessService(session, user.id).remove_manager_access(schema)
+        # Get applets where user still have access
+        ex_admin = await UserService(session).get(schema.user_id)
+        if ex_admin:
+            management_applets = await UserAccessService(
+                session, schema.user_id
+            ).get_management_applets(schema.applet_ids)
+            ids_to_remove = set(schema.applet_ids) - set(management_applets)
+            await InvitationsService(session, ex_admin).delete_for_managers(
+                list(ids_to_remove)
+            )
 
 
 async def applet_remove_respondent_access(
@@ -270,6 +281,11 @@ async def applet_remove_respondent_access(
         await UserAccessService(session, user.id).remove_respondent_access(
             schema
         )
+        ex_resp = await UserService(session).get(schema.user_id)
+        if ex_resp:
+            await InvitationsService(session, ex_resp).delete_for_respondents(
+                schema.applet_ids
+            )
 
 
 async def workspace_respondents_list(

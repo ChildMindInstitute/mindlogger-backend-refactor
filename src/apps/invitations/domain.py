@@ -142,6 +142,7 @@ class Invitation(InternalModel):
     last_name: str
     created_at: datetime
     user_id: uuid.UUID | None
+    is_deleted: bool
 
 
 class InvitationRespondent(Invitation):
