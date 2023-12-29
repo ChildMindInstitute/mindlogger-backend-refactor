@@ -68,7 +68,7 @@ class ThemeBase(BaseModel):
 
 class Theme(ThemeBase, InternalModel):
     id: uuid.UUID
-    creator_id: uuid.UUID
+    creator_id: uuid.UUID | None
     public: bool
     allow_rename: bool
 

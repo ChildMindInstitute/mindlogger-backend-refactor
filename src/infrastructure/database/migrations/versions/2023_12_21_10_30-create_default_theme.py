@@ -29,6 +29,8 @@ THEMES_TABLE = table(
     column("tertiary_color", String),
     column("creator_id", UUID),
     column("is_default", Boolean),
+    column("public", Boolean),
+    column("allow_rename", Boolean),
 )
 FIRST_DEFAULT_THEME = {
     THEMES_TABLE.c.name: "First default theme",
@@ -36,6 +38,8 @@ FIRST_DEFAULT_THEME = {
     THEMES_TABLE.c.secondary_color: "#000000",
     THEMES_TABLE.c.tertiary_color: "#AAAAAA",
     THEMES_TABLE.c.is_default: True,
+    THEMES_TABLE.c.public: True,
+    THEMES_TABLE.c.allow_rename: True,
 }
 
 

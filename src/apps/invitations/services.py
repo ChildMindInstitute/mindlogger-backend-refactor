@@ -308,10 +308,10 @@ class InvitationsService:
             invitation_internal.applet_id
         )
 
-        if not not invited_user_id:
-            path = "invitation_new_user_en"
+        if not invited_user_id:
+            path = f"invitation_new_user_{schema.language or 'en'}"
         else:
-            path = "invitation_registered_user_en"
+            path = f"invitation_registered_user_{schema.language or 'en'}"
 
         # Send email to the user
         service = MailingService()
