@@ -47,17 +47,16 @@ async def invitation_list(
     """Fetch all invitations whose status is pending
     for the specific user who is invitor.
     """
-    async with atomic(session):
-        if query_params.filters.get("applet_id"):
-            await CheckAccessService(
-                session, user.id
-            ).check_applet_invite_access(query_params.filters["applet_id"])
-        invitations = await InvitationsService(session, user).fetch_all(
-            deepcopy(query_params)
+    if query_params.filters.get("applet_id"):
+        await CheckAccessService(session, user.id).check_applet_invite_access(
+            query_params.filters["applet_id"]
         )
-        count = await InvitationsService(session, user).fetch_all_count(
-            deepcopy(query_params)
-        )
+    invitations = await InvitationsService(session, user).fetch_all(
+        deepcopy(query_params)
+    )
+    count = await InvitationsService(session, user).fetch_all_count(
+        deepcopy(query_params)
+    )
 
     return ResponseMulti[InvitationResponse](
         result=[
@@ -76,18 +75,17 @@ async def invitation_list_for_invited(
     ),
 ) -> ResponseMulti[InvitationResponse]:
     """Fetch all invitations for the specific user who is invited."""
-    async with atomic(session):
-        if query_params.filters.get("applet_id"):
-            await CheckAccessService(
-                session, user.id
-            ).check_applet_invite_access(query_params.filters["applet_id"])
-        invitations = await InvitationsService(
-            session, user
-        ).fetch_all_for_invited(deepcopy(query_params))
+    if query_params.filters.get("applet_id"):
+        await CheckAccessService(session, user.id).check_applet_invite_access(
+            query_params.filters["applet_id"]
+        )
+    invitations = await InvitationsService(
+        session, user
+    ).fetch_all_for_invited(deepcopy(query_params))
 
-        count = await InvitationsService(
-            session, user
-        ).fetch_all_for_invited_count(deepcopy(query_params))
+    count = await InvitationsService(
+        session, user
+    ).fetch_all_for_invited_count(deepcopy(query_params))
 
     return ResponseMulti[InvitationResponse](
         result=[
