@@ -483,7 +483,7 @@ class TestInvite(BaseTest):
             uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa4"),
             uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
-        assert len(roles) == 2
+        assert len(roles) == 3
         assert Role.COORDINATOR in roles
         assert Role.EDITOR in roles
 
@@ -582,8 +582,8 @@ class TestInvite(BaseTest):
             ),
             request_data,
         )
-        assert response.status_code == 422
-        assert len(TestMail.mails) == 1
+        assert response.status_code == 200
+        assert len(TestMail.mails) == 2
 
     @rollback
     async def test_admin_invite_respondent_fail_if_duplicate_email(self):

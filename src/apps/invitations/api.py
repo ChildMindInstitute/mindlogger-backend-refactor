@@ -142,9 +142,7 @@ async def invitation_respondent_send(
         ).has_role_by_email(invitation_schema.email, Role.RESPONDENT)
         if is_role_exist:
             raise RespondentInvitationExist()
-        await invitation_srv.check_for_duplicates(
-            applet_id, invitation_schema.email, Role.RESPONDENT
-        )
+
         invitation = await invitation_srv.send_respondent_invitation(
             applet_id, invitation_schema
         )
@@ -176,9 +174,7 @@ async def invitation_reviewer_send(
         ).has_role_by_email(invitation_schema.email, Role.REVIEWER)
         if is_role_exist:
             raise ManagerInvitationExist()
-        await invitation_srv.check_for_duplicates(
-            applet_id, invitation_schema.email, Role.REVIEWER
-        )
+
         invitation: InvitationDetailForReviewer = await (
             invitation_srv.send_reviewer_invitation(
                 applet_id, invitation_schema
@@ -213,9 +209,7 @@ async def invitation_managers_send(
         ).has_role_by_email(invitation_schema.email, invitation_schema.role)
         if is_role_exist:
             raise ManagerInvitationExist()
-        await invitation_srv.check_for_duplicates(
-            applet_id, invitation_schema.email, Role.REVIEWER
-        )
+
         invitation = await invitation_srv.send_managers_invitation(
             applet_id, invitation_schema
         )
