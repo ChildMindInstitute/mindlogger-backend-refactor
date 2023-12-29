@@ -38,7 +38,7 @@ LORIS_CREATE_CANDIDATE = "https://loris.cmiml.net/api/v0.0.3/candidates"
 LORIS_CREATE_VISIT = "https://loris.cmiml.net/api/v0.0.3/candidates/{}/{}"
 LORIS_START_VISIT = "https://loris.cmiml.net/api/v0.0.4-dev/candidates/{}/{}"
 LORIS_INSTRUMENT_DATA = (
-    "https://loris.cmiml.net/api/v0.0.3/candidates/{}/{}/instruments/{} "
+    "https://loris.cmiml.net/api/v0.0.3/candidates/{}/{}/instruments/{}"
 )
 
 LORIS_USERNAME = "lorisfrontadmin"
@@ -262,6 +262,7 @@ async def integration(applet_id: uuid.UUID, session):
                 "Site": "Data Coordinating Center",
                 "Battery": "Control",
                 "Project": "loris",
+                "Cohort": "Control",
                 "Stages": {
                     "Visit": {
                         "Date": str(datetime.date.today()),
