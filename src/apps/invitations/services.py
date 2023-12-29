@@ -45,7 +45,7 @@ from apps.invitations.errors import (
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.query_params import QueryParams
-from apps.users import UserNotFound, UsersCRUD
+from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
@@ -124,7 +124,12 @@ class InvitationsService:
                 email_=schema.email, applet_id_=applet_id
             )
         )
-
+        # Get invited user if he exists. User will be linked with invitaion
+        # by user_id in this case
+        invited_user = await UsersCRUD(self.session).get_user_or_none_by_email(
+            email=schema.email
+        )
+        invited_user_id = invited_user.id if invited_user is not None else None
         success_invitation_schema = {
             "email": schema.email,
             "applet_id": applet_id,
@@ -134,6 +139,7 @@ class InvitationsService:
             "status": InvitationStatus.PENDING,
             "first_name": schema.first_name,
             "last_name": schema.last_name,
+            "user_id": invited_user_id,
         }
 
         payload = None
@@ -191,9 +197,7 @@ class InvitationsService:
             invitation_internal.applet_id
         )
 
-        try:
-            await UsersCRUD(self.session).get_by_email(schema.email)
-        except UserNotFound:
+        if not invited_user_id:
             path = f"invitation_new_user_{schema.language or 'en'}"
         else:
             path = f"invitation_registered_user_{schema.language or 'en'}"
@@ -226,6 +230,7 @@ class InvitationsService:
             role=invitation_internal.role,
             status=invitation_internal.status,
             key=invitation_internal.key,
+            user_id=invitation_internal.user_id,
         )
 
     async def send_reviewer_invitation(
@@ -248,7 +253,12 @@ class InvitationsService:
         respondents = [
             str(respondent_id) for respondent_id in schema.respondents
         ]
-
+        # Get invited user if he exists. User will be linked with invitaion
+        # by user_id in this case
+        invited_user = await UsersCRUD(self.session).get_user_or_none_by_email(
+            email=schema.email
+        )
+        invited_user_id = invited_user.id if invited_user is not None else None
         success_invitation_schema = {
             "email": schema.email,
             "applet_id": applet_id,
@@ -258,6 +268,7 @@ class InvitationsService:
             "status": InvitationStatus.PENDING,
             "first_name": schema.first_name,
             "last_name": schema.last_name,
+            "user_id": invited_user_id,
         }
 
         payload = None
@@ -298,9 +309,7 @@ class InvitationsService:
             invitation_internal.applet_id
         )
 
-        try:
-            await UsersCRUD(self.session).get_by_email(schema.email)
-        except UserNotFound:
+        if not not invited_user_id:
             path = "invitation_new_user_en"
         else:
             path = "invitation_registered_user_en"
@@ -338,6 +347,7 @@ class InvitationsService:
             status=invitation_internal.status,
             key=invitation_internal.key,
             respondents=schema.respondents,
+            user_id=invitation_internal.user_id,
         )
 
     async def send_managers_invitation(
@@ -356,7 +366,12 @@ class InvitationsService:
         ] = await self.invitations_crud.get_by_email_applet_role_managers(
             email_=schema.email, applet_id_=applet_id, role_=schema.role
         )
-
+        # Get invited user if he exists. User will be linked with invitaion
+        # by user_id in this case
+        invited_user = await UsersCRUD(self.session).get_user_or_none_by_email(
+            email=schema.email
+        )
+        invited_user_id = invited_user.id if invited_user is not None else None
         success_invitation_schema = {
             "email": schema.email,
             "applet_id": applet_id,
@@ -366,13 +381,15 @@ class InvitationsService:
             "status": InvitationStatus.PENDING,
             "first_name": schema.first_name,
             "last_name": schema.last_name,
+            "user_id": invited_user_id,
+            "meta": {},
         }
 
         payload = None
         invitation_schema = None
         for invitation in invitations:
             if invitation.status == InvitationStatus.PENDING:
-                payload = success_invitation_schema | {"meta": {}}
+                payload = success_invitation_schema
                 invitation_schema = await self.invitations_crud.update(
                     lookup="id",
                     value=invitation.id,
@@ -383,7 +400,7 @@ class InvitationsService:
                 raise InvitationAlreadyProcesses
 
         if not payload:
-            payload = success_invitation_schema | {"meta": {}}
+            payload = success_invitation_schema
             invitation_schema = await self.invitations_crud.save(
                 InvitationSchema(**payload)
             )
@@ -399,9 +416,7 @@ class InvitationsService:
             invitation_internal.applet_id
         )
 
-        try:
-            await UsersCRUD(self.session).get_by_email(schema.email)
-        except UserNotFound:
+        if not invited_user_id:
             path = f"invitation_new_user_{schema.language}"
         else:
             path = f"invitation_registered_user_{schema.language}"
@@ -438,6 +453,7 @@ class InvitationsService:
             role=invitation_internal.role,
             status=invitation_internal.status,
             key=invitation_internal.key,
+            user_id=invitation_internal.user_id,
         )
 
     def _get_invitation_url_by_role(self, role: Role):
@@ -582,7 +598,9 @@ class InvitationsService:
             self.session, self._user.id, invitation.applet_id
         ).add_role_by_invitation(invitation)
 
-        await InvitationCRUD(self.session).approve_by_id(invitation.id)
+        await InvitationCRUD(self.session).approve_by_id(
+            invitation.id, self._user.id
+        )
 
     async def decline(self, key: uuid.UUID):
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
@@ -594,7 +612,9 @@ class InvitationsService:
         if invitation.status != InvitationStatus.PENDING:
             raise InvitationAlreadyProcesses()
 
-        await InvitationCRUD(self.session).decline_by_id(invitation.id)
+        await InvitationCRUD(self.session).decline_by_id(
+            invitation.id, self._user.id
+        )
 
     async def clear_applets_invitations(self, applet_id: uuid.UUID):
         await InvitationCRUD(self.session).delete_by_applet_id(applet_id)

@@ -21,7 +21,7 @@ class _NotificationLogBase(BaseModel):
 
 
 class NotificationLogQuery(BaseModel):
-    user_id: str
+    email: str
     device_id: str
     limit: PositiveInt = 1
 
