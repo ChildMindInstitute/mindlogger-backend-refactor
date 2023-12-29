@@ -1,7 +1,5 @@
 import re
 
-import pytest
-
 from apps.applets.domain import Role
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
@@ -199,7 +197,6 @@ class TestTransfer(BaseTest):
         for key in report_settings_keys:
             assert not resp_data[key]
 
-    @pytest.mark.run
     @rollback
     async def test_reinvite_manager_after_transfer(self):
         await self.client.login(
