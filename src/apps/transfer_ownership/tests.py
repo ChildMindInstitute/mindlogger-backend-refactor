@@ -1,3 +1,8 @@
+import re
+
+import pytest
+
+from apps.applets.domain import Role
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -10,6 +15,7 @@ class TestTransfer(BaseTest):
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
         "transfer_ownership/fixtures/transfers.json",
+        "invitations/fixtures/invitations.json",
         "themes/fixtures/themes.json",
     ]
 
@@ -17,6 +23,12 @@ class TestTransfer(BaseTest):
     transfer_url = "/applets/{applet_id}/transferOwnership"
     response_url = "/applets/{applet_id}/transferOwnership/{key}"
     applet_details_url = "/applets/{applet_id}"
+    invite_manager_url = "/invitations/{applet_id}/managers"
+    invite_accept_url = "/invitations/{key}/accept"
+    workspace_applet_managers_list = (
+        "/workspaces/{owner_id}/applets/{applet_id}/managers"
+    )
+    applet_encryption_url = f"{applet_details_url}/encryption"
 
     @rollback
     async def test_initiate_transfer(self):
@@ -186,3 +198,125 @@ class TestTransfer(BaseTest):
         # After accept transfership all report settings must be cleared
         for key in report_settings_keys:
             assert not resp_data[key]
+
+    @pytest.mark.run
+    @rollback
+    async def test_reinvite_manager_after_transfer(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        request_data = dict(
+            email="patric@gmail.com",
+            first_name="Patric",
+            last_name="Daniel",
+            role=Role.MANAGER,
+            language="en",
+        )
+        # send manager invite
+        response = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=request_data,
+        )
+        assert response.status_code == 200
+        assert len(TestMail.mails) == 1
+        assert TestMail.mails[0].recipients == [request_data["email"]]
+
+        # accept manager invite
+        await self.client.login(self.login_url, "patric@gmail.com", "Test1234")
+        key = response.json()["result"]["key"]
+        response = await self.client.post(
+            self.invite_accept_url.format(key=key)
+        )
+        assert response.status_code == 200
+
+        # transfer ownership to mike@gmail.com
+        # initiate transfer
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        data = {"email": "mike@gmail.com"}
+
+        response = await self.client.post(
+            self.transfer_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=data,
+        )
+
+        assert response.status_code == 200
+
+        assert len(TestMail.mails) == 2
+        assert TestMail.mails[0].recipients == [data["email"]]
+        assert TestMail.mails[0].subject == "Transfer ownership of an applet"
+        body = TestMail.mails[0].body
+        regex = r"\bkey=[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}&action=accept"  # noqa: E501
+        key = re.findall(regex, body)
+        key = key[0][4:-14]
+
+        # accept transfer
+        await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
+        response = await self.client.post(
+            self.response_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                key=key,
+            ),
+        )
+        assert response.status_code == 200
+
+        # send manager invite
+        request_data = dict(
+            email="patric@gmail.com",
+            first_name="Patric",
+            last_name="Daniel",
+            role=Role.MANAGER,
+            language="en",
+        )
+        response = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=request_data,
+        )
+        assert response.status_code == 200
+        assert len(TestMail.mails) == 3
+        assert TestMail.mails[0].recipients == [request_data["email"]]
+
+        # accept manager invite
+        await self.client.login(self.login_url, "patric@gmail.com", "Test1234")
+        key = response.json()["result"]["key"]
+        response = await self.client.post(
+            self.invite_accept_url.format(key=key)
+        )
+        assert response.status_code == 200
+
+        await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
+        # set encryption
+        request_data = {
+            "publicKey": "1",
+            "prime": "2",
+            "base": "3",
+            "accountId": "4",
+        }
+        response = await self.client.post(
+            self.applet_encryption_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            ),
+            data=request_data,
+        )
+        # check managers list
+        response = await self.client.get(
+            self.workspace_applet_managers_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa4",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            ),
+        )
+
+        result = response.json()
+
+        assert result["result"][0]["email"] == "mike@gmail.com"
+        assert Role.OWNER in result["result"][0]["roles"]
+
+        assert result["result"][1]["email"] == "patric@gmail.com"
+        assert Role.MANAGER in result["result"][1]["roles"]
