@@ -3,7 +3,6 @@ import uuid
 
 import pytest
 
-from apps.activities.errors import IncorrectConditionItemIndexError
 from apps.activities import errors as activity_errors
 from apps.activities.domain.response_type_config import (
     ResponseType,
@@ -2102,7 +2101,7 @@ class TestActivityItems(BaseTest):
         assert response.status_code == 400
         assert (
             response.json()["result"][0]["message"]
-            == IncorrectConditionItemIndexError.message
+            == activity_errors.IncorrectConditionItemIndexError.message
         )
 
         text_item = create_data["activities"][0]["items"][1]
