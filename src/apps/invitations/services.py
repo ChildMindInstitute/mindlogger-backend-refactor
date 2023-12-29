@@ -34,7 +34,7 @@ from apps.invitations.domain import (
 from apps.invitations.errors import (
     AppletDoesNotExist,
     DoesNotHaveAccess,
-    InvitationAlreadyProcesses,
+    InvitationAlreadyProcessed,
     InvitationDoesNotExist,
     ManagerInvitationExist,
     NonUniqueValue,
@@ -87,11 +87,9 @@ class InvitationsService:
             self._user.email_encrypted, key  # type: ignore[arg-type]
         )
         if not invitation:
-            raise InvitationDoesNotExist(
-                message=f"No such invitation with key={key}."
-            )
+            raise InvitationDoesNotExist()
         elif invitation.status != InvitationStatus.PENDING:
-            raise InvitationAlreadyProcesses()
+            raise InvitationAlreadyProcessed()
         return invitation
 
     def _get_invitation_subject(self, applet: AppletSchema):
@@ -505,7 +503,7 @@ class InvitationsService:
             raise InvitationDoesNotExist()
 
         if invitation.status != InvitationStatus.PENDING:
-            raise InvitationAlreadyProcesses()
+            raise InvitationAlreadyProcessed()
 
         await UserAppletAccessService(
             self.session, self._user.id, invitation.applet_id
@@ -523,7 +521,7 @@ class InvitationsService:
             raise InvitationDoesNotExist()
 
         if invitation.status != InvitationStatus.PENDING:
-            raise InvitationAlreadyProcesses()
+            raise InvitationAlreadyProcessed()
 
         await InvitationCRUD(self.session).decline_by_id(
             invitation.id, self._user.id
@@ -590,7 +588,7 @@ class PrivateInvitationService:
             link, True
         )
         if not applet:
-            return None
+            raise InvitationDoesNotExist()
         return PrivateInvitationDetail(
             id=applet.id,
             applet_id=applet.id,

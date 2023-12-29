@@ -1,6 +1,7 @@
 import http
 import json
 import uuid
+from typing import Literal
 
 import pytest
 
@@ -14,7 +15,10 @@ from apps.invitations.domain import (
     InvitationStatus,
 )
 from apps.invitations.errors import (
+    InvitationAlreadyProcessed,
+    InvitationDoesNotExist,
     ManagerInvitationExist,
+    NonUniqueValue,
     RespondentInvitationExist,
 )
 from apps.mailing.services import TestMail
@@ -105,6 +109,7 @@ class TestInvite(BaseTest):
     invitation_detail = "/invitations/{key}"
     private_invitation_detail = "/invitations/private/{key}"
     invite_url = "/invitations/invite"
+    invited_url = "/invitations/invited"
     accept_url = "/invitations/{key}/accept"
     accept_private_url = "/invitations/private/{key}/accept"
     decline_url = "/invitations/{key}/decline"
@@ -300,6 +305,9 @@ class TestInvite(BaseTest):
             invitation_respondent_data,
         )
         assert response.status_code == 422
+        assert (
+            response.json()["result"][0]["message"] == NonUniqueValue.message
+        )
 
     @rollback
     async def test_manager_invite_manager_success(
@@ -501,7 +509,7 @@ class TestInvite(BaseTest):
         assert access.role == Role.RESPONDENT
 
     @rollback
-    async def test_invitation_accept_wrong(self):
+    async def test_invitation_accept_invitation_does_not_exists(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -521,7 +529,7 @@ class TestInvite(BaseTest):
         assert response.status_code == 200
 
     @rollback
-    async def test_invitation_decline_wrong(self):
+    async def test_invitation_decline_wrong_invitation_does_not_exists(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -530,6 +538,10 @@ class TestInvite(BaseTest):
             self.decline_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da9")
         )
         assert response.status_code == 404
+        assert (
+            response.json()["result"][0]["message"]
+            == InvitationDoesNotExist.message
+        )
 
     @rollback
     @pytest.mark.parametrize(
@@ -743,6 +755,124 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 200
         assert response.json()["result"]["userId"] == exp_user_id
+
+    @rollback
+    async def test_get_invitation_by_key_invitation_does_not_exist(self):
+        await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
+
+        response = await self.client.get(
+            self.invitation_detail.format(
+                key="00000000-0000-0000-0000-000000000000"
+            )
+        )
+        assert response.status_code == 404
+        assert (
+            response.json()["result"][0]["message"]
+            == InvitationDoesNotExist.message
+        )
+
+    @rollback
+    @pytest.mark.parametrize(
+        "url,method",
+        (("decline_url", "delete"), ("accept_url", "post")),
+    )
+    async def test_get_invitation_by_key_already_accpted_declined(
+        self,
+        url: Literal["decline_url", "accept_url"],
+        method: Literal["delete", "post"],
+    ):
+        await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
+        key = "6a3ab8e6-f2fa-49ae-b2db-197136677da0"
+        client_method = getattr(self.client, method)
+        url_ = getattr(self, url)
+        response = await client_method(url_.format(key=key))
+        assert response.status_code == 200
+
+        response = await self.client.get(
+            self.invitation_detail.format(key=key)
+        )
+        assert response.status_code == 400
+        assert (
+            response.json()["result"][0]["message"]
+            == InvitationAlreadyProcessed.message
+        )
+
+    @rollback
+    async def test_get_private_invitation_by_link_does_not_exist(self):
+        await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
+
+        response = await self.client.get(
+            self.private_invitation_detail.format(
+                key="00000000-0000-0000-0000-000000000000"
+            )
+        )
+        assert response.status_code == 404
+        assert (
+            response.json()["result"][0]["message"]
+            == InvitationDoesNotExist.message
+        )
+
+    @rollback
+    async def test_private_invitation_accept_invitation_does_not_exist(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.accept_private_url.format(
+                key="00000000-0000-0000-0000-000000000000"
+            )
+        )
+        assert response.status_code == 404
+        assert (
+            response.json()["result"][0]["message"]
+            == InvitationDoesNotExist.message
+        )
+
+    @rollback
+    async def test_send_invitation_to_reviewer_invitation_already_approved(
+        self,
+    ):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        request_data = dict(
+            email="patric@gmail.com",
+            first_name="Patric",
+            last_name="Daniel",
+            role=Role.REVIEWER,
+            language="en",
+            respondents=["7484f34a-3acc-4ee6-8a94-fd7299502fa1"],
+        )
+        # send an invite
+        response = await self.client.post(
+            self.invite_reviewer_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
+        assert response.status_code == 200
+        key = response.json()["result"]["key"]
+        # accept invite
+        await self.client.login(self.login_url, "patric@gmail.com", "Test1234")
+        response = await self.client.post(self.accept_url.format(key=key))
+        assert response.status_code == 200
+
+        # resend invite
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.post(
+            self.invite_reviewer_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            request_data,
+        )
+        assert response.status_code == 422
+        assert (
+            response.json()["result"][0]["message"]
+            == ManagerInvitationExist.message
+        )
 
     @rollback
     async def test_resend_invitation_with_updates_for_respondent_with_pending_invitation(  # noqa: E501

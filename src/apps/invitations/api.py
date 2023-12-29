@@ -51,12 +51,9 @@ async def invitation_list(
         await CheckAccessService(session, user.id).check_applet_invite_access(
             query_params.filters["applet_id"]
         )
-    invitations = await InvitationsService(session, user).fetch_all(
-        deepcopy(query_params)
-    )
-    count = await InvitationsService(session, user).fetch_all_count(
-        deepcopy(query_params)
-    )
+    service = InvitationsService(session, user)
+    invitations = await service.fetch_all(deepcopy(query_params))
+    count = await service.fetch_all_count(deepcopy(query_params))
 
     return ResponseMulti[InvitationResponse](
         result=[
@@ -75,17 +72,15 @@ async def invitation_list_for_invited(
     ),
 ) -> ResponseMulti[InvitationResponse]:
     """Fetch all invitations for the specific user who is invited."""
+    # NOTE: this endpoint is not used
     if query_params.filters.get("applet_id"):
         await CheckAccessService(session, user.id).check_applet_invite_access(
             query_params.filters["applet_id"]
         )
-    invitations = await InvitationsService(
-        session, user
-    ).fetch_all_for_invited(deepcopy(query_params))
+    service = InvitationsService(session, user)
+    invitations = await service.fetch_all_for_invited(deepcopy(query_params))
 
-    count = await InvitationsService(
-        session, user
-    ).fetch_all_for_invited_count(deepcopy(query_params))
+    count = await service.fetch_all_for_invited_count(deepcopy(query_params))
 
     return ResponseMulti[InvitationResponse](
         result=[
