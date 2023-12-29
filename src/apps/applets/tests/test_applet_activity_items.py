@@ -3,6 +3,7 @@ import uuid
 
 import pytest
 
+from apps.activities.errors import IncorrectConditionItemIndexError
 from apps.activities import errors as activity_errors
 from apps.activities.domain.response_type_config import (
     ResponseType,
@@ -11,7 +12,6 @@ from apps.activities.domain.response_type_config import (
 from apps.activities.domain.response_values import SingleSelectionValues
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
-from apps.activities.errors import IncorrectConditionItemIndexError
 
 
 @pytest.fixture
@@ -1515,7 +1515,6 @@ class TestActivityItems(BaseTest):
         )
         assert response.status_code == 200
 
-    @pytest.mark.run
     @rollback
     async def test_creating_applet_with_activity_items_condition(self):
         await self.client.login(
@@ -1697,7 +1696,7 @@ class TestActivityItems(BaseTest):
                                     conditions=[
                                         dict(
                                             item_name=(
-                                                "activity_item_singleselect_score"
+                                                "activity_item_singleselect_score"  # noqa E501
                                             ),
                                             type="GREATER_THAN",
                                             payload=dict(
@@ -1802,7 +1801,7 @@ class TestActivityItems(BaseTest):
                                         ),
                                     ),
                                     dict(
-                                        item_name="activity_item_singleselect_2",
+                                        item_name="activity_item_singleselect_2",  # noqa: E501
                                         type="NOT_EQUAL_TO_OPTION",
                                         payload=dict(
                                             option_value="2"  # noqa E501
@@ -1816,7 +1815,7 @@ class TestActivityItems(BaseTest):
                                         ),
                                     ),
                                     dict(
-                                        item_name="activity_item_multiselect_2",
+                                        item_name="activity_item_multiselect_2",  # noqa: E501
                                         type="NOT_INCLUDES_OPTION",
                                         payload=dict(
                                             option_value="2"  # noqa E501
