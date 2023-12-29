@@ -256,12 +256,15 @@ class TestWorkspaces(BaseTest):
                 role="respondent",
             ),
         )
-        assert response.json()["count"] == 4
-        assert "New respondent" in response.json()["result"][1]["nicknames"]
-        assert (
-            "f0dd4996-e0eb-461f-b2f8-ba873a674710"
-            in response.json()["result"][1]["secretIds"]
-        )
+        payload = response.json()
+        assert payload["count"] == 4
+        nicknames = []
+        secret_ids = []
+        for respondent in payload["result"]:
+            nicknames += respondent.get("nicknames", [])
+            secret_ids += respondent.get("secretIds", [])
+        assert "New respondent" in nicknames
+        assert "f0dd4996-e0eb-461f-b2f8-ba873a674710" in secret_ids
 
     @rollback
     async def test_wrong_workspace_applets_list(self):

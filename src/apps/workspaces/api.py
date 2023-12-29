@@ -263,12 +263,12 @@ async def workspace_remove_manager_access(
         # Get applets where user still have access
         ex_admin = await UserService(session).get(schema.user_id)
         if ex_admin:
-            management_applets = await UserAppletAccessService(
-                session, schema.user_id, uuid.uuid4()
+            management_applets = await UserAccessService(
+                session, schema.user_id
             ).get_management_applets(schema.applet_ids)
             ids_to_remove = set(schema.applet_ids) - set(management_applets)
             await InvitationsService(session, ex_admin).delete_for_managers(
-                ids_to_remove
+                list(ids_to_remove)
             )
 
 

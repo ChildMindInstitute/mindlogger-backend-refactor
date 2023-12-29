@@ -1,6 +1,5 @@
 import asyncio
 import uuid
-from typing import Collection
 
 from fastapi.exceptions import RequestValidationError
 from pydantic.error_wrappers import ErrorWrapper
@@ -638,7 +637,7 @@ class InvitationsService:
             if is_exist:
                 raise RespondentInvitationExist()
 
-    async def delete_for_managers(self, applet_ids: Collection[uuid.UUID]):
+    async def delete_for_managers(self, applet_ids: list[uuid.UUID]):
         roles = [
             Role.MANAGER,
             Role.COORDINATOR,

@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Collection
+from typing import Any
 
 from sqlalchemy import delete, select, text, update
 from sqlalchemy.engine import Result
@@ -409,7 +409,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
     async def delete_by_applet_ids(
         self,
         email: str | None,
-        applet_ids: Collection[uuid.UUID],
+        applet_ids: list[uuid.UUID],
         roles: list[Role],
     ):
         query: Query = delete(InvitationSchema)
