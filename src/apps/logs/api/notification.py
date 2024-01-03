@@ -36,9 +36,7 @@ async def notification_log_retrieve(
 ) -> ResponseMulti[PublicNotificationLog]:
     """Returns NotificationLogs of user and device"""
     async with atomic(session):
-        # TODO: Remove query.user_id when mobile change user_id -> email.
-        email = query.email if query.email else query.user_id
-        user = await UserService(session).get_by_email(email)
+        user = await UserService(session).get_by_email(query.email)
         notification_logs = await NotificationLogCRUD(session).filter(
             query, user_id=str(user.id)
         )

@@ -426,3 +426,10 @@ class UserAccessService:
         email_list = config.settings.logs.get_access_emails()
         if email not in email_list:
             raise AccessDeniedError()
+
+    async def get_management_applets(
+        self, applet_ids: list[uuid.UUID]
+    ) -> list[uuid.UUID]:
+        return await UserAppletAccessCRUD(self.session).get_management_applets(
+            self._user_id, applet_ids
+        )

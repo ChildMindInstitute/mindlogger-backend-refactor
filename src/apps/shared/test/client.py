@@ -30,7 +30,7 @@ class TestClient:
     @staticmethod
     def _get_body(data: dict | None = None):
         if data:
-            return json.dumps(data)
+            return json.dumps(data, default=str)
         return None
 
     async def post(

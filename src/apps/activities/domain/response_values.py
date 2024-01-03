@@ -150,9 +150,11 @@ class SliderValues(PublicModel):
 
     @root_validator
     def validate_scores(cls, values):
-        if values.get("scores") is not None and values.get("scores") != []:
+        # length of scores must be equal to max_value - min_value + 1
+        scores = values.get("scores", [])
+        if scores:
             if (
-                len(values.get("scores"))
+                len(scores)
                 != values.get("max_value") - values.get("min_value") + 1
             ):
                 raise InvalidScoreLengthError()
@@ -253,9 +255,7 @@ class SingleSelectionRowsValues(PublicModel):
     def validate_data_matrix(cls, value, values):
         if value is not None:
             if len(value) != len(values["rows"]):
-                raise InvalidDataMatrixError(
-                    message="data_matrix must have the same length as rows"
-                )
+                raise InvalidDataMatrixError()
             for row in value:
                 if len(row.options) != len(values["options"]):
                     raise InvalidDataMatrixByOptionError()

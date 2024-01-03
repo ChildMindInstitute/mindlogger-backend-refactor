@@ -1332,3 +1332,19 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
         db_result = db_result.first()  # noqa
         return db_result[0] if db_result else None
+
+    async def get_management_applets(
+        self,
+        user_id: uuid.UUID,
+        applet_ids: list[uuid.UUID],
+    ) -> list[uuid.UUID]:
+        query: Query = select(UserAppletAccessSchema.applet_id)
+        query = query.where(
+            UserAppletAccessSchema.applet_id.in_(applet_ids),
+            UserAppletAccessSchema.user_id == user_id,
+            UserAppletAccessSchema.role.in_(Role.managers()),
+            UserAppletAccessSchema.soft_exists(),
+        )
+        db_result = await self._execute(query)
+        db_result = db_result.scalars().all()  # noqa
+        return db_result
