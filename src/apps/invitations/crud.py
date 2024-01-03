@@ -287,19 +287,18 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                 **invitation_detail_base.dict(),
             )
 
-    async def get_by_email_applet_role_respondent(
+    async def get_pending_by_email_applet_role_respondent(
         self, email_: str, applet_id_: uuid.UUID
-    ) -> list[InvitationRespondent]:
+    ) -> InvitationRespondent:
         query: Query = select(InvitationSchema)
         query = query.where(InvitationSchema.email == email_)
         query = query.where(InvitationSchema.applet_id == applet_id_)
         query = query.where(InvitationSchema.role == Role.RESPONDENT)
+        query = query.where(
+            InvitationSchema.status == InvitationStatus.PENDING
+        )
         db_result: Result = await self._execute(query)
-        results: list[InvitationSchema] = db_result.scalars().all()
-
-        return [
-            InvitationRespondent.from_orm(invitation) for invitation in results
-        ]
+        return db_result.scalar_one_or_none()
 
     async def get_by_email_applet_role_reviewer(
         self, email_: str, applet_id_: uuid.UUID
@@ -353,6 +352,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         applet_id: uuid.UUID,
         secret_user_id: str,
         status: InvitationStatus,
+        email: str = "",
     ) -> InvitationSchema | None:
         schema = self.schema_class
         query: Query = select(schema).where(
@@ -361,6 +361,11 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             schema.status == status,
             schema.meta[text("'secret_user_id'")].astext == secret_user_id,
         )
+        # We don't need to check secret_user_id if applet manager sends
+        # invitation to respondent one more time with the same secret_user_id
+        # and email for because old invitation will be updated
+        if email:
+            query = query.where(schema.email != email)
         db_result = await self._execute(query)
 
         return db_result.scalars().first()
