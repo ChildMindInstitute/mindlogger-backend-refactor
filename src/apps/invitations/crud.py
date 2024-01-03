@@ -59,72 +59,6 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         schema = await self._update_one(lookup, value, schema)
         return schema
 
-    async def get_pending_by_invited_email(
-        self, email: str | None, query_params: QueryParams
-    ) -> list[InvitationDetail]:
-        """Return the list of pending invitations for the invited user."""
-
-        query: Query = select(
-            InvitationSchema, AppletSchema.display_name.label("applet_name")
-        )
-        query = query.join(
-            AppletSchema, AppletSchema.id == InvitationSchema.applet_id
-        )
-        query = query.where(InvitationSchema.email == email)
-        query = query.where(
-            InvitationSchema.status == InvitationStatus.PENDING
-        )
-        if query_params.search:
-            query = query.where(
-                _InvitationSearching().get_clauses(query_params.search)
-            )
-        if query_params.ordering:
-            query = query.order_by(
-                *_InvitationOrdering().get_clauses(*query_params.ordering)
-            )
-        query = paging(query, query_params.page, query_params.limit)
-
-        db_result = await self._execute(query)
-        results = []
-        for invitation, applet_name in db_result.all():
-            results.append(
-                InvitationDetail(
-                    id=invitation.id,
-                    email=invitation.email,
-                    applet_id=invitation.applet_id,
-                    applet_name=applet_name,
-                    role=invitation.role,
-                    key=invitation.key,
-                    status=invitation.status,
-                    invitor_id=invitation.invitor_id,
-                    meta=invitation.meta,
-                    first_name=invitation.first_name,
-                    last_name=invitation.last_name,
-                    created_at=invitation.created_at,
-                    nickname=invitation.nickname,
-                )
-            )
-        return results
-
-    async def get_pending_by_invited_email_count(
-        self, email: str | None, query_params: QueryParams
-    ) -> int:
-        """Return the count of pending invitations for the invited user."""
-
-        query: Query = select(count(InvitationSchema.id))
-        query = query.where(InvitationSchema.email == email)
-        query = query.where(
-            InvitationSchema.status == InvitationStatus.PENDING
-        )
-        if query_params.search:
-            query = query.where(
-                _InvitationSearching().get_clauses(query_params.search)
-            )
-
-        result = await self._execute(query)
-
-        return result.scalars().first() or 0
-
     async def get_pending_by_invitor_id(
         self, user_id: uuid.UUID, query_params: QueryParams
     ) -> list[InvitationDetail]:
@@ -350,34 +284,6 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(InvitationSchema.email == email)
         query = query.where(InvitationSchema.applet_id == applet_id)
         query = query.where(InvitationSchema.role == role)
-        db_result: Result = await self._execute(query)
-        return bool(db_result.scalars().first())
-
-    async def duplicate_exist(
-        self, email: str, role: str, applet_id: uuid.UUID
-    ) -> bool:
-        query: Query = select(count(InvitationSchema.id))
-        query = query.where(
-            InvitationSchema.email == email,
-            InvitationSchema.applet_id == applet_id,
-            InvitationSchema.role == role,
-            InvitationSchema.status == InvitationStatus.PENDING,
-            InvitationSchema.soft_exists(),
-        )
-        db_result: Result = await self._execute(query)
-        return bool(db_result.scalars().first())
-
-    async def manager_invitation_exist(
-        self, email: str, applet_id: uuid.UUID
-    ) -> bool:
-        query: Query = select(count(InvitationSchema.id))
-        query = query.where(
-            InvitationSchema.email == email,
-            InvitationSchema.applet_id == applet_id,
-            InvitationSchema.status == InvitationStatus.PENDING,
-            InvitationSchema.role.in_(Role.managers()),
-            InvitationSchema.soft_exists(),
-        )
         db_result: Result = await self._execute(query)
         return bool(db_result.scalars().first())
 

@@ -64,33 +64,6 @@ async def invitation_list(
     )
 
 
-async def invitation_list_for_invited(
-    user: User = Depends(get_current_user),
-    session=Depends(get_session),
-    query_params: QueryParams = Depends(
-        parse_query_params(InvitationQueryParams)
-    ),
-) -> ResponseMulti[InvitationResponse]:
-    """Fetch all invitations for the specific user who is invited."""
-    # NOTE: this endpoint is not used
-    if query_params.filters.get("applet_id"):
-        await CheckAccessService(session, user.id).check_applet_invite_access(
-            query_params.filters["applet_id"]
-        )
-    service = InvitationsService(session, user)
-    invitations = await service.fetch_all_for_invited(deepcopy(query_params))
-
-    count = await service.fetch_all_for_invited_count(deepcopy(query_params))
-
-    return ResponseMulti[InvitationResponse](
-        result=[
-            InvitationResponse(**invitation.dict())
-            for invitation in invitations
-        ],
-        count=count,
-    )
-
-
 async def invitation_retrieve(
     key: uuid.UUID,
     user: User = Depends(get_current_user),

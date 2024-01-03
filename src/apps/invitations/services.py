@@ -36,10 +36,8 @@ from apps.invitations.errors import (
     DoesNotHaveAccess,
     InvitationAlreadyProcessed,
     InvitationDoesNotExist,
-    ManagerInvitationExist,
     NonUniqueValue,
     RespondentDoesNotExist,
-    RespondentInvitationExist,
 )
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
@@ -66,20 +64,6 @@ class InvitationsService:
     async def fetch_all_count(self, query_params: QueryParams) -> int:
         return await self.invitations_crud.get_pending_by_invitor_id_count(
             self._user.id, query_params
-        )
-
-    async def fetch_all_for_invited(
-        self, query_params: QueryParams
-    ) -> list[InvitationDetail]:
-        return await self.invitations_crud.get_pending_by_invited_email(
-            self._user.email_encrypted, query_params
-        )
-
-    async def fetch_all_for_invited_count(
-        self, query_params: QueryParams
-    ) -> int:
-        return await self.invitations_crud.get_pending_by_invited_email_count(
-            self._user.email_encrypted, query_params
         )
 
     async def get(self, key: uuid.UUID) -> InvitationDetailGeneric | None:
@@ -532,22 +516,6 @@ class InvitationsService:
 
     async def exist(self, email: str, role: str, applet_id: uuid.UUID) -> int:
         return await InvitationCRUD(self.session).exist(email, role, applet_id)
-
-    async def check_for_duplicates(
-        self, applet_id: uuid.UUID, email: str, role: str
-    ):
-        crud = InvitationCRUD(self.session)
-        is_manager = role in Role.managers()
-        if is_manager:
-            is_exist = await crud.manager_invitation_exist(email, applet_id)
-            if is_exist:
-                raise ManagerInvitationExist()
-        else:
-            is_exist = await InvitationCRUD(self.session).duplicate_exist(
-                email, role, applet_id
-            )
-            if is_exist:
-                raise RespondentInvitationExist()
 
     async def delete_for_managers(self, applet_ids: list[uuid.UUID]):
         roles = [
