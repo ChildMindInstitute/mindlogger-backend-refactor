@@ -45,19 +45,19 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         notif_in_queue_upd = True
         sched_notif_upd = True
 
-        if not schema.notification_descriptions:
+        if schema.notification_descriptions is None:
             description = await self.get_previous_description(user_id, schema)
             schema.notification_descriptions = (
                 description if description else None
             )
             notif_desc_upd = False
 
-        if not schema.notification_in_queue:
+        if schema.notification_in_queue is None:
             in_queue = await self.get_previous_in_queue(user_id, schema)
             schema.notification_in_queue = in_queue if in_queue else None
             notif_in_queue_upd = False
 
-        if not schema.scheduled_notifications:
+        if schema.scheduled_notifications is None:
             scheduled = await self.get_previous_scheduled_notifications(
                 user_id, schema
             )
