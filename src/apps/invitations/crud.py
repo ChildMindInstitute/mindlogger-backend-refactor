@@ -352,7 +352,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         applet_id: uuid.UUID,
         secret_user_id: str,
         status: InvitationStatus,
-        email: str = "",
+        invited_email: str = "",
     ) -> InvitationSchema | None:
         schema = self.schema_class
         query: Query = select(schema).where(
@@ -361,11 +361,13 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             schema.status == status,
             schema.meta[text("'secret_user_id'")].astext == secret_user_id,
         )
-        # We don't need to check secret_user_id if applet manager sends
-        # invitation to respondent one more time with the same secret_user_id
-        # and email for because old invitation will be updated
-        if email:
-            query = query.where(schema.email != email)
+        # NOTE: this case is valid only for updating pending invitation.
+        # If pending invitation exists with provided secret_user_id, but
+        # email is the same as invited email - it is ok because existing
+        # invitation will be updated.
+        # So need to exclude invited_email from filter.
+        if invited_email:
+            query = query.where(schema.email != invited_email)
         db_result = await self._execute(query)
 
         return db_result.scalars().first()

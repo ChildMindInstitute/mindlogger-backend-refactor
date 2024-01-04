@@ -517,7 +517,10 @@ class InvitationsService:
             self.session
         ).get_by_secret_user_id_for_applet(applet_id, secret_user_id)
         invitation_coro = InvitationCRUD(self.session).get_for_respondent(
-            applet_id, secret_user_id, InvitationStatus.PENDING, email=email
+            applet_id,
+            secret_user_id,
+            InvitationStatus.PENDING,
+            invited_email=email,
         )
         access, invitation = await asyncio.gather(access_coro, invitation_coro)
         if access or invitation:
