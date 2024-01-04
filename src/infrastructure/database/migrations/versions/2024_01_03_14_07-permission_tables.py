@@ -19,28 +19,28 @@ depends_on = None
 
 
 INITIAL_PERMISSION_NAMES = [
-    "Transfer ownership",
-    "Invite new organizers",
-    "View all organizers",
-    "Change organizer role/permissions",
-    "Invite new respondents",
-    "View all respondents",
-    "Remove specific respondent's access",
-    "Invite new reviewer for specific respondent",
-    "Set schedule and notifications for one or all respondents",
-    "Create applet",
-    "Upload new content",
-    "Copy content from another applet",
-    "Edit, save or delete content",
-    "View or export assigned respondent's data",
-    "View all respondents data",
-    "Delete specific respondents data",
-    "Perform activities"
+    ("Transfer ownership", "OWN_TRF"),
+    ("Invite new organizers", "ORG_INV"),
+    ("View all organizers", "ORG_VIEW"),
+    ("Change organizer role/permissions", "ORG_EDIT"),
+    ("Invite new respondents", "RSP_INV"),
+    ("View all respondents", "RSP_VIEW"),
+    ("Remove specific respondent's access", "RSP_EDIT"),
+    ("Invite new reviewer for specific respondent", "RVW_INV"),
+    ("Set schedule and notifications for one or all respondents", "SET_EVT"),
+    ("Create applet", "APL_CRT"),
+    ("Upload new content", "APL_UPL"),
+    ("Copy content from another applet", "APL_CP"),
+    ("Edit, save or delete content", "APL_ED"),
+    ("View or export assigned respondent's data", "DATA_VIEW_ASG"),
+    ("View all respondents data", "DATA_VIEW_ALL"),
+    ("Delete specific respondents data", "DATA_DEL_RSP"),
+    ("Perform activities", "PRF_ACT")
 ]
 
 PERMISSIONS = {}
-for permission_name in INITIAL_PERMISSION_NAMES:
-    PERMISSIONS[permission_name] = uuid.uuid4()
+for permission in INITIAL_PERMISSION_NAMES:
+    PERMISSIONS[permission[0]] = (uuid.uuid4(), permission[1])
 
 RESPONDENT_PERMISSIONS = {
     PERMISSIONS["Perform activities"]
@@ -117,10 +117,14 @@ def upgrade() -> None:
         sa.Column("migrated_updated", sa.DateTime(), nullable=True),
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
         sa.Column("name", sa.String(length=60), nullable=False),
+        sa.Column("code", sa.String(length=20), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_permissions")),
     )
     op.create_index(
         op.f("ix_permissions_name"), "permissions", ["name"], unique=False
+    )
+    op.create_index(
+        op.f("ix_permissions_code"), "permissions", ["code"], unique=False
     )
     op.create_table(
         "permissions_roles",
@@ -175,12 +179,14 @@ def upgrade() -> None:
 
     conn = op.get_bind()
     sql = sa.text(
-        'insert into permissions (id, name, is_deleted) '
-        'values (:id, :name, false)'
+        'insert into permissions (id, name, code, is_deleted) '
+        'values (:id, :name, :code, false)'
     )
     # Fill 'permissions' table
     for name in PERMISSIONS:
-        conn.execute(sql.bindparams(id=PERMISSIONS[name], name=name))
+        _id = PERMISSIONS[name][0]
+        code = PERMISSIONS[name][1]
+        conn.execute(sql.bindparams(id=_id, name=name, code=code))
 
     sql = sa.text(
         'insert into permissions_roles (role, permission_id) '
@@ -188,10 +194,10 @@ def upgrade() -> None:
     )
     # Fill 'permissions_roles' table
     for role in ROLES_PERMISSIONS:
-        for permission_id in ROLES_PERMISSIONS[role]:
+        for permission in ROLES_PERMISSIONS[role]:
             conn.execute(sql.bindparams(
                 role=role,
-                permission_id=permission_id
+                permission_id=permission[0]
             ))
     # ### end Alembic commands ###
 

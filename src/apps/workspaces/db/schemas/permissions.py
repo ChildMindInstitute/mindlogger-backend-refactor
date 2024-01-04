@@ -8,6 +8,7 @@ __all__ = ["Permissions", "RolePermissions"]
 class Permissions(Base):
     __tablename__ = "permissions"
     name = Column(String(length=60), nullable=False, index=True)
+    code = Column(String(length=20), nullable=False, index=True)
 
 
 class RolePermissions(Base):
