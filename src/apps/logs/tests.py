@@ -181,3 +181,43 @@ class TestNotificationLogs(BaseTest):
         assert response["scheduledNotifications"] == [
             {"name": "notifications3"}
         ]
+
+    @rollback
+    async def test_create_log_allow_empty_array(self):
+        payloads = [
+            dict(
+                user_id="tom@mindlogger.com",
+                device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                action_type="test",
+                notification_descriptions=[{"name": "descriptions1"}],
+                notification_in_queue=[{"name": "in_queue1"}],
+                scheduled_notifications=[{"name": "notifications1"}],
+            ),
+            dict(
+                user_id="tom@mindlogger.com",
+                device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                action_type="test",
+                notification_descriptions=[],
+                notification_in_queue=[{"name": "in_queue2"}],
+                scheduled_notifications=[{"name": "notifications2"}],
+            ),
+        ]
+
+        for payload in payloads:
+            response = await self.client.post(self.logs_url, data=payload)
+            assert response.status_code == 201
+
+        query = dict(
+            email="tom@mindlogger.com",
+            device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            limit=5,
+        )
+
+        response = await self.client.get(self.logs_url, query=query)
+        assert response.status_code == 200, response.json()
+        response = response.json()["result"]
+        has_empty_array = next(
+            filter(lambda x: x["notificationDescriptions"] == [], response),
+            None,
+        )
+        assert has_empty_array
