@@ -221,3 +221,52 @@ class TestNotificationLogs(BaseTest):
             None,
         )
         assert has_empty_array
+
+    @rollback
+    async def test_create_log_allow_empty_array_if_prev_is_none(self):
+        payloads = [
+            dict(
+                user_id="tom@mindlogger.com",
+                device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                action_type="test1",
+                notification_descriptions=None,
+                notification_in_queue=[{"name": "in_queue1"}],
+                scheduled_notifications=[{"name": "notifications1"}],
+            ),
+            dict(
+                user_id="tom@mindlogger.com",
+                device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                action_type="test2",
+                notification_descriptions=[],
+                notification_in_queue=[{"name": "in_queue2"}],
+                scheduled_notifications=[{"name": "notifications2"}],
+            ),
+            dict(
+                user_id="tom@mindlogger.com",
+                device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                action_type="test3",
+                notification_descriptions=None,
+                notification_in_queue=[{"name": "in_queue2"}],
+                scheduled_notifications=[{"name": "notifications2"}],
+            ),
+        ]
+
+        for payload in payloads:
+            response = await self.client.post(self.logs_url, data=payload)
+            assert response.status_code == 201
+
+        query = dict(
+            email="tom@mindlogger.com",
+            device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+            limit=5,
+        )
+
+        response = await self.client.get(self.logs_url, query=query)
+        assert response.status_code == 200, response.json()
+        response = response.json()["result"]
+        log_1 = next(filter(lambda x: x["actionType"] == "test1", response))
+        log_2 = next(filter(lambda x: x["actionType"] == "test2", response))
+        log_3 = next(filter(lambda x: x["actionType"] == "test3", response))
+        assert log_1["notificationDescriptions"] is None
+        assert log_2["notificationDescriptions"] == []
+        assert log_3["notificationDescriptions"] == []
