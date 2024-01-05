@@ -1,16 +1,17 @@
-"""empty message
+"""Add subjects
 
-Revision ID: 1ca4c4d3b7df
+Revision ID: edb2781f141b
 Revises: 3fb536a58c94
-Create Date: 2024-01-05 12:09:12.306997
+Create Date: 2024-01-05 18:28:37.879517
 
 """
 import sqlalchemy as sa
+import sqlalchemy_utils
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "1ca4c4d3b7df"
+revision = "edb2781f141b"
 down_revision = "3fb536a58c94"
 branch_labels = None
 depends_on = None
@@ -42,9 +43,13 @@ def upgrade() -> None:
         sa.Column("migrated_updated", sa.DateTime(), nullable=True),
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
         sa.Column("applet_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("email", sa.String(length=56), nullable=True),
         sa.Column("creator_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column(
+            "email",
+            sqlalchemy_utils.types.encrypted.encrypted_type.StringEncryptedType(),
+            nullable=True,
+        ),
         sa.ForeignKeyConstraint(
             ["applet_id"],
             ["applets.id"],
@@ -64,7 +69,6 @@ def upgrade() -> None:
             ondelete="RESTRICT",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_subjects")),
-        sa.UniqueConstraint("email", name=op.f("uq_subjects_email")),
     )
     op.create_table(
         "subject_respondents",

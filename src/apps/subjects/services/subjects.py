@@ -4,12 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.subjects.crud import SubjectsCrud, SubjectsRespondentsCrud
 from apps.subjects.db.schemas import SubjectRespondentSchema, SubjectSchema
-from apps.subjects.domain import (
-    Subject,
-    SubjectCreate,
-    SubjectFull,
-    SubjectRespondent,
-)
+from apps.subjects.domain import Subject, SubjectCreate, SubjectRespondent
 
 
 class SubjectsService:
@@ -17,7 +12,7 @@ class SubjectsService:
         self.session = session
         self.user_id = user_id
 
-    async def _create_subject(self, schema: SubjectCreate) -> Subject:
+    async def _create_subject(self, schema: Subject) -> Subject:
         subj_crud = SubjectsCrud(self.session)
         subject = SubjectSchema(
             applet_id=schema.applet_id,
@@ -40,10 +35,7 @@ class SubjectsService:
         subj_resp_entity = await subj_resp_crud.save(subject_resp)
         return SubjectRespondent.from_orm(subj_resp_entity)
 
-    async def create(self, schema: SubjectCreate) -> SubjectFull:
+    async def create(self, schema: Subject) -> Subject:
         subject = await self._create_subject(schema)
-        subject_resp = await self._create_subject_respondent(
-            subject.id, schema
-        )
-        merged_data = subject.dict() | subject_resp.dict()
-        return SubjectFull(**merged_data)
+        merged_data = subject.dict()
+        return Subject(**merged_data)

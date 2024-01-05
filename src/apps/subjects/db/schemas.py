@@ -1,5 +1,7 @@
-from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy import Column, ForeignKey, String, Unicode
+from sqlalchemy_utils import StringEncryptedType
 
+from apps.shared.encryption import get_key
 from infrastructure.database.base import Base
 
 __all__ = ["SubjectSchema", "SubjectRespondentSchema"]
@@ -10,14 +12,13 @@ class SubjectSchema(Base):
     applet_id = Column(
         ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
     )
-    # todo: tbd (why so short)
-    email = Column(String(length=56), unique=True)
     creator_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     user_id = Column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
+    email = Column(StringEncryptedType(Unicode, get_key), default=None)
 
 
 class SubjectRespondentSchema(Base):

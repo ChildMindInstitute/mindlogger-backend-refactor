@@ -415,3 +415,13 @@ class UserAppletAccessService:
             return role in manager_roles and bool(
                 user_roles.intersection(manager_roles)
             )
+
+    async def get_respondent_access(self) -> UserAppletAccessSchema | None:
+        crud = UserAppletAccessCRUD(self.session)
+        return await crud.get(
+            self._user_id, self._applet_id, Role.RESPONDENT.value
+        )
+
+    async def get_owner(self) -> UserAppletAccessSchema:
+        crud = UserAppletAccessCRUD(self.session)
+        return await crud.get_applet_owner(self._applet_id)

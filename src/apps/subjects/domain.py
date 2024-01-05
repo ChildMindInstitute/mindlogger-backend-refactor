@@ -6,7 +6,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class Subject(InternalModel):
-    id: uuid.UUID
+    id: uuid.UUID | None
     applet_id: uuid.UUID
     email: EmailStr
     creator_id: uuid.UUID
@@ -26,6 +26,11 @@ class SubjectCreate(PublicModel):
     creator_id: uuid.UUID
     user_id: uuid.UUID
     respondent_access_id: uuid.UUID
+    relation: str
+
+
+class SubjectCreateRequest(InternalModel):
+    applet_id: uuid.UUID
     relation: str
 
 
