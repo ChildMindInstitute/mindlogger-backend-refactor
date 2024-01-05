@@ -4,6 +4,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    String,
     Text,
     Time,
     Unicode,
@@ -28,6 +29,9 @@ class AnswerSchema(Base):
     respondent_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     is_flow_completed = Column(Boolean(), nullable=True)
     migrated_data = Column(JSONB())
+    target_subject_id = Column(Text(), nullable=False, index=True)
+    source_subject_id = Column(Text(), nullable=False, index=True)
+    relation = Column(String(length=20), unique=True)
 
 
 class AnswerNoteSchema(Base):
