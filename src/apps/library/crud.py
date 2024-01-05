@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Unicode, delete, or_, select
+from sqlalchemy import Unicode, or_, select
 from sqlalchemy.orm import Query
 
 from apps.applets.db.schemas import AppletHistorySchema
@@ -31,12 +31,6 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
     ) -> LibrarySchema | None:
         schema = await self._get("applet_id_version", applet_id_version)
         return schema
-
-    async def get_all(self) -> list[LibrarySchema] | None:
-        query: Query = select(self.schema_class)
-        db_result = await self._execute(query)
-
-        return db_result.scalars().all()
 
     async def get_all_library_count(self, query_params: QueryParams) -> int:
         query: Query = select(LibrarySchema.id)
@@ -112,10 +106,6 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
 
         return LibraryItem.from_orm(db_result)
 
-    async def delete_by_id(self, id: str) -> None:
-        query = delete(LibrarySchema).where(LibrarySchema.id == id)
-        await self._execute(query)
-
     async def check_applet_name(self, name: str):
         query: Query = select(AppletHistorySchema.display_name)
         query = query.join(
@@ -135,10 +125,6 @@ class CartCRUD(BaseCRUD[CartSchema]):
 
     async def save(self, schema: CartSchema):
         return await self._create(schema)
-
-    async def update(self, schema: CartSchema, user_id: uuid.UUID):
-        schema = await self._update_one("user_id", user_id, schema)
-        return schema
 
     async def get_by_user_id(self, user_id: uuid.UUID) -> CartSchema | None:
         schema = await self._get("user_id", user_id)
