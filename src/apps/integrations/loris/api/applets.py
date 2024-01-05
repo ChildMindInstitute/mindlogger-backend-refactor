@@ -353,6 +353,8 @@ async def ml_answer_to_loris(
                 loris_answers[key] = list(map(str, data[i]["value"]))
             case "slider":
                 loris_answers[key] = data[i]["value"]
+            case "numberSelect":
+                loris_answers[key] = int(data[i]["value"])
             case "text":
                 loris_answers[key] = data[i]
             case _:
