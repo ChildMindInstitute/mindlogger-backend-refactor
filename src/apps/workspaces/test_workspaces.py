@@ -71,11 +71,17 @@ class TestWorkspaces(BaseTest):
     async def test_user_workspace_list(self):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
 
-        response = await self.client.get(
-            self.workspaces_list_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2"
-            )
+        response = await self.client.get(self.workspaces_list_url)
+        assert response.status_code == 200, response.json()
+        assert len(response.json()["result"]) == 2
+
+    @rollback
+    async def test_user_workspace_list_super_admin(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
         )
+
+        response = await self.client.get(self.workspaces_list_url)
         assert response.status_code == 200, response.json()
         assert len(response.json()["result"]) == 2
 
@@ -103,6 +109,20 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["role"] == Role.COORDINATOR
+
+    @rollback
+    async def test_get_users_priority_role_in_workspace_super_admin(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.workspaces_priority_role_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            )
+        )
+        assert response.status_code == 200, response.json()
+        assert response.json()["result"]["role"] == Role.SUPER_ADMIN
 
     @rollback
     async def test_workspace_roles_retrieve(self):
@@ -779,6 +799,20 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
         assert response.json()["result"][0]["displayName"] == "Applet 1"
         assert response.json()["result"][1]["displayName"] == "Applet 2"
+
+    @rollback
+    async def test_folder_applets_not_super_admin(self):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+
+        response = await self.client.get(
+            self.workspace_folder_applets_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa3",
+                folder_id="ecf66358-a717-41a7-8027-807374307737",
+            )
+        )
+        assert response.status_code == 200
+        assert len(response.json()["result"]) == 1
+        assert response.json()["result"][0]["displayName"] == "Applet 4"
 
     @rollback
     async def test_applets_with_description(self):

@@ -116,7 +116,7 @@ class TestDataService:
         activities = []
         has_reviewable = False
         for index in range(count):
-            items = self._generate_activity_items()
+            items = self.generate_activity_items()
             is_reviewable = self.random_boolean()
             if has_reviewable:
                 is_reviewable = False
@@ -164,10 +164,10 @@ class TestDataService:
             )
         return flows
 
-    def _generate_activity_items(self, count=10) -> list[ActivityItemCreate]:
+    def generate_activity_items(self, count=10) -> list[ActivityItemCreate]:
         items = []
         for index in range(count):
-            response_config = self._generate_response_value_config(
+            response_config = self.generate_response_value_config(
                 type_=self.activity_item_options[
                     index % len(self.activity_item_options)
                 ]
@@ -190,7 +190,8 @@ class TestDataService:
             )
         return items
 
-    def _generate_response_value_config(self, type_: ResponseType):
+    @staticmethod
+    def generate_response_value_config(type_: ResponseType):
         result = dict()
         if type_ == ResponseType.TEXT:
             result["config"] = dict(
