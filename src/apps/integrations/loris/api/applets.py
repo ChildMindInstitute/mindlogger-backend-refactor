@@ -24,9 +24,7 @@ from apps.users.domain import User
 from infrastructure.database.deps import get_session
 from infrastructure.logger import logger
 
-__all__ = [
-    "start_transmit_process",
-]
+__all__ = ["start_transmit_process", "send_schema"]
 
 
 # TODO move to env and config
@@ -337,6 +335,104 @@ async def start_transmit_process(
 ):
     background_tasks.add_task(integration, applet_id, session)
     return HTTPResponse(status_code=status.HTTP_202_ACCEPTED)
+
+
+async def send_schema(
+    applet_id: uuid.UUID,
+    session=Depends(get_session),
+    # ) -> Response:
+):
+    activities_crud = ActivitiesCRUD(session)
+    activities_items_crud = ActivityItemsCRUD(session)
+    applet_crud = AppletsCRUD(session)
+
+    applet = await applet_crud.get_by_id(applet_id)
+    loris_data = {
+        "id": applet_id,
+        "displayName": applet.display_name,
+        "description": list(applet.description.values())[0],
+        "activities": None,
+    }
+
+    activities: list = []
+    applet_activities = await activities_crud.get_by_applet_id(applet_id)
+    for _activitie in applet_activities:
+        items: list = []
+        _activities_items = await activities_items_crud.get_by_activity_id(
+            _activitie.id
+        )
+        for item in _activities_items:
+            items.append(
+                {
+                    "id": item.id,
+                    "question": list(item.question.values())[0],
+                    "responseType": item.response_type,
+                    "responseValues": item.response_values,
+                    "config": item.config,
+                    "name": item.name,
+                    "isHidden": item.is_hidden,
+                    "conditionalLogic": item.conditional_logic,
+                    "allowEdit": item.allow_edit,
+                }
+            )
+        activities.append(
+            {
+                "id": _activitie.id,
+                "name": _activitie.name,
+                "description": list(_activitie.description.values())[0],
+                "splash_screen": _activitie.splash_screen,
+                "image": _activitie.image,
+                "order": _activitie.order,
+                "createdAt": _activitie.created_at,
+                "items": items,
+            }
+        )
+    loris_data["activities"] = activities
+
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        logger.info(
+            f"Sending LOGIN request to the loris server {LORIS_LOGIN_URL}."
+        )
+        start = time.time()
+        async with session.post(
+            LORIS_LOGIN_URL,
+            data=json.dumps(LORIS_LOGIN_DATA),
+        ) as resp:
+            duration = time.time() - start
+            if resp.status == 200:
+                logger.info(f"Successful request in {duration:.1f} seconds.")
+                response_data = await resp.json()
+            else:
+                logger.error(f"Failed request in {duration:.1f} seconds.")
+                error_message = await resp.text()
+                raise LorisServerError(message=error_message)
+
+        headers = {
+            "Authorization": f"Bearer: {response_data['token']}",
+            "Content-Type": "application/json",
+            "accept": "*/*",
+        }
+        logger.info(
+            f"Sending UPLOAD SCHEMA request to the loris server \
+                {LORIS_ML_URL}."
+        )
+        start = time.time()
+        async with session.post(
+            LORIS_ML_URL,
+            data=UnencryptedApplet(**loris_data).json(),
+            headers=headers,
+        ) as resp:
+            duration = time.time() - start
+            if resp.status == 200:
+                logger.info(f"Successful request in {duration:.1f} seconds.")
+                response_data = await resp.json()
+            else:
+                logger.error(f"Failed request in {duration:.1f} seconds.")
+                error_message = await resp.text()
+                raise LorisServerError(message=error_message)
+
+    return HTTPResponse(status_code=status.HTTP_201_CREATED)
 
 
 async def ml_answer_to_loris(
