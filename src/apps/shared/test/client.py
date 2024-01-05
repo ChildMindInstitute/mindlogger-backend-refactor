@@ -1,13 +1,16 @@
 import json
 import urllib.parse
 from io import BytesIO
-from typing import Mapping
+from typing import Any, Mapping, Type, TypeVar
 
 import taskiq_fastapi
 from httpx import AsyncClient, Response
+from pydantic import BaseModel
 
 from broker import broker
 from infrastructure.app import create_app
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class TestClient:
@@ -28,15 +31,19 @@ class TestClient:
         return headers_
 
     @staticmethod
-    def _get_body(data: dict | None = None):
+    def _get_body(data: dict[str, Any] | Type[T] | None = None):
         if data:
-            return json.dumps(data, default=str)
+            if isinstance(data, BaseModel):
+                request_data = data.dict()
+            else:
+                request_data = data
+            return json.dumps(request_data, default=str)
         return None
 
     async def post(
         self,
         url: str,
-        data: dict | None = None,
+        data: dict[str, Any] | Type[T] | None = None,
         query: dict | None = None,
         headers: dict | None = None,
         files: Mapping[str, BytesIO] | None = None,
