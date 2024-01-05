@@ -1,7 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.integrations.loris.api import start_transmit_process
+from apps.integrations.loris.api import send_schema, start_transmit_process
 from apps.integrations.loris.api.consent import (
     consent_create,
     consent_get_by_id,
@@ -29,6 +29,18 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(start_transmit_process)
+
+
+router.post(
+    "/schema",
+    description="This endpoint is used to send schema from\
+          ML to LORIS",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(send_schema)
 
 
 router.post(
