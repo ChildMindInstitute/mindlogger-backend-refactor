@@ -19,6 +19,7 @@ class SubjectSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     email = Column(StringEncryptedType(Unicode, get_key), default=None)
+    language = Column(String(length=5))
 
 
 class SubjectRespondentSchema(Base):
