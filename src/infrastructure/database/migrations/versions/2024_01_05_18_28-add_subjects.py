@@ -44,7 +44,7 @@ def upgrade() -> None:
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
         sa.Column("applet_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("creator_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column(
             "email",
             sqlalchemy_utils.types.encrypted.encrypted_type.StringEncryptedType(),
