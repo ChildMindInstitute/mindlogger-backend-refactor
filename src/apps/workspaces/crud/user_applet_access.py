@@ -697,7 +697,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             )
 
         coro_total = self._execute(
-            select(count()).select_from(query.with_only_columns(UserSchema.id))
+            select(count()).select_from(
+                query.with_only_columns(UserSchema.id).subquery()
+            )
         )
 
         if query_params.ordering:
@@ -813,7 +815,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             )
 
         coro_total = self._execute(
-            select(count()).select_from(query.with_only_columns(UserSchema.id))
+            select(count()).select_from(
+                query.with_only_columns(UserSchema.id).subquery()
+            )
         )
 
         if query_params.ordering:
