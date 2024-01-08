@@ -1,4 +1,4 @@
-FROM --platform=linux/x86_64 python:3.10.8-slim as base
+FROM python:3.10-slim-bookworm as base
 
 ARG PIPENV_EXTRA_ARGS
 
@@ -8,8 +8,8 @@ ENV PYTHONPATH="src/"
 WORKDIR /app/
 
 RUN apt-get -y update && apt-get -y upgrade \
-    # dependencies for building Python packages
-    && apt-get install -y build-essential curl
+    && apt-get install --no-install-recommends -y build-essential=12.9 curl=7.88* \
+    && rm -rf /var/lib/apt/lists/
 
 # Add local non-root user to avoid issue with files
 # created inside a container being owned by root.
@@ -20,7 +20,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash
 
 # Install Python dependencies
-RUN pip install --upgrade pip setuptools pipenv
+RUN pip install --no-cache-dir pipenv==2023.11.15
 
 COPY Pipfile Pipfile.lock ./
 RUN pipenv sync --system ${PIPENV_EXTRA_ARGS}
@@ -45,6 +45,9 @@ USER code
 FROM base as worker
 
 USER root
-RUN apt-get install -y --no-install-recommends ffmpeg && apt-get install -y imagemagick
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    ffmpeg=7:5.1* \
+    imagemagick=8:6.9* \
+    && rm -rf /var/lib/apt/lists/
 
 USER code
