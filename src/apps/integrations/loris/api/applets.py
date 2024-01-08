@@ -10,6 +10,9 @@ from starlette.responses import Response as HTTPResponse
 
 from apps.activities.crud.activity import ActivitiesCRUD
 from apps.activities.crud.activity_item import ActivityItemsCRUD
+from apps.alerts.crud.alert import AlertCRUD
+from apps.alerts.db.schemas import AlertSchema
+from apps.alerts.domain import AlertMessage
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.errors import ReportServerError
 from apps.answers.service import ReportServerService
@@ -21,8 +24,10 @@ from apps.integrations.loris.domain import (
 )
 from apps.integrations.loris.errors import LorisServerError
 from apps.users.domain import User
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from infrastructure.database.deps import get_session
 from infrastructure.logger import logger
+from infrastructure.utility import RedisCache
 
 __all__ = ["start_transmit_process", "send_schema"]
 
@@ -35,6 +40,9 @@ LORIS_ML_URL = "https://loris.cmiml.net/mindlogger/v1/schema/"
 LORIS_CREATE_CANDIDATE = "https://loris.cmiml.net/api/v0.0.3/candidates"
 LORIS_CREATE_VISIT = "https://loris.cmiml.net/api/v0.0.3/candidates/{}/{}"
 LORIS_START_VISIT = "https://loris.cmiml.net/api/v0.0.4-dev/candidates/{}/{}"
+LORIS_ADD_INSTRUMENTS = (
+    "https://loris.cmiml.net/api/v0.0.4-dev/candidates/{}/{}/instruments"
+)
 LORIS_INSTRUMENT_DATA = (
     "https://loris.cmiml.net/api/v0.0.3/candidates/{}/{}/instruments/{}"
 )
@@ -48,7 +56,56 @@ LORIS_LOGIN_DATA = {
 }
 
 
-async def integration(applet_id: uuid.UUID, session):
+async def integration(applet_id: uuid.UUID, session, user):
+    # cache = RedisCache()
+    # persons = await UserAppletAccessCRUD(
+    #     session
+    # ).get_responsible_persons(applet_id, user.id)
+    # alert_schemas = []
+    # print(f"persons are: {persons}")
+    # for person in persons:
+    #         alert_schemas.append(
+    #             AlertSchema(
+    #                 user_id=person.id,
+    #                 respondent_id=user.id,
+    #                 is_watched=False,
+    #                 applet_id=applet_id,
+    #                 version="1.2.3",
+    #                 activity_id=activity_id,
+    #                 activity_item_id=uuid.uuid4(),
+    #                 alert_message="haha hihi test",
+    #                 answer_id=uuid.uuid4(),
+    #             )
+    #         )
+    # print("1" * 10)
+    # alerts = await AlertCRUD(session).create_many(alert_schemas)
+    # print("2" * 10)
+
+    # for alert in alerts:
+    #     print("3.1" * 10)
+    #     channel_id = f"channel_{alert.user_id}"
+    #     try:
+    #         await cache.publish(
+    #             channel_id,
+    #             AlertMessage(
+    #                 id=alert.id,
+    #                 respondent_id=user.id,
+    #                 applet_id=applet_id,
+    #                 version="1.2.3",
+    #                 message=alert.alert_message,
+    #                 created_at=alert.created_at,
+    #                 activity_id=alert.activity_id,
+    #                 activity_item_id=alert.activity_item_id,
+    #                 answer_id=uuid.uuid4(),
+    #             ).dict(),
+    #         )
+    #         print("3.2" * 10)
+    #     except Exception as e:
+    #         logger.info("Error during alert creation")
+    #         break
+    # print("4" * 10)
+    # 5/0
+    ########################################
     respondents = await AnswersCRUD(
         session
     ).get_respondents_by_applet_id_and_readiness_to_share_data(
@@ -170,24 +227,24 @@ async def integration(applet_id: uuid.UUID, session):
             "Content-Type": "application/json",
             "accept": "*/*",
         }
-        # logger.info(
-        #     f"Sending UPLOAD SCHEMA request to the loris server \
-        #         {LORIS_ML_URL}."
-        # )
-        # start = time.time()
-        # async with session.post(
-        #     LORIS_ML_URL,
-        #     data=UnencryptedApplet(**loris_data).json(),
-        #     headers=headers,
-        # ) as resp:
-        #     duration = time.time() - start
-        #     if resp.status == 200:
-        #         logger.info(f"Successful request in {duration:.1f} seconds.")
-        #         response_data = await resp.json()
-        #     else:
-        #         logger.error(f"Failed request in {duration:.1f} seconds.")
-        #         error_message = await resp.text()
-        #         raise LorisServerError(message=error_message)
+        logger.info(
+            f"Sending UPLOAD SCHEMA request to the loris server \
+                {LORIS_ML_URL}."
+        )
+        start = time.time()
+        async with session.post(
+            LORIS_ML_URL,
+            data=UnencryptedApplet(**loris_data).json(),
+            headers=headers,
+        ) as resp:
+            duration = time.time() - start
+            if resp.status == 200:
+                logger.info(f"Successful request in {duration:.1f} seconds.")
+                response_data = await resp.json()
+            else:
+                logger.error(f"Failed request in {duration:.1f} seconds.")
+                error_message = await resp.text()
+                raise LorisServerError(message=error_message)
 
         # logger.info("On 30 sec pause")
         # time.sleep(30)
@@ -284,6 +341,33 @@ async def integration(applet_id: uuid.UUID, session):
                     raise LorisServerError(message=error_message)
 
             logger.info(
+                f"Sending ADD INSTRUMENTS request to the loris server \
+                    {LORIS_ADD_INSTRUMENTS.format(candidate_data['CandID'], VISIT)}."
+            )
+            start = time.time()
+            _data_add_instruments = {
+                "Meta": {
+                    "Candidate": candidate_data["CandID"],
+                    "Visit": VISIT,
+                },
+                "Instruments": [str(applet_id)],
+            }
+            async with session.post(
+                LORIS_ADD_INSTRUMENTS.format(candidate_data["CandID"], VISIT),
+                data=json.dumps(_data_add_instruments),
+                headers=headers,
+            ) as resp:
+                duration = time.time() - start
+                if resp.status == 200:
+                    logger.info(
+                        f"Successful request in {duration:.1f} seconds."
+                    )
+                else:
+                    logger.info(f"Failed request in {duration:.1f} seconds.")
+                    error_message = await resp.text()
+                    raise LorisServerError(message=error_message)
+
+            logger.info(
                 f"Sending SEND INSTUMENT DATA request to the loris server \
                     {LORIS_INSTRUMENT_DATA.format(candidate_data['CandID'], VISIT, str(applet_id))}."
             )
@@ -333,7 +417,7 @@ async def start_transmit_process(
     session=Depends(get_session),
     # ) -> Response:
 ):
-    background_tasks.add_task(integration, applet_id, session)
+    background_tasks.add_task(integration, applet_id, session, user)
     return HTTPResponse(status_code=status.HTTP_202_ACCEPTED)
 
 
