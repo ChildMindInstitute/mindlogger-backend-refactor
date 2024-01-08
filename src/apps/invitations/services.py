@@ -150,6 +150,7 @@ class InvitationsService:
             body=service.get_template(
                 path=template_name,
                 first_name=schema.first_name,
+                last_name=schema.last_name,
                 applet_name=applet.display_name,
                 role=invitation_internal.role,
                 link=self._get_invitation_url_by_role(
@@ -239,6 +240,7 @@ class InvitationsService:
             body=service.get_template(
                 path=template_name,
                 first_name=schema.first_name,
+                last_name=schema.last_name,
                 applet_name=applet.display_name,
                 role=invitation_internal.role,
                 link=self._get_invitation_url_by_role(
@@ -320,6 +322,7 @@ class InvitationsService:
             body=service.get_template(
                 path=template_name,
                 first_name=schema.first_name,
+                last_name=schema.last_name,
                 applet_name=applet.display_name,
                 role=invitation_internal.role,
                 link=self._get_invitation_url_by_role(
