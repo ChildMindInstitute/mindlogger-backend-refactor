@@ -83,7 +83,7 @@ services:
       target: base
       args:
         - PIPENV_EXTRA_ARGS=--dev
-    image: mindlogger_scheduler
+    image: mindlogger_webapp
     container_name: mindlogger_scheduler
     entrypoint: /fastapi-entrypoint
     command: [ 'taskiq', 'scheduler', 'scheduler:scheduler', '-fsd' ]
