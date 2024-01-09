@@ -51,6 +51,18 @@ def upgrade() -> None:
             sqlalchemy_utils.types.encrypted.encrypted_type.StringEncryptedType(),
             nullable=True,
         ),
+        sa.Column("nickname", sa.String(), nullable=True),
+        sa.Column(
+            "first_name",
+            sqlalchemy_utils.types.encrypted.encrypted_type.StringEncryptedType(),
+            nullable=False,
+        ),
+        sa.Column(
+            "last_name",
+            sqlalchemy_utils.types.encrypted.encrypted_type.StringEncryptedType(),
+            nullable=False,
+        ),
+        sa.Column("secret_user_id", sa.String(), nullable=False),
         sa.ForeignKeyConstraint(
             ["applet_id"],
             ["applets.id"],

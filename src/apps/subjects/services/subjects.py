@@ -21,6 +21,10 @@ class SubjectsService:
             user_id=schema.user_id,
             creator_id=self.user_id,
             language=schema.language,
+            nickname=schema.email,
+            first_name=schema.first_name,
+            last_name=schema.last_name,
+            secret_user_id=schema.secret_user_id,
         )
         subject_entity = await subj_crud.save(subject)
         return Subject.from_orm(subject_entity)
@@ -53,6 +57,15 @@ class SubjectsService:
         if subject:
             subject.user_id = user.id
             subject.email = user.email_encrypted
+            subject.last_name = user.first_name
+            subject.first_name = user.first_name
             await crud.update_by_id(subject)
             return Subject.from_orm(subject)
         return None
+
+    async def is_secret_id_exist(
+        self, secret_id: str, applet_id: uuid.UUID
+    ) -> bool:
+        return await SubjectsCrud(self.session).is_secret_id_exist(
+            secret_id, applet_id
+        )

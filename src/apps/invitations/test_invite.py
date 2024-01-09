@@ -1111,7 +1111,13 @@ class TestInvite(BaseTest):
         applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
         creator_id = "7484f34a-3acc-4ee6-8a94-fd7299502fa3"
         language = "en"
-        request_data = dict(language=language)
+        request_data = dict(
+            language=language,
+            firstName="language",
+            lastName="firstName",
+            secretUserId="lastName",
+            nickname="secretUserId",
+        )
         url = self.shell_acc_create_url.format(applet_id=applet_id)
         response = await self.client.post(url, request_data)
         assert response.status_code == http.HTTPStatus.OK

@@ -363,9 +363,19 @@ InvitationDetailGeneric = (
 
 class ShellAccountCreateRequest(PublicModel):
     language: str
+    first_name: str
+    last_name: str
+    secret_user_id: str
+    nickname: str | None
+    email: str | None
 
 
 class ShellAccountCreateResponse(PublicModel):
     applet_id: uuid.UUID
     language: str
     creator_id: uuid.UUID
+    first_name: str
+    last_name: str
+    secret_user_id: str
+    nickname: str | None
+    email: str | None

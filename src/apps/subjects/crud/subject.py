@@ -1,5 +1,8 @@
 import uuid
 
+from sqlalchemy import select
+from sqlalchemy.orm import Query
+
 from apps.subjects.db.schemas import SubjectSchema
 from infrastructure.database.crud import BaseCRUD
 
@@ -20,3 +23,16 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
 
     async def delete(self, pk: uuid.UUID):
         return await self._delete("id", pk)
+
+    async def is_secret_id_exist(
+        self, secret_id: str, applet_id: uuid.UUID
+    ) -> bool:
+        query: Query = select(SubjectSchema.id)
+        query = query.where(
+            SubjectSchema.secret_user_id == secret_id,
+            SubjectSchema.applet_id == applet_id,
+        )
+        query = query.limit(1)
+        res = await self._execute(query)
+        res = res.scalars().all()
+        return bool(res)

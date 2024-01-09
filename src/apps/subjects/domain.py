@@ -12,6 +12,10 @@ class Subject(InternalModel):
     creator_id: uuid.UUID
     user_id: uuid.UUID | None
     language: str | None
+    first_name: str
+    last_name: str
+    secret_user_id: str
+    nickname: str | None
 
 
 class SubjectRespondent(InternalModel):
@@ -30,9 +34,14 @@ class SubjectCreate(PublicModel):
     relation: str
 
 
-class SubjectCreateRequest(InternalModel):
+class SubjectCreateRequest(PublicModel):
     applet_id: uuid.UUID
     language: str
+    first_name: str
+    last_name: str
+    secret_user_id: str
+    nickname: str | None
+    email: str | None
 
 
 class SubjectFull(SubjectCreate):

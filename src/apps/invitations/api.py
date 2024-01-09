@@ -21,6 +21,7 @@ from apps.invitations.domain import (
 )
 from apps.invitations.errors import (
     ManagerInvitationExist,
+    NonUniqueValue,
     RespondentInvitationExist,
 )
 from apps.invitations.filters import InvitationQueryParams
@@ -122,6 +123,11 @@ async def invitation_respondent_send(
             applet_id=applet_id,
             creator_id=user.id,
             language=invitation_schema.language,
+            email=invitation_schema.email,
+            first_name=invitation_schema.first_name,
+            last_name=invitation_schema.last_name,
+            secret_user_id=invitation_schema.secret_user_id,
+            nickname=invitation_schema.nickname,
         )
         subject = await SubjectsService(session, user.id).create(subject_sch)
         invitation = await invitation_srv.send_respondent_invitation(
@@ -264,10 +270,21 @@ async def create_shell_account(
         await CheckAccessService(session, user.id).check_applet_invite_access(
             applet_id
         )
+        service = SubjectsService(session, user.id)
+        exist = await service.is_secret_id_exist(
+            subject_schema.secret_user_id, applet_id
+        )
+        if exist:
+            raise NonUniqueValue()
         subject_sch = Subject(
             applet_id=applet_id,
             creator_id=user.id,
             language=subject_schema.language,
+            first_name=subject_schema.first_name,
+            last_name=subject_schema.last_name,
+            secret_user_id=subject_schema.secret_user_id,
+            nickname=subject_schema.nickname,
+            email=subject_schema.email,
         )
         subject = await SubjectsService(session, user.id).create(subject_sch)
         return Response(result=ShellAccountCreateResponse.from_orm(subject))

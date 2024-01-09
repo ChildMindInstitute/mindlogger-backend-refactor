@@ -22,7 +22,11 @@ class TestSubjects(BaseTest):
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
         create_data = SubjectCreateRequest(
-            applet_id=applet_id, language=lang
+            applet_id=applet_id,
+            language=lang,
+            first_name="fn",
+            last_name="ln",
+            secret_user_id="1234",
         ).dict()
         response = await self.client.post(self.subject_list, data=create_data)
         assert response.status_code == 201

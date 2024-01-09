@@ -19,7 +19,11 @@ class SubjectSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     email = Column(StringEncryptedType(Unicode, get_key), default=None)
+    nickname = Column(String, default=None, nullable=True)
     language = Column(String(length=5))
+    first_name = Column(StringEncryptedType(Unicode, get_key), nullable=False)
+    last_name = Column(StringEncryptedType(Unicode, get_key), nullable=False)
+    secret_user_id = Column(String, nullable=False)
 
 
 class SubjectRespondentSchema(Base):

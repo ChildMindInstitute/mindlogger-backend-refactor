@@ -20,6 +20,11 @@ async def create_subject(
             applet_id=schema.applet_id,
             creator_id=user.id,
             language=schema.language,
+            first_name=schema.first_name,
+            last_name=schema.last_name,
+            nickname=schema.nickname,
+            secret_user_id=schema.secret_user_id,
+            email=schema.email,
         )
         subject = await SubjectsService(session, user.id).create(subject_sch)
         return Response(result=Subject.from_orm(subject))
