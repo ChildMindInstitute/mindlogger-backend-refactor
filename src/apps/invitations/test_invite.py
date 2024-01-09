@@ -93,7 +93,7 @@ def invitation_respondent_data(
 
 
 @pytest.fixture
-def invitation_revier_data(
+def invitation_reviewer_data(
     invitation_base_data, respondent_ids
 ) -> InvitationReviewerRequest:
     return InvitationReviewerRequest(
@@ -246,7 +246,9 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [invitation_editor_data.email]
 
     @rollback
-    async def test_admin_invite_reviewer_success(self, invitation_revier_data):
+    async def test_admin_invite_reviewer_success(
+        self, invitation_reviewer_data
+    ):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -254,7 +256,7 @@ class TestInvite(BaseTest):
             self.invite_reviewer_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            invitation_revier_data,
+            invitation_reviewer_data,
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
         assert (
@@ -262,7 +264,7 @@ class TestInvite(BaseTest):
             == "7484f34a-3acc-4ee6-8a94-fd7299502fa5"
         )
         assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].recipients == [invitation_revier_data.email]
+        assert TestMail.mails[0].recipients == [invitation_reviewer_data.email]
         assert TestMail.mails[0].subject == "Applet 1 invitation"
 
     @rollback_with_session
@@ -355,7 +357,9 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].recipients == [request_data["email"]]
+        assert TestMail.mails[0].recipients == [
+            invitation_coordinator_data.email
+        ]
         count = await SubjectsCrud(kwargs["session"]).count()
         assert count == 0
 
@@ -373,25 +377,25 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].recipients == [request_data["email"]]
+        assert TestMail.mails[0].recipients == [invitation_editor_data.email]
         count = await SubjectsCrud(kwargs["session"]).count()
         assert count == 0
 
     @rollback_with_session
     async def test_manager_invite_reviewer_success(
-        self, invitation_revier_data, **kwargs
+        self, invitation_reviewer_data, **kwargs
     ):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await self.client.post(
             self.invite_reviewer_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            invitation_revier_data,
+            invitation_reviewer_data,
         )
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].recipients == [request_data["email"]]
+        assert TestMail.mails[0].recipients == [invitation_reviewer_data.email]
         count = await SubjectsCrud(kwargs["session"]).count()
         assert count == 0
 
@@ -433,19 +437,19 @@ class TestInvite(BaseTest):
 
     @rollback
     async def test_coordinator_invite_reviewer_success(
-        self, invitation_revier_data
+        self, invitation_reviewer_data
     ):
         await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
         response = await self.client.post(
             self.invite_reviewer_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            invitation_revier_data,
+            invitation_reviewer_data,
         )
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].recipients == [invitation_revier_data.email]
+        assert TestMail.mails[0].recipients == [invitation_reviewer_data.email]
 
     @rollback
     async def test_coordinator_invite_manager_fail(
@@ -650,17 +654,17 @@ class TestInvite(BaseTest):
 
     @rollback
     async def test_invite_not_registered_user_reviewer(
-        self, invitation_revier_data
+        self, invitation_reviewer_data
     ):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
-        invitation_revier_data.email = f"new{invitation_revier_data.email}"
+        invitation_reviewer_data.email = f"new{invitation_reviewer_data.email}"
         response = await self.client.post(
             self.invite_reviewer_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            invitation_revier_data,
+            invitation_reviewer_data,
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
         assert not response.json()["result"]["userId"]
@@ -861,7 +865,7 @@ class TestInvite(BaseTest):
         invitation_editor_data,
         invitation_manager_data,
         invitation_respondent_data,
-        invitation_revier_data,
+        invitation_reviewer_data,
     ):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -871,7 +875,7 @@ class TestInvite(BaseTest):
             (invitation_editor_data, self.invite_manager_url),
             (invitation_manager_data, self.invite_manager_url),
             (invitation_respondent_data, self.invite_respondent_url),
-            (invitation_revier_data, self.invite_reviewer_url),
+            (invitation_reviewer_data, self.invite_reviewer_url),
         ]
         applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
         keys = []
@@ -980,7 +984,7 @@ class TestInvite(BaseTest):
 
     @rollback
     async def test_send_invitation_to_reviewer_invitation_already_approved(
-        self, invitation_revier_data
+        self, invitation_reviewer_data
     ):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -990,13 +994,13 @@ class TestInvite(BaseTest):
             self.invite_reviewer_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            invitation_revier_data,
+            invitation_reviewer_data,
         )
         assert response.status_code == http.HTTPStatus.OK
         key = response.json()["result"]["key"]
         # accept invite
         await self.client.login(
-            self.login_url, invitation_revier_data.email, "Test1234"
+            self.login_url, invitation_reviewer_data.email, "Test1234"
         )
         response = await self.client.post(self.accept_url.format(key=key))
         assert response.status_code == http.HTTPStatus.OK
@@ -1009,7 +1013,7 @@ class TestInvite(BaseTest):
             self.invite_reviewer_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            invitation_revier_data,
+            invitation_reviewer_data,
         )
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
@@ -1043,19 +1047,19 @@ class TestInvite(BaseTest):
 
     @rollback
     async def test_invite_reviewer_with_respondent_does_not_exist(
-        self, invitation_revier_data
+        self, invitation_reviewer_data
     ):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
-        invitation_revier_data.respondents = [
+        invitation_reviewer_data.respondents = [
             "00000000-0000-0000-0000-000000000000"
         ]
         response = await self.client.post(
             self.invite_reviewer_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
-            invitation_revier_data,
+            invitation_reviewer_data,
         )
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         result = response.json()["result"]
