@@ -7,7 +7,7 @@ from pydantic.error_wrappers import ErrorWrapper
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import ManagersRole, Role
-from apps.applets.service import UserAppletAccessService
+from apps.applets.service import AppletService, UserAppletAccessService
 from apps.applets.service.applet import PublicAppletService
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
@@ -20,6 +20,7 @@ from apps.invitations.domain import (
     InvitationDetailGeneric,
     InvitationManagers,
     InvitationManagersRequest,
+    InvitationRequest,
     InvitationRespondent,
     InvitationRespondentRequest,
     InvitationReviewer,
@@ -28,13 +29,17 @@ from apps.invitations.domain import (
     RespondentInfo,
     RespondentMeta,
     ReviewerMeta,
+    _InvitationRequest,
 )
 from apps.invitations.errors import (
+    AppletDoesNotExist,
     DoesNotHaveAccess,
-    InvitationAlreadyProcessed,
+    InvitationAlreadyProcesses,
     InvitationDoesNotExist,
+    ManagerInvitationExist,
     NonUniqueValue,
     RespondentDoesNotExist,
+    RespondentInvitationExist,
 )
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
@@ -63,14 +68,30 @@ class InvitationsService:
             self._user.id, query_params
         )
 
+    async def fetch_all_for_invited(
+        self, query_params: QueryParams
+    ) -> list[InvitationDetail]:
+        return await self.invitations_crud.get_pending_by_invited_email(
+            self._user.email_encrypted, query_params
+        )
+
+    async def fetch_all_for_invited_count(
+        self, query_params: QueryParams
+    ) -> int:
+        return await self.invitations_crud.get_pending_by_invited_email_count(
+            self._user.email_encrypted, query_params
+        )
+
     async def get(self, key: uuid.UUID) -> InvitationDetailGeneric | None:
         invitation = await self.invitations_crud.get_by_email_and_key(
             self._user.email_encrypted, key  # type: ignore[arg-type]
         )
         if not invitation:
-            raise InvitationDoesNotExist()
+            raise InvitationDoesNotExist(
+                message=f"No such invitation with key={key}."
+            )
         elif invitation.status != InvitationStatus.PENDING:
-            raise InvitationAlreadyProcessed()
+            raise InvitationAlreadyProcesses()
         return invitation
 
     def _get_invitation_subject(self, applet: AppletSchema):
@@ -80,7 +101,7 @@ class InvitationsService:
         self, applet_id: uuid.UUID, schema: InvitationRespondentRequest
     ) -> InvitationDetailForRespondent:
         await self._is_validated_role_for_invitation(
-            applet_id, Role.RESPONDENT
+            applet_id, Role.RESPONDENT, schema
         )
         try:
             await self._is_secret_user_id_unique(
@@ -177,7 +198,9 @@ class InvitationsService:
     async def send_reviewer_invitation(
         self, applet_id: uuid.UUID, schema: InvitationReviewerRequest
     ) -> InvitationDetailForReviewer:
-        await self._is_validated_role_for_invitation(applet_id, Role.REVIEWER)
+        await self._is_validated_role_for_invitation(
+            applet_id, Role.REVIEWER, schema
+        )
         await self._do_respondents_exist(applet_id, schema.respondents)
 
         respondents = [
@@ -268,7 +291,9 @@ class InvitationsService:
     async def send_managers_invitation(
         self, applet_id: uuid.UUID, schema: InvitationManagersRequest
     ) -> InvitationDetailForManagers:
-        await self._is_validated_role_for_invitation(applet_id, schema.role)
+        await self._is_validated_role_for_invitation(
+            applet_id, schema.role, schema
+        )
         # Get invited user if he exists. User will be linked with invitaion
         # by user_id in this case
         invited_user = await UsersCRUD(self.session).get_user_or_none_by_email(
@@ -354,16 +379,56 @@ class InvitationsService:
         #     domain = settings.service.urls.frontend.admin_base
         return f"https://{domain}/{url_path}"
 
+    async def _validate_invitation(
+        self, invitation_request: InvitationRequest
+    ):
+        is_exist = await AppletService(
+            self.session, self._user.id
+        ).exist_by_id(invitation_request.applet_id)
+        if not is_exist:
+            raise AppletDoesNotExist()
+
+        access_service = UserAppletAccessService(
+            self.session, self._user.id, invitation_request.applet_id
+        )
+        if invitation_request.role == Role.RESPONDENT:
+            role = await access_service.get_respondent_managers_role()
+        elif invitation_request.role in [
+            Role.MANAGER,
+            Role.COORDINATOR,
+            Role.EDITOR,
+            Role.REVIEWER,
+        ]:
+            role = await access_service.get_organizers_role()
+        else:
+            # Wrong role to invite
+            raise DoesNotHaveAccess(
+                message="You can not invite user with "
+                f"role {invitation_request.role.name}."
+            )
+
+        if not role:
+            # Does not have access to send invitation
+            raise DoesNotHaveAccess(
+                message="You do not have access to send invitation."
+            )
+        elif Role(role) < Role(invitation_request.role):
+            # TODO: remove this validation if it is not needed
+            # Can not invite users by roles where own role level is lower.
+            raise DoesNotHaveAccess(
+                message="You do not have access to send invitation."
+            )
+
     async def _is_validated_role_for_invitation(
         self,
         applet_id: uuid.UUID,
         request_role: Role | ManagersRole,
+        schema: _InvitationRequest,
     ):
         access_service = UserAppletAccessService(
             self.session, self._user.id, applet_id
         )
-        role = None
-        if request_role in [Role.RESPONDENT, Role.REVIEWER]:
+        if request_role == Role.RESPONDENT:
             role = await access_service.get_respondent_managers_role()
         elif request_role in [
             Role.MANAGER,
@@ -371,9 +436,28 @@ class InvitationsService:
             Role.EDITOR,
         ]:
             role = await access_service.get_organizers_role()
+        elif request_role == Role.REVIEWER:
+            role = await access_service.get_respondent_managers_role()
+            if (
+                role == Role.COORDINATOR
+                and self._user.email.lower() == schema.email.lower()
+            ):
+                role = None
+        else:
+            # Wrong role to invite
+            raise DoesNotHaveAccess(
+                message="You can not invite user with "
+                f"role {request_role.name}."
+            )
 
         if not role:
             # Does not have access to send invitation
+            raise DoesNotHaveAccess(
+                message="You do not have access to send invitation."
+            )
+        elif Role(role) < Role(request_role):
+            # TODO: remove this validation if it is not needed
+            # Can not invite users by roles where own role level is lower.
             raise DoesNotHaveAccess(
                 message="You do not have access to send invitation."
             )
@@ -411,7 +495,10 @@ class InvitationsService:
 
         for respondent in respondents:
             if respondent not in exist_respondents:
-                raise RespondentDoesNotExist()
+                raise RespondentDoesNotExist(
+                    message=f"Respondent with id {respondent} not exist "
+                    f"in applet with id {applet_id}."
+                )
 
     async def accept(self, key: uuid.UUID):
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
@@ -421,7 +508,7 @@ class InvitationsService:
             raise InvitationDoesNotExist()
 
         if invitation.status != InvitationStatus.PENDING:
-            raise InvitationAlreadyProcessed()
+            raise InvitationAlreadyProcesses()
 
         await UserAppletAccessService(
             self.session, self._user.id, invitation.applet_id
@@ -439,7 +526,7 @@ class InvitationsService:
             raise InvitationDoesNotExist()
 
         if invitation.status != InvitationStatus.PENDING:
-            raise InvitationAlreadyProcessed()
+            raise InvitationAlreadyProcesses()
 
         await InvitationCRUD(self.session).decline_by_id(
             invitation.id, self._user.id
@@ -447,6 +534,25 @@ class InvitationsService:
 
     async def clear_applets_invitations(self, applet_id: uuid.UUID):
         await InvitationCRUD(self.session).delete_by_applet_id(applet_id)
+
+    async def exist(self, email: str, role: str, applet_id: uuid.UUID) -> int:
+        return await InvitationCRUD(self.session).exist(email, role, applet_id)
+
+    async def check_for_duplicates(
+        self, applet_id: uuid.UUID, email: str, role: str
+    ):
+        crud = InvitationCRUD(self.session)
+        is_manager = role in Role.managers()
+        if is_manager:
+            is_exist = await crud.manager_invitation_exist(email, applet_id)
+            if is_exist:
+                raise ManagerInvitationExist()
+        else:
+            is_exist = await InvitationCRUD(self.session).duplicate_exist(
+                email, role, applet_id
+            )
+            if is_exist:
+                raise RespondentInvitationExist()
 
     async def delete_for_managers(self, applet_ids: list[uuid.UUID]):
         roles = [
@@ -487,7 +593,7 @@ class PrivateInvitationService:
             link, True
         )
         if not applet:
-            raise InvitationDoesNotExist()
+            return None
         return PrivateInvitationDetail(
             id=applet.id,
             applet_id=applet.id,
