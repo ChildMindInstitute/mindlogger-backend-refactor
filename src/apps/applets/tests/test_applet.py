@@ -794,6 +794,8 @@ class TestApplet(BaseTest):
         )
         update_data = dict(
             stream_enabled=True,
+            stream_ip_address="127.0.0.1",
+            stream_port=8881,
             display_name="Applet 1",
             encryption=dict(
                 public_key=uuid.uuid4().hex,

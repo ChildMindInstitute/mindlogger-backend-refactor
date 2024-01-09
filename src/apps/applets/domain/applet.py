@@ -80,6 +80,8 @@ class AppletSingleLanguageDetailMobilePublic(PublicModel):
     )
     encryption: Encryption | None
     stream_enabled: bool | None
+    stream_ip_address: str | None
+    stream_port: int | None
 
 
 class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):

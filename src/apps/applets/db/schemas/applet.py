@@ -38,6 +38,8 @@ class _BaseAppletSchema:
     )
 
     stream_enabled = Column(Boolean(), default=False)
+    stream_ip_address = Column(Text())
+    stream_port = Column(Integer())
 
 
 class AppletSchema(_BaseAppletSchema, Base):
