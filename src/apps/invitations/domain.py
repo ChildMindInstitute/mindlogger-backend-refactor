@@ -112,7 +112,7 @@ class RespondentMeta(InternalModel):
     """
 
     secret_user_id: str
-    # nickname: str
+    subject_id: str | None
 
 
 class RespondentInfo(InternalModel):
@@ -359,3 +359,13 @@ class PrivateInvitationResponse(PublicModel):
 InvitationDetailGeneric = (
     InvitationDetailReviewer | InvitationDetailRespondent | InvitationDetail
 )
+
+
+class ShellAccountCreateRequest(PublicModel):
+    language: str
+
+
+class ShellAccountCreateResponse(PublicModel):
+    applet_id: uuid.UUID
+    language: str
+    creator_id: uuid.UUID

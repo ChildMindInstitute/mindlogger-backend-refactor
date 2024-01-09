@@ -98,7 +98,10 @@ class InvitationsService:
         return f"{applet.display_name} invitation"
 
     async def send_respondent_invitation(
-        self, applet_id: uuid.UUID, schema: InvitationRespondentRequest
+        self,
+        applet_id: uuid.UUID,
+        schema: InvitationRespondentRequest,
+        subject_id: uuid.UUID | None,
     ) -> InvitationDetailForRespondent:
         await self._is_validated_role_for_invitation(
             applet_id, Role.RESPONDENT, schema
@@ -121,7 +124,10 @@ class InvitationsService:
         )
         invited_user_id = invited_user.id if invited_user is not None else None
         respondent_info = RespondentInfo(
-            meta=RespondentMeta(secret_user_id=schema.secret_user_id),
+            meta=RespondentMeta(
+                secret_user_id=schema.secret_user_id,
+                subject_id=str(subject_id),
+            ),
             nickname=schema.nickname,
         )
         payload = {

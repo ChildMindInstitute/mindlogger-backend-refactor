@@ -15,6 +15,9 @@ from apps.invitations.domain import (
     InvitationReviewerRequest,
     InvitationReviewerResponse,
     PrivateInvitationResponse,
+    RespondentMeta,
+    ShellAccountCreateRequest,
+    ShellAccountCreateResponse,
 )
 from apps.invitations.errors import (
     ManagerInvitationExist,
@@ -27,6 +30,8 @@ from apps.invitations.services import (
 )
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
 from apps.users import UserNotFound
 from apps.users.domain import User
 from apps.users.services.user import UserService
@@ -147,8 +152,14 @@ async def invitation_respondent_send(
         except UserNotFound:
             pass
 
+        subject_sch = Subject(
+            applet_id=applet_id,
+            creator_id=user.id,
+            language=invitation_schema.language,
+        )
+        subject = await SubjectsService(session, user.id).create(subject_sch)
         invitation = await invitation_srv.send_respondent_invitation(
-            applet_id, invitation_schema
+            applet_id, invitation_schema, subject.id
         )
 
     return Response[InvitationRespondentResponse](
@@ -242,6 +253,14 @@ async def invitation_accept(
 ):
     """General endpoint to approve the applet invitation."""
     async with atomic(session):
+        service = InvitationsService(session, user)
+        invitation = await service.get(key)
+        if invitation and invitation.role == Role.RESPONDENT:
+            if isinstance(invitation.meta, RespondentMeta):
+                subject_id = invitation.meta.subject_id
+                await SubjectsService(session, user.id).merge(
+                    uuid.UUID(subject_id)
+                )
         await InvitationsService(session, user).accept(key)
 
 
@@ -262,3 +281,27 @@ async def invitation_decline(
     """General endpoint to decline the applet invitation."""
     async with atomic(session):
         await InvitationsService(session, user).decline(key)
+
+
+async def create_shell_account(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    subject_schema: ShellAccountCreateRequest = Body(...),
+    session=Depends(get_session),
+) -> Response[Subject]:
+    """
+    General endpoint for sending invitations to the concrete applet
+    for the concrete user giving him a roles "respondent".
+    """
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_invite_access(
+            applet_id
+        )
+        subject_sch = Subject(
+            applet_id=applet_id,
+            creator_id=user.id,
+            language=subject_schema.language,
+        )
+        subject = await SubjectsService(session, user.id).create(subject_sch)
+        return Response(result=ShellAccountCreateResponse.from_orm(subject))

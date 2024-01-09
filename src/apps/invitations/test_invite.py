@@ -13,8 +13,13 @@ from apps.invitations.errors import (
 )
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
+from apps.subjects.crud import SubjectsCrud
 from apps.users.domain import UserCreateRequest
-from infrastructure.database import rollback, session_manager
+from infrastructure.database import (
+    rollback,
+    rollback_with_session,
+    session_manager,
+)
 
 
 @pytest.fixture
@@ -47,6 +52,7 @@ class TestInvite(BaseTest):
     invite_manager_url = f"{invitation_list}/{{applet_id}}/managers"
     invite_reviewer_url = f"{invitation_list}/{{applet_id}}/reviewer"
     invite_respondent_url = f"{invitation_list}/{{applet_id}}/respondent"
+    shell_acc_create_url = f"{invitation_list}/{{applet_id}}/shell-account"
 
     @rollback
     async def test_invitation_list(self):
@@ -214,8 +220,9 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         assert TestMail.mails[0].subject == "Applet 1 invitation"
 
-    @rollback
-    async def test_admin_invite_respondent_success(self):
+    @rollback_with_session
+    async def test_admin_invite_respondent_success(self, **kwargs):
+        session = kwargs.get("session")
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -242,6 +249,9 @@ class TestInvite(BaseTest):
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
         assert TestMail.mails[0].subject == "Applet 1 invitation"
+
+        count = await SubjectsCrud(session).count()
+        assert count == 1
 
     @rollback
     async def test_admin_invite_respondent_duplicate_pending_secret_id(self):
@@ -274,8 +284,9 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == 422
 
-    @rollback
-    async def test_manager_invite_manager_success(self):
+    @rollback_with_session
+    async def test_manager_invite_manager_success(self, **kwargs):
+        session = kwargs.get("session")
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
@@ -296,8 +307,11 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
         assert TestMail.mails[0].subject == "Applet 1 invitation"
 
-    @rollback
-    async def test_manager_invite_coordinator_success(self):
+        count = await SubjectsCrud(session).count()
+        assert count == 0
+
+    @rollback_with_session
+    async def test_manager_invite_coordinator_success(self, **kwargs):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
@@ -316,9 +330,11 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
+        count = await SubjectsCrud(kwargs["session"]).count()
+        assert count == 0
 
-    @rollback
-    async def test_manager_invite_editor_success(self):
+    @rollback_with_session
+    async def test_manager_invite_editor_success(self, **kwargs):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
@@ -337,9 +353,11 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
+        count = await SubjectsCrud(kwargs["session"]).count()
+        assert count == 0
 
-    @rollback
-    async def test_manager_invite_reviewer_success(self):
+    @rollback_with_session
+    async def test_manager_invite_reviewer_success(self, **kwargs):
         await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
         request_data = dict(
             email="patric@gmail.com",
@@ -359,6 +377,8 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [request_data["email"]]
+        count = await SubjectsCrud(kwargs["session"]).count()
+        assert count == 0
 
     @rollback
     async def test_manager_invite_respondent_success(self):
@@ -899,3 +919,19 @@ class TestInvite(BaseTest):
             self.invitation_detail.format(key=new_key)
         )
         assert response.status_code == 200
+
+    @rollback
+    async def test_create_shell_account(self):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        creator_id = "7484f34a-3acc-4ee6-8a94-fd7299502fa3"
+        language = "en"
+        request_data = dict(language=language)
+        url = self.shell_acc_create_url.format(applet_id=applet_id)
+        response = await self.client.post(url, request_data)
+        assert response.status_code == 200
+        assert len(TestMail.mails) == 0
+        payload = response.json()
+        assert payload["result"]["appletId"] == applet_id
+        assert payload["result"]["creatorId"] == creator_id
+        assert payload["result"]["language"] == language

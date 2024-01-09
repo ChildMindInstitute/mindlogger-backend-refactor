@@ -2,6 +2,7 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.invitations.api import (
+    create_shell_account,
     invitation_accept,
     invitation_decline,
     invitation_list,
@@ -19,6 +20,7 @@ from apps.invitations.domain import (
     InvitationResponse,
     InvitationReviewerResponse,
     PrivateInvitationResponse,
+    ShellAccountCreateResponse,
 )
 from apps.shared.domain.response import (
     DEFAULT_OPENAPI_RESPONSE,
@@ -131,3 +133,18 @@ router.get(
 )(private_invitation_retrieve)
 
 router.post("/private/{key}/accept")(private_invitation_accept)
+
+
+# Invitation send for shell account
+router.post(
+    "/{applet_id}/shell-account",
+    description="""
+    Creation of shell account for current applet
+    """,
+    response_model_by_alias=True,
+    response_model=Response[ShellAccountCreateResponse],
+    responses={
+        status.HTTP_200_OK: {"model": Response[ShellAccountCreateResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(create_shell_account)

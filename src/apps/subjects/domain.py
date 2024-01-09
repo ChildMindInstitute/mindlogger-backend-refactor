@@ -10,7 +10,7 @@ class Subject(InternalModel):
     applet_id: uuid.UUID
     email: EmailStr | None
     creator_id: uuid.UUID
-    user_id: uuid.UUID
+    user_id: uuid.UUID | None
     language: str | None
 
 

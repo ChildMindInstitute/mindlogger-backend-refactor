@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.subjects.crud import SubjectsCrud, SubjectsRespondentsCrud
 from apps.subjects.db.schemas import SubjectRespondentSchema, SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate, SubjectRespondent
+from apps.users.services.user import UserService
 
 
 class SubjectsService:
@@ -19,6 +20,7 @@ class SubjectsService:
             email=schema.email,
             user_id=schema.user_id,
             creator_id=self.user_id,
+            language=schema.language,
         )
         subject_entity = await subj_crud.save(subject)
         return Subject.from_orm(subject_entity)
@@ -39,3 +41,18 @@ class SubjectsService:
         subject = await self._create_subject(schema)
         merged_data = subject.dict()
         return Subject(**merged_data)
+
+    async def merge(self, subject_id: uuid.UUID) -> Subject | None:
+        """
+        Merge shell account with full account for current user
+        """
+        user = await UserService(self.session).get(self.user_id)
+        assert user
+        crud = SubjectsCrud(self.session)
+        subject = await crud.get_by_id(subject_id)
+        if subject:
+            subject.user_id = user.id
+            subject.email = user.email_encrypted
+            await crud.update_by_id(subject)
+            return Subject.from_orm(subject)
+        return None
