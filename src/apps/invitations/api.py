@@ -106,7 +106,8 @@ async def invitation_retrieve(
     """Get specific invitation with approve key for user
     who was invited.
     """
-    invitation = await InvitationsService(session, user).get(key)
+    async with atomic(session):
+        invitation = await InvitationsService(session, user).get(key)
     return Response(result=InvitationResponse.from_orm(invitation))
 
 
@@ -114,7 +115,10 @@ async def private_invitation_retrieve(
     key: uuid.UUID,
     session=Depends(get_session),
 ) -> Response[PrivateInvitationResponse]:
-    invitation = await PrivateInvitationService(session).get_invitation(key)
+    async with atomic(session):
+        invitation = await PrivateInvitationService(session).get_invitation(
+            key
+        )
     return Response(result=PrivateInvitationResponse.from_orm(invitation))
 
 
