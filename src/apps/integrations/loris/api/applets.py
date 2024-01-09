@@ -537,6 +537,66 @@ async def ml_answer_to_loris(
                 loris_answers[key] = int(data[i]["value"])
             case "text":
                 loris_answers[key] = data[i]
+            case "timeRange":
+                data = data[i]["value"]
+
+                key_start = key + "__start"
+                key_end = key + "__end"
+
+                start_hour = data["from"]["hour"]
+                start_minute = data["from"]["minute"]
+
+                end_hour = data["to"]["hour"]
+                end_minute = data["to"]["minute"]
+
+                start = "{:02d}:{:02d}".format(start_hour, start_minute)
+                end = "{:02d}:{:02d}".format(end_hour, end_minute)
+
+                loris_answers[key_start] = start
+                loris_answers[key_end] = end
+            case "geolocation":
+                data = data[i]["value"]
+
+                key_latitude = key + "__latitude"
+                key_longitude = key + "__longitude"
+
+                latitude = str(data["latitude"])
+                longitude = str(data["longitude"])
+
+                loris_answers[key_latitude] = latitude
+                loris_answers[key_longitude] = longitude
+            case "date":
+                data = data[i]["value"]
+
+                date = "{:04d}-{:02d}-{:02d}".format(
+                    data["year"], data["month"], data["day"]
+                )
+
+                loris_answers[key] = date
+            case "sliderRows":
+                data = data[i]["value"]
+
+                for i, v in enumerate(data):
+                    _key = key + "__{}".format(i)
+                    loris_answers[_key] = v
+            case "singleSelectRows":
+                data = data[i]["value"]
+
+                for i, v in enumerate(data):
+                    _key = key + "__{}".format(i)
+                    loris_answers[_key] = v
+            case "multiSelectRows":
+                data = data[i]["value"]
+
+                for i, v in enumerate(data):
+                    _key = key + "__{}".format(i)
+                    loris_answers[_key] = v
+            case "time":
+                data = data[i]["value"]
+
+                time = "{:02d}:{:02d}".format(data["hours"], data["minutes"])
+
+                loris_answers[key] = time
             case _:
                 logger.info(f"Unknown item type: {items[i]['responseType']}")
                 # raise Exception
