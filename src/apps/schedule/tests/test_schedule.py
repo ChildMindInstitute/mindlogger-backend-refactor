@@ -51,46 +51,6 @@ class TestSchedule(BaseTest):
     public_events_url = "public/applets/{key}/events"
 
     @rollback
-    async def test_schedule_create_with_equal_start_end_time(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "08:00:00",
-            "access_before_schedule": False,
-            "one_time_completion": False,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "ONCE",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": None,
-            "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-            "flow_id": None,
-            "notification": {
-                "notifications": [
-                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
-                ],
-                "reminder": {
-                    "activity_incomplete": 1,
-                    "reminder_time": "08:30:00",
-                },
-            },
-        }
-
-        response = await self.client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
-            data=create_data,
-        )
-        assert response.status_code == 422
-
-    @rollback
     async def test_schedule_create_with_activity(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
@@ -408,66 +368,6 @@ class TestSchedule(BaseTest):
         )
 
         assert response.status_code == 204
-
-    @rollback
-    async def test_schedule_update_with_equal_start_end_time(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
-            "activity_id": None,
-            "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
-            "notification": {
-                "notifications": [
-                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
-                ],
-                "reminder": {
-                    "activity_incomplete": 1,
-                    "reminder_time": "08:30:00",
-                },
-            },
-        }
-
-        response = await self.client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
-            data=create_data,
-        )
-        event = response.json()["result"]
-
-        update_data = {
-            "start_time": "00:00:15",
-            "end_time": "00:00:15",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-        }
-
-        response = await self.client.put(
-            self.schedule_detail_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-                event_id=event["id"],
-            ),
-            data=update_data,
-        )
-        assert response.status_code == 422
 
     @rollback
     async def test_schedule_update(self):

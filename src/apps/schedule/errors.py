@@ -88,9 +88,5 @@ class StartEndTimeAccessBeforeScheduleCaseError(FieldError):
     )
 
 
-class StartEndTimeEqualError(FieldError):
-    message = _("The start_time and end_time fields can't be equal.")
-
-
 class UnavailableActivityOrFlowError(FieldError):
     message = _("Activity/flow is unavailable at this time.")
