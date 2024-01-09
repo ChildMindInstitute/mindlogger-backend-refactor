@@ -16,7 +16,9 @@ from apps.invitations.domain import (
     InvitationDetailGeneric,
     InvitationDetailRespondent,
     InvitationDetailReviewer,
+    InvitationManagers,
     InvitationRespondent,
+    InvitationReviewer,
 )
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
@@ -24,6 +26,7 @@ from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
 from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.domain.constants import ManagersRole
 from infrastructure.database import BaseCRUD
 
 __all__ = ["InvitationCRUD"]
@@ -284,17 +287,46 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                 **invitation_detail_base.dict(),
             )
 
-    async def get_pending_invitation(
-        self, email: str, applet_id: uuid.UUID
+    async def get_pending_by_email_applet_role_respondent(
+        self, email_: str, applet_id_: uuid.UUID
     ) -> InvitationRespondent:
         query: Query = select(InvitationSchema)
-        query = query.where(InvitationSchema.email == email)
-        query = query.where(InvitationSchema.applet_id == applet_id)
+        query = query.where(InvitationSchema.email == email_)
+        query = query.where(InvitationSchema.applet_id == applet_id_)
+        query = query.where(InvitationSchema.role == Role.RESPONDENT)
         query = query.where(
             InvitationSchema.status == InvitationStatus.PENDING
         )
         db_result: Result = await self._execute(query)
         return db_result.scalar_one_or_none()
+
+    async def get_by_email_applet_role_reviewer(
+        self, email_: str, applet_id_: uuid.UUID
+    ) -> list[InvitationReviewer]:
+        query: Query = select(InvitationSchema)
+        query = query.where(InvitationSchema.email == email_)
+        query = query.where(InvitationSchema.applet_id == applet_id_)
+        query = query.where(InvitationSchema.role == Role.REVIEWER)
+        db_result: Result = await self._execute(query)
+        results: list[InvitationSchema] = db_result.scalars().all()
+
+        return [
+            InvitationReviewer.from_orm(invitation) for invitation in results
+        ]
+
+    async def get_by_email_applet_role_managers(
+        self, email_: str, applet_id_: uuid.UUID, role_: ManagersRole
+    ) -> list[InvitationManagers]:
+        query: Query = select(InvitationSchema)
+        query = query.where(InvitationSchema.email == email_)
+        query = query.where(InvitationSchema.applet_id == applet_id_)
+        query = query.where(InvitationSchema.role == role_)
+        db_result: Result = await self._execute(query)
+        results: list[InvitationSchema] = db_result.scalars().all()
+
+        return [
+            InvitationManagers.from_orm(invitation) for invitation in results
+        ]
 
     async def approve_by_id(self, id_: uuid.UUID, user_id: uuid.UUID):
         query = update(InvitationSchema)
