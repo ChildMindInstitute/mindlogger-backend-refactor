@@ -17,7 +17,7 @@ from config.secret import SecretSettings
 from config.sentry import SentrySettings
 from config.service import JsonLdConverterSettings, ServiceSettings
 from config.superuser import SuperAdmin
-from config.task import AnswerEncryption, AudioFileConvert, ImageConvert
+from config.task import AnswerEncryption, AudioFileConvert
 
 
 # NOTE: Settings powered by pydantic
@@ -81,7 +81,6 @@ class Settings(BaseSettings):
 
     task_answer_encryption = AnswerEncryption()
     task_audio_file_convert = AudioFileConvert()
-    task_image_convert = ImageConvert()
 
     logs: Logs = Logs()
 
