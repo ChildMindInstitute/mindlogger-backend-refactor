@@ -10,24 +10,24 @@ from starlette.responses import Response as HTTPResponse
 
 from apps.activities.crud.activity import ActivitiesCRUD
 from apps.activities.crud.activity_item import ActivityItemsCRUD
-from apps.alerts.crud.alert import AlertCRUD
-from apps.alerts.db.schemas import AlertSchema
-from apps.alerts.domain import AlertMessage
+
+# from apps.alerts.crud.alert import AlertCRUD
+# from apps.alerts.db.schemas import AlertSchema
+# from apps.alerts.domain import AlertMessage
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.errors import ReportServerError
 from apps.answers.service import ReportServerService
 from apps.applets.crud.applets import AppletsCRUD
 from apps.authentication.deps import get_current_user
-from apps.integrations.loris.domain import (
-    LorisServerResponse,
-    UnencryptedApplet,
-)
+from apps.integrations.loris.domain import UnencryptedApplet
 from apps.integrations.loris.errors import LorisServerError
 from apps.users.domain import User
-from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+
+# from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from infrastructure.database.deps import get_session
 from infrastructure.logger import logger
-from infrastructure.utility import RedisCache
+
+# from infrastructure.utility import RedisCache
 
 __all__ = ["start_transmit_process", "send_schema"]
 
@@ -206,7 +206,7 @@ async def integration(applet_id: uuid.UUID, session, user):
     timeout = aiohttp.ClientTimeout(total=60)
     async with aiohttp.ClientSession(timeout=timeout) as session:
         logger.info(
-            f"Sending LOGIN request to the loris server {LORIS_LOGIN_URL}."
+            f"Sending LOGIN request to the loris server {LORIS_LOGIN_URL}"
         )
         start = time.time()
         async with session.post(
@@ -228,8 +228,8 @@ async def integration(applet_id: uuid.UUID, session, user):
             "accept": "*/*",
         }
         logger.info(
-            f"Sending UPLOAD SCHEMA request to the loris server \
-                {LORIS_ML_URL}."
+            f"Sending UPLOAD SCHEMA request to the loris server "
+            f"{LORIS_ML_URL}"
         )
         start = time.time()
         async with session.post(
@@ -246,13 +246,10 @@ async def integration(applet_id: uuid.UUID, session, user):
                 error_message = await resp.text()
                 raise LorisServerError(message=error_message)
 
-        # logger.info("On 30 sec pause")
-        # time.sleep(30)
-
         for user, answer in answers_for_loris_by_respondent.items():
             logger.info(
-                f"Sending CREATE CANDIDATE request to the loris server \
-                    {LORIS_CREATE_CANDIDATE}."
+                f"Sending CREATE CANDIDATE request to the loris server "
+                f"{LORIS_CREATE_CANDIDATE}"
             )
             start = time.time()
             _data_candidate = {
@@ -274,25 +271,26 @@ async def integration(applet_id: uuid.UUID, session, user):
                         f"Successful request in {duration:.1f} seconds."
                     )
                     candidate_data = await resp.json()
+                    c_id = candidate_data["CandID"]
                 else:
                     logger.info(f"Failed request in {duration:.1f} seconds.")
                     error_message = await resp.text()
                     raise LorisServerError(message=error_message)
 
             logger.info(
-                f"Sending CREATE VISIT request to the loris server \
-                    {LORIS_CREATE_VISIT.format(candidate_data['CandID'], VISIT)}."
+                f"Sending CREATE VISIT request to the loris server"
+                f"{LORIS_CREATE_VISIT.format(c_id, VISIT)}"
             )
             start = time.time()
             _data_create_visit = {
-                "CandID": candidate_data["CandID"],
+                "CandID": c_id,
                 "Visit": VISIT,
                 "Site": "Data Coordinating Center",
                 "Battery": "Control",
                 "Project": "loris",
             }
             async with session.put(
-                LORIS_CREATE_VISIT.format(candidate_data["CandID"], VISIT),
+                LORIS_CREATE_VISIT.format(c_id, VISIT),
                 data=json.dumps(_data_create_visit),
                 headers=headers,
             ) as resp:
@@ -307,12 +305,12 @@ async def integration(applet_id: uuid.UUID, session, user):
                     raise LorisServerError(message=error_message)
 
             logger.info(
-                f"Sending START VISIT request to the loris server \
-                    {LORIS_START_VISIT.format(candidate_data['CandID'], VISIT)}."
+                f"Sending START VISIT request to the loris server "
+                f"{LORIS_START_VISIT.format(c_id, VISIT)}"
             )
             start = time.time()
             _data_start_visit = {
-                "CandID": candidate_data["CandID"],
+                "CandID": c_id,
                 "Visit": VISIT,
                 "Site": "Data Coordinating Center",
                 "Battery": "Control",
@@ -326,7 +324,7 @@ async def integration(applet_id: uuid.UUID, session, user):
                 },
             }
             async with session.patch(
-                LORIS_START_VISIT.format(candidate_data["CandID"], VISIT),
+                LORIS_START_VISIT.format(c_id, VISIT),
                 data=json.dumps(_data_start_visit),
                 headers=headers,
             ) as resp:
@@ -341,19 +339,19 @@ async def integration(applet_id: uuid.UUID, session, user):
                     raise LorisServerError(message=error_message)
 
             logger.info(
-                f"Sending ADD INSTRUMENTS request to the loris server \
-                    {LORIS_ADD_INSTRUMENTS.format(candidate_data['CandID'], VISIT)}."
+                f"Sending ADD INSTRUMENTS request to the loris server "
+                f"{LORIS_ADD_INSTRUMENTS.format(c_id, VISIT)}"
             )
             start = time.time()
             _data_add_instruments = {
                 "Meta": {
-                    "Candidate": candidate_data["CandID"],
+                    "Candidate": c_id,
                     "Visit": VISIT,
                 },
                 "Instruments": [str(applet_id)],
             }
             async with session.post(
-                LORIS_ADD_INSTRUMENTS.format(candidate_data["CandID"], VISIT),
+                LORIS_ADD_INSTRUMENTS.format(c_id, VISIT),
                 data=json.dumps(_data_add_instruments),
                 headers=headers,
             ) as resp:
@@ -368,23 +366,21 @@ async def integration(applet_id: uuid.UUID, session, user):
                     raise LorisServerError(message=error_message)
 
             logger.info(
-                f"Sending SEND INSTUMENT DATA request to the loris server \
-                    {LORIS_INSTRUMENT_DATA.format(candidate_data['CandID'], VISIT, str(applet_id))}."
+                f"Sending SEND INSTUMENT DATA request to the loris server "
+                f"{LORIS_INSTRUMENT_DATA.format(c_id, VISIT, str(applet_id))}"
             )
             start = time.time()
             _data_instrument_data = {
                 "Meta": {
                     "Instrument": str(applet_id),
                     "Visit": VISIT,
-                    "Candidate": candidate_data["CandID"],
+                    "Candidate": c_id,
                     "DDE": True,
                 },
                 str(applet_id): answer,
             }
             async with session.put(
-                LORIS_INSTRUMENT_DATA.format(
-                    candidate_data["CandID"], VISIT, str(applet_id)
-                ),
+                LORIS_INSTRUMENT_DATA.format(c_id, VISIT, str(applet_id)),
                 data=json.dumps(_data_instrument_data),
                 headers=headers,
             ) as resp:
@@ -397,14 +393,14 @@ async def integration(applet_id: uuid.UUID, session, user):
                     logger.info(f"Failed request in {duration:.1f} seconds.")
                     error_message = await resp.text()
                     logger.info(
-                        f"response is: \
-                            {error_message}\nstatus is: {resp.status}"
+                        f"response is: "
+                        f"{error_message}\nstatus is: {resp.status}"
                     )
                     raise LorisServerError(message=error_message)
 
             logger.info(
-                f"Successfully send data for user: {user},\
-                      with loris id: {candidate_data['CandID']}"
+                f"Successfully send data for user: {user},"
+                f" with loris id: {c_id}"
             )
 
     logger.info("All finished")
@@ -498,8 +494,8 @@ async def send_schema(
             "accept": "*/*",
         }
         logger.info(
-            f"Sending UPLOAD SCHEMA request to the loris server \
-                {LORIS_ML_URL}."
+            f"Sending UPLOAD SCHEMA request to the loris server "
+            f"{LORIS_ML_URL}."
         )
         start = time.time()
         async with session.post(
