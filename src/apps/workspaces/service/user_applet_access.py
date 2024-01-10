@@ -401,3 +401,17 @@ class UserAppletAccessService:
             return RespondentInfoPublic(
                 nickname=respondent_schema.nickname, secret_user_id=None
             )
+
+    async def has_role(self, role: str) -> bool:
+        manager_roles = set(Role.managers())
+        is_manager = role in manager_roles
+        current_roles = await UserAppletAccessCRUD(
+            self.session
+        ).get_user_roles_to_applet(self._user_id, self._applet_id)
+        if not is_manager:
+            return role in current_roles
+        else:
+            user_roles = set(current_roles)
+            return role in manager_roles and bool(
+                user_roles.intersection(manager_roles)
+            )

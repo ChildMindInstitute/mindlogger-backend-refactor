@@ -1,14 +1,14 @@
 PORT = 8000
 HOST = localhost
 
-TEST_COMMAND = pytest -s -vvv
+TEST_COMMAND = pytest -s -vv
 
 BLACK_COMMAND = black
 FLAKE8_COMMAND = flake8
 ISORT_COMMAND = isort
 MYPY_COMMAND = mypy
 
-DOCKER_EXEC = docker-compose exec fastapi
+DOCKER_EXEC = docker-compose run --rm app
 
 # ###############
 # Local

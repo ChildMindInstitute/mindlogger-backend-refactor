@@ -39,6 +39,8 @@ services:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
       target: base
+      args:
+        - PIPENV_EXTRA_ARGS=--dev
     container_name: mindlogger_app
     entrypoint: /fastapi-entrypoint
     command: /fastapi-start
@@ -47,6 +49,7 @@ services:
       - postgres
       - redis
       - rabbitmq
+      - mailhog
     ports:
       - 8000:80
     volumes:
@@ -58,10 +61,12 @@ services:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
       target: worker
+      args:
+        - PIPENV_EXTRA_ARGS=--dev
     image: mindlogger_worker
     container_name: mindlogger_worker
     entrypoint: /fastapi-entrypoint
-    command: ['taskiq', 'worker', 'broker:broker', '-fsd']
+    command: [ 'taskiq', 'worker', 'broker:broker', '-fsd' ]
     env_file: .env
     volumes:
       - ./:/app/
@@ -69,15 +74,19 @@ services:
       - postgres
       - redis
       - rabbitmq
+      - mailhog
 
   scheduler:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-    image: mindlogger_scheduler
+      target: base
+      args:
+        - PIPENV_EXTRA_ARGS=--dev
+    image: mindlogger_webapp
     container_name: mindlogger_scheduler
     entrypoint: /fastapi-entrypoint
-    command: ['taskiq', 'scheduler', 'scheduler:scheduler', '-fsd']
+    command: [ 'taskiq', 'scheduler', 'scheduler:scheduler', '-fsd' ]
     env_file: .env
     volumes:
       - ./:/app/
@@ -92,7 +101,7 @@ services:
     ports:
       - 8025:8025
       - 1025:1025
-  
+
   mongo:
     image: mongo
     ports:
@@ -124,7 +133,6 @@ services:
     volumes:
       - './compose/minio:/etc/minio'
     entrypoint: /etc/minio/create_bucket.sh
-
 
 volumes:
   pg_data: {}

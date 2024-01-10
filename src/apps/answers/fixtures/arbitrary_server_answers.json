@@ -270,7 +270,7 @@
       "extra_fields": {}
     }
   },
-    {
+  {
     "table": "activities",
     "fields": {
       "id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3621",
@@ -739,7 +739,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 0
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d3",
@@ -748,7 +749,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 1
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d4",
@@ -757,7 +759,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 2
           },
           {
             "id": "2ba4bb83-ed1c-4140-a225-c2c9b4db66d5",
@@ -766,7 +769,8 @@
             "score": null,
             "tooltip": null,
             "is_hidden": false,
-            "color": null
+            "color": null,
+            "value": 3
           }
         ]
       },

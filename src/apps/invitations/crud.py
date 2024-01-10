@@ -268,6 +268,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             first_name=invitation.first_name,
             last_name=invitation.last_name,
             created_at=invitation.created_at,
+            user_id=invitation.user_id,
         )
         if invitation.role == Role.RESPONDENT:
             return InvitationDetailRespondent(
@@ -328,17 +329,17 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             InvitationManagers.from_orm(invitation) for invitation in results
         ]
 
-    async def approve_by_id(self, id_: uuid.UUID):
+    async def approve_by_id(self, id_: uuid.UUID, user_id: uuid.UUID):
         query = update(InvitationSchema)
         query = query.where(InvitationSchema.id == id_)
-        query = query.values(status=InvitationStatus.APPROVED)
+        query = query.values(status=InvitationStatus.APPROVED, user_id=user_id)
 
         await self._execute(query)
 
-    async def decline_by_id(self, id_: uuid.UUID):
+    async def decline_by_id(self, id_: uuid.UUID, user_id: uuid.UUID):
         query = update(InvitationSchema)
         query = query.where(InvitationSchema.id == id_)
-        query = query.values(status=InvitationStatus.DECLINED)
+        query = query.values(status=InvitationStatus.DECLINED, user_id=user_id)
 
         await self._execute(query)
 
@@ -385,7 +386,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             InvitationSchema.email == email,
             InvitationSchema.applet_id == applet_id,
             InvitationSchema.role == role,
-            InvitationSchema.status == InvitationStatus.APPROVED,
+            InvitationSchema.status == InvitationStatus.PENDING,
+            InvitationSchema.soft_exists(),
         )
         db_result: Result = await self._execute(query)
         return bool(db_result.scalars().first())
@@ -397,8 +399,25 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(
             InvitationSchema.email == email,
             InvitationSchema.applet_id == applet_id,
-            InvitationSchema.status == InvitationStatus.APPROVED,
+            InvitationSchema.status == InvitationStatus.PENDING,
             InvitationSchema.role.in_(Role.managers()),
+            InvitationSchema.soft_exists(),
         )
         db_result: Result = await self._execute(query)
         return bool(db_result.scalars().first())
+
+    async def delete_by_applet_ids(
+        self,
+        email: str | None,
+        applet_ids: list[uuid.UUID],
+        roles: list[Role],
+    ):
+        query: Query = delete(InvitationSchema)
+        query = query.where(
+            InvitationSchema.email == email,
+            InvitationSchema.applet_id.in_(applet_ids),
+            InvitationSchema.status == InvitationStatus.APPROVED,
+            InvitationSchema.role.in_(roles),
+            InvitationSchema.soft_exists(),
+        )
+        await self._execute(query)

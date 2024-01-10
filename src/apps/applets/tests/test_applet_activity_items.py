@@ -1,7 +1,14 @@
+import copy
 import uuid
 
 import pytest
 
+from apps.activities import errors as activity_errors
+from apps.activities.domain.response_type_config import (
+    ResponseType,
+    SingleSelectionConfig,
+)
+from apps.activities.domain.response_values import SingleSelectionValues
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
@@ -177,6 +184,192 @@ def activity_flanker_data():
                 ),
             ),
         ],
+    )
+
+
+@pytest.fixture
+def single_select_response_values():
+    return dict(
+        options=[
+            dict(
+                id=uuid.uuid4(),
+                text="text",
+                image=None,
+                score=None,
+                tooltip=None,
+                is_hidden=False,
+                color=None,
+                value=0,
+            )
+        ]
+    )
+
+
+@pytest.fixture
+def single_select_config():
+    return dict(
+        randomize_options=False,
+        timer=0,
+        add_scores=False,
+        set_alerts=False,
+        add_tooltip=False,
+        set_palette=False,
+        remove_back_button=False,
+        skippable_item=False,
+        additional_response_option=dict(
+            text_input_option=False,
+            text_input_required=False,
+        ),
+    )
+
+
+@pytest.fixture
+def applet_minimal_data(single_select_response_values, single_select_config):
+    return dict(
+        display_name="minimal required data to create applet",
+        encryption=dict(
+            public_key=uuid.uuid4().hex,
+            prime=uuid.uuid4().hex,
+            base=uuid.uuid4().hex,
+            account_id=str(uuid.uuid4()),
+        ),
+        description=dict(en="description"),
+        activities=[
+            dict(
+                name="name",
+                key=uuid.uuid4(),
+                description=dict(en="description"),
+                items=[
+                    dict(
+                        name="item1",
+                        question=dict(en="question"),
+                        response_type=ResponseType.SINGLESELECT,
+                        response_values=single_select_response_values,
+                        config=single_select_config,
+                    ),
+                ],
+            )
+        ],
+        # Empty, but required
+        activity_flows=[],
+    )
+
+
+@pytest.fixture
+def slider_response_values():
+    return dict(
+        min_value=0,
+        max_value=10,
+        min_label="min_label",
+        max_label="max_label",
+        min_image=None,
+        max_image=None,
+        scores=None,
+        alerts=None,
+    )
+
+
+@pytest.fixture
+def slider_config():
+    return dict(
+        remove_back_button=False,
+        skippable_item=False,
+        add_scores=False,
+        set_alerts=False,
+        timer=1,
+        show_tick_labels=False,
+        show_tick_marks=False,
+        continuous_slider=False,
+        additional_response_option={
+            "text_input_option": False,
+            "text_input_required": False,
+        },
+    )
+
+
+@pytest.fixture
+def slider_rows_response_values():
+    return dict(
+        rows=[
+            {
+                "label": "label1",
+                "min_label": "min_label1",
+                "max_label": "max_label1",
+                "min_value": 0,
+                "max_value": 10,
+                "min_image": None,
+                "max_image": None,
+                "scores": None,
+                "alerts": None,
+            }
+        ]
+    )
+
+
+@pytest.fixture
+def slider_rows_config():
+    return dict(
+        remove_back_button=False,
+        skippable_item=False,
+        add_scores=False,
+        set_alerts=False,
+        timer=1,
+    )
+
+
+@pytest.fixture
+def single_select_rows_response_values():
+    return dict(
+        rows=[
+            {
+                "id": "17e69155-22cd-4484-8a49-364779ea9df1",
+                "row_name": "row1",
+                "row_image": None,
+                "tooltip": None,
+            },
+        ],
+        options=[
+            {
+                "id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                "text": "option1",
+                "image": None,
+                "tooltip": None,
+            }
+        ],
+        data_matrix=[
+            {
+                "row_id": "17e69155-22cd-4484-8a49-364779ea9df1",
+                "options": [
+                    {
+                        "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                        "score": 1,
+                        "alert": "alert1",
+                    },
+                ],
+            },
+            {
+                "row_id": "17e69155-22cd-4484-8a49-364779ea9df2",
+                "options": [
+                    {
+                        "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
+                        "score": 3,
+                        "alert": None,
+                    },
+                ],
+            },
+        ],
+    )
+
+
+@pytest.fixture
+def single_select_rows_config():
+    return dict(
+        remove_back_button=False,
+        skippable_item=False,
+        add_scores=False,
+        set_alerts=False,
+        timer=1,
+        add_tooltip=False,
     )
 
 
@@ -1441,9 +1634,9 @@ class TestActivityItems(BaseTest):
                         showScoreSummary=True,
                         reports=[
                             dict(
-                                name="activity_item_singleselect",
+                                name="activity_item_singleselect_score",
                                 type="score",
-                                id="activity_item_singleselect",
+                                id="activity_item_singleselect_score",
                                 calculationType="sum",
                                 minScore=0,
                                 maxScore=3,
@@ -1458,7 +1651,7 @@ class TestActivityItems(BaseTest):
                                 conditionalLogic=[
                                     dict(
                                         name="score1_condition1",
-                                        id="activity_item_singleselect",
+                                        id="activity_item_singleselect_score",
                                         flagScore=True,
                                         message="Hello2",
                                         match="any",
@@ -1466,7 +1659,7 @@ class TestActivityItems(BaseTest):
                                             dict(
                                                 item_name=(
                                                     "activity_item_"
-                                                    "singleselect"
+                                                    "singleselect_score"
                                                 ),
                                                 type="GREATER_THAN",
                                                 payload=dict(
@@ -1476,11 +1669,11 @@ class TestActivityItems(BaseTest):
                                             dict(
                                                 item_name=(
                                                     "activity_item_"
-                                                    "singleselect"
+                                                    "singleselect_score"
                                                 ),
                                                 type="GREATER_THAN",
                                                 payload=dict(
-                                                    value=2,
+                                                    value=1,
                                                 ),
                                             ),
                                         ],
@@ -1502,7 +1695,7 @@ class TestActivityItems(BaseTest):
                                     conditions=[
                                         dict(
                                             item_name=(
-                                                "activity_item_singleselect"
+                                                "activity_item_singleselect_score"  # noqa E501
                                             ),
                                             type="GREATER_THAN",
                                             payload=dict(
@@ -1511,9 +1704,27 @@ class TestActivityItems(BaseTest):
                                         ),
                                         dict(
                                             item_name=(
-                                                "activity_item_singleselect"  # noqa E501
+                                                "activity_item_singleselect_score"  # noqa E501
                                             ),
                                             type="EQUAL_TO_OPTION",
+                                            payload=dict(
+                                                option_value="1",  # noqa E501
+                                            ),
+                                        ),
+                                        dict(
+                                            item_name=(
+                                                "activity_item_singleselect_score"  # noqa E501
+                                            ),
+                                            type="NOT_EQUAL_TO_OPTION",
+                                            payload=dict(
+                                                option_value="2",  # noqa E501
+                                            ),
+                                        ),
+                                        dict(
+                                            item_name=(
+                                                "activity_item_multiselect"  # noqa E501
+                                            ),
+                                            type="NOT_INCLUDES_OPTION",
                                             payload=dict(
                                                 option_value="1",  # noqa E501
                                             ),
@@ -1541,6 +1752,109 @@ class TestActivityItems(BaseTest):
                                         "text": "option2",
                                         "score": 2,
                                         "id": "26e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
+                                        "value": "2",
+                                    },
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=False,
+                                add_scores=True,
+                                set_alerts=False,
+                                timer=1,
+                                add_tooltip=False,
+                                set_palette=False,
+                                randomize_options=False,
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                            ),
+                        ),
+                        dict(
+                            name="activity_item_text",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="text",
+                            response_values=None,
+                            config=dict(
+                                max_response_length=200,
+                                correct_answer_required=False,
+                                correct_answer=None,
+                                numerical_response_required=False,
+                                response_data_identifier=False,
+                                response_required=False,
+                                remove_back_button=False,
+                                skippable_item=True,
+                            ),
+                            conditional_logic=dict(
+                                match="any",
+                                conditions=[
+                                    dict(
+                                        item_name="activity_item_singleselect",
+                                        type="EQUAL_TO_OPTION",
+                                        payload=dict(
+                                            option_value="1"  # noqa E501
+                                        ),
+                                    ),
+                                    dict(
+                                        item_name="activity_item_singleselect_2",  # noqa: E501
+                                        type="NOT_EQUAL_TO_OPTION",
+                                        payload=dict(
+                                            option_value="2"  # noqa E501
+                                        ),
+                                    ),
+                                    dict(
+                                        item_name="activity_item_multiselect",
+                                        type="INCLUDES_OPTION",
+                                        payload=dict(
+                                            option_value="1"  # noqa E501
+                                        ),
+                                    ),
+                                    dict(
+                                        item_name="activity_item_multiselect_2",  # noqa: E501
+                                        type="NOT_INCLUDES_OPTION",
+                                        payload=dict(
+                                            option_value="2"  # noqa E501
+                                        ),
+                                    ),
+                                    dict(
+                                        item_name="activity_item_slideritem",
+                                        type="GREATER_THAN",
+                                        payload=dict(
+                                            value=5,
+                                        ),
+                                    ),
+                                    dict(
+                                        item_name="activity_item_slideritem_2",
+                                        type="OUTSIDE_OF",
+                                        payload=dict(
+                                            min_value=5,
+                                            max_value=10,
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        dict(
+                            name="activity_item_singleselect_2",
+                            question={"en": "What is your name?"},
+                            response_type="singleSelect",
+                            response_values=dict(
+                                palette_name="palette1",
+                                options=[
+                                    {
+                                        "text": "option1",
+                                        "score": 1,
+                                        "id": "25e69155-22cd-4484-8a49-364779fa9de1",  # noqa E501
+                                        "value": "1",
+                                    },
+                                    {
+                                        "text": "option2",
+                                        "score": 2,
+                                        "id": "26e69155-22cd-4484-8a49-364779fa9de1",  # noqa E501
                                         "value": "2",
                                     },
                                 ],
@@ -1595,6 +1909,40 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
+                            name="activity_item_multiselect_2",
+                            question={"en": "Option 2?"},
+                            response_type="multiSelect",
+                            response_values=dict(
+                                palette_name="palette1",
+                                options=[
+                                    {
+                                        "text": "option1",
+                                        "id": "27e69155-22cd-4484-8a49-364779eb9de1",  # noqa E501
+                                        "value": "1",
+                                    },
+                                    {
+                                        "text": "option2",
+                                        "id": "28e69155-22cd-4484-8a49-364779eb9de1",  # noqa E501
+                                        "value": "2",
+                                    },
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=False,
+                                add_scores=False,
+                                set_alerts=False,
+                                timer=1,
+                                add_tooltip=False,
+                                set_palette=False,
+                                randomize_options=False,
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                            ),
+                        ),
+                        dict(
                             name="activity_item_slideritem",
                             question={"en": "What is your name?"},
                             response_type="slider",
@@ -1623,48 +1971,31 @@ class TestActivityItems(BaseTest):
                             ),
                         ),
                         dict(
-                            name="activity_item_text",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
+                            name="activity_item_slideritem_2",
+                            question={"en": "What is your name?"},
+                            response_type="slider",
+                            response_values=dict(
+                                min_value=0,
+                                max_value=10,
+                                min_label="min_label",
+                                max_label="max_label",
+                                min_image=None,
+                                max_image=None,
+                                scores=None,
                             ),
-                            response_type="text",
-                            response_values=None,
                             config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
                                 remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                            conditional_logic=dict(
-                                match="any",
-                                conditions=[
-                                    dict(
-                                        item_name="activity_item_singleselect",
-                                        type="EQUAL_TO_OPTION",
-                                        payload=dict(
-                                            option_value="1"  # noqa E501
-                                        ),
-                                    ),
-                                    dict(
-                                        item_name="activity_item_multiselect",
-                                        type="INCLUDES_OPTION",
-                                        payload=dict(
-                                            option_value="1"  # noqa E501
-                                        ),
-                                    ),
-                                    dict(
-                                        item_name="activity_item_slideritem",
-                                        type="GREATER_THAN",
-                                        payload=dict(
-                                            value=5,
-                                        ),
-                                    ),
-                                ],
+                                skippable_item=False,
+                                add_scores=False,
+                                set_alerts=False,
+                                timer=1,
+                                show_tick_labels=False,
+                                show_tick_marks=False,
+                                continuous_slider=False,
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
                             ),
                         ),
                         dict(
@@ -1767,10 +2098,27 @@ class TestActivityItems(BaseTest):
             ),
             data=create_data,
         )
+        assert response.status_code == 400
+        assert (
+            response.json()["result"][0]["message"]
+            == activity_errors.IncorrectConditionItemIndexError.message
+        )
+
+        text_item = create_data["activities"][0]["items"][1]
+        slider_item_2 = create_data["activities"][0]["items"][6]
+        create_data["activities"][0]["items"][1] = slider_item_2
+        create_data["activities"][0]["items"][6] = text_item
+
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=create_data,
+        )
         assert response.status_code == 201, response.json()
         assert (
             type(
-                response.json()["result"]["activities"][0]["items"][3][
+                response.json()["result"]["activities"][0]["items"][6][
                     "conditionalLogic"
                 ]
             )
@@ -1797,7 +2145,7 @@ class TestActivityItems(BaseTest):
         )
         assert response.status_code == 200
         assert (
-            type(response.json()["result"]["items"][3]["conditionalLogic"])
+            type(response.json()["result"]["items"][6]["conditionalLogic"])
             == dict
         )
 
@@ -2071,7 +2419,7 @@ class TestActivityItems(BaseTest):
                         "max_value": 5,
                         "min_image": None,
                         "max_image": None,
-                        "score": [1, 2, 3, 4, 5],
+                        "scores": [1, 2, 3, 4, 5],
                     }
                 ]
             ),
@@ -2239,3 +2587,349 @@ class TestActivityItems(BaseTest):
         flanker = response.json()["result"]["activities"][1]
         assert flanker["isPerformanceTask"]
         assert flanker["performanceTaskType"] == "flanker"
+
+    @rollback
+    async def test_create_applet_item_name_is_not_valid(
+        self, applet_minimal_data
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        applet_minimal_data["activities"][0]["items"][0]["name"] = "%name"
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        errors = resp.json()["result"]
+        assert len(errors) == 1
+        assert (
+            errors[0]["message"]
+            == activity_errors.IncorrectNameCharactersError.message
+        )
+
+    @rollback
+    async def test_create_applet_item_config_not_valid(
+        self, applet_minimal_data
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        del applet_minimal_data["activities"][0]["items"][0]["config"][
+            "add_scores"
+        ]
+        del applet_minimal_data["activities"][0]["items"][0]["config"][
+            "set_alerts"
+        ]
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        errors = resp.json()["result"]
+        assert len(errors) == 1
+        assert errors[0][
+            "message"
+        ] == activity_errors.IncorrectConfigError.message.format(
+            type=SingleSelectionConfig
+        )
+
+    @rollback
+    async def test_create_applet_not_valid_response_type(
+        self, applet_minimal_data
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        applet_minimal_data["activities"][0]["items"][0][
+            "response_type"
+        ] = "NotValid"
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        errors = resp.json()["result"]
+        assert len(errors) == 1
+        assert errors[0][
+            "message"
+        ] == activity_errors.IncorrectResponseValueError.message.format(
+            type=ResponseType
+        )
+
+    @rollback
+    @pytest.mark.parametrize(
+        "value,error_msg",
+        (
+            (
+                {},
+                activity_errors.IncorrectResponseValueError.message.format(
+                    type=SingleSelectionValues
+                ),
+            ),
+            (
+                None,
+                activity_errors.IncorrectResponseValueError.message.format(
+                    type=SingleSelectionValues
+                ),
+            ),
+        ),
+    )
+    async def test_create_applet_not_valid_response_values(  # noqa: E501
+        self, applet_minimal_data, value, error_msg
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        applet_minimal_data["activities"][0]["items"][0][
+            "response_values"
+        ] = value
+        applet_minimal_data["activities"][0]["items"][0][
+            "response_type"
+        ] = ResponseType.SINGLESELECT
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        errors = resp.json()["result"]
+        assert len(errors) == 1
+        assert errors[0]["message"] == error_msg
+
+    @rollback
+    async def test_create_applet_without_item_response_type(
+        self, applet_minimal_data
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        del applet_minimal_data["activities"][0]["items"][0]["response_type"]
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        errors = resp.json()["result"]
+        assert len(errors) == 1
+        assert errors[0]["message"] == "field required"
+
+    @rollback
+    async def test_create_applet_single_select_add_scores_not_scores_in_response_values(  # noqa: E501
+        self, applet_minimal_data
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        applet_minimal_data["activities"][0]["items"][0]["config"][
+            "add_scores"
+        ] = True
+        applet_minimal_data["activities"][0]["items"][0][
+            "response_type"
+        ] = ResponseType.SINGLESELECT
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        errors = resp.json()["result"]
+        assert len(errors) == 1
+        assert (
+            errors[0]["message"]
+            == activity_errors.ScoreRequiredForResponseValueError.message
+        )
+
+    @rollback
+    async def test_create_applet_slider_response_values_add_scores_not_scores_in_response_values(  # noqa: E501
+        self, applet_minimal_data, slider_response_values, slider_config
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        slider_config["add_scores"] = True
+        applet_minimal_data["activities"][0]["items"][0][
+            "config"
+        ] = slider_config
+        applet_minimal_data["activities"][0]["items"][0][
+            "response_type"
+        ] = ResponseType.SLIDER
+        applet_minimal_data["activities"][0]["items"][0][
+            "response_values"
+        ] = slider_response_values
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        errors = resp.json()["result"]
+        assert len(errors) == 1
+        assert errors[0]["message"] == activity_errors.NullScoreError.message
+
+    @rollback
+    async def test_create_applet_slider_response_values_add_scores_scores_not_for_all_values(  # noqa: E501
+        self, applet_minimal_data, slider_response_values, slider_config
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        slider_config["add_scores"] = True
+        min_val = slider_response_values["min_value"]
+        max_val = slider_response_values["max_value"]
+        scores = [i for i in range(max_val - min_val)]
+        slider_response_values["scores"] = scores
+        applet_minimal_data["activities"][0]["items"][0][
+            "config"
+        ] = slider_config
+        applet_minimal_data["activities"][0]["items"][0][
+            "response_type"
+        ] = ResponseType.SLIDER
+        applet_minimal_data["activities"][0]["items"][0][
+            "response_values"
+        ] = slider_response_values
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        errors = resp.json()["result"]
+        assert len(errors) == 1
+        assert (
+            errors[0]["message"]
+            == activity_errors.InvalidScoreLengthError.message
+        )
+
+    @rollback
+    async def test_create_applet_slider_rows_response_values_add_scores_true_no_scores(  # noqa: E501
+        self,
+        applet_minimal_data,
+        slider_rows_response_values,
+        slider_rows_config,
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        slider_rows_config["add_scores"] = True
+        slider_rows_response_values["rows"][0]["scores"] = None
+        item = applet_minimal_data["activities"][0]["items"][0]
+        item["config"] = slider_rows_config
+        item["response_type"] = ResponseType.SLIDERROWS
+        item["response_values"] = slider_rows_response_values
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        errors = resp.json()["result"]
+        assert len(errors) == 1
+        assert errors[0]["message"] == activity_errors.NullScoreError.message
+
+    @rollback
+    async def test_create_applet_slider_rows_response_values_add_scores_true_scores_not_for_all_values(  # noqa: E501
+        self,
+        applet_minimal_data,
+        slider_rows_response_values,
+        slider_rows_config,
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        slider_rows_config["add_scores"] = True
+        min_val = slider_rows_response_values["rows"][0]["min_value"]
+        max_val = slider_rows_response_values["rows"][0]["max_value"]
+        slider_rows_response_values["rows"][0]["scores"] = [
+            i for i in range(max_val - min_val)
+        ]
+        item = applet_minimal_data["activities"][0]["items"][0]
+        item["config"] = slider_rows_config
+        item["response_type"] = ResponseType.SLIDERROWS
+        item["response_values"] = slider_rows_response_values
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        errors = resp.json()["result"]
+        assert len(errors) == 1
+        assert (
+            errors[0]["message"]
+            == activity_errors.InvalidScoreLengthError.message
+        )
+
+    @rollback
+    @pytest.mark.parametrize(
+        "response_type", (ResponseType.SINGLESELECT, ResponseType.MULTISELECT)
+    )
+    async def test_create_applet_single_multi_select_response_values_value_null_auto_set_value(  # noqa: E501
+        self, applet_minimal_data, response_type
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        item = applet_minimal_data["activities"][0]["items"][0]
+        option = item["response_values"]["options"][0]
+        del option["value"]
+        option2 = copy.deepcopy(option)
+        option2["value"] = None
+        item["response_values"]["options"].append(option2)
+        item["response_type"] = response_type
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 201
+        item = resp.json()["result"]["activities"][0]["items"][0]
+        # We can use enumerate because we have 2 options and values should be
+        # 0 and 1
+        for i, o in enumerate(item["responseValues"]["options"]):
+            assert o["value"] == i
+
+    @rollback
+    async def test_create_applet_single_select_rows_response_values_add_alerts_no_datamatrix(  # noqa: E501
+        self,
+        applet_minimal_data,
+        single_select_rows_response_values,
+        single_select_rows_config,
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        single_select_rows_config["set_alerts"] = True
+        single_select_rows_response_values["data_matrix"] = None
+        item = applet_minimal_data["activities"][0]["items"][0]
+        item["config"] = single_select_rows_config
+        item["response_type"] = ResponseType.SINGLESELECTROWS
+        item["response_values"] = single_select_rows_response_values
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        errors = resp.json()["result"]
+        assert len(errors) == 1
+        assert (
+            errors[0]["message"]
+            == activity_errors.DataMatrixRequiredError.message
+        )

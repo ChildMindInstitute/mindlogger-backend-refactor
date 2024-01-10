@@ -141,6 +141,8 @@ class Invitation(InternalModel):
     first_name: str
     last_name: str
     created_at: datetime
+    user_id: uuid.UUID | None
+    is_deleted: bool
 
 
 class InvitationRespondent(Invitation):
@@ -176,6 +178,7 @@ class InvitationDetailBase(InternalModel):
     first_name: str
     last_name: str
     created_at: datetime
+    user_id: uuid.UUID | None
 
 
 class InvitationDetail(InvitationDetailBase):
@@ -214,6 +217,7 @@ class _InvitationDetail(InternalModel):
     applet_name: str
     status: str
     key: uuid.UUID
+    user_id: uuid.UUID | None
 
 
 class InvitationDetailForRespondent(_InvitationDetail):
@@ -290,6 +294,11 @@ class _InvitationResponse(PublicModel):
     )
     status: InvitationStatus = Field(
         description="This field represents the status for invitation",
+    )
+    user_id: uuid.UUID | None = Field(
+        None,
+        description="This field respresents registered user or not. "
+        "Used for tests",
     )
 
 

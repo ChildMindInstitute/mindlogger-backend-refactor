@@ -33,8 +33,25 @@ class TestUser(BaseTest):
         response = await self.client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
-
         assert response.status_code == status.HTTP_201_CREATED, response.json()
+
+        password_spaces_create_request_user = self.create_request_user.dict()
+        password_spaces_create_request_user["password"] = "Test1234 !"
+        response = await self.client.post(
+            self.user_create_url, data=password_spaces_create_request_user
+        )
+        assert (
+            response.status_code == status.HTTP_404_NOT_FOUND
+        ), response.json()
+
+        not_valid_email_create_request_user = self.create_request_user.dict()
+        not_valid_email_create_request_user["email"] = "tom2@mindlogger@com"
+        response = await self.client.post(
+            self.user_create_url, data=not_valid_email_create_request_user
+        )
+        assert (
+            response.status_code == status.HTTP_400_BAD_REQUEST
+        ), response.json()
 
     @rollback
     async def test_user_create_exist(self):

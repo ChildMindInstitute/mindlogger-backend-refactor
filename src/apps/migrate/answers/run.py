@@ -437,7 +437,9 @@ class AnswersMigrateFacade:
                     )._create(ActivityItemHistorySchema(**item))
         elif assessment_only and reviewer_assessment_activities:
             activity = reviewer_assessment_activities[0]
-            id_version = f"{activity.id}_{original_applet_version}"
+            id_version = (
+                f"{activity.id}_{mongo_answer['meta']['applet']['version']}"
+            )
             activity_hist = await ActivityHistoriesCRUD(
                 regular_session
             ).get_by_id(id_version)

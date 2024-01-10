@@ -17,7 +17,6 @@ from apps.activities.errors import (
     IncorrectResponseValueError,
     NullScoreError,
     ScoreRequiredForResponseValueError,
-    ScoreRequiredForValueError,
     SliderMinMaxValueError,
     SliderRowsValueError,
 )
@@ -30,6 +29,7 @@ class BaseActivityItem(BaseModel):
 
     question: dict[str, str] = Field(default_factory=dict)
     response_type: ResponseType
+    # smart_union ?
     response_values: PublicModel | None  # ResponseValueConfig
     config: PublicModel  # ResponseTypeConfig
     name: str
@@ -66,69 +66,68 @@ class BaseActivityItem(BaseModel):
             raise IncorrectNameCharactersError()
         return value
 
+    @validator("response_type", pre=True)
+    def validate_response_type(cls, value):
+        if value not in ResponseTypeValueConfig:
+            raise IncorrectResponseValueError(type=ResponseType)
+        return value
+
     @validator("config", pre=True)
     def validate_config(cls, value, values):
         response_type = values.get("response_type")
+        # response type is checked in separate validator
+        if not response_type:
+            return value
         # wrap value in class to validate and pass value
-        if response_type in ResponseTypeValueConfig:
-            if (
-                type(value)
-                is not ResponseTypeValueConfig[response_type]["config"]
-            ):
-                try:
-                    value = ResponseTypeValueConfig[response_type]["config"](
-                        **value
-                    )
-                except Exception:
-                    raise IncorrectConfigError(
-                        type=ResponseTypeValueConfig[response_type]["config"]
-                    )
-        else:
-            raise IncorrectResponseValueError(type=ResponseType)
+        if type(value) is not ResponseTypeValueConfig[response_type]["config"]:
+            try:
+                value = ResponseTypeValueConfig[response_type]["config"](
+                    **value
+                )
+            except Exception:
+                raise IncorrectConfigError(
+                    type=ResponseTypeValueConfig[response_type]["config"]
+                )
 
         return value
 
     @validator("response_values", pre=True)
-    def validate_response_type(cls, value, values):
+    def validate_response_values(cls, value, values):
         response_type = values.get("response_type")
-        if response_type in ResponseTypeValueConfig:
-            if response_type not in list(NoneResponseType):
-                if (
-                    type(value)
-                    is not ResponseTypeValueConfig[response_type]["value"]
-                ):
-                    try:
-                        value = ResponseTypeValueConfig[response_type][
-                            "value"
-                        ](**value)
-                    except BaseError as e:
-                        raise e
-                    except Exception:
-                        raise IncorrectResponseValueError(
-                            type=ResponseTypeValueConfig[response_type][
-                                "value"
-                            ]
-                        )
-            else:
-                if (
-                    value is not None
-                    and type(value)
-                    is not ResponseTypeValueConfig[response_type]["value"]
-                ):
+        if not response_type:
+            return value
+        if response_type not in list(NoneResponseType):
+            if (
+                type(value)
+                is not ResponseTypeValueConfig[response_type]["value"]
+            ):
+                try:
+                    value = ResponseTypeValueConfig[response_type]["value"](
+                        **value
+                    )
+                except BaseError as e:
+                    raise e
+                except Exception:
                     raise IncorrectResponseValueError(
                         type=ResponseTypeValueConfig[response_type]["value"]
                     )
-                elif (
-                    type(value)
-                    is ResponseTypeValueConfig[response_type]["value"]
-                ):
-                    value = None
-
         else:
-            raise IncorrectResponseValueError(type=ResponseType)
+            if (
+                value is not None
+                and type(value)
+                is not ResponseTypeValueConfig[response_type]["value"]
+            ):
+                raise IncorrectResponseValueError(
+                    type=ResponseTypeValueConfig[response_type]["value"]
+                )
+            elif (
+                type(value) is ResponseTypeValueConfig[response_type]["value"]
+            ):
+                value = None
+
         return value
 
-    @root_validator()
+    @root_validator(skip_on_failure=True)
     def validate_score_required(cls, values):
         # validate score fields of response values for each response type
 
@@ -147,36 +146,24 @@ class BaseActivityItem(BaseModel):
                 if None in scores:
                     raise ScoreRequiredForResponseValueError()
 
-        if response_type is ResponseType.SLIDER:
-            # if add_scores is True in config,
-            # then length of scores must be equal
-            # to max_value - min_value + 1 and must not include None
-            if config.add_scores:
-                if len(response_values.scores) != (
-                    response_values.max_value - response_values.min_value + 1
-                ):
-                    raise ScoreRequiredForValueError()
-                if None in response_values.scores:
-                    raise NullScoreError()
+        if response_type == ResponseType.SLIDER:
+            # if add_scores is True in config, then scores should not be None
+            if config.add_scores and response_values.scores is None:
+                raise NullScoreError()
 
-        if response_type is ResponseType.SLIDERROWS:
-            # if add_scores is True in config,
-            # then length of scores in each row must be
-            # equal to max_value - min_value + 1 of each row
-            # and must not include None
+        if response_type == ResponseType.SLIDERROWS:
+            # if add_scores is True in config, then scores should not be None
             if config.add_scores:
                 for row in response_values.rows:
-                    if len(row.scores) != (row.max_value - row.min_value + 1):
-                        raise ScoreRequiredForValueError()
-                    if None in row.scores:
+                    if row.scores is None:
                         raise NullScoreError()
 
         if response_type in [
             ResponseType.SINGLESELECTROWS,
             ResponseType.MULTISELECTROWS,
         ]:
-            # if add_scores is True in config, then score must be provided in each option of each row of response_values  # noqa: E501
-            if config.add_scores or config.add_tokens:
+            # data_matrix must be not null if add_scores or set_alerts are set
+            if config.add_scores or config.set_alerts:
                 if response_values.data_matrix is None:
                     raise DataMatrixRequiredError()
 
@@ -199,7 +186,7 @@ class BaseActivityItem(BaseModel):
 
         return value
 
-    @root_validator()
+    @root_validator(skip_on_failure=True)
     def validate_is_hidden(cls, values):
         # cannot hide if conditional logic is set
         value = values.get("is_hidden")
@@ -207,15 +194,13 @@ class BaseActivityItem(BaseModel):
             raise HiddenWhenConditionalLogicSetError()
         return values
 
-    @root_validator()
+    @root_validator(skip_on_failure=True)
     def validate_slider_value_alert(cls, values):
         # validate slider value alert
         response_type = values.get("response_type")
         config = values.get("config")
         response_values = values.get("response_values")
-        if response_type in [
-            ResponseType.SLIDER,
-        ]:
+        if response_type == ResponseType.SLIDER:
             if response_values.alerts is not None:
                 if not config.set_alerts:
                     raise AlertFlagMissingSliderItemError()
@@ -228,9 +213,7 @@ class BaseActivityItem(BaseModel):
                         if alert.value is None:
                             raise SliderMinMaxValueError()
 
-        elif response_type in [
-            ResponseType.SLIDERROWS,
-        ]:
+        elif response_type == ResponseType.SLIDERROWS:
             for row in response_values.rows:
                 if row.alerts is not None:
                     for alert in row.alerts:
@@ -241,7 +224,7 @@ class BaseActivityItem(BaseModel):
 
         return values
 
-    @root_validator()
+    @root_validator(skip_on_failure=True)
     def validate_single_multi_alert(cls, values):
         # validate single/multi selection type alerts
         response_type = values.get("response_type")
