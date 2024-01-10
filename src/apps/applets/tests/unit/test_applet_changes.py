@@ -221,7 +221,7 @@ def test_get_changes_new_applet_bool_fields_disabled(
 ):
     applet.report_include_user_id = True
     applet.stream_enabled = True
-    applet.stream_ip_address = "127.0.0.1"
+    applet.stream_ip_address = "127.0.0.1"  # type: ignore[assignment]  # noqa: E501
     applet.stream_port = 8882
 
     new_applet.report_include_user_id = False

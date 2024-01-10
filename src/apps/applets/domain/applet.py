@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from pydantic import Field, PositiveInt, root_validator
+from pydantic import Field, IPvAnyAddress, PositiveInt, root_validator
 
 from apps.activities.domain.activity import (
     ActivityLanguageWithItemsMobileDetailPublic,
@@ -80,8 +80,8 @@ class AppletSingleLanguageDetailMobilePublic(PublicModel):
     )
     encryption: Encryption | None
     stream_enabled: bool | None
-    stream_ip_address: str | None
-    stream_port: int | None
+    stream_ip_address: IPvAnyAddress | None
+    stream_port: PositiveInt | None
 
 
 class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):

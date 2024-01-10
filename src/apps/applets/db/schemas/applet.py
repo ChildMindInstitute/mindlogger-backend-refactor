@@ -11,6 +11,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy_utils.types import IPAddressType
 
 from infrastructure.database.base import Base
 
@@ -38,7 +39,7 @@ class _BaseAppletSchema:
     )
 
     stream_enabled = Column(Boolean(), default=False)
-    stream_ip_address = Column(Text())
+    stream_ip_address = Column(IPAddressType())
     stream_port = Column(Integer())
 
 

@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import Field
+from pydantic import Field, IPvAnyAddress, PositiveInt
 
 from apps.activities.domain import (
     ActivityHistoryChange,
@@ -34,8 +34,8 @@ class AppletHistory(InternalModel):
     report_include_case_id: bool = False
     report_email_body: str = ""
     stream_enabled: bool | None = None
-    stream_ip_address: str | None = None
-    stream_port: int | None = None
+    stream_ip_address: IPvAnyAddress | None = None
+    stream_port: PositiveInt | None = None
     version: str
 
 
