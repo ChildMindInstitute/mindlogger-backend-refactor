@@ -1199,7 +1199,7 @@ class ReportServerService:
 
     async def decrypt_data_for_loris(
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID
-    ) -> ReportServerResponse | None:
+    ) -> dict | None:
         answers = await AnswersCRUD(
             self.answers_session
         ).get_by_applet_id_and_readiness_to_share_data(
