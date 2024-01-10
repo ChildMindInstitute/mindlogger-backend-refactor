@@ -1,7 +1,7 @@
 """Add stream ip address and port to applet
 
 Revision ID: 46f285831ae8
-Revises: 3fb536a58c94
+Revises: 47405ad1f948
 Create Date: 2024-01-09 14:20:00.181263
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "46f285831ae8"
-down_revision = "3fb536a58c94"
+down_revision = "47405ad1f948"
 branch_labels = None
 depends_on = None
 

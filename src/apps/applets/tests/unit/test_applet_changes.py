@@ -114,13 +114,23 @@ def test_get_changes_is_initial_applet_only_with_name(
             True,
             "Enable streaming of response data was enabled",
         ),
+        (
+            "stream_ip_address",
+            "127.0.0.1",
+            "Stream IP Address was set to 127.0.0.1",
+        ),
+        (
+            "stream_port",
+            8882,
+            "Stream Port was set to 8882",
+        ),
     ),
 )
 def test_get_changes_is_initial_version(
     new_applet: AppletHistory,
     applet_change_service: AppletChangeService,
     field_name: str,
-    value: str | dict | bool,
+    value: str | dict | bool | int,
     change: str,
 ):
     setattr(new_applet, field_name, value)
@@ -178,6 +188,16 @@ def test_get_changes_is_initial_version(
             True,
             "Enable streaming of response data was enabled",
         ),
+        (
+            "stream_ip_address",
+            "127.0.0.1",
+            "Stream IP Address was set to 127.0.0.1",
+        ),
+        (
+            "stream_port",
+            8882,
+            "Stream Port was set to 8882",
+        ),
     ),
 )
 def test_get_changes_applet_updated(
@@ -185,7 +205,7 @@ def test_get_changes_applet_updated(
     new_applet: AppletHistory,
     applet_change_service: AppletChangeService,
     field_name: str,
-    value: str | dict | bool,
+    value: str | dict | bool | int,
     change: str,
 ):
     setattr(new_applet, field_name, value)
@@ -201,13 +221,21 @@ def test_get_changes_new_applet_bool_fields_disabled(
 ):
     applet.report_include_user_id = True
     applet.stream_enabled = True
+    applet.stream_ip_address = "127.0.0.1"
+    applet.stream_port = 8882
+
     new_applet.report_include_user_id = False
     new_applet.stream_enabled = False
+    new_applet.stream_ip_address = None
+    new_applet.stream_port = None
+
     changes = applet_change_service.get_changes(applet, new_applet)
-    assert len(changes) == 2
+    assert len(changes) == 4
     exp_changes = [
         "Enable streaming of response data was disabled",
         "Include respondent in the Subject and Attachment was disabled",
+        "Stream IP Address was cleared",
+        "Stream Port was cleared",
     ]
     for change in exp_changes:
         assert change in changes
