@@ -589,7 +589,7 @@ def test_field_changed(
 def test_item_removed(
     old_item: ActivityItemHistoryFull,
     item_change_service: ActivityItemChangeService,
-    exp_change_msg: str,  # type: ignore
+    exp_change_msg: str,
 ) -> None:
     changes = item_change_service.get_changes([old_item])
     assert len(changes) == 1
