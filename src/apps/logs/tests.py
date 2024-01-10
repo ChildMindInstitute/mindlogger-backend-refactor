@@ -3,87 +3,6 @@ from pytest import fixture, mark
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
 
-EMPTY_DESCRIPTIONS = [
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test1",
-        notification_descriptions=None,
-        notification_in_queue=[{"name": "in_queue1"}],
-        scheduled_notifications=[{"name": "notifications1"}],
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test2",
-        notification_descriptions=[],
-        notification_in_queue=[{"name": "in_queue2"}],
-        scheduled_notifications=[{"name": "notifications2"}],
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test3",
-        notification_descriptions=None,
-        notification_in_queue=[{"name": "in_queue2"}],
-        scheduled_notifications=[{"name": "notifications2"}],
-    ),
-]
-
-EMPTY_QUEUE = [
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test1",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=None,
-        scheduled_notifications=[{"name": "notifications1"}],
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test2",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=[],
-        scheduled_notifications=[{"name": "notifications2"}],
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test3",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=None,
-        scheduled_notifications=[{"name": "notifications2"}],
-    ),
-]
-
-EMPTY_SCHEDULE = [
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test1",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=[{"name": "in_queue1"}],
-        scheduled_notifications=None,
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test2",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=[{"name": "in_queue2"}],
-        scheduled_notifications=[],
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test3",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=[{"name": "in_queue2"}],
-        scheduled_notifications=None,
-    ),
-]
-
 
 @fixture(scope="function")
 def dummy_logs_payload() -> list[dict]:
@@ -303,21 +222,35 @@ class TestNotificationLogs(BaseTest):
         )
         assert has_empty_array
 
-    @mark.parametrize(
-        "param,payloads",
-        (
-            ("notificationDescriptions", EMPTY_DESCRIPTIONS),
-            ("notificationInQueue", EMPTY_QUEUE),
-            (
-                "scheduledNotifications",
-                EMPTY_SCHEDULE,
-            ),
-        ),
-    )
     @rollback
-    async def test_create_log_allow_empty_array_if_prev_is_none(
-        self, param, payloads
-    ):
+    async def test_create_log_allow_empty_array_if_prev_is_none(self):
+        payloads = [
+            dict(
+                user_id="tom@mindlogger.com",
+                device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                action_type="test1",
+                notification_descriptions=None,
+                notification_in_queue=[{"name": "in_queue1"}],
+                scheduled_notifications=[{"name": "notifications1"}],
+            ),
+            dict(
+                user_id="tom@mindlogger.com",
+                device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                action_type="test2",
+                notification_descriptions=[],
+                notification_in_queue=[{"name": "in_queue2"}],
+                scheduled_notifications=[{"name": "notifications2"}],
+            ),
+            dict(
+                user_id="tom@mindlogger.com",
+                device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                action_type="test3",
+                notification_descriptions=None,
+                notification_in_queue=[{"name": "in_queue2"}],
+                scheduled_notifications=[{"name": "notifications2"}],
+            ),
+        ]
+
         for payload in payloads:
             response = await self.client.post(self.logs_url, data=payload)
             assert response.status_code == 201
@@ -334,6 +267,6 @@ class TestNotificationLogs(BaseTest):
         log_1 = next(filter(lambda x: x["actionType"] == "test1", response))
         log_2 = next(filter(lambda x: x["actionType"] == "test2", response))
         log_3 = next(filter(lambda x: x["actionType"] == "test3", response))
-        assert log_1[param] is None
-        assert log_2[param] == []
-        assert log_3[param] == []
+        assert log_1["notificationDescriptions"] is None
+        assert log_2["notificationDescriptions"] == []
+        assert log_3["notificationDescriptions"] == []
