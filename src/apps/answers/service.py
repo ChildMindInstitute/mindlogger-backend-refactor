@@ -1231,7 +1231,7 @@ class ReportServerService:
 
         async with aiohttp.ClientSession() as session:
             logger.info(
-                f"Sending request to the report server for LORIS {url}."
+                f"Sending request to the report server for LORIS {url}"
             )
             start = time.time()
             async with session.post(
@@ -1241,16 +1241,16 @@ class ReportServerService:
                 duration = time.time() - start
                 if resp.status == 200:
                     logger.info(
-                        f"Successful request (for LORIS) in {duration:.1f}\
-                              seconds."
+                        f"Successful request (for LORIS) in {duration:.1f}"
+                        "  seconds."
                     )
                     response_data = await resp.json()
                     # return ReportServerResponse(**response_data)
                     return response_data
                 else:
                     logger.error(
-                        f"Failed request (for LORIS) in {duration:.1f}\
-                              seconds."
+                        f"Failed request (for LORIS) in {duration:.1f}"
+                        "  seconds."
                     )
                     error_message = await resp.text()
                     raise ReportServerError(message=error_message)
