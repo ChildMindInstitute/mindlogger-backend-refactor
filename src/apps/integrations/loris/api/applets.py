@@ -122,9 +122,16 @@ async def integration(applet_id: uuid.UUID, session, user):
     for respondent in set(respondents):
         try:
             report_service = ReportServerService(session)
-            decrypted_answers = await report_service.decrypt_data_for_loris(
+            decrypted_answers: dict[
+                str, list
+            ] | None = await report_service.decrypt_data_for_loris(
                 applet_id, respondent
             )
+            if not decrypted_answers:
+                logger.info(
+                    "Error during request to report server, no answers"
+                )
+                return
             _result_dict = {}
             for item in decrypted_answers["result"]:
                 activity_id = item["activityId"]
@@ -534,16 +541,16 @@ async def ml_answer_to_loris(
             case "text":
                 loris_answers[key] = data[i]
             case "timeRange":
-                data = data[i]["value"]
+                _data = data[i]["value"]
 
                 key_start = key + "__start"
                 key_end = key + "__end"
 
-                start_hour = data["from"]["hour"]
-                start_minute = data["from"]["minute"]
+                start_hour = _data["from"]["hour"]
+                start_minute = _data["from"]["minute"]
 
-                end_hour = data["to"]["hour"]
-                end_minute = data["to"]["minute"]
+                end_hour = _data["to"]["hour"]
+                end_minute = _data["to"]["minute"]
 
                 start = "{:02d}:{:02d}".format(start_hour, start_minute)
                 end = "{:02d}:{:02d}".format(end_hour, end_minute)
@@ -551,21 +558,21 @@ async def ml_answer_to_loris(
                 loris_answers[key_start] = start
                 loris_answers[key_end] = end
             case "geolocation":
-                data = data[i]["value"]
+                _data = data[i]["value"]
 
                 key_latitude = key + "__latitude"
                 key_longitude = key + "__longitude"
 
-                latitude = str(data["latitude"])
-                longitude = str(data["longitude"])
+                latitude = str(_data["latitude"])
+                longitude = str(_data["longitude"])
 
                 loris_answers[key_latitude] = latitude
                 loris_answers[key_longitude] = longitude
             case "date":
-                data = data[i]["value"]
+                _data = data[i]["value"]
 
                 date = "{:04d}-{:02d}-{:02d}".format(
-                    data["year"], data["month"], data["day"]
+                    _data["year"], _data["month"], _data["day"]
                 )
 
                 loris_answers[key] = date
@@ -588,9 +595,9 @@ async def ml_answer_to_loris(
                     _key = key + "__{}".format(i)
                     loris_answers[_key] = v
             case "time":
-                data = data[i]["value"]
+                _data = data[i]["value"]
 
-                time = "{:02d}:{:02d}".format(data["hours"], data["minutes"])
+                time = "{:02d}:{:02d}".format(_data["hours"], _data["minutes"])
 
                 loris_answers[key] = time
             case _:
