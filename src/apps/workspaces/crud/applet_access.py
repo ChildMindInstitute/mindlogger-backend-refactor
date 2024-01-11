@@ -212,6 +212,23 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(select(query))
         return db_result.scalars().first()
 
+    async def can_invite(self, applet_id: uuid.UUID, user_id: uuid.UUID):
+        """
+        1. invite new respondent
+        2. can view all respondents
+        3. remove access from lower role
+        4. invite new reviewer
+        """
+        query: Query = select(UserAppletAccessSchema.id)
+        query = query.where(UserAppletAccessSchema.soft_exists())
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.role.in_(Role.inviters()))
+        query = query.exists()
+
+        db_result = await self._execute(select(query))
+        return db_result.scalars().first()
+
     async def can_set_schedule_and_notifications(
         self, applet_id: uuid.UUID, user_id: uuid.UUID
     ):
