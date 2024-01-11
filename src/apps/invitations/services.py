@@ -39,6 +39,7 @@ from apps.invitations.errors import (
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.query_params import QueryParams
+from apps.subjects.crud import SubjectsCrud
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.service.workspace import WorkspaceService
@@ -85,16 +86,6 @@ class InvitationsService:
         await self._is_validated_role_for_invitation(
             applet_id, Role.RESPONDENT
         )
-        try:
-            await self._is_secret_user_id_unique(
-                applet_id, schema.secret_user_id, schema.email
-            )
-        except NonUniqueValue as e:
-            field_name = InvitationRespondentRequest.__fields__[
-                "secret_user_id"
-            ].alias
-            wrapper = ErrorWrapper(ValueError(e), ("body", field_name))
-            raise RequestValidationError([wrapper]) from e
 
         # Get invited user if he exists. User will be linked with invitaion
         # by user_id in this case
@@ -385,19 +376,29 @@ class InvitationsService:
             )
 
     async def _is_secret_user_id_unique(
-        self, applet_id: uuid.UUID, secret_user_id: str, email: str
+        self, applet_id: uuid.UUID, secret_user_id: str, email: str | None
     ):
-        access_coro = UserAppletAccessCRUD(
-            self.session
-        ).get_by_secret_user_id_for_applet(applet_id, secret_user_id)
-        invitation_coro = InvitationCRUD(self.session).get_for_respondent(
-            applet_id,
-            secret_user_id,
-            InvitationStatus.PENDING,
-            invited_email=email,
-        )
-        access, invitation = await asyncio.gather(access_coro, invitation_coro)
-        if access or invitation:
+
+        workers = [
+            UserAppletAccessCRUD(
+                self.session
+            ).get_by_secret_user_id_for_applet(applet_id, secret_user_id),
+            SubjectsCrud(self.session).is_secret_id_exist(
+                secret_user_id, applet_id, email
+            ),
+        ]
+
+        if email:
+            workers += [
+                InvitationCRUD(self.session).get_for_respondent(
+                    applet_id,
+                    secret_user_id,
+                    InvitationStatus.PENDING,
+                    invited_email=email,
+                )
+            ]
+        results = await asyncio.gather(*workers)
+        if any(results):
             raise NonUniqueValue(
                 message=f"In applet with id {applet_id} "
                 f"secret User Id is non-unique."
@@ -480,6 +481,21 @@ class InvitationsService:
         if not invited_user_id:
             return f"invitation_new_user_{language}"
         return f"invitation_registered_user_{language}"
+
+    async def raise_for_secret_id(
+        self,
+        applet_id: uuid.UUID,
+        email: str | None,
+        secret_user_id: str,
+        alias: str,
+    ):
+        try:
+            await self._is_secret_user_id_unique(
+                applet_id, secret_user_id, email
+            )
+        except NonUniqueValue as e:
+            wrapper = ErrorWrapper(ValueError(e), ("body", alias))
+            raise RequestValidationError([wrapper]) from e
 
 
 class PrivateInvitationService:

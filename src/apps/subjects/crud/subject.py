@@ -25,14 +25,15 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         return await self._delete("id", pk)
 
     async def is_secret_id_exist(
-        self, secret_id: str, applet_id: uuid.UUID
+        self, secret_id: str, applet_id: uuid.UUID, email: str | None
     ) -> bool:
         query: Query = select(SubjectSchema.id)
         query = query.where(
             SubjectSchema.secret_user_id == secret_id,
             SubjectSchema.applet_id == applet_id,
         )
-        query = query.limit(1)
+        if email:
+            query = query.where(SubjectSchema.email != email)
         res = await self._execute(query)
         res = res.scalars().all()
         return bool(res)

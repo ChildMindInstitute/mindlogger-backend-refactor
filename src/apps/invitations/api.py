@@ -22,7 +22,6 @@ from apps.invitations.domain import (
 )
 from apps.invitations.errors import (
     ManagerInvitationExist,
-    NonUniqueValue,
     RespondentInvitationExist,
 )
 from apps.invitations.filters import InvitationQueryParams
@@ -121,6 +120,13 @@ async def invitation_respondent_send(
         except UserNotFound:
             pass
 
+        subject_srv = SubjectsService(session, user.id)
+        await invitation_srv.raise_for_secret_id(
+            applet_id,
+            invitation_schema.email,
+            invitation_schema.secret_user_id,
+            InvitationRespondentRequest.__fields__["secret_user_id"].alias,
+        )
         subject_sch = Subject(
             applet_id=applet_id,
             creator_id=user.id,
@@ -131,7 +137,7 @@ async def invitation_respondent_send(
             secret_user_id=invitation_schema.secret_user_id,
             nickname=invitation_schema.nickname,
         )
-        subject = await SubjectsService(session, user.id).create(subject_sch)
+        subject = await subject_srv.create(subject_sch)
         invitation = await invitation_srv.send_respondent_invitation(
             applet_id, invitation_schema, subject.id
         )
@@ -273,11 +279,12 @@ async def create_shell_account(
             applet_id
         )
         service = SubjectsService(session, user.id)
-        exist = await service.is_secret_id_exist(
-            subject_schema.secret_user_id, applet_id
+        await InvitationsService(session, user).raise_for_secret_id(
+            applet_id,
+            subject_schema.email,
+            subject_schema.secret_user_id,
+            ShellAccountCreateRequest.__fields__["secret_user_id"].alias,
         )
-        if exist:
-            raise NonUniqueValue()
         subject_sch = Subject(
             applet_id=applet_id,
             creator_id=user.id,
@@ -288,7 +295,7 @@ async def create_shell_account(
             nickname=subject_schema.nickname,
             email=subject_schema.email,
         )
-        subject = await SubjectsService(session, user.id).create(subject_sch)
+        subject = await service.create(subject_sch)
         return Response(result=ShellAccountCreateResponse.from_orm(subject))
 
 
