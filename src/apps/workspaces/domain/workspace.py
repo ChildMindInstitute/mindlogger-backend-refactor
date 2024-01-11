@@ -10,6 +10,9 @@ from sqlalchemy_utils import StringEncryptedType
 from apps.applets.domain.base import Encryption
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.encryption import get_key
+from apps.workspaces.constants import StorageType
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.errors import InvalidAppletIDFilter
 
 __all__ = [
     "PublicWorkspace",
@@ -24,9 +27,6 @@ __all__ = [
     "WorkspaceArbitraryCreate",
     "WorkspaceArbitraryFields",
 ]
-
-from apps.workspaces.constants import StorageType
-from apps.workspaces.domain.constants import Role
 
 
 class PublicWorkspace(PublicModel):
@@ -340,3 +340,17 @@ class UserAnswersDBInfo(AnswerDbApplet):
 class AnswerDbApplets(InternalModel):
     database_uri: str | None
     applets: list[AnswerDbApplet] = Field(default_factory=list)
+
+
+class AppletIdsQuery(InternalModel):
+    applet_ids: str | None = Field(None, alias="appletIDs")
+
+    @validator("applet_ids")
+    def convert_str_to_uuid(cls, value) -> list[uuid.UUID]:
+        if not value:
+            return []
+        try:
+            applet_ids = list(map(uuid.UUID, filter(None, value.split(","))))
+        except ValueError:
+            raise InvalidAppletIDFilter
+        return applet_ids

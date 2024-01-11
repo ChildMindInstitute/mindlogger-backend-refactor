@@ -93,32 +93,6 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(select(query))
         return db_result.scalars().first()
 
-    async def get_workspace_priority_role(
-        self,
-        owner_id: uuid.UUID,
-        user_id: uuid.UUID,
-    ) -> Role | None:
-        query: Query = select(UserAppletAccessSchema.role)
-        query = query.where(UserAppletAccessSchema.soft_exists())
-        query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
-        query = query.order_by(
-            case(
-                (UserAppletAccessSchema.role == Role.OWNER, 1),
-                (UserAppletAccessSchema.role == Role.MANAGER, 2),
-                (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
-                (UserAppletAccessSchema.role == Role.EDITOR, 4),
-                (UserAppletAccessSchema.role == Role.REVIEWER, 5),
-                (UserAppletAccessSchema.role == Role.RESPONDENT, 6),
-                else_=10,
-            ).asc()
-        )
-        query = query.limit(1)
-        db_result = await self._execute(query)
-        result = db_result.scalars().first()
-
-        return Role(result) if result else None
-
     async def get_applets_priority_role(
         self,
         applet_id: uuid.UUID,
@@ -223,24 +197,6 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(UserAppletAccessSchema.role.in_(Role.schedulers()))
-        query = query.exists()
-
-        db_result = await self._execute(select(query))
-        return db_result.scalars().first()
-
-    async def can_see_any_data(self, applet_id: uuid.UUID, user_id: uuid.UUID):
-        """
-        1. view all users data
-        2. delete users data
-        2. export any users data
-        """
-        query: Query = select(UserAppletAccessSchema.id)
-        query = query.where(UserAppletAccessSchema.soft_exists())
-        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
-        query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(
-            UserAppletAccessSchema.role.in_(Role.super_reviewers())
-        )
         query = query.exists()
 
         db_result = await self._execute(select(query))

@@ -38,10 +38,7 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         return db_result.scalars().all()
 
     async def get_all(self) -> list[UserWorkspaceSchema]:
-        query: Query = select(self.schema_class)
-        db_result = await self._execute(query)
-
-        return db_result.scalars().all()
+        return await self._all()
 
     async def save(self, schema: UserWorkspaceSchema) -> UserWorkspaceSchema:
         """Return UserWorkspace instance."""
@@ -125,26 +122,6 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
             ] = user_applet_access.owner_id
 
         return applet_owner_map
-
-    async def get_bucket_info(self, applet_id: uuid.UUID):
-        query: Query = select(
-            UserWorkspaceSchema.storage_access_key,
-            UserWorkspaceSchema.storage_secret_key,
-            UserWorkspaceSchema.storage_bucket,
-            UserWorkspaceSchema.database_uri,
-        )
-        query.join(
-            UserAppletAccessSchema,
-            UserAppletAccessSchema.owner_id == UserWorkspaceSchema.user_id,
-        )
-        query.where(
-            UserAppletAccessSchema.applet_id == applet_id,
-            UserWorkspaceSchema.use_arbitrary.is_(True),
-        )
-        query.limit(1)
-        db_result = await self._execute(query)
-        res = db_result.scalars().first()
-        return res
 
     async def get_user_answers_db_info(
         self, user_id: uuid.UUID
