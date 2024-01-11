@@ -20,7 +20,7 @@ class DoesNotHaveAccess(AccessDeniedError):
     message = _("Access denied.")
 
 
-class InvitationAlreadyProcessed(ValidationError):
+class InvitationAlreadyProcesses(ValidationError):
     message = _("Invitation has been already processed.")
 
 

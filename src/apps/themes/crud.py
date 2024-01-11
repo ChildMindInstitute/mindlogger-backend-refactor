@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
+from sqlalchemy.sql.functions import count
 
 from apps.authentication.errors import PermissionsError
 from apps.shared.filtering import FilterField, Filtering
@@ -163,5 +164,10 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
         query: Query = select(ThemeSchema)
         query = query.where(ThemeSchema.is_default.is_(True))
         query = query.limit(1)
+        db_result = await self._execute(query)
+        return db_result.scalars().first()
+
+    async def count(self) -> int:
+        query: Query = select(count(ThemeSchema.id))
         db_result = await self._execute(query)
         return db_result.scalars().first()

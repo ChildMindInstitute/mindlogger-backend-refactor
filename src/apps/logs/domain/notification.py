@@ -27,9 +27,21 @@ class NotificationLogQuery(BaseModel):
 
 
 class NotificationLogCreate(_NotificationLogBase, InternalModel):
-    notification_descriptions: list[dict] | None
-    notification_in_queue: list[dict] | None
-    scheduled_notifications: list[dict] | None
+    notification_descriptions: str | None
+    notification_in_queue: str | None
+    scheduled_notifications: str | None
+
+    @validator(
+        "notification_descriptions",
+        "notification_in_queue",
+        "scheduled_notifications",
+    )
+    def validate_json(cls, v):
+        try:
+            if v is not None:
+                return json.loads(v)
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON")
 
     @root_validator
     def validate_json_fields(cls, values):

@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy import select
 from sqlalchemy.orm import InstrumentedAttribute, Query
 from sqlalchemy.sql.operators import ColumnOperators
@@ -45,26 +47,26 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         notif_in_queue_upd = True
         sched_notif_upd = True
 
-        if schema.notification_descriptions is None:
+        if not schema.notification_descriptions:
             description = await self.get_previous_description(user_id, schema)
             schema.notification_descriptions = (
-                description if description is not None else None
+                json.dumps(description) if description else json.dumps(None)
             )
             notif_desc_upd = False
 
-        if schema.notification_in_queue is None:
+        if not schema.notification_in_queue:
             in_queue = await self.get_previous_in_queue(user_id, schema)
             schema.notification_in_queue = (
-                in_queue if in_queue is not None else None
+                json.dumps(in_queue) if in_queue else json.dumps(None)
             )
             notif_in_queue_upd = False
 
-        if schema.scheduled_notifications is None:
+        if not schema.scheduled_notifications:
             scheduled = await self.get_previous_scheduled_notifications(
                 user_id, schema
             )
             schema.scheduled_notifications = (
-                scheduled if scheduled is not None else None
+                json.dumps(scheduled) if scheduled else json.dumps(None)
             )
             sched_notif_upd = False
 
