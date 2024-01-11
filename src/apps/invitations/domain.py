@@ -379,3 +379,8 @@ class ShellAccountCreateResponse(PublicModel):
     secret_user_id: str
     nickname: str | None
     email: str | None
+
+
+class ShallAccountInvitation(PublicModel):
+    email: str
+    subject_id: uuid.UUID

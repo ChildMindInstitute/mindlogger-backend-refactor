@@ -16,14 +16,16 @@ class SubjectSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     user_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
     )
     email = Column(StringEncryptedType(Unicode, get_key), default=None)
-    nickname = Column(String, default=None, nullable=True)
-    language = Column(String(length=5))
     first_name = Column(StringEncryptedType(Unicode, get_key), nullable=False)
     last_name = Column(StringEncryptedType(Unicode, get_key), nullable=False)
+    nickname = Column(
+        StringEncryptedType(Unicode, get_key), default=None, nullable=True
+    )
     secret_user_id = Column(String, nullable=False)
+    language = Column(String(length=5))
 
 
 class SubjectRespondentSchema(Base):

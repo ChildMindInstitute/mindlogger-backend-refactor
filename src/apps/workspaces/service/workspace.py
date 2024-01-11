@@ -113,7 +113,6 @@ class WorkspaceService:
         ).get_workspace_respondents(
             self._user_id, owner_id, applet_id, query_params
         )
-
         return users, total
 
     async def get_workspace_managers(
@@ -374,3 +373,16 @@ class WorkspaceService:
         if not schemas:
             return []
         return [WorkspaceArbitrary.from_orm(schema) for schema in schemas]
+
+    async def get_workspace_subjects(
+        self,
+        owner_id: uuid.UUID,
+        applet_id: uuid.UUID | None,
+        query_params: QueryParams,
+    ) -> Tuple[list[WorkspaceRespondent], int]:
+        users, total = await UserAppletAccessCRUD(
+            self.session
+        ).get_workspace_respondents(
+            self._user_id, owner_id, applet_id, query_params
+        )
+        return users, total

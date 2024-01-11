@@ -68,7 +68,7 @@ class WorkspaceRespondentDetails(InternalModel):
     applet_id: uuid.UUID
     applet_display_name: str
     applet_image: str | None
-    access_id: uuid.UUID
+    access_id: str | None = None
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
     has_individual_schedule: bool = False
@@ -93,6 +93,8 @@ class WorkspaceRespondent(InternalModel):
     is_anonymous_respondent: bool
     last_seen: datetime.datetime | None
     is_pinned: bool = False
+    status: str
+    email: str | None = None
     details: list[WorkspaceRespondentDetails] | None = None
 
 
@@ -155,7 +157,7 @@ class PublicWorkspaceRespondentDetails(PublicModel):
     applet_id: uuid.UUID
     applet_display_name: str
     applet_image: str | None
-    access_id: uuid.UUID
+    access_id: uuid.UUID | None
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
     has_individual_schedule: bool = False
@@ -169,6 +171,8 @@ class PublicWorkspaceRespondent(PublicModel):
     is_anonymous_respondent: bool
     last_seen: datetime.datetime | None
     is_pinned: bool = False
+    status: str
+    email: str | None
     details: list[PublicWorkspaceRespondentDetails] | None = None
 
 

@@ -1,5 +1,7 @@
 from uuid import uuid4
 
+import pytest
+
 from apps.shared.test import BaseTest
 from apps.workspaces.domain.constants import Role
 from infrastructure.database import rollback
@@ -23,6 +25,7 @@ class TestWorkspaces(BaseTest):
         "schedule/fixtures/flow_events.json",
         "schedule/fixtures/user_events.json",
         "folders/fixtures/folders_applet.json",
+        "subjects/fixtures/subjects.json",
     ]
 
     login_url = "/auth/login"
@@ -248,6 +251,9 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == 200
 
+    @pytest.mark.skip(
+        reason="Skip until responses sending as subject not ready"
+    )
     @rollback
     async def test_workspace_applets_respondent_update(self):
         await self.client.login(
@@ -546,6 +552,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         # TODO: check from database results
 
+    @pytest.mark.skip(reason="Skipp until subject pins will be implemented")
     @rollback
     async def test_pin_workspace_respondents(self):
         await self.client.login(

@@ -35,6 +35,8 @@ from sqlalchemy_utils import StringEncryptedType
 
 from apps.applets.db.schemas import AppletSchema
 from apps.folders.db.schemas import FolderAppletSchema
+from apps.invitations.constants import InvitationStatus
+from apps.invitations.db import InvitationSchema
 from apps.schedule.db.schemas import EventSchema, UserEventsSchema
 from apps.shared.encryption import get_key
 from apps.shared.filtering import Comparisons, FilterField, Filtering
@@ -42,6 +44,8 @@ from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
+from apps.subjects.constants import SubjectStatus
+from apps.subjects.db.schemas import SubjectSchema
 from apps.users import UserSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.db.schemas.user_applet_access import UserPinSchema
@@ -575,6 +579,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         applet_id: uuid.UUID | None,
         query_params: QueryParams,
     ) -> Tuple[list[WorkspaceRespondent], int]:
+        field_nickname = SubjectSchema.nickname
+        field_secret_user_id = SubjectSchema.secret_user_id
+
         schedule_exists = (
             select(UserEventsSchema)
             .join(EventSchema, EventSchema.id == UserEventsSchema.event_id)
@@ -633,73 +640,89 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(AppletSchema, UserSchema)
         )
 
-        field_nickname = UserAppletAccessSchema.respondent_nickname
-        field_secret_user_id = UserAppletAccessSchema.respondent_secret_id
-
-        query: Query = (
-            select(
-                # fmt: off
-                UserSchema.id,
-                UserSchema.first_name,
-                UserSchema.last_name,
-                UserSchema.is_anonymous_respondent,
-
-                func.coalesce(
-                    UserSchema.last_seen_at, UserSchema.created_at
-                ).label("last_seen"),
-
-                func.array_remove(
-                    func.array_agg(
-                            func.distinct(field_nickname)
-                    ), None)
-                .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
-                .label("nicknames"),
-
-                func.array_agg(
-                    aggregate_order_by(
-                        func.distinct(field_secret_user_id),
-                        field_secret_user_id,
-                    )
-                ).label("secret_ids"),
-
-                is_pinned.label("is_pinned"),
-
-                func.array_agg(
-                    func.json_build_object(
-                        text("'applet_id'"), AppletSchema.id,
-                        text("'applet_display_name'"),
-                        AppletSchema.display_name,  # noqa: E501
-                        text("'applet_image'"), AppletSchema.image,
-                        text("'access_id'"), UserAppletAccessSchema.id,
-                        text("'respondent_nickname'"), field_nickname,
-                        text("'respondent_secret_id'"), field_secret_user_id,
-                        text("'has_individual_schedule'"), schedule_exists,
-                        text("'encryption'"), AppletSchema.encryption,
-                    )
-                ).label("details"),
-            )
-            .select_from(UserAppletAccessSchema)
-            .join(
-                AppletSchema,
-                and_(
-                    AppletSchema.id == UserAppletAccessSchema.applet_id,
-                    AppletSchema.soft_exists(),
+        query: Query = select(
+            # fmt: off
+            SubjectSchema.id,
+            SubjectSchema.first_name,
+            SubjectSchema.last_name,
+            SubjectSchema.email,
+            case(
+                (
+                    InvitationSchema.status == InvitationStatus.APPROVED,
+                    SubjectStatus.INVITED
                 ),
-            )
-            .join(
-                UserSchema,
-                UserSchema.id == UserAppletAccessSchema.user_id,
-            )
-            .where(
-                UserAppletAccessSchema.owner_id == owner_id,
+                (
+                    InvitationSchema.status == InvitationStatus.PENDING,
+                    SubjectStatus.PENDING
+                ),
+                else_=SubjectStatus.NOT_INVITED
+            ).label('status'),
+            is_pinned.label('is_anonymous_respondent'),
+            func.array_remove(
+                func.array_agg(
+                    func.distinct(field_nickname)
+                ), None)
+            .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
+            .label("nicknames"),
+            func.array_agg(
+                aggregate_order_by(
+                    func.distinct(field_secret_user_id),
+                    field_secret_user_id,
+                )
+            ).label("secret_ids"),
+            func.array_agg(
+                func.json_build_object(
+                    text("'applet_id'"), AppletSchema.id,
+                    text("'applet_display_name'"),
+                    AppletSchema.display_name,  # noqa: E501
+                    text("'applet_image'"), AppletSchema.image,
+                    text("'access_id'"), UserAppletAccessSchema.id,
+                    text("'respondent_nickname'"), field_nickname,
+                    text("'respondent_secret_id'"), field_secret_user_id,
+                    text("'has_individual_schedule'"), schedule_exists,
+                    text("'encryption'"), AppletSchema.encryption,
+                )
+            ).label("details"),
+        )
+
+        query = query.join(
+            UserSchema, UserSchema.id == SubjectSchema.user_id, isouter=True
+        )
+
+        query = query.join(
+            AppletSchema, AppletSchema.id == SubjectSchema.applet_id
+        )
+
+        query = query.join(
+            UserAppletAccessSchema,
+            and_(
+                UserAppletAccessSchema.applet_id == SubjectSchema.applet_id,
+                UserAppletAccessSchema.user_id == SubjectSchema.user_id,
                 UserAppletAccessSchema.role == Role.RESPONDENT,
-                has_access,
-                UserAppletAccessSchema.applet_id == applet_id
-                if applet_id
-                else True,
-                UserAppletAccessSchema.soft_exists(),
-            )
-            .group_by(UserSchema.id)
+            ),
+            isouter=True,
+        )
+
+        query = query.join(
+            InvitationSchema,
+            and_(
+                InvitationSchema.email == SubjectSchema.email,
+                InvitationSchema.applet_id == SubjectSchema.applet_id,
+            ),
+            isouter=True,
+        )
+
+        query = query.group_by(
+            SubjectSchema.id,
+            UserSchema.id,
+            UserSchema.is_anonymous_respondent,
+            InvitationSchema.status,
+            UserAppletAccessSchema.is_pinned,
+        )
+
+        query = query.where(
+            has_access,
+            SubjectSchema.applet_id == applet_id if applet_id else True,
         )
 
         if query_params.filters:
@@ -712,7 +735,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             )
 
         coro_total = self._execute(
-            select(count()).select_from(query.with_only_columns(UserSchema.id))
+            select(count()).select_from(
+                query.with_only_columns(SubjectSchema.id)
+            )
         )
 
         if query_params.ordering:
@@ -722,14 +747,10 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 )
             )
         query = paging(query, query_params.page, query_params.limit)
-
         coro_data = self._execute(query)
-
         res_data, res_total = await asyncio.gather(coro_data, coro_total)
-
         data = parse_obj_as(list[WorkspaceRespondent], res_data.all())
         total = res_total.scalar()
-
         return data, total
 
     async def get_workspace_managers(

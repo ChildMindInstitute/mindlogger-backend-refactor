@@ -16,6 +16,7 @@ from apps.invitations.domain import (
     InvitationReviewerResponse,
     PrivateInvitationResponse,
     RespondentMeta,
+    ShallAccountInvitation,
     ShellAccountCreateRequest,
     ShellAccountCreateResponse,
 )
@@ -30,6 +31,7 @@ from apps.invitations.services import (
     PrivateInvitationService,
 )
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.exception import NotFoundError
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.subjects.domain import Subject
 from apps.subjects.services import SubjectsService
@@ -288,3 +290,50 @@ async def create_shell_account(
         )
         subject = await SubjectsService(session, user.id).create(subject_sch)
         return Response(result=ShellAccountCreateResponse.from_orm(subject))
+
+
+async def invitation_subject_send(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    schema: ShallAccountInvitation = Body(...),
+    session=Depends(get_session),
+) -> Response[InvitationRespondentResponse]:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_invite_access(
+            applet_id
+        )
+        invitation_srv = InvitationsService(session, user)
+        try:
+            invited_user = await UserService(session).get_by_email(
+                schema.email
+            )
+            is_role_exist = await UserAppletAccessService(
+                session, invited_user.id, applet_id
+            ).has_role(Role.RESPONDENT)
+            if is_role_exist:
+                raise RespondentInvitationExist()
+        except UserNotFound:
+            pass
+
+        subject = await SubjectsService(session, user.id).get(
+            schema.subject_id
+        )
+        if not subject:
+            raise NotFoundError()
+
+        invitation_schema = InvitationRespondentRequest(
+            email=schema.email,
+            first_name=subject.first_name,
+            last_name=subject.last_name,
+            language=subject.language,
+            secret_user_id=subject.secret_user_id,
+            nickname=subject.nickname,
+        )
+        invitation = await invitation_srv.send_respondent_invitation(
+            applet_id, invitation_schema, subject.id
+        )
+
+    return Response[InvitationRespondentResponse](
+        result=InvitationRespondentResponse(**invitation.dict())
+    )

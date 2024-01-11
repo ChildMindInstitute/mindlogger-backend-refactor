@@ -36,3 +36,10 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         res = await self._execute(query)
         res = res.scalars().all()
         return bool(res)
+
+    async def get_by_email(self, email: str) -> SubjectSchema | None:
+        query: Query = select(SubjectSchema)
+        query = query.where(SubjectSchema.email == email)
+        query = query.limit(1)
+        result = await self._execute(query)
+        return result.scalars().first()

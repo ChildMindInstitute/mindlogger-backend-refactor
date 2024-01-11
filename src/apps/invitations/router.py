@@ -10,6 +10,7 @@ from apps.invitations.api import (
     invitation_respondent_send,
     invitation_retrieve,
     invitation_reviewer_send,
+    invitation_subject_send,
     private_invitation_accept,
     private_invitation_retrieve,
 )
@@ -120,7 +121,7 @@ router.get(
 router.post("/private/{key}/accept")(private_invitation_accept)
 
 
-# Invitation send for shell account
+# Invitation send for shell account without sending invitation
 router.post(
     "/{applet_id}/shell-account",
     description="""
@@ -133,3 +134,18 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(create_shell_account)
+
+
+# Send invitation to shell account
+router.post(
+    "/{applet_id}/subject",
+    description="""General endpoint for sending invitations to the concrete
+                applet for the concrete user to extend shell-account into user.
+                """,
+    response_model_by_alias=True,
+    response_model=Response[InvitationRespondentResponse],
+    responses={
+        status.HTTP_200_OK: {"model": Response[InvitationRespondentResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(invitation_subject_send)

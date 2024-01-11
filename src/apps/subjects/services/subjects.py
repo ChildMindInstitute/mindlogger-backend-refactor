@@ -69,3 +69,9 @@ class SubjectsService:
         return await SubjectsCrud(self.session).is_secret_id_exist(
             secret_id, applet_id
         )
+
+    async def get_by_email(self, email: str) -> Subject | None:
+        return await SubjectsCrud(self.session).get_by_email(email)
+
+    async def get(self, id_: uuid.UUID) -> Subject | None:
+        return await SubjectsCrud(self.session).get_by_id(id_)

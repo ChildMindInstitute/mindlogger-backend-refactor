@@ -51,7 +51,11 @@ def upgrade() -> None:
             sqlalchemy_utils.types.encrypted.encrypted_type.StringEncryptedType(),
             nullable=True,
         ),
-        sa.Column("nickname", sa.String(), nullable=True),
+        sa.Column(
+            "nickname",
+            sqlalchemy_utils.types.encrypted.encrypted_type.StringEncryptedType(),
+            nullable=True
+        ),
         sa.Column(
             "first_name",
             sqlalchemy_utils.types.encrypted.encrypted_type.StringEncryptedType(),
