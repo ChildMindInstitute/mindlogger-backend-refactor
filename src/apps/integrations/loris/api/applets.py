@@ -531,7 +531,9 @@ async def ml_answer_to_loris(
         key: str = "__".join([applet_id, activitie_id, items[i]["name"]])
         match items[i]["responseType"]:
             case "singleSelect":
-                loris_answers[key] = str(data[i]["value"] + 1)
+                index = data[i]["value"]
+                _data = items[i]["responseValues"]["options"][index]["text"]
+                loris_answers[key] = _data
             case "multiSelect":
                 loris_answers[key] = list(map(str, data[i]["value"]))
             case "slider":
