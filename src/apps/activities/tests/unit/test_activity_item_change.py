@@ -582,3 +582,15 @@ def test_field_changed(
     changes = item_change_service.get_changes_update(old_item, new_item)
     assert len(changes) == 1
     assert changes[0] == exp_change_msg
+
+
+@pytest.mark.run
+@pytest.mark.parametrize("exp_change_msg", ("Item test_item was removed",))
+def test_item_removed(
+    old_item: ActivityItemHistoryFull,
+    item_change_service: ActivityItemChangeService,
+    exp_change_msg: str,
+) -> None:
+    changes = item_change_service.get_changes([old_item])
+    assert len(changes) == 1
+    assert changes[0].name == exp_change_msg
