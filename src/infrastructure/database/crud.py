@@ -1,3 +1,4 @@
+import operator
 import typing
 from copy import deepcopy
 from typing import Any, Generic, Type, TypeVar
@@ -107,8 +108,15 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
         return results.scalars().all()
 
-    async def count(self) -> int:
-        query = func.count(self.schema_class.id)
+    async def count(self, **filters: Any) -> int:
+        query = select(func.count()).select_from(self.schema_class)
+        if filters:
+            wheres = [
+                operator.eq(getattr(self.schema_class, k), v)
+                for k, v in filters.items()
+            ]
+
+            query = query.where(*wheres)
         results = await self._execute(query=query)
 
         value = results.scalar()
