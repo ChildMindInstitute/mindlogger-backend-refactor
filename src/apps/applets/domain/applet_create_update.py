@@ -11,6 +11,7 @@ from apps.activities.errors import (
     DuplicateActivityNameError,
     DuplicatedActivitiesError,
     DuplicatedActivityFlowsError,
+    FlowItemActivityKeyNotFoundError,
 )
 from apps.activity_flows.domain.flow_create import FlowCreate
 from apps.activity_flows.domain.flow_update import FlowUpdate
@@ -33,12 +34,14 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
         flows: list[FlowCreate] = values.get("activity_flows", [])
 
         activity_names = set()
+        activity_keys = set()
         flow_names = set()
         assessments_count = 0
         for activity in activities:
             if activity.name in activity_names:
                 raise DuplicateActivityNameError()
             activity_names.add(activity.name)
+            activity_keys.add(activity.key)
             assessments_count += int(activity.is_reviewable)
 
         # if assessments_count > 1:
@@ -48,6 +51,9 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
             if flow.name in flow_names:
                 raise DuplicateActivityFlowNameError()
             flow_names.add(flow.name)
+            for flow_item in flow.items:
+                if flow_item.activity_key not in activity_keys:
+                    raise FlowItemActivityKeyNotFoundError()
         return values
 
     @root_validator
@@ -65,6 +71,8 @@ class AppletUpdate(AppletBase, InternalModel):
         flows = values.get("activity_flows", [])
 
         activity_names = set()
+        activity_keys = set()
+
         flow_names = set()
         activity_ids = set()
         flow_ids = set()
@@ -76,6 +84,8 @@ class AppletUpdate(AppletBase, InternalModel):
                 raise DuplicatedActivitiesError()
             activity_ids.add(activity.id)
             activity_names.add(activity.name)
+            activity_keys.add(activity.key)
+
             assessments_count += int(activity.is_reviewable)
 
         if assessments_count > 1:
@@ -86,6 +96,10 @@ class AppletUpdate(AppletBase, InternalModel):
                 raise DuplicateActivityFlowNameError()
             if flow.id and flow.id in flow_ids:
                 raise DuplicatedActivityFlowsError()
+            for flow_item in flow.items:
+                if flow_item.activity_key not in activity_keys:
+                    raise FlowItemActivityKeyNotFoundError()
+
             flow_ids.add(flow.id)
             flow_names.add(flow.name)
         return values

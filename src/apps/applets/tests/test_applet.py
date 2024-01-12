@@ -1,6 +1,7 @@
 import asyncio
 import uuid
 
+from apps.activities import errors as activity_errors
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -925,6 +926,32 @@ class TestApplet(BaseTest):
                 )
             ],
         )
+        activity_key = update_data["activity_flows"][0]["items"][0][
+            "activity_key"
+        ]
+        wrong_activity_key = uuid.uuid4()
+        update_data["activity_flows"][0]["items"][0][
+            "activity_key"
+        ] = wrong_activity_key
+
+        response = await self.client.put(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=update_data,
+        )
+        assert (
+            response.status_code
+            == activity_errors.FlowItemActivityKeyNotFoundError.status_code
+        )
+        assert (
+            response.json()["result"][0]["message"]
+            == activity_errors.FlowItemActivityKeyNotFoundError.message
+        )
+
+        update_data["activity_flows"][0]["items"][0][
+            "activity_key"
+        ] = activity_key
         response = await self.client.put(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
