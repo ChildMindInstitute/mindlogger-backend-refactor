@@ -1,6 +1,7 @@
 import http
 import json
 import uuid
+from typing import Literal
 
 import pytest
 
@@ -14,7 +15,11 @@ from apps.invitations.domain import (
     InvitationStatus,
 )
 from apps.invitations.errors import (
+    InvitationAlreadyProcessed,
+    InvitationDoesNotExist,
     ManagerInvitationExist,
+    NonUniqueValue,
+    RespondentDoesNotExist,
     RespondentInvitationExist,
 )
 from apps.mailing.services import TestMail
@@ -105,6 +110,7 @@ class TestInvite(BaseTest):
     invitation_detail = "/invitations/{key}"
     private_invitation_detail = "/invitations/private/{key}"
     invite_url = "/invitations/invite"
+    invited_url = "/invitations/invited"
     accept_url = "/invitations/{key}/accept"
     accept_private_url = "/invitations/private/{key}/accept"
     decline_url = "/invitations/{key}/decline"
@@ -119,7 +125,7 @@ class TestInvite(BaseTest):
         )
 
         response = await self.client.get(self.invitation_list)
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         assert len(response.json()["result"]) == 4
 
@@ -133,7 +139,7 @@ class TestInvite(BaseTest):
             self.invitation_list,
             dict(appletId="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         assert len(response.json()["result"]) == 3
 
@@ -146,7 +152,7 @@ class TestInvite(BaseTest):
                 key="6a3ab8e6-f2fa-49ae-b2db-197136677da6"
             )
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         assert (
             response.json()["result"]["appletId"]
@@ -163,7 +169,7 @@ class TestInvite(BaseTest):
                 key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa7"
             )
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         assert (
             response.json()["result"]["appletId"]
@@ -182,7 +188,7 @@ class TestInvite(BaseTest):
             ),
             invitation_manager_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert (
             response.json()["result"]["userId"]
             == "7484f34a-3acc-4ee6-8a94-fd7299502fa5"
@@ -204,7 +210,7 @@ class TestInvite(BaseTest):
             ),
             invitation_coordinator_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert (
             response.json()["result"]["userId"]
             == "7484f34a-3acc-4ee6-8a94-fd7299502fa5"
@@ -225,7 +231,7 @@ class TestInvite(BaseTest):
             ),
             invitation_editor_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert (
             response.json()["result"]["userId"]
             == "7484f34a-3acc-4ee6-8a94-fd7299502fa5"
@@ -244,7 +250,7 @@ class TestInvite(BaseTest):
             ),
             invitation_revier_data,
         )
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         assert (
             response.json()["result"]["userId"]
             == "7484f34a-3acc-4ee6-8a94-fd7299502fa5"
@@ -266,7 +272,7 @@ class TestInvite(BaseTest):
             ),
             invitation_respondent_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert (
             response.json()["result"]["userId"]
             == "7484f34a-3acc-4ee6-8a94-fd7299502fa5"
@@ -290,7 +296,7 @@ class TestInvite(BaseTest):
             ),
             invitation_respondent_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         invitation_respondent_data.email = "patric1@gmail.com"
         response = await self.client.post(
@@ -299,7 +305,10 @@ class TestInvite(BaseTest):
             ),
             invitation_respondent_data,
         )
-        assert response.status_code == 422
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["result"][0]["message"] == NonUniqueValue.message
+        )
 
     @rollback
     async def test_manager_invite_manager_success(
@@ -312,7 +321,7 @@ class TestInvite(BaseTest):
             ),
             invitation_manager_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [invitation_manager_data.email]
@@ -329,7 +338,7 @@ class TestInvite(BaseTest):
             ),
             invitation_coordinator_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [
@@ -345,7 +354,7 @@ class TestInvite(BaseTest):
             ),
             invitation_editor_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [invitation_editor_data.email]
@@ -361,7 +370,7 @@ class TestInvite(BaseTest):
             ),
             invitation_revier_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [invitation_revier_data.email]
@@ -377,7 +386,7 @@ class TestInvite(BaseTest):
             ),
             invitation_respondent_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [
@@ -395,7 +404,7 @@ class TestInvite(BaseTest):
             ),
             invitation_respondent_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [
@@ -413,7 +422,7 @@ class TestInvite(BaseTest):
             ),
             invitation_revier_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [invitation_revier_data.email]
@@ -468,7 +477,7 @@ class TestInvite(BaseTest):
         response = await self.client.post(
             self.accept_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6")
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         roles = await UserAppletAccessCRUD(
             session_manager.get_session()
         ).get_user_roles_to_applet(
@@ -490,7 +499,7 @@ class TestInvite(BaseTest):
                 key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa7"
             )
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         access = await UserAppletAccessCRUD(
             session_manager.get_session()
         ).get_by_roles(
@@ -501,7 +510,7 @@ class TestInvite(BaseTest):
         assert access.role == Role.RESPONDENT
 
     @rollback
-    async def test_invitation_accept_wrong(self):
+    async def test_invitation_accept_invitation_does_not_exists(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -509,7 +518,7 @@ class TestInvite(BaseTest):
         response = await self.client.post(
             self.accept_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da9")
         )
-        assert response.status_code == 404
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     @rollback
     async def test_invitation_decline(self):
@@ -518,10 +527,10 @@ class TestInvite(BaseTest):
         response = await self.client.delete(
             self.decline_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da0")
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
     @rollback
-    async def test_invitation_decline_wrong(self):
+    async def test_invitation_decline_wrong_invitation_does_not_exists(self):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -529,7 +538,11 @@ class TestInvite(BaseTest):
         response = await self.client.delete(
             self.decline_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da9")
         )
-        assert response.status_code == 404
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        assert (
+            response.json()["result"][0]["message"]
+            == InvitationDoesNotExist.message
+        )
 
     @rollback
     @pytest.mark.parametrize(
@@ -546,7 +559,7 @@ class TestInvite(BaseTest):
             ),
             invitation_manager_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         response = await self.client.post(
             self.invite_manager_url.format(
@@ -554,7 +567,7 @@ class TestInvite(BaseTest):
             ),
             invitation_manager_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert len(TestMail.mails) == 2
 
     @rollback
@@ -571,7 +584,7 @@ class TestInvite(BaseTest):
             ),
             invitation_respondent_data,
         )
-        assert response.status_code == 422
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         res = json.loads(response.content)
         res = res["result"][0]
         assert res["message"] == RespondentInvitationExist.message
@@ -591,7 +604,7 @@ class TestInvite(BaseTest):
             ),
             invitation_editor_data,
         )
-        assert response.status_code == 422
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         res = json.loads(response.content)
         res = res["result"][0]
         assert res["message"] == ManagerInvitationExist.message
@@ -611,7 +624,7 @@ class TestInvite(BaseTest):
             ),
             invitation_manager_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert not response.json()["result"]["userId"]
         assert len(TestMail.mails) == 1
 
@@ -629,7 +642,7 @@ class TestInvite(BaseTest):
             ),
             invitation_revier_data,
         )
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         assert not response.json()["result"]["userId"]
         assert len(TestMail.mails) == 1
 
@@ -649,7 +662,7 @@ class TestInvite(BaseTest):
             ),
             invitation_respondent_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert not response.json()["result"]["userId"]
         assert len(TestMail.mails) == 1
 
@@ -676,14 +689,14 @@ class TestInvite(BaseTest):
             ),
             invitation_manager_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert not response.json()["result"]["userId"]
 
         invitation_key = response.json()["result"]["key"]
         user_create_data.email = new_email
         # An invited user creates an account
         resp = await self.client.post("/users", data=user_create_data)
-        assert resp.status_code == 201
+        assert resp.status_code == http.HTTPStatus.CREATED
         resp = await self.client.login(
             self.login_url, new_email, user_create_data.password
         )
@@ -693,7 +706,7 @@ class TestInvite(BaseTest):
         resp = await client_method(
             getattr(self, url).format(key=invitation_key)
         )
-        assert resp.status_code == 200
+        assert resp.status_code == http.HTTPStatus.OK
         session = session_manager.get_session()
         # Because we don't return anything after accepting/declining
         # invitation, check in database that user_id has already been updated
@@ -719,13 +732,13 @@ class TestInvite(BaseTest):
             ),
             invitation_manager_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert not response.json()["result"]["userId"]
 
         user_create_data.email = new_email
         # An invited user creates an account
         resp = await self.client.post("/users", data=user_create_data)
-        assert resp.status_code == 201
+        assert resp.status_code == http.HTTPStatus.CREATED
         resp = await self.client.login(
             self.login_url, new_email, user_create_data.password
         )
@@ -741,7 +754,7 @@ class TestInvite(BaseTest):
             ),
             invitation_manager_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["userId"] == exp_user_id
 
     @rollback
@@ -757,7 +770,7 @@ class TestInvite(BaseTest):
             ),
             invitation_respondent_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         # change first name and last name for user for tests
         # update secret_user_id because it should be unique
@@ -770,7 +783,7 @@ class TestInvite(BaseTest):
             ),
             invitation_respondent_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         invitation_key = response.json()["result"]["key"]
         session = session_manager.get_session()
         # Because we don't return anything after accepting/declining
@@ -794,7 +807,7 @@ class TestInvite(BaseTest):
             ),
             invitation_respondent_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         old_key = response.json()["result"]["key"]
 
         response = await self.client.post(
@@ -803,7 +816,7 @@ class TestInvite(BaseTest):
             ),
             invitation_respondent_data,
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         new_key = response.json()["result"]["key"]
         await self.client.login(
             self.login_url, invitation_respondent_data.email, "Test1234"
@@ -812,14 +825,14 @@ class TestInvite(BaseTest):
         response = await self.client.get(
             self.invitation_detail.format(key=old_key)
         )
-        assert response.status_code == 404
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
 
         # we use invitation detail url for tests, because sninny atomic
         # does not work correct in tests.
         response = await self.client.get(
             self.invitation_detail.format(key=new_key)
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
     @rollback
     async def test_send_many_pending_invitations_for_one_email_valid_only_last(
@@ -871,3 +884,199 @@ class TestInvite(BaseTest):
             self.invitation_detail.format(key=keys[-1])
         )
         assert response.status_code == http.HTTPStatus.OK
+
+    @rollback
+    async def test_get_invitation_by_key_invitation_does_not_exist(self):
+        await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
+
+        response = await self.client.get(
+            self.invitation_detail.format(
+                key="00000000-0000-0000-0000-000000000000"
+            )
+        )
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        assert (
+            response.json()["result"][0]["message"]
+            == InvitationDoesNotExist.message
+        )
+
+    @rollback
+    @pytest.mark.parametrize(
+        "url,method",
+        (("decline_url", "delete"), ("accept_url", "post")),
+    )
+    async def test_get_invitation_by_key_already_accpted_declined(
+        self,
+        url: Literal["decline_url", "accept_url"],
+        method: Literal["delete", "post"],
+    ):
+        await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
+        key = "6a3ab8e6-f2fa-49ae-b2db-197136677da0"
+        client_method = getattr(self.client, method)
+        url_ = getattr(self, url)
+        response = await client_method(url_.format(key=key))
+        assert response.status_code == http.HTTPStatus.OK
+
+        response = await self.client.get(
+            self.invitation_detail.format(key=key)
+        )
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert (
+            response.json()["result"][0]["message"]
+            == InvitationAlreadyProcessed.message
+        )
+
+    @rollback
+    async def test_get_private_invitation_by_link_does_not_exist(self):
+        await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
+
+        response = await self.client.get(
+            self.private_invitation_detail.format(
+                key="00000000-0000-0000-0000-000000000000"
+            )
+        )
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        assert (
+            response.json()["result"][0]["message"]
+            == InvitationDoesNotExist.message
+        )
+
+    @rollback
+    async def test_private_invitation_accept_invitation_does_not_exist(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.post(
+            self.accept_private_url.format(
+                key="00000000-0000-0000-0000-000000000000"
+            )
+        )
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        assert (
+            response.json()["result"][0]["message"]
+            == InvitationDoesNotExist.message
+        )
+
+    @rollback
+    async def test_send_invitation_to_reviewer_invitation_already_approved(
+        self, invitation_revier_data
+    ):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        # send an invite
+        response = await self.client.post(
+            self.invite_reviewer_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            invitation_revier_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        key = response.json()["result"]["key"]
+        # accept invite
+        await self.client.login(
+            self.login_url, invitation_revier_data.email, "Test1234"
+        )
+        response = await self.client.post(self.accept_url.format(key=key))
+        assert response.status_code == http.HTTPStatus.OK
+
+        # resend invite
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        response = await self.client.post(
+            self.invite_reviewer_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            invitation_revier_data,
+        )
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["result"][0]["message"]
+            == ManagerInvitationExist.message
+        )
+
+    @rollback
+    async def test_send_incorrect_role_to_invite_managers(
+        self, invitation_manager_data
+    ):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        data = invitation_manager_data.dict()
+        data["role"] = "notvalid"
+        resp = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data,
+        )
+        assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        emsg = (
+            "value is not a valid enumeration member; "
+            "permitted: 'manager', 'coordinator', 'editor'"
+        )
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == emsg
+
+    @rollback
+    async def test_invite_reviewer_with_respondent_does_not_exist(
+        self, invitation_revier_data
+    ):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        invitation_revier_data.respondents = [
+            "00000000-0000-0000-0000-000000000000"
+        ]
+        response = await self.client.post(
+            self.invite_reviewer_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            invitation_revier_data,
+        )
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == RespondentDoesNotExist.message
+
+    @rollback
+    @pytest.mark.parametrize(
+        "url,method",
+        (("accept_url", "post"), ("decline_url", "delete")),
+    )
+    async def test_accept_or_decline_already_processed_invitation(
+        self, url, method, invitation_manager_data
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        # Send an invite
+        response = await self.client.post(
+            self.invite_manager_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            invitation_manager_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+
+        invitation_key = response.json()["result"]["key"]
+        resp = await self.client.login(
+            self.login_url,
+            invitation_manager_data.email,
+            "Test1234",
+        )
+        # Accept invite
+        client_method = getattr(self.client, method)
+        resp = await client_method(
+            getattr(self, url).format(key=invitation_key)
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        # Accept one more time
+        client_method = getattr(self.client, method)
+        resp = await client_method(
+            getattr(self, url).format(key=invitation_key)
+        )
+        assert resp.status_code == http.HTTPStatus.BAD_REQUEST
