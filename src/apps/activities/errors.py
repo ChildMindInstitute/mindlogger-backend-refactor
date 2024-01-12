@@ -277,3 +277,7 @@ class FlowItemActivityKeyNotFoundError(ValidationError):
     message = _(
         "Activity key from activity flow item is not found in activity list."
     )
+
+
+class DuplicateActivityItemOptionIdError(FieldError):
+    message = _("Activity item option ids are duplicated.")

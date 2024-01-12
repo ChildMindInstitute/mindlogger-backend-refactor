@@ -2889,6 +2889,7 @@ class TestActivityItems(BaseTest):
         del option["value"]
         option2 = copy.deepcopy(option)
         option2["value"] = None
+        option2["id"] = None
         item["response_values"]["options"].append(option2)
         item["response_type"] = response_type
         resp = await self.client.post(
