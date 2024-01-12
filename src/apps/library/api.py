@@ -45,9 +45,8 @@ async def library_check_name(
     user: User = Depends(get_current_user),
     schema: LibraryNameCheck = Body(...),
     session=Depends(get_session),
-):
-    async with atomic(session):
-        await LibraryService(session).check_applet_name(schema.name)
+) -> None:
+    await LibraryService(session).check_applet_name(schema.name)
 
 
 async def library_get_all(
@@ -56,13 +55,12 @@ async def library_get_all(
     ),
     session=Depends(get_session),
 ) -> ResponseMulti[PublicLibraryItem]:
-    async with atomic(session):
-        items: list[PublicLibraryItem] = await LibraryService(
-            session
-        ).get_all_applets(deepcopy(query_params))
-        count = await LibraryService(session).get_applets_count(
-            deepcopy(query_params)
-        )
+    items: list[PublicLibraryItem] = await LibraryService(
+        session
+    ).get_all_applets(deepcopy(query_params))
+    count = await LibraryService(session).get_applets_count(
+        deepcopy(query_params)
+    )
 
     items_as_camel: list[PublicLibraryItem] = [
         model_as_camel_case(item) for item in items
@@ -75,8 +73,7 @@ async def library_get_by_id(
     library_id: uuid.UUID,
     session=Depends(get_session),
 ) -> Response[PublicLibraryItem]:
-    async with atomic(session):
-        applet = await LibraryService(session).get_applet_by_id(library_id)
+    applet = await LibraryService(session).get_applet_by_id(library_id)
     return Response(
         result=model_as_camel_case(PublicLibraryItem(**applet.dict()))
     )
@@ -87,11 +84,10 @@ async def library_get_url(
     session=Depends(get_session),
     user=Depends(get_current_user),
 ) -> Response[AppletLibraryInfo]:
-    async with atomic(session):
-        await CheckAccessService(session, user.id).check_link_edit_access(
-            applet_id
-        )
-        info = await LibraryService(session).get_applet_url(applet_id)
+    await CheckAccessService(session, user.id).check_link_edit_access(
+        applet_id
+    )
+    info = await LibraryService(session).get_applet_url(applet_id)
 
     return Response(result=info)
 
@@ -115,15 +111,14 @@ async def cart_get(
     session=Depends(get_session),
     query_params: QueryParams = Depends(parse_query_params(CartQueryParams)),
 ) -> ResponseMulti[PublicLibraryItem]:
-    async with atomic(session):
-        service = LibraryService(session)
-        cart = await service.get_cart(user.id)
-        items = await service.filter_cart_items(cart, query_params)
-        count = len(cart.cart_items) if cart and cart.cart_items else 0
+    service = LibraryService(session)
+    cart = await service.get_cart(user.id)
+    items = await service.filter_cart_items(cart, query_params)
+    count = len(cart.cart_items) if cart and cart.cart_items else 0
 
-        items_as_camel: list[PublicLibraryItem] = [
-            model_as_camel_case(item) for item in items
-        ]
+    items_as_camel: list[PublicLibraryItem] = [
+        model_as_camel_case(item) for item in items
+    ]
 
     return ResponseMulti(result=items_as_camel, count=count)
 
