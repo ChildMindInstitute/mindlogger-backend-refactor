@@ -2889,9 +2889,25 @@ class TestActivityItems(BaseTest):
         del option["value"]
         option2 = copy.deepcopy(option)
         option2["value"] = None
-        option2["id"] = None
         item["response_values"]["options"].append(option2)
         item["response_type"] = response_type
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert (
+            resp.status_code
+            == activity_errors.DuplicateActivityItemOptionIdError.status_code
+        )
+        assert (
+            resp.json()["result"][0]["message"]
+            == activity_errors.DuplicateActivityItemOptionIdError.message
+        )
+        option2["id"] = None
+        item["response_values"]["options"][-1] = option2
+
         resp = await self.client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
