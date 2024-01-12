@@ -794,6 +794,8 @@ class TestApplet(BaseTest):
         )
         update_data = dict(
             stream_enabled=True,
+            stream_ip_address="127.0.0.1",
+            stream_port=8881,
             display_name="Applet 1",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
@@ -955,6 +957,23 @@ class TestApplet(BaseTest):
             ),
         )
         assert response.status_code == 200
+
+        # get applet and check stream settings
+        response = await self.client.get(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 200
+        assert response.json()["result"]["streamEnabled"] is True
+        assert (
+            response.json()["result"]["streamIpAddress"]
+            == update_data["stream_ip_address"]
+        )
+        assert (
+            response.json()["result"]["streamPort"]
+            == update_data["stream_port"]
+        )
 
     @rollback
     async def test_duplicate_applet(self):

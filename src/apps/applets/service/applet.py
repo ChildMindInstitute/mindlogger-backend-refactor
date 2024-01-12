@@ -397,6 +397,8 @@ class AppletService:
                 theme_id=update_data.theme_id,
                 version=version,
                 stream_enabled=update_data.stream_enabled,
+                stream_ip_address=update_data.stream_ip_address,
+                stream_port=update_data.stream_port,
             ),
         )
         return AppletFull.from_orm(schema)
@@ -520,6 +522,8 @@ class AppletService:
                     created_at=schema.created_at,
                     updated_at=schema.updated_at,
                     stream_enabled=schema.stream_enabled,
+                    stream_ip_address=schema.stream_ip_address,
+                    stream_port=schema.stream_port,
                 )
             )
         return applets
@@ -568,6 +572,8 @@ class AppletService:
             retention_type=schema.retention_type,
             is_published=schema.is_published,
             stream_enabled=schema.stream_enabled,
+            stream_ip_address=schema.stream_ip_address,
+            stream_port=schema.stream_port,
         )
         activities = ActivityService(
             self.session, self.user_id
