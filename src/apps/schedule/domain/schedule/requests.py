@@ -16,7 +16,6 @@ from apps.schedule.errors import (
     ActivityOrFlowRequiredError,
     OneTimeCompletionCaseError,
     StartEndTimeAccessBeforeScheduleCaseError,
-    StartEndTimeEqualError,
     UnavailableActivityOrFlowError,
 )
 from apps.shared.domain import InternalModel, PublicModel
@@ -113,10 +112,6 @@ class EventUpdateRequest(BaseEvent, InternalModel):
                         is None
                     ):
                         raise UnavailableActivityOrFlowError()
-
-        if values.get("start_time") == values.get("end_time"):
-            raise StartEndTimeEqualError()
-
         return values
 
 

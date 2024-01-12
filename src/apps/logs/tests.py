@@ -1,88 +1,9 @@
+import json
+
 from pytest import fixture, mark
 
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
-
-EMPTY_DESCRIPTIONS = [
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test1",
-        notification_descriptions=None,
-        notification_in_queue=[{"name": "in_queue1"}],
-        scheduled_notifications=[{"name": "notifications1"}],
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test2",
-        notification_descriptions=[],
-        notification_in_queue=[{"name": "in_queue2"}],
-        scheduled_notifications=[{"name": "notifications2"}],
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test3",
-        notification_descriptions=None,
-        notification_in_queue=[{"name": "in_queue2"}],
-        scheduled_notifications=[{"name": "notifications2"}],
-    ),
-]
-
-EMPTY_QUEUE = [
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test1",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=None,
-        scheduled_notifications=[{"name": "notifications1"}],
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test2",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=[],
-        scheduled_notifications=[{"name": "notifications2"}],
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test3",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=None,
-        scheduled_notifications=[{"name": "notifications2"}],
-    ),
-]
-
-EMPTY_SCHEDULE = [
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test1",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=[{"name": "in_queue1"}],
-        scheduled_notifications=None,
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test2",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=[{"name": "in_queue2"}],
-        scheduled_notifications=[],
-    ),
-    dict(
-        user_id="tom@mindlogger.com",
-        device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-        action_type="test3",
-        notification_descriptions=[{"name": "description"}],
-        notification_in_queue=[{"name": "in_queue2"}],
-        scheduled_notifications=None,
-    ),
-]
 
 
 @fixture(scope="function")
@@ -92,9 +13,11 @@ def dummy_logs_payload() -> list[dict]:
             user_id="tom@mindlogger.com",
             device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             action_type=f"test{i}",
-            notification_descriptions=[{"sample": f"descriptions{i}"}],
-            notification_in_queue=[{"sample": f"queue{i}"}],
-            scheduled_notifications=[{"sample": f"scheduled{i}"}],
+            notification_descriptions=json.dumps(
+                [{"sample": f"descriptions{i}"}]
+            ),
+            notification_in_queue=json.dumps([{"sample": f"queue{i}"}]),
+            scheduled_notifications=json.dumps([{"sample": f"scheduled{i}"}]),
         )
         for i in range(2)
     ]
@@ -113,9 +36,9 @@ class TestNotificationLogs(BaseTest):
             user_id="tom@mindlogger.com",
             device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             action_type="test",
-            notification_descriptions=[{"sample": "json"}],
-            notification_in_queue=[{"sample": "json"}],
-            scheduled_notifications=[{"sample": "json"}],
+            notification_descriptions='[{"sample":"json"}]',
+            notification_in_queue='[{"sample":"json"}]',
+            scheduled_notifications='[{"sample":"json"}]',
         )
 
         response = await self.client.post(self.logs_url, data=create_data)
@@ -138,9 +61,9 @@ class TestNotificationLogs(BaseTest):
             user_id="tom@mindlogger.com",
             device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             action_type="test",
-            notification_descriptions=[{"sample": "json"}],
-            notification_in_queue=[{"sample": "json"}],
-            scheduled_notifications=[{"sample": "json"}],
+            notification_descriptions='[{"sample":"json"}]',
+            notification_in_queue='[{"sample":"json"}]',
+            scheduled_notifications='[{"sample":"json"}]',
         )
 
         response = await self.client.post(self.logs_url, data=create_data)
@@ -161,13 +84,13 @@ class TestNotificationLogs(BaseTest):
     @mark.parametrize(
         "description,queue,scheduled",
         (
-            ([{"sample": "json"}], None, None),
-            (None, [{"sample": "json"}], None),
-            (None, None, [{"sample": "json"}]),
+            ('[{"sample":"json"}]', json.dumps(None), json.dumps(None)),
+            (json.dumps(None), '[{"sample":"json"}]', json.dumps(None)),
+            (json.dumps(None), json.dumps(None), '[{"sample":"json"}]'),
             (
-                [{"sample": "json0"}],
-                [{"sample": "json1"}],
-                [{"sample": "json2"}],
+                '[{"sample":"json0"}]',
+                '[{"sample":"json1"}]',
+                '[{"sample":"json2"}]',
             ),
         ),
     )
@@ -207,8 +130,8 @@ class TestNotificationLogs(BaseTest):
                 device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
                 action_type="test",
                 notification_descriptions=None,
-                notification_in_queue=[{"name": "notification_in_queue"}],
-                scheduled_notifications=[{"name": "scheduled_notifications"}],
+                notification_in_queue='[{"name":"notification_in_queue"}]',
+                scheduled_notifications='[{"name":"scheduled_notifications"}]',
             ),
         )
         assert response.status_code == 201, response.json()
@@ -225,17 +148,17 @@ class TestNotificationLogs(BaseTest):
                 user_id="tom@mindlogger.com",
                 device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
                 action_type="test",
-                notification_descriptions=[{"name": "descriptions1"}],
-                notification_in_queue=[{"name": "in_queue1"}],
-                scheduled_notifications=[{"name": "notifications1"}],
+                notification_descriptions='[{"name":"descriptions1"}]',
+                notification_in_queue='[{"name":"in_queue1"}]',
+                scheduled_notifications='[{"name":"notifications1"}]',
             ),
             dict(
                 user_id="tom@mindlogger.com",
                 device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
                 action_type="test",
                 notification_descriptions=None,
-                notification_in_queue=[{"name": "in_queue2"}],
-                scheduled_notifications=[{"name": "notifications2"}],
+                notification_in_queue='[{"name":"in_queue2"}]',
+                scheduled_notifications='[{"name":"notifications2"}]',
             ),
         ]
         for payload in payloads:
@@ -247,93 +170,20 @@ class TestNotificationLogs(BaseTest):
             device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
             action_type="test",
             notification_descriptions=None,
-            notification_in_queue=[{"name": "in_queue3"}],
-            scheduled_notifications=[{"name": "notifications3"}],
+            notification_in_queue='[{"name":"in_queue3"}]',
+            scheduled_notifications='[{"name":"notifications3"}]',
         )
 
         response = await self.client.post(self.logs_url, data=create_data)
         assert response.status_code == 201, response.json()
         response = response.json()["result"]
         assert response["id"]
-        assert response["notificationDescriptions"] == [
-            {"name": "descriptions1"}
-        ]
-        assert response["notificationInQueue"] == [{"name": "in_queue3"}]
-        assert response["scheduledNotifications"] == [
-            {"name": "notifications3"}
-        ]
-
-    @rollback
-    async def test_create_log_allow_empty_array(self):
-        payloads = [
-            dict(
-                user_id="tom@mindlogger.com",
-                device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                action_type="test",
-                notification_descriptions=[{"name": "descriptions1"}],
-                notification_in_queue=[{"name": "in_queue1"}],
-                scheduled_notifications=[{"name": "notifications1"}],
-            ),
-            dict(
-                user_id="tom@mindlogger.com",
-                device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                action_type="test",
-                notification_descriptions=[],
-                notification_in_queue=[{"name": "in_queue2"}],
-                scheduled_notifications=[{"name": "notifications2"}],
-            ),
-        ]
-
-        for payload in payloads:
-            response = await self.client.post(self.logs_url, data=payload)
-            assert response.status_code == 201
-
-        query = dict(
-            email="tom@mindlogger.com",
-            device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-            limit=5,
+        assert response["notificationDescriptions"] == json.loads(
+            '[{"name":"descriptions1"}]'
         )
-
-        response = await self.client.get(self.logs_url, query=query)
-        assert response.status_code == 200, response.json()
-        response = response.json()["result"]
-        has_empty_array = next(
-            filter(lambda x: x["notificationDescriptions"] == [], response),
-            None,
+        assert response["notificationInQueue"] == json.loads(
+            '[{"name":"in_queue3"}]'
         )
-        assert has_empty_array
-
-    @mark.parametrize(
-        "param,payloads",
-        (
-            ("notificationDescriptions", EMPTY_DESCRIPTIONS),
-            ("notificationInQueue", EMPTY_QUEUE),
-            (
-                "scheduledNotifications",
-                EMPTY_SCHEDULE,
-            ),
-        ),
-    )
-    @rollback
-    async def test_create_log_allow_empty_array_if_prev_is_none(
-        self, param, payloads
-    ):
-        for payload in payloads:
-            response = await self.client.post(self.logs_url, data=payload)
-            assert response.status_code == 201
-
-        query = dict(
-            email="tom@mindlogger.com",
-            device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-            limit=5,
+        assert response["scheduledNotifications"] == json.loads(
+            '[{"name":"notifications3"}]'
         )
-
-        response = await self.client.get(self.logs_url, query=query)
-        assert response.status_code == 200, response.json()
-        response = response.json()["result"]
-        log_1 = next(filter(lambda x: x["actionType"] == "test1", response))
-        log_2 = next(filter(lambda x: x["actionType"] == "test2", response))
-        log_3 = next(filter(lambda x: x["actionType"] == "test3", response))
-        assert log_1[param] is None
-        assert log_2[param] == []
-        assert log_3[param] == []

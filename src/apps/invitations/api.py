@@ -47,13 +47,47 @@ async def invitation_list(
     """Fetch all invitations whose status is pending
     for the specific user who is invitor.
     """
-    if query_params.filters.get("applet_id"):
-        await CheckAccessService(session, user.id).check_applet_invite_access(
-            query_params.filters["applet_id"]
+    async with atomic(session):
+        if query_params.filters.get("applet_id"):
+            await CheckAccessService(
+                session, user.id
+            ).check_applet_invite_access(query_params.filters["applet_id"])
+        invitations = await InvitationsService(session, user).fetch_all(
+            deepcopy(query_params)
         )
-    service = InvitationsService(session, user)
-    invitations = await service.fetch_all(deepcopy(query_params))
-    count = await service.fetch_all_count(deepcopy(query_params))
+        count = await InvitationsService(session, user).fetch_all_count(
+            deepcopy(query_params)
+        )
+
+    return ResponseMulti[InvitationResponse](
+        result=[
+            InvitationResponse(**invitation.dict())
+            for invitation in invitations
+        ],
+        count=count,
+    )
+
+
+async def invitation_list_for_invited(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    query_params: QueryParams = Depends(
+        parse_query_params(InvitationQueryParams)
+    ),
+) -> ResponseMulti[InvitationResponse]:
+    """Fetch all invitations for the specific user who is invited."""
+    async with atomic(session):
+        if query_params.filters.get("applet_id"):
+            await CheckAccessService(
+                session, user.id
+            ).check_applet_invite_access(query_params.filters["applet_id"])
+        invitations = await InvitationsService(
+            session, user
+        ).fetch_all_for_invited(deepcopy(query_params))
+
+        count = await InvitationsService(
+            session, user
+        ).fetch_all_for_invited_count(deepcopy(query_params))
 
     return ResponseMulti[InvitationResponse](
         result=[
@@ -72,7 +106,8 @@ async def invitation_retrieve(
     """Get specific invitation with approve key for user
     who was invited.
     """
-    invitation = await InvitationsService(session, user).get(key)
+    async with atomic(session):
+        invitation = await InvitationsService(session, user).get(key)
     return Response(result=InvitationResponse.from_orm(invitation))
 
 
@@ -80,7 +115,10 @@ async def private_invitation_retrieve(
     key: uuid.UUID,
     session=Depends(get_session),
 ) -> Response[PrivateInvitationResponse]:
-    invitation = await PrivateInvitationService(session).get_invitation(key)
+    async with atomic(session):
+        invitation = await PrivateInvitationService(session).get_invitation(
+            key
+        )
     return Response(result=PrivateInvitationResponse.from_orm(invitation))
 
 

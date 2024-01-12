@@ -12,7 +12,7 @@ from botocore.exceptions import ClientError
 from fastapi import Body, Depends, File, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from taskiq import TaskiqResult, TaskiqResultTimeoutError
+from taskiq import TaskiqResult
 
 from apps.authentication.deps import get_current_user
 from apps.file.domain import (
@@ -28,7 +28,7 @@ from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
 from apps.file.services import LogFileService
 from apps.file.storage import select_storage
-from apps.file.tasks import convert_audio_file, convert_image
+from apps.file.tasks import convert_audio_file
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.users.domain import User
@@ -49,16 +49,10 @@ async def upload(
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_media_bucket),
 ) -> Response[ContentUploadedFile]:
-    converters = [convert_not_supported_audio]
-
     to_close = []
     to_delete = []
     try:
-        res = None
-        for converter in converters:
-            if (res := await converter(file)) is not None:
-                break
-
+        res = await convert_not_supported_audio(file)
         if res is not None:
             filename, fout = res
             to_delete.append(fout)
@@ -85,13 +79,6 @@ async def upload(
     return Response(result=result)
 
 
-async def _copy(file: UploadFile, path: str):
-    async with aiofiles.open(path, "wb") as fout:
-        _size = 1024 * 1024
-        while content := await file.read(_size):
-            await fout.write(content)
-
-
 async def convert_not_supported_audio(file: UploadFile):
 
     type_ = mimetypes.guess_type(file.filename)[0] or ""
@@ -99,44 +86,15 @@ async def convert_not_supported_audio(file: UploadFile):
         # store file, create task to convert
         convert_filename = f"{uuid.uuid4()}_{file.filename}"
         path = settings.uploads_dir / convert_filename
-        await _copy(file, path)
+        async with aiofiles.open(path, "wb") as fout:
+            _size = 1024 * 1024
+            while content := await file.read(_size):
+                await fout.write(content)
         task = await convert_audio_file.kiq(convert_filename)
         task_result: TaskiqResult[str] = await task.wait_result(
             timeout=settings.task_audio_file_convert.task_wait_timeout
         )
         success = not task_result.is_err
-        if not success:
-            if task_result.error:
-                raise task_result.error
-            raise Exception("File convertion error")
-
-        out_filename = task_result.return_value
-
-        fout = settings.uploads_dir / out_filename
-
-        return out_filename, fout
-
-    return None
-
-
-async def convert_not_supported_image(file: UploadFile):
-
-    type_ = mimetypes.guess_type(file.filename)[0] or ""
-    if type_.lower() == "image/heic":
-        # store file, create task to convert
-        convert_filename = f"{uuid.uuid4()}_{file.filename}"
-        path = settings.uploads_dir / convert_filename
-        await _copy(file, path)
-        task = await convert_image.kiq(convert_filename)
-        try:
-            task_result: TaskiqResult[str] = await task.wait_result(
-                timeout=settings.task_image_convert.task_wait_timeout
-            )
-        except TaskiqResultTimeoutError:
-            raise
-
-        success = not task_result.is_err
-
         if not success:
             if task_result.error:
                 raise task_result.error
@@ -181,42 +139,15 @@ async def answer_upload(
     ):
         raise AnswerViewAccessDenied()
 
-    converters = [convert_not_supported_image]
-
-    to_close = []
-    to_delete = []
-    try:
-        res = None
-        for converter in converters:
-            if (res := await converter(file)) is not None:
-                break
-
-        if res is not None:
-            filename, fout = res
-            to_delete.append(fout)
-
-            reader = open(fout, "rb")
-            to_close.append(reader)
-        else:
-            filename = file.filename
-            reader = file.file  # type: ignore[assignment]
-
-        cdn_client = await select_storage(applet_id, session)
-        unique = f"{user.id}/{applet_id}"
-        cleaned_file_id = (
-            file_id.strip() if file_id else f"{uuid.uuid4()}/{filename}"
-        )
-        key = cdn_client.generate_key(
-            FileScopeEnum.ANSWER, unique, cleaned_file_id
-        )
-        await cdn_client.upload(key, reader)
-    finally:
-        for f in to_close:
-            f.close()
-
-        for path in to_delete:
-            os.remove(path)
-
+    cdn_client = await select_storage(applet_id, session)
+    unique = f"{user.id}/{applet_id}"
+    cleaned_file_id = (
+        file_id.strip() if file_id else f"{uuid.uuid4()}/{file.filename}"
+    )
+    key = cdn_client.generate_key(
+        FileScopeEnum.ANSWER, unique, cleaned_file_id
+    )
+    await cdn_client.upload(key, file.file)
     result = AnswerUploadedFile(
         key=key,
         url=cdn_client.generate_private_url(key),
