@@ -86,27 +86,12 @@ class _AppletUsersFilter(Filtering):
 
 
 class _WorkspaceRespondentOrdering(Ordering):
-    email = UserSchema.email
-    first_name = UserSchema.first_name
     is_pinned = Ordering.Clause(literal_column("is_pinned"))
     secret_ids = Ordering.Clause(literal_column("secret_ids"))
-    nicknames = Ordering.Clause(literal_column("nicknames"))
     created_at = Ordering.Clause(func.min(UserAppletAccessSchema.created_at))
-    last_seen = Ordering.Clause(
-        func.coalesce(UserSchema.last_seen_at, UserSchema.created_at)
-    )
-
-
-class _AppletRespondentOrdering(Ordering):
-    email = UserSchema.email
-    first_name = UserSchema.first_name
-    is_pinned = Ordering.Clause(literal_column("is_pinned"))
-    secret_id = Ordering.Clause(literal_column("secret_id"))
-    nickname = Ordering.Clause(literal_column("nickname"))
-    created_at = Ordering.Clause(UserAppletAccessSchema.created_at)
-    last_seen = Ordering.Clause(
-        func.coalesce(UserSchema.last_seen_at, UserSchema.created_at)
-    )
+    # last_seen = Ordering.Clause(
+    #     func.coalesce(UserSchema.last_seen_at, UserSchema.created_at)
+    # )
 
 
 class _WorkspaceRespondentSearch(Searching):

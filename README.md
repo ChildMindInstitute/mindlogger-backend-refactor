@@ -78,6 +78,11 @@ It is hightly recommended to create `.env` file as far as it is needed for setti
 cp .env.default .env
 ```
 
+#### 2.3 Generate secret keys, update .env with values
+
+```bash
+openssl rand -hex 32
+```
 
 <br/>
 
