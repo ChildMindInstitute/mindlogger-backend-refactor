@@ -584,7 +584,6 @@ def test_field_changed(
     assert changes[0] == exp_change_msg
 
 
-@pytest.mark.run
 @pytest.mark.parametrize("exp_change_msg", ("Item test_item was removed",))
 def test_item_removed(
     old_item: ActivityItemHistoryFull,
