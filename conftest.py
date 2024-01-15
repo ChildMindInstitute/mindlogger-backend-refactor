@@ -15,7 +15,7 @@ def before():
 
 
 def after():
-    for alembic_cfg in alembic_configs:
+    for alembic_cfg in alembic_configs[::-1]:
         command.downgrade(alembic_cfg, "base")
     os.environ.pop("PYTEST_APP_TESTING")
 
