@@ -13,8 +13,8 @@ from apps.applets.api.applets import (
     applet_list,
     applet_publish,
     applet_retrieve,
-    applet_retrieve_activities,
-    applet_retrieve_activities_by_key,
+    applet_retrieve_base_info,
+    applet_retrieve_base_info_by_key,
     applet_retrieve_by_key,
     applet_set_data_retention,
     applet_set_folder,
@@ -269,7 +269,7 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(applet_retrieve_activities)
+)(applet_retrieve_base_info)
 
 public_router.get(
     "/{key}",
@@ -293,4 +293,4 @@ public_router.get(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(applet_retrieve_activities_by_key)
+)(applet_retrieve_base_info_by_key)

@@ -534,7 +534,7 @@ async def applet_set_data_retention(
         await service.set_data_retention(applet_id, schema)
 
 
-async def applet_retrieve_activities(
+async def applet_retrieve_base_info(
     applet_id: uuid.UUID,
     language: str = Depends(get_language),
     user: User = Depends(get_current_user),
@@ -550,7 +550,7 @@ async def applet_retrieve_activities(
     return Response(result=AppletActivitiesBaseInfo.from_orm(applet))
 
 
-async def applet_retrieve_activities_by_key(
+async def applet_retrieve_base_info_by_key(
     key: str,
     language: str = Depends(get_language),
     session=Depends(get_session),

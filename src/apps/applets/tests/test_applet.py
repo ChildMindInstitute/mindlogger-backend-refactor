@@ -42,12 +42,10 @@ class TestApplet(BaseTest):
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
-    applet_activities_info_url = f"{applet_detail_url}/activities"
+    applet_base_info_url = f"{applet_detail_url}/base_info"
 
     public_applet_detail_url = "/public/applets/{key}"
-    public_applet_activities_info_url = (
-        f"{public_applet_detail_url}/activities"
-    )
+    public_applet_base_info_url = f"{public_applet_detail_url}/base_info"
 
     @rollback
     async def test_creating_applet(self):
