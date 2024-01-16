@@ -262,7 +262,7 @@ router.put(
 )(flow_report_config_update)
 
 router.get(
-    "/{applet_id}/activities",
+    "/{applet_id}/base_info",
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": AppletActivitiesBaseInfo},
@@ -285,7 +285,7 @@ public_router.get(
 )(applet_retrieve_by_key)
 
 public_router.get(
-    "/{key}/activities",
+    "/{key}/base_info",
     status_code=status.HTTP_200_OK,
     response_model=Response[AppletActivitiesBaseInfo],
     responses={

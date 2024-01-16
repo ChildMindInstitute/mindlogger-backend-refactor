@@ -1976,11 +1976,10 @@ class TestApplet(BaseTest):
         )
 
         response = await self.client.get(
-            self.applet_activities_info_url.format(
+            self.applet_base_info_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
-
         assert response.status_code == 200
         assert response.json()["result"]["displayName"] == "Applet 1"
         assert (
@@ -1993,10 +1992,11 @@ class TestApplet(BaseTest):
     @rollback
     async def test_get_public_applet_activities_info(self):
         response = await self.client.get(
-            self.public_applet_activities_info_url.format(
+            self.public_applet_base_info_url.format(
                 key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
             )
         )
+
         assert response.status_code == 200
         assert response.json()["result"]["displayName"] == "Applet 1"
         assert (
