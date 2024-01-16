@@ -22,6 +22,7 @@ from apps.applets.domain import (
     PublicHistory,
 )
 from apps.applets.domain.applet import (
+    AppletActivitiesBaseInfo,
     AppletDataRetention,
     AppletRetrieveResponse,
     AppletSingleLanguageDetailForPublic,
@@ -531,3 +532,33 @@ async def applet_set_data_retention(
             session, user.id
         ).check_applet_retention_access(applet_id)
         await service.set_data_retention(applet_id, schema)
+
+
+async def applet_retrieve_activities(
+    applet_id: uuid.UUID,
+    language: str = Depends(get_language),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[AppletActivitiesBaseInfo]:
+    service = AppletService(session, user.id)
+    await service.exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_applet_detail_access(
+        applet_id
+    )
+    applet = await service.get_info_by_id(applet_id, language)
+
+    return Response(result=AppletActivitiesBaseInfo.from_orm(applet))
+
+
+async def applet_retrieve_activities_by_key(
+    key: str,
+    language: str = Depends(get_language),
+    session=Depends(get_session),
+) -> Response[AppletSingleLanguageDetailForPublic]:
+    key_guid = convert_link_key(key)
+    service = AppletService(
+        session, uuid.UUID("00000000-0000-0000-0000-000000000000")
+    )
+    await service.exist_by_key(key_guid)
+    applet = await service.get_info_by_key(key_guid, language)
+    return Response(result=AppletActivitiesBaseInfo.from_orm(applet))

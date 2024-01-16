@@ -19,6 +19,7 @@ from apps.applets.crud import (
 )
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import (
+    AppletActivitiesBaseInfo,
     AppletFolder,
     AppletName,
     AppletSingleLanguageDetail,
@@ -879,6 +880,45 @@ class AppletService:
                 ),
             ),
         )
+
+    async def get_info_by_id(
+        self, applet_id: uuid.UUID, language: str
+    ) -> AppletActivitiesBaseInfo:
+        schema = await AppletsCRUD(self.session).get_by_id(applet_id)
+        return await self._get_info_by_id(schema, language)
+
+    async def get_info_by_key(
+        self, key: uuid.UUID, language: str
+    ) -> AppletActivitiesBaseInfo:
+        schema = await AppletsCRUD(self.session).get_by_key(key)
+        return await self._get_info_by_id(schema, language)
+
+    async def _get_info_by_id(
+        self, schema: AppletSchema, language: str
+    ) -> AppletActivitiesBaseInfo:
+        applet = AppletActivitiesBaseInfo(
+            id=schema.id,
+            display_name=schema.display_name,
+            version=schema.version,
+            description=self._get_by_language(schema.description, language),
+            about=self._get_by_language(schema.about, language),
+            image=schema.image,
+            watermark=schema.watermark,
+            created_at=schema.created_at,
+            updated_at=schema.updated_at,
+            activities=[],
+            activity_flows=[],
+        )
+        activities = ActivityService(
+            self.session, self.user_id
+        ).get_info_by_applet_id(schema.id, language)
+        activity_flows = FlowService(self.session).get_info_by_applet_id(
+            schema.id, language
+        )
+        futures = await asyncio.gather(activities, activity_flows)
+        applet.activities = futures[0]
+        applet.activity_flows = futures[1]
+        return applet
 
 
 class PublicAppletService:
