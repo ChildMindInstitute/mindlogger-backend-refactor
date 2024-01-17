@@ -2987,7 +2987,7 @@ class TestActivityItems(BaseTest):
     )
     async def test_create_applet_single_multi_select_response_values_id_duplicate_error(  # noqa: E501
         self, applet_minimal_data, response_type
-    ) -> None:
+    ):
         await self.client.login(
             self.login_url, "tom@mindlogger.com", "Test1234!"
         )
@@ -3011,4 +3011,24 @@ class TestActivityItems(BaseTest):
         assert (
             resp.json()["result"][0]["message"]
             == activity_errors.DuplicateActivityItemOptionIdError.message
+        )
+
+    @rollback
+    async def test_update_applet_duplicated_activity_item_name_is_not_allowed(
+        self, applet_minimal_data
+    ):
+        item = copy.deepcopy(applet_minimal_data["activities"][0]["items"][0])
+        applet_minimal_data["activities"][0]["items"].append(item)
+        resp = await self.client.put(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert (
+            result[0]["message"]
+            == activity_errors.DuplicateActivityItemNameNameError.message
         )
