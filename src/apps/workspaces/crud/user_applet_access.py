@@ -1333,3 +1333,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
         db_result = db_result.scalars().all()  # noqa
         return db_result
+
+    async def change_owner_of_applet_accesses(
+        self, new_owner: uuid.UUID, applet_id: uuid.UUID
+    ):
+        query: Query = update(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.values(owner_id=new_owner)
+        await self._execute(query)
