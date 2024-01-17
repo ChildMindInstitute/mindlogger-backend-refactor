@@ -42,8 +42,10 @@ class TestApplet(BaseTest):
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
+    applet_base_info_url = f"{applet_detail_url}/base_info"
 
     public_applet_detail_url = "/public/applets/{key}"
+    public_applet_base_info_url = f"{public_applet_detail_url}/base_info"
 
     @rollback
     async def test_creating_applet(self):
@@ -1966,3 +1968,40 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["result"]["name"] == "AppleT 1 (1)"
+
+    @rollback
+    async def test_get_applet_activities_info(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.applet_base_info_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 200
+        assert response.json()["result"]["displayName"] == "Applet 1"
+        assert (
+            "singleSelect"
+            in response.json()["result"]["activities"][0][
+                "containsResponseTypes"
+            ]
+        )
+
+    @rollback
+    async def test_get_public_applet_activities_info(self):
+        response = await self.client.get(
+            self.public_applet_base_info_url.format(
+                key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
+            )
+        )
+
+        assert response.status_code == 200
+        assert response.json()["result"]["displayName"] == "Applet 1"
+        assert (
+            "singleSelect"
+            in response.json()["result"]["activities"][0][
+                "containsResponseTypes"
+            ]
+        )

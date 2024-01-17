@@ -4,6 +4,7 @@ from apps.activity_flows.crud import FlowItemsCRUD, FlowsCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.activity_flows.domain.flow import (
     Flow,
+    FlowBaseInfo,
     FlowDuplicate,
     FlowSingleLanguageDetail,
 )
@@ -311,3 +312,32 @@ class FlowService:
 
     async def get_by_id(self, flow_id: uuid.UUID) -> Flow | None:
         return await FlowsCRUD(self.session).get_by_id(flow_id)
+
+    async def get_info_by_applet_id(
+        self, applet_id: uuid.UUID, language: str
+    ) -> list[FlowBaseInfo]:
+        schemas = await FlowsCRUD(self.session).get_by_applet_id(applet_id)
+        flow_ids = []
+        flow_map = dict()
+        flows = []
+        for schema in schemas:
+            flow_ids.append(schema.id)
+
+            flow = FlowBaseInfo(
+                id=schema.id,
+                name=schema.name,
+                description=self._get_by_language(
+                    schema.description, language
+                ),
+                hide_badge=schema.hide_badge,
+                order=schema.order,
+                is_hidden=schema.is_hidden,
+            )
+            flow_map[flow.id] = flow
+            flows.append(flow)
+        schemas = await FlowItemsCRUD(self.session).get_by_applet_id(applet_id)
+        for schema in schemas:
+            flow_map[schema.activity_flow_id].activity_ids.append(
+                schema.activity_id
+            )
+        return flows

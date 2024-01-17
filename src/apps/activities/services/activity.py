@@ -3,6 +3,7 @@ import uuid
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain.activity import (
+    ActivityBaseInfo,
     ActivityDuplicate,
     ActivityLanguageWithItemsMobileDetailPublic,
     ActivitySingleLanguageDetail,
@@ -521,3 +522,38 @@ class ActivityService:
             await crud(self.session).update_by_id(
                 activity_id, **schema.dict(by_alias=False, exclude_unset=True)
             )
+
+    async def get_info_by_applet_id(
+        self, applet_id: uuid.UUID, language: str
+    ) -> list[ActivityBaseInfo]:
+        schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
+            applet_id, is_reviewable=False
+        )
+        activities = []
+        activity_ids = []
+        for schema in schemas:
+            activity = ActivityBaseInfo(
+                id=schema.id,
+                name=schema.name,
+                description=self._get_by_language(
+                    schema.description, language
+                ),
+                image=schema.image,
+                order=schema.order,
+                is_hidden=schema.is_hidden,
+                contains_response_types=[],
+            )
+
+            activities.append(activity)
+            activity_ids.append(activity.id)
+
+        activity_items_map = await ActivityItemService(
+            self.session
+        ).get_info_by_activity_ids(
+            activity_ids=activity_ids, language=language
+        )
+        for activity in activities:
+            activity.contains_response_types = list(
+                activity_items_map.get(activity.id, set())
+            )
+        return activities
