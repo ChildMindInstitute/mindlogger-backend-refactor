@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import distinct, false, select, update
 from sqlalchemy.orm import Query
 
-from apps.activities.db.schemas import ActivityHistorySchema, ActivitySchema
+from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activities.errors import ActivityHistoryDoeNotExist
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
@@ -79,48 +79,6 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         result = db_result.scalars().first()
         if not result:
             raise ActivityHistoryDoeNotExist()
-
-    async def get_by_ids(
-        self, activity_id_versions: list[str]
-    ) -> list[ActivityHistorySchema]:
-        query: Query = select(ActivityHistorySchema)
-        query = query.where(
-            ActivityHistorySchema.id_version.in_(activity_id_versions)
-        )
-        query = query.order_by(ActivityHistorySchema.order.asc())
-        db_result = await self._execute(query)
-        return db_result.scalars().all()
-
-    async def get_applet_assessment(
-        self, applet_id_version: str
-    ) -> ActivityHistorySchema:
-        query: Query = select(ActivityHistorySchema)
-        query = query.where(
-            ActivityHistorySchema.applet_id == applet_id_version
-        )
-        query = query.order_by(ActivityHistorySchema.order.asc())
-        query = query.limit(1)
-
-        db_result = await self._execute(query)
-        return db_result.scalars().first()
-
-    async def get_reviewable_activities(
-        self, activity_version_ids: list[str]
-    ) -> list[ActivityHistorySchema]:
-        if not activity_version_ids:
-            return []
-
-        query: Query = (
-            select(ActivityHistorySchema)
-            .where(ActivityHistorySchema.id_version.in_(activity_version_ids))
-            .order_by(
-                ActivityHistorySchema.applet_id, ActivityHistorySchema.order
-            )
-            .distinct(ActivityHistorySchema.applet_id)
-        )  # single activity per applet version
-
-        db_result = await self._execute(query)
-        return db_result.scalars().all()
 
     async def get_by_applet_id_for_summary(
         self, applet_id: uuid.UUID
@@ -201,21 +159,3 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query = query.values(**values)
         query = query.returning(ActivityHistorySchema)
         await self._execute(query)
-
-    async def get_assessment_version_id(self, applet: uuid.UUID) -> str:
-        query: Query = (
-            select(ActivityHistorySchema.id_version)
-            .select_from(ActivitySchema)
-            .join(
-                ActivityHistorySchema,
-                ActivityHistorySchema.id == ActivitySchema.id,
-            )
-            .where(
-                ActivitySchema.applet_id == applet,
-                ActivitySchema.is_reviewable.is_(True),
-            )
-            .order_by(ActivityHistorySchema.created_at.desc())
-            .limit(1)
-        )
-        db_result = await self._execute(query)
-        return db_result.scalars().first()

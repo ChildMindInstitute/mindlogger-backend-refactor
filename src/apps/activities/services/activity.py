@@ -6,7 +6,6 @@ from apps.activities.domain.activity import (
     ActivityDuplicate,
     ActivityLanguageWithItemsMobileDetailPublic,
     ActivitySingleLanguageDetail,
-    ActivitySingleLanguageMobileDetailPublic,
     ActivitySingleLanguageWithItemsDetail,
 )
 from apps.activities.domain.activity_create import (
@@ -306,33 +305,6 @@ class ActivityService:
                     report_included_item_name=schema.report_included_item_name,
                     performance_task_type=schema.performance_task_type,
                     is_performance_task=schema.is_performance_task,
-                )
-            )
-        return activities
-
-    async def get_single_language_by_applet_id_mobile(
-        self, applet_id: uuid.UUID, language: str
-    ) -> list[ActivitySingleLanguageMobileDetailPublic]:
-        schemas = await ActivitiesCRUD(self.session).get_by_applet_id(
-            applet_id, is_reviewable=False
-        )
-        activities = []
-        for schema in schemas:
-            activities.append(
-                ActivitySingleLanguageMobileDetailPublic(
-                    id=schema.id,
-                    name=schema.name,
-                    description=self._get_by_language(
-                        schema.description, language
-                    ),
-                    image=schema.image,
-                    is_reviewable=schema.is_reviewable,
-                    is_skippable=schema.is_skippable,
-                    show_all_at_once=schema.show_all_at_once,
-                    is_hidden=schema.is_hidden,
-                    response_is_editable=schema.response_is_editable,
-                    order=schema.order,
-                    splash_screen=schema.splash_screen,
                 )
             )
         return activities

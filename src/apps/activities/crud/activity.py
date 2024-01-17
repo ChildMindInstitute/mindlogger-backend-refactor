@@ -1,4 +1,5 @@
 import uuid
+from typing import cast
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Query
@@ -69,13 +70,10 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         return result.all()
 
     async def get_by_id(self, activity_id: uuid.UUID) -> ActivitySchema:
-        query: Query = select(ActivitySchema)
-        query = query.where(ActivitySchema.id == activity_id)
-        result = await self._execute(query)
-        try:
-            return result.scalars().one_or_none()
-        except Exception as e:
-            raise e
+        activity = await self._get("id", activity_id)
+        # TODO: Fix mypy for now. Later need to make get_by_id more consistant
+        activity = cast(ActivitySchema, activity)
+        return activity
 
     # Get by applet id and activity id
     async def get_by_applet_id_and_activity_id(
