@@ -129,10 +129,7 @@ class SubjectsService:
         return await self.get_full(subject_id)
 
     async def create_anonymous_subject(
-        self,
-        anonymous_user: UserSchema,
-        applet_id: uuid.UUID,
-        secret_user_id: str,
+        self, anonymous_user: UserSchema, applet_id: uuid.UUID
     ) -> Subject:
         return await self.create(
             Subject(
@@ -140,7 +137,7 @@ class SubjectsService:
                 creator_id=self.user_id,
                 first_name=anonymous_user.first_name,
                 last_name=anonymous_user.last_name,
-                secret_user_id=secret_user_id,
+                secret_user_id=str(uuid.uuid4()),
             )
         )
 

@@ -772,9 +772,7 @@ class AppletService:
             await SubjectsService(
                 self.session, self.user_id, applet_id
             ).create_anonymous_subject(
-                anonymous_user=anonymous_user,
-                applet_id=applet_id,
-                secret_user_id=access.meta["secretUserId"],
+                anonymous_user=anonymous_user, applet_id=applet_id
             )
         return AppletLink(
             link=link, require_login=create_request.require_login
