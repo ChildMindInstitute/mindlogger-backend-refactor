@@ -1,11 +1,9 @@
 import datetime
 import uuid
 
-from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
-from apps.invitations.services import InvitationsService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.transfer_ownership.constants import TransferOwnershipStatus
@@ -82,8 +80,6 @@ class TransferService:
     async def accept_transfer(self, applet_id: uuid.UUID, key: uuid.UUID):
         """Respond to a transfer of ownership of an applet."""
         await AppletsCRUD(self.session).get_by_id(applet_id)
-        await AppletsCRUD(self.session).clear_encryption(applet_id)
-        await AppletsCRUD(self.session).clear_report_settings(applet_id)
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
         if (
@@ -92,16 +88,23 @@ class TransferService:
         ):
             raise PermissionsError()
 
-        await UserAppletAccessCRUD(self.session).delete_all_by_applet_id(
-            applet_id=transfer.applet_id
+        # delete previous owner's accesses
+        previous_owner = await UserAppletAccessCRUD(
+            self.session
+        ).get_applet_owner(applet_id=applet_id)
+        await UserAppletAccessCRUD(
+            self.session
+        ).remove_access_by_user_and_applet_to_role(
+            user_id=previous_owner.user_id,
+            applet_ids=[
+                applet_id,
+            ],
+            roles=[
+                Role.OWNER,
+                Role.RESPONDENT,
+            ],
         )
-        await InvitationsService(
-            self.session, self._user
-        ).clear_applets_invitations(applet_id)
 
-        await AnswersCRUD(self.session).delete_by_applet_user(
-            applet_id=transfer.applet_id
-        )
         await TransferCRUD(self.session).approve_by_key(key=key)
         await TransferCRUD(self.session).decline_all_pending_by_applet_id(
             applet_id=transfer.applet_id
@@ -130,6 +133,13 @@ class TransferService:
         await UserAppletAccessCRUD(
             self.session
         ).upsert_user_applet_access_list(roles_to_add)
+
+        # change other accesses' owner_id to current owner
+        await UserAppletAccessCRUD(
+            self.session
+        ).change_owner_of_applet_accesses(
+            new_owner=self._user.id, applet_id=applet_id
+        )
 
     def _generate_transfer_url(self) -> str:
         domain = settings.service.urls.frontend.web_base

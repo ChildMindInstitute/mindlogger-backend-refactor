@@ -1,6 +1,7 @@
 import re
 
 from apps.applets.domain import Role
+from apps.invitations.errors import ManagerInvitationExist
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
@@ -154,7 +155,7 @@ class TestTransfer(BaseTest):
         assert response.status_code == 404
 
     @rollback
-    async def test_accept_transfer_report_settings_are_cleared(self):
+    async def test_accept_transfer_report_settings_are_kept(self):
         report_settings_keys = (
             "reportServerIp",
             "reportPublicKey",
@@ -193,9 +194,9 @@ class TestTransfer(BaseTest):
         )
         assert resp.status_code == 200
         resp_data = resp.json()["result"]
-        # After accept transfership all report settings must be cleared
+        # After accept transfership all report settings must be kept
         for key in report_settings_keys:
-            assert not resp_data[key]
+            assert resp_data[key]
 
     @rollback
     async def test_reinvite_manager_after_transfer(self):
@@ -262,7 +263,28 @@ class TestTransfer(BaseTest):
         )
         assert response.status_code == 200
 
-        # send manager invite
+        # check managers list
+        response = await self.client.get(
+            self.workspace_applet_managers_list.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa4",
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+            ),
+        )
+
+        assert response.status_code == 200
+        result = response.json()["result"]
+        email_role_map = dict()
+        for res in result:
+            email_role_map[res["email"]] = res["roles"]
+        emails = list(email_role_map.keys())
+
+        assert "mike@gmail.com" in emails
+        assert Role.OWNER in email_role_map["mike@gmail.com"]
+
+        assert "patric@gmail.com" in emails
+        assert Role.MANAGER in email_role_map["patric@gmail.com"]
+
+        # try sending manager invite,
         request_data = dict(
             email="patric@gmail.com",
             first_name="Patric",
@@ -276,44 +298,8 @@ class TestTransfer(BaseTest):
             ),
             data=request_data,
         )
-        assert response.status_code == 200
-        assert len(TestMail.mails) == 3
-        assert TestMail.mails[0].recipients == [request_data["email"]]
-
-        # accept manager invite
-        await self.client.login(self.login_url, "patric@gmail.com", "Test1234")
-        key = response.json()["result"]["key"]
-        response = await self.client.post(
-            self.invite_accept_url.format(key=key)
+        assert response.status_code == ManagerInvitationExist.status_code
+        assert (
+            response.json()["result"][0]["message"]
+            == ManagerInvitationExist.message
         )
-        assert response.status_code == 200
-
-        await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
-        # set encryption
-        request_data = {
-            "publicKey": "1",
-            "prime": "2",
-            "base": "3",
-            "accountId": "4",
-        }
-        response = await self.client.post(
-            self.applet_encryption_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-            ),
-            data=request_data,
-        )
-        # check managers list
-        response = await self.client.get(
-            self.workspace_applet_managers_list.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa4",
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-            ),
-        )
-
-        result = response.json()
-
-        assert result["result"][0]["email"] == "mike@gmail.com"
-        assert Role.OWNER in result["result"][0]["roles"]
-
-        assert result["result"][1]["email"] == "patric@gmail.com"
-        assert Role.MANAGER in result["result"][1]["roles"]
