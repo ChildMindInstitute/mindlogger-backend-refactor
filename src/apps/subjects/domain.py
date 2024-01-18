@@ -25,13 +25,18 @@ class SubjectRespondent(InternalModel):
     relation: str
 
 
-class SubjectCreate(PublicModel):
+class SubjectRespondentCreate(PublicModel):
+    user_id: uuid.UUID
+    subject_id: uuid.UUID
     applet_id: uuid.UUID
-    email: EmailStr
+    relation: str
+
+
+class SubjectBase(PublicModel):
+    applet_id: uuid.UUID
+    email: EmailStr | None
     creator_id: uuid.UUID
     user_id: uuid.UUID | None
-    respondent_access_id: uuid.UUID
-    relation: str
 
 
 class SubjectCreateRequest(PublicModel):
@@ -44,5 +49,5 @@ class SubjectCreateRequest(PublicModel):
     email: str | None
 
 
-class SubjectFull(SubjectCreate):
-    id: uuid.UUID
+class SubjectFull(SubjectBase):
+    subjects: list[SubjectRespondent]
