@@ -29,8 +29,8 @@ class AnswerSchema(Base):
     respondent_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     is_flow_completed = Column(Boolean(), nullable=True)
     migrated_data = Column(JSONB())
-    target_subject_id = Column(Text(), nullable=True, index=True)
-    source_subject_id = Column(Text(), nullable=True, index=True)
+    target_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    source_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     relation = Column(String(length=20), nullable=True)
 
 
