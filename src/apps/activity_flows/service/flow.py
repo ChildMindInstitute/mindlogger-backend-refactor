@@ -169,6 +169,11 @@ class FlowService:
 
         # Create default events for new activities
         if new_flows:
+            await ScheduleService(self.session).create_default_schedules(
+                applet_id=applet_id,
+                activity_ids=list(new_flows),
+                is_activity=False,
+            )
             respondents_in_applet = await UserAppletAccessCRUD(
                 self.session
             ).get_user_id_applet_and_role(
@@ -197,12 +202,6 @@ class FlowService:
                         is_activity=False,
                         respondent_id=respondent_uuid,
                     )
-            else:
-                await ScheduleService(self.session).create_default_schedules(
-                    applet_id=applet_id,
-                    activity_ids=list(new_flows),
-                    is_activity=False,
-                )
 
         return flows
 
