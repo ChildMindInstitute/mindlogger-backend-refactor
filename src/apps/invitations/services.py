@@ -7,7 +7,7 @@ from pydantic.error_wrappers import ErrorWrapper
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import ManagersRole, Role
-from apps.applets.service import AppletService, UserAppletAccessService
+from apps.applets.service import UserAppletAccessService
 from apps.applets.service.applet import PublicAppletService
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
@@ -20,7 +20,6 @@ from apps.invitations.domain import (
     InvitationDetailGeneric,
     InvitationManagers,
     InvitationManagersRequest,
-    InvitationRequest,
     InvitationRespondent,
     InvitationRespondentRequest,
     InvitationReviewer,
@@ -29,17 +28,13 @@ from apps.invitations.domain import (
     RespondentInfo,
     RespondentMeta,
     ReviewerMeta,
-    _InvitationRequest,
 )
 from apps.invitations.errors import (
-    AppletDoesNotExist,
     DoesNotHaveAccess,
-    InvitationAlreadyProcesses,
+    InvitationAlreadyProcessed,
     InvitationDoesNotExist,
-    ManagerInvitationExist,
     NonUniqueValue,
     RespondentDoesNotExist,
-    RespondentInvitationExist,
 )
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
@@ -68,30 +63,14 @@ class InvitationsService:
             self._user.id, query_params
         )
 
-    async def fetch_all_for_invited(
-        self, query_params: QueryParams
-    ) -> list[InvitationDetail]:
-        return await self.invitations_crud.get_pending_by_invited_email(
-            self._user.email_encrypted, query_params
-        )
-
-    async def fetch_all_for_invited_count(
-        self, query_params: QueryParams
-    ) -> int:
-        return await self.invitations_crud.get_pending_by_invited_email_count(
-            self._user.email_encrypted, query_params
-        )
-
     async def get(self, key: uuid.UUID) -> InvitationDetailGeneric | None:
         invitation = await self.invitations_crud.get_by_email_and_key(
             self._user.email_encrypted, key  # type: ignore[arg-type]
         )
         if not invitation:
-            raise InvitationDoesNotExist(
-                message=f"No such invitation with key={key}."
-            )
+            raise InvitationDoesNotExist()
         elif invitation.status != InvitationStatus.PENDING:
-            raise InvitationAlreadyProcesses()
+            raise InvitationAlreadyProcessed()
         return invitation
 
     def _get_invitation_subject(self, applet: AppletSchema):
@@ -101,11 +80,11 @@ class InvitationsService:
         self, applet_id: uuid.UUID, schema: InvitationRespondentRequest
     ) -> InvitationDetailForRespondent:
         await self._is_validated_role_for_invitation(
-            applet_id, Role.RESPONDENT, schema
+            applet_id, Role.RESPONDENT
         )
         try:
             await self._is_secret_user_id_unique(
-                applet_id, schema.secret_user_id
+                applet_id, schema.secret_user_id, schema.email
             )
         except NonUniqueValue as e:
             field_name = InvitationRespondentRequest.__fields__[
@@ -114,22 +93,17 @@ class InvitationsService:
             wrapper = ErrorWrapper(ValueError(e), ("body", field_name))
             raise RequestValidationError([wrapper]) from e
 
-        # Get all invitations and check if it is possible to create
-        # the another invite or update existing or invitation
-        # has already been accepted by the user, and we should raise
-        # an error that sending a second invitation is not possible.
-        invitations = (
-            await self.invitations_crud.get_by_email_applet_role_respondent(
-                email_=schema.email, applet_id_=applet_id
-            )
-        )
         # Get invited user if he exists. User will be linked with invitaion
         # by user_id in this case
         invited_user = await UsersCRUD(self.session).get_user_or_none_by_email(
             email=schema.email
         )
         invited_user_id = invited_user.id if invited_user is not None else None
-        success_invitation_schema = {
+        respondent_info = RespondentInfo(
+            meta=RespondentMeta(secret_user_id=schema.secret_user_id),
+            nickname=schema.nickname,
+        )
+        payload = {
             "email": schema.email,
             "applet_id": applet_id,
             "role": Role.RESPONDENT,
@@ -139,67 +113,34 @@ class InvitationsService:
             "first_name": schema.first_name,
             "last_name": schema.last_name,
             "user_id": invited_user_id,
+            "meta": respondent_info.meta.dict(),
+            "nickname": respondent_info.nickname,
         }
-
-        payload = None
-        invitation_schema = None
-        for invitation in invitations:
-            respondent_info = RespondentInfo(
-                meta=RespondentMeta(
-                    secret_user_id=invitation.meta.secret_user_id
-                ),
-                nickname=invitation.nickname,
+        pending_invitation = await (
+            self.invitations_crud.get_pending_invitation(
+                schema.email, applet_id
             )
-            if invitation.status == InvitationStatus.PENDING and (
-                respondent_info.meta.secret_user_id == schema.secret_user_id
-            ):
-                payload = success_invitation_schema | {
-                    "meta": respondent_info.meta.dict(),
-                    "nickname": invitation.nickname,
-                }
-                invitation_schema = await self.invitations_crud.update(
-                    lookup="id",
-                    value=invitation.id,
-                    schema=InvitationSchema(**payload),
-                )
-                break
-            elif invitation.status == InvitationStatus.APPROVED and (
-                respondent_info.meta.secret_user_id == schema.secret_user_id
-            ):
-                raise InvitationAlreadyProcesses
-
-        if not payload:
-            respondent_info = RespondentInfo(
-                meta=RespondentMeta(
-                    secret_user_id=schema.secret_user_id,
-                    # nickname=schema.nickname,
-                ),
-                nickname=schema.nickname,
+        )
+        if pending_invitation:
+            invitation_schema = await self.invitations_crud.update(
+                lookup="id",
+                value=pending_invitation.id,
+                schema=InvitationSchema(**payload),
             )
-
-            payload = success_invitation_schema | {
-                "meta": respondent_info.meta.dict(),
-                "nickname": respondent_info.nickname,
-            }
+        else:
             invitation_schema = await self.invitations_crud.save(
                 InvitationSchema(**payload)
             )
-            invitation_internal: InvitationRespondent = (
-                InvitationRespondent.from_orm(invitation_schema)
-            )
-        else:
-            invitation_internal = InvitationRespondent.from_orm(
-                invitation_schema
-            )
+        invitation_internal: InvitationRespondent = (
+            InvitationRespondent.from_orm(invitation_schema)
+        )
 
         applet = await AppletsCRUD(self.session).get_by_id(
             invitation_internal.applet_id
         )
-
-        if not invited_user_id:
-            path = f"invitation_new_user_{schema.language or 'en'}"
-        else:
-            path = f"invitation_registered_user_{schema.language or 'en'}"
+        template_name = self._get_email_template_name(
+            invited_user_id, schema.language
+        )
 
         # Send email to the user
         service = MailingService()
@@ -207,7 +148,7 @@ class InvitationsService:
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
             body=service.get_template(
-                path=path,
+                path=template_name,
                 first_name=schema.first_name,
                 last_name=schema.last_name,
                 applet_name=applet.display_name,
@@ -236,20 +177,9 @@ class InvitationsService:
     async def send_reviewer_invitation(
         self, applet_id: uuid.UUID, schema: InvitationReviewerRequest
     ) -> InvitationDetailForReviewer:
-        await self._is_validated_role_for_invitation(
-            applet_id, Role.REVIEWER, schema
-        )
-        await self._is_respondents_exist(applet_id, schema.respondents)
+        await self._is_validated_role_for_invitation(applet_id, Role.REVIEWER)
+        await self._do_respondents_exist(applet_id, schema.respondents)
 
-        # Get all invitations and check if it is possible to create
-        # the another invite or update existing or invitation
-        # has already been accepted by the user, and we should raise
-        # an error that sending a second invitation is not possible.
-        invitations: list[
-            InvitationReviewer
-        ] = await self.invitations_crud.get_by_email_applet_role_reviewer(
-            email_=schema.email, applet_id_=applet_id
-        )
         respondents = [
             str(respondent_id) for respondent_id in schema.respondents
         ]
@@ -259,7 +189,7 @@ class InvitationsService:
             email=schema.email
         )
         invited_user_id = invited_user.id if invited_user is not None else None
-        success_invitation_schema = {
+        payload = {
             "email": schema.email,
             "applet_id": applet_id,
             "role": Role.REVIEWER,
@@ -269,50 +199,38 @@ class InvitationsService:
             "first_name": schema.first_name,
             "last_name": schema.last_name,
             "user_id": invited_user_id,
+            "nickname": None,
+            "meta": ReviewerMeta(respondents=respondents).dict(),
         }
 
-        payload = None
-        invitation_schema = None
-        for invitation in invitations:
-            meta = ReviewerMeta.from_orm(invitation.meta)
-            if invitation.status == InvitationStatus.PENDING and (
-                meta.respondents == respondents
-            ):
-                payload = success_invitation_schema | {"meta": meta.dict()}
-                invitation_schema = await self.invitations_crud.update(
-                    lookup="id",
-                    value=invitation.id,
-                    schema=InvitationSchema(**payload),
-                )
-                break
-            elif invitation.status == InvitationStatus.APPROVED and (
-                meta.respondents == respondents
-            ):
-                raise InvitationAlreadyProcesses
-
-        if not payload:
-            meta = ReviewerMeta(respondents=respondents)
-
-            payload = success_invitation_schema | {"meta": meta.dict()}
+        pending_invitation = await (
+            self.invitations_crud.get_pending_invitation(
+                schema.email, applet_id
+            )
+        )
+        if pending_invitation:
+            invitation_schema = await self.invitations_crud.update(
+                lookup="id",
+                value=pending_invitation.id,
+                schema=InvitationSchema(**payload),
+            )
+        else:
             invitation_schema = await self.invitations_crud.save(
                 InvitationSchema(**payload)
             )
-            invitation_internal: InvitationReviewer = (
-                InvitationReviewer.from_orm(invitation_schema)
-            )
-        else:
-            invitation_internal = InvitationReviewer.from_orm(
-                invitation_schema
-            )
+        invitation_internal = InvitationReviewer.from_orm(invitation_schema)
 
         applet = await AppletsCRUD(self.session).get_by_id(
             invitation_internal.applet_id
         )
 
-        if not invited_user_id:
-            path = f"invitation_new_user_{schema.language or 'en'}"
-        else:
-            path = f"invitation_registered_user_{schema.language or 'en'}"
+        template_name = self._get_email_template_name(
+            invited_user_id, schema.language
+        )
+
+        await WorkspaceService(
+            self.session, self._user.id
+        ).update_workspace_name(self._user, schema.workspace_prefix)
 
         # Send email to the user
         service = MailingService()
@@ -320,7 +238,7 @@ class InvitationsService:
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
             body=service.get_template(
-                path=path,
+                path=template_name,
                 first_name=schema.first_name,
                 last_name=schema.last_name,
                 applet_name=applet.display_name,
@@ -334,10 +252,6 @@ class InvitationsService:
         )
 
         await service.send(message)
-
-        await WorkspaceService(
-            self.session, self._user.id
-        ).update_workspace_name(self._user, schema.workspace_prefix)
 
         return InvitationDetailForReviewer(
             id=invitation_internal.id,
@@ -354,26 +268,14 @@ class InvitationsService:
     async def send_managers_invitation(
         self, applet_id: uuid.UUID, schema: InvitationManagersRequest
     ) -> InvitationDetailForManagers:
-        await self._is_validated_role_for_invitation(
-            applet_id, schema.role, schema
-        )
-
-        # Get all invitations and check if it is possible to create
-        # the another invite or update existing or invitation
-        # has already been accepted by the user, and we should raise
-        # an error that sending a second invitation is not possible.
-        invitations: list[
-            InvitationManagers
-        ] = await self.invitations_crud.get_by_email_applet_role_managers(
-            email_=schema.email, applet_id_=applet_id, role_=schema.role
-        )
+        await self._is_validated_role_for_invitation(applet_id, schema.role)
         # Get invited user if he exists. User will be linked with invitaion
         # by user_id in this case
         invited_user = await UsersCRUD(self.session).get_user_or_none_by_email(
             email=schema.email
         )
         invited_user_id = invited_user.id if invited_user is not None else None
-        success_invitation_schema = {
+        payload = {
             "email": schema.email,
             "applet_id": applet_id,
             "role": schema.role,
@@ -386,41 +288,31 @@ class InvitationsService:
             "meta": {},
         }
 
-        payload = None
-        invitation_schema = None
-        for invitation in invitations:
-            if invitation.status == InvitationStatus.PENDING:
-                payload = success_invitation_schema
-                invitation_schema = await self.invitations_crud.update(
-                    lookup="id",
-                    value=invitation.id,
-                    schema=InvitationSchema(**payload),
-                )
-                break
-            elif invitation.status == InvitationStatus.APPROVED:
-                raise InvitationAlreadyProcesses
-
-        if not payload:
-            payload = success_invitation_schema
+        pending_invitation = await (
+            self.invitations_crud.get_pending_invitation(
+                schema.email, applet_id
+            )
+        )
+        if pending_invitation:
+            invitation_schema = await self.invitations_crud.update(
+                lookup="id",
+                value=pending_invitation.id,
+                schema=InvitationSchema(**payload),
+            )
+        else:
             invitation_schema = await self.invitations_crud.save(
                 InvitationSchema(**payload)
             )
-            invitation_internal: InvitationManagers = (
-                InvitationManagers.from_orm(invitation_schema)
-            )
-        else:
-            invitation_internal = InvitationManagers.from_orm(
-                invitation_schema
-            )
-
+        invitation_internal = InvitationManagers.from_orm(invitation_schema)
         applet = await AppletsCRUD(self.session).get_by_id(
             invitation_internal.applet_id
         )
-
-        if not invited_user_id:
-            path = f"invitation_new_user_{schema.language}"
-        else:
-            path = f"invitation_registered_user_{schema.language}"
+        template_name = self._get_email_template_name(
+            invited_user_id, schema.language
+        )
+        await WorkspaceService(
+            self.session, self._user.id
+        ).update_workspace_name(self._user, schema.workspace_prefix)
 
         # Send email to the user
         service = MailingService()
@@ -428,7 +320,7 @@ class InvitationsService:
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
             body=service.get_template(
-                path=path,
+                path=template_name,
                 first_name=schema.first_name,
                 last_name=schema.last_name,
                 applet_name=applet.display_name,
@@ -442,10 +334,6 @@ class InvitationsService:
         )
 
         await service.send(message)
-
-        await WorkspaceService(
-            self.session, self._user.id
-        ).update_workspace_name(self._user, schema.workspace_prefix)
 
         return InvitationDetailForManagers(
             id=invitation_internal.id,
@@ -466,56 +354,16 @@ class InvitationsService:
         #     domain = settings.service.urls.frontend.admin_base
         return f"https://{domain}/{url_path}"
 
-    async def _validate_invitation(
-        self, invitation_request: InvitationRequest
-    ):
-        is_exist = await AppletService(
-            self.session, self._user.id
-        ).exist_by_id(invitation_request.applet_id)
-        if not is_exist:
-            raise AppletDoesNotExist()
-
-        access_service = UserAppletAccessService(
-            self.session, self._user.id, invitation_request.applet_id
-        )
-        if invitation_request.role == Role.RESPONDENT:
-            role = await access_service.get_respondent_managers_role()
-        elif invitation_request.role in [
-            Role.MANAGER,
-            Role.COORDINATOR,
-            Role.EDITOR,
-            Role.REVIEWER,
-        ]:
-            role = await access_service.get_organizers_role()
-        else:
-            # Wrong role to invite
-            raise DoesNotHaveAccess(
-                message="You can not invite user with "
-                f"role {invitation_request.role.name}."
-            )
-
-        if not role:
-            # Does not have access to send invitation
-            raise DoesNotHaveAccess(
-                message="You do not have access to send invitation."
-            )
-        elif Role(role) < Role(invitation_request.role):
-            # TODO: remove this validation if it is not needed
-            # Can not invite users by roles where own role level is lower.
-            raise DoesNotHaveAccess(
-                message="You do not have access to send invitation."
-            )
-
     async def _is_validated_role_for_invitation(
         self,
         applet_id: uuid.UUID,
         request_role: Role | ManagersRole,
-        schema: _InvitationRequest,
     ):
         access_service = UserAppletAccessService(
             self.session, self._user.id, applet_id
         )
-        if request_role == Role.RESPONDENT:
+        role = None
+        if request_role in [Role.RESPONDENT, Role.REVIEWER]:
             role = await access_service.get_respondent_managers_role()
         elif request_role in [
             Role.MANAGER,
@@ -523,42 +371,24 @@ class InvitationsService:
             Role.EDITOR,
         ]:
             role = await access_service.get_organizers_role()
-        elif request_role == Role.REVIEWER:
-            role = await access_service.get_respondent_managers_role()
-            if (
-                role == Role.COORDINATOR
-                and self._user.email.lower() == schema.email.lower()
-            ):
-                role = None
-        else:
-            # Wrong role to invite
-            raise DoesNotHaveAccess(
-                message="You can not invite user with "
-                f"role {request_role.name}."
-            )
 
         if not role:
             # Does not have access to send invitation
             raise DoesNotHaveAccess(
                 message="You do not have access to send invitation."
             )
-        elif Role(role) < Role(request_role):
-            # TODO: remove this validation if it is not needed
-            # Can not invite users by roles where own role level is lower.
-            raise DoesNotHaveAccess(
-                message="You do not have access to send invitation."
-            )
 
     async def _is_secret_user_id_unique(
-        self,
-        applet_id: uuid.UUID,
-        secret_user_id: str,
+        self, applet_id: uuid.UUID, secret_user_id: str, email: str
     ):
         access_coro = UserAppletAccessCRUD(
             self.session
         ).get_by_secret_user_id_for_applet(applet_id, secret_user_id)
         invitation_coro = InvitationCRUD(self.session).get_for_respondent(
-            applet_id, secret_user_id, InvitationStatus.PENDING
+            applet_id,
+            secret_user_id,
+            InvitationStatus.PENDING,
+            invited_email=email,
         )
         access, invitation = await asyncio.gather(access_coro, invitation_coro)
         if access or invitation:
@@ -567,7 +397,7 @@ class InvitationsService:
                 f"secret User Id is non-unique."
             )
 
-    async def _is_respondents_exist(
+    async def _do_respondents_exist(
         self,
         applet_id: uuid.UUID,
         respondents: list[uuid.UUID],
@@ -581,10 +411,7 @@ class InvitationsService:
 
         for respondent in respondents:
             if respondent not in exist_respondents:
-                raise RespondentDoesNotExist(
-                    message=f"Respondent with id {respondent} not exist "
-                    f"in applet with id {applet_id}."
-                )
+                raise RespondentDoesNotExist()
 
     async def accept(self, key: uuid.UUID):
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
@@ -594,7 +421,7 @@ class InvitationsService:
             raise InvitationDoesNotExist()
 
         if invitation.status != InvitationStatus.PENDING:
-            raise InvitationAlreadyProcesses()
+            raise InvitationAlreadyProcessed()
 
         await UserAppletAccessService(
             self.session, self._user.id, invitation.applet_id
@@ -612,7 +439,7 @@ class InvitationsService:
             raise InvitationDoesNotExist()
 
         if invitation.status != InvitationStatus.PENDING:
-            raise InvitationAlreadyProcesses()
+            raise InvitationAlreadyProcessed()
 
         await InvitationCRUD(self.session).decline_by_id(
             invitation.id, self._user.id
@@ -620,25 +447,6 @@ class InvitationsService:
 
     async def clear_applets_invitations(self, applet_id: uuid.UUID):
         await InvitationCRUD(self.session).delete_by_applet_id(applet_id)
-
-    async def exist(self, email: str, role: str, applet_id: uuid.UUID) -> int:
-        return await InvitationCRUD(self.session).exist(email, role, applet_id)
-
-    async def check_for_duplicates(
-        self, applet_id: uuid.UUID, email: str, role: str
-    ):
-        crud = InvitationCRUD(self.session)
-        is_manager = role in Role.managers()
-        if is_manager:
-            is_exist = await crud.manager_invitation_exist(email, applet_id)
-            if is_exist:
-                raise ManagerInvitationExist()
-        else:
-            is_exist = await InvitationCRUD(self.session).duplicate_exist(
-                email, role, applet_id
-            )
-            if is_exist:
-                raise RespondentInvitationExist()
 
     async def delete_for_managers(self, applet_ids: list[uuid.UUID]):
         roles = [
@@ -659,6 +467,14 @@ class InvitationsService:
             self._user.email, applet_ids, roles
         )
 
+    @staticmethod
+    def _get_email_template_name(
+        invited_user_id: uuid.UUID | None, language: str
+    ) -> str:
+        if not invited_user_id:
+            return f"invitation_new_user_{language}"
+        return f"invitation_registered_user_{language}"
+
 
 class PrivateInvitationService:
     def __init__(self, session):
@@ -671,7 +487,7 @@ class PrivateInvitationService:
             link, True
         )
         if not applet:
-            return None
+            raise InvitationDoesNotExist()
         return PrivateInvitationDetail(
             id=applet.id,
             applet_id=applet.id,

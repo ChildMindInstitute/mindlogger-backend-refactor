@@ -395,6 +395,7 @@ class ActivityItemChangeService(BaseChangeGenerator):
                 change = self.init_change(
                     old_item.name, ChangeStatusEnum.REMOVED
                 )
+                result.append(change)
             elif new_item and old_item:
                 changes = self.get_changes_update(old_item, new_item)
                 if changes:
