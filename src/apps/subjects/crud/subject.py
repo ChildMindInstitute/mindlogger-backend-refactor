@@ -1,10 +1,11 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Query
 
 from apps.subjects.db.schemas import SubjectRespondentSchema, SubjectSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.domain.constants import Role
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["SubjectsCrud"]
@@ -100,3 +101,25 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         query = query.limit(1)
         res = await self._execute(query)
         return res.scalar_one_or_none()
+
+    async def get_relation(
+        self,
+        target_id: uuid.UUID,
+        source_user_id: uuid.UUID,
+        applet_id: uuid.UUID,
+    ) -> str | None:
+        query: Query = select(SubjectRespondentSchema.relation)
+        query = query.join(
+            UserAppletAccessSchema,
+            and_(
+                UserAppletAccessSchema.id
+                == SubjectRespondentSchema.respondent_access_id,
+                UserAppletAccessSchema.user_id == source_user_id,
+                UserAppletAccessSchema.applet_id == applet_id,
+                UserAppletAccessSchema.role == Role.RESPONDENT,
+            ),
+            isouter=True,
+        )
+        query = query.where(SubjectRespondentSchema.subject_id == target_id)
+        result = await self._execute(query)
+        return result.scalar_one_or_none()

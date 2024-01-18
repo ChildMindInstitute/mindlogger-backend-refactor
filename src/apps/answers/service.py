@@ -213,6 +213,9 @@ class AnswerService:
             )
             source_subject = None
         assert target_subject
+        relation = await subject_crud.get_relation(
+            target_subject.id, self.user_id, applet_answer.applet_id
+        )
         answer = await AnswersCRUD(self.answer_session).create(
             AnswerSchema(
                 submit_id=applet_answer.submit_id,
@@ -233,6 +236,7 @@ class AnswerService:
                 source_subject_id=source_subject.id
                 if source_subject
                 else None,
+                relation=relation,
             )
         )
         item_answer = applet_answer.answer
