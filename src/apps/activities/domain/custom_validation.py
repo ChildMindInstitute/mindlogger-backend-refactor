@@ -151,20 +151,6 @@ def validate_score_and_sections(values: dict):
                         raise IncorrectSectionPrintItemTypeError()
 
             if report.conditional_logic:
-                if hasattr(report.conditional_logic, "items_print"):
-                    for item in report.conditional_logic.items_print:
-                        if item not in item_names:
-                            raise IncorrectSectionPrintItemError()
-                        else:
-                            if items[
-                                item_names.index(item)
-                            ].response_type not in [
-                                ResponseType.SINGLESELECT,
-                                ResponseType.MULTISELECT,
-                                ResponseType.SLIDER,
-                                ResponseType.TEXT,
-                            ]:
-                                raise IncorrectSectionPrintItemTypeError()
                 if hasattr(report.conditional_logic, "conditions"):
                     for item in report.conditional_logic.conditions:
                         dependency_conditions = (

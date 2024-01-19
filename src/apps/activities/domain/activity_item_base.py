@@ -111,20 +111,10 @@ class BaseActivityItem(BaseModel):
                     raise IncorrectResponseValueError(
                         type=ResponseTypeValueConfig[response_type]["value"]
                     )
-        else:
-            if (
-                value is not None
-                and type(value)
-                is not ResponseTypeValueConfig[response_type]["value"]
-            ):
-                raise IncorrectResponseValueError(
-                    type=ResponseTypeValueConfig[response_type]["value"]
-                )
-            elif (
-                type(value) is ResponseTypeValueConfig[response_type]["value"]
-            ):
-                value = None
-
+        elif value is not None:
+            raise IncorrectResponseValueError(
+                type=ResponseTypeValueConfig[response_type]["value"]
+            )
         return value
 
     @root_validator(skip_on_failure=True)
@@ -172,17 +162,15 @@ class BaseActivityItem(BaseModel):
     @validator("conditional_logic")
     def validate_conditional_logic(cls, value, values):
         response_type = values.get("response_type")
-        if value is not None:
-            # check if response type is correct
-            if response_type not in [
-                ResponseType.SINGLESELECT,
-                ResponseType.MULTISELECT,
-                ResponseType.SLIDER,
-                ResponseType.TEXT,
-                ResponseType.TIME,
-                ResponseType.TIMERANGE,  # TODO add support???
-            ]:
-                raise IncorrectConditionLogicItemTypeError()
+        if value is not None and response_type not in [
+            ResponseType.SINGLESELECT,
+            ResponseType.MULTISELECT,
+            ResponseType.SLIDER,
+            ResponseType.TEXT,
+            ResponseType.TIME,
+            ResponseType.TIMERANGE,
+        ]:
+            raise IncorrectConditionLogicItemTypeError()
 
         return value
 
