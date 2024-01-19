@@ -60,7 +60,7 @@ class TextConfig(_ScreenConfig, PublicModel):
         return value
 
 
-class SingleSelectionConfig(_ScreenConfig, PublicModel):
+class _SelectionConfig(_ScreenConfig, PublicModel):
     randomize_options: bool
     timer: NonNegativeInt | None
     add_scores: bool
@@ -71,7 +71,11 @@ class SingleSelectionConfig(_ScreenConfig, PublicModel):
     additional_response_option: AdditionalResponseOption
 
 
-class MultiSelectionConfig(SingleSelectionConfig, PublicModel):
+class SingleSelectionConfig(_SelectionConfig, PublicModel):
+    auto_advance: bool | None = False
+
+
+class MultiSelectionConfig(_SelectionConfig, PublicModel):
     pass
 
 

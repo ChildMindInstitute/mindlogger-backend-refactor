@@ -77,6 +77,7 @@ class ConfigChangeService(BaseChangeGenerator):
         "add_tooltip": "Add Tooltips",
         "set_palette": "Set Color Palette",
         "add_tokens": "Tokens",
+        "auto_advance": "Auto Advance",
         # Additional options
         "text_input_option": "Add Text Input Option",
         "text_input_required": "Input Required",
