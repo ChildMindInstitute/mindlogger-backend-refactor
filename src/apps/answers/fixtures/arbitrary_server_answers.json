@@ -333,6 +333,7 @@
         ]
       },
       "config": {
+        "auto_advance": false,
         "timer": 0,
         "add_scores": false,
         "add_tokens": null,
@@ -668,6 +669,7 @@
         ]
       },
       "config": {
+        "auto_advance": false,
         "randomize_options": false,
         "timer": 0,
         "add_scores": false,
@@ -777,6 +779,7 @@
         ]
       },
       "config": {
+        "auto_advance": false,
         "randomize_options": false,
         "timer": 0,
         "add_scores": false,
