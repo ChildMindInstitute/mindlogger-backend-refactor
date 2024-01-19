@@ -1,17 +1,14 @@
 import json
 
-from asynctest import CoroutineMock, patch
-
 from apps.shared.test import BaseTest
 
 
-@patch("apps.answers.service.create_report.kiq")
 class TestAnswerCases(BaseTest):
     login_url = "/auth/login"
     answer_url = "/answers"
 
     async def test_answer_activity_items_create_for_respondent(
-        self, report_mock: CoroutineMock, client
+        self, mock_kiq_report, client
     ):
         await self.load_data(
             "answers/fixtures/duplicate_activity_in_flow.json"

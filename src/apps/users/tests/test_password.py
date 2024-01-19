@@ -1,8 +1,6 @@
 import asyncio
 import datetime
-from unittest.mock import patch
 
-from asynctest import CoroutineMock
 from httpx import Response as HttpResponse
 from starlette import status
 
@@ -26,7 +24,6 @@ from config import settings
 from infrastructure.utility import RedisCache
 
 
-@patch("apps.users.api.password.reencrypt_answers.kiq")
 class TestPassword(BaseTest):
     get_token_url = auth_router.url_path_for("get_token")
     user_create_url = user_router.url_path_for("user_create")
@@ -50,7 +47,7 @@ class TestPassword(BaseTest):
         created_at=datetime.datetime.utcnow(),
     )
 
-    async def test_password_update(self, task_mock: CoroutineMock, client):
+    async def test_password_update(self, mock_reencrypt_kiq, client):
         # Creating new user
         await client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -88,11 +85,11 @@ class TestPassword(BaseTest):
         assert response.status_code == status.HTTP_200_OK
         assert response.status_code == status.HTTP_200_OK
         assert internal_response.status_code == status.HTTP_200_OK
-        task_mock.assert_awaited_once()
+        mock_reencrypt_kiq.assert_awaited_once()
 
     async def test_password_recovery(
         self,
-        task_mock: CoroutineMock,
+        mock_reencrypt_kiq,
         client,
     ):
         # Creating new user
@@ -148,7 +145,7 @@ class TestPassword(BaseTest):
 
     async def test_password_recovery_approve(
         self,
-        task_mock: CoroutineMock,
+        mock_reencrypt_kiq,
         client,
     ):
         cache = RedisCache()
@@ -199,7 +196,7 @@ class TestPassword(BaseTest):
 
     async def test_password_recovery_approve_expired(
         self,
-        task_mock: CoroutineMock,
+        mock_reencrypt_kiq,
         client,
     ):
         cache = RedisCache()
