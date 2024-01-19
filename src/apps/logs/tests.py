@@ -1,7 +1,6 @@
 from pytest import fixture, mark
 
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback
 
 EMPTY_DESCRIPTIONS = [
     dict(
@@ -107,8 +106,7 @@ class TestNotificationLogs(BaseTest):
         "users/fixtures/user_devices.json",
     ]
 
-    @rollback
-    async def test_create_log(self):
+    async def test_create_log(self, client):
         create_data = dict(
             user_id="tom@mindlogger.com",
             device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -118,18 +116,17 @@ class TestNotificationLogs(BaseTest):
             scheduled_notifications=[{"sample": "json"}],
         )
 
-        response = await self.client.post(self.logs_url, data=create_data)
+        response = await client.post(self.logs_url, data=create_data)
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-    @rollback
-    async def test_retrieve_log(self):
+    async def test_retrieve_log(self, client):
         query = dict(
             email="tom@mindlogger.com",
             device_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
         )
 
-        response = await self.client.get(self.logs_url, query=query)
+        response = await client.get(self.logs_url, query=query)
 
         assert response.status_code == 200, response.json()
         assert type(response.json()["result"]) == list
@@ -143,7 +140,7 @@ class TestNotificationLogs(BaseTest):
             scheduled_notifications=[{"sample": "json"}],
         )
 
-        response = await self.client.post(self.logs_url, data=create_data)
+        response = await client.post(self.logs_url, data=create_data)
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
@@ -153,7 +150,7 @@ class TestNotificationLogs(BaseTest):
             limit=10,
         )
 
-        response = await self.client.get(self.logs_url, query=query)
+        response = await client.get(self.logs_url, query=query)
 
         assert response.status_code == 200, response.json()
         assert len(response.json()["result"]) == 1
@@ -171,12 +168,11 @@ class TestNotificationLogs(BaseTest):
             ),
         ),
     )
-    @rollback
     async def test_create_log_use_previous_value_if_attribute_null(
-        self, dummy_logs_payload, description, queue, scheduled
+        self, client, dummy_logs_payload, description, queue, scheduled
     ):
         for payload in dummy_logs_payload:
-            response = await self.client.post(self.logs_url, data=payload)
+            response = await client.post(self.logs_url, data=payload)
             assert response.status_code == 201
 
         create_data = dict(
@@ -188,7 +184,7 @@ class TestNotificationLogs(BaseTest):
             scheduled_notifications=scheduled,
         )
 
-        response = await self.client.post(self.logs_url, data=create_data)
+        response = await client.post(self.logs_url, data=create_data)
         assert response.status_code == 201, response.json()
         response = response.json()["result"]
         assert response["id"]
@@ -196,11 +192,10 @@ class TestNotificationLogs(BaseTest):
         assert response["notificationInQueue"]
         assert response["scheduledNotifications"]
 
-    @rollback
     async def test_create_log_use_none_value_if_attribute_null_at_first_log(
-        self,
+        self, client
     ):
-        response = await self.client.post(
+        response = await client.post(
             self.logs_url,
             data=dict(
                 user_id="tom@mindlogger.com",
@@ -218,8 +213,9 @@ class TestNotificationLogs(BaseTest):
         assert response["notificationInQueue"]
         assert response["scheduledNotifications"]
 
-    @rollback
-    async def test_create_log_use_previous_non_null_if_attribute_null(self):
+    async def test_create_log_use_previous_non_null_if_attribute_null(
+        self, client
+    ):
         payloads = [
             dict(
                 user_id="tom@mindlogger.com",
@@ -239,7 +235,7 @@ class TestNotificationLogs(BaseTest):
             ),
         ]
         for payload in payloads:
-            response = await self.client.post(self.logs_url, data=payload)
+            response = await client.post(self.logs_url, data=payload)
             assert response.status_code == 201
 
         create_data = dict(
@@ -251,7 +247,7 @@ class TestNotificationLogs(BaseTest):
             scheduled_notifications=[{"name": "notifications3"}],
         )
 
-        response = await self.client.post(self.logs_url, data=create_data)
+        response = await client.post(self.logs_url, data=create_data)
         assert response.status_code == 201, response.json()
         response = response.json()["result"]
         assert response["id"]
@@ -263,8 +259,7 @@ class TestNotificationLogs(BaseTest):
             {"name": "notifications3"}
         ]
 
-    @rollback
-    async def test_create_log_allow_empty_array(self):
+    async def test_create_log_allow_empty_array(self, client):
         payloads = [
             dict(
                 user_id="tom@mindlogger.com",
@@ -285,7 +280,7 @@ class TestNotificationLogs(BaseTest):
         ]
 
         for payload in payloads:
-            response = await self.client.post(self.logs_url, data=payload)
+            response = await client.post(self.logs_url, data=payload)
             assert response.status_code == 201
 
         query = dict(
@@ -294,7 +289,7 @@ class TestNotificationLogs(BaseTest):
             limit=5,
         )
 
-        response = await self.client.get(self.logs_url, query=query)
+        response = await client.get(self.logs_url, query=query)
         assert response.status_code == 200, response.json()
         response = response.json()["result"]
         has_empty_array = next(
@@ -314,12 +309,11 @@ class TestNotificationLogs(BaseTest):
             ),
         ),
     )
-    @rollback
     async def test_create_log_allow_empty_array_if_prev_is_none(
-        self, param, payloads
+        self, client, param, payloads
     ):
         for payload in payloads:
-            response = await self.client.post(self.logs_url, data=payload)
+            response = await client.post(self.logs_url, data=payload)
             assert response.status_code == 201
 
         query = dict(
@@ -328,7 +322,7 @@ class TestNotificationLogs(BaseTest):
             limit=5,
         )
 
-        response = await self.client.get(self.logs_url, query=query)
+        response = await client.get(self.logs_url, query=query)
         assert response.status_code == 200, response.json()
         response = response.json()["result"]
         log_1 = next(filter(lambda x: x["actionType"] == "test1", response))

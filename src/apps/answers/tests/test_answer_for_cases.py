@@ -1,21 +1,22 @@
 import json
 
+from asynctest import CoroutineMock, patch
+
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback
 
 
+@patch("apps.answers.service.create_report.kiq")
 class TestAnswerCases(BaseTest):
     login_url = "/auth/login"
     answer_url = "/answers"
 
-    @rollback
-    async def test_answer_activity_items_create_for_respondent(self):
+    async def test_answer_activity_items_create_for_respondent(
+        self, report_mock: CoroutineMock, client
+    ):
         await self.load_data(
             "answers/fixtures/duplicate_activity_in_flow.json"
         )
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -49,7 +50,7 @@ class TestAnswerCases(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
         assert response.status_code == 201, response.json()
 
         create_data = dict(
@@ -84,5 +85,5 @@ class TestAnswerCases(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
         assert response.status_code == 201, response.json()

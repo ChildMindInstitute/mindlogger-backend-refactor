@@ -8,7 +8,6 @@ from apps.activities import errors as activity_errors
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.workspaces.errors import AppletCreationAccessDenied
-from infrastructure.database import rollback
 from infrastructure.utility import FCMNotificationTest
 
 
@@ -51,11 +50,8 @@ class TestApplet(BaseTest):
     public_applet_detail_url = "/public/applets/{key}"
     public_applet_base_info_url = f"{public_applet_detail_url}/base_info"
 
-    @rollback
-    async def test_creating_applet(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_creating_applet(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = {
             "displayName": "7ee3617f-fe7f-49bc-8e0c-da6730a2d1cd",
             "encryption": {
@@ -268,7 +264,7 @@ class TestApplet(BaseTest):
                 }
             ],
         }
-        response = await self.client.post(
+        response = await client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
@@ -276,18 +272,17 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.applet_detail_url.format(pk=response.json()["result"]["id"])
         )
         assert response.status_code == http.HTTPStatus.OK
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].subject == "Applet upload success!"
 
-    @rollback
-    async def test_creating_applet_failed_by_duplicate_activity_name(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_creating_applet_failed_by_duplicate_activity_name(
+        self, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             display_name="User daily behave",
             description=dict(
@@ -480,7 +475,7 @@ class TestApplet(BaseTest):
                 ),
             ],
         )
-        response = await self.client.post(
+        response = await client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
@@ -488,13 +483,10 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
-    @rollback
     async def test_creating_applet_failed_by_duplicate_activity_item_name(
-        self,
+        self, client
     ):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             display_name="User daily behave",
             description=dict(
@@ -569,7 +561,7 @@ class TestApplet(BaseTest):
                 )
             ],
         )
-        response = await self.client.post(
+        response = await client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
@@ -577,11 +569,8 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
-    @rollback
-    async def test_create_duplicate_name_applet(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_create_duplicate_name_applet(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             display_name="Applet 1",
             encryption=dict(
@@ -674,7 +663,7 @@ class TestApplet(BaseTest):
                 )
             ],
         )
-        response = await self.client.post(
+        response = await client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
@@ -686,11 +675,8 @@ class TestApplet(BaseTest):
         )
         assert TestMail.mails[0].subject == "Applet upload failed!"
 
-    @rollback
-    async def test_create_duplicate_case_sensitive_name_applet(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_create_duplicate_case_sensitive_name_applet(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             display_name="AppleT 1",
             encryption=dict(
@@ -783,7 +769,7 @@ class TestApplet(BaseTest):
                 )
             ],
         )
-        response = await self.client.post(
+        response = await client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
@@ -794,11 +780,8 @@ class TestApplet(BaseTest):
             response.json()["result"][0]["message"] == "Applet already exists."
         )
 
-    @rollback
-    async def test_update_applet(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_update_applet(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         update_data = dict(
             stream_enabled=True,
             stream_ip_address="127.0.0.1",
@@ -940,7 +923,7 @@ class TestApplet(BaseTest):
             "activity_key"
         ] = wrong_activity_key
 
-        response = await self.client.put(
+        response = await client.put(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -958,7 +941,7 @@ class TestApplet(BaseTest):
         update_data["activity_flows"][0]["items"][0][
             "activity_key"
         ] = activity_key
-        response = await self.client.put(
+        response = await client.put(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -970,7 +953,7 @@ class TestApplet(BaseTest):
         assert len(FCMNotificationTest.notifications) > 0
 
         data = response.json()
-        response = await self.client.put(
+        response = await client.put(
             self.activity_report_config_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
@@ -980,7 +963,7 @@ class TestApplet(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         flow_id = data["result"]["activityFlows"][0]["id"]
-        response = await self.client.put(
+        response = await client.put(
             self.flow_report_config_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1", flow_id=flow_id
             ),
@@ -992,7 +975,7 @@ class TestApplet(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         # get applet and check stream settings
-        response = await self.client.get(
+        response = await client.get(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -1008,13 +991,10 @@ class TestApplet(BaseTest):
             == update_data["stream_port"]
         )
 
-    @rollback
-    async def test_duplicate_applet(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_duplicate_applet(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.post(
+        response = await client.post(
             self.applet_duplicate_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -1033,11 +1013,11 @@ class TestApplet(BaseTest):
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].subject == "Applet duplicate success!"
 
-        response = await self.client.get(self.applet_list_url)
+        response = await client.get(self.applet_list_url)
         assert len(response.json()["result"]) == 4
         assert response.json()["result"][0]["displayName"] == "New name"
 
-        response = await self.client.post(
+        response = await client.post(
             self.applet_duplicate_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -1053,11 +1033,8 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
-    @rollback
-    async def test_set_applet_report_configuration(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_set_applet_report_configuration(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         report_configuration = dict(
             report_server_ip="ipaddress",
@@ -1068,7 +1045,7 @@ class TestApplet(BaseTest):
             report_email_body="email body",
         )
 
-        response = await self.client.post(
+        response = await client.post(
             self.applet_report_config_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1",
             ),
@@ -1076,7 +1053,7 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -1107,20 +1084,17 @@ class TestApplet(BaseTest):
             == report_configuration["report_email_body"]
         )
 
-    @rollback
-    async def test_publish_conceal_applet(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_publish_conceal_applet(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.post(
+        response = await client.post(
             self.applet_publish_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -1128,14 +1102,14 @@ class TestApplet(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["isPublished"] is True
 
-        response = await self.client.post(
+        response = await client.post(
             self.applet_conceal_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -1143,11 +1117,10 @@ class TestApplet(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["isPublished"] is False
 
-    @rollback
-    async def test_set_encryption(self):
-        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+    async def test_set_encryption(self, client):
+        await client.login(self.login_url, "bob@gmail.com", "Test1234!")
 
-        response = await self.client.post(
+        response = await client.post(
             self.applet_set_encryption_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b4"
             ),
@@ -1160,7 +1133,7 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
-        response = await self.client.post(
+        response = await client.post(
             self.applet_set_encryption_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b4"
             ),
@@ -1173,12 +1146,9 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == 403, response.json()
 
-    @rollback
-    async def test_applet_list(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.get(self.applet_list_url)
+    async def test_applet_list(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.get(self.applet_list_url)
 
         assert response.status_code == http.HTTPStatus.OK, response.json()
         assert len(response.json()["result"]) == 3
@@ -1195,12 +1165,9 @@ class TestApplet(BaseTest):
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 
-    @rollback
-    async def test_applet_delete(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.delete(
+    async def test_applet_delete(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.delete(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -1208,7 +1175,7 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 204, response.json()
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.applet_detail_url.format(
                 pk="00000000-0000-0000-0000-000000000000"
             ),
@@ -1218,10 +1185,9 @@ class TestApplet(BaseTest):
 
         assert len(FCMNotificationTest.notifications) > 0
 
-    @rollback
-    async def test_applet_delete_by_manager(self):
-        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-        response = await self.client.delete(
+    async def test_applet_delete_by_manager(self, client):
+        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await client.delete(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -1229,10 +1195,9 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 204
 
-    @rollback
-    async def test_applet_delete_by_coordinator(self):
-        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
-        response = await self.client.delete(
+    async def test_applet_delete_by_coordinator(self, client):
+        await client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        response = await client.delete(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -1240,8 +1205,7 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 403
 
-    @rollback
-    async def test_applet_list_with_invalid_token(self):
+    async def test_applet_list_with_invalid_token(self, client):
         from config import settings
 
         current_access_token_expiration = (
@@ -1249,32 +1213,26 @@ class TestApplet(BaseTest):
         )
 
         settings.authentication.access_token.expiration = 0.05
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await asyncio.sleep(4)
-        response = await self.client.get(self.applet_list_url)
+        response = await client.get(self.applet_list_url)
 
         settings.authentication.access_token.expiration = (
             current_access_token_expiration
         )
         assert response.status_code == 401, response.json()
 
-    @rollback
-    async def test_applet_list_with_expired_token(self):
-        response = await self.client.get(
+    async def test_applet_list_with_expired_token(self, client):
+        response = await client.get(
             self.applet_list_url,
             headers=dict(Authorization="Bearer invalid_token"),
         )
 
         assert response.status_code == 401, response.json()
 
-    @rollback
-    async def test_applet_list_by_filters(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.get(
+    async def test_applet_list_by_filters(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.get(
             self.applet_list_url, dict(ordering="id", owner_id=1, limit=1)
         )
 
@@ -1285,12 +1243,9 @@ class TestApplet(BaseTest):
             == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         )
 
-    @rollback
-    async def test_applet_detail(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.get(
+    async def test_applet_detail(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.get(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -1304,9 +1259,8 @@ class TestApplet(BaseTest):
         assert len(result["activityFlows"][0]["activityIds"]) == 1
         assert len(result["activityFlows"][1]["activityIds"]) == 1
 
-    @rollback
-    async def test_public_applet_detail(self):
-        response = await self.client.get(
+    async def test_public_applet_detail(self, client):
+        response = await client.get(
             self.public_applet_detail_url.format(
                 key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
             )
@@ -1320,11 +1274,8 @@ class TestApplet(BaseTest):
         assert len(result["activityFlows"][0]["activityIds"]) == 1
         assert len(result["activityFlows"][1]["activityIds"]) == 1
 
-    @rollback
-    async def test_creating_applet_history(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_creating_applet_history(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             display_name="User daily behave",
             encryption=dict(
@@ -1417,7 +1368,7 @@ class TestApplet(BaseTest):
                 )
             ],
         )
-        response = await self.client.post(
+        response = await client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
@@ -1428,31 +1379,21 @@ class TestApplet(BaseTest):
         version = response.json()["result"]["version"]
         applet_id = response.json()["result"]["id"]
 
-        response = await self.client.get(
-            self.histories_url.format(pk=applet_id)
-        )
+        response = await client.get(self.histories_url.format(pk=applet_id))
 
         assert response.status_code == http.HTTPStatus.OK, response.json()
         versions = response.json()["result"]
         assert len(versions) == 1
         assert versions[0]["version"] == version
 
-    @rollback
-    async def test_versions_for_not_existed_applet(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.get(
-            self.histories_url.format(pk=uuid.uuid4())
-        )
+    async def test_versions_for_not_existed_applet(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.get(self.histories_url.format(pk=uuid.uuid4()))
 
         assert response.status_code == 404, response.json()
 
-    @rollback
-    async def test_updating_applet_history(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_updating_applet_history(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         update_data = dict(
             display_name="Applet 1",
             encryption=dict(
@@ -1567,7 +1508,7 @@ class TestApplet(BaseTest):
                 )
             ],
         )
-        response = await self.client.put(
+        response = await client.put(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -1579,9 +1520,7 @@ class TestApplet(BaseTest):
 
         assert response.json()["result"]["version"] == "2.0.0"
 
-        response = await self.client.get(
-            self.histories_url.format(pk=applet_id)
-        )
+        response = await client.get(self.histories_url.format(pk=applet_id))
 
         assert response.status_code == http.HTTPStatus.OK, response.json()
         versions = response.json()["result"]
@@ -1590,7 +1529,7 @@ class TestApplet(BaseTest):
         assert versions[1]["version"] == "1.9.9"
         assert versions[2]["version"] == "1.0.0"
 
-        response = await self.client.get(
+        response = await client.get(
             self.history_url.format(pk=applet_id, version="1.9.9")
         )
 
@@ -1598,7 +1537,7 @@ class TestApplet(BaseTest):
         applet = response.json()["result"]
         assert applet["version"] == "1.9.9"
 
-        response = await self.client.get(
+        response = await client.get(
             self.history_url.format(pk=applet_id, version="1.0.0")
         )
 
@@ -1606,17 +1545,14 @@ class TestApplet(BaseTest):
         applet = response.json()["result"]
         assert applet["version"] == "1.0.0"
 
-        response = await self.client.get(
+        response = await client.get(
             self.history_url.format(pk=applet_id, version="0.0.0")
         )
 
         assert response.status_code == 404, response.json()
 
-    @rollback
-    async def test_history_changes(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_history_changes(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             display_name="User daily behave",
             encryption=dict(
@@ -1709,7 +1645,7 @@ class TestApplet(BaseTest):
                 )
             ],
         )
-        response = await self.client.post(
+        response = await client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
@@ -1927,7 +1863,7 @@ class TestApplet(BaseTest):
                 )
             ],
         )
-        response = await self.client.put(
+        response = await client.put(
             self.applet_detail_url.format(pk=response.json()["result"]["id"]),
             data=update_data,
         )
@@ -1937,7 +1873,7 @@ class TestApplet(BaseTest):
         version = response.json()["result"]["version"]
         applet_id = response.json()["result"]["id"]
 
-        response = await self.client.get(
+        response = await client.get(
             self.history_changes_url.format(pk=applet_id, version=version)
         )
         assert response.status_code == http.HTTPStatus.OK
@@ -1947,39 +1883,30 @@ class TestApplet(BaseTest):
         )
         assert len(response.json()["result"]["activities"]) == 4
 
-    @rollback
-    async def test_get_applet_unique_name(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_get_applet_unique_name(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.post(
+        response = await client.post(
             self.applet_unique_name_url, data=dict(name="Applet 1")
         )
 
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["name"] == "Applet 1 (1)"
 
-    @rollback
-    async def test_get_applet_unique_name_case_insensitive(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_get_applet_unique_name_case_insensitive(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.post(
+        response = await client.post(
             self.applet_unique_name_url, data=dict(name="AppleT 1")
         )
 
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["name"] == "AppleT 1 (1)"
 
-    @rollback
-    async def test_get_applet_activities_info(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_get_applet_activities_info(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.get(
+        response = await client.get(
             self.applet_base_info_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -1997,9 +1924,8 @@ class TestApplet(BaseTest):
             == int
         )
 
-    @rollback
-    async def test_get_public_applet_activities_info(self):
-        response = await self.client.get(
+    async def test_get_public_applet_activities_info(self, client):
+        response = await client.get(
             self.public_applet_base_info_url.format(
                 key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
             )
@@ -2018,7 +1944,6 @@ class TestApplet(BaseTest):
             == int
         )
 
-    @rollback
     @pytest.mark.parametrize(
         "email,password",
         (
@@ -2029,10 +1954,10 @@ class TestApplet(BaseTest):
         ),
     )
     async def test_create_applet_in_another_workspace_not_owner(
-        self, applet_minimal_data, email, password
+        self, client, applet_minimal_data, email, password
     ):
-        await self.client.login(self.login_url, email, password)
-        response = await self.client.post(
+        await client.login(self.login_url, email, password)
+        response = await client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),
@@ -2040,12 +1965,11 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.CREATED
 
-    @rollback
     async def test_create_applet_in_another_workspace_not_owner_user_is_not_invited(  # noqa: E501
-        self, applet_minimal_data
+        self, client, applet_minimal_data
     ):
-        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-        response = await self.client.post(
+        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa3"
             ),
@@ -2056,12 +1980,11 @@ class TestApplet(BaseTest):
         assert len(result) == 1
         assert result[0]["message"] == AppletCreationAccessDenied.message
 
-    @rollback
     async def test_create_applet_in_another_workspace_not_owner_user_does_not_have_role_to_create_applet(  # noqa: E501
-        self, applet_minimal_data
+        self, client, applet_minimal_data
     ):
-        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
-        response = await self.client.post(
+        await client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        response = await client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
             ),

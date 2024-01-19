@@ -188,8 +188,6 @@ async def reindex_auto():
             print_results(result)
     except Exception as ex:
         print(f"[bold red] {ex}")
-    finally:
-        await s_maker.remove()
 
 
 @app.command(short_help="Fix indexation of activity items")
@@ -211,5 +209,3 @@ async def reindex(
             )
     except Exception as ex:
         print(f"[bold red] {ex}")
-    finally:
-        await s_maker.remove()

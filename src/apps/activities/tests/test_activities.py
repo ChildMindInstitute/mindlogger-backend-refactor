@@ -1,5 +1,4 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback
 
 
 class TestActivities(BaseTest):
@@ -18,12 +17,9 @@ class TestActivities(BaseTest):
     activities_applet = "/activities/applet/{applet_id}"
     public_activity_detail = "public/activities/{pk}"
 
-    @rollback
-    async def test_activity_detail(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.get(
+    async def test_activity_detail(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.get(
             self.activity_detail.format(
                 pk="09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
             )
@@ -44,12 +40,9 @@ class TestActivities(BaseTest):
             == "Feeling down, depressed, or hopeless?"
         )
 
-    @rollback
-    async def test_activities_applet(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.get(
+    async def test_activities_applet(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.get(
             self.activities_applet.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -270,9 +263,8 @@ class TestActivities(BaseTest):
             "nickname": "Mindlogger ChildMindInstitute"
         }
 
-    @rollback
-    async def test_public_activity_detail(self):
-        response = await self.client.get(
+    async def test_public_activity_detail(self, client):
+        response = await client.get(
             self.public_activity_detail.format(
                 pk="09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
             )

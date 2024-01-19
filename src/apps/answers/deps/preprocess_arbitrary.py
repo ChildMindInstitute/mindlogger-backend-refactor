@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.domain import ArbitraryPreprocessor
 from apps.workspaces.service.workspace import WorkspaceService
-from config import settings
 from infrastructure.database.core import session_manager
 from infrastructure.database.deps import get_session
 
@@ -51,14 +50,12 @@ async def preprocess_arbitrary_url(
 
 
 async def get_answer_session(url=Depends(preprocess_arbitrary_url)):
-    session_maker = session_manager.get_session(url) if url else None
-    if settings.env == "testing":
-        yield session_maker
-    elif session_maker:
+    if not url:
+        yield None
+    else:
+        session_maker = session_manager.get_session(url)
         async with session_maker() as session:
             yield session
-    else:
-        yield None
 
 
 async def get_answer_session_by_owner_id(
@@ -69,13 +66,11 @@ async def get_answer_session_by_owner_id(
     server_info = await service.get_arbitrary_info_by_owner_id(owner_id)
     if server_info and server_info.use_arbitrary:
         url = server_info.database_uri
-        session_maker = session_manager.get_session(url) if url else None
-        if settings.env == "testing":
-            yield session_maker
-        elif session_maker:
+        if not url:
+            yield None
+        else:
+            session_maker = session_manager.get_session(url)
             async with session_maker() as session:
                 yield session
-        else:
-            yield None
     else:
         yield None
