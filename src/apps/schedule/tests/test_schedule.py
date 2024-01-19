@@ -1,5 +1,4 @@
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback
 
 
 class TestSchedule(BaseTest):
@@ -50,11 +49,8 @@ class TestSchedule(BaseTest):
 
     public_events_url = "public/applets/{key}/events"
 
-    @rollback
-    async def test_schedule_create_with_equal_start_end_time(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_create_with_equal_start_end_time(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = {
             "start_time": "08:00:00",
             "end_time": "08:00:00",
@@ -82,7 +78,7 @@ class TestSchedule(BaseTest):
             },
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -90,11 +86,8 @@ class TestSchedule(BaseTest):
         )
         assert response.status_code == 422
 
-    @rollback
-    async def test_schedule_create_with_activity(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_create_with_activity(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
@@ -122,7 +115,7 @@ class TestSchedule(BaseTest):
             },
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -132,11 +125,8 @@ class TestSchedule(BaseTest):
         event = response.json()["result"]
         assert event["startTime"] == create_data["start_time"]
 
-    @rollback
-    async def test_schedule_create_with_respondent_id(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_create_with_respondent_id(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
@@ -155,7 +145,7 @@ class TestSchedule(BaseTest):
             "flow_id": None,
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -166,11 +156,8 @@ class TestSchedule(BaseTest):
         event = response.json()["result"]
         assert event["respondentId"] == create_data["respondent_id"]
 
-    @rollback
-    async def test_schedule_create_with_flow(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_create_with_flow(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
@@ -189,7 +176,7 @@ class TestSchedule(BaseTest):
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -201,13 +188,10 @@ class TestSchedule(BaseTest):
         assert event["respondentId"] == create_data["respondent_id"]
         assert event["flowId"] == create_data["flow_id"]
 
-    @rollback
-    async def test_schedule_get_all(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_get_all(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.get(
+        response = await client.get(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -236,7 +220,7 @@ class TestSchedule(BaseTest):
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5832",
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -245,7 +229,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 201
 
-        response = await self.client.get(
+        response = await client.get(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -255,7 +239,7 @@ class TestSchedule(BaseTest):
         events = response.json()["result"]
         assert len(events) == events_count
 
-        response = await self.client.get(
+        response = await client.get(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -266,9 +250,8 @@ class TestSchedule(BaseTest):
         events = response.json()["result"]
         assert len(events) == 1
 
-    @rollback
-    async def test_public_schedule_get_all(self):
-        response = await self.client.get(
+    async def test_public_schedule_get_all(self, client):
+        response = await client.get(
             self.public_events_url.format(
                 key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
             )
@@ -278,11 +261,8 @@ class TestSchedule(BaseTest):
         events = response.json()["result"]
         assert type(events) == dict
 
-    @rollback
-    async def test_schedule_get_detail(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_get_detail(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = {
             "start_time": "08:00:00",
@@ -302,7 +282,7 @@ class TestSchedule(BaseTest):
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -310,7 +290,7 @@ class TestSchedule(BaseTest):
         )
         event_id = response.json()["result"]["id"]
 
-        response = await self.client.get(
+        response = await client.get(
             self.schedule_detail_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 event_id=event_id,
@@ -321,13 +301,10 @@ class TestSchedule(BaseTest):
         event = response.json()["result"]
         assert event["respondentId"] == create_data["respondent_id"]
 
-    @rollback
-    async def test_schedule_delete_all(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_delete_all(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -352,7 +329,7 @@ class TestSchedule(BaseTest):
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -360,7 +337,7 @@ class TestSchedule(BaseTest):
         )
         assert response.status_code == 201, response.json()
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -368,11 +345,8 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 204
 
-    @rollback
-    async def test_schedule_delete_detail(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_delete_detail(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = {
             "start_time": "08:00:00",
@@ -392,7 +366,7 @@ class TestSchedule(BaseTest):
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -400,7 +374,7 @@ class TestSchedule(BaseTest):
         )
         event = response.json()["result"]
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.schedule_detail_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 event_id=event["id"],
@@ -409,11 +383,8 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 204
 
-    @rollback
-    async def test_schedule_update_with_equal_start_end_time(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_update_with_equal_start_end_time(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
@@ -441,7 +412,7 @@ class TestSchedule(BaseTest):
             },
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -460,7 +431,7 @@ class TestSchedule(BaseTest):
             },
         }
 
-        response = await self.client.put(
+        response = await client.put(
             self.schedule_detail_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 event_id=event["id"],
@@ -469,11 +440,8 @@ class TestSchedule(BaseTest):
         )
         assert response.status_code == 422
 
-    @rollback
-    async def test_schedule_update(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_update(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = {
             "start_time": "08:00:00",
             "end_time": "09:00:00",
@@ -501,7 +469,7 @@ class TestSchedule(BaseTest):
             },
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -524,7 +492,7 @@ class TestSchedule(BaseTest):
             "reminder_time": "08:40:00",
         }
 
-        response = await self.client.put(
+        response = await client.put(
             self.schedule_detail_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 event_id=event["id"],
@@ -540,13 +508,10 @@ class TestSchedule(BaseTest):
             == create_data["notification"]["reminder"]["reminder_time"]
         )
 
-    @rollback
-    async def test_count(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_count(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.get(
+        response = await client.get(
             self.count_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -571,7 +536,7 @@ class TestSchedule(BaseTest):
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -582,7 +547,7 @@ class TestSchedule(BaseTest):
 
         create_data["activity_id"] = "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
         create_data["flow_id"] = None
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -591,7 +556,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 201
 
-        response = await self.client.get(
+        response = await client.get(
             self.count_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -604,13 +569,10 @@ class TestSchedule(BaseTest):
         assert type(result["activityEvents"]) == list
         assert type(result["flowEvents"]) == list
 
-    @rollback
-    async def test_schedule_delete_user(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_delete_user(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.delete_user_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -637,7 +599,7 @@ class TestSchedule(BaseTest):
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -645,7 +607,7 @@ class TestSchedule(BaseTest):
         )
         event_id = response.json()["result"]["id"]
 
-        response = await self.client.get(
+        response = await client.get(
             self.schedule_detail_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 event_id=event_id,
@@ -658,7 +620,7 @@ class TestSchedule(BaseTest):
             == create_data["respondent_id"]
         )
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.delete_user_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -666,7 +628,7 @@ class TestSchedule(BaseTest):
         )
         assert response.status_code == 204
 
-        response = await self.client.get(
+        response = await client.get(
             self.schedule_detail_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 event_id=event_id,
@@ -674,24 +636,18 @@ class TestSchedule(BaseTest):
         )
         assert response.status_code == 404
 
-    @rollback
-    async def test_schedules_get_user_all(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedules_get_user_all(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.get(self.schedule_user_url)
+        response = await client.get(self.schedule_user_url)
 
         assert response.status_code == 200
         assert response.json()["count"] == 6
 
-    @rollback
-    async def test_respondent_schedules_get_user_two_weeks(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_respondent_schedules_get_user_two_weeks(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.get(
+        response = await client.get(
             self.erspondent_schedules_user_two_weeks_url
         )
 
@@ -759,26 +715,20 @@ class TestSchedule(BaseTest):
         events_data[0]["id"] = "04c93c4a-2cd4-45ce-9aec-b1912f330584"
         events_data[0]["entityId"] = "09e3dbf0-aefb-4d0e-9177-bdb321bf3612"
 
-    @rollback
-    async def test_schedule_get_user_by_applet(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_get_user_by_applet(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.get(
+        response = await client.get(
             self.schedule_detail_user_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
         assert response.status_code == 200
 
-    @rollback
-    async def test_schedule_remove_individual(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_remove_individual(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.remove_ind_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -805,7 +755,7 @@ class TestSchedule(BaseTest):
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -813,7 +763,7 @@ class TestSchedule(BaseTest):
         )
         event_id = response.json()["result"]["id"]
 
-        response = await self.client.get(
+        response = await client.get(
             self.schedule_detail_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 event_id=event_id,
@@ -826,7 +776,7 @@ class TestSchedule(BaseTest):
             == create_data["respondent_id"]
         )
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.remove_ind_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
@@ -835,7 +785,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 204
 
-        response = await self.client.get(
+        response = await client.get(
             self.schedule_detail_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 event_id=event_id,
@@ -843,11 +793,8 @@ class TestSchedule(BaseTest):
         )
         assert response.status_code == 404
 
-    @rollback
-    async def test_schedule_import(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_schedule_import(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = [
             {
                 "start_time": "08:00:00",
@@ -885,7 +832,7 @@ class TestSchedule(BaseTest):
             },
         ]
 
-        response = await self.client.post(
+        response = await client.post(
             self.schedule_import_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -897,12 +844,9 @@ class TestSchedule(BaseTest):
         assert len(events) == 2
         assert events[0]["respondentId"] == create_data[0]["respondent_id"]
 
-    @rollback
-    async def test_schedule_create_individual(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.post(
+    async def test_schedule_create_individual(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.post(
             self.schedule_create_individual.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2",

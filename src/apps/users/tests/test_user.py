@@ -9,7 +9,6 @@ from apps.users.domain import UserCreateRequest
 from apps.users.errors import UserIsDeletedError
 from apps.users.router import router as user_router
 from apps.users.tests.factories import UserUpdateRequestFactory
-from infrastructure.database import rollback, session_manager
 
 
 class TestUser(BaseTest):
@@ -27,17 +26,16 @@ class TestUser(BaseTest):
     )
     user_update_request = UserUpdateRequestFactory.build()
 
-    @rollback
-    async def test_user_create(self):
+    async def test_user_create(self, client):
         # Creating new user
-        response = await self.client.post(
+        response = await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
         assert response.status_code == status.HTTP_201_CREATED, response.json()
 
         password_spaces_create_request_user = self.create_request_user.dict()
         password_spaces_create_request_user["password"] = "Test1234 !"
-        response = await self.client.post(
+        response = await client.post(
             self.user_create_url, data=password_spaces_create_request_user
         )
         assert (
@@ -46,29 +44,27 @@ class TestUser(BaseTest):
 
         not_valid_email_create_request_user = self.create_request_user.dict()
         not_valid_email_create_request_user["email"] = "tom2@mindlogger@com"
-        response = await self.client.post(
+        response = await client.post(
             self.user_create_url, data=not_valid_email_create_request_user
         )
         assert (
             response.status_code == status.HTTP_400_BAD_REQUEST
         ), response.json()
 
-    @rollback
-    async def test_user_create_exist(self):
+    async def test_user_create_exist(self, client):
         # Creating new user
-        await self.client.post(
+        await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
         # Creating a user that already exists
-        response = await self.client.post(
+        response = await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    @rollback
-    async def test_user_retrieve(self):
+    async def test_user_retrieve(self, client):
         # Creating new user
-        await self.client.post(
+        await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
@@ -77,19 +73,18 @@ class TestUser(BaseTest):
         )
 
         # User get token
-        await self.client.login(
+        await client.login(
             url=self.get_token_url,
             **login_request_user.dict(),
         )
 
         # User retrieve
-        response = await self.client.get(self.user_retrieve_url)
+        response = await client.get(self.user_retrieve_url)
         assert response.status_code == status.HTTP_200_OK
 
-    @rollback
-    async def test_user_update(self):
+    async def test_user_update(self, client):
         # Creating new user
-        await self.client.post(
+        await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
@@ -98,25 +93,24 @@ class TestUser(BaseTest):
         )
 
         # User get token
-        await self.client.login(
+        await client.login(
             url=self.get_token_url,
             **login_request_user.dict(),
         )
 
         # User update
-        response = await self.client.put(
+        response = await client.put(
             self.user_update_url, data=self.user_update_request.dict()
         )
 
         assert response.status_code == status.HTTP_200_OK
 
-    @rollback
-    async def test_user_delete(self):
+    async def test_user_delete(self, session, client):
         """UsersCRUD.get_by_email should raise an error
         if user is deleted.
         """
         # Creating new user
-        await self.client.post(
+        await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
@@ -124,19 +118,17 @@ class TestUser(BaseTest):
         login_request_user: UserLoginRequest = UserLoginRequest(
             **self.create_request_user.dict()
         )
-        await self.client.login(
+        await client.login(
             url=self.get_token_url,
             **login_request_user.dict(),
         )
 
         # Delete user
-        response = await self.client.delete(
+        response = await client.delete(
             self.user_delete_url,
         )
 
         with pytest.raises(UserIsDeletedError):
-            await UsersCRUD(session_manager.get_session()).get_by_email(
-                login_request_user.email
-            )
+            await UsersCRUD(session).get_by_email(login_request_user.email)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT

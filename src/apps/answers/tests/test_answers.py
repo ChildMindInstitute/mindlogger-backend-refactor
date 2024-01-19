@@ -7,10 +7,10 @@ from sqlalchemy import select
 from apps.answers.db.schemas import AnswerSchema
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback, rollback_with_session
 from infrastructure.utility import RedisCacheTest
 
 
+@patch("apps.answers.service.create_report.kiq")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
@@ -62,14 +62,10 @@ class TestAnswerActivityItems(BaseTest):
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
     latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
 
-    @patch("apps.answers.service.create_report.kiq")
-    @rollback
     async def test_answer_activity_items_create_for_respondent(
-        self, report_mock: CoroutineMock
+        self, report_mock: CoroutineMock, client
     ):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -112,7 +108,7 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
         assert response.status_code == 201, response.json()
 
         report_mock.assert_awaited_once()
@@ -127,8 +123,9 @@ class TestAnswerActivityItems(BaseTest):
         assert TestMail.mails[0].subject == "Response alert"
 
     @patch("aiohttp.ClientSession.post")
-    @rollback
-    async def test_get_latest_summary(self, mock: CoroutineMock):
+    async def test_get_latest_summary(
+        self, mock: CoroutineMock, report_mock: CoroutineMock, client
+    ):
         mock.return_value.__aenter__.return_value.status = 200
         mock.return_value.__aenter__.return_value.json = CoroutineMock(
             side_effect=lambda: dict(
@@ -142,9 +139,7 @@ class TestAnswerActivityItems(BaseTest):
             )
         )
 
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -178,10 +173,10 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
-        response = await self.client.post(
+        response = await client.post(
             self.latest_report_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
@@ -190,8 +185,9 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == 200
 
-    @rollback
-    async def test_public_answer_activity_items_create_for_respondent(self):
+    async def test_public_answer_activity_items_create_for_respondent(
+        self, report_mock: CoroutineMock, client
+    ):
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
@@ -223,17 +219,14 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.public_answer_url, data=create_data
-        )
+        response = await client.post(self.public_answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-    @rollback
-    async def test_answer_skippable_activity_items_create_for_respondent(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_answer_skippable_activity_items_create_for_respondent(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -256,11 +249,11 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.applet_submit_dates_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -273,11 +266,8 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200
         assert len(response.json()["result"]["dates"]) == 1
 
-    @rollback
-    async def test_list_submit_dates(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_list_submit_dates(self, report_mock: CoroutineMock, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -309,10 +299,10 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.applet_submit_dates_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -325,11 +315,10 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200
         assert len(response.json()["result"]["dates"]) == 1
 
-    @rollback
-    async def test_answer_flow_items_create_for_respondent(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_answer_flow_items_create_for_respondent(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -363,15 +352,14 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-    @rollback
-    async def test_answer_with_skipping_all(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_answer_with_skipping_all(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -395,15 +383,14 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-    @rollback
-    async def test_answered_applet_activities(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_answered_applet_activities(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -435,11 +422,11 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.review_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -454,7 +441,7 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"][0]["answerDates"]) == 1
 
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
-        response = await self.client.get(
+        response = await client.get(
             self.activity_answers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -464,7 +451,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.activity_answers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -478,11 +465,10 @@ class TestAnswerActivityItems(BaseTest):
             == '{"events": ["event1", "event2"]}'
         )
 
-    @rollback
-    async def test_fail_answered_applet_not_existed_activities(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_fail_answered_applet_not_existed_activities(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -514,11 +500,11 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.review_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -533,7 +519,7 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"][0]["answerDates"]) == 1
 
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
-        response = await self.client.get(
+        response = await client.get(
             self.activity_answers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -543,12 +529,10 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 404, response.json()
 
-    @patch("apps.answers.service.create_report.kiq")
-    @rollback
-    async def test_applet_activity_answers(self, report_mock: CoroutineMock):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_applet_activity_answers(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -580,11 +564,11 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.answers_for_activity_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
@@ -594,11 +578,10 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 1
 
-    @rollback
-    async def test_applet_assessment_retrieve(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_applet_assessment_retrieve(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -629,11 +612,11 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.review_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -648,7 +631,7 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"][0]["answerDates"]) == 1
 
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
-        response = await self.client.get(
+        response = await client.get(
             self.assessment_answers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -657,11 +640,10 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200, response.json()
 
-    @rollback
-    async def test_applet_assessment_create(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_applet_assessment_create(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -692,11 +674,11 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.review_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -712,7 +694,7 @@ class TestAnswerActivityItems(BaseTest):
 
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
 
-        response = await self.client.post(
+        response = await client.post(
             self.assessment_answers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -729,7 +711,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201
 
-        response = await self.client.get(
+        response = await client.get(
             self.assessment_answers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -745,7 +727,7 @@ class TestAnswerActivityItems(BaseTest):
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
         ]
 
-        response = await self.client.post(
+        response = await client.post(
             self.assessment_answers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -762,7 +744,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201
 
-        response = await self.client.get(
+        response = await client.get(
             self.assessment_answers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -777,7 +759,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"]["itemIds"] == [
             "a18d3409-2c96-4a5e-a1f3-1c1c14be0021"
         ]
-        response = await self.client.get(
+        response = await client.get(
             self.answer_reviews_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -797,13 +779,10 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["reviewer"]["firstName"] == "Tom"
         assert response.json()["result"][0]["reviewer"]["lastName"] == "Isaak"
 
-    @rollback
-    async def test_applet_activities(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_applet_activities(self, report_mock: CoroutineMock, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.get(
+        response = await client.get(
             self.review_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -817,11 +796,8 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert len(response.json()["result"][0]["answerDates"]) == 0
 
-    @rollback
-    async def test_add_note(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_add_note(self, report_mock: CoroutineMock, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -852,11 +828,11 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.review_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -867,7 +843,7 @@ class TestAnswerActivityItems(BaseTest):
         )
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
 
-        response = await self.client.post(
+        response = await client.post(
             self.answer_notes_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -878,7 +854,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.answer_notes_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -889,11 +865,8 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 1
 
-    @rollback
-    async def test_edit_note(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_edit_note(self, report_mock: CoroutineMock, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -924,11 +897,11 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.review_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -939,7 +912,7 @@ class TestAnswerActivityItems(BaseTest):
         )
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
 
-        response = await self.client.post(
+        response = await client.post(
             self.answer_notes_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -950,7 +923,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.answer_notes_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -962,7 +935,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["note"] == "Some note"
 
-        response = await self.client.put(
+        response = await client.put(
             self.answer_note_detail_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -973,7 +946,7 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == 200
 
-        response = await self.client.get(
+        response = await client.get(
             self.answer_notes_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -985,11 +958,8 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["note"] == "Some note 2"
 
-    @rollback
-    async def test_delete_note(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_delete_note(self, report_mock: CoroutineMock, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -1020,11 +990,11 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.review_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -1035,7 +1005,7 @@ class TestAnswerActivityItems(BaseTest):
         )
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
 
-        response = await self.client.post(
+        response = await client.post(
             self.answer_notes_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -1046,7 +1016,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.answer_notes_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -1058,7 +1028,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["note"] == "Some note"
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.answer_note_detail_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -1068,7 +1038,7 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == 204
 
-        response = await self.client.get(
+        response = await client.get(
             self.answer_notes_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -1079,9 +1049,10 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 0
 
-    @rollback
-    async def test_answer_activity_items_create_for_not_respondent(self):
-        await self.client.login(self.login_url, "patric@gmail.com", "Test1234")
+    async def test_answer_activity_items_create_for_not_respondent(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "patric@gmail.com", "Test1234")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -1111,15 +1082,12 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 403, response.json()
 
-    @rollback
-    async def test_answers_export(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_answers_export(self, report_mock: CoroutineMock, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         # create answer
         create_data = dict(
@@ -1151,12 +1119,12 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201
 
         # get answer id
-        response = await self.client.get(
+        response = await client.get(
             self.review_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -1170,7 +1138,7 @@ class TestAnswerActivityItems(BaseTest):
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
 
         # create assessment
-        response = await self.client.post(
+        response = await client.post(
             self.assessment_answers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 answer_id=answer_id,
@@ -1188,7 +1156,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 201
 
         # test export
-        response = await self.client.get(
+        response = await client.get(
             self.applet_answers_export_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             )
@@ -1218,7 +1186,7 @@ class TestAnswerActivityItems(BaseTest):
         assert assessment["reviewedAnswerId"] == answer["id"]
 
         # test filters
-        response = await self.client.get(
+        response = await client.get(
             self.applet_answers_export_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             ),
@@ -1231,13 +1199,10 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()["result"]
         assert not data["answers"]
 
-    @rollback
-    async def test_get_identifiers(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_get_identifiers(self, report_mock: CoroutineMock, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.get(
+        response = await client.get(
             self.identifiers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
@@ -1277,11 +1242,11 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.identifiers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
@@ -1293,13 +1258,10 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["identifier"] == "some identifier"
         assert response.json()["result"][0]["userPublicKey"] == "user key"
 
-    @rollback
-    async def test_get_versions(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_get_versions(self, report_mock: CoroutineMock, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.get(
+        response = await client.get(
             self.versions_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
@@ -1313,13 +1275,12 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][1]["version"] == "1.9.9"
         assert response.json()["result"][1]["createdAt"]
 
-    @rollback
-    async def test_get_summary_activities(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_get_summary_activities(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.get(
+        response = await client.get(
             self.summary_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             )
@@ -1331,11 +1292,10 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["isPerformanceTask"]
         assert not response.json()["result"][0]["hasAnswer"]
 
-    @rollback
-    async def test_get_summary_activities_after_submitted_answer(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_get_summary_activities_after_submitted_answer(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -1367,10 +1327,10 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
         assert response.status_code == 201
 
-        response = await self.client.get(
+        response = await client.get(
             self.summary_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             )
@@ -1382,17 +1342,15 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["isPerformanceTask"]
         assert response.json()["result"][0]["hasAnswer"]
 
-    @rollback_with_session
-    async def test_store_client_meta(self, **kwargs):
-        session = kwargs["session"]
+    async def test_store_client_meta(
+        self, report_mock: CoroutineMock, client, session
+    ):
         app_id = "mindlogger-mobile"
         app_version = "0.21.48"
         app_width = 819
         app_height = 1080
 
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
@@ -1422,23 +1380,19 @@ class TestAnswerActivityItems(BaseTest):
                 height=app_height,
             ),
         )
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
         assert response.status_code == 201
-        res = await session.execute(select(AnswerSchema))
-        res: AnswerSchema = res.scalars().first()
+        db_result = await session.execute(select(AnswerSchema))
+        res: AnswerSchema = db_result.scalars().first()
         assert app_id == res.client["app_id"]
         assert app_version == res.client["app_version"]
         assert app_width == res.client["width"]
         assert app_height == res.client["height"]
 
-    @patch("apps.answers.service.create_report.kiq")
-    @rollback
     async def test_activity_answers_by_identifier(
-        self, report_mock: CoroutineMock
+        self, report_mock: CoroutineMock, client
     ):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -1471,11 +1425,11 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await self.client.get(
+        response = await client.get(
             self.answers_for_activity_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
@@ -1487,11 +1441,10 @@ class TestAnswerActivityItems(BaseTest):
         result = response.json()
         assert result["count"] == 1
 
-    @rollback
-    async def test_applet_completions(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_applet_completions(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         # create answer
         create_data = dict(
@@ -1526,12 +1479,12 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201
 
         # get answer id
-        response = await self.client.get(
+        response = await client.get(
             self.review_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -1545,7 +1498,7 @@ class TestAnswerActivityItems(BaseTest):
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
 
         # test completions
-        response = await self.client.get(
+        response = await client.get(
             self.applet_answers_completions_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             ),
@@ -1573,11 +1526,10 @@ class TestAnswerActivityItems(BaseTest):
         assert activity_answer_data["answerId"] == answer_id
         assert activity_answer_data["localEndTime"] == "12:35:00"
 
-    @rollback
-    async def test_applets_completions(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_applets_completions(
+        self, report_mock: CoroutineMock, client
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         # create answer
         create_data = dict(
@@ -1612,12 +1564,12 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201
 
         # get answer id
-        response = await self.client.get(
+        response = await client.get(
             self.review_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -1631,7 +1583,7 @@ class TestAnswerActivityItems(BaseTest):
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
 
         # test completions
-        response = await self.client.get(
+        response = await client.get(
             url=self.applets_answers_completions_url,
             query={"fromDate": "2022-10-01"},
         )
@@ -1676,13 +1628,12 @@ class TestAnswerActivityItems(BaseTest):
         assert apppet_1["version"] == "2.0.1"
         assert len(apppet_1["activities"]) == 0
 
-    @rollback
     async def test_summary_restricted_for_reviewer_if_external_respondent(
         self,
+        report_mock: CoroutineMock,
+        client,
     ):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -1714,15 +1665,13 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(self.answer_url, data=create_data)
+        response = await client.post(self.answer_url, data=create_data)
         assert response.status_code == 201
 
-        await self.client.logout()
-        await self.client.login(
-            self.login_url, "reviewer@mail.com", "Test1234!"
-        )
+        await client.logout()
+        await client.login(self.login_url, "reviewer@mail.com", "Test1234!")
 
-        response = await self.client.get(
+        response = await client.get(
             self.summary_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             )
@@ -1730,8 +1679,9 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 403
 
-    @rollback
-    async def test_public_answer_with_zero_timestamps(self):
+    async def test_public_answer_with_zero_timestamps(
+        self, report_mock: CoroutineMock, client
+    ):
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
@@ -1763,8 +1713,6 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        response = await self.client.post(
-            self.public_answer_url, data=create_data
-        )
+        response = await client.post(self.public_answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
