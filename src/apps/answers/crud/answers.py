@@ -3,7 +3,7 @@ import datetime
 import uuid
 from typing import Collection
 
-from pydantic import parse_obj_as
+from pydantic import PositiveInt, parse_obj_as
 from sqlalchemy import (
     Text,
     and_,
@@ -37,10 +37,11 @@ from apps.answers.domain import (
     UserAnswerItemData,
     Version,
 )
-from apps.answers.errors import AnswerNotFoundError
+from apps.answers.errors import AnswerNotFoundError, AnswerRetentionType
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
+from apps.workspaces.domain.constants import DataRetention
 from infrastructure.database.crud import BaseCRUD
 
 
@@ -206,6 +207,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
             .where(
                 AnswerSchema.applet_id == applet_id,
+                AnswerSchema.soft_exists(),
+                AnswerItemSchema.soft_exists(),
                 *filter_clauses,
             )
         )
@@ -566,6 +569,51 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
 
         return parse_obj_as(list[UserAnswerItemData], db_result.all())
+
+    async def removing_outdated_answers(
+        self,
+        applet_id: uuid.UUID,
+        retention_period: PositiveInt,
+        retention_type: DataRetention,
+    ):
+        hours_in_day = 24
+        hours_in_week = hours_in_day * 7
+        hours_in_month = hours_in_day * 30
+        hours_in_year = hours_in_day * 365
+
+        if retention_type == DataRetention.DAYS:
+            retention_time = datetime.timedelta(
+                hours=retention_period * hours_in_day
+            )
+        elif retention_type == DataRetention.WEEKS:
+            retention_time = datetime.timedelta(
+                hours=retention_period * hours_in_week
+            )
+        elif retention_type == DataRetention.MONTHS:
+            retention_time = datetime.timedelta(
+                hours=retention_period * hours_in_month
+            )
+        elif retention_type == DataRetention.YEARS:
+            retention_time = datetime.timedelta(
+                hours=retention_period * hours_in_year
+            )
+        else:
+            raise AnswerRetentionType()
+        border_datetime = datetime.datetime.utcnow() - retention_time
+
+        query: Query = delete(AnswerSchema)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(AnswerSchema.created_at < border_datetime)
+        query = query.returning(column("id"))
+        deleted_answer_ids: list[uuid.UUID] = [
+            x[0] for x in await self._execute(query)
+        ]
+
+        item_query: Query = delete(AnswerItemSchema)
+        item_query = item_query.where(
+            AnswerItemSchema.answer_id.in_(deleted_answer_ids)
+        )
+        await self._execute(item_query)
 
     async def update_encrypted_fields(
         self, user_public_key: str, data: list[AnswerItemDataEncrypted]

@@ -27,6 +27,10 @@ class AnswerNoteAccessDeniedError(AccessDeniedError):
     message = _("Note access denied.")
 
 
+class AnswerRetentionType(ValidationError):
+    message = _("Incorrect answer retention type.")
+
+
 class UserDoesNotHavePermissionError(AccessDeniedError):
     message = _("User does not have permission.")
 
