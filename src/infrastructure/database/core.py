@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import AsyncAdaptedQueuePool
+from sqlalchemy.pool import NullPool
 
 from config import settings
 
@@ -19,7 +19,7 @@ def build_engine(uri: str) -> AsyncEngine:
         future=True,
         pool_pre_ping=True,
         echo=False,
-        poolclass=AsyncAdaptedQueuePool,
+        poolclass=NullPool,
         json_serializer=lambda x: json.dumps(x),
         json_deserializer=lambda x: json.loads(x),
     )
