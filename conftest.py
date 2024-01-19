@@ -133,8 +133,8 @@ def client(session: AsyncSession, app: FastAPI) -> TestClient:
 def arbitrary_client(
     app: FastAPI, session: AsyncSession, arbitrary_session: AsyncSession
 ) -> TestClient:
-    """Separate client fixture for tests which interact with arbitrary database
-    becasue keep both sessions is expensive.
+    """Use only for tests which interact with arbitrary servers, because
+    arbitrary (answers) session has higher prioritet then general session.
     """
     app.dependency_overrides[get_session] = lambda: session
     app.dependency_overrides[get_answer_session] = lambda: arbitrary_session
