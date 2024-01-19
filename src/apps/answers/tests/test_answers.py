@@ -1,7 +1,6 @@
 import datetime
 import json
 
-from asynctest import CoroutineMock, patch
 from sqlalchemy import select
 
 from apps.answers.db.schemas import AnswerSchema
@@ -10,7 +9,6 @@ from apps.shared.test import BaseTest
 from infrastructure.utility import RedisCacheTest
 
 
-@patch("apps.answers.service.create_report.kiq")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
@@ -63,7 +61,7 @@ class TestAnswerActivityItems(BaseTest):
     latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
 
     async def test_answer_activity_items_create_for_respondent(
-        self, report_mock: CoroutineMock, client
+        self, mock_kiq_report, client
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
@@ -111,7 +109,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.post(self.answer_url, data=create_data)
         assert response.status_code == 201, response.json()
 
-        report_mock.assert_awaited_once()
+        mock_kiq_report.assert_awaited_once()
 
         published_values = await RedisCacheTest().get(
             "channel_7484f34a-3acc-4ee6-8a94-fd7299502fa1"
@@ -122,23 +120,9 @@ class TestAnswerActivityItems(BaseTest):
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].subject == "Response alert"
 
-    @patch("aiohttp.ClientSession.post")
     async def test_get_latest_summary(
-        self, mock: CoroutineMock, report_mock: CoroutineMock, client
+        self, mock_report_server_response, mock_kiq_report, client
     ):
-        mock.return_value.__aenter__.return_value.status = 200
-        mock.return_value.__aenter__.return_value.json = CoroutineMock(
-            side_effect=lambda: dict(
-                pdf="cGRmIGJvZHk=",
-                email=dict(
-                    body="Body",
-                    subject="Subject",
-                    attachment="Attachment name",
-                    emailRecipients=["tom@cmiml.net"],
-                ),
-            )
-        )
-
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -186,7 +170,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200
 
     async def test_public_answer_activity_items_create_for_respondent(
-        self, report_mock: CoroutineMock, client
+        self, mock_kiq_report, client
     ):
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -224,7 +208,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 201, response.json()
 
     async def test_answer_skippable_activity_items_create_for_respondent(
-        self, report_mock: CoroutineMock, client
+        self, mock_kiq_report, client
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
@@ -266,7 +250,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200
         assert len(response.json()["result"]["dates"]) == 1
 
-    async def test_list_submit_dates(self, report_mock: CoroutineMock, client):
+    async def test_list_submit_dates(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -316,7 +300,7 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"]["dates"]) == 1
 
     async def test_answer_flow_items_create_for_respondent(
-        self, report_mock: CoroutineMock, client
+        self, mock_kiq_report, client
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
@@ -356,9 +340,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-    async def test_answer_with_skipping_all(
-        self, report_mock: CoroutineMock, client
-    ):
+    async def test_answer_with_skipping_all(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -387,9 +369,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-    async def test_answered_applet_activities(
-        self, report_mock: CoroutineMock, client
-    ):
+    async def test_answered_applet_activities(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -466,7 +446,7 @@ class TestAnswerActivityItems(BaseTest):
         )
 
     async def test_fail_answered_applet_not_existed_activities(
-        self, report_mock: CoroutineMock, client
+        self, mock_kiq_report, client
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
@@ -529,9 +509,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 404, response.json()
 
-    async def test_applet_activity_answers(
-        self, report_mock: CoroutineMock, client
-    ):
+    async def test_applet_activity_answers(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -578,9 +556,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 1
 
-    async def test_applet_assessment_retrieve(
-        self, report_mock: CoroutineMock, client
-    ):
+    async def test_applet_assessment_retrieve(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -640,9 +616,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 200, response.json()
 
-    async def test_applet_assessment_create(
-        self, report_mock: CoroutineMock, client
-    ):
+    async def test_applet_assessment_create(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -779,7 +753,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["reviewer"]["firstName"] == "Tom"
         assert response.json()["result"][0]["reviewer"]["lastName"] == "Isaak"
 
-    async def test_applet_activities(self, report_mock: CoroutineMock, client):
+    async def test_applet_activities(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         response = await client.get(
@@ -796,7 +770,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert len(response.json()["result"][0]["answerDates"]) == 0
 
-    async def test_add_note(self, report_mock: CoroutineMock, client):
+    async def test_add_note(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -865,7 +839,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 1
 
-    async def test_edit_note(self, report_mock: CoroutineMock, client):
+    async def test_edit_note(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -958,7 +932,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["note"] == "Some note 2"
 
-    async def test_delete_note(self, report_mock: CoroutineMock, client):
+    async def test_delete_note(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -1050,7 +1024,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 0
 
     async def test_answer_activity_items_create_for_not_respondent(
-        self, report_mock: CoroutineMock, client
+        self, mock_kiq_report, client
     ):
         await client.login(self.login_url, "patric@gmail.com", "Test1234")
 
@@ -1086,7 +1060,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 403, response.json()
 
-    async def test_answers_export(self, report_mock: CoroutineMock, client):
+    async def test_answers_export(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         # create answer
@@ -1199,7 +1173,7 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()["result"]
         assert not data["answers"]
 
-    async def test_get_identifiers(self, report_mock: CoroutineMock, client):
+    async def test_get_identifiers(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         response = await client.get(
@@ -1258,7 +1232,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["identifier"] == "some identifier"
         assert response.json()["result"][0]["userPublicKey"] == "user key"
 
-    async def test_get_versions(self, report_mock: CoroutineMock, client):
+    async def test_get_versions(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         response = await client.get(
@@ -1275,9 +1249,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][1]["version"] == "1.9.9"
         assert response.json()["result"][1]["createdAt"]
 
-    async def test_get_summary_activities(
-        self, report_mock: CoroutineMock, client
-    ):
+    async def test_get_summary_activities(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         response = await client.get(
@@ -1293,7 +1265,7 @@ class TestAnswerActivityItems(BaseTest):
         assert not response.json()["result"][0]["hasAnswer"]
 
     async def test_get_summary_activities_after_submitted_answer(
-        self, report_mock: CoroutineMock, client
+        self, mock_kiq_report, client
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
@@ -1342,9 +1314,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["isPerformanceTask"]
         assert response.json()["result"][0]["hasAnswer"]
 
-    async def test_store_client_meta(
-        self, report_mock: CoroutineMock, client, session
-    ):
+    async def test_store_client_meta(self, mock_kiq_report, client, session):
         app_id = "mindlogger-mobile"
         app_version = "0.21.48"
         app_width = 819
@@ -1390,7 +1360,7 @@ class TestAnswerActivityItems(BaseTest):
         assert app_height == res.client["height"]
 
     async def test_activity_answers_by_identifier(
-        self, report_mock: CoroutineMock, client
+        self, mock_kiq_report, client
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
@@ -1441,9 +1411,7 @@ class TestAnswerActivityItems(BaseTest):
         result = response.json()
         assert result["count"] == 1
 
-    async def test_applet_completions(
-        self, report_mock: CoroutineMock, client
-    ):
+    async def test_applet_completions(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         # create answer
@@ -1526,9 +1494,7 @@ class TestAnswerActivityItems(BaseTest):
         assert activity_answer_data["answerId"] == answer_id
         assert activity_answer_data["localEndTime"] == "12:35:00"
 
-    async def test_applets_completions(
-        self, report_mock: CoroutineMock, client
-    ):
+    async def test_applets_completions(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         # create answer
@@ -1630,7 +1596,7 @@ class TestAnswerActivityItems(BaseTest):
 
     async def test_summary_restricted_for_reviewer_if_external_respondent(
         self,
-        report_mock: CoroutineMock,
+        mock_kiq_report,
         client,
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
@@ -1680,7 +1646,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 403
 
     async def test_public_answer_with_zero_timestamps(
-        self, report_mock: CoroutineMock, client
+        self, mock_kiq_report, client
     ):
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",

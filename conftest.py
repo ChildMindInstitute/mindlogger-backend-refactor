@@ -65,8 +65,9 @@ async def engine() -> AsyncGenerator[AsyncEngine, Any]:
 
 @pytest.fixture()
 async def arbitrary_engine() -> AsyncGenerator[AsyncEngine, Any]:
+    host = settings.database.host
     engine = build_engine(
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/test_arbitrary"
+        f"postgresql+asyncpg://postgres:postgres@{host}:5432/test_arbitrary"
     )
     yield engine
     await engine.dispose()
@@ -165,3 +166,37 @@ def pytest_collection_modifyitems(items):
 def remote_image() -> str:
     # TODO: add support for localimages for tests
     return "https://www.w3schools.com/css/img_5terre_wide.jpg"
+
+
+@pytest.fixture
+async def mock_kiq_report(mocker):
+    mock = mocker.patch("apps.answers.service.create_report.kiq")
+    yield mock
+    mock.stop_all()
+
+
+@pytest.fixture
+async def mock_report_server_response(mocker):
+    def json_():
+        return dict(
+            pdf="cGRmIGJvZHk=",
+            email=dict(
+                body="Body",
+                subject="Subject",
+                attachment="Attachment name",
+                emailRecipients=["tom@cmiml.net"],
+            ),
+        )
+
+    mock = mocker.patch("aiohttp.ClientSession.post")
+    mock.return_value.__aenter__.return_value.status = 200
+    mock.return_value.__aenter__.return_value.json.side_effect = json_
+    yield mock
+    mock.stop_all()
+
+
+@pytest.fixture
+def mock_reencrypt_kiq(mocker):
+    mock = mocker.patch("apps.users.api.password.reencrypt_answers.kiq")
+    yield mock
+    mock.stop_all()
