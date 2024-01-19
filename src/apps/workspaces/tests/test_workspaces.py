@@ -1,7 +1,8 @@
-from uuid import uuid4
+import uuid
 
 from apps.shared.test import BaseTest
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.errors import AppletAccessDenied, InvalidAppletIDFilter
 from infrastructure.database import rollback
 
 
@@ -234,7 +235,7 @@ class TestWorkspaces(BaseTest):
         # check access not exists
         response = await self.client.get(
             self.workspace_applets_detail_url.format(
-                owner_id=uuid4(),
+                owner_id=uuid.uuid4(),
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             )
         )
@@ -565,7 +566,7 @@ class TestWorkspaces(BaseTest):
         # Pin access wrong owner
         response = await self.client.post(
             self.workspace_respondents_pin.format(
-                owner_id=uuid4(), user_id=user_id
+                owner_id=uuid.uuid4(), user_id=user_id
             ),
         )
 
@@ -575,7 +576,7 @@ class TestWorkspaces(BaseTest):
         response = await self.client.post(
             self.workspace_respondents_pin.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                user_id=uuid4(),
+                user_id=uuid.uuid4(),
             ),
         )
 
@@ -638,7 +639,7 @@ class TestWorkspaces(BaseTest):
         # Pin access wrong owner
         response = await self.client.post(
             self.workspace_managers_pin.format(
-                owner_id=uuid4(), user_id=user_id
+                owner_id=uuid.uuid4(), user_id=user_id
             ),
         )
 
@@ -648,7 +649,7 @@ class TestWorkspaces(BaseTest):
         response = await self.client.post(
             self.workspace_managers_pin.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-                user_id=uuid4(),
+                user_id=uuid.uuid4(),
             ),
         )
 
@@ -892,3 +893,33 @@ class TestWorkspaces(BaseTest):
         )
         res = await self.client.get(url)
         assert res.status_code == 403
+
+    @rollback
+    async def test_get_managers_priority_roles_not_valid_uuid(self):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        response = await self.client.get(
+            self.workspaces_priority_role_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            query={"appletIDs": "92917a56"},
+        )
+        assert response.status_code == 422
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == InvalidAppletIDFilter.message
+
+    @rollback
+    async def test_get_managers_priority_roles_user_does_not_have_access_to_the_applet(  # noqa: E501
+        self,
+    ):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        response = await self.client.get(
+            self.workspaces_priority_role_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            query={"appletIDs": "00000000-0000-0000-0000-000000000000"},
+        )
+        assert response.status_code == 403
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == AppletAccessDenied.message
