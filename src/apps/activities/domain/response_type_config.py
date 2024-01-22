@@ -72,7 +72,7 @@ class _SelectionConfig(_ScreenConfig, PublicModel):
 
 
 class SingleSelectionConfig(_SelectionConfig, PublicModel):
-    auto_advance: bool | None = False
+    auto_advance: bool = False
 
 
 class MultiSelectionConfig(_SelectionConfig, PublicModel):
