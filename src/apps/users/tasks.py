@@ -7,7 +7,7 @@ from apps.job.service import JobService
 from apps.shared.encryption import (
     generate_dh_public_key,
     generate_dh_user_private_key,
-    geterate_dh_aes_key,
+    generate_dh_aes_key,
 )
 from apps.workspaces.service.workspace import WorkspaceService
 from broker import broker
@@ -76,10 +76,10 @@ async def reencrypt_answers(
             new_public_key = generate_dh_public_key(
                 new_private_key, prime, base
             )
-            old_aes_key = geterate_dh_aes_key(
+            old_aes_key = generate_dh_aes_key(
                 old_private_key, applet_pub_key, prime
             )
-            new_aes_key = geterate_dh_aes_key(
+            new_aes_key = generate_dh_aes_key(
                 new_private_key, applet_pub_key, prime
             )
 
