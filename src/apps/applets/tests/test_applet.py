@@ -1992,6 +1992,10 @@ class TestApplet(BaseTest):
                 "containsResponseTypes"
             ]
         )
+        assert (
+            type(response.json()["result"]["activities"][0]["itemCount"])
+            == int
+        )
 
     @rollback
     async def test_get_public_applet_activities_info(self):
@@ -2008,6 +2012,10 @@ class TestApplet(BaseTest):
             in response.json()["result"]["activities"][0][
                 "containsResponseTypes"
             ]
+        )
+        assert (
+            type(response.json()["result"]["activities"][0]["itemCount"])
+            == int
         )
 
     @rollback
