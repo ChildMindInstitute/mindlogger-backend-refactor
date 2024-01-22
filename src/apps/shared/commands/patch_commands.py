@@ -22,6 +22,11 @@ PatchRegister.register(
     description="Slider tick marks and labels fix patch",
     manage_session=False,
 )
+PatchRegister.register(
+    file_path="m2_4608_create_subjects.sql",
+    task_id="M2-4608",
+    description="Create subject record for each respondent",
+)
 
 
 app = typer.Typer()
