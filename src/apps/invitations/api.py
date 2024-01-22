@@ -120,7 +120,7 @@ async def invitation_respondent_send(
         except UserNotFound:
             pass
 
-        subject_srv = SubjectsService(session, user.id)
+        subject_srv = SubjectsService(session, user.id, applet_id)
         await invitation_srv.raise_for_secret_id(
             applet_id,
             invitation_schema.email,
@@ -238,9 +238,9 @@ async def invitation_accept(
         if invitation and invitation.role == Role.RESPONDENT:
             if isinstance(invitation.meta, RespondentMeta):
                 subject_id = invitation.meta.subject_id
-                await SubjectsService(session, user.id).merge(
-                    uuid.UUID(subject_id)
-                )
+                await SubjectsService(
+                    session, user.id, invitation.applet_id
+                ).merge(uuid.UUID(subject_id))
         await InvitationsService(session, user).accept(key)
 
 
@@ -278,7 +278,7 @@ async def create_shell_account(
         await CheckAccessService(session, user.id).check_applet_invite_access(
             applet_id
         )
-        service = SubjectsService(session, user.id)
+        service = SubjectsService(session, user.id, applet_id)
         await InvitationsService(session, user).raise_for_secret_id(
             applet_id,
             subject_schema.email,
@@ -323,7 +323,7 @@ async def invitation_subject_send(
         except UserNotFound:
             pass
 
-        subject = await SubjectsService(session, user.id).get(
+        subject = await SubjectsService(session, user.id, applet_id).get(
             schema.subject_id
         )
         if not subject:

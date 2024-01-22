@@ -51,6 +51,7 @@ from apps.shared.version import (
     VERSION_DIFFERENCE_ITEM,
     VERSION_DIFFERENCE_MINOR,
 )
+from apps.subjects.services import SubjectsService
 from apps.themes.service import ThemeService
 from apps.users.services.user import UserService
 from apps.workspaces.errors import AppletEncryptionUpdateDenied
@@ -760,10 +761,19 @@ class AppletService:
             create_request.require_login, applet_link
         )
         if not create_request.require_login:
-            await UserService(self.session).create_anonymous_respondent()
-            await UserAppletAccessService(
+            anonymous_user = await UserService(
+                self.session
+            ).create_anonymous_respondent()
+            access = await UserAppletAccessService(
                 self.session, self.user_id, applet_id
             ).add_role_for_anonymous_respondent()
+            assert anonymous_user
+            assert access
+            await SubjectsService(
+                self.session, self.user_id, applet_id
+            ).create_anonymous_subject(
+                anonymous_user=anonymous_user, applet_id=applet_id
+            )
         return AppletLink(
             link=link, require_login=create_request.require_login
         )

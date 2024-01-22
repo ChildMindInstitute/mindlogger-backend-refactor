@@ -27,6 +27,7 @@ class TestAnswerActivityItems(BaseTest):
         "activity_flows/fixtures/activity_flow_histories.json",
         "activity_flows/fixtures/activity_flow_item_histories.json",
         "workspaces/fixtures/workspaces.json",
+        "subjects/fixtures/subjects.json",
     ]
 
     login_url = "/auth/login"

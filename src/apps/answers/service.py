@@ -83,6 +83,7 @@ from apps.mailing.services import MailingService
 from apps.shared.encryption import decrypt_cbc, encrypt_cbc
 from apps.shared.exception import EncryptionError
 from apps.shared.query_params import QueryParams
+from apps.subjects.crud import SubjectsCrud
 from apps.users import User, UserSchema, UsersCRUD
 from apps.users.errors import UserNotFound
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
@@ -190,8 +191,31 @@ class AnswerService:
             raise UserDoesNotHavePermissionError()
 
     async def _create_answer(self, applet_answer: AppletAnswerCreate):
+        assert self.user_id
         pk = self._generate_history_id(applet_answer.version)
         created_at = applet_answer.created_at or datetime.datetime.utcnow()
+        subject_crud = SubjectsCrud(self.session)
+        if applet_answer.target_subject_id:
+            target_subject_coro = subject_crud.get_source(
+                user_id=self.user_id,
+                target_id=applet_answer.target_subject_id,
+                applet_id=applet_answer.applet_id,
+            )
+            source_subject_coro = subject_crud.get_self_subject(
+                user_id=self.user_id, applet_id=applet_answer.applet_id
+            )
+            target_subject, source_subject = await asyncio.gather(
+                target_subject_coro, source_subject_coro
+            )
+        else:
+            target_subject = await subject_crud.get_self_subject(
+                user_id=self.user_id, applet_id=applet_answer.applet_id
+            )
+            source_subject = None
+        assert target_subject
+        relation = await subject_crud.get_relation(
+            target_subject.id, self.user_id, applet_answer.applet_id
+        )
         answer = await AnswersCRUD(self.answer_session).create(
             AnswerSchema(
                 submit_id=applet_answer.submit_id,
@@ -208,6 +232,11 @@ class AnswerService:
                 is_flow_completed=bool(applet_answer.is_flow_completed)
                 if applet_answer.flow_id
                 else None,
+                target_subject_id=target_subject.id,
+                source_subject_id=source_subject.id
+                if source_subject
+                else None,
+                relation=relation,
             )
         )
         item_answer = applet_answer.answer

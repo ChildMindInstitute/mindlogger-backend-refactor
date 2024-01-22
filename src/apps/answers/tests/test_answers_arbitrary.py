@@ -46,7 +46,7 @@ async def assert_answer_not_exist_on_arbitrary(submit_id: str):
     assert not answer
 
 
-class TestAnswerActivityItems(BaseTest):
+class TestAnswerActivityItemsArbitrary(BaseTest):
     fixtures = ["answers/fixtures/arbitrary_server_answers.json"]
 
     login_url = "/auth/login"

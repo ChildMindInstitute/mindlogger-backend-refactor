@@ -102,6 +102,7 @@ class AppletAnswerCreate(InternalModel):
     created_at: datetime.datetime | None
     alerts: list[AnswerAlert] = Field(default_factory=list)
     client: ClientMeta
+    target_subject_id: uuid.UUID | None
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(
         datetime_from_ms

@@ -3,7 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response
-from apps.subjects.domain import Subject, SubjectCreateRequest
+from apps.subjects.domain import (
+    Subject,
+    SubjectCreateRequest,
+    SubjectFull,
+    SubjectRespondentCreate,
+)
 from apps.subjects.services import SubjectsService
 from apps.users import User
 from infrastructure.database import atomic
@@ -26,5 +31,23 @@ async def create_subject(
             secret_user_id=schema.secret_user_id,
             email=schema.email,
         )
-        subject = await SubjectsService(session, user.id).create(subject_sch)
+        subject = await SubjectsService(
+            session, user.id, schema.applet_id
+        ).create(subject_sch)
         return Response(result=Subject.from_orm(subject))
+
+
+async def add_respondent(
+    user: User = Depends(get_current_user),
+    schema: SubjectRespondentCreate = Body(...),
+    session: AsyncSession = Depends(get_session),
+) -> Response[SubjectFull]:
+    async with atomic(session):
+        service = SubjectsService(session, user.id, schema.applet_id)
+        subject_full = await service.add_respondent(
+            respondent_id=schema.user_id,
+            subject_id=schema.subject_id,
+            applet_id=schema.applet_id,
+            relation=schema.relation,
+        )
+        return Response(result=subject_full)

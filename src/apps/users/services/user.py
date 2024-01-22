@@ -56,12 +56,12 @@ class UserService:
             )
             await UserWorkspaceCRUD(self.session).save(schema=workspace)
 
-    async def create_anonymous_respondent(self):
+    async def create_anonymous_respondent(self) -> UserSchema | None:
         crud = UsersCRUD(self.session)
         anonymous_respondent = await crud.get_anonymous_respondent()
         if anonymous_respondent is not None:
             if not settings.anonymous_respondent.force_update:
-                return
+                return None
             anonymous_respondent.email = settings.anonymous_respondent.email
             anonymous_respondent.first_name = (
                 settings.anonymous_respondent.first_name
@@ -73,7 +73,7 @@ class UserService:
                 self.session
             ).get_password_hash(settings.anonymous_respondent.password)
             anonymous_respondent.is_anonymous_respondent = True
-            await crud.update_by_id(
+            return await crud.update_by_id(
                 anonymous_respondent.id, anonymous_respondent
             )
         else:
@@ -86,7 +86,7 @@ class UserService:
                 ).get_password_hash(settings.anonymous_respondent.password),
                 is_anonymous_respondent=True,
             )
-            await crud.save(anonymous_respondent)
+            return await crud.save(anonymous_respondent)
 
     async def get_by_email(self, email: str) -> User:
         crud = UsersCRUD(self.session)
