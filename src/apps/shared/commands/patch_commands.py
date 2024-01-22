@@ -32,6 +32,11 @@ PatchRegister.register(
     task_id="M2-4611",
     description="Add subject ids for answers in internal DB and arbitrary DBs",
 )
+PatchRegister.register(
+    file_path="m2_4613_create_invitation_subjects.py",
+    task_id="M2-4613",
+    description="Create subjects for pending invitations",
+)
 
 
 app = typer.Typer()
@@ -141,6 +146,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
                             "r",
                         ) as f:
                             sql = f.read()
+                            # TODO: doesn't work with multiple statements
                             await session.execute(sql)
                             await session.commit()
                             print(
