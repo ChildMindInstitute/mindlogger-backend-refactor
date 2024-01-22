@@ -123,3 +123,12 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         query = query.where(SubjectRespondentSchema.subject_id == target_id)
         result = await self._execute(query)
         return result.scalar_one_or_none()
+
+    async def exist(self, subject_id: uuid.UUID, applet_id: uuid.UUID) -> bool:
+        query: Query = select(SubjectSchema.id)
+        query = query.where(
+            SubjectSchema.id == subject_id,
+            SubjectSchema.applet_id == applet_id,
+        )
+        res = await self._execute(query)
+        return bool(res.scalar_one_or_none())

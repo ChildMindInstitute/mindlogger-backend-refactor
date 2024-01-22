@@ -4,6 +4,9 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Query
 
 from apps.subjects.db.schemas import SubjectRespondentSchema
+from apps.workspaces.db.schemas.user_applet_access import (
+    UserAppletAccessSchema,
+)
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["SubjectsRespondentsCrud"]
@@ -12,7 +15,7 @@ __all__ = ["SubjectsRespondentsCrud"]
 class SubjectsRespondentsCrud(BaseCRUD[SubjectRespondentSchema]):
     schema_class = SubjectRespondentSchema
 
-    async def save(
+    async def create(
         self, schema: SubjectRespondentSchema
     ) -> SubjectRespondentSchema:
         return await self._create(schema)
@@ -30,11 +33,19 @@ class SubjectsRespondentsCrud(BaseCRUD[SubjectRespondentSchema]):
 
     async def list_by_subject(
         self, subject_id: uuid.UUID
-    ) -> list[SubjectRespondentSchema]:
-        query: Query = select(SubjectRespondentSchema)
+    ) -> list[tuple[SubjectRespondentSchema, uuid.UUID]]:
+        query: Query = select(
+            SubjectRespondentSchema, UserAppletAccessSchema.user_id
+        )
         query = query.where(SubjectRespondentSchema.subject_id == subject_id)
+        query = query.join(
+            UserAppletAccessSchema,
+            UserAppletAccessSchema.id
+            == SubjectRespondentSchema.respondent_access_id,
+            isouter=True,
+        )
         result = await self._execute(query)
-        return result.scalars().all()
+        return result.all()
 
     async def delete_from_applet(
         self,

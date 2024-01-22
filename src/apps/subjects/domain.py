@@ -18,11 +18,12 @@ class Subject(InternalModel):
     nickname: str | None
 
 
-class SubjectRespondent(InternalModel):
-    id: uuid.UUID
+class SubjectRespondent(PublicModel):
+    id: uuid.UUID | None
     respondent_access_id: uuid.UUID
     subject_id: uuid.UUID
     relation: str
+    user_id: uuid.UUID
 
 
 class SubjectRespondentCreate(PublicModel):
@@ -33,6 +34,7 @@ class SubjectRespondentCreate(PublicModel):
 
 
 class SubjectBase(PublicModel):
+    id: uuid.UUID | None
     applet_id: uuid.UUID
     email: EmailStr | None
     creator_id: uuid.UUID
