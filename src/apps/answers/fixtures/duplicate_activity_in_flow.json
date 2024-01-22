@@ -218,6 +218,7 @@
         ]
       },
       "config": {
+        "auto_advance": false,
         "randomize_options": false,
         "timer": 0,
         "add_scores": false,
@@ -294,6 +295,7 @@
         ]
       },
       "config": {
+        "auto_advance": false,
         "randomize_options": false,
         "timer": 0,
         "add_scores": false,
