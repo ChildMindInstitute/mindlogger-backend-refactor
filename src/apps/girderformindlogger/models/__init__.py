@@ -187,7 +187,6 @@ def cycleModels(IRIset, modelType=None, meta={}):
 
 
 def smartImport(IRI, user=None, refreshCache=False, modelType=None, meta={}):
-
     MODELS = MODELS()
     mt1 = (
         "screen"

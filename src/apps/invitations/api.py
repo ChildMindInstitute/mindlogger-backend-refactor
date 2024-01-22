@@ -151,9 +151,11 @@ async def invitation_reviewer_send(
         except UserNotFound:
             pass
 
-        invitation: InvitationDetailForReviewer = await (
-            invitation_srv.send_reviewer_invitation(
-                applet_id, invitation_schema
+        invitation: InvitationDetailForReviewer = (
+            await (
+                invitation_srv.send_reviewer_invitation(
+                    applet_id, invitation_schema
+                )
             )
         )
 

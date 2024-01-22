@@ -7,7 +7,6 @@ from infrastructure.logger import logger
 
 
 def generate_command(fin: str, fout: str, command: str):
-
     return command.format(fin=fin, fout=fout)
 
 

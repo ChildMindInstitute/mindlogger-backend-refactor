@@ -5,9 +5,9 @@ from apps.answers.service import AnswerEncryptor, AnswerService
 from apps.job.constants import JobStatus
 from apps.job.service import JobService
 from apps.shared.encryption import (
+    generate_dh_aes_key,
     generate_dh_public_key,
     generate_dh_user_private_key,
-    generate_dh_aes_key,
 )
 from apps.workspaces.service.workspace import WorkspaceService
 from broker import broker

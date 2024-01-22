@@ -100,7 +100,6 @@ class Invitation(AESEncryption):
         )
 
         if doc is not None:
-
             self._removeSupplementalFields(doc, fields)
 
         return doc
@@ -749,7 +748,7 @@ class Invitation(AESEncryption):
         for sub in childFolders:
             if sub["name"] == metadataFile:
                 metadataFile = None
-            for (filepath, file) in self.fileList(
+            for filepath, file in self.fileList(
                 sub,
                 user,
                 path,
@@ -770,7 +769,7 @@ class Invitation(AESEncryption):
         for item in childItems:
             if item["name"] == metadataFile:
                 metadataFile = None
-            for (filepath, file) in itemModel.fileList(
+            for filepath, file in itemModel.fileList(
                 item,
                 user,
                 path,
