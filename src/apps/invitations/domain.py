@@ -362,6 +362,7 @@ InvitationDetailGeneric = (
 
 
 class ShellAccountCreateRequest(PublicModel):
+    id: uuid.UUID
     language: str
     first_name: str
     last_name: str
