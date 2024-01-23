@@ -106,19 +106,22 @@ async def exec(
 async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
     session_maker = session_manager.get_session()
     arbitrary = None
-    async with session_maker() as session:
-        async with atomic(session):
-            if owner_id:
-                try:
-                    arbitrary = await WorkspaceService(
-                        session, owner_id
-                    ).get_arbitrary_info_by_owner_id(owner_id)
-                    if not arbitrary:
-                        raise WorkspaceNotFoundError("Workspace not found")
+    if owner_id:
+        try:
+            async with session_maker() as session:
+                async with atomic(session):
+                    try:
+                        arbitrary = await WorkspaceService(
+                            session, owner_id
+                        ).get_arbitrary_info_by_owner_id(owner_id)
+                        if not arbitrary:
+                            raise WorkspaceNotFoundError("Workspace not found")
 
-                except WorkspaceNotFoundError as e:
-                    print(wrap_error_msg(e))
-                    raise
+                    except WorkspaceNotFoundError as e:
+                        print(wrap_error_msg(e))
+                        raise
+        finally:
+            await session_maker.remove()
 
     arbitrary_session_maker = None
     if arbitrary:
