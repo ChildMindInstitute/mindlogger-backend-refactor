@@ -646,7 +646,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             SubjectSchema.first_name,
             SubjectSchema.last_name,
             SubjectSchema.email,
+            UserAppletAccessSchema.user_id,
             case(
+                (
+                    UserAppletAccessSchema.user_id.isnot(None),
+                    SubjectStatus.INVITED
+                ),
                 (
                     InvitationSchema.status == InvitationStatus.APPROVED,
                     SubjectStatus.INVITED
@@ -718,6 +723,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserSchema.is_anonymous_respondent,
             InvitationSchema.status,
             UserAppletAccessSchema.is_pinned,
+            UserAppletAccessSchema.user_id,
         )
 
         query = query.where(
