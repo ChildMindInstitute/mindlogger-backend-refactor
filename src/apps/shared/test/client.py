@@ -3,20 +3,14 @@ import urllib.parse
 from io import BytesIO
 from typing import Any, Mapping, Type, TypeVar
 
-import taskiq_fastapi
 from httpx import AsyncClient, Response
 from pydantic import BaseModel
-
-from broker import broker
-from infrastructure.app import create_app
 
 T = TypeVar("T", bound=BaseModel)
 
 
 class TestClient:
-    def __init__(self):
-        app = create_app()
-        taskiq_fastapi.populate_dependency_context(broker, app)
+    def __init__(self, app):
         self.client = AsyncClient(app=app, base_url="http://test.com")
         self.headers = {}
 

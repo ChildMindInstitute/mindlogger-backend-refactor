@@ -13,6 +13,8 @@ from apps.applets.api.applets import (
     applet_list,
     applet_publish,
     applet_retrieve,
+    applet_retrieve_base_info,
+    applet_retrieve_base_info_by_key,
     applet_retrieve_by_key,
     applet_set_data_retention,
     applet_set_folder,
@@ -30,6 +32,7 @@ from apps.applets.domain import (
     PublicHistory,
 )
 from apps.applets.domain.applet import (
+    AppletActivitiesBaseInfo,
     AppletRetrieveResponse,
     AppletSingleLanguageDetailForPublic,
     AppletSingleLanguageInfoPublic,
@@ -258,6 +261,16 @@ router.put(
     },
 )(flow_report_config_update)
 
+router.get(
+    "/{applet_id}/base_info",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": AppletActivitiesBaseInfo},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_retrieve_base_info)
+
 public_router.get(
     "/{key}",
     status_code=status.HTTP_200_OK,
@@ -270,3 +283,14 @@ public_router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_retrieve_by_key)
+
+public_router.get(
+    "/{key}/base_info",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[AppletActivitiesBaseInfo],
+    responses={
+        status.HTTP_200_OK: {"model": Response[AppletActivitiesBaseInfo]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_retrieve_base_info_by_key)

@@ -216,7 +216,9 @@
       "id_version": "92917a56-d586-4613-b7aa-991f2c4b15b8_1.1.0",
       "id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
       "display_name": "Applet0",
-      "stream_enabled": false
+      "stream_enabled": false,
+      "stream_ip_address": null,
+      "stream_port": null
     },
     "private_key": ""
   },
@@ -331,6 +333,7 @@
         ]
       },
       "config": {
+        "auto_advance": false,
         "timer": 0,
         "add_scores": false,
         "add_tokens": null,
@@ -666,6 +669,7 @@
         ]
       },
       "config": {
+        "auto_advance": false,
         "randomize_options": false,
         "timer": 0,
         "add_scores": false,
@@ -775,6 +779,7 @@
         ]
       },
       "config": {
+        "auto_advance": false,
         "randomize_options": false,
         "timer": 0,
         "add_scores": false,

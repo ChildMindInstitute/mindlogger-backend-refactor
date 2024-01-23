@@ -12,13 +12,11 @@ from sqlalchemy import (
     case,
     distinct,
     exists,
-    false,
     func,
     literal_column,
     or_,
     select,
     text,
-    true,
     update,
 )
 from sqlalchemy.dialects.postgresql import (
@@ -39,7 +37,7 @@ from apps.invitations.constants import InvitationStatus
 from apps.invitations.db import InvitationSchema
 from apps.schedule.db.schemas import EventSchema, UserEventsSchema
 from apps.shared.encryption import get_key
-from apps.shared.filtering import Comparisons, FilterField, Filtering
+from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
@@ -68,49 +66,17 @@ from infrastructure.database.crud import BaseCRUD
 __all__ = ["UserAppletAccessCRUD"]
 
 
-class _UserAppletFilter(Filtering):
-    owner_id = FilterField(UserAppletAccessSchema.owner_id)
-    roles = FilterField(UserAppletAccessSchema.role, lookup=Comparisons.IN)
-
-    def prepare_roles(self, value: str):
-        return value.split(",")
-
-
-class _UserAppletOrdering(Ordering):
-    created_at = AppletSchema.created_at
-    display_name = AppletSchema.display_name
-
-
-class _UserAppletSearch(Searching):
-    search_fields = [AppletSchema.display_name]
-
-
 class _AppletUsersFilter(Filtering):
     role = FilterField(UserAppletAccessSchema.role)
 
 
 class _WorkspaceRespondentOrdering(Ordering):
-    email = UserSchema.email
-    first_name = UserSchema.first_name
     is_pinned = Ordering.Clause(literal_column("is_pinned"))
     secret_ids = Ordering.Clause(literal_column("secret_ids"))
-    nicknames = Ordering.Clause(literal_column("nicknames"))
     created_at = Ordering.Clause(func.min(UserAppletAccessSchema.created_at))
-    last_seen = Ordering.Clause(
-        func.coalesce(UserSchema.last_seen_at, UserSchema.created_at)
-    )
-
-
-class _AppletRespondentOrdering(Ordering):
-    email = UserSchema.email
-    first_name = UserSchema.first_name
-    is_pinned = Ordering.Clause(literal_column("is_pinned"))
-    secret_id = Ordering.Clause(literal_column("secret_id"))
-    nickname = Ordering.Clause(literal_column("nickname"))
-    created_at = Ordering.Clause(UserAppletAccessSchema.created_at)
-    last_seen = Ordering.Clause(
-        func.coalesce(UserSchema.last_seen_at, UserSchema.created_at)
-    )
+    # last_seen = Ordering.Clause(
+    #     func.coalesce(UserSchema.last_seen_at, UserSchema.created_at)
+    # )
 
 
 class _WorkspaceRespondentSearch(Searching):
@@ -145,125 +111,6 @@ class _AppletUsersSearch(Searching):
 
 class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     schema_class = UserAppletAccessSchema
-
-    async def get_accessible_applets(
-        self,
-        user_id: uuid.UUID,
-        query_params: QueryParams,
-        folder_applet_query: Query,
-        folder_id: uuid.UUID | None,
-    ) -> list[AppletSchema]:
-        if folder_id:
-            is_pinned_var = func.coalesce(
-                FolderAppletSchema.pinned_at, func.now()
-            )
-            query: Query = select(
-                AppletSchema,
-                case(
-                    (FolderAppletSchema.pinned_at != None, true()),  # noqa
-                    else_=false(),
-                ),
-            )
-            query = query.where(AppletSchema.id.in_(folder_applet_query))
-            query = query.join(
-                FolderAppletSchema,
-                and_(
-                    FolderAppletSchema.applet_id == AppletSchema.id,
-                    FolderAppletSchema.folder_id == folder_id,
-                ),
-                isouter=True,
-            )
-            query = query.order_by(is_pinned_var.desc())
-            query = query.group_by(
-                AppletSchema.id,
-                AppletSchema.display_name,
-                AppletSchema.created_at,
-                FolderAppletSchema.pinned_at,
-            )
-        else:
-            query = select(AppletSchema, false())
-            query = query.where(AppletSchema.id.notin_(folder_applet_query))
-            query = query.group_by(
-                AppletSchema.id,
-                AppletSchema.display_name,
-                AppletSchema.created_at,
-            )
-
-        query = query.join(
-            UserAppletAccessSchema,
-            UserAppletAccessSchema.applet_id == AppletSchema.id,
-        )
-        query = query.where(UserAppletAccessSchema.soft_exists())
-        query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(AppletSchema.soft_exists())
-
-        if query_params.filters:
-            query = query.where(
-                *_UserAppletFilter().get_clauses(**query_params.filters)
-            )
-        if query_params.ordering:
-            query = query.order_by(
-                *_UserAppletOrdering().get_clauses(*query_params.ordering)
-            )
-        if query_params.search:
-            query = query.where(
-                _UserAppletSearch().get_clauses(query_params.search)
-            )
-        query = paging(query, query_params.page, query_params.limit)
-        db_result = await self._execute(query)
-
-        applets = []
-        for applet_schema, is_pinned in db_result.all():
-            applet_schema.is_pinned = is_pinned
-            applets.append(applet_schema)
-        return applets
-
-    async def get_accessible_applets_count(
-        self,
-        user_id: uuid.UUID,
-        query_params: QueryParams,
-        folder_applet_query: Query,
-        folder_id: uuid.UUID | None,
-    ) -> int:
-        applet_ids: Query = select(AppletSchema.id)
-        applet_ids = applet_ids.join(
-            UserAppletAccessSchema,
-            UserAppletAccessSchema.applet_id == AppletSchema.id,
-        )
-        applet_ids = applet_ids.where(UserAppletAccessSchema.soft_exists())
-        applet_ids = applet_ids.where(
-            UserAppletAccessSchema.user_id == user_id
-        )
-        applet_ids = applet_ids.where(AppletSchema.soft_exists())
-        if folder_id:
-            applet_ids = applet_ids.where(
-                AppletSchema.id.in_(folder_applet_query)
-            )
-        else:
-            applet_ids = applet_ids.where(
-                AppletSchema.id.notin_(folder_applet_query)
-            )
-        applet_ids = applet_ids.group_by(
-            AppletSchema.id,
-            AppletSchema.display_name,
-            AppletSchema.created_at,
-        )
-
-        if query_params.filters:
-            applet_ids = applet_ids.where(
-                *_UserAppletFilter().get_clauses(**query_params.filters)
-            )
-        if query_params.search:
-            applet_ids = applet_ids.where(
-                _UserAppletSearch().get_clauses(query_params.search)
-            )
-
-        query: Query = select(count(AppletSchema.id))
-        query = query.where(AppletSchema.id.in_(applet_ids))
-
-        db_result = await self._execute(query)
-
-        return db_result.scalars().first() or 0
 
     async def get_applet_role_by_user_id(
         self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
@@ -524,18 +371,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return db_result.scalars().all()
 
-    async def get_roles_in_roles(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID, roles: list[str]
-    ) -> list[str]:
-        query: Query = select(distinct(UserAppletAccessSchema.role))
-        query = query.where(UserAppletAccessSchema.soft_exists())
-        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
-        query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(UserAppletAccessSchema.role.in_(roles))
-        db_result = await self._execute(query)
-
-        return db_result.scalars().all()
-
     async def get_by_secret_user_id_for_applet(
         self,
         applet_id: uuid.UUID,
@@ -736,7 +571,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         coro_total = self._execute(
             select(count()).select_from(
-                query.with_only_columns(SubjectSchema.id)
+                query.with_only_columns(UserSchema.id).subquery()
             )
         )
 
@@ -849,7 +684,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             )
 
         coro_total = self._execute(
-            select(count()).select_from(query.with_only_columns(UserSchema.id))
+            select(count()).select_from(
+                query.with_only_columns(UserSchema.id).subquery()
+            )
         )
 
         if query_params.ordering:
@@ -1220,22 +1057,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return db_result.scalars().first()
 
-    async def remove_manager_accesses_by_user_id_in_workspace(
-        self, owner_id: uuid.UUID, user_id: uuid.UUID
-    ):
-        query: Query = update(UserAppletAccessSchema)
-        query = query.where(UserAppletAccessSchema.soft_exists())
-        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
-        query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(
-            UserAppletAccessSchema.role.in_(
-                [Role.MANAGER, Role.COORDINATOR, Role.EDITOR, Role.REVIEWER]
-            )
-        )
-        query = query.values(is_deleted=True)
-
-        await self._execute(query)
-
     async def update_meta_by_access_id(
         self, access_id: uuid.UUID, meta: dict, nickname: str
     ):
@@ -1369,3 +1190,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
         db_result = db_result.scalars().all()  # noqa
         return db_result
+
+    async def change_owner_of_applet_accesses(
+        self, new_owner: uuid.UUID, applet_id: uuid.UUID
+    ):
+        query: Query = update(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.values(owner_id=new_owner)
+        await self._execute(query)

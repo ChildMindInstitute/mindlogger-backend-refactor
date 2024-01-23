@@ -1,13 +1,13 @@
 from gettext import gettext as _
 
-from apps.shared.exception import AccessDeniedError, NotFoundError
+from apps.shared.exception import NotFoundError, ValidationError
 
 
-class AppletNameExistsError(AccessDeniedError):
+class AppletNameExistsError(ValidationError):
     message = _("This Applet name is already taken in the Library.")
 
 
-class AppletVersionExistsError(AccessDeniedError):
+class AppletVersionExistsError(ValidationError):
     message = _("This Applet version already exists in the Library.")
 
 

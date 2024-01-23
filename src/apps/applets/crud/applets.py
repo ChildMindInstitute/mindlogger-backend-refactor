@@ -558,7 +558,11 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         orderings = type(
             "_Ordering",
             (Ordering,),
-            {"display_name": cte.c.name, "created_at": cte.c.created_at},
+            {
+                "display_name": cte.c.name,
+                "created_at": cte.c.created_at,
+                "updated_at": cte.c.updated_at,
+            },
         )()
 
         query = query.order_by(
@@ -728,6 +732,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         )
         query = query.where(_AppletSearching().get_clauses(search_text))
         query = query.where(access_query.c.role != None)  # noqa
+        query = query.subquery()
         db_result = await self._execute(select(func.count(query.c.id)))
         return db_result.scalars().first() or 0
 
@@ -853,7 +858,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             .where(
                 AppletSchema.id == ActivitySchema.applet_id,
             )
-            .as_scalar()
+            .scalar_subquery()
         )
 
     @staticmethod
@@ -946,6 +951,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             isouter=True,
         )
         query = query.where(access_query.c.role != None)  # noqa
+        query = query.subquery()
         db_result = await self._execute(select(func.count(query.c.id)))
         return db_result.scalars().first() or 0
 

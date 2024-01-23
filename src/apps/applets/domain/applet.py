@@ -1,9 +1,10 @@
 import datetime
 import uuid
 
-from pydantic import Field, PositiveInt, root_validator
+from pydantic import Field, IPvAnyAddress, PositiveInt, root_validator
 
 from apps.activities.domain.activity import (
+    ActivityBaseInfo,
     ActivityLanguageWithItemsMobileDetailPublic,
     ActivitySingleLanguageDetail,
     ActivitySingleLanguageDetailPublic,
@@ -11,6 +12,7 @@ from apps.activities.domain.activity import (
 )
 from apps.activities.errors import PeriodIsRequiredError
 from apps.activity_flows.domain.flow import (
+    FlowBaseInfo,
     FlowSingleLanguageDetail,
     FlowSingleLanguageDetailPublic,
     FlowSingleLanguageMobileDetailPublic,
@@ -63,14 +65,17 @@ class AppletSingleLanguageDetailPublic(AppletFetchBase, PublicModel):
     theme: PublicTheme | None = None
 
 
-class AppletSingleLanguageDetailMobilePublic(PublicModel):
-    id: uuid.UUID
+class AppletMinimumInfo(PublicModel):
     display_name: str
     version: str
     description: str
     about: str
     image: str = ""
     watermark: str = ""
+
+
+class AppletSingleLanguageDetailMobilePublic(AppletMinimumInfo, PublicModel):
+    id: uuid.UUID
     theme: PublicThemeMobile | None = None
     activities: list[ActivitySingleLanguageMobileDetailPublic] = Field(
         default_factory=list
@@ -80,6 +85,8 @@ class AppletSingleLanguageDetailMobilePublic(PublicModel):
     )
     encryption: Encryption | None
     stream_enabled: bool | None
+    stream_ip_address: IPvAnyAddress | None
+    stream_port: PositiveInt | None
 
 
 class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
@@ -149,3 +156,11 @@ class AppletActivitiesDetailsPublic(PublicModel):
     ] = Field(default_factory=list)
     applet_detail: AppletSingleLanguageDetailMobilePublic
     respondent_meta: dict | None = None
+
+
+class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):
+    id: uuid.UUID
+    created_at: datetime.datetime | None
+    updated_at: datetime.datetime | None
+    activities: list[ActivityBaseInfo]
+    activity_flows: list[FlowBaseInfo]

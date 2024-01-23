@@ -31,7 +31,10 @@
       "report_include_case_id": true,
       "report_email_body": "EMAIL BODY",
       "link": "51857e10-6c05-4fa8-a2c8-725b8c1a0aa6",
-      "require_login": false
+      "require_login": false,
+      "stream_enabled": false,
+      "stream_ip_address": "127.0.0.1",
+      "stream_port": 8881
     },
     "private_key": "-----BEGIN ENCRYPTED PRIVATE KEY-----\\nMIH8MFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAiHlug6D4hOpAICCAAw\\nDAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEELYI7lu36P3Jb1OOFyDRLoAEgaAp\\np1M1RqHcfdIevAJQKPWkC3+B/Z2V7WbTgty4YNKy+I2kSk31FmyT9FmknIbpSVMd\\nKEBVV23OgRNTIbK3G0uIX0meisWXkpged+fHoZMIQ54Ala78UgA947kUcZB70vza\\nOTTo+RO0RHWPjNAgKKWCpIq65tb1iSjFEYjnPNHYtjlMJS54zFI0njnX22Me/xLz\\n389gAJb3hWT4rxhpDMlY\\n-----END ENCRYPTED PRIVATE KEY-----\\n"
   },
@@ -66,7 +69,10 @@
       "report_include_user_id": false,
       "report_include_case_id": false,
       "report_email_body": "",
-      "require_login": true
+      "require_login": true,
+      "stream_enabled": false,
+      "stream_ip_address": null,
+      "stream_port": null
     },
     "private_key": "-----BEGIN ENCRYPTED PRIVATE KEY-----\\nMIH8MFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAiHlug6D4hOpAICCAAw\\nDAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEELYI7lu36P3Jb1OOFyDRLoAEgaAp\\np1M1RqHcfdIevAJQKPWkC3+B/Z2V7WbTgty4YNKy+I2kSk31FmyT9FmknIbpSVMd\\nKEBVV23OgRNTIbK3G0uIX0meisWXkpged+fHoZMIQ54Ala78UgA947kUcZB70vza\\nOTTo+RO0RHWPjNAgKKWCpIq65tb1iSjFEYjnPNHYtjlMJS54zFI0njnX22Me/xLz\\n389gAJb3hWT4rxhpDMlY\\n-----END ENCRYPTED PRIVATE KEY-----\\n"
   },
@@ -102,7 +108,10 @@
       "report_include_case_id": false,
       "report_email_body": "",
       "link": "51857e10-6c05-4fa8-a2c8-725b8c1a0aa7",
-      "require_login": true
+      "require_login": true,
+      "stream_enabled": false,
+      "stream_ip_address": null,
+      "stream_port": null
     },
     "private_key": "-----BEGIN ENCRYPTED PRIVATE KEY-----\\nMIH8MFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAiHlug6D4hOpAICCAAw\\nDAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEELYI7lu36P3Jb1OOFyDRLoAEgaAp\\np1M1RqHcfdIevAJQKPWkC3+B/Z2V7WbTgty4YNKy+I2kSk31FmyT9FmknIbpSVMd\\nKEBVV23OgRNTIbK3G0uIX0meisWXkpged+fHoZMIQ54Ala78UgA947kUcZB70vza\\nOTTo+RO0RHWPjNAgKKWCpIq65tb1iSjFEYjnPNHYtjlMJS54zFI0njnX22Me/xLz\\n389gAJb3hWT4rxhpDMlY\\n-----END ENCRYPTED PRIVATE KEY-----\\n"
   },
@@ -133,7 +142,10 @@
       "report_include_case_id": false,
       "report_email_body": "",
       "link": null,
-      "require_login": null
+      "require_login": null,
+      "stream_enabled": false,
+      "stream_ip_address": null,
+      "stream_port": null
     },
     "private_key": "-----BEGIN ENCRYPTED PRIVATE KEY-----\\nMIH8MFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAiHlug6D4hOpAICCAAw\\nDAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEELYI7lu36P3Jb1OOFyDRLoAEgaAp\\np1M1RqHcfdIevAJQKPWkC3+B/Z2V7WbTgty4YNKy+I2kSk31FmyT9FmknIbpSVMd\\nKEBVV23OgRNTIbK3G0uIX0meisWXkpged+fHoZMIQ54Ala78UgA947kUcZB70vza\\nOTTo+RO0RHWPjNAgKKWCpIq65tb1iSjFEYjnPNHYtjlMJS54zFI0njnX22Me/xLz\\n389gAJb3hWT4rxhpDMlY\\n-----END ENCRYPTED PRIVATE KEY-----\\n"
   },
@@ -169,7 +181,10 @@
       "report_include_case_id": false,
       "report_email_body": "",
       "link": null,
-      "require_login": null
+      "require_login": null,
+      "stream_enabled": false,
+      "stream_ip_address": null,
+      "stream_port": null
     },
     "private_key": "-----BEGIN ENCRYPTED PRIVATE KEY-----\\nMIH8MFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAiHlug6D4hOpAICCAAw\\nDAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEELYI7lu36P3Jb1OOFyDRLoAEgaAp\\np1M1RqHcfdIevAJQKPWkC3+B/Z2V7WbTgty4YNKy+I2kSk31FmyT9FmknIbpSVMd\\nKEBVV23OgRNTIbK3G0uIX0meisWXkpged+fHoZMIQ54Ala78UgA947kUcZB70vza\\nOTTo+RO0RHWPjNAgKKWCpIq65tb1iSjFEYjnPNHYtjlMJS54zFI0njnX22Me/xLz\\n389gAJb3hWT4rxhpDMlY\\n-----END ENCRYPTED PRIVATE KEY-----\\n"
   }

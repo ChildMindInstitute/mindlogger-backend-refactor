@@ -9,7 +9,6 @@ from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
 from apps.users.domain import UserCreateRequest
 from apps.users.router import router as user_router
-from infrastructure.database import rollback, session_manager
 
 
 class TestAuthentication(BaseTest):
@@ -26,10 +25,9 @@ class TestAuthentication(BaseTest):
     )
     create_request_logout_user = UserLogoutRequestFactory.build()
 
-    @rollback
-    async def test_get_token(self):
+    async def test_get_token(self, session, client):
         # Creating new user
-        await self.client.post(
+        await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
@@ -37,12 +35,12 @@ class TestAuthentication(BaseTest):
         login_request_user: UserLoginRequest = UserLoginRequest(
             **self.create_request_user.dict()
         )
-        response = await self.client.post(
+        response = await client.post(
             url=self.get_token_url,
             data=login_request_user.dict(),
         )
 
-        user = await UsersCRUD(session_manager.get_session()).get_by_email(
+        user = await UsersCRUD(session).get_by_email(
             email=self.create_request_user.dict()["email"]
         )
 
@@ -51,10 +49,9 @@ class TestAuthentication(BaseTest):
         assert set(data.keys()) == {"user", "token"}
         assert data["user"]["id"] == str(user.id)
 
-    @rollback
-    async def test_delete_access_token(self):
+    async def test_delete_access_token(self, client):
         # Creating new user
-        await self.client.post(
+        await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
@@ -62,21 +59,20 @@ class TestAuthentication(BaseTest):
         login_request_user = UserLoginRequest(
             **self.create_request_user.dict()
         )
-        await self.client.login(
+        await client.login(
             url=self.get_token_url,
             **login_request_user.dict(),
         )
 
-        response = await self.client.post(
+        response = await client.post(
             url=self.delete_token_url,
         )
 
         assert response.status_code == 200
 
-    @rollback
-    async def test_refresh_access_token(self):
+    async def test_refresh_access_token(self, client):
         # Creating new user
-        internal_response = await self.client.post(
+        internal_response = await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
@@ -90,16 +86,15 @@ class TestAuthentication(BaseTest):
             )
         )
 
-        response = await self.client.post(
+        response = await client.post(
             url=self.refresh_access_token_url,
             data=refresh_access_token_request.dict(),
         )
 
         assert response.status_code == 200
 
-    @rollback
-    async def test_login_and_logout_device(self):
-        await self.client.post(
+    async def test_login_and_logout_device(self, client):
+        await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
         device_id = str(uuid.uuid4())
@@ -107,19 +102,19 @@ class TestAuthentication(BaseTest):
         login_request_user: UserLoginRequest = UserLoginRequest(
             **self.create_request_user.dict(), device_id=device_id
         )
-        response = await self.client.post(
+        response = await client.post(
             url=self.get_token_url,
             data=login_request_user.dict(),
         )
         assert response.status_code == 200
 
-        await self.client.login(
+        await client.login(
             self.get_token_url,
             self.create_request_user.email,
             self.create_request_user.password,
         )
 
-        response = await self.client.post(
+        response = await client.post(
             url=self.delete_token_url,
             data=dict(device_id=device_id),
         )

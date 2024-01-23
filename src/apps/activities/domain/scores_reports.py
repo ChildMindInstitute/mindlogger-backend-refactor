@@ -136,7 +136,7 @@ class ScoresAndReports(PublicModel):
         return value
 
     @classmethod
-    def __validate_sections(csl, value):  # noqa
+    def __validate_sections(cls, value):  # noqa
         if value:
             # check if there are duplicate section names
             section_names = [section.name for section in value]

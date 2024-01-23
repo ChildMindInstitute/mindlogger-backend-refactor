@@ -42,13 +42,15 @@ class LibraryService:
     def __init__(self, session):
         self.session = session
 
-    async def check_applet_name(self, name: str):
+    async def check_applet_name(self, name: str) -> None:
         """Check if applet with this name is already in library."""
         name_exists = await LibraryCRUD(self.session).check_applet_name(name)
         if name_exists:
             raise AppletNameExistsError()
 
-    async def share_applet(self, schema: AppletLibraryCreate):
+    async def share_applet(
+        self, schema: AppletLibraryCreate
+    ) -> AppletLibraryFull:
         """Share applet to library."""
 
         # check if applet with this name is already in library
@@ -350,7 +352,7 @@ class LibraryService:
     async def filter_cart_items(
         self, cart: Cart | None, query_params: QueryParams
     ) -> List[PublicLibraryItem]:
-        if not cart:
+        if not cart:  # pragma: no cover
             return []
         filtered_items: list[dict] = []
         if query_params.search and cart.cart_items:

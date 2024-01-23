@@ -34,15 +34,18 @@ class FlowSingleLanguageDetailPublic(FlowPublic):
     created_at: datetime
 
 
-class FlowSingleLanguageMobileDetailPublic(InternalModel):
+class FlowBaseInfo(InternalModel):
     id: uuid.UUID
     name: str
     description: str
     hide_badge: bool = False
-    is_single_report: bool = False
     order: int
     is_hidden: bool | None = False
     activity_ids: list[uuid.UUID] = Field(default_factory=list)
+
+
+class FlowSingleLanguageMobileDetailPublic(FlowBaseInfo, InternalModel):
+    is_single_report: bool = False
 
 
 class FlowDuplicate(FlowBase, InternalModel):

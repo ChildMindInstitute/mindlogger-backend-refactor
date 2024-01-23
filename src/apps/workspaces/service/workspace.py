@@ -24,7 +24,6 @@ from apps.workspaces.domain.workspace import (
 )
 from apps.workspaces.errors import (
     ArbitraryServerSettingsError,
-    InvalidAppletIDFilter,
     WorkspaceAccessDenied,
     WorkspaceDoesNotExistError,
     WorkspaceNotFoundError,
@@ -271,15 +270,7 @@ class WorkspaceService:
         if not exists:
             raise WorkspaceDoesNotExistError()
 
-    async def get_applets_roles_by_priority(self, owner_id, appletIDs):
-        # parse applet ids
-        try:
-            applet_ids = list(
-                map(uuid.UUID, filter(None, appletIDs.split(",")))
-            )
-        except ValueError:
-            raise InvalidAppletIDFilter
-
+    async def get_applets_roles_by_priority(self, owner_id, applet_ids):
         # check if applets exist
         for applet_id in applet_ids:
             await CheckAccessService(

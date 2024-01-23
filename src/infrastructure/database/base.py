@@ -6,8 +6,6 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_method
 from sqlalchemy.orm import declarative_base
 
-from infrastructure.database.core import engine
-
 __all__ = ["Base"]
 
 meta = MetaData(
@@ -21,7 +19,7 @@ meta = MetaData(
 )
 
 
-_Base = declarative_base(bind=engine.sync_engine, metadata=meta)
+_Base = declarative_base(metadata=meta)
 
 
 class Base(_Base):  # type: ignore
