@@ -6,20 +6,20 @@ class PatchRegister:
 
     @classmethod
     def register(
-        self,
+        cls,
         file_path: str,
         task_id: str,
         description: str,
-        manage_session: bool,
+        manage_session: bool = False,
     ):
-        self.patches = self.patches or []
+        cls.patches = cls.patches or []
         # check if task_id already exist
         found_patch = next(
-            (p for p in self.patches if p.task_id == task_id), None
+            (p for p in cls.patches if p.task_id == task_id), None
         )
         if found_patch:
             raise ValueError(f"Patch with task_id {task_id} already exist")
-        self.patches.append(
+        cls.patches.append(
             Patch(
                 file_path=file_path,
                 task_id=task_id,

@@ -22,6 +22,21 @@ PatchRegister.register(
     description="Slider tick marks and labels fix patch",
     manage_session=False,
 )
+PatchRegister.register(
+    file_path="m2_4608_create_subjects.sql",
+    task_id="M2-4608",
+    description="Create subject record for each respondent",
+)
+PatchRegister.register(
+    file_path="m2_4611_add_answer_subjects.py",
+    task_id="M2-4611",
+    description="Add subject ids for answers in internal DB and arbitrary DBs",
+)
+PatchRegister.register(
+    file_path="m2_4613_create_invitation_subjects.py",
+    task_id="M2-4613",
+    description="Create subjects for pending invitations",
+)
 
 
 app = typer.Typer()
@@ -91,10 +106,10 @@ async def exec(
 async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
     session_maker = session_manager.get_session()
     arbitrary = None
-    try:
-        async with session_maker() as session:
-            async with atomic(session):
-                if owner_id:
+    if owner_id:
+        try:
+            async with session_maker() as session:
+                async with atomic(session):
                     try:
                         arbitrary = await WorkspaceService(
                             session, owner_id
@@ -105,8 +120,8 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
                     except WorkspaceNotFoundError as e:
                         print(wrap_error_msg(e))
                         raise
-    finally:
-        await session_maker.remove()
+        finally:
+            await session_maker.remove()
 
     arbitrary_session_maker = None
     if arbitrary:
@@ -131,6 +146,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
                             "r",
                         ) as f:
                             sql = f.read()
+                            # TODO: doesn't work with multiple statements
                             await session.execute(sql)
                             await session.commit()
                             print(
