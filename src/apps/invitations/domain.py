@@ -372,6 +372,7 @@ class ShellAccountCreateRequest(PublicModel):
 
 
 class ShellAccountCreateResponse(PublicModel):
+    id: uuid.UUID | None
     applet_id: uuid.UUID
     language: str
     creator_id: uuid.UUID

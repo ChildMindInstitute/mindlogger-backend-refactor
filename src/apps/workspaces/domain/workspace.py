@@ -96,6 +96,7 @@ class WorkspaceRespondent(InternalModel):
     status: str
     email: str | None = None
     details: list[WorkspaceRespondentDetails] | None = None
+    user_id: uuid.UUID | None
 
 
 class AppletRole(InternalModel):
@@ -173,6 +174,7 @@ class PublicWorkspaceRespondent(PublicModel):
     is_pinned: bool = False
     status: str
     email: str | None
+    user_id: uuid.UUID | None
     details: list[PublicWorkspaceRespondentDetails] | None = None
 
 
