@@ -3,10 +3,10 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
-from infrastructure.database.base import Base
+from infrastructure.database.base import Base, MigratedMixin
 
 
-class AlertSchema(Base):
+class AlertSchema(MigratedMixin, Base):
     """This table is used as responses to specific flow activity items"""
 
     __tablename__ = "alerts"

@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from apps.activities.domain.response_type_config import PerformanceTaskType
-from infrastructure.database.base import Base
+from infrastructure.database.base import Base, MigratedMixin
 
 __all__ = ["ActivitySchema", "ActivityHistorySchema"]
 
@@ -47,7 +47,7 @@ class _BaseActivitySchema:
         )
 
 
-class ActivitySchema(Base, _BaseActivitySchema):
+class ActivitySchema(Base, _BaseActivitySchema, MigratedMixin):
     __tablename__ = "activities"
 
     applet_id = Column(
@@ -55,7 +55,7 @@ class ActivitySchema(Base, _BaseActivitySchema):
     )
 
 
-class ActivityHistorySchema(Base, _BaseActivitySchema):
+class ActivityHistorySchema(Base, _BaseActivitySchema, MigratedMixin):
     __tablename__ = "activity_histories"
 
     id = Column(UUID(as_uuid=True))

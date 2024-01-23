@@ -2,10 +2,10 @@ from sqlalchemy import Boolean, Column, ForeignKey, Unicode
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
-from infrastructure.database.base import Base
+from infrastructure.database.base import Base, MigratedMixin
 
 
-class UserWorkspaceSchema(Base):
+class UserWorkspaceSchema(MigratedMixin, Base):
     __tablename__ = "users_workspaces"
 
     user_id = Column(

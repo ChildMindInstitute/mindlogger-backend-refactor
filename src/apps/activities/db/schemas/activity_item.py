@@ -1,7 +1,7 @@
 from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
-from infrastructure.database.base import Base
+from infrastructure.database.base import Base, MigratedMixin
 
 __all__ = ["ActivityItemSchema", "ActivityItemHistorySchema"]
 
@@ -21,7 +21,7 @@ class _BaseActivityItemSchema:
     )
 
 
-class ActivityItemSchema(_BaseActivityItemSchema, Base):
+class ActivityItemSchema(_BaseActivityItemSchema, MigratedMixin, Base):
     __tablename__ = "activity_items"
 
     activity_id = Column(
@@ -29,7 +29,7 @@ class ActivityItemSchema(_BaseActivityItemSchema, Base):
     )
 
 
-class ActivityItemHistorySchema(_BaseActivityItemSchema, Base):
+class ActivityItemHistorySchema(_BaseActivityItemSchema, MigratedMixin, Base):
     __tablename__ = "activity_item_histories"
 
     id = Column(UUID(as_uuid=True))

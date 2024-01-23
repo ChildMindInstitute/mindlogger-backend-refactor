@@ -1,9 +1,9 @@
 from sqlalchemy import Boolean, Column, ForeignKey, String, Text
 
-from infrastructure.database.base import Base
+from infrastructure.database.base import Base, MigratedMixin
 
 
-class ThemeSchema(Base):
+class ThemeSchema(MigratedMixin, Base):
     __tablename__ = "themes"
 
     name = Column(String(length=100), nullable=False)

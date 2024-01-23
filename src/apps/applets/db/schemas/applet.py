@@ -13,7 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utils.types import IPAddressType
 
-from infrastructure.database.base import Base
+from infrastructure.database.base import Base, MigratedMixin
 
 __all__ = ["AppletSchema", "AppletHistorySchema"]
 
@@ -43,7 +43,7 @@ class _BaseAppletSchema:
     stream_port = Column(Integer())
 
 
-class AppletSchema(_BaseAppletSchema, Base):
+class AppletSchema(_BaseAppletSchema, Base, MigratedMixin):
     __tablename__ = "applets"
 
     encryption = Column(JSONB())
@@ -72,7 +72,9 @@ class HistoryMixin:
         return uuid.UUID(parts[0]), parts[1]
 
 
-class AppletHistorySchema(_BaseAppletSchema, HistoryMixin, Base):
+class AppletHistorySchema(
+    _BaseAppletSchema, HistoryMixin, Base, MigratedMixin
+):
     __tablename__ = "applet_histories"
 
     id_version = Column(String(), primary_key=True)

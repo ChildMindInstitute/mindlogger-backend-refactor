@@ -1,7 +1,7 @@
 from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
-from infrastructure.database import Base
+from infrastructure.database import Base, MigratedMixin
 
 __all__ = ["ActivityFlowSchema", "ActivityFlowHistoriesSchema"]
 
@@ -20,13 +20,15 @@ class _BaseActivityFlowSchema:
     )
 
 
-class ActivityFlowSchema(_BaseActivityFlowSchema, Base):
+class ActivityFlowSchema(_BaseActivityFlowSchema, MigratedMixin, Base):
     __tablename__ = "flows"
 
     applet_id = Column(ForeignKey("applets.id", ondelete="RESTRICT"))
 
 
-class ActivityFlowHistoriesSchema(_BaseActivityFlowSchema, Base):
+class ActivityFlowHistoriesSchema(
+    _BaseActivityFlowSchema, MigratedMixin, Base
+):
     __tablename__ = "flow_histories"
 
     id_version = Column(String(), primary_key=True)

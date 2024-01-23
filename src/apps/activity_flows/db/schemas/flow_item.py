@@ -1,7 +1,7 @@
 from sqlalchemy import REAL, Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 
-from infrastructure.database import Base
+from infrastructure.database import Base, MigratedMixin
 
 __all__ = ["ActivityFlowItemSchema", "ActivityFlowItemHistorySchema"]
 
@@ -10,14 +10,14 @@ class _BaseActivityFlow:
     order = Column(REAL())
 
 
-class ActivityFlowItemSchema(_BaseActivityFlow, Base):
+class ActivityFlowItemSchema(_BaseActivityFlow, MigratedMixin, Base):
     __tablename__ = "flow_items"
 
     activity_flow_id = Column(ForeignKey("flows.id", ondelete="RESTRICT"))
     activity_id = Column(ForeignKey("activities.id", ondelete="RESTRICT"))
 
 
-class ActivityFlowItemHistorySchema(_BaseActivityFlow, Base):
+class ActivityFlowItemHistorySchema(_BaseActivityFlow, MigratedMixin, Base):
     __tablename__ = "flow_item_histories"
 
     id_version = Column(String(), primary_key=True)

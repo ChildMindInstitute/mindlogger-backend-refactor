@@ -4,10 +4,10 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Unicode
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
-from infrastructure.database.base import Base
+from infrastructure.database.base import Base, MigratedMixin
 
 
-class UserSchema(Base):
+class UserSchema(MigratedMixin, Base):
     __tablename__ = "users"
 
     email = Column(String(length=56), unique=True)

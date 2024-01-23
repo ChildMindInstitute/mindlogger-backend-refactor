@@ -4,9 +4,10 @@ from datetime import datetime
 from sqlalchemy import Boolean, Column, DateTime, MetaData, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_method
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, declarative_mixin
 
-__all__ = ["Base"]
+
+__all__ = ["Base", "MigratedMixin"]
 
 meta = MetaData(
     naming_convention={
@@ -45,18 +46,6 @@ class Base(_Base):  # type: ignore
         server_default=text("timezone('utc', now())"),
         server_onupdate=text("timezone('utc', now())"),
     )
-    migrated_date = Column(
-        DateTime(),
-        default=None,
-        server_default=None,
-        nullable=True,
-    )
-    migrated_updated = Column(
-        DateTime(),
-        default=None,
-        server_default=None,
-        nullable=True,
-    )
     is_deleted = Column(Boolean(), default=False)
 
     def __iter__(self):
@@ -77,3 +66,20 @@ class Base(_Base):  # type: ignore
         if exists:
             return cls.is_deleted.isnot(True)
         return cls.is_deleted.is_(True)
+
+
+@declarative_mixin
+class MigratedMixin:
+
+    migrated_date = Column(
+        DateTime(),
+        default=None,
+        server_default=None,
+        nullable=True,
+    )
+    migrated_updated = Column(
+        DateTime(),
+        default=None,
+        server_default=None,
+        nullable=True,
+    )

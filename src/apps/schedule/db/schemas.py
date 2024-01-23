@@ -11,10 +11,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 
-from infrastructure.database.base import Base
+from infrastructure.database.base import Base, MigratedMixin
 
 
-class PeriodicitySchema(Base):
+class PeriodicitySchema(MigratedMixin, Base):
     __tablename__ = "periodicity"
 
     type = Column(
@@ -25,7 +25,7 @@ class PeriodicitySchema(Base):
     selected_date = Column(Date, nullable=True)
 
 
-class EventSchema(Base):
+class EventSchema(MigratedMixin, Base):
     __tablename__ = "events"
 
     periodicity_id = Column(
@@ -42,7 +42,7 @@ class EventSchema(Base):
     )
 
 
-class UserEventsSchema(Base):
+class UserEventsSchema(MigratedMixin, Base):
     __tablename__ = "user_events"
 
     user_id = Column(
@@ -62,7 +62,7 @@ class UserEventsSchema(Base):
     )
 
 
-class ActivityEventsSchema(Base):
+class ActivityEventsSchema(MigratedMixin, Base):
     __tablename__ = "activity_events"
 
     activity_id = Column(UUID(as_uuid=True), nullable=False)
@@ -80,7 +80,7 @@ class ActivityEventsSchema(Base):
     )
 
 
-class FlowEventsSchema(Base):
+class FlowEventsSchema(MigratedMixin, Base):
     __tablename__ = "flow_events"
 
     flow_id = Column(UUID(as_uuid=True), nullable=False)
@@ -98,7 +98,7 @@ class FlowEventsSchema(Base):
     )
 
 
-class NotificationSchema(Base):
+class NotificationSchema(MigratedMixin, Base):
     __tablename__ = "notifications"
 
     event_id = Column(
@@ -111,7 +111,7 @@ class NotificationSchema(Base):
     order = Column(Integer, nullable=True)
 
 
-class ReminderSchema(Base):
+class ReminderSchema(MigratedMixin, Base):
     __tablename__ = "reminders"
 
     event_id = Column(
