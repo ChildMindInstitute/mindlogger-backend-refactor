@@ -238,7 +238,8 @@ async def invitation_accept(
         if invitation and invitation.role == Role.RESPONDENT:
             if isinstance(invitation.meta, RespondentMeta):
                 subject_id = invitation.meta.subject_id
-                await SubjectsService(session, user.id).merge(
+                assert subject_id
+                await SubjectsService(session, user.id).extend(
                     uuid.UUID(subject_id)
                 )
         await InvitationsService(session, user).accept(key)

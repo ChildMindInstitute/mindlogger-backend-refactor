@@ -1034,3 +1034,5 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert len(TestMail.mails) == 1
+        subject_model = await SubjectsCrud(session).get_by_id(subject["id"])
+        assert subject_model.email == email

@@ -57,9 +57,9 @@ class SubjectsService:
     async def update(self, schema: SubjectSchema) -> SubjectSchema:
         return await SubjectsCrud(self.session).update(schema)
 
-    async def merge(self, subject_id: uuid.UUID) -> Subject | None:
+    async def extend(self, subject_id: uuid.UUID) -> Subject | None:
         """
-        Merge shell account with full account for current user
+        Extend shell account with full account for current user
         """
         user = await UserService(self.session).get(self.user_id)
         assert user
@@ -67,11 +67,8 @@ class SubjectsService:
         subject = await crud.get_by_id(subject_id)
         if subject:
             subject.user_id = user.id
-            subject.email = user.email_encrypted
-            subject.last_name = user.first_name
-            subject.first_name = user.first_name
-            await crud.update_by_id(subject)
-            return Subject.from_orm(subject)
+            subject_model = await crud.update(subject)
+            return Subject.from_orm(subject_model)
         return None
 
     async def get_by_email(self, email: str) -> Subject | None:

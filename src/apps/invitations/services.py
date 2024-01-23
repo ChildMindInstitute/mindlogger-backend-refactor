@@ -25,7 +25,6 @@ from apps.invitations.domain import (
     InvitationReviewer,
     InvitationReviewerRequest,
     PrivateInvitationDetail,
-    RespondentInfo,
     RespondentMeta,
     ReviewerMeta,
 )
@@ -93,13 +92,7 @@ class InvitationsService:
             email=schema.email
         )
         invited_user_id = invited_user.id if invited_user is not None else None
-        respondent_info = RespondentInfo(
-            meta=RespondentMeta(
-                secret_user_id=schema.secret_user_id,
-                subject_id=str(subject_id),
-            ),
-            nickname=schema.nickname,
-        )
+        meta = RespondentMeta(subject_id=str(subject_id))
         payload = {
             "email": schema.email,
             "applet_id": applet_id,
@@ -110,8 +103,8 @@ class InvitationsService:
             "first_name": schema.first_name,
             "last_name": schema.last_name,
             "user_id": invited_user_id,
-            "meta": respondent_info.meta.dict(),
-            "nickname": respondent_info.nickname,
+            "meta": meta.dict(),
+            "nickname": schema.nickname,
         }
         pending_invitation = await (
             self.invitations_crud.get_pending_invitation(
