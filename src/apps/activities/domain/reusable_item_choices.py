@@ -18,9 +18,6 @@ class _ReusableItemChoiceBase(BaseModel):
     token_value: conint(gt=-2147483648, lt=2147483647)  # type: ignore
     input_type: InputType
 
-    def __str__(self) -> str:
-        return f"{self.token_name}: {self.token_value}"
-
 
 class PublicReusableItemChoice(_ReusableItemChoiceBase, PublicModel):
     """Public item template data model."""

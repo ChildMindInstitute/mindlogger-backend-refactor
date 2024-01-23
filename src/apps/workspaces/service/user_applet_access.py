@@ -43,13 +43,6 @@ class UserAppletAccessService:
 
         return meta
 
-    async def _get_default_role_meta_for_anonymous_respondent(self) -> dict:
-        meta: dict = {}
-        meta.update(
-            secretUserId="Guest Account Submission",
-        )
-        return meta
-
     async def add_role(
         self, user_id: uuid.UUID, role: Role
     ) -> UserAppletAccess:
@@ -94,7 +87,7 @@ class UserAppletAccessService:
                     )
                 return UserAppletAccess.from_orm(access_schema)
 
-            meta = await self._get_default_role_meta_for_anonymous_respondent()
+            meta = dict(secretUserId="Guest Account Submission")
             owner_access = await UserAppletAccessCRUD(
                 self.session
             ).get_applet_owner(applet_id=self._applet_id)

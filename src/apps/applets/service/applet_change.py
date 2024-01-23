@@ -16,6 +16,8 @@ class AppletChangeService(BaseChangeGenerator):
         "report_include_user_id": "Include respondent in the Subject and Attachment",  # noqa E501
         "report_email_body": "Email Body",
         "stream_enabled": "Enable streaming of response data",
+        "stream_ip_address": "Stream IP Address",
+        "stream_port": "Stream Port",
     }
 
     def compare(

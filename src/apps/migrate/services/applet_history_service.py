@@ -53,6 +53,8 @@ class AppletMigrationHistoryService:
                 migrated_updated=applet.migrated_updated,
                 extra_fields=prepare_extra_fields_to_save(applet.extra_fields),
                 stream_enabled=applet.stream_enabled,
+                stream_ip_address=applet.stream_ip_address,
+                stream_port=applet.stream_port,
             )
         )
         await ActivityHistoryMigrationService(

@@ -431,6 +431,7 @@ def test_initial_single_selection_config_change(
         "Tokens was disabled",
         "Add Text Input Option was disabled",
         "Input Required was disabled",
+        "Auto Advance was disabled",
     ]
     assert changes == exp_changes
 
@@ -530,6 +531,7 @@ def test_initial_version_changes(
         "Tokens was disabled",
         "Add Text Input Option was disabled",
         "Input Required was disabled",
+        "Auto Advance was disabled",
     ]
     changes = item_change_service.get_changes_insert(new_item)
     assert changes == single_select_exp_changes
@@ -582,3 +584,14 @@ def test_field_changed(
     changes = item_change_service.get_changes_update(old_item, new_item)
     assert len(changes) == 1
     assert changes[0] == exp_change_msg
+
+
+@pytest.mark.parametrize("exp_change_msg", ("Item test_item was removed",))
+def test_item_removed(
+    old_item: ActivityItemHistoryFull,
+    item_change_service: ActivityItemChangeService,
+    exp_change_msg: str,
+) -> None:
+    changes = item_change_service.get_changes([old_item])
+    assert len(changes) == 1
+    assert changes[0].name == exp_change_msg

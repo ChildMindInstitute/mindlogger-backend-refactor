@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, IPvAnyAddress, PositiveInt
 
 from apps.shared.domain import InternalModel
 from apps.shared.enums import Language
@@ -36,6 +36,8 @@ class AppletBaseInfo(BaseModel):
     retention_period: int | None
     retention_type: str | None
     stream_enabled: bool | None
+    stream_ip_address: IPvAnyAddress | None
+    stream_port: PositiveInt | None
 
 
 class AppletBase(AppletBaseInfo):

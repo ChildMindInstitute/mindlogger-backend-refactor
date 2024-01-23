@@ -133,30 +133,26 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
 
     if patch.file_path.endswith(".sql"):
         # execute sql file
-        try:
-            async with session_maker() as session:
-                async with atomic(session):
-                    try:
-                        with open(
-                            (
-                                str(Path(__file__).parent.resolve())
-                                + "/patches/"
-                                + patch.file_path
-                            ),
-                            "r",
-                        ) as f:
-                            sql = f.read()
-                            # TODO: doesn't work with multiple statements
-                            await session.execute(sql)
-                            await session.commit()
-                            print(
-                                f"[bold green]Patch {patch.task_id} executed[/bold green]"  # noqa: E501
-                            )
-                            return
-                    except Exception as e:
-                        print(wrap_error_msg(e))
-        finally:
-            await session_maker.remove()
+        async with session_maker() as session:
+            async with atomic(session):
+                try:
+                    with open(
+                        (
+                            str(Path(__file__).parent.resolve())
+                            + "/patches/"
+                            + patch.file_path
+                        ),
+                        "r",
+                    ) as f:
+                        sql = f.read()
+                        await session.execute(sql)
+                        await session.commit()
+                        print(
+                            f"[bold green]Patch {patch.task_id} executed[/bold green]"  # noqa: E501
+                        )
+                        return
+                except Exception as e:
+                    print(wrap_error_msg(e))
     elif patch.file_path.endswith(".py"):
         try:
             # run main from the file
@@ -170,21 +166,16 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
             if patch.manage_session:
                 await patch_file.main(session_maker, arbitrary_session_maker)
             else:
-                try:
-                    async with session_maker() as session:
-                        async with atomic(session):
-                            if arbitrary_session_maker:
-                                async with arbitrary_session_maker() as arbitrary_session:  # noqa: E501
-                                    async with atomic(arbitrary_session):
-                                        await patch_file.main(
-                                            session, arbitrary_session
-                                        )
-                            else:
-                                await patch_file.main(session)
-                finally:
-                    await session_maker.remove()
-                    if arbitrary_session_maker:
-                        await arbitrary_session_maker.remove()
+                async with session_maker() as session:
+                    async with atomic(session):
+                        if arbitrary_session_maker:
+                            async with arbitrary_session_maker() as arbitrary_session:  # noqa: E501
+                                async with atomic(arbitrary_session):
+                                    await patch_file.main(
+                                        session, arbitrary_session
+                                    )
+                        else:
+                            await patch_file.main(session)
 
             print(
                 f"[bold green]Patch {patch.task_id} executed[/bold green]"  # noqa: E501

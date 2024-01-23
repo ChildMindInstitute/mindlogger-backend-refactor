@@ -40,6 +40,8 @@ class AppletHistoryService:
                 report_include_case_id=applet.report_include_case_id,
                 report_email_body=applet.report_email_body,
                 stream_enabled=applet.stream_enabled,
+                stream_ip_address=applet.stream_ip_address,
+                stream_port=applet.stream_port,
             )
         )
         await ActivityHistoryService(

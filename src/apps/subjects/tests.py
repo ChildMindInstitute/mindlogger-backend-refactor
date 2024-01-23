@@ -5,7 +5,6 @@ import pytest
 
 from apps.shared.test import BaseTest
 from apps.subjects.domain import SubjectCreateRequest, SubjectRespondentCreate
-from infrastructure.database import rollback, rollback_with_session
 
 
 @pytest.fixture()
@@ -33,14 +32,11 @@ class TestSubjects(BaseTest):
         "/subjects/{subject_id}/respondents/{respondent_id}"
     )
 
-    @rollback_with_session
-    async def test_create_subject(self, create_shell_body, **kwargs):
+    async def test_create_subject(self, client, create_shell_body):
         creator_id = "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
         applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.post(
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.post(
             self.subject_list_url, data=create_shell_body
         )
         assert response.status_code == 201
@@ -52,14 +48,11 @@ class TestSubjects(BaseTest):
         assert payload["result"]["userId"] is None
         assert payload["result"]["language"] == "en"
 
-    @rollback
-    async def test_add_respondent(self, create_shell_body):
+    async def test_add_respondent(self, client, create_shell_body):
         creator_id = "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
         applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.post(
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.post(
             self.subject_list_url, data=create_shell_body
         )
         subject = response.json()
@@ -72,27 +65,24 @@ class TestSubjects(BaseTest):
         url = self.subject_respondent_url.format(
             subject_id=subject["result"]["id"]
         )
-        res = await self.client.post(url, body)
+        res = await client.post(url, body)
         assert res.status_code == http.HTTPStatus.OK
 
     @pytest.mark.parametrize(
-        "subject_id,respondent_id,expected_code",
+        "subject_id,respondent_id,exp_code",
         (
             (uuid.uuid4(), None, http.HTTPStatus.NOT_FOUND),
             (None, uuid.uuid4(), http.HTTPStatus.NOT_FOUND),
             (None, None, http.HTTPStatus.OK),
         ),
     )
-    @rollback
     async def test_remove_respondent(
-        self, create_shell_body, subject_id, respondent_id, expected_code
+        self, client, create_shell_body, subject_id, respondent_id, exp_code
     ):
         creator_id = "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
         applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.post(
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.post(
             self.subject_list_url, data=create_shell_body
         )
         subject = response.json()
@@ -105,7 +95,7 @@ class TestSubjects(BaseTest):
         url = self.subject_respondent_url.format(
             subject_id=subject["result"]["id"]
         )
-        respondent_res = await self.client.post(url, body)
+        respondent_res = await client.post(url, body.dict())
         subject = respondent_res.json()
         subject_id_ = subject["result"]["id"]
         respondent_id_ = subject["result"]["subjects"][0]["userId"]
@@ -113,5 +103,5 @@ class TestSubjects(BaseTest):
             subject_id=subject_id if subject_id else subject_id_,
             respondent_id=respondent_id if respondent_id else respondent_id_,
         )
-        res = await self.client.delete(url_delete)
-        assert res.status_code == expected_code
+        res = await client.delete(url_delete)
+        assert res.status_code == exp_code

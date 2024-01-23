@@ -128,9 +128,6 @@ async def openapi_auth(
         if not user:
             raise AuthenticationError
 
-        user = await AuthenticationService(session).authenticate_user(
-            user_login_schema
-        )
         access_token = AuthenticationService.create_access_token(
             {JWTClaim.sub: str(user.id)}
         )

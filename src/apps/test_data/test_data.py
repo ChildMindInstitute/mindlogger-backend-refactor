@@ -1,7 +1,6 @@
 import uuid
 
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback
 
 
 class TestData(BaseTest):
@@ -16,13 +15,10 @@ class TestData(BaseTest):
     generate_applet_url = f"{generating_url}/generate_applet"
     applet_list_url = "applets"
 
-    @rollback
-    async def test_generate_applet(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_generate_applet(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.post(
+        response = await client.post(
             self.generate_applet_url,
             data=dict(
                 encryption=dict(
@@ -35,6 +31,6 @@ class TestData(BaseTest):
         )
 
         assert response.status_code == 201, response.json()
-        response = await self.client.get(self.applet_list_url)
+        response = await client.get(self.applet_list_url)
         assert response.status_code == 200
         assert response.json()["count"] == 1

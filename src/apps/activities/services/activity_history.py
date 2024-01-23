@@ -80,25 +80,11 @@ class ActivityHistoryService:
         service = ActivityChangeService(prev_version, self._version)
         return service.get_changes(activities)
 
-    async def get_by_history_ids(
-        self, activity_ids: list[str]
-    ) -> list[ActivityHistory]:
-        schemas = await ActivityHistoriesCRUD(self.session).get_by_ids(
-            activity_ids
-        )
-        return [ActivityHistory.from_orm(schema) for schema in schemas]
-
     async def activities_list(self) -> list[ActivityHistory]:
         schemas = await ActivityHistoriesCRUD(
             self.session
         ).retrieve_activities_by_applet_version(self._applet_id_version)
         return [ActivityHistory.from_orm(schema) for schema in schemas]
-
-    async def get_by_id(self, activity_id: uuid.UUID) -> ActivityHistory:
-        schema = await ActivityHistoriesCRUD(self.session).get_by_id(
-            f"{activity_id}_{self._version}"
-        )
-        return ActivityHistory.from_orm(schema)
 
     async def get_full(
         self, non_performance=False
