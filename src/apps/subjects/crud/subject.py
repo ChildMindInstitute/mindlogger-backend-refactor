@@ -22,6 +22,10 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
     ) -> list[SubjectSchema]:
         return await self._create_many(schema)
 
+    async def update(self, schema: SubjectSchema) -> SubjectSchema:
+        schema = await self._update_one("id", schema.id, schema)
+        return schema
+
     async def get_by_id(self, _id: uuid.UUID) -> SubjectSchema | None:
         return await self._get("id", _id)
 

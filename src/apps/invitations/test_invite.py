@@ -96,6 +96,17 @@ def invitation_reviewer_data(
     )
 
 
+@pytest.fixture
+def shell_create_data():
+    return dict(
+        language="en",
+        firstName="language",
+        lastName="firstName",
+        secretUserId="lastName",
+        nickname="secretUserId",
+    )
+
+
 class TestInvite(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
@@ -118,6 +129,7 @@ class TestInvite(BaseTest):
     invite_reviewer_url = f"{invitation_list}/{{applet_id}}/reviewer"
     invite_respondent_url = f"{invitation_list}/{{applet_id}}/respondent"
     shell_acc_create_url = f"{invitation_list}/{{applet_id}}/shell-account"
+    shell_acc_invite_url = f"{invitation_list}/{{applet_id}}/subject"
 
     async def test_invitation_list(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
@@ -996,23 +1008,29 @@ class TestInvite(BaseTest):
         )
         assert resp.status_code == http.HTTPStatus.BAD_REQUEST
 
-    async def test_create_shell_account(self, client):
+    async def test_shell_create_account(self, client, shell_create_data):
         await client.login(self.login_url, "bob@gmail.com", "Test1234!")
         applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
         creator_id = "7484f34a-3acc-4ee6-8a94-fd7299502fa3"
-        language = "en"
-        request_data = dict(
-            language=language,
-            firstName="language",
-            lastName="firstName",
-            secretUserId="lastName",
-            nickname="secretUserId",
-        )
         url = self.shell_acc_create_url.format(applet_id=applet_id)
-        response = await client.post(url, request_data)
+        response = await client.post(url, shell_create_data)
         assert response.status_code == http.HTTPStatus.OK
         assert len(TestMail.mails) == 0
         payload = response.json()
         assert payload["result"]["appletId"] == applet_id
         assert payload["result"]["creatorId"] == creator_id
-        assert payload["result"]["language"] == language
+        assert payload["result"]["language"] == shell_create_data["language"]
+
+    async def test_shell_invite(self, client, session, shell_create_data):
+        await client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        email = "mm@mail.com"
+        applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        url = self.shell_acc_create_url.format(applet_id=applet_id)
+        response = await client.post(url, shell_create_data)
+        subject = response.json()["result"]
+        url = self.shell_acc_invite_url.format(applet_id=applet_id)
+        response = await client.post(
+            url, dict(subjectId=subject["id"], email=email)
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert len(TestMail.mails) == 1

@@ -323,9 +323,8 @@ async def invitation_subject_send(
         except UserNotFound:
             pass
 
-        subject = await SubjectsService(session, user.id).get(
-            schema.subject_id
-        )
+        subject_srv = SubjectsService(session, user.id)
+        subject = await subject_srv.get(schema.subject_id)
         if not subject:
             raise NotFoundError()
 
@@ -340,6 +339,8 @@ async def invitation_subject_send(
         invitation = await invitation_srv.send_respondent_invitation(
             applet_id, invitation_schema, subject.id
         )
+        subject.email = schema.email
+        await subject_srv.update(subject)
 
     return Response[InvitationRespondentResponse](
         result=InvitationRespondentResponse(**invitation.dict())

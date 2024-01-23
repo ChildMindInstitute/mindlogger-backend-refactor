@@ -54,6 +54,9 @@ class SubjectsService:
         models = list(map(lambda s: self.__to_db_model(s), schema))
         return await SubjectsCrud(self.session).create_many(models)
 
+    async def update(self, schema: SubjectSchema) -> SubjectSchema:
+        return await SubjectsCrud(self.session).update(schema)
+
     async def merge(self, subject_id: uuid.UUID) -> Subject | None:
         """
         Merge shell account with full account for current user
@@ -74,7 +77,7 @@ class SubjectsService:
     async def get_by_email(self, email: str) -> Subject | None:
         return await SubjectsCrud(self.session).get_by_email(email)
 
-    async def get(self, id_: uuid.UUID) -> Subject | None:
+    async def get(self, id_: uuid.UUID) -> SubjectSchema | None:
         return await SubjectsCrud(self.session).get_by_id(id_)
 
     async def get_full(self, subject_id: uuid.UUID):
