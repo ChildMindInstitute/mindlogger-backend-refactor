@@ -8,7 +8,6 @@ from apps.activities.domain.response_type_config import (
 )
 from apps.activities.domain.scores_reports import ReportType, SubscaleItemType
 from apps.activities.errors import (
-    DuplicateActivityItemOptionIdError,
     IncorrectConditionItemError,
     IncorrectConditionItemIndexError,
     IncorrectConditionLogicItemTypeError,
@@ -221,19 +220,4 @@ def validate_performance_task_type(values: dict):
             ResponseType.ABTRAILS,
         ):
             values["performance_task_type"] = item.response_type
-    return values
-
-
-def validate_unique_item_option_ids(values: dict):
-    items = values.get("items", [])
-    option_ids = []
-    for item in items:
-        if item.response_type in (
-            ResponseType.SINGLESELECT,
-            ResponseType.MULTISELECT,
-        ):
-            for option in item.response_values.options:
-                if option.id is not None and option.id in option_ids:
-                    raise DuplicateActivityItemOptionIdError()
-                option_ids.append(option.id)
     return values
