@@ -1018,9 +1018,8 @@ class TestInvite(BaseTest):
         assert payload["result"]["creatorId"] == creator_id
         assert payload["result"]["language"] == language
 
-    @rollback
-    async def test_shell_account_invite(self):
-        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+    async def test_shell_account_invite(self, client):
+        await client.login(self.login_url, "bob@gmail.com", "Test1234!")
         applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
         language = "en"
         request_data = dict(
@@ -1031,14 +1030,14 @@ class TestInvite(BaseTest):
             nickname="secretUserId",
         )
         url = self.shell_acc_create_url.format(applet_id=applet_id)
-        response = await self.client.post(url, request_data)
+        response = await client.post(url, request_data)
         assert response.status_code == http.HTTPStatus.OK
         assert len(TestMail.mails) == 0
         payload = response.json()
         assert payload
         subject = payload["result"]
         url = self.shell_acc_invite_url.format(applet_id=applet_id)
-        response = await self.client.post(
+        response = await client.post(
             url, dict(subject_id=subject["id"], email="nmm@mail.com")
         )
         assert response.status_code == http.HTTPStatus.OK
