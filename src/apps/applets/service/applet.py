@@ -770,7 +770,7 @@ class AppletService:
             assert anonymous_user
             assert access
             await SubjectsService(
-                self.session, self.user_id, applet_id
+                self.session, self.user_id
             ).create_anonymous_subject(
                 anonymous_user=anonymous_user, applet_id=applet_id
             )

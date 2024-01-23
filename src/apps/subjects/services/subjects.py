@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.shared.exception import NotFoundError
 from apps.subjects.crud import SubjectsCrud, SubjectsRespondentsCrud
 from apps.subjects.db.schemas import SubjectRespondentSchema, SubjectSchema
 from apps.subjects.domain import (
@@ -20,12 +21,9 @@ __all__ = ["SubjectsService"]
 
 
 class SubjectsService:
-    def __init__(
-        self, session: AsyncSession, user_id: uuid.UUID, applet_id: uuid.UUID
-    ):
+    def __init__(self, session: AsyncSession, user_id: uuid.UUID):
         self.session = session
         self.user_id = user_id
-        self.applet_id = applet_id
 
     @staticmethod
     def __to_db_model(schema: Subject):
@@ -83,10 +81,17 @@ class SubjectsService:
         subject = await self.get(subject_id)
         subject_resp_crud = SubjectsRespondentsCrud(self.session)
         respondents = await subject_resp_crud.list_by_subject(subject_id)
-        respondent_models = [
-            SubjectRespondent.from_orm(respondent)
-            for respondent in respondents
-        ]
+        respondent_models = []
+        for respondent, user_id in respondents:
+            respondent_models.append(
+                SubjectRespondent(
+                    id=respondent.id,
+                    respondent_access_id=respondent.respondent_access_id,
+                    subject_id=respondent.subject_id,
+                    relation=respondent.relation,
+                    user_id=user_id,
+                )
+            )
         return SubjectFull(
             **SubjectBase.from_orm(subject).dict(), subjects=respondent_models
         )
@@ -103,7 +108,7 @@ class SubjectsService:
         ).get_applet_role_by_user_id(applet_id, respondent_id, Role.RESPONDENT)
         assert access
         subject_resp_crud = SubjectsRespondentsCrud(self.session)
-        await subject_resp_crud.save(
+        await subject_resp_crud.create(
             SubjectRespondentSchema(
                 respondent_access_id=access.id,
                 subject_id=subject_id,
@@ -113,18 +118,11 @@ class SubjectsService:
         return await self.get_full(subject_id)
 
     async def remove_respondent(
-        self,
-        respondent_id: uuid.UUID,
-        subject_id: uuid.UUID,
-        applet_id: uuid.UUID,
+        self, access_id: uuid.UUID, subject_id: uuid.UUID
     ):
-        access = await UserAppletAccessCRUD(
-            self.session
-        ).get_applet_role_by_user_id(applet_id, respondent_id, Role.RESPONDENT)
-        assert access
         subject_resp_crud = SubjectsRespondentsCrud(self.session)
         await subject_resp_crud.delete_from_applet(
-            subject_id=subject_id, access_id=access.id
+            subject_id=subject_id, access_id=access_id
         )
         return await self.get_full(subject_id)
 
@@ -142,7 +140,7 @@ class SubjectsService:
         )
 
     async def create_applet_managers(
-        self, manager_id: uuid.UUID | None
+        self, applet_id: uuid.UUID, manager_id: uuid.UUID | None
     ) -> list[SubjectSchema]:
         user_ids = [self.user_id]  # owner
         if manager_id and manager_id != self.user_id:
@@ -153,7 +151,7 @@ class SubjectsService:
             if owner_or_manager:
                 subjects.append(
                     Subject(
-                        applet_id=self.applet_id,
+                        applet_id=applet_id,
                         creator_id=self.user_id,
                         email=owner_or_manager.email_encrypted,
                         first_name=owner_or_manager.first_name,
@@ -163,3 +161,11 @@ class SubjectsService:
                     )
                 )
         return await self.create_many(subjects)
+
+    async def exist(self, subject_id: uuid.UUID, applet_id: uuid.UUID):
+        return await SubjectsCrud(self.session).exist(subject_id, applet_id)
+
+    async def check_exist(self, subject_id: uuid.UUID, applet_id: uuid.UUID):
+        is_exist = await self.exist(subject_id, applet_id)
+        if not is_exist:
+            raise NotFoundError()

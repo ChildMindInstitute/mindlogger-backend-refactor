@@ -166,8 +166,8 @@ async def applet_create(
             applet = await AppletService(session, owner_id).create(
                 schema, user.id, manager_role
             )
-            subject_srv = SubjectsService(session, owner_id, applet.id)
-            await subject_srv.create_applet_managers(user.id)
+            subject_srv = SubjectsService(session, owner_id)
+            await subject_srv.create_applet_managers(applet.id, user.id)
         except Exception:
             await mail_service.send(
                 MessageSchema(
