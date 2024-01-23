@@ -136,3 +136,6 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         )
         res = await self._execute(query)
         return bool(res.scalar_one_or_none())
+
+    async def delete_by_id(self, id_: uuid.UUID):
+        await self._delete(key="id", value=id_)

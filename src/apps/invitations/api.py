@@ -15,7 +15,6 @@ from apps.invitations.domain import (
     InvitationReviewerRequest,
     InvitationReviewerResponse,
     PrivateInvitationResponse,
-    RespondentMeta,
     ShallAccountInvitation,
     ShellAccountCreateRequest,
     ShellAccountCreateResponse,
@@ -217,8 +216,22 @@ async def invitation_managers_send(
         except UserNotFound:
             pass
 
+        subject_srv = SubjectsService(session, user.id)
+        subject = await subject_srv.get_by_email(invitation_schema.email)
+        if not subject:
+            subject_schema = Subject(
+                applet_id=applet_id,
+                creator_id=user.id,
+                language=invitation_schema.language,
+                email=invitation_schema.email,
+                first_name=invitation_schema.first_name,
+                last_name=invitation_schema.last_name,
+                secret_user_id=str(uuid.uuid4()),
+            )
+            subject = await subject_srv.create(subject_schema)
+        assert subject
         invitation = await invitation_srv.send_managers_invitation(
-            applet_id, invitation_schema
+            applet_id, invitation_schema, subject.id
         )
 
     return Response[InvitationManagersResponse](
@@ -233,15 +246,11 @@ async def invitation_accept(
 ):
     """General endpoint to approve the applet invitation."""
     async with atomic(session):
-        service = InvitationsService(session, user)
-        invitation = await service.get(key)
-        if invitation and invitation.role == Role.RESPONDENT:
-            if isinstance(invitation.meta, RespondentMeta):
-                subject_id = invitation.meta.subject_id
-                assert subject_id
-                await SubjectsService(session, user.id).extend(
-                    uuid.UUID(subject_id)
-                )
+        invitation_srv = InvitationsService(session, user)
+        subject_srv = SubjectsService(session, user.id)
+        meta = await invitation_srv.get_meta(key)
+        if meta and "subject_id" in meta:
+            await subject_srv.extend(uuid.UUID(meta["subject_id"]))
         await InvitationsService(session, user).accept(key)
 
 
@@ -261,7 +270,13 @@ async def invitation_decline(
 ):
     """General endpoint to decline the applet invitation."""
     async with atomic(session):
-        await InvitationsService(session, user).decline(key)
+        invitation_srv = InvitationsService(session, user)
+        subject_srv = SubjectsService(session, user.id)
+        await invitation_srv.decline(key)
+        meta = await invitation_srv.get_meta(key)
+        if meta:
+            subject_id = meta["subject_id"]
+            await subject_srv.delete(subject_id)
 
 
 async def create_shell_account(

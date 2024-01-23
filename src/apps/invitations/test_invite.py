@@ -335,8 +335,6 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [
             invitation_coordinator_data.email
         ]
-        count = await SubjectsCrud(session).count()
-        assert count == 0
 
     async def test_manager_invite_editor_success(
         self, client, session, invitation_editor_data
@@ -352,8 +350,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [invitation_editor_data.email]
-        count = await SubjectsCrud(session).count()
-        assert count == 0
 
     async def test_manager_invite_reviewer_success(
         self, client, session, invitation_reviewer_data

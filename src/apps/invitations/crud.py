@@ -289,3 +289,9 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             InvitationSchema.soft_exists(),
         )
         await self._execute(query)
+
+    async def get_meta(self, key: uuid.UUID) -> dict | None:
+        query: Query = select(InvitationSchema.meta)
+        query = query.where(InvitationSchema.key == key)
+        result_db = await self._execute(query)
+        return result_db.scalar_one_or_none()

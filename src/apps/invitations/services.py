@@ -41,6 +41,7 @@ from apps.shared.query_params import QueryParams
 from apps.subjects.crud import SubjectsCrud
 from apps.users import UsersCRUD
 from apps.users.domain import User
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
 
@@ -256,7 +257,10 @@ class InvitationsService:
         )
 
     async def send_managers_invitation(
-        self, applet_id: uuid.UUID, schema: InvitationManagersRequest
+        self,
+        applet_id: uuid.UUID,
+        schema: InvitationManagersRequest,
+        subject_id: uuid.UUID,
     ) -> InvitationDetailForManagers:
         await self._is_validated_role_for_invitation(applet_id, schema.role)
         # Get invited user if he exists. User will be linked with invitaion
@@ -275,7 +279,7 @@ class InvitationsService:
             "first_name": schema.first_name,
             "last_name": schema.last_name,
             "user_id": invited_user_id,
-            "meta": {},
+            "meta": {"subject_id": str(subject_id)},
         }
 
         pending_invitation = await (
@@ -413,7 +417,7 @@ class InvitationsService:
             if respondent not in exist_respondents:
                 raise RespondentDoesNotExist()
 
-    async def accept(self, key: uuid.UUID):
+    async def accept(self, key: uuid.UUID) -> list[UserAppletAccessSchema]:
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
             self._user.email_encrypted, key  # type: ignore[arg-type]
         )
@@ -423,13 +427,14 @@ class InvitationsService:
         if invitation.status != InvitationStatus.PENDING:
             raise InvitationAlreadyProcessed()
 
-        await UserAppletAccessService(
+        roles = await UserAppletAccessService(
             self.session, self._user.id, invitation.applet_id
         ).add_role_by_invitation(invitation)
 
         await InvitationCRUD(self.session).approve_by_id(
             invitation.id, self._user.id
         )
+        return roles
 
     async def decline(self, key: uuid.UUID):
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
@@ -489,6 +494,9 @@ class InvitationsService:
         except NonUniqueValue as e:
             wrapper = ErrorWrapper(ValueError(e), ("body", alias))
             raise RequestValidationError([wrapper]) from e
+
+    async def get_meta(self, key: uuid.UUID) -> dict | None:
+        return await InvitationCRUD(self.session).get_meta(key)
 
 
 class PrivateInvitationService:

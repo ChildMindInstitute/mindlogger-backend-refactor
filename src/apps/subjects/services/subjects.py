@@ -39,16 +39,14 @@ class SubjectsService:
             secret_user_id=schema.secret_user_id,
         )
 
-    async def _create_subject(self, schema: Subject) -> Subject:
+    async def _create_subject(self, schema: Subject) -> SubjectSchema:
         subj_crud = SubjectsCrud(self.session)
         subject = self.__to_db_model(schema)
         subject_entity = await subj_crud.create(subject)
-        return Subject.from_orm(subject_entity)
+        return subject_entity
 
-    async def create(self, schema: Subject) -> Subject:
-        subject = await self._create_subject(schema)
-        merged_data = subject.dict()
-        return Subject(**merged_data)
+    async def create(self, schema: Subject) -> SubjectSchema:
+        return await self._create_subject(schema)
 
     async def create_many(self, schema: list[Subject]) -> list[SubjectSchema]:
         models = list(map(lambda s: self.__to_db_model(s), schema))
@@ -56,6 +54,9 @@ class SubjectsService:
 
     async def update(self, schema: SubjectSchema) -> SubjectSchema:
         return await SubjectsCrud(self.session).update(schema)
+
+    async def delete(self, id_: uuid.UUID):
+        return await SubjectsCrud(self.session).delete_by_id(id_)
 
     async def extend(self, subject_id: uuid.UUID) -> Subject | None:
         """
@@ -71,8 +72,14 @@ class SubjectsService:
             return Subject.from_orm(subject_model)
         return None
 
-    async def get_by_email(self, email: str) -> Subject | None:
+    async def get_by_email(self, email: str) -> SubjectSchema | None:
         return await SubjectsCrud(self.session).get_by_email(email)
+
+    async def delete_by_email(self, email: str):
+        crud = SubjectsCrud(self.session)
+        model = await crud.get_by_email(email)
+        if model:
+            await self.delete(model.id)
 
     async def get(self, id_: uuid.UUID) -> SubjectSchema | None:
         return await SubjectsCrud(self.session).get_by_id(id_)
