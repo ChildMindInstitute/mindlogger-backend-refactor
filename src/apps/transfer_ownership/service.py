@@ -101,7 +101,6 @@ class TransferService:
             ],
             roles=[
                 Role.OWNER,
-                Role.RESPONDENT,
             ],
         )
 
@@ -133,6 +132,22 @@ class TransferService:
         await UserAppletAccessCRUD(
             self.session
         ).upsert_user_applet_access_list(roles_to_add)
+
+        # remove other roles of new owner
+        await UserAppletAccessCRUD(
+            self.session
+        ).remove_access_by_user_and_applet_to_role(
+            user_id=self._user.id,
+            applet_ids=[
+                applet_id,
+            ],
+            roles=[
+                Role.MANAGER,
+                Role.COORDINATOR,
+                Role.EDITOR,
+                Role.REVIEWER,
+            ],
+        )
 
         # change other accesses' owner_id to current owner
         await UserAppletAccessCRUD(
