@@ -61,7 +61,7 @@ class UserService:
         anonymous_respondent = await crud.get_anonymous_respondent()
         if anonymous_respondent is not None:
             if not settings.anonymous_respondent.force_update:
-                return None
+                return anonymous_respondent
             anonymous_respondent.email = settings.anonymous_respondent.email
             anonymous_respondent.first_name = (
                 settings.anonymous_respondent.first_name

@@ -32,7 +32,6 @@ from sqlalchemy.sql.functions import count
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.applets.db.schemas import AppletSchema
-from apps.folders.db.schemas import FolderAppletSchema
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.db import InvitationSchema
 from apps.schedule.db.schemas import EventSchema, UserEventsSchema
