@@ -13,7 +13,7 @@ from apps.users.router import router as user_router
 
 class TestAuthentication(BaseTest):
     user_create_url = user_router.url_path_for("user_create")
-    get_token_url = auth_router.url_path_for("get_token")
+    login_url = auth_router.url_path_for("get_token")
     delete_token_url = auth_router.url_path_for("delete_access_token")
     refresh_access_token_url = auth_router.url_path_for("refresh_access_token")
 
@@ -36,7 +36,7 @@ class TestAuthentication(BaseTest):
             **self.create_request_user.dict()
         )
         response = await client.post(
-            url=self.get_token_url,
+            url=self.login_url,
             data=login_request_user.dict(),
         )
 
@@ -60,7 +60,7 @@ class TestAuthentication(BaseTest):
             **self.create_request_user.dict()
         )
         await client.login(
-            url=self.get_token_url,
+            url=self.login_url,
             **login_request_user.dict(),
         )
 
@@ -103,13 +103,12 @@ class TestAuthentication(BaseTest):
             **self.create_request_user.dict(), device_id=device_id
         )
         response = await client.post(
-            url=self.get_token_url,
+            url=self.login_url,
             data=login_request_user.dict(),
         )
         assert response.status_code == 200
 
         await client.login(
-            self.get_token_url,
             self.create_request_user.email,
             self.create_request_user.password,
         )
@@ -120,3 +119,24 @@ class TestAuthentication(BaseTest):
         )
 
         assert response.status_code == 200
+
+    async def test_login_event_log_is_crated_after_login(self, client):
+        await client.post(
+            self.user_create_url, data=self.create_request_user.dict()
+        )
+        device_id = str(uuid.uuid4())
+
+        login_request_user: UserLoginRequest = UserLoginRequest(
+            **self.create_request_user.dict(), device_id=device_id
+        )
+        response = await client.post(
+            url=self.login_url,
+            data=login_request_user.dict(),
+        )
+        assert response.status_code == 200
+
+        await client.login(
+            self.login_url,
+            self.create_request_user.email,
+            self.create_request_user.password,
+        )

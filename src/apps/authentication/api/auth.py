@@ -1,11 +1,10 @@
 import uuid
 from datetime import datetime
 
-from fastapi import Body, Depends
+from fastapi import Body, Depends, Request
 from jose import JWTError, jwt
 from pydantic import ValidationError
 
-from apps.authentication.api.auth_utils import auth_user
 from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.login import UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest
@@ -17,27 +16,42 @@ from apps.authentication.domain.token import (
     TokenPayload,
     TokenPurpose,
 )
-from apps.authentication.errors import AuthenticationError, InvalidRefreshToken
+from apps.authentication.errors import (
+    AuthenticationError,
+    InvalidCredentials,
+    InvalidRefreshToken,
+)
 from apps.authentication.services.security import AuthenticationService
-from apps.logs.user_activity_log import user_activity_login_log
+from apps.logs.domain.constants import UserActivityEvent, UserActivityEventType
+from apps.logs.services.user_activity_log import UserActivityLogService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
 from apps.users.domain import PublicUser, User
+from apps.users.errors import UserNotFound
 from apps.users.services.user_device import UserDeviceService
 from config import settings
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
+from infrastructure.http.deps import get_mindlogger_content_source
 
 
 async def get_token(
+    request: Request,
     user_login_schema: UserLoginRequest = Body(...),
     session=Depends(get_session),
-    user=Depends(auth_user),
-    user_activity_log=Depends(user_activity_login_log),
+    mindlogger_content=Depends(get_mindlogger_content_source),
 ) -> Response[UserLogin]:
     """Generate the JWT access token."""
     async with atomic(session):
+        try:
+            user: User = await AuthenticationService(
+                session
+            ).authenticate_user(user_login_schema)
+
+        except UserNotFound:
+            raise InvalidCredentials(email=user_login_schema.email)
+
         if user_login_schema.device_id:
             await UserDeviceService(session, user.id).add_device(
                 user_login_schema.device_id
@@ -46,6 +60,15 @@ async def get_token(
             user = await UsersCRUD(session).update_encrypted_email(
                 user, user_login_schema.email
             )
+
+        await UserActivityLogService(session).create_log(
+            user.id,
+            user_login_schema.device_id,
+            UserActivityEventType.LOGIN,
+            UserActivityEvent.LOGIN,
+            request.headers.get("user-agent"),
+            mindlogger_content,
+        )
 
     rjti = str(uuid.uuid4())
     refresh_token = AuthenticationService.create_refresh_token(
@@ -119,7 +142,7 @@ async def delete_access_token(
     token: InternalToken = Depends(get_current_token()),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-):
+) -> EmptyResponse:
     """Add token to the blacklist."""
     async with atomic(session):
         await AuthenticationService(session).revoke_token(
@@ -137,7 +160,7 @@ async def delete_refresh_token(
     schema: UserLogoutRequest | None = Body(default=None),
     token: InternalToken = Depends(get_current_token(TokenPurpose.REFRESH)),
     session=Depends(get_session),
-):
+) -> EmptyResponse:
     """Add token to the blacklist."""
     async with atomic(session):
         await AuthenticationService(session).revoke_token(
