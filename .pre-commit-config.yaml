@@ -23,6 +23,7 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+        additional_dependencies: ["flake8-fastapi==0.7.0"]
 
       - id: mypy
         name: mypy

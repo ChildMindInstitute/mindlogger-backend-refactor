@@ -1,4 +1,16 @@
 [flake8]
 max-line-length = 79
-exclude = .venv,env,venv,src/infrastructure/database/migrations/versions,src/apps/girderformindlogger,src/apps/migrate
+max-complexity = 15
+exclude =
+    .venv,
+    env,
+    venv,
+    .git,
+    __pycache__,
+    src/infrastructure/database/migrations/versions,
+    src/apps/girderformindlogger,
+    src/apps/migrate
 
+extend-ignore =
+    # PEP 8 recommends to treat : in slices as a binary operator with the lowest priority, and to leave an equal amount of space on either side, except if a parameter is omitted (e.g. ham[1 + 1 :]). This behaviour may raise E203 whitespace before ':' warnings. Since E203 is not PEP 8 compliant, we tell Flake8 to ignore this warning. https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#slices
+    E203
