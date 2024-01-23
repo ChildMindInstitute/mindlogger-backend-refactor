@@ -8,5 +8,4 @@ class UserActivityLogCRUD(BaseCRUD[UserActivityLogSchema]):
     async def save(
         self, schema: UserActivityLogSchema
     ) -> UserActivityLogSchema:
-        """Return UserActivityLogSchema instance."""
         return await self._create(schema)

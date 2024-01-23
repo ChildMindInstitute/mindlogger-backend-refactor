@@ -18,6 +18,7 @@ class UserActivityLogService:
         user_agent: str | None,
         mindlogger_content: str,
     ) -> UserActivityLogSchema:
+        # TODO: remove this remporary solution when mobile is ready
         if (
             mindlogger_content == MindloggerContentSource.undefined.name
             and firebase_token_id

@@ -1,4 +1,8 @@
+import http
 import uuid
+from unittest.mock import ANY, AsyncMock
+
+import pytest
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import RefreshAccessTokenRequest
@@ -9,6 +13,12 @@ from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
 from apps.users.domain import UserCreateRequest
 from apps.users.router import router as user_router
+from infrastructure.http.domain import MindloggerContentSource
+
+
+@pytest.fixture
+def device_id() -> uuid.UUID:
+    return uuid.uuid4()
 
 
 class TestAuthentication(BaseTest):
@@ -44,7 +54,7 @@ class TestAuthentication(BaseTest):
             email=self.create_request_user.dict()["email"]
         )
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         data = response.json()["result"]
         assert set(data.keys()) == {"user", "token"}
         assert data["user"]["id"] == str(user.id)
@@ -68,7 +78,7 @@ class TestAuthentication(BaseTest):
             url=self.delete_token_url,
         )
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
     async def test_refresh_access_token(self, client):
         # Creating new user
@@ -91,24 +101,24 @@ class TestAuthentication(BaseTest):
             data=refresh_access_token_request.dict(),
         )
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
-    async def test_login_and_logout_device(self, client):
+    async def test_login_and_logout_device(self, client, device_id):
         await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
-        device_id = str(uuid.uuid4())
 
         login_request_user: UserLoginRequest = UserLoginRequest(
-            **self.create_request_user.dict(), device_id=device_id
+            **self.create_request_user.dict(), device_id=str(device_id)
         )
         response = await client.post(
             url=self.login_url,
             data=login_request_user.dict(),
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         await client.login(
+            self.login_url,
             self.create_request_user.email,
             self.create_request_user.password,
         )
@@ -118,25 +128,57 @@ class TestAuthentication(BaseTest):
             data=dict(device_id=device_id),
         )
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
-    async def test_login_event_log_is_crated_after_login(self, client):
+    async def test_login_event_log_is_created_after_login(
+        self, mock_activity_log: AsyncMock, client
+    ):
         await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
-        device_id = str(uuid.uuid4())
-
         login_request_user: UserLoginRequest = UserLoginRequest(
-            **self.create_request_user.dict(), device_id=device_id
+            **self.create_request_user.dict()
         )
         response = await client.post(
             url=self.login_url,
             data=login_request_user.dict(),
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
+        mock_activity_log.assert_awaited_once()
 
-        await client.login(
-            self.login_url,
-            self.create_request_user.email,
-            self.create_request_user.password,
+    @pytest.mark.parametrize(
+        "header_value,dest_value",
+        (
+            (MindloggerContentSource.admin, MindloggerContentSource.admin),
+            (MindloggerContentSource.mobile, MindloggerContentSource.mobile),
+            (MindloggerContentSource.web, MindloggerContentSource.web),
+            (
+                MindloggerContentSource.undefined,
+                MindloggerContentSource.undefined,
+            ),
+            ("test", MindloggerContentSource.undefined),
+        ),
+    )
+    async def test_login_if_default_mindollger_content_source_header_is_undefined(  # noqa: E501
+        self,
+        mock_activity_log: AsyncMock,
+        client,
+        header_value: str,
+        dest_value: str,
+    ):
+        await client.post(
+            self.user_create_url, data=self.create_request_user.dict()
+        )
+        login_request_user: UserLoginRequest = UserLoginRequest(
+            **self.create_request_user.dict()
+        )
+        response = await client.post(
+            url=self.login_url,
+            data=login_request_user.dict(),
+            headers={"Mindlogger-Content-Source": header_value},
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        user_id = uuid.UUID(response.json()["result"]["user"]["id"])
+        mock_activity_log.assert_awaited_once_with(
+            user_id, None, ANY, ANY, ANY, dest_value
         )

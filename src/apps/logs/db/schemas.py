@@ -32,7 +32,7 @@ class UserActivityLogSchema(Base):
     user_agent = Column(String(), nullable=True)
     mindlogger_content = Column(String(), nullable=False)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"UserActivityLogSchema(id='{self.id}', user_id='{self.user_id}',"
             f" event_type='{self.event_type}', event='{self.event}')"

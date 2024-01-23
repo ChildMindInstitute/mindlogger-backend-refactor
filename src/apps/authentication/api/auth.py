@@ -23,7 +23,7 @@ from apps.authentication.errors import (
 )
 from apps.authentication.services.security import AuthenticationService
 from apps.logs.domain.constants import UserActivityEvent, UserActivityEventType
-from apps.logs.services.user_activity_log import UserActivityLogService
+from apps.logs.services import UserActivityLogService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD

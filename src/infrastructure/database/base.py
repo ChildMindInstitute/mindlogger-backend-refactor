@@ -6,7 +6,6 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_method
 from sqlalchemy.orm import declarative_base, declarative_mixin
 
-
 __all__ = ["Base", "MigratedMixin"]
 
 meta = MetaData(

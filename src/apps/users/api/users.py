@@ -28,6 +28,7 @@ async def user_create(
         raise PasswordHasSpacesError()
     async with atomic(session):
         email_hash = hash_sha224(user_create_schema.email)
+        # TODO: Move Logic to the service
         user_schema = await UsersCRUD(session).save(
             UserSchema(
                 email=email_hash,

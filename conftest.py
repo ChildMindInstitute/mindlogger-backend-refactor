@@ -1,5 +1,5 @@
 import os
-from typing import Any, AsyncGenerator, cast
+from typing import Any, AsyncGenerator, Generator, cast
 
 import pytest
 import taskiq_fastapi
@@ -8,6 +8,7 @@ from alembic.config import Config
 from fastapi import FastAPI
 from pytest import Parser
 from pytest_asyncio import is_async_test
+from pytest_mock import MockerFixture
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, SessionTransaction
@@ -26,6 +27,7 @@ pytest_plugins = [
     "apps.activities.tests.fixtures.items",
     "apps.activities.tests.fixtures.conditional_logic",
     "apps.activities.tests.fixtures.scores_reports",
+    "apps.users.tests.fixtures.users",
 ]
 
 
@@ -169,14 +171,13 @@ def remote_image() -> str:
 
 
 @pytest.fixture
-async def mock_kiq_report(mocker):
+def mock_kiq_report(mocker: MockerFixture):
     mock = mocker.patch("apps.answers.service.create_report.kiq")
     yield mock
-    mock.stop_all()
 
 
 @pytest.fixture
-async def mock_report_server_response(mocker):
+def mock_report_server_response(mocker: MockerFixture) -> Generator:
     def json_():
         return dict(
             pdf="cGRmIGJvZHk=",
@@ -192,11 +193,15 @@ async def mock_report_server_response(mocker):
     mock.return_value.__aenter__.return_value.status = 200
     mock.return_value.__aenter__.return_value.json.side_effect = json_
     yield mock
-    mock.stop_all()
 
 
 @pytest.fixture
-def mock_reencrypt_kiq(mocker):
+def mock_reencrypt_kiq(mocker: MockerFixture) -> Generator:
     mock = mocker.patch("apps.users.api.password.reencrypt_answers.kiq")
     yield mock
-    mock.stop_all()
+
+
+@pytest.fixture
+def mock_activity_log(mocker: MockerFixture) -> Generator:
+    mock = mocker.patch("apps.logs.services.UserActivityLogService.create_log")
+    yield mock
