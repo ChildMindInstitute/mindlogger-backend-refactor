@@ -1,8 +1,6 @@
 import asyncio
 import datetime
-from unittest.mock import patch
 
-from asynctest import CoroutineMock
 from httpx import Response as HttpResponse
 from starlette import status
 
@@ -23,7 +21,6 @@ from apps.users.tests.factories import (
     PasswordUpdateRequestFactory,
 )
 from config import settings
-from infrastructure.database import rollback
 from infrastructure.utility import RedisCache
 
 
@@ -50,11 +47,9 @@ class TestPassword(BaseTest):
         created_at=datetime.datetime.utcnow(),
     )
 
-    @patch("apps.users.api.password.reencrypt_answers.kiq")
-    @rollback
-    async def test_password_update(self, task_mock: CoroutineMock):
+    async def test_password_update(self, mock_reencrypt_kiq, client):
         # Creating new user
-        await self.client.post(
+        await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
@@ -63,7 +58,7 @@ class TestPassword(BaseTest):
         )
 
         # User get token
-        await self.client.login(
+        await client.login(
             url=self.get_token_url,
             **login_request_user.dict(),
         )
@@ -72,7 +67,7 @@ class TestPassword(BaseTest):
         password_update_request = PasswordUpdateRequestFactory.build(
             prev_password=self.create_request_user.password
         )
-        response: HttpResponse = await self.client.put(
+        response: HttpResponse = await client.put(
             self.password_update_url, data=password_update_request.dict()
         )
 
@@ -82,7 +77,7 @@ class TestPassword(BaseTest):
             password=password_update_request.dict()["password"],
         )
 
-        internal_response: HttpResponse = await self.client.login(
+        internal_response: HttpResponse = await client.login(
             url=self.get_token_url,
             **login_request_user.dict(),
         )
@@ -90,14 +85,15 @@ class TestPassword(BaseTest):
         assert response.status_code == status.HTTP_200_OK
         assert response.status_code == status.HTTP_200_OK
         assert internal_response.status_code == status.HTTP_200_OK
-        task_mock.assert_awaited_once()
+        mock_reencrypt_kiq.assert_awaited_once()
 
-    @rollback
     async def test_password_recovery(
         self,
+        mock_reencrypt_kiq,
+        client,
     ):
         # Creating new user
-        await self.client.post(
+        await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
@@ -108,7 +104,7 @@ class TestPassword(BaseTest):
             )
         )
 
-        response = await self.client.post(
+        response = await client.post(
             url=self.password_recovery_url,
             data=password_recovery_request.dict(),
         )
@@ -130,7 +126,7 @@ class TestPassword(BaseTest):
             == "Girder for MindLogger (development instance): Temporary access"
         )
 
-        response = await self.client.post(
+        response = await client.post(
             url=self.password_recovery_url,
             data=password_recovery_request.dict(),
         )
@@ -147,14 +143,15 @@ class TestPassword(BaseTest):
             TestMail.mails[0].recipients[0] == password_recovery_request.email
         )
 
-    @rollback
     async def test_password_recovery_approve(
         self,
+        mock_reencrypt_kiq,
+        client,
     ):
         cache = RedisCache()
 
         # Creating new user
-        internal_response: Response[PublicUser] = await self.client.post(
+        internal_response: Response[PublicUser] = await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
@@ -167,7 +164,7 @@ class TestPassword(BaseTest):
             )
         )
 
-        response = await self.client.post(
+        response = await client.post(
             url=self.password_recovery_url,
             data=password_recovery_request.dict(),
         )
@@ -183,7 +180,7 @@ class TestPassword(BaseTest):
             "password": "new_password",
         }
 
-        response = await self.client.post(
+        response = await client.post(
             url=self.password_recovery_approve_url,
             data=data,
         )
@@ -197,15 +194,16 @@ class TestPassword(BaseTest):
         assert len(keys) == 0
         assert len(keys) == 0
 
-    @rollback
     async def test_password_recovery_approve_expired(
         self,
+        mock_reencrypt_kiq,
+        client,
     ):
         cache = RedisCache()
         settings.authentication.password_recover.expiration = 1
 
         # Creating new user
-        await self.client.post(
+        await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
 
@@ -216,7 +214,7 @@ class TestPassword(BaseTest):
             )
         )
 
-        response = await self.client.post(
+        response = await client.post(
             url=self.password_recovery_url,
             data=password_recovery_request.dict(),
         )
@@ -233,7 +231,7 @@ class TestPassword(BaseTest):
             "password": "new_password",
         }
 
-        response = await self.client.post(
+        response = await client.post(
             url=self.password_recovery_approve_url,
             data=data,
         )

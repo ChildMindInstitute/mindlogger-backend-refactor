@@ -187,11 +187,15 @@ The `pytest` framework is using in order to write unit tests.
 Currently postgresql is used as a database for tests with running configurations that are defined in `pyproject.toml`
 
 ```toml
-DATABASE__HOST=localhost
+DATABASE__HOST=postgres
 DATABASE__PORT=5432
-DATABASE__PASSWORD=test
-DATABASE__USER=test
+DATABASE__PASSWORD=postgres
+DATABASE__USER=postgres
 DATABASE__DB=test
+```
+> 🛑 **NOTE:** To run tests localy without changing DATABASE_HOST please add row below to the `/etc/hosts` file (macOS, Linux). It will automatically redirect postgres to the localhost.
+```
+127.0.0.1       postgres
 ```
 
 #### Adjust your database for using with tests
@@ -210,7 +214,7 @@ psql -U postgres postgres
 psql# create database test;
 
 # Create arbitrary database
-psql# create database test_arbitrary; 
+psql# create database test_arbitrary;
 
 # Create user test
 psql# create user test;
@@ -270,6 +274,12 @@ Additional `docker-compose down` flags that might be useful for development
 -v  # Remove with all volumes
 ```
 
+#### Run only tests 🛑
+(This is how tests are running on CI)
+```bash
+make dtest
+```
+
 
 ### 3. Provide code quality ✨
 
@@ -283,10 +293,6 @@ Additional `docker-compose down` flags that might be useful for development
 Usage:
 
 ```bash
-# Run the application in a background
-# NOTE: Mandatory to run commands inside the container
-docker-compose up -d
-
 # Check the code quality
 make dcq
 
@@ -321,14 +327,7 @@ make check
 
 ...
 ```
-💡 If you want run web-app locally you can use the next commands
-
-> 🛑 **NOTE:** Before these commands, the storages must be started.
-
-If you want, you can start storage with the command:
-```bash
-make run_storages
-```
+💡 If you want run web-app locally you can use the next command
 
 Run web-app locally (don't forget to activate the environment)
 ```bash
@@ -388,7 +387,7 @@ User_applet_accesses ||--o{ Applets: ""
 
     User_applet_accesses {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         int user_id FK
         int applet_id FK
@@ -397,7 +396,7 @@ User_applet_accesses ||--o{ Applets: ""
 
     Users {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         boolean is_deleted
         string email
@@ -409,7 +408,7 @@ User_applet_accesses ||--o{ Applets: ""
 
     Applets {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         boolean is_deleted
         string display_name
@@ -432,7 +431,7 @@ Applet_histories }o--|| Users: ""
 
     Applet_histories {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         boolean is_deleted
         jsonb description
@@ -459,7 +458,7 @@ Answers_activity_items }o--|| Activity_item_histories: ""
 
     Answers_activity_items {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         jsonb answer
         int applet_id FK
@@ -473,7 +472,7 @@ Answers_flow_items ||--o{ Flow_item_histories: ""
 
     Answers_flow_items {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         jsonb answer
         int applet_id FK
@@ -485,7 +484,7 @@ Activities }o--|| Applets: ""
 
     Activities {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         boolean is_deleted
         UUID guid
@@ -498,14 +497,14 @@ Activities }o--|| Applets: ""
         boolean is_reviewable
         boolean response_is_editable
         int ordering
-        int applet_id FK 
+        int applet_id FK
     }
 
 Activity_histories }o--|| Applets: ""
 
     Activity_histories {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         boolean is_deleted
         UUID guid
@@ -525,7 +524,7 @@ Activity_item_histories }o--|| Activity_histories: ""
 
     Activity_item_histories {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         boolean is_deleted
         jsonb question
@@ -549,7 +548,7 @@ Activity_items }o--|| Activities: ""
 
     Activity_items {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         jsonb question
         string response_type
@@ -567,13 +566,13 @@ Activity_items }o--|| Activities: ""
         int activity_id FK
     }
 
-    
+
 
 Flows }o--|| Applets: ""
 
     Flows {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         boolean is_deleted
         string name
@@ -590,7 +589,7 @@ Flow_items }o--|| Activities: ""
 
     Flow_items {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         boolean is_deleted
         int ordering
@@ -603,7 +602,7 @@ Flow_item_histories }o--|| Activity_histories: ""
 
     Flow_item_histories {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         boolean is_deleted
         string id_version
@@ -615,7 +614,7 @@ Flow_histories }o--|| Applet_histories: ""
 
     Flow_histories {
         int id
-        datetime created_at 
+        datetime created_at
         datetime updated_at
         boolean is_deleted
         string name
@@ -640,7 +639,7 @@ In next format:
 postgresql+asyncpg://<username>:<password>@<hostname>:port/database
 ```
 ### 2. AWS S3 and GCP S3
-For AWS S3 bucket next fields are required: 
+For AWS S3 bucket next fields are required:
 `storage_region`,`storage_bucket`, `storage_access_key`,`storage_secret_key`.
 ### 3. Azure Blob
 In case of Azure blob, specify your connection string into field `storage_secret_key`

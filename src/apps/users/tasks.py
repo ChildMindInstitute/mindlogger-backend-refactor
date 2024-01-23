@@ -39,23 +39,18 @@ async def reencrypt_answers(
     success = True
 
     default_session_maker = session_manager.get_session()
-    try:
-        async with default_session_maker() as session:
-            job_service = JobService(session, user_id)
-            async with atomic(session):
-                job = await job_service.get_or_create_owned(
-                    job_name, JobStatus.in_progress
-                )
-                if job.status != JobStatus.in_progress:
-                    await job_service.change_status(
-                        job.id, JobStatus.in_progress
-                    )
+    async with default_session_maker() as session:
+        job_service = JobService(session, user_id)
+        async with atomic(session):
+            job = await job_service.get_or_create_owned(
+                job_name, JobStatus.in_progress
+            )
+            if job.status != JobStatus.in_progress:
+                await job_service.change_status(job.id, JobStatus.in_progress)
 
-            db_applets = await WorkspaceService(
-                session, user_id
-            ).get_user_answer_db_info()
-    finally:
-        await default_session_maker.remove()
+        db_applets = await WorkspaceService(
+            session, user_id
+        ).get_user_answer_db_info()
 
     for db_applet_data in db_applets:
         session_maker = default_session_maker
@@ -91,29 +86,22 @@ async def reencrypt_answers(
             page = 1
             try:
                 while True:
-                    try:
-                        async with session_maker() as session:
-                            async with atomic(session):
-                                service = AnswerService(session)
-                                count = await service.reencrypt_user_answers(
-                                    applet.applet_id,
-                                    user_id,
-                                    page=page,
-                                    limit=batch_limit,
-                                    old_public_key=old_public_key,
-                                    new_public_key=new_public_key,
-                                    encryptor=AnswerEncryptor(
-                                        bytes(new_aes_key)
-                                    ),
-                                    decryptor=AnswerEncryptor(
-                                        bytes(old_aes_key)
-                                    ),
-                                )
-                                if count < batch_limit:
-                                    break
-                                page += 1
-                    finally:
-                        await session_maker.remove()
+                    async with session_maker() as session:
+                        async with atomic(session):
+                            service = AnswerService(session)
+                            count = await service.reencrypt_user_answers(
+                                applet.applet_id,
+                                user_id,
+                                page=page,
+                                limit=batch_limit,
+                                old_public_key=old_public_key,
+                                new_public_key=new_public_key,
+                                encryptor=AnswerEncryptor(bytes(new_aes_key)),
+                                decryptor=AnswerEncryptor(bytes(old_aes_key)),
+                            )
+                            if count < batch_limit:
+                                break
+                            page += 1
 
             except Exception as e:
                 msg = (
@@ -122,47 +110,41 @@ async def reencrypt_answers(
                 )
                 logger.error(msg)
                 logger.exception(str(e))
-                try:
-                    async with default_session_maker() as session:
-                        async with atomic(session):
-                            details = dict(errors=[msg, str(e)])
-                            await JobService(session, user_id).change_status(
-                                job.id, JobStatus.error, details
-                            )
-                finally:
-                    await default_session_maker.remove()
+                async with default_session_maker() as session:
+                    async with atomic(session):
+                        details = dict(errors=[msg, str(e)])
+                        await JobService(session, user_id).change_status(
+                            job.id, JobStatus.error, details
+                        )
                 success = False
                 continue
 
     # Update job status, schedule retry
-    try:
-        async with default_session_maker() as session:
-            async with atomic(session):
-                if success:
+    async with default_session_maker() as session:
+        async with atomic(session):
+            if success:
+                await JobService(session, user_id).change_status(
+                    job.id, JobStatus.success
+                )
+            else:
+                if retries:
                     await JobService(session, user_id).change_status(
-                        job.id, JobStatus.success
+                        job.id, JobStatus.retry
                     )
-                else:
-                    if retries:
-                        await JobService(session, user_id).change_status(
-                            job.id, JobStatus.retry
-                        )
 
-                        logger.info(f"Reencryption {user_id}: schedule retry")
-                        if retry_timeout is None:
-                            retry_timeout = (
-                                settings.task_answer_encryption.retry_timeout
-                            )
-                        retries -= 1
-                        await reencrypt_answers.kicker().with_labels(
-                            delay=retry_timeout
-                        ).kiq(
-                            user_id,
-                            email,
-                            old_password,
-                            new_password,
-                            retries=retries,
-                            retry_timeout=retry_timeout,
+                    logger.info(f"Reencryption {user_id}: schedule retry")
+                    if retry_timeout is None:
+                        retry_timeout = (
+                            settings.task_answer_encryption.retry_timeout
                         )
-    finally:
-        await default_session_maker.remove()
+                    retries -= 1
+                    await reencrypt_answers.kicker().with_labels(
+                        delay=retry_timeout
+                    ).kiq(
+                        user_id,
+                        email,
+                        old_password,
+                        new_password,
+                        retries=retries,
+                        retry_timeout=retry_timeout,
+                    )
