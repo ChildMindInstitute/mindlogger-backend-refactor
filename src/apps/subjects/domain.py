@@ -28,7 +28,6 @@ class SubjectRespondent(PublicModel):
 
 class SubjectRespondentCreate(PublicModel):
     user_id: uuid.UUID
-    subject_id: uuid.UUID
     applet_id: uuid.UUID
     relation: str
 
@@ -53,3 +52,8 @@ class SubjectCreateRequest(PublicModel):
 
 class SubjectFull(SubjectBase):
     subjects: list[SubjectRespondent]
+
+
+class SubjectUpdateRequest(PublicModel):
+    secret_user_id: str
+    nickname: str | None

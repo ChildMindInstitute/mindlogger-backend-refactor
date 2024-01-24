@@ -4,6 +4,7 @@ from fastapi import Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.authentication.deps import get_current_user
+from apps.invitations.errors import NonUniqueValue
 from apps.shared.domain import Response
 from apps.shared.exception import NotFoundError
 from apps.subjects.domain import (
@@ -11,6 +12,7 @@ from apps.subjects.domain import (
     SubjectCreateRequest,
     SubjectFull,
     SubjectRespondentCreate,
+    SubjectUpdateRequest,
 )
 from apps.subjects.services import SubjectsService
 from apps.users import User
@@ -42,6 +44,7 @@ async def create_subject(
 
 
 async def add_respondent(
+    subject_id: uuid.UUID,
     user: User = Depends(get_current_user),
     schema: SubjectRespondentCreate = Body(...),
     session: AsyncSession = Depends(get_session),
@@ -51,10 +54,10 @@ async def add_respondent(
     )
     async with atomic(session):
         service = SubjectsService(session, user.id)
-        await service.check_exist(schema.subject_id, schema.applet_id)
+        await service.check_exist(subject_id, schema.applet_id)
         subject_full = await service.add_respondent(
             respondent_id=schema.user_id,
-            subject_id=schema.subject_id,
+            subject_id=subject_id,
             applet_id=schema.applet_id,
             relation=schema.relation,
         )
@@ -82,3 +85,28 @@ async def remove_respondent(
             raise NotFoundError()
         subject = await service.remove_respondent(access.id, subject_id)
         return Response(result=subject)
+
+
+async def update_subject(
+    subject_id: uuid.UUID,
+    schema: SubjectUpdateRequest = Body(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> Response[SubjectFull]:
+    subject_srv = SubjectsService(session, user.id)
+    subject = await subject_srv.get(subject_id)
+    if not subject:
+        raise NotFoundError()
+    await CheckAccessService(session, user.id).check_applet_invite_access(
+        subject.applet_id
+    )
+    exist = await subject_srv.check_secret_id(
+        subject_id, schema.secret_user_id, subject.applet_id
+    )
+    if exist:
+        raise NonUniqueValue()
+    async with atomic(session):
+        subject_full = await subject_srv.update(
+            subject_id, schema.secret_user_id, schema.nickname
+        )
+        return Response(result=subject_full)
