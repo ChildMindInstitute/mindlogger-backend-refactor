@@ -28,7 +28,6 @@ class SubjectRespondent(PublicModel):
 
 class SubjectRespondentCreate(PublicModel):
     user_id: uuid.UUID
-    applet_id: uuid.UUID
     relation: str
 
 

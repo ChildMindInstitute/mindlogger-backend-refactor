@@ -28,6 +28,9 @@ async def create_subject(
     schema: SubjectCreateRequest = Body(...),
     session: AsyncSession = Depends(get_session),
 ) -> Response[Subject]:
+    await CheckAccessService(session, user.id).check_applet_invite_access(
+        schema.applet_id
+    )
     async with atomic(session):
         subject_sch = Subject(
             applet_id=schema.applet_id,
@@ -49,16 +52,20 @@ async def add_respondent(
     schema: SubjectRespondentCreate = Body(...),
     session: AsyncSession = Depends(get_session),
 ) -> Response[SubjectFull]:
+    subject_srv = SubjectsService(session, user.id)
+    subject = await subject_srv.get(subject_id)
+    if not subject:
+        raise NotFoundError()
     await CheckAccessService(session, user.id).check_applet_invite_access(
-        schema.applet_id
+        subject.applet_id
     )
     async with atomic(session):
         service = SubjectsService(session, user.id)
-        await service.check_exist(subject_id, schema.applet_id)
+        await service.check_exist(subject_id, subject.applet_id)
         subject_full = await service.add_respondent(
             respondent_id=schema.user_id,
             subject_id=subject_id,
-            applet_id=schema.applet_id,
+            applet_id=subject.applet_id,
             relation=schema.relation,
         )
         return Response(result=subject_full)
@@ -70,6 +77,13 @@ async def remove_respondent(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> Response[SubjectFull]:
+    subject_srv = SubjectsService(session, user.id)
+    subject = await subject_srv.get(subject_id)
+    if not subject:
+        raise NotFoundError()
+    await CheckAccessService(session, user.id).check_applet_invite_access(
+        subject.applet_id
+    )
     async with atomic(session):
         service = SubjectsService(session, user.id)
         subject = await service.get(subject_id)
