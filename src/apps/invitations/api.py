@@ -216,22 +216,8 @@ async def invitation_managers_send(
         except UserNotFound:
             pass
 
-        subject_srv = SubjectsService(session, user.id)
-        subject = await subject_srv.get_by_email(invitation_schema.email)
-        if not subject:
-            subject_schema = Subject(
-                applet_id=applet_id,
-                creator_id=user.id,
-                language=invitation_schema.language,
-                email=invitation_schema.email,
-                first_name=invitation_schema.first_name,
-                last_name=invitation_schema.last_name,
-                secret_user_id=str(uuid.uuid4()),
-            )
-            subject = await subject_srv.create(subject_schema)
-        assert subject
         invitation = await invitation_srv.send_managers_invitation(
-            applet_id, invitation_schema, subject.id
+            applet_id, invitation_schema
         )
 
     return Response[InvitationManagersResponse](
@@ -248,9 +234,12 @@ async def invitation_accept(
     async with atomic(session):
         invitation_srv = InvitationsService(session, user)
         subject_srv = SubjectsService(session, user.id)
-        meta = await invitation_srv.get_meta(key)
-        if meta and "subject_id" in meta:
-            await subject_srv.extend(uuid.UUID(meta["subject_id"]))
+        invitation = await invitation_srv.get(key)
+        assert invitation
+        if invitation.role == Role.RESPONDENT:
+            meta = await invitation_srv.get_meta(key)
+            if meta and "subject_id" in meta:
+                await subject_srv.extend(uuid.UUID(meta["subject_id"]))
         await InvitationsService(session, user).accept(key)
 
 
@@ -270,13 +259,7 @@ async def invitation_decline(
 ):
     """General endpoint to decline the applet invitation."""
     async with atomic(session):
-        invitation_srv = InvitationsService(session, user)
-        subject_srv = SubjectsService(session, user.id)
-        await invitation_srv.decline(key)
-        meta = await invitation_srv.get_meta(key)
-        if meta:
-            subject_id = meta["subject_id"]
-            await subject_srv.delete(subject_id)
+        await InvitationsService(session, user).decline(key)
 
 
 async def create_shell_account(

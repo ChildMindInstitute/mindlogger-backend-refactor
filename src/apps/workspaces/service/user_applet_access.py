@@ -8,6 +8,8 @@ from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.domain import InvitationDetailGeneric
 from apps.shared.exception import NotFoundError
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
 from apps.users import UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
@@ -108,7 +110,7 @@ class UserAppletAccessService:
 
     async def add_role_by_invitation(
         self, invitation: InvitationDetailGeneric
-    ):
+    ) -> UserAppletAccess:
         assert (
             invitation.role != Role.OWNER
         ), "Admin role can not be added by invitation"
@@ -172,10 +174,22 @@ class UserAppletAccessService:
                     nickname=nickname,
                     is_deleted=False,
                 )
-
                 await UserAppletAccessCRUD(
                     self.session
                 ).upsert_user_applet_access(schema)
+
+                await SubjectsService(self.session, self._user_id).create(
+                    Subject(
+                        applet_id=invitation.applet_id,
+                        email=invitation.email,
+                        creator_id=invitation.invitor_id,
+                        user_id=self._user_id,
+                        first_name=invitation.first_name,
+                        last_name=invitation.last_name,
+                        secret_user_id=meta["secretUserId"],
+                        nickname=nickname,
+                    )
+                )
 
         return UserAppletAccess.from_orm(access_schema[0])
 
