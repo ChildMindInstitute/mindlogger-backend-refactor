@@ -100,10 +100,10 @@ def invitation_reviewer_data(
 def shell_create_data():
     return dict(
         language="en",
-        firstName="language",
-        lastName="firstName",
-        secretUserId="lastName",
-        nickname="secretUserId",
+        firstName="firstName",
+        lastName="lastName",
+        secretUserId="secretUserId",
+        nickname="nickname",
     )
 
 
