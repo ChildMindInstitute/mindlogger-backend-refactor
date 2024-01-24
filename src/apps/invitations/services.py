@@ -41,7 +41,6 @@ from apps.shared.query_params import QueryParams
 from apps.subjects.crud import SubjectsCrud
 from apps.users import UsersCRUD
 from apps.users.domain import User
-from apps.workspaces.domain.user_applet_access import UserAppletAccess
 from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
 
@@ -416,7 +415,7 @@ class InvitationsService:
             if respondent not in exist_respondents:
                 raise RespondentDoesNotExist()
 
-    async def accept(self, key: uuid.UUID) -> UserAppletAccess:
+    async def accept(self, key: uuid.UUID):
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
             self._user.email_encrypted, key  # type: ignore[arg-type]
         )
@@ -426,14 +425,13 @@ class InvitationsService:
         if invitation.status != InvitationStatus.PENDING:
             raise InvitationAlreadyProcessed()
 
-        role = await UserAppletAccessService(
+        await UserAppletAccessService(
             self.session, self._user.id, invitation.applet_id
         ).add_role_by_invitation(invitation)
 
         await InvitationCRUD(self.session).approve_by_id(
             invitation.id, self._user.id
         )
-        return role
 
     async def decline(self, key: uuid.UUID):
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
@@ -519,12 +517,12 @@ class PrivateInvitationService:
             key=link,
         )
 
-    async def accept_invitation(self, user_id: uuid.UUID, link: uuid.UUID):
+    async def accept_invitation(self, user: User, link: uuid.UUID):
         applet = await PublicAppletService(self.session).get_by_link(
             link, True
         )
         if not applet:
             raise InvitationDoesNotExist()
         await UserAppletAccessService(
-            self.session, user_id, applet.id
-        ).add_role_by_private_invitation(Role.RESPONDENT)
+            self.session, user.id, applet.id
+        ).add_role_by_private_invitation(Role.RESPONDENT, user)

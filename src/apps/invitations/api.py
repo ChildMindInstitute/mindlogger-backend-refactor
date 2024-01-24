@@ -232,14 +232,6 @@ async def invitation_accept(
 ):
     """General endpoint to approve the applet invitation."""
     async with atomic(session):
-        invitation_srv = InvitationsService(session, user)
-        subject_srv = SubjectsService(session, user.id)
-        invitation = await invitation_srv.get(key)
-        assert invitation
-        if invitation.role == Role.RESPONDENT:
-            meta = await invitation_srv.get_meta(key)
-            if meta and "subject_id" in meta:
-                await subject_srv.extend(uuid.UUID(meta["subject_id"]))
         await InvitationsService(session, user).accept(key)
 
 
@@ -249,7 +241,7 @@ async def private_invitation_accept(
     session=Depends(get_session),
 ):
     async with atomic(session):
-        await PrivateInvitationService(session).accept_invitation(user.id, key)
+        await PrivateInvitationService(session).accept_invitation(user, key)
 
 
 async def invitation_decline(

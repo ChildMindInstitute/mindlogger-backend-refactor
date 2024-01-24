@@ -132,3 +132,14 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
 
     async def delete_by_id(self, id_: uuid.UUID):
         await self._delete(key="id", value=id_)
+
+    async def get(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
+    ) -> SubjectSchema | None:
+        query: Query = select(SubjectSchema)
+        query = query.where(
+            SubjectSchema.user_id == user_id,
+            SubjectSchema.applet_id == applet_id,
+        )
+        result = await self._execute(query)
+        return result.scalar_one_or_none()
