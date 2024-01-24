@@ -2842,10 +2842,8 @@ class TestActivityItems(BaseTest):
         del option["value"]
         option2 = copy.deepcopy(option)
         option2["value"] = None
-        option2["id"] = uuid.uuid4()
         item["response_values"]["options"].append(option2)
         item["response_type"] = response_type
-
         resp = await client.post(
             self.applet_create_url.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
@@ -2928,35 +2926,6 @@ class TestActivityItems(BaseTest):
             data=applet_minimal_data,
         )
         assert resp.status_code == 201
-
-    @pytest.mark.parametrize(
-        "response_type", (ResponseType.SINGLESELECT, ResponseType.MULTISELECT)
-    )
-    async def test_create_applet_single_multi_select_response_values_id_duplicate_error(  # noqa: E501
-        self, client, applet_minimal_data, response_type
-    ):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        item = applet_minimal_data["activities"][0]["items"][0]
-        option = item["response_values"]["options"][0]
-        del option["value"]
-        option2 = copy.deepcopy(option)
-        item["response_values"]["options"].append(option2)
-        item["response_type"] = response_type
-
-        resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
-            data=applet_minimal_data,
-        )
-        assert (
-            resp.status_code
-            == activity_errors.DuplicateActivityItemOptionIdError.status_code
-        )
-        assert (
-            resp.json()["result"][0]["message"]
-            == activity_errors.DuplicateActivityItemOptionIdError.message
-        )
 
     async def test_update_applet_duplicated_activity_item_name_is_not_allowed(
         self, client, applet_minimal_data

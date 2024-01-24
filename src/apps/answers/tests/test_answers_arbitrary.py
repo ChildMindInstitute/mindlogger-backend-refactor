@@ -1013,7 +1013,7 @@ class TestAnswerActivityItems(BaseTest):
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime", "legacyProfileId", "migratedDate"
+            "endDatetime", "legacyProfileId", "migratedDate", "client",
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on
@@ -1388,7 +1388,7 @@ class TestAnswerActivityItems(BaseTest):
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime", "legacyProfileId", "migratedDate"
+            "endDatetime", "legacyProfileId", "migratedDate", "client",
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on

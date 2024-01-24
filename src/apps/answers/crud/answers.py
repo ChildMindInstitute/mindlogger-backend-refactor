@@ -199,6 +199,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.created_at,
                 reviewed_answer_id.label("reviewed_answer_id"),
                 reviewed_answer_id.label("reviewed_answer_id"),
+                AnswerSchema.client,
             )
             .select_from(AnswerSchema)
             .join(
