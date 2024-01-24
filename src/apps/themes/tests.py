@@ -1,7 +1,6 @@
 from pydantic.color import Color
 
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback
 
 
 class TestThemes(BaseTest):
@@ -11,11 +10,8 @@ class TestThemes(BaseTest):
     list_url = "/themes"
     detail_url = "themes/{id}"
 
-    @rollback
-    async def test_create_theme(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_create_theme(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             name="Test theme",
             logo="test/logo.png",
@@ -25,15 +21,12 @@ class TestThemes(BaseTest):
             tertiary_color="#000000",
         )
 
-        response = await self.client.post(self.list_url, data=create_data)
+        response = await client.post(self.list_url, data=create_data)
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-    @rollback
-    async def test_delete_theme(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_delete_theme(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             name="Test theme",
             logo="test/logo.png",
@@ -43,22 +36,19 @@ class TestThemes(BaseTest):
             tertiary_color="#000000",
         )
 
-        response = await self.client.post(self.list_url, data=create_data)
+        response = await client.post(self.list_url, data=create_data)
 
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.detail_url.format(id=response.json()["result"]["id"])
         )
 
         assert response.status_code == 204, response.json()
 
-    @rollback
-    async def test_update_theme(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_update_theme(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             name="Test theme",
             logo="test/logo.png",
@@ -68,7 +58,7 @@ class TestThemes(BaseTest):
             tertiary_color="#000000",
         )
 
-        response = await self.client.post(self.list_url, data=create_data)
+        response = await client.post(self.list_url, data=create_data)
 
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
@@ -81,7 +71,7 @@ class TestThemes(BaseTest):
             secondary_color="#000000",
             tertiary_color="#000000",
         )
-        response = await self.client.put(
+        response = await client.put(
             self.detail_url.format(id=response.json()["result"]["id"]),
             data=update_data,
         )
@@ -107,12 +97,9 @@ class TestThemes(BaseTest):
             == Color(update_data["tertiary_color"]).as_hex()
         )
 
-    @rollback
-    async def test_themes_list(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        response = await self.client.get(self.list_url)
+    async def test_themes_list(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.get(self.list_url)
 
         assert response.status_code == 200
         assert type(response.json()["result"]) == list

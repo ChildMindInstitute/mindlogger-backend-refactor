@@ -4,7 +4,6 @@ from apps.applets.domain import Role
 from apps.invitations.errors import ManagerInvitationExist
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback
 
 
 class TestTransfer(BaseTest):
@@ -29,14 +28,11 @@ class TestTransfer(BaseTest):
     )
     applet_encryption_url = f"{applet_details_url}/encryption"
 
-    @rollback
-    async def test_initiate_transfer(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_initiate_transfer(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         data = {"email": "lucy@gmail.com"}
 
-        response = await self.client.post(
+        response = await client.post(
             self.transfer_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -48,14 +44,11 @@ class TestTransfer(BaseTest):
         assert TestMail.mails[0].recipients == [data["email"]]
         assert TestMail.mails[0].subject == "Transfer ownership of an applet"
 
-    @rollback
-    async def test_initiate_transfer_fail(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_initiate_transfer_fail(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         data = {"email": "aloevdamirkhon@gmail.com"}
 
-        response = await self.client.post(
+        response = await client.post(
             self.transfer_url.format(
                 applet_id="00000000-0000-0000-0000-000000000012"
             ),
@@ -64,10 +57,9 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 404, response.json()
 
-    @rollback
-    async def test_decline_transfer(self):
-        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-        response = await self.client.delete(
+    async def test_decline_transfer(self, client):
+        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await client.delete(
             self.response_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
@@ -76,10 +68,9 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 204
 
-    @rollback
-    async def test_decline_wrong_transfer(self):
-        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-        response = await self.client.delete(
+    async def test_decline_wrong_transfer(self, client):
+        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await client.delete(
             self.response_url.format(
                 applet_id="00000000-0000-0000-0000-000000000000",
                 key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
@@ -88,10 +79,9 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 404
 
-    @rollback
-    async def test_re_decline_transfer(self):
-        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-        response = await self.client.delete(
+    async def test_re_decline_transfer(self, client):
+        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await client.delete(
             self.response_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
@@ -100,7 +90,7 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 204
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.response_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
@@ -109,10 +99,9 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 404
 
-    @rollback
-    async def test_accept_transfer(self):
-        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-        response = await self.client.post(
+    async def test_accept_transfer(self, client):
+        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await client.post(
             self.response_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
@@ -121,10 +110,9 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 200
 
-    @rollback
-    async def test_accept_wrong_transfer(self):
-        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-        response = await self.client.post(
+    async def test_accept_wrong_transfer(self, client):
+        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await client.post(
             self.response_url.format(
                 applet_id="00000000-0000-0000-0000-000000000000",
                 key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
@@ -133,10 +121,9 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 404
 
-    @rollback
-    async def test_re_accept_transfer(self):
-        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-        response = await self.client.post(
+    async def test_re_accept_transfer(self, client):
+        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await client.post(
             self.response_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
@@ -145,7 +132,7 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 200
 
-        response = await self.client.post(
+        response = await client.post(
             self.response_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
@@ -154,8 +141,7 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == 404
 
-    @rollback
-    async def test_accept_transfer_report_settings_are_kept(self):
+    async def test_accept_transfer_report_settings_are_kept(self, client):
         report_settings_keys = (
             "reportServerIp",
             "reportPublicKey",
@@ -164,10 +150,8 @@ class TestTransfer(BaseTest):
             "reportIncludeUserId",
             "reportIncludeCaseId",
         )
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
-        resp = await self.client.get(
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        resp = await client.get(
             self.applet_details_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -178,8 +162,8 @@ class TestTransfer(BaseTest):
         for key in report_settings_keys:
             assert resp_data[key]
 
-        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
-        response = await self.client.post(
+        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await client.post(
             self.response_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
@@ -187,7 +171,7 @@ class TestTransfer(BaseTest):
         )
         assert response.status_code == 200
 
-        resp = await self.client.get(
+        resp = await client.get(
             self.applet_details_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
@@ -198,11 +182,8 @@ class TestTransfer(BaseTest):
         for key in report_settings_keys:
             assert resp_data[key]
 
-    @rollback
-    async def test_reinvite_manager_after_transfer(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_reinvite_manager_after_transfer(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         request_data = dict(
             email="patric@gmail.com",
             first_name="Patric",
@@ -211,7 +192,7 @@ class TestTransfer(BaseTest):
             language="en",
         )
         # send manager invite
-        response = await self.client.post(
+        response = await client.post(
             self.invite_manager_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -222,21 +203,17 @@ class TestTransfer(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
 
         # accept manager invite
-        await self.client.login(self.login_url, "patric@gmail.com", "Test1234")
+        await client.login(self.login_url, "patric@gmail.com", "Test1234")
         key = response.json()["result"]["key"]
-        response = await self.client.post(
-            self.invite_accept_url.format(key=key)
-        )
+        response = await client.post(self.invite_accept_url.format(key=key))
         assert response.status_code == 200
 
         # transfer ownership to mike@gmail.com
         # initiate transfer
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         data = {"email": "mike@gmail.com"}
 
-        response = await self.client.post(
+        response = await client.post(
             self.transfer_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
@@ -254,8 +231,8 @@ class TestTransfer(BaseTest):
         key = key[0][4:-14]
 
         # accept transfer
-        await self.client.login(self.login_url, "mike@gmail.com", "Test1234")
-        response = await self.client.post(
+        await client.login(self.login_url, "mike@gmail.com", "Test1234")
+        response = await client.post(
             self.response_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 key=key,
@@ -264,7 +241,7 @@ class TestTransfer(BaseTest):
         assert response.status_code == 200
 
         # check managers list
-        response = await self.client.get(
+        response = await client.get(
             self.workspace_applet_managers_list.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa4",
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
@@ -292,7 +269,7 @@ class TestTransfer(BaseTest):
             role=Role.MANAGER,
             language="en",
         )
-        response = await self.client.post(
+        response = await client.post(
             self.invite_manager_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),

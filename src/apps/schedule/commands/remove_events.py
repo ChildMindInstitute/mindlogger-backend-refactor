@@ -32,21 +32,18 @@ async def get_assessments(session: AsyncSession) -> list[ActivitySchema]:
 @coro
 async def remove_events():
     session_maker = session_manager.get_session()
-    try:
-        async with session_maker() as session:
-            async with atomic(session):
-                try:
-                    assessments = await get_assessments(session)
-                    service = ScheduleService(session)
-                    for activity in assessments:
-                        print(
-                            f"Applet: {activity.applet_id} "
-                            f"Activity: {activity.id}"
-                        )
-                        await service.delete_by_activity_ids(
-                            activity.applet_id, [activity.id]
-                        )
-                except Exception as ex:
-                    print(ex)
-    finally:
-        await session_maker.remove()
+    async with session_maker() as session:
+        async with atomic(session):
+            try:
+                assessments = await get_assessments(session)
+                service = ScheduleService(session)
+                for activity in assessments:
+                    print(
+                        f"Applet: {activity.applet_id} "
+                        f"Activity: {activity.id}"
+                    )
+                    await service.delete_by_activity_ids(
+                        activity.applet_id, [activity.id]
+                    )
+            except Exception as ex:
+                print(ex)
