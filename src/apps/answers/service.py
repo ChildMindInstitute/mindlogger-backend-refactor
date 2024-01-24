@@ -639,7 +639,7 @@ class AnswerService:
         if not schema.is_reviewable:
             raise ActivityIsNotAssessment()
 
-    async def get_export_data(
+    async def get_export_data(  # noqa: C901
         self,
         applet_id: uuid.UUID,
         query_params: QueryParams,

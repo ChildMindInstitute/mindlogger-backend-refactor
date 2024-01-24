@@ -73,7 +73,7 @@ def validate_item_flow(values: dict):
     return values
 
 
-def validate_score_and_sections(values: dict):
+def validate_score_and_sections(values: dict):  # noqa: C901
     items = values.get("items", [])
     item_names = [item.name for item in items]
     scores_and_reports = values.get("scores_and_reports")
@@ -184,7 +184,7 @@ def validate_subscales(values: dict):
                         subscale_item_name.name
                     )
 
-                    if not items[subscale_item_index].response_type in [
+                    if items[subscale_item_index].response_type not in [
                         ResponseType.SINGLESELECT,
                         ResponseType.MULTISELECT,
                         ResponseType.SLIDER,
