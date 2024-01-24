@@ -72,15 +72,6 @@ class SubjectsService:
             return Subject.from_orm(subject_model)
         return None
 
-    async def get_by_email(self, email: str) -> SubjectSchema | None:
-        return await SubjectsCrud(self.session).get_by_email(email)
-
-    async def delete_by_email(self, email: str):
-        crud = SubjectsCrud(self.session)
-        model = await crud.get_by_email(email)
-        if model:
-            await self.delete(model.id)
-
     async def get(self, id_: uuid.UUID) -> SubjectSchema | None:
         return await SubjectsCrud(self.session).get_by_id(id_)
 

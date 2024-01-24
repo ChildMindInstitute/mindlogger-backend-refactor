@@ -52,13 +52,6 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         res = res.scalars().all()
         return bool(res)
 
-    async def get_by_email(self, email: str) -> SubjectSchema | None:
-        query: Query = select(SubjectSchema)
-        query = query.where(SubjectSchema.email == email)
-        query = query.limit(1)
-        result = await self._execute(query)
-        return result.scalars().first()
-
     async def get_source(
         self, user_id: uuid.UUID, target_id: uuid.UUID, applet_id: uuid.UUID
     ) -> SubjectSchema | None:
