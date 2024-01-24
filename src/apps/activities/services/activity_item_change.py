@@ -300,12 +300,12 @@ class ConditionalLogicChangeService(BaseChangeGenerator):
         # Because we can not check conditional logic identity (there are no
         # any ids or other unique fields) we just write that logic was update
         # to the new value.
-        elif new_value != old_value:
+        elif new_value != old_value and new_value is not None:
             self.check_changes(
                 parent_field,
                 new_value,
                 changes,
-                method_name="updated_text",  # type: ignore [arg-type] # noqa: E501
+                method_name="updated_text",  # noqa: E501
             )
 
     @staticmethod
