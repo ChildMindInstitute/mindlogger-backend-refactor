@@ -5,6 +5,15 @@ from alembic import command
 from alembic.config import Config
 from pytest_asyncio import is_async_test
 
+pytest_plugins = [
+    "apps.activities.tests.fixtures.configs",
+    "apps.activities.tests.fixtures.response_values",
+    "apps.activities.tests.fixtures.items",
+    "apps.activities.tests.fixtures.conditional_logic",
+    "apps.activities.tests.fixtures.scores_reports",
+]
+
+
 alembic_configs = [Config("alembic.ini"), Config("alembic_arbitrary.ini")]
 
 
@@ -15,7 +24,7 @@ def before():
 
 
 def after():
-    for alembic_cfg in alembic_configs:
+    for alembic_cfg in alembic_configs[::-1]:
         command.downgrade(alembic_cfg, "base")
     os.environ.pop("PYTEST_APP_TESTING")
 
@@ -33,3 +42,9 @@ def pytest_sessionstart():
 
 def pytest_sessionfinish():
     after()
+
+
+@pytest.fixture
+def remote_image() -> str:
+    # TODO: add support for localimages for tests
+    return "https://www.w3schools.com/css/img_5terre_wide.jpg"

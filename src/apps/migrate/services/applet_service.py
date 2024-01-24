@@ -100,6 +100,8 @@ class AppletMigrationService:
                 migrated_date=datetime.datetime.utcnow(),
                 migrated_updated=datetime.datetime.utcnow(),
                 stream_enabled=create_data.stream_enabled or False,
+                stream_ip_address=create_data.stream_ip_address,
+                stream_port=create_data.stream_port,
                 extra_fields=prepare_extra_fields_to_save(
                     create_data.extra_fields
                 ),
@@ -174,6 +176,8 @@ class AppletMigrationService:
                 migrated_date=datetime.datetime.utcnow(),
                 migrated_updated=datetime.datetime.utcnow(),
                 stream_enabled=update_data.stream_enabled or False,
+                stream_ip_address=update_data.stream_ip_address,
+                stream_port=update_data.stream_port,
                 extra_fields=prepare_extra_fields_to_save(
                     update_data.extra_fields
                 ),

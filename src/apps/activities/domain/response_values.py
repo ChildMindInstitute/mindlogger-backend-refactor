@@ -97,13 +97,8 @@ class SingleSelectionValues(PublicModel):
         return validate_options_value(value)
 
 
-class MultiSelectionValues(PublicModel):
-    palette_name: str | None
-    options: list[_SingleSelectionValue]
-
-    @validator("options")
-    def validate_options(cls, value):
-        return validate_options_value(value)
+class MultiSelectionValues(SingleSelectionValues, PublicModel):
+    pass
 
 
 class SliderValueAlert(PublicModel):
@@ -272,10 +267,6 @@ class AudioValues(PublicModel):
 
 class AudioPlayerValues(PublicModel):
     file: str | None = Field(default=None)
-
-    # @validator("file")
-    # def validate_file(cls, value):
-    #     return validate_audio(value)
 
 
 ResponseValueConfigOptions = [

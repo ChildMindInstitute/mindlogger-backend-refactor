@@ -19,7 +19,7 @@ __all__ = [
     "WorkspaceNotFoundError",
 ]
 
-from apps.workspaces.domain.workspace import WorkspaceArbitraryFields
+# from apps.workspaces.domain.workspace import WorkspaceArbitraryFields
 
 
 class WorkspaceDoesNotExistError(NotFoundError):
@@ -137,6 +137,6 @@ class WorkspaceNotFoundError(Exception):
 
 
 class ArbitraryServerSettingsError(Exception):
-    def __init__(self, data: WorkspaceArbitraryFields, *args, **kwargs):
+    def __init__(self, data, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data = data

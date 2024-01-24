@@ -40,36 +40,12 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def retrieve_by_id_version(
-        self, id_version: str
-    ) -> ActivityItemHistorySchema:
-        """
-        This method might be redundant.
-        It is leaved there because of changes from main branch.
-        """
-
-        query: Query = select(ActivityItemHistorySchema)
-        query = query.where(ActivityItemHistorySchema.id_version == id_version)
-        result = await self._execute(query)
-        return result.scalars().one_or_none()
-
     async def get_by_activity_id_version(
         self, activity_id: str
     ) -> list[ActivityItemHistorySchema]:
         query: Query = select(ActivityItemHistorySchema)
         query = query.where(
             ActivityItemHistorySchema.activity_id == activity_id
-        )
-        query = query.order_by(ActivityItemHistorySchema.order.asc())
-        db_result = await self._execute(query)
-        return db_result.scalars().all()
-
-    async def get_by_id_versions(
-        self, id_versions: list[str]
-    ) -> list[ActivityItemHistorySchema]:
-        query: Query = select(ActivityItemHistorySchema)
-        query = query.where(
-            ActivityItemHistorySchema.id_version.in_(id_versions)
         )
         query = query.order_by(ActivityItemHistorySchema.order.asc())
         db_result = await self._execute(query)
@@ -128,7 +104,7 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         self, id_version: str | None
     ) -> list[ActivityItemHistorySchema | None]:
         if not id_version:
-            return []
+            return []  # pragma: no cover
         query: Query = select(ActivityItemHistorySchema)
         query = query.join(
             ActivityHistorySchema,

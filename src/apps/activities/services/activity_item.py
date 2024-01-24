@@ -11,6 +11,7 @@ from apps.activities.domain.activity_item import (
     ActivityItemSingleLanguageDetailPublic,
 )
 from apps.activities.domain.activity_update import PreparedActivityItemUpdate
+from apps.activities.domain.response_type_config import ResponseType
 
 
 class ActivityItemService:
@@ -110,6 +111,21 @@ class ActivityItemService:
                     allow_edit=schema.allow_edit,
                     is_hidden=schema.is_hidden,
                 )
+            )
+        return items_map
+
+    async def get_info_by_activity_ids(
+        self, activity_ids: list[uuid.UUID], language: str
+    ) -> dict[uuid.UUID, list[ResponseType]]:
+        """Return all Items in map by event activity_ids."""
+        schemas = await ActivityItemsCRUD(self.session).get_by_activity_ids(
+            activity_ids
+        )
+        items_map: dict[uuid.UUID, list[ResponseType]] = dict()
+        for schema in schemas:
+            items_map.setdefault(schema.activity_id, list())
+            items_map[schema.activity_id].append(
+                schema.response_type,
             )
         return items_map
 

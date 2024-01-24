@@ -271,3 +271,9 @@ class SubscaleItemTypeError(ValidationError):
 
 class DuplicateSubscaleNameError(FieldError):
     message = _("Subscale names are duplicated.")
+
+
+class FlowItemActivityKeyNotFoundError(ValidationError):
+    message = _(
+        "Activity key from activity flow item is not found in activity list."
+    )

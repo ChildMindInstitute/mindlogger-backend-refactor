@@ -2933,3 +2933,68 @@ class TestActivityItems(BaseTest):
             errors[0]["message"]
             == activity_errors.DataMatrixRequiredError.message
         )
+
+    @rollback
+    async def test_create_applet_flow_wrong_activity_key(  # noqa: E501
+        self, applet_minimal_data
+    ) -> None:
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        activity_key = applet_minimal_data["activities"][0]["key"]
+        activity_wrong_key = uuid.uuid4()
+        applet_minimal_data["activity_flows"].append(
+            dict(
+                name="Morning questionnaire",
+                description=dict(
+                    en="Understand how was the morning",
+                    fr="Understand how was the morning",
+                ),
+                items=[dict(activity_key=activity_wrong_key)],
+            )
+        )
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert (
+            resp.status_code
+            == activity_errors.FlowItemActivityKeyNotFoundError.status_code
+        )
+        assert (
+            resp.json()["result"][0]["message"]
+            == activity_errors.FlowItemActivityKeyNotFoundError.message
+        )
+
+        applet_minimal_data["activity_flows"][0]["items"][0][
+            "activity_key"
+        ] = activity_key
+        resp = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 201
+
+    @rollback
+    async def test_update_applet_duplicated_activity_item_name_is_not_allowed(
+        self, applet_minimal_data
+    ):
+        item = copy.deepcopy(applet_minimal_data["activities"][0]["items"][0])
+        applet_minimal_data["activities"][0]["items"].append(item)
+        resp = await self.client.put(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert resp.status_code == 422
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert (
+            result[0]["message"]
+            == activity_errors.DuplicateActivityItemNameNameError.message
+        )

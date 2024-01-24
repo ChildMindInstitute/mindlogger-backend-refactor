@@ -1,8 +1,13 @@
 import asyncio
+import http
 import uuid
 
+import pytest
+
+from apps.activities import errors as activity_errors
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
+from apps.workspaces.errors import AppletCreationAccessDenied
 from infrastructure.database import rollback
 from infrastructure.utility import FCMNotificationTest
 
@@ -41,8 +46,10 @@ class TestApplet(BaseTest):
     histories_url = f"{applet_detail_url}/versions"
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
+    applet_base_info_url = f"{applet_detail_url}/base_info"
 
     public_applet_detail_url = "/public/applets/{key}"
+    public_applet_base_info_url = f"{public_applet_detail_url}/base_info"
 
     @rollback
     async def test_creating_applet(self):
@@ -267,12 +274,12 @@ class TestApplet(BaseTest):
             ),
             data=create_data,
         )
-        assert response.status_code == 201, response.json()
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
         response = await self.client.get(
             self.applet_detail_url.format(pk=response.json()["result"]["id"])
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].subject == "Applet upload success!"
 
@@ -479,7 +486,7 @@ class TestApplet(BaseTest):
             ),
             data=create_data,
         )
-        assert response.status_code == 422, response.json()
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
     @rollback
     async def test_creating_applet_failed_by_duplicate_activity_item_name(
@@ -568,7 +575,7 @@ class TestApplet(BaseTest):
             ),
             data=create_data,
         )
-        assert response.status_code == 422, response.json()
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
     @rollback
     async def test_create_duplicate_name_applet(self):
@@ -673,7 +680,7 @@ class TestApplet(BaseTest):
             ),
             data=create_data,
         )
-        assert response.status_code == 400, response.json()
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert (
             response.json()["result"][0]["message"] == "Applet already exists."
         )
@@ -782,7 +789,7 @@ class TestApplet(BaseTest):
             ),
             data=create_data,
         )
-        assert response.status_code == 400, response.json()
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert (
             response.json()["result"][0]["message"] == "Applet already exists."
         )
@@ -794,6 +801,8 @@ class TestApplet(BaseTest):
         )
         update_data = dict(
             stream_enabled=True,
+            stream_ip_address="127.0.0.1",
+            stream_port=8881,
             display_name="Applet 1",
             encryption=dict(
                 public_key=uuid.uuid4().hex,
@@ -923,13 +932,39 @@ class TestApplet(BaseTest):
                 )
             ],
         )
+        activity_key = update_data["activity_flows"][0]["items"][0][
+            "activity_key"
+        ]
+        wrong_activity_key = uuid.uuid4()
+        update_data["activity_flows"][0]["items"][0][
+            "activity_key"
+        ] = wrong_activity_key
+
         response = await self.client.put(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             ),
             data=update_data,
         )
-        assert response.status_code == 200, response.json()
+        assert (
+            response.status_code
+            == activity_errors.FlowItemActivityKeyNotFoundError.status_code
+        )
+        assert (
+            response.json()["result"][0]["message"]
+            == activity_errors.FlowItemActivityKeyNotFoundError.message
+        )
+
+        update_data["activity_flows"][0]["items"][0][
+            "activity_key"
+        ] = activity_key
+        response = await self.client.put(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            data=update_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         # assert len(TestMail.mails) == 1
         # assert TestMail.mails[0].subject == "Applet edit success!"
         assert len(FCMNotificationTest.notifications) > 0
@@ -942,7 +977,7 @@ class TestApplet(BaseTest):
             ),
             data=dict(report_included_item_name="evening_activity_item3"),
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
         flow_id = data["result"]["activityFlows"][0]["id"]
         response = await self.client.put(
@@ -954,7 +989,24 @@ class TestApplet(BaseTest):
                 report_included_item_name="evening_activity_item3",
             ),
         )
+        assert response.status_code == http.HTTPStatus.OK
+
+        # get applet and check stream settings
+        response = await self.client.get(
+            self.applet_detail_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
         assert response.status_code == 200
+        assert response.json()["result"]["streamEnabled"] is True
+        assert (
+            response.json()["result"]["streamIpAddress"]
+            == update_data["stream_ip_address"]
+        )
+        assert (
+            response.json()["result"]["streamPort"]
+            == update_data["stream_port"]
+        )
 
     @rollback
     async def test_duplicate_applet(self):
@@ -976,7 +1028,7 @@ class TestApplet(BaseTest):
                 ),
             ),
         )
-        assert response.status_code == 201, response.json()
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].subject == "Applet duplicate success!"
@@ -999,7 +1051,7 @@ class TestApplet(BaseTest):
                 ),
             ),
         )
-        assert response.status_code == 400, response.json()
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
     @rollback
     async def test_set_applet_report_configuration(self):
@@ -1022,14 +1074,14 @@ class TestApplet(BaseTest):
             ),
             report_configuration,
         )
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
 
         response = await self.client.get(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert (
             response.json()["result"]["reportServerIp"]
             == report_configuration["report_server_ip"]
@@ -1066,14 +1118,14 @@ class TestApplet(BaseTest):
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
 
         response = await self.client.get(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["isPublished"] is True
 
         response = await self.client.post(
@@ -1081,14 +1133,14 @@ class TestApplet(BaseTest):
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
 
         response = await self.client.get(
             self.applet_detail_url.format(
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["isPublished"] is False
 
     @rollback
@@ -1106,7 +1158,7 @@ class TestApplet(BaseTest):
                 account_id=str(uuid.uuid4()),
             ),
         )
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
 
         response = await self.client.post(
             self.applet_set_encryption_url.format(
@@ -1128,7 +1180,7 @@ class TestApplet(BaseTest):
         )
         response = await self.client.get(self.applet_list_url)
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         assert len(response.json()["result"]) == 3
         assert (
             response.json()["result"][0]["id"]
@@ -1226,7 +1278,7 @@ class TestApplet(BaseTest):
             self.applet_list_url, dict(ordering="id", owner_id=1, limit=1)
         )
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert len(response.json()["result"]) == 1
         assert (
             response.json()["result"][0]["id"]
@@ -1243,7 +1295,7 @@ class TestApplet(BaseTest):
                 pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
             )
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
         assert result["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         assert result["displayName"] == "Applet 1"
@@ -1259,7 +1311,7 @@ class TestApplet(BaseTest):
                 key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
             )
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
         assert result["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         assert result["displayName"] == "Applet 1"
@@ -1371,7 +1423,7 @@ class TestApplet(BaseTest):
             ),
             data=create_data,
         )
-        assert response.status_code == 201, response.json()
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
         version = response.json()["result"]["version"]
         applet_id = response.json()["result"]["id"]
@@ -1380,7 +1432,7 @@ class TestApplet(BaseTest):
             self.histories_url.format(pk=applet_id)
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         versions = response.json()["result"]
         assert len(versions) == 1
         assert versions[0]["version"] == version
@@ -1521,7 +1573,7 @@ class TestApplet(BaseTest):
             ),
             data=update_data,
         )
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
 
         applet_id = response.json()["result"]["id"]
 
@@ -1531,7 +1583,7 @@ class TestApplet(BaseTest):
             self.histories_url.format(pk=applet_id)
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         versions = response.json()["result"]
         assert len(versions) == 3
         assert versions[0]["version"] == "2.0.0"
@@ -1542,7 +1594,7 @@ class TestApplet(BaseTest):
             self.history_url.format(pk=applet_id, version="1.9.9")
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         applet = response.json()["result"]
         assert applet["version"] == "1.9.9"
 
@@ -1550,7 +1602,7 @@ class TestApplet(BaseTest):
             self.history_url.format(pk=applet_id, version="1.0.0")
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         applet = response.json()["result"]
         assert applet["version"] == "1.0.0"
 
@@ -1880,7 +1932,7 @@ class TestApplet(BaseTest):
             data=update_data,
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
 
         version = response.json()["result"]["version"]
         applet_id = response.json()["result"]["id"]
@@ -1888,7 +1940,7 @@ class TestApplet(BaseTest):
         response = await self.client.get(
             self.history_changes_url.format(pk=applet_id, version=version)
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert (
             response.json()["result"]["displayName"]
             == "Applet User daily behave updated updated"
@@ -1905,7 +1957,7 @@ class TestApplet(BaseTest):
             self.applet_unique_name_url, data=dict(name="Applet 1")
         )
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["name"] == "Applet 1 (1)"
 
     @rollback
@@ -1918,5 +1970,104 @@ class TestApplet(BaseTest):
             self.applet_unique_name_url, data=dict(name="AppleT 1")
         )
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["name"] == "AppleT 1 (1)"
+
+    @rollback
+    async def test_get_applet_activities_info(self):
+        await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+
+        response = await self.client.get(
+            self.applet_base_info_url.format(
+                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            )
+        )
+        assert response.status_code == 200
+        assert response.json()["result"]["displayName"] == "Applet 1"
+        assert (
+            "singleSelect"
+            in response.json()["result"]["activities"][0][
+                "containsResponseTypes"
+            ]
+        )
+        assert (
+            type(response.json()["result"]["activities"][0]["itemCount"])
+            == int
+        )
+
+    @rollback
+    async def test_get_public_applet_activities_info(self):
+        response = await self.client.get(
+            self.public_applet_base_info_url.format(
+                key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
+            )
+        )
+
+        assert response.status_code == 200
+        assert response.json()["result"]["displayName"] == "Applet 1"
+        assert (
+            "singleSelect"
+            in response.json()["result"]["activities"][0][
+                "containsResponseTypes"
+            ]
+        )
+        assert (
+            type(response.json()["result"]["activities"][0]["itemCount"])
+            == int
+        )
+
+    @rollback
+    @pytest.mark.parametrize(
+        "email,password",
+        (
+            # Manager
+            ("lucy@gmail.com", "Test123"),
+            # Editor
+            ("mike2@gmail.com", "Test1234"),
+        ),
+    )
+    async def test_create_applet_in_another_workspace_not_owner(
+        self, applet_minimal_data, email, password
+    ):
+        await self.client.login(self.login_url, email, password)
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert response.status_code == http.HTTPStatus.CREATED
+
+    @rollback
+    async def test_create_applet_in_another_workspace_not_owner_user_is_not_invited(  # noqa: E501
+        self, applet_minimal_data
+    ):
+        await self.client.login(self.login_url, "lucy@gmail.com", "Test123")
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa3"
+            ),
+            data=applet_minimal_data,
+        )
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == AppletCreationAccessDenied.message
+
+    @rollback
+    async def test_create_applet_in_another_workspace_not_owner_user_does_not_have_role_to_create_applet(  # noqa: E501
+        self, applet_minimal_data
+    ):
+        await self.client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        response = await self.client.post(
+            self.applet_create_url.format(
+                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
+            ),
+            data=applet_minimal_data,
+        )
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == AppletCreationAccessDenied.message

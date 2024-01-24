@@ -3,12 +3,9 @@ import uuid
 import config
 from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import UserAppletAccessCRUD
-from apps.applets.domain.applet import AppletSingleLanguageInfo
-from apps.folders.crud import FolderCRUD
 from apps.invitations.errors import RespondentDoesNotExist, RespondentsNotSet
 from apps.shared.exception import AccessDeniedError
 from apps.shared.query_params import QueryParams
-from apps.themes.service import ThemeService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role, UserPinRole
@@ -60,61 +57,6 @@ class UserAccessService:
 
         workspaces = await UserWorkspaceCRUD(self.session).get_all()
         return [UserWorkspace.from_orm(workspace) for workspace in workspaces]
-
-    async def get_workspace_applets_by_language(
-        self, language: str, query_params: QueryParams
-    ) -> list[AppletSingleLanguageInfo]:
-        """Returns the user their chosen workspace applets."""
-        folder_id = query_params.filters.pop("folder_id", None)
-        folder_applet_query = FolderCRUD(self.session).get_folder_applets(
-            folder_id, self._user_id
-        )
-
-        schemas = await UserAppletAccessCRUD(
-            self.session
-        ).get_accessible_applets(
-            self._user_id, query_params, folder_applet_query, folder_id
-        )
-
-        theme_ids = [schema.theme_id for schema in schemas if schema.theme_id]
-        themes = []
-        if theme_ids:
-            themes = await ThemeService(
-                self.session, self._user_id
-            ).get_by_ids(theme_ids)
-
-        theme_map = dict((theme.id, theme) for theme in themes)
-        applets = []
-        for schema in schemas:
-            theme = theme_map.get(schema.theme_id)
-            applets.append(
-                AppletSingleLanguageInfo(
-                    id=schema.id,
-                    display_name=schema.display_name,
-                    version=schema.version,
-                    description=self._get_by_language(
-                        schema.description, language
-                    ),
-                    encryption=schema.encryption,
-                    theme=theme.dict() if theme else None,
-                    about=self._get_by_language(schema.about, language),
-                    image=schema.image,
-                    watermark=schema.watermark,
-                    theme_id=schema.theme_id,
-                    report_server_ip=schema.report_server_ip,
-                    report_public_key=schema.report_public_key,
-                    report_recipients=schema.report_recipients,
-                    report_include_user_id=schema.report_include_user_id,
-                    report_include_case_id=schema.report_include_case_id,
-                    report_email_body=schema.report_email_body,
-                    created_at=schema.created_at,
-                    updated_at=schema.updated_at,
-                    retention_period=schema.retention_period,
-                    retention_type=schema.retention_type,
-                    is_pinned=getattr(schema, "is_pinned", False),
-                )
-            )
-        return applets
 
     async def remove_manager_access(self, schema: RemoveManagerAccess):
         """Remove manager access from a specific user."""
@@ -209,21 +151,6 @@ class UserAccessService:
             raise AppletAccessDenied(
                 message=f"User is not related to applets {no_access_applet}"
             )
-
-    async def get_workspace_applets_count(
-        self, query_params: QueryParams
-    ) -> int:
-        folder_id = query_params.filters.pop("folder_id", None)
-        folder_applet_query = FolderCRUD(self.session).get_folder_applets(
-            folder_id, self._user_id
-        )
-
-        count = await UserAppletAccessCRUD(
-            self.session
-        ).get_accessible_applets_count(
-            self._user_id, query_params, folder_applet_query, folder_id
-        )
-        return count
 
     @staticmethod
     def _get_by_language(values: dict, language: str):

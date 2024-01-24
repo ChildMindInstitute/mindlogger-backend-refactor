@@ -144,3 +144,26 @@ class TestLink(BaseTest):
             )
         )
         assert response.status_code == 404
+
+    @rollback
+    async def test_applet_access_link_create_for_anonym(self):
+        # session = session_manager.get_session()
+
+        resp = await self.client.login(
+            self.login_url, "tom@mindlogger.com", "Test1234!"
+        )
+        # user_id = resp.json()["result"]["user"]["id"]
+        applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        # First delete link from fixtures
+        resp = await self.client.delete(
+            self.access_link_url.format(applet_id=applet_id)
+        )
+        # service = UserAppletAccessService(
+        #     session, uuid.UUID(user_id), uuid.UUID(applet_id)
+        # )
+        data = {"require_login": False}
+        resp = await self.client.post(
+            self.access_link_url.format(applet_id=applet_id),
+            data=data,
+        )
+        assert resp.status_code == 201
