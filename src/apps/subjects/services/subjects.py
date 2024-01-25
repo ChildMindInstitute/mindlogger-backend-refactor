@@ -74,7 +74,7 @@ class SubjectsService:
     async def get_by_email(self, email: str) -> Subject | None:
         return await SubjectsCrud(self.session).get_by_email(email)
 
-    async def get(self, id_: uuid.UUID) -> Subject | None:
+    async def get(self, id_: uuid.UUID) -> SubjectSchema | None:
         return await SubjectsCrud(self.session).get_by_id(id_)
 
     async def get_full(self, subject_id: uuid.UUID):
@@ -169,3 +169,21 @@ class SubjectsService:
         is_exist = await self.exist(subject_id, applet_id)
         if not is_exist:
             raise NotFoundError()
+
+    async def check_secret_id(
+        self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID
+    ) -> bool:
+        return await SubjectsCrud(self.session).check_secret_id(
+            subject_id, secret_id, applet_id
+        )
+
+    async def update(
+        self, subject_id: uuid.UUID, secret_user_id: str, nickname: str | None
+    ) -> SubjectFull:
+        subject = await self.get(subject_id)
+        if not subject:
+            raise NotFoundError()
+        subject.secret_user_id = secret_user_id
+        subject.nickname = nickname
+        await SubjectsCrud(self.session).update(subject)
+        return await self.get_full(subject_id)
