@@ -170,7 +170,6 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
                 **values,
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow(),
-                "is_deleted": False,
             },
             where=SubjectSchema.soft_exists(exists=True),
         ).returning(SubjectSchema.id)

@@ -38,12 +38,6 @@ class SubjectsService:
             secret_user_id=schema.secret_user_id,
         )
 
-    async def _create_subject(self, schema: Subject) -> SubjectSchema:
-        subj_crud = SubjectsCrud(self.session)
-        subject = self.__to_db_model(schema)
-        subject_entity = await subj_crud.create(subject)
-        return subject_entity
-
     async def create(self, schema: Subject) -> Subject:
         return await SubjectsCrud(self.session).upsert(schema)
 
