@@ -44,8 +44,8 @@ class SubjectsService:
         subject_entity = await subj_crud.create(subject)
         return subject_entity
 
-    async def create(self, schema: Subject) -> SubjectSchema:
-        return await self._create_subject(schema)
+    async def create(self, schema: Subject) -> Subject:
+        return await SubjectsCrud(self.session).upsert(schema)
 
     async def create_many(self, schema: list[Subject]) -> list[SubjectSchema]:
         models = list(map(lambda s: self.__to_db_model(s), schema))
@@ -171,3 +171,7 @@ class SubjectsService:
         return await SubjectsCrud(self.session).check_secret_id(
             subject_id, secret_id, applet_id
         )
+
+    async def upsert(self, subject: Subject) -> Subject:
+        schema = await SubjectsCrud(self.session).upsert(subject)
+        return Subject.from_orm(schema)

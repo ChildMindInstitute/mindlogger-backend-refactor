@@ -1,9 +1,13 @@
 import uuid
+from datetime import datetime
 
+from asyncpg import UniqueViolationError
 from sqlalchemy import and_, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Query
 
 from apps.subjects.db.schemas import SubjectRespondentSchema, SubjectSchema
+from apps.subjects.domain import Subject
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from infrastructure.database.crud import BaseCRUD
@@ -155,3 +159,24 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         query = query.limit(1)
         res = await self._execute(query)
         return bool(res.scalar_one_or_none())
+
+    async def upsert(self, schema: Subject) -> Subject:
+        values = {**schema.dict()}
+        values.pop("id")
+        stmt = insert(SubjectSchema).values(values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[SubjectSchema.user_id, SubjectSchema.applet_id],
+            set_={
+                **values,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "is_deleted": False,
+            },
+            where=SubjectSchema.soft_exists(exists=True),
+        ).returning(SubjectSchema.id)
+        result = await self._execute(stmt)
+        model_id = result.scalar_one_or_none()
+        if not model_id:
+            raise UniqueViolationError()
+        schema.id = model_id
+        return schema
