@@ -22,6 +22,12 @@ PatchRegister.register(
     description="Slider tick marks and labels fix patch",
     manage_session=False,
 )
+PatchRegister.register(
+    file_path="m2_4906_populate_user_id_in_invitations.sql",
+    task_id="M2-4906",
+    description="Populate user_id column in declined/approved invitations",
+    manage_session=False,
+)
 
 
 app = typer.Typer()
