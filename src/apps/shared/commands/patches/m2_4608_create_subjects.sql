@@ -9,7 +9,8 @@ insert into subjects (
 	secret_user_id,
 	creator_id,
 	created_at,
-	updated_at
+	updated_at,
+	is_deleted
 )
 select
 	(md5(uaa.applet_id::text || uaa.user_id::text))::uuid as id,
@@ -22,7 +23,8 @@ select
 	uaa.meta->>'secretUserId' as secret_user_id,
 	uaa.owner_id as creator_id,
 	uaa.created_at,
-	uaa.updated_at
+	uaa.updated_at,
+	uaa.is_deleted
 from
 	user_applet_accesses uaa
 	join users on users.id = uaa.user_id

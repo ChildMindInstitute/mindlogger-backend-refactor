@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-sql_subjects = """
+sql_subjects_pending = """
     insert into subjects (
         id,
         applet_id,
@@ -26,7 +26,7 @@ sql_subjects = """
         AND i.status = 'pending';
 """
 
-sql_invitations = """
+sql_invitations_pending = """
     update invitations
     set meta = jsonb_set(
         meta,
@@ -37,6 +37,17 @@ sql_invitations = """
         AND status = 'pending';
 """
 
+sql_invitations_accepted = """
+    update invitations
+    set meta = jsonb_set(
+        coalesce(meta, '{}'::jsonb),
+        '{subject_id}',
+        to_jsonb((md5(applet_id::text || user_id::text)::uuid))
+    )
+    where role = 'respondent'
+        AND status = 'approved';
+"""
+
 
 async def main(
     session: AsyncSession,
@@ -44,5 +55,6 @@ async def main(
     *args,
     **kwargs,
 ):
-    await session.execute(sql_subjects)
-    await session.execute(sql_invitations)
+    await session.execute(sql_invitations_accepted)
+    await session.execute(sql_subjects_pending)
+    await session.execute(sql_invitations_pending)
