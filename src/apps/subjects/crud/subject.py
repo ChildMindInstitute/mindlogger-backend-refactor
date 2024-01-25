@@ -134,7 +134,9 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         return bool(res.scalar_one_or_none())
 
     async def delete_by_id(self, id_: uuid.UUID):
-        await self._delete(key="id", value=id_)
+        await self._update_one(
+            lookup="id", value=id_, schema=SubjectSchema(is_deleted=True)
+        )
 
     async def get(
         self, user_id: uuid.UUID, applet_id: uuid.UUID
@@ -171,7 +173,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow(),
             },
-            where=SubjectSchema.soft_exists(exists=True),
+            where=SubjectSchema.soft_exists(exists=False),
         ).returning(SubjectSchema.id)
         result = await self._execute(stmt)
         model_id = result.scalar_one_or_none()
