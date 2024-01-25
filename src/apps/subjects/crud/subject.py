@@ -23,8 +23,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         return await self._create_many(schema)
 
     async def update(self, schema: SubjectSchema) -> SubjectSchema:
-        schema = await self._update_one("id", schema.id, schema)
-        return schema
+        return await self._update_one("id", schema.id, schema)
 
     async def get_by_id(self, _id: uuid.UUID) -> SubjectSchema | None:
         return await self._get("id", _id)
@@ -143,9 +142,6 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         )
         result = await self._execute(query)
         return result.scalar_one_or_none()
-        
-    async def update(self, schema: SubjectSchema) -> SubjectSchema:
-        return await self._update_one("id", schema.id, schema)
 
     async def check_secret_id(
         self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID

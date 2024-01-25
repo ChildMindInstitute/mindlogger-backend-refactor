@@ -171,14 +171,3 @@ class SubjectsService:
         return await SubjectsCrud(self.session).check_secret_id(
             subject_id, secret_id, applet_id
         )
-
-    async def update(
-        self, subject_id: uuid.UUID, secret_user_id: str, nickname: str | None
-    ) -> SubjectFull:
-        subject = await self.get(subject_id)
-        if not subject:
-            raise NotFoundError()
-        subject.secret_user_id = secret_user_id
-        subject.nickname = nickname
-        await SubjectsCrud(self.session).update(subject)
-        return await self.get_full(subject_id)
