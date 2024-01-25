@@ -4,6 +4,7 @@ import uuid
 import pytest
 
 from apps.shared.test import BaseTest
+from apps.subjects.crud import SubjectsCrud
 from apps.subjects.domain import SubjectCreateRequest, SubjectRespondentCreate
 
 
@@ -23,10 +24,12 @@ class TestSubjects(BaseTest):
         "users/fixtures/users.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
+        "subjects/fixtures/subjects.json",
     ]
 
     login_url = "/auth/login"
     subject_list_url = "/subjects"
+    subject_detail_url = "/subjects/{subject_id}"
     subject_respondent_url = "/subjects/{subject_id}/respondents"
     subject_respondent_details_url = (
         "/subjects/{subject_id}/respondents/{respondent_id}"
@@ -105,3 +108,41 @@ class TestSubjects(BaseTest):
         )
         res = await client.delete(url_delete)
         assert res.status_code == exp_code
+
+    @pytest.mark.parametrize(
+        "body,exp_status",
+        (
+            (
+                # Duplicated secret id
+                dict(secretUserId="f0dd4996-e0eb-461f-b2f8-ba873a674788"),
+                http.HTTPStatus.BAD_REQUEST,
+            ),
+            (dict(secretUserId=str(uuid.uuid4())), http.HTTPStatus.OK),
+            (
+                dict(secretUserId=str(uuid.uuid4()), nickname="bob"),
+                http.HTTPStatus.OK,
+            ),
+            (dict(nickname="bob"), http.HTTPStatus.UNPROCESSABLE_ENTITY),
+        ),
+    )
+    async def test_update_subject(
+        self, client, session, create_shell_body, body, exp_status
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.post(
+            self.subject_list_url, data=create_shell_body
+        )
+        subject = response.json()["result"]
+        url = self.subject_detail_url.format(subject_id=subject["id"])
+        response = await client.put(url, body)
+        assert response.status_code == exp_status
+        subject = await SubjectsCrud(session).get_by_id(subject["id"])
+        if exp_status == http.HTTPStatus.OK:
+            exp_secret_id = body.get("secretUserId")
+            exp_nickname = body.get("nickname")
+        else:
+            exp_secret_id = create_shell_body.get("secret_user_id")
+            exp_nickname = create_shell_body.get("nickname")
+
+        assert subject.secret_user_id == exp_secret_id
+        assert subject.nickname == exp_nickname

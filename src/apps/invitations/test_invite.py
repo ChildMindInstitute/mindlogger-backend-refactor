@@ -299,8 +299,8 @@ class TestInvite(BaseTest):
             invitation_respondent_data.dict(),
         )
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
-        assert (
-            response.json()["result"][0]["message"] == NonUniqueValue.message
+        assert response.json()["result"][0]["message"] == (
+            NonUniqueValue.message
         )
 
     async def test_manager_invite_manager_success(

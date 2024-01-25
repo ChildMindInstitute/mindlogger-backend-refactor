@@ -6,7 +6,12 @@ from apps.shared.domain import (
     DEFAULT_OPENAPI_RESPONSE,
     Response,
 )
-from apps.subjects.api import add_respondent, create_subject, remove_respondent
+from apps.subjects.api import (
+    add_respondent,
+    create_subject,
+    remove_respondent,
+    update_subject,
+)
 from apps.subjects.domain import Subject, SubjectFull
 
 router = APIRouter(prefix="/subjects", tags=["Subjects"])
@@ -21,6 +26,17 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(create_subject)
+
+router.put(
+    "/{subject_id}",
+    response_model=Response[SubjectFull],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[SubjectFull]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(update_subject)
 
 
 router.post(

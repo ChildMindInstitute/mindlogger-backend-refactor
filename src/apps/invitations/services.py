@@ -394,10 +394,7 @@ class InvitationsService:
             ]
         results = await asyncio.gather(*workers)
         if any(results):
-            raise NonUniqueValue(
-                message=f"In applet with id {applet_id} "
-                f"secret User Id is non-unique."
-            )
+            raise NonUniqueValue()
 
     async def _do_respondents_exist(
         self,

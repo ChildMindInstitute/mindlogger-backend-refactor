@@ -1,5 +1,6 @@
 import uuid
 
+from apps.shared.exception import AccessDeniedError
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import (
@@ -231,3 +232,11 @@ class CheckAccessService:
 
         if not has_access:
             raise AnswerCheckAccessDenied()
+
+    async def check_subject_edit_access(self, applet_id: uuid.UUID):
+        has_access = await AppletAccessCRUD(self.session).can_invite_anyone(
+            applet_id, self.user_id
+        )
+
+        if not has_access:
+            raise AccessDeniedError()
