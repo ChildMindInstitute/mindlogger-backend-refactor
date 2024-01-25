@@ -23,7 +23,8 @@ sql_subjects_pending = """
     from
         invitations i
     where i.role = 'respondent'
-        AND i.status = 'pending';
+        and i.status = 'pending'
+        and meta->>'secret_user_id' is not null;
 """
 
 sql_invitations_pending = """
@@ -34,7 +35,8 @@ sql_invitations_pending = """
         to_jsonb((md5(applet_id::text || (meta->>'secret_user_id'))::uuid))
     )
     where role = 'respondent'
-        AND status = 'pending';
+        and status = 'pending'
+        and meta->>'secret_user_id' is not null;
 """
 
 sql_invitations_accepted = """

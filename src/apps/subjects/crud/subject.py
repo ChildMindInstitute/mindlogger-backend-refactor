@@ -132,3 +132,19 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         )
         res = await self._execute(query)
         return bool(res.scalar_one_or_none())
+
+    async def update(self, schema: SubjectSchema) -> SubjectSchema:
+        return await self._update_one("id", schema.id, schema)
+
+    async def check_secret_id(
+        self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID
+    ) -> bool:
+        query: Query = select(SubjectSchema.id)
+        query = query.where(
+            SubjectSchema.secret_user_id == secret_id,
+            SubjectSchema.applet_id == applet_id,
+            SubjectSchema.id != subject_id,
+        )
+        query = query.limit(1)
+        res = await self._execute(query)
+        return bool(res.scalar_one_or_none())
