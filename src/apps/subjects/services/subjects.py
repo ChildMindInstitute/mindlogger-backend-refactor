@@ -13,7 +13,6 @@ from apps.subjects.domain import (
 )
 from apps.users import UserSchema
 from apps.users.cruds.user import UsersCRUD
-from apps.users.services.user import UserService
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 
@@ -62,12 +61,10 @@ class SubjectsService:
         """
         Extend shell account with full account for current user
         """
-        user = await UserService(self.session).get(self.user_id)
-        assert user
         crud = SubjectsCrud(self.session)
         subject = await crud.get_by_id(subject_id)
         if subject:
-            subject.user_id = user.id
+            subject.user_id = self.user_id
             subject_model = await crud.update(subject)
             return Subject.from_orm(subject_model)
         return None
