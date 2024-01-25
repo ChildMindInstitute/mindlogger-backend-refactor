@@ -10,6 +10,7 @@ from apps.shared.domain import Response, ResponseMulti
 from apps.users import User
 from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic
+from infrastructure.database.deps import get_session
 
 __all__ = [
     "folder_list",
@@ -20,20 +21,17 @@ __all__ = [
     "folder_unpin",
 ]
 
-from infrastructure.database.deps import get_session
-
 
 async def folder_list(
     workspace_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> ResponseMulti[FolderPublic]:
-    async with atomic(session):
-        if not user.is_super_admin:
-            await CheckAccessService(
-                session, user.id
-            ).check_workspace_folder_access(workspace_id)
-        folders = await FolderService(session, workspace_id, user.id).list()
+    if not user.is_super_admin:
+        await CheckAccessService(
+            session, user.id
+        ).check_workspace_folder_access(workspace_id)
+    folders = await FolderService(session, workspace_id, user.id).list()
     return ResponseMulti(
         result=[FolderPublic.from_orm(f) for f in folders], count=len(folders)
     )
@@ -42,7 +40,7 @@ async def folder_list(
 async def folder_create(
     workspace_id: uuid.UUID,
     data: FolderCreate,
-    user=Depends(get_current_user),
+    user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> Response[FolderPublic]:
     async with atomic(session):
@@ -60,7 +58,7 @@ async def folder_update_name(
     workspace_id: uuid.UUID,
     folder_id: uuid.UUID,
     data: FolderUpdate,
-    user=Depends(get_current_user),
+    user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> Response[FolderPublic]:
     async with atomic(session):
@@ -77,7 +75,7 @@ async def folder_update_name(
 async def folder_delete(
     workspace_id: uuid.UUID,
     folder_id: uuid.UUID,
-    user=Depends(get_current_user),
+    user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
     async with atomic(session):
@@ -94,7 +92,7 @@ async def folder_pin(
     workspace_id: uuid.UUID,
     folder_id: uuid.UUID,
     applet_id: uuid.UUID,
-    user=Depends(get_current_user),
+    user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
     async with atomic(session):
@@ -112,7 +110,7 @@ async def folder_unpin(
     workspace_id: uuid.UUID,
     folder_id: uuid.UUID,
     applet_id: uuid.UUID,
-    user=Depends(get_current_user),
+    user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
     async with atomic(session):
