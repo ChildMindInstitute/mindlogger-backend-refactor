@@ -111,7 +111,7 @@ async def update_subject(
     subject = await subject_srv.get(subject_id)
     if not subject:
         raise NotFoundError()
-    await CheckAccessService(session, user.id).check_applet_invite_access(
+    await CheckAccessService(session, user.id).check_subject_edit_access(
         subject.applet_id
     )
     exist = await subject_srv.check_secret_id(
