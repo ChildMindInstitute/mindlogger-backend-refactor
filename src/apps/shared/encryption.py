@@ -64,7 +64,7 @@ def generate_dh_public_key(private_key: list, prime: list, base: list) -> list:
     return list(key)
 
 
-def geterate_dh_aes_key(
+def generate_dh_aes_key(
     private_key: list, public_key: list, prime: list
 ) -> list:
     p = int.from_bytes(bytes(prime), "big")

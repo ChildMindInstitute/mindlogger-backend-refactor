@@ -117,7 +117,6 @@ def replace_batch(doc: str, replacements: dict):
 
 
 class ModelJsonLDConverter(ContainsNestedModelMixin):
-
     CONTEXT_TO_COMPACT = "https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json"  # noqa: E501
 
     url_prefix = "https://raw.githubusercontent.com"
@@ -164,7 +163,6 @@ class ModelJsonLDConverter(ContainsNestedModelMixin):
         return protocol_data
 
     async def to_zip(self, model, compact=False) -> BytesIO:
-
         data = await self.to_list(model, compact)
 
         schema = data.schema

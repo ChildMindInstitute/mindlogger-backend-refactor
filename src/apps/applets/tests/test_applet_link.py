@@ -23,7 +23,7 @@ class TestLink(BaseTest):
         )
 
         assert response.status_code == 201
-        assert type(response.json()["result"]["link"]) == str
+        assert isinstance(response.json()["result"]["link"], str)
 
         response = await client.get(
             self.access_link_url.format(
@@ -33,7 +33,7 @@ class TestLink(BaseTest):
 
         assert response.status_code == 200, response.json()
 
-        assert type(response.json()["result"]["link"]) == str
+        assert isinstance(response.json()["result"]["link"], str)
 
         response = await client.post(
             self.access_link_url.format(
@@ -62,7 +62,7 @@ class TestLink(BaseTest):
         )
 
         assert response.status_code == 201
-        assert type(response.json()["result"]["link"]) == str
+        assert isinstance(response.json()["result"]["link"], str)
 
     async def test_applet_access_link_create_by_coordinator(self, client):
         await client.login(self.login_url, "bob@gmail.com", "Test1234!")
@@ -83,7 +83,7 @@ class TestLink(BaseTest):
         )
 
         assert response.status_code == 201
-        assert type(response.json()["result"]["link"]) == str
+        assert isinstance(response.json()["result"]["link"], str)
 
     async def test_applet_access_link_get(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
@@ -94,7 +94,7 @@ class TestLink(BaseTest):
             )
         )
         assert response.status_code == 200
-        assert type(response.json()["result"]["link"]) == str
+        assert isinstance(response.json()["result"]["link"], str)
 
         response = await client.get(
             self.access_link_url.format(

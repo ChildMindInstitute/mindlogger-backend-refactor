@@ -37,7 +37,6 @@ DEFLATE = 8
 
 
 class ZipInfo(object):
-
     __slots__ = (
         "filename",
         "timestamp",

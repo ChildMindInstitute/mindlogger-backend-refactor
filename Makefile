@@ -3,8 +3,7 @@ HOST = localhost
 
 TEST_COMMAND = pytest -s -vv
 
-BLACK_COMMAND = black
-FLAKE8_COMMAND = flake8
+RUFF_COMMAND = ruff
 ISORT_COMMAND = isort
 MYPY_COMMAND = mypy
 
@@ -30,7 +29,7 @@ test:
 # NOTE: cq == "Code quality"
 .PHONY: cq
 cq:
-	${BLACK_COMMAND} ./ && ${FLAKE8_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./
+	${RUFF_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./
 
 # NOTE: This command is used to run migration from Mongo to Postgres
 .PHONY: migrate
@@ -49,7 +48,7 @@ migrate_answer:
 .PHONY: dcq
 dcq:
 	${DOCKER_EXEC} \
-		${BLACK_COMMAND} ./ && ${FLAKE8_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./
+		${RUFF_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./
 
 .PHONY: dtest
 dtest:
@@ -60,8 +59,7 @@ dtest:
 .PHONY: dcheck
 dcheck:
 	${DOCKER_EXEC} \
-		${BLACK_COMMAND} ./ && ${FLAKE8_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./ \
-		&& ${TEST_COMMAND}
+		${RUFF_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./ && ${TEST_COMMAND}
 
 
 # Setting pre-commit hooks to search for aws keys

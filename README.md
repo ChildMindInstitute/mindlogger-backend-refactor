@@ -1,10 +1,13 @@
 # ChildMindInstitute
+
 # Mindlogger
 
 ## <span style="color:#9DB7FF">About</span>
+
 👉 This repository is used as a backend for the service MindLogger [HERE](https://github.com/ChildMindInstitute/mindlogger-backend-refactor).
 
 🔌 **Web application is powered by:**
+
 - ✅ [Python3.10+](https://www.python.org/downloads/release/python-3108/)
 - ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
 - ✅ [FastAPI](https://fastapi.tiangolo.com)
@@ -21,8 +24,8 @@ And
 <br/>
 
 🔌 **Code quality tools:**
-- ✅ [flake8](https://github.com/pycqa/flake8)
-- ✅ [black](https://github.com/psf/black)
+
+- ✅ [ruff](https://github.com/astral-sh/ruff)
 - ✅ [isort](https://github.com/PyCQA/isort)
 - ✅ [mypy](https://github.com/python/mypy)
 - ✅ [pytest](https://github.com/pytest-dev/pytest)
@@ -45,24 +48,24 @@ git clone git@github.com:ChildMindInstitute/mindlogger-backend-refactor.git
 
 > 💡 All of them you can find in `.env.default`
 
-
 #### 2.1 Description 📜
-| Key | Default value      | Description                                                                                                                                                                   |
-| --- |--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| DATABASE__HOST | postgres           | Database Host                                                                                                                                                                 |
-| DATABASE__USER | postgres           | User name for Postgresql Database user                                                                                                                                        |
-| DATABASE__PASSWORD | postgres           | Password for Postgresql Database user                                                                                                                                         |
-| DATABASE__DB | mindlogger_backend | Database name                                                                                                                                                                 |
-| CORS__ALLOW_ORIGINS | `*`                | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000`                                        |
-| CORS__ALLOW_CREDENTIALS | true               | Set the `Access-Control-Allow-Credentials` header                                                                                                                             |
-| CORS__ALLOW_METHODS | `*`                | Set the `Access-Control-Allow-Methods` header                                                                                                                                 |
-| CORS__ALLOW_HEADERS | `*`                | Set the `Access-Control-Allow-Headers` header                                                                                                                                 |
-| AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY | secret1            | Access token's salt                                                                                                                                                           |
-| AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY | secret2            | Refresh token salt                                                                                                                                                            |
-| AUTHENTICATION__ALGORITHM | HS256              | The JWT's algorithm                                                                                                                                                           |
-| AUTHENTICATION__ACCESS_TOKEN__EXPIRATION | 30                 | Time in minutes after which the access token will stop working                                                                                                                |
-| AUTHENTICATION__REFRESH_TOKEN__EXPIRATION | 30                 | Time in minutes after which the refresh token will stop working                                                                                                               |
-| ADMIN_DOMAIN | -                  | Admin panel domain                                                                                                                                                            |
+
+| Key                                       | Default value      | Description                                                                                                                            |
+| ----------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| DATABASE\_\_HOST                          | postgres           | Database Host                                                                                                                          |
+| DATABASE\_\_USER                          | postgres           | User name for Postgresql Database user                                                                                                 |
+| DATABASE\_\_PASSWORD                      | postgres           | Password for Postgresql Database user                                                                                                  |
+| DATABASE\_\_DB                            | mindlogger_backend | Database name                                                                                                                          |
+| CORS\_\_ALLOW_ORIGINS                     | `*`                | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000` |
+| CORS\_\_ALLOW_CREDENTIALS                 | true               | Set the `Access-Control-Allow-Credentials` header                                                                                      |
+| CORS\_\_ALLOW_METHODS                     | `*`                | Set the `Access-Control-Allow-Methods` header                                                                                          |
+| CORS\_\_ALLOW_HEADERS                     | `*`                | Set the `Access-Control-Allow-Headers` header                                                                                          |
+| AUTHENTICATION**ACCESS_TOKEN**SECRET_KEY  | secret1            | Access token's salt                                                                                                                    |
+| AUTHENTICATION**REFRESH_TOKEN**SECRET_KEY | secret2            | Refresh token salt                                                                                                                     |
+| AUTHENTICATION\_\_ALGORITHM               | HS256              | The JWT's algorithm                                                                                                                    |
+| AUTHENTICATION**ACCESS_TOKEN**EXPIRATION  | 30                 | Time in minutes after which the access token will stop working                                                                         |
+| AUTHENTICATION**REFRESH_TOKEN**EXPIRATION | 30                 | Time in minutes after which the refresh token will stop working                                                                        |
+| ADMIN_DOMAIN                              | -                  | Admin panel domain                                                                                                                     |
 
 ##### ✋ Mandatory:
 
@@ -86,7 +89,6 @@ openssl rand -hex 32
 
 <br/>
 
-
 ## 👨‍🦯 <span style="color:#9DB7FF">Local development</span>
 
 ### 1. Decide how would you run storages 🤔
@@ -96,7 +98,6 @@ openssl rand -hex 32
 ✅ [🐧 Linux](https://redis.io/docs/getting-started/installation/install-redis-on-linux/)
 
 ✅ [ MacOs](https://redis.io/docs/getting-started/installation/install-redis-on-mac-os/)
-
 
 #### 1.2 Install via Docker 🐳
 
@@ -124,6 +125,7 @@ pipenv sync --dev
 > 🔗 [Pipenv docs](https://docs.pipenv.org/advanced/#automatic-loading-of-env)
 
 So then you have to do it by your own manually
+
 ```bash
 # Manual exporting in Unix (like this)
 export PYTHONPATH=src/
@@ -132,6 +134,7 @@ export BASIC_AUTH__PASSWORD=1234
 ```
 
 ...or using a Bash-script
+
 ```bash
 set -o allexport; source .env; set +o allexport
 ```
@@ -139,7 +142,6 @@ set -o allexport; source .env; set +o allexport
 > 🛑 **NOTE:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
 
 <br/>
-
 
 ### 3. Provide code quality ✨
 
@@ -165,7 +167,6 @@ make aws-scan
 
 ### 4. Running the application ▶️
 
-
 > 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable, e.g: export PYTHONPATH=src/
 
 In project we use simplified version of imports: `from apps.application_name import class_name, function_name, module_nanme`.
@@ -173,7 +174,6 @@ In project we use simplified version of imports: `from apps.application_name imp
 For doing this we must have `src/` folder specified in a **PATH**.
 
 P.S. You don't need to do this additional step if you run application via Docker container 🤫
-
 
 ```bash
 uvicorn src.main:app --proxy-headers --port {PORT} --reload
@@ -193,7 +193,9 @@ DATABASE__PASSWORD=postgres
 DATABASE__USER=postgres
 DATABASE__DB=test
 ```
+
 > 🛑 **NOTE:** To run tests localy without changing DATABASE_HOST please add row below to the `/etc/hosts` file (macOS, Linux). It will automatically redirect postgres to the localhost.
+
 ```
 127.0.0.1       postgres
 ```
@@ -242,13 +244,12 @@ coverage report -m
 ```bash
 docker-compose build
 ```
+
 ✅ Make sure that you completed `.env` file. It is using by default in `docker-compose.yaml` file for buildnig.
 
 ✅ Check building with `docker images` command. You should see the record with `fastapi_service`.
 
 💡 If you would like to debug the application insode Docker comtainer make sure that you use `COMPOSE_FILE=docker-compose.dev.yaml` in `.env`. It has opened stdin and tty.
-
-
 
 ### 2. Running the application ▶️
 
@@ -264,6 +265,7 @@ Additional `docker-compose up` flags that might be useful for development
 ```
 
 #### Stop the application 🛑
+
 ```bash
 docker-compose down
 ```
@@ -275,20 +277,21 @@ Additional `docker-compose down` flags that might be useful for development
 ```
 
 #### Run only tests 🛑
+
 (This is how tests are running on CI)
+
 ```bash
 make dtest
 ```
-
 
 ### 3. Provide code quality ✨
 
 ✋ Only in case you want to setup the Git hooks inside your Docker container and burn down in hell you may skip this step. 👹 🔥
 
 👉 <u>For the rest of audience it is recommended:</u>
+
 1. Don't install pre-commit hooks
 2. Use Makefile to run all commands in Docker container
-
 
 Usage:
 
@@ -302,7 +305,6 @@ make dtest
 # Check everything in one hop
 make dcheck
 ```
-
 
 ## 💼 <span style="color:#9DB7FF">Additional</span>
 
@@ -327,9 +329,11 @@ make check
 
 ...
 ```
+
 💡 If you want run web-app locally you can use the next command
 
 Run web-app locally (don't forget to activate the environment)
+
 ```bash
 make run
 ```
@@ -337,7 +341,6 @@ make run
 ### CORS policy
 
 By default CORS policy accepts all connections
-
 
 ## <span style="color:#9DB7FF">Alembic (migration)</span>
 
@@ -358,6 +361,7 @@ alembic upgrade head
 ```bash
 alembic downgrade 0e43c346b90d
 ```
+
 ✅ This hash is taken from the generated file in the migrations folder
 
 ### 3. Downgrade to the specific one 🔨
@@ -369,16 +373,19 @@ alembic downgrade 0e43c346b90d
 ### 4. Removing the migration 🔨
 
 💡 Do not forget that alembic saves the migration version into the database.
+
 ```bash
 delete from alembic_version;
 ```
 
 ### 5. Upgrade arbitrary servers
-``` bash
+
+```bash
 alembic -c alembic_arbitrary.ini upgrade head
 ```
 
 ### 6. Database relation structure
+
 ```mermaid
 
 erDiagram
@@ -631,15 +638,23 @@ Flow_histories }o--|| Applet_histories: ""
 ```
 
 ## <span style="color:#9DB7FF"> Arbitrary setup </span>
+
 You can connect arbitrary file storage and database by filling special fields in table `user_workspaces`.
+
 ### 1. PostgreSQL
+
 Add your database connection string into `database_uri`
 In next format:
+
 ```
 postgresql+asyncpg://<username>:<password>@<hostname>:port/database
 ```
+
 ### 2. AWS S3 and GCP S3
+
 For AWS S3 bucket next fields are required:
 `storage_region`,`storage_bucket`, `storage_access_key`,`storage_secret_key`.
+
 ### 3. Azure Blob
+
 In case of Azure blob, specify your connection string into field `storage_secret_key`

@@ -37,7 +37,6 @@ def validator(schema):
 
 
 def isUrlValid(value):
-
     code = "invalid"
     message = "Enter a valid URL."
     schemes = ["http", "https", "ftp", "ftps"]
@@ -103,7 +102,6 @@ def pathIsImage(url):
 
 
 def isValidImageUrl(url):
-
     result = pathIsImage(url)
 
     if result:
@@ -113,7 +111,6 @@ def isValidImageUrl(url):
 
 
 def isValidHexColor(input_str):
-
     # Regex to check valid
     # hexadecimal color code.
     if input_str == None:
