@@ -65,7 +65,16 @@ env = [
 ]
 
 [tool.coverage.run]
-omit = ["*/conftest.py", "*/test_*.py", "*/migrations/"]
+omit = [
+    "*/conftest.py",
+    "*/test_*.py",
+    "*/tests/*",
+    "*/migrations/*",
+    "*/girderformindlogger/*",
+    "*/jsonld_converter/*",
+    "*/migrate/*",
+    "*/migrations_arbitrary/*"
+]
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]

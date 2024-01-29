@@ -1,14 +1,13 @@
 import datetime
 import uuid
 
-from apps.job.constants import JobStatus
 from apps.shared.domain import InternalModel
 
 
 class JobCreate(InternalModel):
     name: str
     creator_id: uuid.UUID
-    status: JobStatus
+    status: str
     details: dict | None = None
 
 
