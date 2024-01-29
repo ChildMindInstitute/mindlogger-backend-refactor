@@ -37,8 +37,6 @@ class PasswordRecoveryService:
     async def send_password_recovery(
         self, schema: PasswordRecoveryRequest
     ) -> PublicUser:
-        # encrypted_email = encrypt(bytes(schema.email, "utf-8")).hex()
-
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
         if user.email_encrypted != schema.email:
@@ -56,7 +54,8 @@ class PasswordRecoveryService:
             email=user.email_encrypted,
             user_id=user.id,
             key=uuid.uuid3(
-                uuid.uuid4(), user.email_encrypted  # type: ignore[arg-type]
+                uuid.uuid4(),
+                user.email_encrypted,  # type: ignore[arg-type]
             ),
         )
 

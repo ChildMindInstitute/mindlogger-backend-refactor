@@ -80,7 +80,7 @@ async def password_update(
 async def password_recovery(
     schema: PasswordRecoveryRequest = Body(...),
     session=Depends(get_session),
-):
+) -> EmptyResponse:
     """General endpoint for sending password recovery email
     and stored info in Redis.
     """
@@ -115,7 +115,7 @@ async def password_recovery_approve(
 async def password_recovery_healthcheck(
     email: Annotated[str, Query(max_length=100)] = Required,
     key: Annotated[uuid.UUID | str, Query(max_length=36)] = Required,
-):
+) -> None:
     """General endpoint to get the password recovery healthcheck."""
 
     try:

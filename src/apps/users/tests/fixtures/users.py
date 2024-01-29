@@ -30,13 +30,17 @@ async def user_tom(
     hashed_password = AuthenticationService.get_password_hash(
         user_tom_create.password
     )
-    user = await UsersCRUD(session).save(
-        UserSchema(
-            email=email_hash,
-            email_encrypted=user_tom_create.email,
-            first_name=user_tom_create.first_name,
-            last_name=user_tom_create.last_name,
-            hashed_password=hashed_password,
+    crud = UsersCRUD(session)
+    # backward compatibility with current JSON fixtures
+    user = await crud.get_user_or_none_by_email(user_tom_create.email)
+    if not user:
+        user = await crud.save(
+            UserSchema(
+                email=email_hash,
+                email_encrypted=user_tom_create.email,
+                first_name=user_tom_create.first_name,
+                last_name=user_tom_create.last_name,
+                hashed_password=hashed_password,
+            )
         )
-    )
     yield user
