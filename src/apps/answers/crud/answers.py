@@ -54,6 +54,9 @@ class _AnswersExportFilter(Filtering):
             field.in_(value), AnswerItemSchema.is_assessment.isnot(True)
         )
 
+    target_subject_ids = FilterField(
+        AnswerSchema.target_subject_id, Comparisons.IN
+    )
     activity_history_ids = FilterField(
         AnswerSchema.activity_history_id, Comparisons.IN
     )
@@ -142,6 +145,13 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.respondent_id == respondent_id)
         await self._execute(query)
 
+    @classmethod
+    def _exclude_assessment_val(cls, col):
+        return case(
+            (AnswerItemSchema.is_assessment.is_(True), null()),
+            else_=col,
+        )
+
     async def get_applet_answers(
         self,
         applet_id: uuid.UUID,
@@ -186,6 +196,15 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.migrated_data,
                 AnswerItemSchema.user_public_key,
                 AnswerItemSchema.respondent_id,
+                self._exclude_assessment_val(
+                    AnswerSchema.target_subject_id
+                ).label("target_subject_id"),
+                self._exclude_assessment_val(
+                    AnswerSchema.source_subject_id
+                ).label("source_subject_id"),
+                self._exclude_assessment_val(AnswerSchema.relation).label(
+                    "relation"
+                ),
                 AnswerItemSchema.answer,
                 AnswerItemSchema.events,
                 AnswerItemSchema.item_ids,
@@ -197,7 +216,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 activity_history_id.label("activity_history_id"),
                 flow_history_id.label("flow_history_id"),
                 AnswerItemSchema.created_at,
-                reviewed_answer_id.label("reviewed_answer_id"),
                 reviewed_answer_id.label("reviewed_answer_id"),
             )
             .select_from(AnswerSchema)

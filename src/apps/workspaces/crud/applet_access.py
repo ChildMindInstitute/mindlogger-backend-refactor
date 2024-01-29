@@ -1,12 +1,16 @@
 import uuid
 
-from sqlalchemy import JSON, and_, case, exists, func, or_, select, text
+from sqlalchemy import JSON, and_, case, exists, func, null, or_, select, text
 from sqlalchemy.orm import Query
 
+from apps.subjects.db.schemas import SubjectSchema
 from apps.users import UserSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.domain.user_applet_access import RespondentExportData
+from apps.workspaces.domain.user_applet_access import (
+    RespondentExportData,
+    SubjectExportData,
+)
 from infrastructure.database import BaseCRUD
 
 
@@ -240,7 +244,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             select(
                 UserSchema.id,
                 UserSchema.email_encrypted.label("email"),
-                UserAppletAccessSchema.respondent_secret_id.label("secret_id"),  # type: ignore[attr-defined] # noqa: E501
+                null().label("secret_id"),
                 UserAppletAccessSchema.legacy_profile_id,
                 has_manager_role.label("is_manager"),
             )
@@ -259,3 +263,46 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         data = db_result.all()
 
         return {row.id: RespondentExportData.from_orm(row) for row in data}
+
+    async def get_subject_export_data(
+        self, applet_id: uuid.UUID, subject_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, SubjectExportData]:
+        if not subject_ids:
+            return {}
+
+        has_manager_role = (
+            exists()
+            .where(
+                # no soft_exists check here
+                UserAppletAccessSchema.user_id == SubjectSchema.user_id,
+                UserAppletAccessSchema.applet_id == applet_id,
+                UserAppletAccessSchema.role != Role.RESPONDENT,
+            )
+            .correlate(SubjectSchema)
+        )
+
+        query = (
+            select(
+                SubjectSchema.id,
+                SubjectSchema.user_id,
+                SubjectSchema.email,
+                SubjectSchema.secret_user_id.label("secret_id"),
+                UserAppletAccessSchema.legacy_profile_id,
+                has_manager_role.label("is_manager"),
+            )
+            .outerjoin(
+                UserAppletAccessSchema,
+                and_(
+                    UserAppletAccessSchema.user_id == SubjectSchema.user_id,
+                    UserAppletAccessSchema.applet_id
+                    == SubjectSchema.applet_id,
+                    UserAppletAccessSchema.role == Role.RESPONDENT,
+                ),
+            )
+            .where(SubjectSchema.id.in_(subject_ids))
+        )
+
+        db_result = await self._execute(query)
+        data = db_result.all()
+
+        return {row.id: SubjectExportData.from_orm(row) for row in data}
