@@ -1,6 +1,7 @@
 import uuid
+from typing import Annotated
 
-from pydantic import BaseModel, EmailStr, Field, root_validator
+from pydantic import BaseModel, EmailStr, Field, Required, root_validator
 
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.domain.custom_validations import lowercase_email
@@ -129,3 +130,8 @@ class PasswordRecoveryApproveRequest(InternalModel):
     email: EmailStr
     key: uuid.UUID
     password: str
+
+
+class PasswordRecoveryHealthCheckRequest(InternalModel):
+    email: Annotated[str, Field(max_length=100)] = Required
+    key: Annotated[uuid.UUID | str, Field(max_length=36)] = Required
