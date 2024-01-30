@@ -681,18 +681,24 @@ class AnswerService:
             applet_id,
             [Role.OWNER, Role.MANAGER, Role.REVIEWER],
         )
+        user_subject = await SubjectsCrud(self.session).get_self_subject(
+            self.user_id, applet_id
+        )
         assessments_allowed = False
         allowed_respondents = None
+        allowed_subjects = None
         if not access:
             allowed_respondents = [self.user_id]
+            allowed_subjects = [user_subject.id] if user_subject else []
         elif access.role == Role.REVIEWER:
             if (
-                isinstance(access.reviewer_respondents, list)
-                and len(access.reviewer_respondents) > 0
+                isinstance(access.reviewer_subjects, list)
+                and len(access.reviewer_subjects) > 0
             ):
-                allowed_respondents = access.reviewer_respondents  # noqa: E501
+                allowed_subjects = access.reviewer_subjects  # noqa: E501
             else:
                 allowed_respondents = [self.user_id]
+                allowed_subjects = [self.user_id]
         else:  # [Role.OWNER, Role.MANAGER]
             assessments_allowed = True
 
@@ -704,6 +710,13 @@ class AnswerService:
                 )
             else:
                 filters["respondent_ids"] = allowed_respondents
+        if allowed_subjects:
+            if _subjects := filters.get("target_subject_ids"):
+                filters["target_subject_ids"] = list(
+                    set(allowed_subjects).intersection(_subjects)
+                )
+            else:
+                filters["target_subject_ids"] = allowed_subjects
 
         repository = AnswersCRUD(self.answer_session)
         answers, total = await repository.get_applet_answers(
@@ -718,11 +731,19 @@ class AnswerService:
             return AnswerExport()
 
         respondent_ids: set[uuid.UUID] = set()
+        subject_ids: set[uuid.UUID] = set()
         applet_assessment_ids = set()
         activity_hist_ids = set()
         flow_hist_ids = set()
         for answer in answers:
-            respondent_ids.add(answer.respondent_id)  # type: ignore[arg-type]
+            # collect id to resolve data
+            if answer.reviewed_answer_id:
+                # collect reviewer ids to fetch the data
+                respondent_ids.add(answer.respondent_id)  # type: ignore[arg-type] # noqa: E501
+            if answer.target_subject_id:
+                subject_ids.add(answer.target_subject_id)  # type: ignore[arg-type] # noqa: E501
+            if answer.source_subject_id:
+                subject_ids.add(answer.source_subject_id)  # type: ignore[arg-type] # noqa: E501
             if answer.reviewed_answer_id:
                 applet_assessment_ids.add(answer.applet_history_id)
             if answer.flow_history_id:
@@ -736,22 +757,32 @@ class AnswerService:
         user_map_coro = AppletAccessCRUD(
             self.session
         ).get_respondent_export_data(applet_id, list(respondent_ids))
+        subject_map_coro = AppletAccessCRUD(
+            self.session
+        ).get_subject_export_data(applet_id, list(subject_ids))
 
         coros_result = await asyncio.gather(
             flows_coro,
             user_map_coro,
+            subject_map_coro,
             return_exceptions=True,
         )
         for res in coros_result:
             if isinstance(res, BaseException):
                 raise res
 
-        flows, user_map = coros_result
+        flows, user_map, subject_map = coros_result
         flow_map = {flow.id_version: flow for flow in flows}  # type: ignore
 
         for answer in answers:
             # respondent data
-            respondent = user_map[answer.respondent_id]  # type: ignore
+            if answer.reviewed_answer_id:
+                # assessment
+                respondent = user_map[answer.respondent_id]  # type: ignore
+            else:
+                subject = subject_map[answer.target_subject_id]  # type: ignore
+                answer.respondent_id = subject.user_id
+                respondent = subject
             answer.respondent_secret_id = respondent.secret_id
             answer.respondent_email = respondent.email
             answer.is_manager = respondent.is_manager

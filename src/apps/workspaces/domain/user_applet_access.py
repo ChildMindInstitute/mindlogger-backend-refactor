@@ -134,6 +134,10 @@ class RespondentExportData(InternalModel):
     is_manager: bool
 
 
+class SubjectExportData(RespondentExportData):
+    user_id: uuid.UUID | None
+
+
 class RespondentInfoPublic(PublicModel):
     nickname: str | None
     secret_user_id: str

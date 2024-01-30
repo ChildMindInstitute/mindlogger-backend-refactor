@@ -103,6 +103,27 @@ class UserAppletAccessSchema(Base):
             .scalar_subquery()
         ).cast(ARRAY(UUID))
 
+    @hybrid_property
+    def reviewer_subjects(self):
+        items = self.meta.get("subjects") or []
+        return [uuid.UUID(itm) for itm in items]
+
+    @reviewer_subjects.expression  # type: ignore[no-redef]
+    def reviewer_subjects(cls):
+        _field = cls.meta[text("'subjects'")]
+        _subjects_jsonb = case(
+            (
+                func.jsonb_typeof(_field) == text("'array'"),
+                _field,
+            ),
+            else_=text("'[]'::jsonb"),
+        )
+        return func.array(
+            select(func.jsonb_array_elements_text(_subjects_jsonb))
+            .correlate(UserAppletAccessSchema)
+            .scalar_subquery()
+        ).cast(ARRAY(UUID))
+
 
 class UserPinSchema(Base):
     __tablename__ = "user_pins"
