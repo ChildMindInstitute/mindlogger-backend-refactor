@@ -1,4 +1,8 @@
-from fastapi import Body, Depends
+import uuid
+from typing import Annotated
+
+from fastapi import Body, Depends, Query
+from pydantic import Required
 from starlette import status
 
 from apps.authentication.deps import get_current_user
@@ -10,7 +14,6 @@ from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     ChangePasswordRequest,
     PasswordRecoveryApproveRequest,
-    PasswordRecoveryHealthCheckRequest,
     PasswordRecoveryRequest,
     PublicUser,
     User,
@@ -110,12 +113,13 @@ async def password_recovery_approve(
 
 
 async def password_recovery_healthcheck(
-    schema: PasswordRecoveryHealthCheckRequest = Body(...),
+    email: Annotated[str, Query(max_length=100)] = Required,
+    key: Annotated[uuid.UUID | str, Query(max_length=36)] = Required,
 ):
     """General endpoint to get the password recovery healthcheck."""
 
     try:
-        cached = await PasswordRecoveryCache().get(schema.email, schema.key)
+        cached = await PasswordRecoveryCache().get(email, key)
         return Response[dict](result=cached.instance)
     except CacheNotFound:
         raise PasswordRecoveryHealthCheckNotValid()
