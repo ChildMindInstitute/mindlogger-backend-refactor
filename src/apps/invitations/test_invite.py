@@ -96,6 +96,17 @@ def invitation_reviewer_data(
     )
 
 
+@pytest.fixture
+def shell_create_data():
+    return dict(
+        language="en",
+        firstName="firstName",
+        lastName="lastName",
+        secretUserId="secretUserId",
+        nickname="nickname",
+    )
+
+
 class TestInvite(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
@@ -324,8 +335,6 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [
             invitation_coordinator_data.email
         ]
-        count = await SubjectsCrud(session).count()
-        assert count == 0
 
     async def test_manager_invite_editor_success(
         self, client, session, invitation_editor_data
@@ -341,8 +350,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [invitation_editor_data.email]
-        count = await SubjectsCrud(session).count()
-        assert count == 0
 
     async def test_manager_invite_reviewer_success(
         self, client, session, invitation_reviewer_data
@@ -997,47 +1004,109 @@ class TestInvite(BaseTest):
         )
         assert resp.status_code == http.HTTPStatus.BAD_REQUEST
 
-    async def test_create_shell_account(self, client):
+    async def test_shell_create_account(self, client, shell_create_data):
         await client.login(self.login_url, "bob@gmail.com", "Test1234!")
         applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
         creator_id = "7484f34a-3acc-4ee6-8a94-fd7299502fa3"
-        language = "en"
-        request_data = dict(
-            language=language,
-            firstName="language",
-            lastName="firstName",
-            secretUserId="lastName",
-            nickname="secretUserId",
-        )
         url = self.shell_acc_create_url.format(applet_id=applet_id)
-        response = await client.post(url, request_data)
+        response = await client.post(url, shell_create_data)
         assert response.status_code == http.HTTPStatus.OK
         assert len(TestMail.mails) == 0
         payload = response.json()
         assert payload["result"]["appletId"] == applet_id
         assert payload["result"]["creatorId"] == creator_id
-        assert payload["result"]["language"] == language
+        assert payload["result"]["language"] == shell_create_data["language"]
 
-    async def test_shell_account_invite(self, client):
+    async def test_shell_invite(self, client, session, shell_create_data):
         await client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        email = "mm@mail.com"
         applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        language = "en"
-        request_data = dict(
-            language=language,
-            firstName="language",
-            lastName="firstName",
-            secretUserId="lastName",
-            nickname="secretUserId",
-        )
         url = self.shell_acc_create_url.format(applet_id=applet_id)
-        response = await client.post(url, request_data)
-        assert response.status_code == http.HTTPStatus.OK
-        assert len(TestMail.mails) == 0
-        payload = response.json()
-        assert payload
-        subject = payload["result"]
+        response = await client.post(url, shell_create_data)
+        subject = response.json()["result"]
         url = self.shell_acc_invite_url.format(applet_id=applet_id)
         response = await client.post(
-            url, dict(subject_id=subject["id"], email="nmm@mail.com")
+            url, dict(subjectId=subject["id"], email=email)
         )
         assert response.status_code == http.HTTPStatus.OK
+        assert len(TestMail.mails) == 1
+        subject_model = await SubjectsCrud(session).get_by_id(subject["id"])
+        assert subject_model.email == email
+
+    async def test_invite_and_accept_invitation_as_respondent(
+        self, client, session, invitation_respondent_data
+    ):
+        subject_crud = SubjectsCrud(session)
+        applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1")
+        mike_email = "mike2@gmail.com"
+        mike_id = uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa6")
+        # Create invitation to Mike
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        invitation_respondent_data.email = mike_email
+        subjects_on_applet0 = await subject_crud.count(applet_id=applet_id)
+        response = await client.post(
+            self.invite_respondent_url.format(applet_id=applet_id),
+            invitation_respondent_data.dict(),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        subjects_on_applet1 = await subject_crud.count(applet_id=applet_id)
+        assert subjects_on_applet1 == (subjects_on_applet0 + 1)
+        invitation = response.json()["result"]
+        # Login as Mike and accept invitation
+        await client.login(self.login_url, mike_email, "Test1234")
+        url_accept = self.accept_url.format(key=invitation["key"])
+        response = await client.post(url_accept)
+        assert response.status_code == http.HTTPStatus.OK
+        subject = await subject_crud.get(mike_id, applet_id)
+        assert subject
+        subjects_on_applet2 = await subject_crud.count(applet_id=applet_id)
+        assert subjects_on_applet2 == subjects_on_applet1
+
+    async def test_invite_and_accept_invitation_as_manager(
+        self, client, session, invitation_manager_data
+    ):
+        subject_crud = SubjectsCrud(session)
+        applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1")
+        mike_email = "mike3@gmail.com"
+        mike_id = uuid.UUID("6a180cd9-db2b-4195-a5ac-30a8733dfb06")
+        # Create invitation to Mike
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        invitation_manager_data.email = mike_email
+        subjects_on_applet0 = await subject_crud.count(applet_id=applet_id)
+        response = await client.post(
+            self.invite_manager_url.format(applet_id=applet_id),
+            invitation_manager_data.dict(),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        subjects_on_applet1 = await subject_crud.count(applet_id=applet_id)
+        assert subjects_on_applet1 == subjects_on_applet0
+        invitation = response.json()["result"]
+        # Login as Mike and accept invitation
+        await client.login(self.login_url, mike_email, "Test1234!")
+        url_accept = self.accept_url.format(key=invitation["key"])
+        response = await client.post(url_accept)
+        assert response.status_code == http.HTTPStatus.OK
+        subject = await subject_crud.get(mike_id, applet_id)
+        assert subject
+        subjects_on_applet2 = await subject_crud.count(applet_id=applet_id)
+        assert subjects_on_applet2 == (subjects_on_applet1 + 1)
+
+    async def test_private_invitation_accept_crate_subject(
+        self, client, session
+    ):
+        subject_crud = SubjectsCrud(session)
+        mike_id = uuid.UUID("6a180cd9-db2b-4195-a5ac-30a8733dfb06")
+        mike_email = "mike3@gmail.com"
+        applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b3")
+        await client.login(self.login_url, mike_email, "Test1234!")
+        count0 = await subject_crud.count(applet_id=applet_id)
+        response = await client.post(
+            self.accept_private_url.format(
+                key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa7"
+            )
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        count1 = await subject_crud.count(applet_id=applet_id)
+        assert (count0 + 1) == count1
+        subject = subject_crud.get(mike_id, applet_id)
+        assert subject

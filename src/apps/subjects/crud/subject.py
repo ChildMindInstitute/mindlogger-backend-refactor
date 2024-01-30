@@ -1,9 +1,13 @@
 import uuid
+from datetime import datetime
 
+from asyncpg import UniqueViolationError
 from sqlalchemy import and_, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Query
 
 from apps.subjects.db.schemas import SubjectRespondentSchema, SubjectSchema
+from apps.subjects.domain import Subject
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from infrastructure.database.crud import BaseCRUD
@@ -21,6 +25,9 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         self, schema: list[SubjectSchema]
     ) -> list[SubjectSchema]:
         return await self._create_many(schema)
+
+    async def update(self, schema: SubjectSchema) -> SubjectSchema:
+        return await self._update_one("id", schema.id, schema)
 
     async def get_by_id(self, _id: uuid.UUID) -> SubjectSchema | None:
         return await self._get("id", _id)
@@ -47,13 +54,6 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         res = await self._execute(query)
         res = res.scalars().all()
         return bool(res)
-
-    async def get_by_email(self, email: str) -> SubjectSchema | None:
-        query: Query = select(SubjectSchema)
-        query = query.where(SubjectSchema.email == email)
-        query = query.limit(1)
-        result = await self._execute(query)
-        return result.scalars().first()
 
     async def get_source(
         self, user_id: uuid.UUID, target_id: uuid.UUID, applet_id: uuid.UUID
@@ -133,8 +133,21 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         res = await self._execute(query)
         return bool(res.scalar_one_or_none())
 
-    async def update(self, schema: SubjectSchema) -> SubjectSchema:
-        return await self._update_one("id", schema.id, schema)
+    async def delete_by_id(self, id_: uuid.UUID):
+        await self._update_one(
+            lookup="id", value=id_, schema=SubjectSchema(is_deleted=True)
+        )
+
+    async def get(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
+    ) -> SubjectSchema | None:
+        query: Query = select(SubjectSchema)
+        query = query.where(
+            SubjectSchema.user_id == user_id,
+            SubjectSchema.applet_id == applet_id,
+        )
+        result = await self._execute(query)
+        return result.scalar_one_or_none()
 
     async def check_secret_id(
         self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID
@@ -148,3 +161,23 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         query = query.limit(1)
         res = await self._execute(query)
         return bool(res.scalar_one_or_none())
+
+    async def upsert(self, schema: Subject) -> Subject:
+        values = {**schema.dict()}
+        values.pop("id")
+        stmt = insert(SubjectSchema).values(values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[SubjectSchema.user_id, SubjectSchema.applet_id],
+            set_={
+                **values,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+            },
+            where=SubjectSchema.soft_exists(exists=False),
+        ).returning(SubjectSchema.id)
+        result = await self._execute(stmt)
+        model_id = result.scalar_one_or_none()
+        if not model_id:
+            raise UniqueViolationError()
+        schema.id = model_id
+        return schema

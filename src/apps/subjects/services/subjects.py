@@ -13,7 +13,6 @@ from apps.subjects.domain import (
 )
 from apps.users import UserSchema
 from apps.users.cruds.user import UsersCRUD
-from apps.users.services.user import UserService
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 
@@ -39,40 +38,30 @@ class SubjectsService:
             secret_user_id=schema.secret_user_id,
         )
 
-    async def _create_subject(self, schema: Subject) -> Subject:
-        subj_crud = SubjectsCrud(self.session)
-        subject = self.__to_db_model(schema)
-        subject_entity = await subj_crud.create(subject)
-        return Subject.from_orm(subject_entity)
-
     async def create(self, schema: Subject) -> Subject:
-        subject = await self._create_subject(schema)
-        merged_data = subject.dict()
-        return Subject(**merged_data)
+        return await SubjectsCrud(self.session).upsert(schema)
 
     async def create_many(self, schema: list[Subject]) -> list[SubjectSchema]:
         models = list(map(lambda s: self.__to_db_model(s), schema))
         return await SubjectsCrud(self.session).create_many(models)
 
-    async def merge(self, subject_id: uuid.UUID) -> Subject | None:
+    async def update(self, schema: SubjectSchema) -> SubjectSchema:
+        return await SubjectsCrud(self.session).update(schema)
+
+    async def delete(self, id_: uuid.UUID):
+        return await SubjectsCrud(self.session).delete_by_id(id_)
+
+    async def extend(self, subject_id: uuid.UUID) -> Subject | None:
         """
-        Merge shell account with full account for current user
+        Extend shell account with full account for current user
         """
-        user = await UserService(self.session).get(self.user_id)
-        assert user
         crud = SubjectsCrud(self.session)
         subject = await crud.get_by_id(subject_id)
         if subject:
-            subject.user_id = user.id
-            subject.email = user.email_encrypted
-            subject.last_name = user.first_name
-            subject.first_name = user.first_name
-            await crud.update_by_id(subject)
-            return Subject.from_orm(subject)
+            subject.user_id = self.user_id
+            subject_model = await crud.update(subject)
+            return Subject.from_orm(subject_model)
         return None
-
-    async def get_by_email(self, email: str) -> Subject | None:
-        return await SubjectsCrud(self.session).get_by_email(email)
 
     async def get(self, id_: uuid.UUID) -> SubjectSchema | None:
         return await SubjectsCrud(self.session).get_by_id(id_)
@@ -177,13 +166,6 @@ class SubjectsService:
             subject_id, secret_id, applet_id
         )
 
-    async def update(
-        self, subject_id: uuid.UUID, secret_user_id: str, nickname: str | None
-    ) -> SubjectFull:
-        subject = await self.get(subject_id)
-        if not subject:
-            raise NotFoundError()
-        subject.secret_user_id = secret_user_id
-        subject.nickname = nickname
-        await SubjectsCrud(self.session).update(subject)
-        return await self.get_full(subject_id)
+    async def upsert(self, subject: Subject) -> Subject:
+        schema = await SubjectsCrud(self.session).upsert(subject)
+        return Subject.from_orm(schema)

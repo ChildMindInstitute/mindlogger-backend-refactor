@@ -106,7 +106,7 @@ async def update_subject(
     schema: SubjectUpdateRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> Response[SubjectFull]:
+) -> Response[Subject]:
     subject_srv = SubjectsService(session, user.id)
     subject = await subject_srv.get(subject_id)
     if not subject:
@@ -120,7 +120,7 @@ async def update_subject(
     if exist:
         raise NonUniqueValue()
     async with atomic(session):
-        subject_full = await subject_srv.update(
-            subject_id, schema.secret_user_id, schema.nickname
-        )
-        return Response(result=subject_full)
+        subject.secret_user_id = schema.secret_user_id
+        subject.nickname = schema.nickname
+        subject = await subject_srv.update(subject)
+        return Response(result=Subject.from_orm(subject))

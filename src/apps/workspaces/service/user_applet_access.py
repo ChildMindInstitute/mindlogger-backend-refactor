@@ -6,9 +6,11 @@ from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
-from apps.invitations.domain import InvitationDetailGeneric
+from apps.invitations.domain import InvitationDetailGeneric, RespondentMeta
 from apps.shared.exception import NotFoundError
-from apps.users import UserNotFound, UsersCRUD
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
+from apps.users import User, UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
@@ -108,7 +110,7 @@ class UserAppletAccessService:
 
     async def add_role_by_invitation(
         self, invitation: InvitationDetailGeneric
-    ):
+    ) -> UserAppletAccess:
         assert (
             invitation.role != Role.OWNER
         ), "Admin role can not be added by invitation"
@@ -152,7 +154,6 @@ class UserAppletAccessService:
             ),
             where=UserAppletAccessSchema.soft_exists(exists=False),
         )
-
         if invitation.role != Role.RESPONDENT:
             has_respondent = await UserAppletAccessCRUD(self.session).has_role(
                 invitation.applet_id, self._user_id, Role.RESPONDENT
@@ -172,14 +173,34 @@ class UserAppletAccessService:
                     nickname=nickname,
                     is_deleted=False,
                 )
-
                 await UserAppletAccessCRUD(
                     self.session
                 ).upsert_user_applet_access(schema)
 
+                await SubjectsService(self.session, self._user_id).create(
+                    Subject(
+                        applet_id=invitation.applet_id,
+                        email=invitation.email,
+                        creator_id=invitation.invitor_id,
+                        user_id=self._user_id,
+                        first_name=invitation.first_name,
+                        last_name=invitation.last_name,
+                        secret_user_id=meta["secretUserId"],
+                        nickname=nickname,
+                    )
+                )
+        else:
+            subject_id = None
+            if isinstance(invitation.meta, RespondentMeta):
+                subject_id = invitation.meta.subject_id
+            assert subject_id
+            await SubjectsService(self.session, self._user_id).extend(
+                uuid.UUID(subject_id)
+            )
+
         return UserAppletAccess.from_orm(access_schema[0])
 
-    async def add_role_by_private_invitation(self, role: Role):
+    async def add_role_by_private_invitation(self, role: Role, user: User):
         owner_access = await UserAppletAccessCRUD(
             self.session
         ).get_applet_owner(self._applet_id)
@@ -205,6 +226,17 @@ class UserAppletAccessService:
             await UserAppletAccessCRUD(self.session).upsert_user_applet_access(
                 schema,
                 where=UserAppletAccessSchema.soft_exists(exists=False),
+            )
+            await SubjectsService(self.session, self._user_id).create(
+                Subject(
+                    applet_id=self._applet_id,
+                    email=user.email_encrypted,
+                    creator_id=owner_access.user_id,
+                    user_id=self._user_id,
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    secret_user_id=meta["secretUserId"],
+                )
             )
         except UniqueViolationError:
             pass

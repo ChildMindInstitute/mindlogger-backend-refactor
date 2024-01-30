@@ -25,7 +25,6 @@ from apps.invitations.domain import (
     InvitationReviewer,
     InvitationReviewerRequest,
     PrivateInvitationDetail,
-    RespondentInfo,
     RespondentMeta,
     ReviewerMeta,
 )
@@ -93,13 +92,7 @@ class InvitationsService:
             email=schema.email
         )
         invited_user_id = invited_user.id if invited_user is not None else None
-        respondent_info = RespondentInfo(
-            meta=RespondentMeta(
-                secret_user_id=schema.secret_user_id,
-                subject_id=str(subject_id),
-            ),
-            nickname=schema.nickname,
-        )
+        meta = RespondentMeta(subject_id=str(subject_id))
         payload = {
             "email": schema.email,
             "applet_id": applet_id,
@@ -110,8 +103,8 @@ class InvitationsService:
             "first_name": schema.first_name,
             "last_name": schema.last_name,
             "user_id": invited_user_id,
-            "meta": respondent_info.meta.dict(),
-            "nickname": respondent_info.nickname,
+            "meta": meta.dict(),
+            "nickname": schema.nickname,
         }
         pending_invitation = await (
             self.invitations_crud.get_pending_invitation(
@@ -263,7 +256,9 @@ class InvitationsService:
         )
 
     async def send_managers_invitation(
-        self, applet_id: uuid.UUID, schema: InvitationManagersRequest
+        self,
+        applet_id: uuid.UUID,
+        schema: InvitationManagersRequest,
     ) -> InvitationDetailForManagers:
         await self._is_validated_role_for_invitation(applet_id, schema.role)
         # Get invited user if he exists. User will be linked with invitaion
@@ -494,6 +489,9 @@ class InvitationsService:
             wrapper = ErrorWrapper(ValueError(e), ("body", alias))
             raise RequestValidationError([wrapper]) from e
 
+    async def get_meta(self, key: uuid.UUID) -> dict | None:
+        return await InvitationCRUD(self.session).get_meta(key)
+
 
 class PrivateInvitationService:
     def __init__(self, session):
@@ -516,12 +514,12 @@ class PrivateInvitationService:
             key=link,
         )
 
-    async def accept_invitation(self, user_id: uuid.UUID, link: uuid.UUID):
+    async def accept_invitation(self, user: User, link: uuid.UUID):
         applet = await PublicAppletService(self.session).get_by_link(
             link, True
         )
         if not applet:
             raise InvitationDoesNotExist()
         await UserAppletAccessService(
-            self.session, user_id, applet.id
-        ).add_role_by_private_invitation(Role.RESPONDENT)
+            self.session, user.id, applet.id
+        ).add_role_by_private_invitation(Role.RESPONDENT, user)

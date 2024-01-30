@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, String, Unicode
+from sqlalchemy import Column, ForeignKey, Index, String, Unicode
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
@@ -26,6 +26,14 @@ class SubjectSchema(Base):
     )
     secret_user_id = Column(String, nullable=False)
     language = Column(String(length=5))
+    __table_args__ = (
+        Index(
+            "unique_subject_user_applet",
+            "user_id",
+            "applet_id",
+            unique=True,
+        ),
+    )
 
 
 class SubjectRespondentSchema(Base):

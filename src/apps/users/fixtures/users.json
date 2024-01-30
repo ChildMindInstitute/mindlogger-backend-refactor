@@ -182,5 +182,27 @@
       "plain_first_name": "Reviewer",
       "plain_last_name": "ReviewerOne"
     }
+  },{
+    "table": "users",
+    "fields": {
+      "id": "6a180cd9-db2b-4195-a5ac-30a8733dfb06",
+      "email": "a58e15d7e3e9d7ff7bdb2eb2ba2085484b51cbab8f2e59ba8b4bc62c",
+      "first_name": "VAcfu386Xfke8pcRmtT69w==",
+      "last_name": "ZY0afSBabSBGxxsXTwyZOw==",
+      "hashed_password": "$2b$12$mEwnjR7IuE3GYpEpbrGo5eJeCIDFUdH2kiVnoUv.vHuSpPu4nNdJK",
+      "is_deleted": false,
+      "is_super_admin": false,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": false,
+      "email_encrypted": "UBTrbB6KHipYtNCslBxo0g=="
+    },
+    "note": {
+      "Password": "Test1234!",
+      "plain_email": "mike3@gmail.com",
+      "plain_first_name": "Patric",
+      "plain_last_name": "Davidson"
+    }
   }
 ]

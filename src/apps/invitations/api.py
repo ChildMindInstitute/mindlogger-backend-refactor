@@ -15,7 +15,6 @@ from apps.invitations.domain import (
     InvitationReviewerRequest,
     InvitationReviewerResponse,
     PrivateInvitationResponse,
-    RespondentMeta,
     ShallAccountInvitation,
     ShellAccountCreateRequest,
     ShellAccountCreateResponse,
@@ -233,14 +232,6 @@ async def invitation_accept(
 ):
     """General endpoint to approve the applet invitation."""
     async with atomic(session):
-        service = InvitationsService(session, user)
-        invitation = await service.get(key)
-        if invitation and invitation.role == Role.RESPONDENT:
-            if isinstance(invitation.meta, RespondentMeta):
-                subject_id = invitation.meta.subject_id
-                await SubjectsService(session, user.id).merge(
-                    uuid.UUID(subject_id)
-                )
         await InvitationsService(session, user).accept(key)
 
 
@@ -250,7 +241,7 @@ async def private_invitation_accept(
     session=Depends(get_session),
 ):
     async with atomic(session):
-        await PrivateInvitationService(session).accept_invitation(user.id, key)
+        await PrivateInvitationService(session).accept_invitation(user, key)
 
 
 async def invitation_decline(
@@ -323,9 +314,8 @@ async def invitation_subject_send(
         except UserNotFound:
             pass
 
-        subject = await SubjectsService(session, user.id).get(
-            schema.subject_id
-        )
+        subject_srv = SubjectsService(session, user.id)
+        subject = await subject_srv.get(schema.subject_id)
         if not subject:
             raise NotFoundError()
 
@@ -340,6 +330,8 @@ async def invitation_subject_send(
         invitation = await invitation_srv.send_respondent_invitation(
             applet_id, invitation_schema, subject.id
         )
+        subject.email = schema.email
+        await subject_srv.update(subject)
 
     return Response[InvitationRespondentResponse](
         result=InvitationRespondentResponse(**invitation.dict())

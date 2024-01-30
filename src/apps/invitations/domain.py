@@ -111,7 +111,6 @@ class RespondentMeta(InternalModel):
     for representation respondent meta information.
     """
 
-    secret_user_id: str
     subject_id: str | None
 
 

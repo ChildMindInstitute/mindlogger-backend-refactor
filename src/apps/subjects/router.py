@@ -29,10 +29,10 @@ router.post(
 
 router.put(
     "/{subject_id}",
-    response_model=Response[SubjectFull],
+    response_model=Response[Subject],
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": Response[SubjectFull]},
+        status.HTTP_200_OK: {"model": Response[Subject]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

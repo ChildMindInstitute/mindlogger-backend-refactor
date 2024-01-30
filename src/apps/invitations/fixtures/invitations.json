@@ -14,7 +14,7 @@
       "key": "6a3ab8e6-f2fa-49ae-b2db-197136677da6",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "status": "pending",
-      "meta": {}
+      "meta": "{\"subject_id\": \"ee5e2f55-8e32-40af-8ef9-24e332c31d7c\"}"
     },
     "note": {
       "plain_first_name": "first_name",
@@ -60,7 +60,7 @@
       "key": "6a3ab8e6-f2fa-49ae-b2db-197136677da0",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "status": "pending",
-      "meta": {}
+      "meta": "{\"subject_id\": \"ee5e2f55-8e32-40af-8ef9-24e332c31d7c\"}"
     },
     "note": {
       "plain_first_name": "first_name",
