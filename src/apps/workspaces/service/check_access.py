@@ -1,6 +1,7 @@
 import uuid
 
 from apps.shared.exception import AccessDeniedError
+from apps.subjects.services import SubjectsService
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import (
@@ -240,3 +241,40 @@ class CheckAccessService:
 
         if not has_access:
             raise AccessDeniedError()
+
+    async def check_subject_answer_access(
+        self, applet_id: uuid.UUID, subject_id: uuid.UUID | None
+    ):
+        access = await AppletAccessCRUD(self.session).get_reviewer_access(
+            applet_id, self.user_id
+        )
+        if not access:
+            raise AccessDeniedError()
+
+        if access.role == Role.REVIEWER:
+            if not subject_id:
+                raise AccessDeniedError()
+            allowed_subject_ids = access.meta.get("subjects", [])
+            if subject_id not in allowed_subject_ids:
+                raise AccessDeniedError()
+
+    async def check_answer_access(
+        self,
+        applet_id: uuid.UUID,
+        respondent_id: uuid.UUID | None,
+        target_subject_id: uuid.UUID | None,
+        **kwargs,
+    ):
+        if respondent_id:
+            subject = await SubjectsService(
+                self.session, self.user_id
+            ).get_by_user(respondent_id)
+            if not subject:
+                raise AccessDeniedError()
+            await self.check_subject_answer_access(applet_id, subject.id)
+        elif target_subject_id:
+            await self.check_subject_answer_access(
+                applet_id, target_subject_id
+            )
+        else:
+            await self.check_answer_review_access(applet_id)

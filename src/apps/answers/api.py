@@ -55,6 +55,7 @@ from apps.shared.query_params import (
     QueryParams,
     parse_query_params,
 )
+from apps.subjects.services import SubjectsService
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
@@ -114,13 +115,14 @@ async def review_activity_list(
     ),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[PublicReviewActivity]:
+    filters = AppletActivityFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(
-        applet_id
+    await CheckAccessService(session, user.id).check_answer_access(
+        applet_id, **filters.dict()
     )
     activities = await AnswerService(
         session, user.id, answer_session
-    ).get_review_activities(applet_id, **query_params.filters)
+    ).get_review_activities(applet_id, filters)
 
     return ResponseMulti(
         result=[
@@ -139,15 +141,23 @@ async def summary_activity_list(
     ),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[PublicSummaryActivity]:
+    filters = SummaryActivityFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(
-        applet_id
+    if filters.respondent_id and not filters.target_subject_id:
+        target_subject = await (
+            SubjectsService(session, user.id).get_by_user(
+                filters.respondent_id
+            )
+        )
+        target_subject_id = target_subject.id
+    else:
+        target_subject_id = filters.target_subject_id
+    await CheckAccessService(session, user.id).check_subject_answer_access(
+        applet_id, target_subject_id
     )
     activities = await AnswerService(
         session, user.id, answer_session
-    ).get_summary_activities(
-        applet_id, query_params.filters.get("respondent_id")
-    )
+    ).get_summary_activities(applet_id, filters)
     return ResponseMulti(
         result=parse_obj_as(list[PublicSummaryActivity], activities),
         count=len(activities),
@@ -164,13 +174,14 @@ async def applet_activity_answers_list(
     ),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[AppletActivityAnswerPublic]:
+    filters = AppletActivityAnswerFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(
-        applet_id
+    await CheckAccessService(session, user.id).check_answer_access(
+        applet_id, **filters.dict()
     )
     answers = await AnswerService(
         session, user.id, answer_session
-    ).get_activity_answers(applet_id, activity_id, query_params)
+    ).get_activity_answers(applet_id, activity_id, filters)
     return ResponseMulti(
         result=parse_obj_as(list[AppletActivityAnswerPublic], answers),
         count=len(answers),
@@ -211,13 +222,16 @@ async def applet_submit_date_list(
     ),
     answer_session=Depends(get_answer_session),
 ) -> Response[PublicAnswerDates]:
+    filters = AppletSubmitDateFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(
-        applet_id
+    await CheckAccessService(session, user.id).check_answer_access(
+        applet_id, **filters.dict()
     )
     dates = await AnswerService(
         session, user.id, answer_session
-    ).get_applet_submit_dates(applet_id, **query_params.filters)
+    ).get_applet_submit_dates(
+        applet_id, AppletSubmitDateFilter(**query_params.filters)
+    )
     return Response(result=PublicAnswerDates(dates=list(sorted(set(dates)))))
 
 
@@ -290,14 +304,14 @@ async def applet_activity_identifiers_retrieve(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[IdentifierPublic]:
+    filters = IdentifiersQueryParams(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(
-        applet_id
+    await CheckAccessService(session, user.id).check_answer_access(
+        applet_id, **filters.dict()
     )
-    respondent_id = query_params.filters.get("respondent_id")
     identifiers = await AnswerService(
         session, user.id, answer_session
-    ).get_activity_identifiers(activity_id, respondent_id)
+    ).get_activity_identifiers(activity_id, filters)
     return ResponseMulti(result=identifiers, count=len(identifiers))
 
 

@@ -56,6 +56,7 @@ from apps.answers.domain import (
     AssessmentAnswer,
     AssessmentAnswerCreate,
     Identifier,
+    IdentifiersQueryParams,
     ReportServerResponse,
     ReviewActivity,
     SummaryActivity,
@@ -73,6 +74,12 @@ from apps.answers.errors import (
     WrongAnswerGroupAppletId,
     WrongAnswerGroupVersion,
     WrongRespondentForAnswerGroup,
+)
+from apps.answers.filters import (
+    AppletActivityAnswerFilter,
+    AppletActivityFilter,
+    AppletSubmitDateFilter,
+    SummaryActivityFilter,
 )
 from apps.answers.tasks import create_report
 from apps.applets.crud import AppletsCRUD
@@ -297,15 +304,14 @@ class AnswerService:
     async def get_review_activities(
         self,
         applet_id: uuid.UUID,
-        respondent_id: uuid.UUID,
-        created_date: datetime.date,
+        filters: AppletActivityFilter,
     ) -> list[ReviewActivity]:
-        await self._validate_applet_activity_access(applet_id, respondent_id)
+        await self._validate_applet_activity_access(
+            applet_id, filters.respondent_id
+        )
         answers = await AnswersCRUD(
             self.answer_session
-        ).get_respondents_answered_activities_by_applet_id(
-            respondent_id, applet_id, created_date
-        )
+        ).get_respondents_answered_activities_by_applet_id(applet_id, filters)
         activity_map: dict[str, ReviewActivity] = dict()
         if not answers:
             applet = await AppletsCRUD(self.session).get_by_id(applet_id)
@@ -348,21 +354,17 @@ class AnswerService:
         return list(activity_map.values())
 
     async def get_applet_submit_dates(
-        self,
-        applet_id: uuid.UUID,
-        respondent_id: uuid.UUID,
-        from_date: datetime.date,
-        to_date: datetime.date,
+        self, applet_id: uuid.UUID, filters: AppletSubmitDateFilter
     ) -> list[datetime.date]:
-        await self._validate_applet_activity_access(applet_id, respondent_id)
+        await self._validate_applet_activity_access(
+            applet_id, filters.respondent_id
+        )
         return await AnswersCRUD(
             self.answer_session
-        ).get_respondents_submit_dates(
-            respondent_id, applet_id, from_date, to_date
-        )
+        ).get_respondents_submit_dates(applet_id, filters)
 
     async def _validate_applet_activity_access(
-        self, applet_id: uuid.UUID, respondent_id: uuid.UUID
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
     ):
         assert self.user_id, "User id is required"
         await AppletsCRUD(self.session).get_by_id(applet_id)
@@ -374,7 +376,8 @@ class AnswerService:
                 self.session, self.user_id, applet_id
             ).get_access(Role.REVIEWER)
             assert access is not None
-
+            if not respondent_id:
+                raise AnswerAccessDeniedError()
             if str(respondent_id) not in access.meta.get("respondents", []):
                 raise AnswerAccessDeniedError()
 
@@ -821,7 +824,7 @@ class AnswerService:
         )
 
     async def get_activity_identifiers(
-        self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None
+        self, activity_id: uuid.UUID, filters: IdentifiersQueryParams
     ) -> list[Identifier]:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         await act_hst_crud.exist_by_activity_id_or_raise(activity_id)
@@ -829,7 +832,7 @@ class AnswerService:
         ids = set(map(lambda a: a.id_version, act_hst_list))
         identifiers = await AnswersCRUD(
             self.answer_session
-        ).get_identifiers_by_activity_id(ids, respondent_id)
+        ).get_identifiers_by_activity_id(ids, filters)
         results = []
         for identifier, key, migrated_data in identifiers:
             if (
@@ -865,10 +868,9 @@ class AnswerService:
         self,
         applet_id: uuid.UUID,
         activity_id: uuid.UUID,
-        filters: QueryParams,
+        filters: AppletActivityAnswerFilter,
     ) -> list[AppletActivityAnswer]:
-        versions = filters.filters.get("versions")
-
+        versions = filters.versions
         if versions and isinstance(versions, str):
             versions = versions.split(",")
 
@@ -958,20 +960,9 @@ class AnswerService:
             raise ReportServerIsNotConfigured()
 
     async def get_summary_activities(
-        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+        self, applet_id: uuid.UUID, filters: SummaryActivityFilter
     ) -> list[SummaryActivity]:
         assert self.user_id
-        role = await AppletAccessCRUD(self.session).get_applets_priority_role(
-            applet_id, self.user_id
-        )
-        if role == Role.REVIEWER:
-            access = await UserAppletAccessService(
-                self.session, self.user_id, applet_id
-            ).get_access(Role.REVIEWER)
-            respondents = access.meta.get("respondents", []) if access else []
-            if str(respondent_id) not in respondents:
-                raise AnswerAccessDeniedError()
-
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_by_applet_id_for_summary(
             applet_id=applet_id
@@ -979,7 +970,9 @@ class AnswerService:
         activity_ver_ids = [activity.id_version for activity in activities]
         activity_ids_with_answer = await AnswersCRUD(
             self.answer_session
-        ).get_activities_which_has_answer(activity_ver_ids, respondent_id)
+        ).get_activities_which_has_answer(
+            activity_ver_ids, filters.respondent_id, filters.target_subject_id
+        )
         answers_act_ids = set(
             map(
                 lambda act_ver: act_ver.split("_")[0], activity_ids_with_answer
