@@ -28,6 +28,12 @@ PatchRegister.register(
     description="Populate user_id column in declined/approved invitations",
     manage_session=False,
 )
+PatchRegister.register(
+    file_path="m2_5045_auto_advance.py",
+    task_id="M2-5045",
+    description="Set auto_advance=True to all existing singleSelect items without auto_advance flag",  # noqa : E501
+    manage_session=False,
+)
 
 
 app = typer.Typer()
@@ -113,9 +119,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
 
     arbitrary_session_maker = None
     if arbitrary:
-        arbitrary_session_maker = session_manager.get_session(
-            arbitrary.database_uri
-        )
+        arbitrary_session_maker = session_manager.get_session(arbitrary.database_uri)
 
     session_maker = session_manager.get_session()
 
@@ -145,9 +149,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
         try:
             # run main from the file
             patch_file = importlib.import_module(
-                str(__package__)
-                + ".patches."
-                + patch.file_path.replace(".py", ""),
+                str(__package__) + ".patches." + patch.file_path.replace(".py", ""),
             )
 
             # if manage_session is True, pass sessions to patch_file main
@@ -159,9 +161,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
                         if arbitrary_session_maker:
                             async with arbitrary_session_maker() as arbitrary_session:  # noqa: E501
                                 async with atomic(arbitrary_session):
-                                    await patch_file.main(
-                                        session, arbitrary_session
-                                    )
+                                    await patch_file.main(session, arbitrary_session)
                         else:
                             await patch_file.main(session)
 
