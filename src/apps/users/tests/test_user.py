@@ -1,4 +1,5 @@
 import pytest
+from pydantic import EmailError
 from starlette import status
 
 from apps.authentication.domain.login import UserLoginRequest
@@ -7,11 +8,7 @@ from apps.shared.domain import to_camelcase
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
 from apps.users.domain import UserCreateRequest
-from apps.users.errors import (
-    EmailAddressNotValid,
-    PasswordHasSpacesError,
-    UserIsDeletedError,
-)
+from apps.users.errors import PasswordHasSpacesError, UserIsDeletedError
 from apps.users.router import router as user_router
 from apps.users.tests.factories import UserUpdateRequestFactory
 
@@ -44,7 +41,9 @@ class TestUser(BaseTest):
 
     async def test_user_create_exist(self, client):
         # Creating new user
-        await client.post(self.user_create_url, data=self.create_request_user.dict())
+        await client.post(
+            self.user_create_url, data=self.create_request_user.dict()
+        )
         # Creating a user that already exists
         response = await client.post(
             self.user_create_url, data=self.create_request_user.dict()
@@ -53,7 +52,9 @@ class TestUser(BaseTest):
 
     async def test_user_retrieve(self, client):
         # Creating new user
-        await client.post(self.user_create_url, data=self.create_request_user.dict())
+        await client.post(
+            self.user_create_url, data=self.create_request_user.dict()
+        )
 
         login_request_user: UserLoginRequest = UserLoginRequest(
             **self.create_request_user.dict()
@@ -71,7 +72,9 @@ class TestUser(BaseTest):
 
     async def test_user_update(self, client):
         # Creating new user
-        await client.post(self.user_create_url, data=self.create_request_user.dict())
+        await client.post(
+            self.user_create_url, data=self.create_request_user.dict()
+        )
 
         login_request_user: UserLoginRequest = UserLoginRequest(
             **self.create_request_user.dict()
@@ -95,7 +98,9 @@ class TestUser(BaseTest):
         if user is deleted.
         """
         # Creating new user
-        await client.post(self.user_create_url, data=self.create_request_user.dict())
+        await client.post(
+            self.user_create_url, data=self.create_request_user.dict()
+        )
 
         # Authorize user
         login_request_user: UserLoginRequest = UserLoginRequest(
@@ -129,9 +134,7 @@ class TestUser(BaseTest):
         data = self.create_request_user.dict()
         data["email"] = "tom2@mindlogger@com"
         response = await client.post(self.user_create_url, data=data)
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         result = response.json()["result"]
         assert len(result) == 1
-        assert result[0]["message"] == EmailAddressNotValid.message.format(
-            email=data["email"]
-        )
+        assert result[0]["message"] == EmailError.msg_template

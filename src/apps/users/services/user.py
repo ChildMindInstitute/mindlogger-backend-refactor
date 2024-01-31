@@ -3,7 +3,7 @@ import uuid
 from apps.authentication.services import AuthenticationService
 from apps.shared.hashing import hash_sha224
 from apps.users import UserSchema, UsersCRUD
-from apps.users.domain import User
+from apps.users.domain import User, UserCreate
 from apps.users.errors import UserNotFound
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserWorkspaceSchema
@@ -11,10 +11,10 @@ from config import settings
 
 
 class UserService:
-    def __init__(self, session):
+    def __init__(self, session) -> None:
         self.session = session
 
-    async def create_superuser(self):
+    async def create_superuser(self) -> None:
         crud = UsersCRUD(self.session)
         super_admin = await crud.get_super_admin()
         # Let's keep this frozen feature
@@ -37,7 +37,7 @@ class UserService:
             )
             await UserWorkspaceCRUD(self.session).save(schema=workspace)
 
-    async def create_anonymous_respondent(self):
+    async def create_anonymous_respondent(self) -> None:
         crud = UsersCRUD(self.session)
         anonymous_respondent = await crud.get_anonymous_respondent()
         if not anonymous_respondent:
@@ -52,6 +52,20 @@ class UserService:
                 is_anonymous_respondent=True,
             )
             await crud.save(anonymous_respondent)
+
+    async def create_user(self, data: UserCreate) -> User:
+        user_schema = await UsersCRUD(self.session).save(
+            UserSchema(
+                email=data.hashed_email,
+                first_name=data.first_name,
+                last_name=data.last_name,
+                hashed_password=data.hashed_password,
+                email_encrypted=data.email,
+            )
+        )
+
+        user: User = User.from_orm(user_schema)
+        return user
 
     async def get_by_email(self, email: str) -> User:
         crud = UsersCRUD(self.session)

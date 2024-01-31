@@ -10,7 +10,7 @@ from apps.users.db.schemas import UserSchema
 from apps.users.domain import (
     User,
     UserChangePassword,
-    UserCreateRequest,
+    UserCreate,
     UserUpdateRequest,
 )
 from apps.users.errors import (
@@ -46,7 +46,7 @@ async def test_get_user_by_id__user_deleted(
 async def test_get_user_by_email(
     user_tom: UserSchema,
     session: AsyncSession,
-    user_tom_create: UserCreateRequest,
+    user_tom_create: UserCreate,
 ):
     crud = UsersCRUD(session)
     user = await crud.get_by_email(user_tom_create.email)
@@ -62,7 +62,7 @@ async def test_get_user_by_email__user_does_not_exists(session: AsyncSession):
 async def test_get_user_by_email__user_deleted(
     session: AsyncSession,
     user_tom: UserSchema,
-    user_tom_create: UserCreateRequest,
+    user_tom_create: UserCreate,
 ):
     crud = UsersCRUD(session)
     await crud.update_by_id(user_tom.id, UserSchema(is_deleted=True))
@@ -71,7 +71,7 @@ async def test_get_user_by_email__user_deleted(
 
 
 async def test_create_user_minimal_data(
-    user_tom_create: UserCreateRequest, session: AsyncSession
+    user_tom_create: UserCreate, session: AsyncSession
 ):
     crud = UsersCRUD(session)
     user = await crud.save(
@@ -92,7 +92,7 @@ async def test_create_user_minimal_data(
 
 
 async def test_create_user__user_already_exists(
-    user_tom_create: UserCreateRequest, session: AsyncSession, user_tom
+    user_tom_create: UserCreate, session: AsyncSession, user_tom
 ):
     crud = UsersCRUD(session)
     with pytest.raises(UserAlreadyExistError):
@@ -231,7 +231,7 @@ async def test_get_user_by_email_or_none__user_does_not_exist(
 async def test_get_user_by_email_or_none(
     session: AsyncSession,
     user_tom: UserSchema,
-    user_tom_create: UserCreateRequest,
+    user_tom_create: UserCreate,
 ):
     crud = UsersCRUD(session)
     user = await crud.get_user_or_none_by_email(user_tom_create.email)

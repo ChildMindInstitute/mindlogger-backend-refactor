@@ -2,12 +2,13 @@ import uuid
 from typing import cast
 
 import pytest
+from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.shared.hashing import hash_sha224
 from apps.users.cruds.user import UsersCRUD
 from apps.users.db.schemas import UserSchema
-from apps.users.domain import User, UserCreateRequest
+from apps.users.domain import User, UserCreate
 from apps.users.errors import UserNotFound
 from apps.users.services.user import UserService
 from config import settings
@@ -17,13 +18,6 @@ async def test_get_user_by_id(session: AsyncSession, user_tom: UserSchema):
     srv = UserService(session)
     result = await srv.get(user_tom.id)
     assert result == User.from_orm(user_tom)
-
-
-async def test_user_exists_by_id(session: AsyncSession, user_tom: UserSchema):
-    srv = UserService(session)
-    result = await srv.exists_by_id(user_tom.id)  # type: ignore [func-returns-value] # noqa: E501
-    # It is stupid, but for now is enough
-    assert result is None
 
 
 async def test_user_exists_by_id__user_does_not_exist(
@@ -37,7 +31,7 @@ async def test_user_exists_by_id__user_does_not_exist(
 async def test_get_user_by_email(
     session: AsyncSession,
     user_tom: UserSchema,
-    user_tom_create: UserCreateRequest,
+    user_tom_create: UserCreate,
 ):
     srv = UserService(session)
     result = await srv.get_by_email(user_tom_create.email)
@@ -93,3 +87,21 @@ async def test_create_anonymous_respondent__created_only_once(
     await crud.get_anonymous_respondent()
     count = await crud.count(is_anonymous_respondent=True)
     assert count == 1
+
+
+async def test_create_user(session: AsyncSession):
+    crud = UsersCRUD(session)
+    srv = UserService(session)
+    data = UserCreate(
+        email=EmailStr("test@example.com"),
+        first_name="first",
+        last_name="last",
+        password="pass",
+    )
+    user = await srv.create_user(data)
+    assert user.first_name == data.first_name
+    assert user.last_name == data.last_name
+    assert user.email == data.hashed_email
+    assert user.email_encrypted == data.email
+    user_from_db = await crud.get_by_email(data.email)
+    assert user_from_db.id == user.id
