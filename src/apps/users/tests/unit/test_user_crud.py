@@ -76,7 +76,9 @@ async def test_create_user_minimal_data(user_tom_create: UserCreate, session: As
     assert not user.is_legacy_deleted_respondent
 
 
-async def test_create_user__user_already_exists(user_tom_create: UserCreate, session: AsyncSession, user_tom):
+async def test_create_user__user_already_exists(
+    user_tom_create: UserCreate, session: AsyncSession, user_tom: UserSchema
+):
     crud = UsersCRUD(session)
     with pytest.raises(UserAlreadyExistError):
         await crud.save(
