@@ -37,6 +37,11 @@ PatchRegister.register(
     task_id="M2-4613",
     description="Create subjects for pending invitations",
 )
+PatchRegister.register(
+    file_path="m2_5018_migrate_reviewer_respondents_list.py",
+    task_id="M2-5018",
+    description="Replace reviewer respondent list with subject list",
+)
 
 
 app = typer.Typer()
