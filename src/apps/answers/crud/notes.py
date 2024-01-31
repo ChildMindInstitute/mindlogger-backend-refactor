@@ -58,7 +58,7 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
         )
 
     async def delete_note_by_id(self, note_id: uuid.UUID):
-        await self._delete("id", note_id)
+        await self._delete(id=note_id)
 
     @staticmethod
     async def map_users_and_notes(

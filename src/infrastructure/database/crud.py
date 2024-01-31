@@ -111,11 +111,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
     async def count(self, **filters: Any) -> int:
         query = select(func.count()).select_from(self.schema_class)
         if filters:
-            wheres = [
-                operator.eq(getattr(self.schema_class, k), v)
-                for k, v in filters.items()
-            ]
-
+            wheres = self._build_where_statement(**filters)
             query = query.where(*wheres)
         results = await self._execute(query=query)
 
@@ -129,10 +125,11 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
         return value
 
-    async def _delete(self, key: str, value: Any) -> None:
-        query: Query = delete(self.schema_class).where(
-            getattr(self.schema_class, key) == value
-        )
+    async def _delete(self, **filters: Any) -> None:
+        query: Query = delete(self.schema_class)
+        if filters:
+            wheres = self._build_where_statement(**filters)
+            query = query.where(*wheres)
         await self._execute(query)
 
         return None
@@ -154,3 +151,9 @@ class BaseCRUD(Generic[ConcreteSchema]):
         await self._execute(query)
 
         return None
+
+    def _build_where_statement(self, **filters: Any):
+        return [
+            operator.eq(getattr(self.schema_class, k), v)
+            for k, v in filters.items()
+        ]

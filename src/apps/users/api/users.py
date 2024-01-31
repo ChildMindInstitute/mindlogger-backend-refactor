@@ -88,4 +88,4 @@ async def user_delete(
     session=Depends(get_session),
 ) -> None:
     async with atomic(session):
-        await UsersCRUD(session).delete(user)
+        await UsersCRUD(session).delete(user.id)

@@ -127,7 +127,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
 
         if instance.creator_id != creator_id:
             raise PermissionsError()
-        await self._delete(key="id", value=pk)
+        await self._delete(id=pk)
 
     async def update(
         self, pk: uuid.UUID, update_schema: ThemeSchema, creator_id: uuid.UUID
