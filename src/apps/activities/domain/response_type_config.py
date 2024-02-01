@@ -72,7 +72,7 @@ class _SelectionConfig(_ScreenConfig, PublicModel):
 
 
 class SingleSelectionConfig(_SelectionConfig, PublicModel):
-    auto_advance: bool = True
+    auto_advance: bool = False
 
 
 class MultiSelectionConfig(_SelectionConfig, PublicModel):
@@ -425,9 +425,7 @@ ResponseTypeValueConfig = {}
 index = 0
 
 for response_type in ResponseType:
-    zipped_type_value = list(
-        zip(ResponseValueConfigOptions, ResponseTypeConfigOptions)
-    )
+    zipped_type_value = list(zip(ResponseValueConfigOptions, ResponseTypeConfigOptions))
 
     ResponseTypeValueConfig[response_type] = {
         "config": zipped_type_value[index][1],
