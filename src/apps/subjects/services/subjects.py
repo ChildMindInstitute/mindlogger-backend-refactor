@@ -169,3 +169,11 @@ class SubjectsService:
     async def upsert(self, subject: Subject) -> Subject:
         schema = await SubjectsCrud(self.session).upsert(subject)
         return Subject.from_orm(schema)
+
+    async def get_by_user_and_applet(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID
+    ) -> Subject | None:
+        model = await SubjectsCrud(self.session).get_by_user_and_applet(
+            user_id, applet_id
+        )
+        return Subject.from_orm(model) if model else None

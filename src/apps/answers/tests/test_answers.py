@@ -1,6 +1,7 @@
 import datetime
 import json
 
+import pytest
 from sqlalchemy import select
 
 from apps.answers.db.schemas import AnswerSchema
@@ -1175,7 +1176,15 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()["result"]
         assert not data["answers"]
 
-    async def test_get_identifiers(self, mock_kiq_report, client):
+    @pytest.mark.parametrize(
+        ("query"),
+        (
+            {},
+            {"respondentId": "7484f34a-3acc-4ee6-8a94-fd7299502fa1"},
+            {"targetSubjectId": "ee5e2f55-8e32-40af-8ef9-24e332c31d7c"},
+        ),
+    )
+    async def test_get_identifiers(self, mock_kiq_report, client, query):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         response = await client.get(
@@ -1226,7 +1235,8 @@ class TestAnswerActivityItems(BaseTest):
             self.identifiers_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-            )
+            ),
+            query=query,
         )
 
         assert response.status_code == 200
@@ -1251,13 +1261,24 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][1]["version"] == "1.9.9"
         assert response.json()["result"][1]["createdAt"]
 
-    async def test_get_summary_activities(self, mock_kiq_report, client):
+    @pytest.mark.parametrize(
+        ("query"),
+        (
+            {},
+            {"respondentId": "7484f34a-3acc-4ee6-8a94-fd7299502fa1"},
+            {"targetSubjectId": "ee5e2f55-8e32-40af-8ef9-24e332c31d7c"},
+        ),
+    )
+    async def test_get_summary_activities(
+        self, mock_kiq_report, client, query
+    ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         response = await client.get(
             self.summary_activities_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-            )
+            ),
+            query=query,
         )
 
         assert response.status_code == 200

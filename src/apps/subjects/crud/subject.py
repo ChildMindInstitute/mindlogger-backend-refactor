@@ -32,8 +32,18 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
     async def get_by_id(self, _id: uuid.UUID) -> SubjectSchema | None:
         return await self._get("id", _id)
 
-    async def get_by_user(self, user_id: uuid.UUID) -> SubjectSchema | None:
-        return await self._get("user_id", user_id)
+    async def get_by_user_and_applet(
+        self,
+        user_id: uuid.UUID,
+        applet_id: uuid.UUID,
+    ) -> SubjectSchema | None:
+        query: Query = select(SubjectSchema)
+        query = query.where(
+            SubjectSchema.user_id == user_id,
+            SubjectSchema.applet_id == applet_id,
+        )
+        res_db = await self._execute(query)
+        return res_db.scalar_one_or_none()
 
     async def update_by_id(self, schema: SubjectSchema) -> SubjectSchema:
         return await self._update_one("id", schema.id, schema)

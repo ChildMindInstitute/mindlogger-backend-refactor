@@ -33,11 +33,13 @@ from apps.answers.domain import (
     AnswerItemDataEncrypted,
     AppletCompletedEntities,
     CompletedEntity,
+    IdentifiersQueryParams,
     RespondentAnswerData,
     UserAnswerItemData,
     Version,
 )
 from apps.answers.errors import AnswerNotFoundError
+from apps.answers.filters import AppletActivityFilter, AppletSubmitDateFilter
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
@@ -82,34 +84,46 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return schemas
 
     async def get_respondents_answered_activities_by_applet_id(
-        self,
-        respondent_id: uuid.UUID,
-        applet_id: uuid.UUID,
-        created_date: datetime.date,
+        self, applet_id: uuid.UUID, filters: AppletActivityFilter
     ) -> list[AnswerSchema]:
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
-        query = query.where(AnswerSchema.respondent_id == respondent_id)
-        query = query.where(func.date(AnswerSchema.created_at) == created_date)
+        query = query.where(
+            func.date(AnswerSchema.created_at) == filters.created_date
+        )
+        if filters.respondent_id:
+            query = query.where(
+                AnswerSchema.respondent_id == filters.respondent_id
+            )
+        if filters.target_subject_id:
+            query = query.where(
+                AnswerSchema.target_subject_id == filters.target_subject_id
+            )
         query = query.order_by(AnswerSchema.created_at.asc())
 
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
     async def get_respondents_submit_dates(
-        self,
-        respondent_id: uuid.UUID,
-        applet_id: uuid.UUID,
-        from_date: datetime.date,
-        to_date: datetime.date,
+        self, applet_id: uuid.UUID, filters: AppletSubmitDateFilter
     ) -> list[datetime.date]:
         query: Query = select(func.date(AnswerSchema.created_at))
-        query = query.where(AnswerSchema.respondent_id == respondent_id)
-        query = query.where(func.date(AnswerSchema.created_at) >= from_date)
-        query = query.where(func.date(AnswerSchema.created_at) <= to_date)
+        query = query.where(
+            func.date(AnswerSchema.created_at) >= filters.from_date
+        )
+        query = query.where(
+            func.date(AnswerSchema.created_at) <= filters.to_date
+        )
         query = query.where(AnswerSchema.applet_id == applet_id)
+        if filters.respondent_id:
+            query = query.where(
+                AnswerSchema.respondent_id == filters.respondent_id
+            )
+        if filters.target_subject_id:
+            query = query.where(
+                AnswerSchema.target_subject_id == filters.target_subject_id
+            )
         query = query.order_by(AnswerSchema.created_at.asc())
-
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
@@ -283,7 +297,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_identifiers_by_activity_id(
         self,
         activity_hist_ids: Collection[str],
-        respondent_id: uuid.UUID | None,
+        filters: IdentifiersQueryParams,
     ) -> list[tuple[str, str, dict]]:
         query: Query = select(
             AnswerItemSchema.identifier,
@@ -295,15 +309,21 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             AnswerItemSchema.identifier.isnot(None),
             AnswerSchema.activity_history_id.in_(activity_hist_ids),
         )
-        if respondent_id:
-            query = query.where(AnswerSchema.respondent_id == respondent_id)
+        if filters.target_subject_id:
+            query = query.where(
+                AnswerSchema.target_subject_id == filters.target_subject_id
+            )
+        if filters.respondent_id:
+            query = query.where(
+                AnswerSchema.respondent_id == filters.respondent_id
+            )
 
         query = query.join(
             AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
         )
         db_result = await self._execute(query)
 
-        return db_result.all()
+        return db_result.all()  # noqa
 
     async def get_versions_by_activity_id(
         self, activity_id: uuid.UUID
@@ -367,7 +387,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return db_result.scalars().all()
 
     async def get_activities_which_has_answer(
-        self, activity_hist_ids: list[str], respondent_id: uuid.UUID | None
+        self,
+        activity_hist_ids: list[str],
+        respondent_id: uuid.UUID | None,
+        subject_id: uuid.UUID | None,
     ) -> list[str]:
         activity_ids = set(
             map(lambda id_version: id_version.split("_")[0], activity_hist_ids)
@@ -382,9 +405,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
         )
         if respondent_id:
-            query.where(AnswerSchema.respondent_id == respondent_id)
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
+        if subject_id:
+            query = query.where(AnswerSchema.target_subject_id == subject_id)
         query = query.distinct(AnswerSchema.activity_history_id)
-        query.order_by(AnswerSchema.activity_history_id)
+        query = query.order_by(AnswerSchema.activity_history_id)
         db_result = await self._execute(query)
         results = []
         for activity_id in db_result.all():

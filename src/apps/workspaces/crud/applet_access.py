@@ -306,3 +306,26 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         data = db_result.all()
 
         return {row.id: SubjectExportData.from_orm(row) for row in data}
+
+    async def get_reviewer_access(
+        self, applet_id: uuid.UUID, user_id: uuid.UUID
+    ) -> UserAppletAccessSchema:
+        query: Query = select(UserAppletAccessSchema)
+        query = query.where(UserAppletAccessSchema.soft_exists())
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.order_by(
+            case(
+                (UserAppletAccessSchema.role == Role.OWNER, 1),
+                (UserAppletAccessSchema.role == Role.MANAGER, 2),
+                (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
+                (UserAppletAccessSchema.role == Role.EDITOR, 4),
+                (UserAppletAccessSchema.role == Role.REVIEWER, 5),
+                (UserAppletAccessSchema.role == Role.RESPONDENT, 6),
+                else_=10,
+            ).asc()
+        )
+        query = query.limit(1)
+        db_result = await self._execute(query)
+        result = db_result.scalars().first()
+        return result
