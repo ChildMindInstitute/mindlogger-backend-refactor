@@ -30,9 +30,7 @@ class TestUser(BaseTest):
 
     async def test_user_create(self, client):
         # Creating new user
-        response = await client.post(
-            self.user_create_url, data=self.create_request_user.dict()
-        )
+        response = await client.post(self.user_create_url, data=self.create_request_user.dict())
         assert response.status_code == status.HTTP_201_CREATED
         result = response.json()["result"]
         for k, v in self.create_request_user:
@@ -41,24 +39,16 @@ class TestUser(BaseTest):
 
     async def test_user_create_exist(self, client):
         # Creating new user
-        await client.post(
-            self.user_create_url, data=self.create_request_user.dict()
-        )
+        await client.post(self.user_create_url, data=self.create_request_user.dict())
         # Creating a user that already exists
-        response = await client.post(
-            self.user_create_url, data=self.create_request_user.dict()
-        )
+        response = await client.post(self.user_create_url, data=self.create_request_user.dict())
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     async def test_user_retrieve(self, client):
         # Creating new user
-        await client.post(
-            self.user_create_url, data=self.create_request_user.dict()
-        )
+        await client.post(self.user_create_url, data=self.create_request_user.dict())
 
-        login_request_user: UserLoginRequest = UserLoginRequest(
-            **self.create_request_user.dict()
-        )
+        login_request_user: UserLoginRequest = UserLoginRequest(**self.create_request_user.dict())
 
         # User get token
         await client.login(
@@ -72,13 +62,9 @@ class TestUser(BaseTest):
 
     async def test_user_update(self, client):
         # Creating new user
-        await client.post(
-            self.user_create_url, data=self.create_request_user.dict()
-        )
+        await client.post(self.user_create_url, data=self.create_request_user.dict())
 
-        login_request_user: UserLoginRequest = UserLoginRequest(
-            **self.create_request_user.dict()
-        )
+        login_request_user: UserLoginRequest = UserLoginRequest(**self.create_request_user.dict())
 
         # User get token
         await client.login(
@@ -87,9 +73,7 @@ class TestUser(BaseTest):
         )
 
         # User update
-        response = await client.put(
-            self.user_update_url, data=self.user_update_request.dict()
-        )
+        response = await client.put(self.user_update_url, data=self.user_update_request.dict())
 
         assert response.status_code == status.HTTP_200_OK
 
@@ -98,14 +82,10 @@ class TestUser(BaseTest):
         if user is deleted.
         """
         # Creating new user
-        await client.post(
-            self.user_create_url, data=self.create_request_user.dict()
-        )
+        await client.post(self.user_create_url, data=self.create_request_user.dict())
 
         # Authorize user
-        login_request_user: UserLoginRequest = UserLoginRequest(
-            **self.create_request_user.dict()
-        )
+        login_request_user: UserLoginRequest = UserLoginRequest(**self.create_request_user.dict())
         await client.login(
             url=self.get_token_url,
             **login_request_user.dict(),

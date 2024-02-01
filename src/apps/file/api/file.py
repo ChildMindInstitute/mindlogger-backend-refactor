@@ -69,9 +69,7 @@ async def upload(
             filename = file.filename
             reader = file.file  # type: ignore[assignment]
 
-        key = cdn_client.generate_key(
-            FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{filename}"
-        )
+        key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{filename}")
         await cdn_client.upload(key, reader)
     finally:
         for f in to_close:
@@ -79,9 +77,7 @@ async def upload(
 
         for path in to_delete:
             os.remove(path)
-    result = ContentUploadedFile(
-        key=key, url=quote(settings.cdn.url.format(key=key), "/:")
-    )
+    result = ContentUploadedFile(key=key, url=quote(settings.cdn.url.format(key=key), "/:"))
     return Response(result=result)
 
 
@@ -201,12 +197,8 @@ async def answer_upload(
 
         cdn_client = await select_storage(applet_id, session)
         unique = f"{user.id}/{applet_id}"
-        cleaned_file_id = (
-            file_id.strip() if file_id else f"{uuid.uuid4()}/{filename}"
-        )
-        key = cdn_client.generate_key(
-            FileScopeEnum.ANSWER, unique, cleaned_file_id
-        )
+        cleaned_file_id = file_id.strip() if file_id else f"{uuid.uuid4()}/{filename}"
+        key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
         await cdn_client.upload(key, reader)
     finally:
         for f in to_close:
@@ -265,9 +257,7 @@ async def check_file_uploaded(
         cleaned_file_id = file_id.strip()
 
         unique = f"{user.id}/{applet_id}"
-        key = cdn_client.generate_key(
-            FileScopeEnum.ANSWER, unique, cleaned_file_id
-        )
+        key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
 
         file_existence_factory = partial(
             FileExistenceResponse,
@@ -286,9 +276,7 @@ async def check_file_uploaded(
         except NotFoundError:
             results.append(file_existence_factory(uploaded=False))
 
-    return ResponseMulti[FileExistenceResponse](
-        result=results, count=len(results)
-    )
+    return ResponseMulti[FileExistenceResponse](result=results, count=len(results))
 
 
 async def presign(
@@ -342,14 +330,10 @@ async def logs_download(
         for key in map(lambda f: f["Key"], files):
             futures.append(cdn_client.generate_presigned_url(key))
         result = await asyncio.gather(*futures)
-        await service.backend_log_download(
-            user.email_encrypted, None, device_id, True
-        )
+        await service.backend_log_download(user.email_encrypted, None, device_id, True)
         return ResponseMulti[str](result=result, count=len(result))
     except Exception as ex:
-        await service.backend_log_download(
-            user.email_encrypted, str(ex), device_id, False
-        )
+        await service.backend_log_download(user.email_encrypted, str(ex), device_id, False)
         raise ex
 
 
@@ -364,9 +348,7 @@ async def logs_exist_check(
         result = await service.check_exist(device_id, files.files)
         count = len(result)
         await service.backend_log_check(result, True, None)
-        return ResponseMulti[LogFileExistenceResponse](
-            result=result, count=count
-        )
+        return ResponseMulti[LogFileExistenceResponse](result=result, count=count)
     except Exception as ex:
         await service.backend_log_check([], False, str(ex))
         raise ex

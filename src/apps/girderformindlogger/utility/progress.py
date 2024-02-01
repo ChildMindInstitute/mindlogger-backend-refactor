@@ -4,14 +4,8 @@ import time
 
 import cherrypy
 
-from apps.girderformindlogger.exceptions import (
-    RestException,
-    ValidationException,
-)
-from apps.girderformindlogger.models.notification import (
-    Notification,
-    ProgressState,
-)
+from apps.girderformindlogger.exceptions import RestException, ValidationException
+from apps.girderformindlogger.models.notification import Notification, ProgressState
 
 
 class ProgressContext(object):

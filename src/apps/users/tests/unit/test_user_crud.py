@@ -7,17 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.shared.hashing import hash_sha224
 from apps.users.cruds.user import UsersCRUD
 from apps.users.db.schemas import UserSchema
-from apps.users.domain import (
-    User,
-    UserChangePassword,
-    UserCreate,
-    UserUpdateRequest,
-)
-from apps.users.errors import (
-    UserAlreadyExistError,
-    UserIsDeletedError,
-    UserNotFound,
-)
+from apps.users.domain import User, UserChangePassword, UserCreate, UserUpdateRequest
+from apps.users.errors import UserAlreadyExistError, UserIsDeletedError, UserNotFound
 
 
 async def test_get_user_by_id(user_tom: UserSchema, session: AsyncSession):
@@ -26,17 +17,13 @@ async def test_get_user_by_id(user_tom: UserSchema, session: AsyncSession):
     assert user.id == user_tom.id
 
 
-async def test_get_user_by_id__user_does_not_exists(
-    session: AsyncSession, uuid_zero: uuid.UUID
-):
+async def test_get_user_by_id__user_does_not_exists(session: AsyncSession, uuid_zero: uuid.UUID):
     crud = UsersCRUD(session)
     with pytest.raises(UserNotFound):
         await crud.get_by_id(uuid_zero)
 
 
-async def test_get_user_by_id__user_deleted(
-    session: AsyncSession, user_tom: UserSchema
-):
+async def test_get_user_by_id__user_deleted(session: AsyncSession, user_tom: UserSchema):
     crud = UsersCRUD(session)
     await crud.update_by_id(user_tom.id, UserSchema(is_deleted=True))
     with pytest.raises(UserIsDeletedError):
@@ -70,9 +57,7 @@ async def test_get_user_by_email__user_deleted(
         await crud.get_by_email(user_tom_create.email)
 
 
-async def test_create_user_minimal_data(
-    user_tom_create: UserCreate, session: AsyncSession
-):
+async def test_create_user_minimal_data(user_tom_create: UserCreate, session: AsyncSession):
     crud = UsersCRUD(session)
     user = await crud.save(
         UserSchema(
@@ -91,9 +76,7 @@ async def test_create_user_minimal_data(
     assert not user.is_legacy_deleted_respondent
 
 
-async def test_create_user__user_already_exists(
-    user_tom_create: UserCreate, session: AsyncSession, user_tom
-):
+async def test_create_user__user_already_exists(user_tom_create: UserCreate, session: AsyncSession, user_tom):
     crud = UsersCRUD(session)
     with pytest.raises(UserAlreadyExistError):
         await crud.save(
@@ -117,26 +100,18 @@ async def test_update_user(user_tom: UserSchema, session: AsyncSession):
 async def test_update_user_by_id(user_tom: UserSchema, session: AsyncSession):
     crud = UsersCRUD(session)
     new_first_name = "new"
-    user = await crud.update_by_id(
-        user_tom.id, UserSchema(first_name=new_first_name)
-    )
+    user = await crud.update_by_id(user_tom.id, UserSchema(first_name=new_first_name))
     assert user.first_name == new_first_name
 
 
-async def test_update_encrypted_email(
-    user_tom: UserSchema, session: AsyncSession
-):
+async def test_update_encrypted_email(user_tom: UserSchema, session: AsyncSession):
     crud = UsersCRUD(session)
     new_email = "newemail@example.com"
-    user = await crud.update_encrypted_email(
-        User.from_orm(user_tom), new_email
-    )
+    user = await crud.update_encrypted_email(User.from_orm(user_tom), new_email)
     assert user.email_encrypted == new_email
 
 
-async def test_delete_user__soft_delete(
-    user_tom: UserSchema, session: AsyncSession
-):
+async def test_delete_user__soft_delete(user_tom: UserSchema, session: AsyncSession):
     crud = UsersCRUD(session)
     deleted = await crud.delete(user_tom.id)
     assert deleted.is_deleted
@@ -184,9 +159,7 @@ async def test_user_exists_by_id__user_does_not_exist(
     assert not result
 
 
-async def test_user_exists_by_id__user_deleted(
-    session: AsyncSession, user_tom: UserSchema
-):
+async def test_user_exists_by_id__user_deleted(session: AsyncSession, user_tom: UserSchema):
     crud = UsersCRUD(session)
     await crud.update_by_id(user_tom.id, UserSchema(is_deleted=True))
     result = await crud.exist_by_id(user_tom.id)
@@ -203,17 +176,13 @@ async def test_get_super_admin(session: AsyncSession, user_tom: UserSchema):
     assert user.id == user_tom.id
 
 
-async def test_get_users_by_ids__no_user_with_id(
-    session: AsyncSession, user_tom: UserSchema, uuid_zero: uuid.UUID
-):
+async def test_get_users_by_ids__no_user_with_id(session: AsyncSession, user_tom: UserSchema, uuid_zero: uuid.UUID):
     crud = UsersCRUD(session)
     result = await crud.get_by_ids([uuid_zero])
     assert not result
 
 
-async def test_get_users_by_ids(
-    session: AsyncSession, user_tom: UserSchema, uuid_zero: uuid.UUID
-):
+async def test_get_users_by_ids(session: AsyncSession, user_tom: UserSchema, uuid_zero: uuid.UUID):
     crud = UsersCRUD(session)
     result = await crud.get_by_ids([uuid_zero, user_tom.id])
     assert len(result) == 1

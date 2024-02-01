@@ -1,11 +1,6 @@
 from gettext import gettext as _
 
-from apps.shared.exception import (
-    AccessDeniedError,
-    FieldError,
-    NotFoundError,
-    ValidationError,
-)
+from apps.shared.exception import AccessDeniedError, FieldError, NotFoundError, ValidationError
 
 __all__ = [
     "UserAppletAccessesNotFound",
@@ -92,16 +87,11 @@ class AppletInviteAccessDenied(AccessDeniedError):
 
 
 class AppletSetScheduleAccessDenied(AccessDeniedError):
-    message = _(
-        "Access denied to manipulate with "
-        "schedules and notifications of the applet."
-    )
+    message = _("Access denied to manipulate with " "schedules and notifications of the applet.")
 
 
 class TransferOwnershipAccessDenied(AccessDeniedError):
-    message = _(
-        "Access denied to create transfer ownership request for the applet."
-    )
+    message = _("Access denied to create transfer ownership request for the applet.")
 
 
 class PublishConcealAccessDenied(AccessDeniedError):

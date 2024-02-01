@@ -130,9 +130,7 @@ class TestLibrary(BaseTest):
 
         assert set(result[0].keys()) == self.applet_expected_keys
 
-        response = await client.get(
-            self.library_url_search.format(search_term="test")
-        )
+        response = await client.get(self.library_url_search.format(search_term="test"))
         assert response.status_code == http.HTTPStatus.OK, response.json()
         result = response.json()["result"]
         assert len(result) == 1
@@ -149,9 +147,7 @@ class TestLibrary(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
         result = response.json()["result"]
 
-        response = await client.get(
-            self.library_detail_url.format(library_id=result["id"])
-        )
+        response = await client.get(self.library_detail_url.format(library_id=result["id"]))
 
         assert response.status_code == http.HTTPStatus.OK, response.json()
         result = response.json()["result"]
@@ -169,11 +165,7 @@ class TestLibrary(BaseTest):
         response = await client.post(self.library_url, data=data)
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
-        response = await client.get(
-            self.applet_link.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            )
-        )
+        response = await client.get(self.applet_link.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"))
         assert response.status_code == http.HTTPStatus.OK, response.json()
         result = response.json()["result"]
         assert isinstance(result["url"], str)
@@ -196,9 +188,7 @@ class TestLibrary(BaseTest):
             name="PHQ23",
         )
 
-        response = await client.put(
-            self.library_detail_url.format(library_id=result["id"]), data=data
-        )
+        response = await client.put(self.library_detail_url.format(library_id=result["id"]), data=data)
         assert response.status_code == http.HTTPStatus.OK, response.json()
         result = response.json()["result"]
         assert result["keywords"] == ["test", "test2", "test3"]
@@ -235,10 +225,7 @@ class TestLibrary(BaseTest):
         result = response.json()["result"]
 
         assert len(result["cartItems"]) == 1
-        assert (
-            result["cartItems"][0]["id"]
-            == "92917a56-d586-4613-b7aa-991f2c4b15b2"
-        )
+        assert result["cartItems"][0]["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b2"
 
         response = await client.get(self.library_cart_url)
 
@@ -337,9 +324,7 @@ class TestLibrary(BaseTest):
         assert response.status_code == http.HTTPStatus.OK, response.json()
         result = response.json()["result"]
         assert len(result) == 2
-        applet = next(
-            filter(lambda item: item["displayName"] == "PHQ2", result), None
-        )
+        applet = next(filter(lambda item: item["displayName"] == "PHQ2", result), None)
         assert applet
         assert set(applet.keys()) == self.applet_expected_keys
         assert applet["description"] == {"en": "Patient Health Questionnaire"}
@@ -362,17 +347,13 @@ class TestLibrary(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED
         assert response.json().get("result")
         result = response.json().get("result")
-        response = await client.get(
-            self.library_detail_url.format(library_id=result.get("id"))
-        )
+        response = await client.get(self.library_detail_url.format(library_id=result.get("id")))
         assert response.status_code == http.HTTPStatus.OK
         assert response.json().get("result")
         applet = response.json().get("result")
 
         items = applet["activities"][0]["items"]
-        slider_responses = next(
-            filter(lambda i: i["responseType"] == "slider", items), None
-        )
+        slider_responses = next(filter(lambda i: i["responseType"] == "slider", items), None)
         assert slider_responses.get("responseValues")
 
     async def test_library_check_activity_item_config_fields(self, client):
@@ -453,9 +434,7 @@ class TestLibrary(BaseTest):
         # for empty list
         assert resp.json()["result"]["cartItems"] is None
 
-    async def test_get_library_by_id_with_flows(
-        self, client, applet_data
-    ) -> None:
+    async def test_get_library_by_id_with_flows(self, client, applet_data) -> None:
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         exp_activity_flow_name = "flow"
         applet_data["activity_flows"] = [
@@ -466,9 +445,7 @@ class TestLibrary(BaseTest):
             )
         ]
         # Update applet, change version
-        resp = await client.put(
-            f"/applets/{APPLET_IN_LABRARY_ID}", data=applet_data
-        )
+        resp = await client.put(f"/applets/{APPLET_IN_LABRARY_ID}", data=applet_data)
         assert resp.status_code == http.HTTPStatus.OK
         # Add new version to the library
         data = dict(
@@ -480,42 +457,28 @@ class TestLibrary(BaseTest):
         assert resp.status_code == http.HTTPStatus.CREATED
         library_id = resp.json()["result"]["id"]
         # get library
-        resp = await client.get(
-            self.library_detail_url.format(library_id=library_id)
-        )
+        resp = await client.get(self.library_detail_url.format(library_id=library_id))
         assert resp.status_code == http.HTTPStatus.OK
         activity_flwo = resp.json()["result"]["activityFlows"][0]
         assert activity_flwo["name"] == exp_activity_flow_name
 
-    async def test_get_library_item_by_lib_id_library_does_not_exist(
-        self, client, applet_data
-    ) -> None:
+    async def test_get_library_item_by_lib_id_library_does_not_exist(self, client, applet_data) -> None:
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         # Update applet, change version
-        resp = await client.put(
-            f"/applets/{APPLET_IN_LABRARY_ID}", data=applet_data
-        )
+        resp = await client.put(f"/applets/{APPLET_IN_LABRARY_ID}", data=applet_data)
         assert resp.status_code == http.HTTPStatus.OK
-        resp = await client.get(
-            self.library_detail_url.format(library_id=ID_DOES_NOT_EXIST)
-        )
+        resp = await client.get(self.library_detail_url.format(library_id=ID_DOES_NOT_EXIST))
         assert resp.status_code == http.HTTPStatus.NOT_FOUND
         res = resp.json()["result"]
         assert len(res) == 1
         assert res[0]["message"] == LibraryItemDoesNotExistError.message
 
-    async def test_library_get_url_applet_version_does_not_exists(
-        self, client, applet_data
-    ) -> None:
+    async def test_library_get_url_applet_version_does_not_exists(self, client, applet_data) -> None:
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         # Update applet, change version
-        resp = await client.put(
-            f"/applets/{APPLET_IN_LABRARY_ID}", data=applet_data
-        )
+        resp = await client.put(f"/applets/{APPLET_IN_LABRARY_ID}", data=applet_data)
         assert resp.status_code == http.HTTPStatus.OK
-        resp = await client.get(
-            self.applet_link.format(applet_id=APPLET_IN_LABRARY_ID)
-        )
+        resp = await client.get(self.applet_link.format(applet_id=APPLET_IN_LABRARY_ID))
         assert resp.status_code == http.HTTPStatus.NOT_FOUND
         res = resp.json()["result"]
         assert len(res) == 1

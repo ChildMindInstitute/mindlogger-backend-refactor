@@ -76,9 +76,7 @@ def test_public_user_from_user_model(base_data: BaseData):
     assert public_user.id == user.id
 
 
-@pytest.mark.parametrize(
-    "field, value", (("password", "pass word"), ("prev_password", "pass word"))
-)
+@pytest.mark.parametrize("field, value", (("password", "pass word"), ("prev_password", "pass word")))
 def test_change_password_passwords_contain_whitespace(field: str, value: str):
     data = {"password": "password", "prev_password": "prev_password"}
     data[field] = value

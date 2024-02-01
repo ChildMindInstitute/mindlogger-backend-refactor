@@ -20,9 +20,7 @@ async def test_get_user_by_id(session: AsyncSession, user_tom: UserSchema):
     assert result == User.from_orm(user_tom)
 
 
-async def test_user_exists_by_id__user_does_not_exist(
-    session: AsyncSession, uuid_zero: uuid.UUID
-):
+async def test_user_exists_by_id__user_does_not_exist(session: AsyncSession, uuid_zero: uuid.UUID):
     srv = UserService(session)
     with pytest.raises(UserNotFound):
         await srv.exists_by_id(uuid_zero)

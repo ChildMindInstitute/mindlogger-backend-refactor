@@ -1,11 +1,7 @@
 import pytest
 
 from apps.activities.domain.conditional_logic import ConditionalLogic, Match
-from apps.activities.domain.conditions import (
-    ConditionType,
-    EqualCondition,
-    ValuePayload,
-)
+from apps.activities.domain.conditions import ConditionType, EqualCondition, ValuePayload
 from apps.activities.tests.utils import DEFAULT_ITEM_NAME
 
 

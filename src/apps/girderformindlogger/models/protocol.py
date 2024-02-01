@@ -31,18 +31,12 @@ from pymongo import ASCENDING, DESCENDING
 from apps.girderformindlogger import events
 from apps.girderformindlogger.api.rest import getCurrentUser
 from apps.girderformindlogger.constants import MODELS, AccessType, SortDir
-from apps.girderformindlogger.exceptions import (
-    GirderException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import GirderException, ValidationException
 from apps.girderformindlogger.models.account_profile import AccountProfile
 from apps.girderformindlogger.models.activity import Activity as ActivityModel
 from apps.girderformindlogger.models.folder import Folder as FolderModel
 from apps.girderformindlogger.models.user import User as UserModel
-from apps.girderformindlogger.utility.progress import (
-    noProgress,
-    setResponseTimeLimit,
-)
+from apps.girderformindlogger.utility.progress import noProgress, setResponseTimeLimit
 
 
 class Protocol(FolderModel):

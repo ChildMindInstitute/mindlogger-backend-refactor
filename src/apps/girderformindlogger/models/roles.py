@@ -2,10 +2,7 @@ import itertools
 
 from apps.girderformindlogger.api.rest import getCurrentUser
 from apps.girderformindlogger.constants import AccessType
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import AccessException, ValidationException
 from apps.girderformindlogger.models.folder import Folder as FolderModel
 from apps.girderformindlogger.models.user import User as UserModel
 from apps.girderformindlogger.utility import config

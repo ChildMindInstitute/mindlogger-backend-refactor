@@ -8,10 +8,7 @@ from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.domain.applets import public_detail
 from apps.applets.router import router as applet_router
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.domain.response import (
-    AUTHENTICATION_ERROR_RESPONSES,
-    DEFAULT_OPENAPI_RESPONSE,
-)
+from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE
 from apps.shared.response import EmptyResponse
 from apps.workspaces.api import (
     applet_remove_respondent_access,
@@ -36,9 +33,7 @@ from apps.workspaces.api import (
     workspace_users_applet_access_list,
 )
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.domain.user_applet_access import (
-    PublicRespondentAppletAccess,
-)
+from apps.workspaces.domain.user_applet_access import PublicRespondentAppletAccess
 from apps.workspaces.domain.workspace import (
     PublicWorkspace,
     PublicWorkspaceInfo,
@@ -171,9 +166,7 @@ router.get(
     status_code=status.HTTP_200_OK,
     response_model=ResponseMulti[PublicWorkspaceRespondent],
     responses={
-        status.HTTP_200_OK: {
-            "model": ResponseMulti[PublicWorkspaceRespondent]
-        },
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicWorkspaceRespondent]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -184,9 +177,7 @@ router.get(
     status_code=status.HTTP_200_OK,
     response_model=ResponseMulti[PublicWorkspaceRespondent],
     responses={
-        status.HTTP_200_OK: {
-            "model": ResponseMulti[PublicWorkspaceRespondent]
-        },
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicWorkspaceRespondent]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -239,9 +230,7 @@ router.get(
     status_code=status.HTTP_200_OK,
     response_model=ResponseMulti[PublicRespondentAppletAccess],
     responses={
-        status.HTTP_200_OK: {
-            "model": ResponseMulti[PublicRespondentAppletAccess]
-        },
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicRespondentAppletAccess]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

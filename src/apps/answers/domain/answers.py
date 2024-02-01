@@ -4,10 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, validator
 
-from apps.activities.domain.activity_full import (
-    ActivityFull,
-    PublicActivityItemFull,
-)
+from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
 from apps.activities.domain.activity_history import (
     ActivityHistoryExport,
     ActivityHistoryFull,
@@ -69,9 +66,7 @@ class ItemAnswerCreate(InternalModel):
     def convert_item_ids(cls, value: list[uuid.UUID]):
         return list(map(str, value))
 
-    _dates_from_ms = validator(
-        "start_time", "end_time", "scheduled_time", pre=True, allow_reuse=True
-    )(datetime_from_ms)
+    _dates_from_ms = validator("start_time", "end_time", "scheduled_time", pre=True, allow_reuse=True)(datetime_from_ms)
 
 
 class AnswerItemSchemaAnsweredActivityItem(InternalModel):
@@ -103,9 +98,7 @@ class AppletAnswerCreate(InternalModel):
     alerts: list[AnswerAlert] = Field(default_factory=list)
     client: ClientMeta
 
-    _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(
-        datetime_from_ms
-    )
+    _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 
 
 class AssessmentAnswerCreate(InternalModel):
@@ -181,9 +174,7 @@ class AssessmentAnswer(InternalModel):
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    items_last: list[PublicActivityItemFull] | None = Field(
-        default_factory=list
-    )
+    items_last: list[PublicActivityItemFull] | None = Field(default_factory=list)
     is_edited: bool = False
     versions: list[str] = []
 
@@ -240,9 +231,7 @@ class AssessmentAnswerPublic(PublicModel):
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    items_last: list[PublicActivityItemFull] | None = Field(
-        default_factory=list
-    )
+    items_last: list[PublicActivityItemFull] | None = Field(default_factory=list)
     versions: list[str]
 
 
@@ -338,9 +327,7 @@ class AnswerExport(InternalModel):
 
 class PublicAnswerExportTranslated(PublicModel):
     answers: list[RespondentAnswerDataPublic] = Field(default_factory=list)
-    activities: list[ActivityHistoryTranslatedExport] = Field(
-        default_factory=list
-    )
+    activities: list[ActivityHistoryTranslatedExport] = Field(default_factory=list)
 
 
 class PublicAnswerExport(PublicModel):
@@ -350,9 +337,7 @@ class PublicAnswerExport(PublicModel):
     def translate(self, i18n: I18N) -> PublicAnswerExportTranslated:
         return PublicAnswerExportTranslated(
             answers=self.answers,
-            activities=[
-                activity.translate(i18n) for activity in self.activities
-            ],
+            activities=[activity.translate(i18n) for activity in self.activities],
         )
 
 

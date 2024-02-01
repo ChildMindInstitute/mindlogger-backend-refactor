@@ -12,6 +12,4 @@ class UserDeviceService:
         await UserDevicesCRUD(self.session).add_device(self.user_id, device_id)
 
     async def remove_device(self, device_id: str) -> None:
-        await UserDevicesCRUD(self.session).remove_device(
-            self.user_id, device_id
-        )
+        await UserDevicesCRUD(self.session).remove_device(self.user_id, device_id)

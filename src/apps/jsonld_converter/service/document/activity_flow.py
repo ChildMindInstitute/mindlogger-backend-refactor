@@ -2,11 +2,7 @@ import uuid
 from copy import deepcopy
 
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
-from apps.jsonld_converter.service.document.base import (
-    CommonFieldsMixin,
-    LdDocumentBase,
-    LdKeyword,
-)
+from apps.jsonld_converter.service.document.base import CommonFieldsMixin, LdDocumentBase, LdKeyword
 
 
 class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
@@ -38,20 +34,14 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
         processed_doc: dict = deepcopy(self.doc_expanded)
         self.ld_pref_label = self._get_ld_pref_label(processed_doc, drop=True)
         self.ld_alt_label = self._get_ld_alt_label(processed_doc, drop=True)
-        self.ld_name = self.attr_processor.get_translation(
-            processed_doc, "schema:name", lang=self.lang, drop=True
-        )
-        self.ld_description = self._get_ld_description(
-            processed_doc, drop=True
-        )
+        self.ld_name = self.attr_processor.get_translation(processed_doc, "schema:name", lang=self.lang, drop=True)
+        self.ld_description = self._get_ld_description(processed_doc, drop=True)
         self.ld_is_vis = self._is_visible(processed_doc, drop=True)
 
         self.ld_combine_reports = self.attr_processor.get_attr_value(
             processed_doc, "reproschema:combineReports", drop=True
         )
-        self.ld_show_badge = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:showBadge", drop=True
-        )
+        self.ld_show_badge = self.attr_processor.get_attr_value(processed_doc, "reproschema:showBadge", drop=True)
         self.ld_report_include_item = self.attr_processor.get_attr_value(
             processed_doc, "reproschema:reportIncludeItem", drop=True
         )
@@ -61,9 +51,7 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
         self._load_extra(processed_doc)
 
     def _get_flow_items(self, doc: dict, *, drop=False):
-        if items := self.attr_processor.get_attr_list(
-            doc, "reproschema:order", drop=drop
-        ):
+        if items := self.attr_processor.get_attr_list(doc, "reproschema:order", drop=drop):
             return [item.get(LdKeyword.id) for item in items]
 
     def export(self) -> FlowCreate:
@@ -85,9 +73,7 @@ class ReproActivityFlow(LdDocumentBase, CommonFieldsMixin):
             extra_fields=self.extra,
         )
         if self.ld_report_include_item:
-            activity_name, item_name = self.ld_report_include_item.rsplit(
-                "/", 1
-            )
+            activity_name, item_name = self.ld_report_include_item.rsplit("/", 1)
             flow.report_included_activity_name = activity_name
             flow.report_included_item_name = item_name
 

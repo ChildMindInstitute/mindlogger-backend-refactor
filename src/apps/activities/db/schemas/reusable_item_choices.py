@@ -17,9 +17,7 @@ class ReusableItemChoiceSchema(Base):
         ),
     )
 
-    user_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
-    )
+    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     token_name = Column(String(length=100), nullable=False)
     token_value = Column(Integer(), nullable=False)
     input_type = Column(String(length=20), nullable=False)

@@ -3,10 +3,7 @@ import requests
 import six
 
 from apps.girderformindlogger.api.rest import Resource
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import AccessException, ValidationException
 
 allowedSearchTypes = {"collection", "file", "folder", "group", "item", "user"}
 

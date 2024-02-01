@@ -28,13 +28,9 @@ async def folder_list(
     session=Depends(get_session),
 ) -> ResponseMulti[FolderPublic]:
     if not user.is_super_admin:
-        await CheckAccessService(
-            session, user.id
-        ).check_workspace_folder_access(workspace_id)
+        await CheckAccessService(session, user.id).check_workspace_folder_access(workspace_id)
     folders = await FolderService(session, workspace_id, user.id).list()
-    return ResponseMulti(
-        result=[FolderPublic.from_orm(f) for f in folders], count=len(folders)
-    )
+    return ResponseMulti(result=[FolderPublic.from_orm(f) for f in folders], count=len(folders))
 
 
 async def folder_create(
@@ -45,12 +41,8 @@ async def folder_create(
 ) -> Response[FolderPublic]:
     async with atomic(session):
         if not user.is_super_admin:
-            await CheckAccessService(
-                session, user.id
-            ).check_workspace_folder_access(workspace_id)
-        folder = await FolderService(session, workspace_id, user.id).create(
-            data
-        )
+            await CheckAccessService(session, user.id).check_workspace_folder_access(workspace_id)
+        folder = await FolderService(session, workspace_id, user.id).create(data)
     return Response(result=FolderPublic.from_orm(folder))
 
 
@@ -63,12 +55,8 @@ async def folder_update_name(
 ) -> Response[FolderPublic]:
     async with atomic(session):
         if not user.is_super_admin:
-            await CheckAccessService(
-                session, user.id
-            ).check_workspace_folder_access(workspace_id)
-        folder = await FolderService(session, workspace_id, user.id).update(
-            folder_id, data
-        )
+            await CheckAccessService(session, user.id).check_workspace_folder_access(workspace_id)
+        folder = await FolderService(session, workspace_id, user.id).update(folder_id, data)
     return Response(result=FolderPublic.from_orm(folder))
 
 
@@ -80,12 +68,8 @@ async def folder_delete(
 ):
     async with atomic(session):
         if not user.is_super_admin:
-            await CheckAccessService(
-                session, user.id
-            ).check_workspace_folder_access(workspace_id)
-        await FolderService(session, workspace_id, user.id).delete_by_id(
-            folder_id
-        )
+            await CheckAccessService(session, user.id).check_workspace_folder_access(workspace_id)
+        await FolderService(session, workspace_id, user.id).delete_by_id(folder_id)
 
 
 async def folder_pin(
@@ -98,12 +82,8 @@ async def folder_pin(
     async with atomic(session):
         await AppletService(session, workspace_id).exist_by_id(applet_id)
         if not user.is_super_admin:
-            await CheckAccessService(
-                session, user.id
-            ).check_workspace_folder_access(workspace_id)
-        await FolderService(session, workspace_id, user.id).pin_applet(
-            folder_id, applet_id
-        )
+            await CheckAccessService(session, user.id).check_workspace_folder_access(workspace_id)
+        await FolderService(session, workspace_id, user.id).pin_applet(folder_id, applet_id)
 
 
 async def folder_unpin(
@@ -116,9 +96,5 @@ async def folder_unpin(
     async with atomic(session):
         await AppletService(session, workspace_id).exist_by_id(applet_id)
         if not user.is_super_admin:
-            await CheckAccessService(
-                session, user.id
-            ).check_workspace_folder_access(workspace_id)
-        await FolderService(session, workspace_id, user.id).unpin_applet(
-            folder_id, applet_id
-        )
+            await CheckAccessService(session, user.id).check_workspace_folder_access(workspace_id)
+        await FolderService(session, workspace_id, user.id).unpin_applet(folder_id, applet_id)

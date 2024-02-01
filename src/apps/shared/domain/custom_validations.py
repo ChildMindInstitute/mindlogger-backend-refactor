@@ -38,11 +38,7 @@ class InvalidUUIDError(ValidationError):
 
 def validate_image(value: str) -> str:
     if value.startswith("http"):
-        type = (
-            _get_mimetype_from_url_without_download(value)
-            or _get_mimetype_from_url(value)
-            or ""
-        )
+        type = _get_mimetype_from_url_without_download(value) or _get_mimetype_from_url(value) or ""
         if type.startswith("image/"):
             return value
 
@@ -114,11 +110,7 @@ def validate_uuid(value):
 def datetime_from_ms(value):
     if isinstance(value, int):
         if (
-            value
-            > datetime.datetime(
-                year=2000, month=1, day=1, tzinfo=datetime.timezone.utc
-            ).timestamp()
-            * 1000
+            value > datetime.datetime(year=2000, month=1, day=1, tzinfo=datetime.timezone.utc).timestamp() * 1000
         ):  # ms, assume date > 2000-01-01
             value = value / 1000  # wtf, rework this
         return datetime.datetime.utcfromtimestamp(value)

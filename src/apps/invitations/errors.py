@@ -1,11 +1,6 @@
 from gettext import gettext as _
 
-from apps.shared.exception import (
-    AccessDeniedError,
-    FieldError,
-    NotFoundError,
-    ValidationError,
-)
+from apps.shared.exception import AccessDeniedError, FieldError, NotFoundError, ValidationError
 
 
 class InvitationDoesNotExist(NotFoundError):

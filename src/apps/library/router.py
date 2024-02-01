@@ -11,17 +11,9 @@ from apps.library.api import (
     library_share_applet,
     library_update,
 )
-from apps.library.domain import (
-    AppletLibraryFull,
-    AppletLibraryInfo,
-    Cart,
-    PublicLibraryItem,
-)
+from apps.library.domain import AppletLibraryFull, AppletLibraryInfo, Cart, PublicLibraryItem
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.domain.response import (
-    AUTHENTICATION_ERROR_RESPONSES,
-    DEFAULT_OPENAPI_RESPONSE,
-)
+from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE
 
 router = APIRouter(prefix="/library", tags=["Library"])
 

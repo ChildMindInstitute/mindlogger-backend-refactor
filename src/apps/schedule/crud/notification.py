@@ -4,11 +4,7 @@ from sqlalchemy.orm import Query
 from sqlalchemy.sql import delete, select, update
 
 from apps.schedule.db.schemas import NotificationSchema, ReminderSchema
-from apps.schedule.domain.schedule.internal import (
-    NotificationSetting,
-    ReminderSetting,
-    ReminderSettingCreate,
-)
+from apps.schedule.domain.schedule.internal import NotificationSetting, ReminderSetting, ReminderSettingCreate
 from infrastructure.database import BaseCRUD
 
 __all__ = [
@@ -25,14 +21,9 @@ class NotificationCRUD(BaseCRUD[NotificationSchema]):
         notifications: list[NotificationSchema],
     ) -> list[NotificationSetting]:
         result = await self._create_many(notifications)
-        return [
-            NotificationSetting.from_orm(notification)
-            for notification in result
-        ]
+        return [NotificationSetting.from_orm(notification) for notification in result]
 
-    async def get_all_by_event_id(
-        self, event_id: uuid.UUID
-    ) -> list[NotificationSetting]:
+    async def get_all_by_event_id(self, event_id: uuid.UUID) -> list[NotificationSetting]:
         """Return all notifications by event id."""
 
         query: Query = select(NotificationSchema)
@@ -41,14 +32,9 @@ class NotificationCRUD(BaseCRUD[NotificationSchema]):
         db_result = await self._execute(query)
         result = db_result.scalars().all()
 
-        return [
-            NotificationSetting.from_orm(notification)
-            for notification in result
-        ]
+        return [NotificationSetting.from_orm(notification) for notification in result]
 
-    async def get_all_by_event_ids(
-        self, event_ids: set[uuid.UUID]
-    ) -> dict[uuid.UUID, list[NotificationSetting]]:
+    async def get_all_by_event_ids(self, event_ids: set[uuid.UUID]) -> dict[uuid.UUID, list[NotificationSetting]]:
         """Return all notifications in map by event ids."""
 
         query: Query = select(NotificationSchema)
@@ -60,9 +46,7 @@ class NotificationCRUD(BaseCRUD[NotificationSchema]):
         notifications_map: dict[uuid.UUID, list[NotificationSetting]] = dict()
         for notification in result:
             notifications_map.setdefault(notification.event_id, list())
-            notifications_map[notification.event_id].append(
-                NotificationSetting.from_orm(notification)
-            )
+            notifications_map[notification.event_id].append(NotificationSetting.from_orm(notification))
 
         return notifications_map
 
@@ -92,9 +76,7 @@ class ReminderCRUD(BaseCRUD[ReminderSchema]):
 
         return db_result.scalars().first()
 
-    async def get_by_event_ids(
-        self, event_ids: set[uuid.UUID]
-    ) -> dict[uuid.UUID, ReminderSchema]:
+    async def get_by_event_ids(self, event_ids: set[uuid.UUID]) -> dict[uuid.UUID, ReminderSchema]:
         """Return all reminders in map by event ids."""
 
         query: Query = select(ReminderSchema)

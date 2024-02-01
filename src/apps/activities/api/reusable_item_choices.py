@@ -22,9 +22,7 @@ async def item_choice_create(
     session=Depends(get_session),
 ) -> Response[PublicReusableItemChoice]:
     async with atomic(session):
-        item_template: ReusableItemChoice = await ReusableItemChoiceCRUD(
-            session
-        ).save(
+        item_template: ReusableItemChoice = await ReusableItemChoiceCRUD(session).save(
             schema=ReusableItemChoiceCreate(**schema.dict(), user_id=user.id)
         )
 
@@ -46,11 +44,7 @@ async def item_choice_retrieve(
     session=Depends(get_session),
 ) -> ResponseMulti[PublicReusableItemChoice]:
     async with atomic(session):
-        item_templates = await ReusableItemChoiceCRUD(
-            session
-        ).get_item_templates(user.id)
-        count = await ReusableItemChoiceCRUD(session).get_item_templates_count(
-            user.id
-        )
+        item_templates = await ReusableItemChoiceCRUD(session).get_item_templates(user.id)
+        count = await ReusableItemChoiceCRUD(session).get_item_templates_count(user.id)
 
     return ResponseMulti(result=item_templates, count=count)

@@ -1,10 +1,6 @@
 from gettext import gettext as _
 
-from apps.shared.exception import (
-    InternalServerError,
-    NotFoundError,
-    ValidationError,
-)
+from apps.shared.exception import InternalServerError, NotFoundError, ValidationError
 
 
 class TransferNotFoundError(NotFoundError):

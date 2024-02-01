@@ -22,7 +22,7 @@ repos:
         entry: mypy
         language: system
         types: [python]
-        exclude: "apps/girderformindlogger|apps/migrate"
+        exclude: "apps/girderformindlogger|apps/migrate|apps/jsonld_converter"
 
       - id: git-secrets
         name: git-secrets

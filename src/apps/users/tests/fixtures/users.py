@@ -22,9 +22,7 @@ def user_tom_create() -> UserCreate:
 
 
 @pytest.fixture
-async def user_tom(
-    user_tom_create: UserCreate, session: AsyncSession
-) -> AsyncGenerator:
+async def user_tom(user_tom_create: UserCreate, session: AsyncSession) -> AsyncGenerator:
     crud = UsersCRUD(session)
     # backward compatibility with current JSON fixtures
     user = await crud.get_user_or_none_by_email(user_tom_create.email)

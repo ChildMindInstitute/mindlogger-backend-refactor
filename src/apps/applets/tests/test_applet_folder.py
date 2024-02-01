@@ -27,9 +27,7 @@ class TestAppletMoveToFolder(BaseTest):
         response = await client.post(self.set_folder_url, data)
         assert response.status_code == http.HTTPStatus.OK
 
-        folders_ids = await FolderCRUD(
-            session
-        ).get_applets_folder_id_in_workspace(
+        folders_ids = await FolderCRUD(session).get_applets_folder_id_in_workspace(
             uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
@@ -55,10 +53,7 @@ class TestAppletMoveToFolder(BaseTest):
 
         response = await client.post(self.set_folder_url, data)
         assert response.status_code == http.HTTPStatus.FORBIDDEN
-        assert (
-            response.json()["result"][0]["message"]
-            == "Access denied to folder."
-        )
+        assert response.json()["result"][0]["message"] == "Access denied to folder."
 
     async def test_move_not_accessible_applet_to_folder(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
@@ -69,23 +64,16 @@ class TestAppletMoveToFolder(BaseTest):
 
         response = await client.post(self.set_folder_url, data)
         assert response.status_code == http.HTTPStatus.FORBIDDEN
-        assert (
-            response.json()["result"][0]["message"]
-            == "Access denied to edit applet in current workspace."
-        )
+        assert response.json()["result"][0]["message"] == "Access denied to edit applet in current workspace."
 
     async def test_remove_from_folder(self, session, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        data = dict(
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1", folder_id=None
-        )
+        data = dict(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1", folder_id=None)
 
         response = await client.post(self.set_folder_url, data)
         assert response.status_code == http.HTTPStatus.OK
 
-        folders_id = await FolderCRUD(
-            session
-        ).get_applets_folder_id_in_workspace(
+        folders_id = await FolderCRUD(session).get_applets_folder_id_in_workspace(
             uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
@@ -100,10 +88,7 @@ class TestAppletMoveToFolder(BaseTest):
 
         response = await client.post(self.set_folder_url, data)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
-        assert (
-            response.json()["result"][0]["message"]
-            == FolderDoesNotExist.message
-        )
+        assert response.json()["result"][0]["message"] == FolderDoesNotExist.message
 
     async def test_move_to_folder_applet_already_moved(self, session, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
@@ -119,9 +104,7 @@ class TestAppletMoveToFolder(BaseTest):
         response = await client.post(self.set_folder_url, data)
         assert response.status_code == http.HTTPStatus.OK
 
-        folders_ids = await FolderCRUD(
-            session
-        ).get_applets_folder_id_in_workspace(
+        folders_ids = await FolderCRUD(session).get_applets_folder_id_in_workspace(
             uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
