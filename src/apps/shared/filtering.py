@@ -95,3 +95,6 @@ class Filtering:
                 )
             )
         return clauses
+
+    def null(self, field, value):
+        return field.is_(None) if value else field.isnot(None)
