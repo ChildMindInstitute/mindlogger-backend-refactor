@@ -16,3 +16,9 @@ class TransferSchema(Base):
     )
     key = Column(UUID(as_uuid=True))
     status = Column(String(), server_default=TransferOwnershipStatus.PENDING)
+    from_user_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
+    )
+    to_user_id = Column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
+    )
