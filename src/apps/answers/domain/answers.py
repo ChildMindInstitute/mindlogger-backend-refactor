@@ -296,7 +296,7 @@ class UserAnswerDataBase(BaseModel):
     reviewed_answer_id: uuid.UUID | str | None
     created_at: datetime.datetime
     migrated_data: dict | None = None
-    client: dict | None = None
+    client: ClientMeta | None = None
 
 
 class RespondentAnswerData(UserAnswerDataBase, InternalModel):

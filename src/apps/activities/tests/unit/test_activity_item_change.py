@@ -431,7 +431,7 @@ def test_initial_single_selection_config_change(
         "Tokens was disabled",
         "Add Text Input Option was disabled",
         "Input Required was disabled",
-        "Auto Advance was disabled",
+        "Auto Advance was enabled",
     ]
     assert changes == exp_changes
 
@@ -531,7 +531,7 @@ def test_initial_version_changes(
         "Tokens was disabled",
         "Add Text Input Option was disabled",
         "Input Required was disabled",
-        "Auto Advance was disabled",
+        "Auto Advance was enabled",
     ]
     changes = item_change_service.get_changes_insert(new_item)
     assert changes == single_select_exp_changes
