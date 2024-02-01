@@ -513,6 +513,7 @@ class ActivityService:
                 order=schema.order,
                 is_hidden=schema.is_hidden,
                 contains_response_types=[],
+                item_count=0,
             )
 
             activities.append(activity)
@@ -525,6 +526,9 @@ class ActivityService:
         )
         for activity in activities:
             activity.contains_response_types = list(
-                activity_items_map.get(activity.id, set())
+                set(activity_items_map.get(activity.id, list()))
+            )
+            activity.item_count = len(
+                activity_items_map.get(activity.id, list())
             )
         return activities

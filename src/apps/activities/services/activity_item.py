@@ -116,15 +116,15 @@ class ActivityItemService:
 
     async def get_info_by_activity_ids(
         self, activity_ids: list[uuid.UUID], language: str
-    ) -> dict[uuid.UUID, set[ResponseType]]:
+    ) -> dict[uuid.UUID, list[ResponseType]]:
         """Return all Items in map by event activity_ids."""
         schemas = await ActivityItemsCRUD(self.session).get_by_activity_ids(
             activity_ids
         )
-        items_map: dict[uuid.UUID, set[ResponseType]] = dict()
+        items_map: dict[uuid.UUID, list[ResponseType]] = dict()
         for schema in schemas:
-            items_map.setdefault(schema.activity_id, set())
-            items_map[schema.activity_id].add(
+            items_map.setdefault(schema.activity_id, list())
+            items_map[schema.activity_id].append(
                 schema.response_type,
             )
         return items_map

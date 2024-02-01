@@ -1919,6 +1919,9 @@ class TestApplet(BaseTest):
                 "containsResponseTypes"
             ]
         )
+        assert isinstance(
+            response.json()["result"]["activities"][0]["itemCount"], int
+        )
 
     async def test_get_public_applet_activities_info(self, client):
         response = await client.get(
@@ -1934,6 +1937,9 @@ class TestApplet(BaseTest):
             in response.json()["result"]["activities"][0][
                 "containsResponseTypes"
             ]
+        )
+        assert isinstance(
+            response.json()["result"]["activities"][0]["itemCount"], int
         )
 
     @pytest.mark.parametrize(

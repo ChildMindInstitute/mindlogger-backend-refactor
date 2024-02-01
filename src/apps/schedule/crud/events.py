@@ -358,8 +358,8 @@ class EventCRUD(BaseCRUD[EventSchema]):
             )
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
-        if respondent_id:
-            query = query.where(UserEventsSchema.user_id == respondent_id)
+
+        query = query.where(UserEventsSchema.user_id == respondent_id)
 
         result = await self._execute(query)
         return result.scalars().all()
@@ -400,8 +400,8 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted == False)  # noqa: E712
-        if respondent_id:
-            query = query.where(UserEventsSchema.user_id == respondent_id)
+
+        query = query.where(UserEventsSchema.user_id == respondent_id)
 
         result = await self._execute(query)
         return result.scalars().all()
@@ -748,6 +748,35 @@ class EventCRUD(BaseCRUD[EventSchema]):
         query = query.where(EventSchema.is_deleted.is_(False))
         result = await self._execute(query)
         return result.scalars().all()
+
+    async def get_all_by_activity_flow_ids(
+        self,
+        applet_id: uuid.UUID,
+        activity_ids: list[uuid.UUID],
+        is_activity: bool,
+    ) -> list[EventSchema]:
+        """Return events for given activity ids."""
+        query: Query = select(self.schema_class)
+        query = query.where(self.schema_class.applet_id == applet_id)
+
+        if is_activity:
+            query = query.join(
+                ActivityEventsSchema,
+                ActivityEventsSchema.event_id == self.schema_class.id,
+            )
+            query = query.where(
+                ActivityEventsSchema.activity_id.in_(activity_ids)
+            )
+        else:
+            query = query.join(
+                FlowEventsSchema,
+                FlowEventsSchema.event_id == self.schema_class.id,
+            )
+            query = query.where(FlowEventsSchema.flow_id.in_(activity_ids))
+
+        result = await self._execute(query)
+        events = result.scalars().all()
+        return events
 
 
 class UserEventsCRUD(BaseCRUD[UserEventsSchema]):

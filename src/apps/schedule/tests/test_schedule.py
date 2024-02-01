@@ -199,7 +199,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 200, response.json()
         events = response.json()["result"]
-        assert type(events) == list
+        assert isinstance(events, list)
         events_count = len(events)
 
         create_data = {
@@ -259,7 +259,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 200, response.json()
         events = response.json()["result"]
-        assert type(events) == dict
+        assert isinstance(events, dict)
 
     async def test_schedule_get_detail(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
@@ -566,8 +566,8 @@ class TestSchedule(BaseTest):
 
         result = response.json()["result"]
 
-        assert type(result["activityEvents"]) == list
-        assert type(result["flowEvents"]) == list
+        assert isinstance(result["activityEvents"], list)
+        assert isinstance(result["flowEvents"], list)
 
     async def test_schedule_delete_user(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")

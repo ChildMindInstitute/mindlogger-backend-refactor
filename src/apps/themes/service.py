@@ -67,7 +67,6 @@ class ThemeService:
     async def update(
         self, theme_id: uuid.UUID, theme_request: ThemeRequest
     ) -> PublicTheme:
-
         theme: Theme = await ThemesCRUD(self.session).update(
             pk=theme_id,
             update_schema=ThemeSchema(

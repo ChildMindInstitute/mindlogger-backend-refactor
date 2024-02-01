@@ -144,7 +144,7 @@ class ResponseOptionChangeService(BaseChangeGenerator):
             self.__process_container_attr(value, "rows", "row_name", changes)
             self.__process_container_attr(value, "options", "text", changes)
 
-    def check_changes_update(
+    def check_changes_update(  # noqa: C901
         self,
         type_,
         old_value,
@@ -300,9 +300,12 @@ class ConditionalLogicChangeService(BaseChangeGenerator):
         # Because we can not check conditional logic identity (there are no
         # any ids or other unique fields) we just write that logic was update
         # to the new value.
-        elif new_value != old_value:
+        elif new_value != old_value and new_value is not None:
             self.check_changes(
-                parent_field, new_value, changes, method_name="updated_text"  # type: ignore [arg-type] # noqa: E501
+                parent_field,
+                new_value,
+                changes,
+                method_name="updated_text",  # noqa: E501
             )
 
     @staticmethod

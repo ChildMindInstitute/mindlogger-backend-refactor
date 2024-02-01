@@ -217,7 +217,6 @@ class ActivityChangeService(BaseChangeGenerator):
         "is_reviewable": "Turn the Activity to the Reviewer dashboard assessment",  # noqa E501
         "response_is_editable": "Disable the respondent's ability to change the response",  # noqa E501
         "report_included_item_name": "Report's name included item name",
-        "order": "Activity Order",
         # NOTE: is_hidden should be inverted
         "is_hidden": "Activity Visibility",
         "scores_and_reports": "Scores & Reports option",

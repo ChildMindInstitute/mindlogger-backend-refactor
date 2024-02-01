@@ -102,4 +102,4 @@ class TestThemes(BaseTest):
         response = await client.get(self.list_url)
 
         assert response.status_code == 200
-        assert type(response.json()["result"]) == list
+        assert isinstance(response.json()["result"], list)

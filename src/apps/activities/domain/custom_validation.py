@@ -8,7 +8,6 @@ from apps.activities.domain.response_type_config import (
 )
 from apps.activities.domain.scores_reports import ReportType, SubscaleItemType
 from apps.activities.errors import (
-    DuplicateActivityItemOptionIdError,
     IncorrectConditionItemError,
     IncorrectConditionItemIndexError,
     IncorrectConditionLogicItemTypeError,
@@ -74,7 +73,7 @@ def validate_item_flow(values: dict):
     return values
 
 
-def validate_score_and_sections(values: dict):
+def validate_score_and_sections(values: dict):  # noqa: C901
     items = values.get("items", [])
     item_names = [item.name for item in items]
     scores_and_reports = values.get("scores_and_reports")
@@ -185,7 +184,7 @@ def validate_subscales(values: dict):
                         subscale_item_name.name
                     )
 
-                    if not items[subscale_item_index].response_type in [
+                    if items[subscale_item_index].response_type not in [
                         ResponseType.SINGLESELECT,
                         ResponseType.MULTISELECT,
                         ResponseType.SLIDER,
@@ -221,19 +220,4 @@ def validate_performance_task_type(values: dict):
             ResponseType.ABTRAILS,
         ):
             values["performance_task_type"] = item.response_type
-    return values
-
-
-def validate_unique_item_option_ids(values: dict):
-    items = values.get("items", [])
-    option_ids = []
-    for item in items:
-        if item.response_type in (
-            ResponseType.SINGLESELECT,
-            ResponseType.MULTISELECT,
-        ):
-            for option in item.response_values.options:
-                if option.id is not None and option.id in option_ids:
-                    raise DuplicateActivityItemOptionIdError()
-                option_ids.append(option.id)
     return values

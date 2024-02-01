@@ -1315,7 +1315,7 @@ class Profile(AESEncryption, dict):
         for sub in childFolders:
             if sub["name"] == metadataFile:
                 metadataFile = None
-            for (filepath, file) in self.fileList(
+            for filepath, file in self.fileList(
                 sub,
                 user,
                 path,
@@ -1336,7 +1336,7 @@ class Profile(AESEncryption, dict):
         for item in childItems:
             if item["name"] == metadataFile:
                 metadataFile = None
-            for (filepath, file) in itemModel.fileList(
+            for filepath, file in itemModel.fileList(
                 item,
                 user,
                 path,

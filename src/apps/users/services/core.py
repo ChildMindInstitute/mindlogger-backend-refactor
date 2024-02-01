@@ -37,7 +37,6 @@ class PasswordRecoveryService:
     async def send_password_recovery(
         self, schema: PasswordRecoveryRequest
     ) -> PublicUser:
-
         # encrypted_email = encrypt(bytes(schema.email, "utf-8")).hex()
 
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
@@ -107,7 +106,6 @@ class PasswordRecoveryService:
     async def approve(
         self, schema: PasswordRecoveryApproveRequest
     ) -> PublicUser:
-
         try:
             cache_entry: CacheEntry[
                 PasswordRecoveryInfo
