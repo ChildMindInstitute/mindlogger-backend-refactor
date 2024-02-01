@@ -12,6 +12,7 @@ from sqlalchemy import (
     case,
     distinct,
     exists,
+    false,
     func,
     literal_column,
     or_,
@@ -67,6 +68,7 @@ __all__ = ["UserAppletAccessCRUD"]
 
 class _AppletUsersFilter(Filtering):
     role = FilterField(UserAppletAccessSchema.role)
+    shell = FilterField(UserSchema.id, method_name="null")
 
 
 class _WorkspaceRespondentOrdering(Ordering):
@@ -474,29 +476,34 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(AppletSchema, UserSchema)
         )
 
+        invite_status = select(
+            case(
+                (UserSchema.id.isnot(None), SubjectStatus.INVITED),
+                (
+                    (InvitationSchema.status == InvitationStatus.APPROVED),
+                    SubjectStatus.INVITED,
+                ),
+                (
+                    (InvitationSchema.status == InvitationStatus.PENDING),
+                    SubjectStatus.PENDING,
+                ),
+                else_=SubjectStatus.NOT_INVITED,
+            )
+        ).correlate(UserSchema, InvitationSchema)
+
         query: Query = select(
             # fmt: off
-            SubjectSchema.id,
-            SubjectSchema.first_name,
-            SubjectSchema.last_name,
-            SubjectSchema.email,
-            UserAppletAccessSchema.user_id,
+            UserSchema.id,
+            UserSchema.email_encrypted.label("email"),
             case(
                 (
-                    UserAppletAccessSchema.user_id.isnot(None),
-                    SubjectStatus.INVITED
+                    UserSchema.id.isnot(None),
+                    UserSchema.is_anonymous_respondent
                 ),
-                (
-                    InvitationSchema.status == InvitationStatus.APPROVED,
-                    SubjectStatus.INVITED
-                ),
-                (
-                    InvitationSchema.status == InvitationStatus.PENDING,
-                    SubjectStatus.PENDING
-                ),
-                else_=SubjectStatus.NOT_INVITED
-            ).label('status'),
-            is_pinned.label('is_anonymous_respondent'),
+                else_=false()
+            ).label("is_anonymous_respondent"),
+            invite_status.label('status'),
+            is_pinned.label('is_pinned'),
             func.array_remove(
                 func.array_agg(
                     func.distinct(field_nickname)
@@ -520,10 +527,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     text("'respondent_secret_id'"), field_secret_user_id,
                     text("'has_individual_schedule'"), schedule_exists,
                     text("'encryption'"), AppletSchema.encryption,
+                    text("'subject_id'"), SubjectSchema.id,
                 )
             ).label("details"),
         )
-
+        query = query.select_from(SubjectSchema)
         query = query.join(
             UserSchema, UserSchema.id == SubjectSchema.user_id, isouter=True
         )
@@ -531,7 +539,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.join(
             AppletSchema, AppletSchema.id == SubjectSchema.applet_id
         )
-
         query = query.join(
             UserAppletAccessSchema,
             and_(
@@ -550,19 +557,15 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             ),
             isouter=True,
         )
-
-        query = query.group_by(
-            SubjectSchema.id,
-            UserSchema.id,
-            UserSchema.is_anonymous_respondent,
-            InvitationSchema.status,
-            UserAppletAccessSchema.is_pinned,
-            UserAppletAccessSchema.user_id,
-        )
-
         query = query.where(
             has_access,
             SubjectSchema.applet_id == applet_id if applet_id else True,
+        )
+
+        query = query.group_by(
+            UserSchema.id,
+            func.coalesce(UserSchema.id, func.gen_random_uuid()),
+            InvitationSchema.status,
         )
 
         if query_params.filters:

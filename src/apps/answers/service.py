@@ -1205,12 +1205,28 @@ class AnswerService:
         respondents: list[WorkspaceRespondent],
         applet_id: uuid.UUID | None = None,
     ) -> list[WorkspaceRespondent]:
-        respondent_ids = [respondent.id for respondent in respondents]
+        def get_subject_ids(r):
+            return list(map(lambda x: x.subject_id, respondent_item.details))
+
+        subjects_ids = []
+        for respondent_item in respondents:
+            subjects_ids = get_subject_ids(respondent_item)
+            subjects_ids += subjects_ids
         result = await AnswersCRUD(self.answer_session).get_last_activity(
-            respondent_ids, applet_id
+            subjects_ids, applet_id
         )
         for respondent in respondents:
-            respondent.last_seen = result.get(respondent.id)
+            respondent_subject_ids = map(
+                lambda x: x.subject_id,
+                respondent.details if respondent.details else [],
+            )
+            opt_dates = map(lambda x: result.get(x), respondent_subject_ids)
+            dates: list[datetime.datetime] = list(
+                filter(None.__ne__, opt_dates)  # type: ignore
+            )
+            if dates:
+                last_date = max(dates)
+                respondent.last_seen = last_date
         return respondents
 
 

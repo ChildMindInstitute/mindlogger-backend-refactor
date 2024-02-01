@@ -654,14 +654,15 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return flow_history_schema.is_single_report
 
     async def get_last_activity(
-        self, respondent_ids: list[uuid.UUID], applet_id: uuid.UUID | None
+        self, subject_ids: list[uuid.UUID], applet_id: uuid.UUID | None
     ) -> dict[uuid.UUID, datetime.datetime]:
         query: Query = (
             select(
-                AnswerSchema.respondent_id, func.max(AnswerSchema.created_at)
+                AnswerSchema.target_subject_id,
+                func.max(AnswerSchema.created_at),
             )
-            .group_by(AnswerSchema.respondent_id)
-            .where(AnswerSchema.respondent_id.in_(respondent_ids))
+            .group_by(AnswerSchema.target_subject_id)
+            .where(AnswerSchema.target_subject_id.in_(subject_ids))
         )
         if applet_id:
             query = query.where(AnswerSchema.applet_id == applet_id)
