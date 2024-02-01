@@ -73,6 +73,7 @@ class WorkspaceRespondentDetails(InternalModel):
     respondent_secret_id: str | None = None
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
+    subject_id: uuid.UUID
 
     @root_validator
     def decrypt_nickname(cls, values):
@@ -87,16 +88,16 @@ class WorkspaceRespondentDetails(InternalModel):
 
 
 class WorkspaceRespondent(InternalModel):
-    id: uuid.UUID
+    id: uuid.UUID | None
     nicknames: list[str] | None = None
     secret_ids: list[str] | None = None
     is_anonymous_respondent: bool
     last_seen: datetime.datetime | None
     is_pinned: bool = False
-    status: str
-    email: str | None = None
     details: list[WorkspaceRespondentDetails] | None = None
     user_id: uuid.UUID | None
+    status: str
+    email: str | None
 
 
 class AppletRole(InternalModel):
@@ -163,19 +164,19 @@ class PublicWorkspaceRespondentDetails(PublicModel):
     respondent_secret_id: str | None = None
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
+    subject_id: uuid.UUID
 
 
 class PublicWorkspaceRespondent(PublicModel):
-    id: uuid.UUID
+    id: uuid.UUID | None
     nicknames: list[str] | None
     secret_ids: list[str] | None
     is_anonymous_respondent: bool
     last_seen: datetime.datetime | None
     is_pinned: bool = False
+    details: list[PublicWorkspaceRespondentDetails] | None = None
     status: str
     email: str | None
-    user_id: uuid.UUID | None
-    details: list[PublicWorkspaceRespondentDetails] | None = None
 
 
 class PublicWorkspaceManager(PublicModel):
