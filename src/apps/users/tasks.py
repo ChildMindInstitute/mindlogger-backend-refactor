@@ -19,7 +19,7 @@ async def reencrypt_answers(
     old_password,
     new_password,
     retries: int | None = None,
-    retry_timeout: int | None = None,
+    retry_timeout: int = settings.task_answer_encryption.retry_timeout,
 ):
     job_name = "reencrypt_answers"
     logger.info(f"Reencryption {user_id}: reencrypt_answers start")
@@ -51,10 +51,7 @@ async def reencrypt_answers(
                 base = json.loads(applet.encryption.base)
                 applet_pub_key = json.loads(applet.encryption.public_key)
             except JSONDecodeError as e:
-                logger.error(
-                    f'Reencryption {user_id}: Wrong applet "{applet.applet_id}"'  # noqa: E501
-                    f" encryption format, skip"
-                )
+                logger.error(f"Reencryption {user_id}: Wrong applet {applet.applet_id} encryption format, skip")
                 logger.exception(str(e))
                 continue
 
@@ -104,8 +101,6 @@ async def reencrypt_answers(
                     await JobService(session, user_id).change_status(job.id, JobStatus.retry)
 
                     logger.info(f"Reencryption {user_id}: schedule retry")
-                    if retry_timeout is None:
-                        retry_timeout = settings.task_answer_encryption.retry_timeout
                     retries -= 1
                     await (
                         reencrypt_answers.kicker()

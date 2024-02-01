@@ -70,3 +70,23 @@ class ThemeService:
 
     async def count(self) -> int:
         return await ThemesCRUD(self.session).count()
+
+    async def get_or_create_default(self) -> Theme:
+        theme = await self.get_default()
+        if not theme:
+            inst = await ThemesCRUD(self.session).save(
+                ThemeSchema(
+                    name="Default",
+                    logo=None,
+                    background_image=None,
+                    primary_color="#ffffff",
+                    secondary_color="#ffffff",
+                    tertiary_color="#ffffff",
+                    creator_id=None,
+                    public=True,
+                    allow_rename=False,
+                    is_default=True,
+                )
+            )
+            theme = Theme.from_orm(inst)
+        return theme
