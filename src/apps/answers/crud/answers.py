@@ -405,11 +405,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
         )
         if respondent_id:
-            query.where(AnswerSchema.respondent_id == respondent_id)
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
         if subject_id:
-            query.where(AnswerSchema.target_subject_id == subject_id)
+            query = query.where(AnswerSchema.target_subject_id == subject_id)
         query = query.distinct(AnswerSchema.activity_history_id)
-        query.order_by(AnswerSchema.activity_history_id)
+        query = query.order_by(AnswerSchema.activity_history_id)
         db_result = await self._execute(query)
         results = []
         for activity_id in db_result.all():

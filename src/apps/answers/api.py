@@ -49,6 +49,7 @@ from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.deps import get_i18n
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.exception import NotFoundError
 from apps.shared.locale import I18N
 from apps.shared.query_params import (
     BaseQueryParams,
@@ -145,10 +146,12 @@ async def summary_activity_list(
     await AppletService(session, user.id).exist_by_id(applet_id)
     if filters.respondent_id and not filters.target_subject_id:
         target_subject = await (
-            SubjectsService(session, user.id).get_by_user(
-                filters.respondent_id
+            SubjectsService(session, user.id).get_by_user_and_applet(
+                filters.respondent_id, applet_id
             )
         )
+        if not target_subject:
+            raise NotFoundError()
         target_subject_id = target_subject.id
     else:
         target_subject_id = filters.target_subject_id

@@ -268,7 +268,7 @@ class CheckAccessService:
         if respondent_id:
             subject = await SubjectsService(
                 self.session, self.user_id
-            ).get_by_user(respondent_id)
+            ).get_by_user_and_applet(respondent_id, applet_id)
             if not subject:
                 raise AccessDeniedError()
             await self.check_subject_answer_access(applet_id, subject.id)
