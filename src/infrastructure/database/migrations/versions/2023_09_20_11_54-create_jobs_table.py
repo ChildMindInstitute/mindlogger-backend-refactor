@@ -46,7 +46,7 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum(
-                "in_progress", "success", "error", "retry", name="job_status"
+                "pending", "in_progress", "success", "error", "retry", name="job_status"
             ),
             nullable=False,
         ),

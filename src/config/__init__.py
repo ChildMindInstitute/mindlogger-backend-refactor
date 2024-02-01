@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     default_language: str = "en"
     content_length_limit: int | None = 150 * 1024 * 1024
 
-    debug: bool = True
+    debug: bool = False
     commit_id: str = "Not assigned"
     version: str = "Not assigned"
 

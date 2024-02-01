@@ -80,7 +80,8 @@ def create_app():
     # Create base FastAPI application
     app = FastAPI(
         description=f"Commit id: <b>{settings.commit_id}"
-        f"</b><br>Version: <b>{settings.version}</b>"
+        f"</b><br>Version: <b>{settings.version}</b>",
+        debug=settings.debug,
     )
 
     app.add_event_handler("startup", startup(app))

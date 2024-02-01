@@ -3,7 +3,7 @@ from typing import Any
 
 from apps.job.constants import JobStatus
 from apps.job.crud import JobCRUD
-from apps.job.domain import JobCreate
+from apps.job.domain import Job, JobCreate
 
 
 class JobService:
@@ -14,14 +14,12 @@ class JobService:
     async def get_or_create_owned(
         self,
         name: str,
-        status: JobStatus | None = None,
+        status: JobStatus = JobStatus.pending,
         details: dict | None = None,
-    ):
+    ) -> Job:
         repository = JobCRUD(self.session)
         job = await repository.get_by_name(name, self.user_id)
         if not job:
-            if not status:
-                status = JobStatus.pending
             model = JobCreate(
                 name=name,
                 creator_id=self.user_id,
@@ -33,7 +31,7 @@ class JobService:
 
         return job
 
-    async def is_job_in_progress(self, job_name: str):
+    async def is_job_in_progress(self, job_name: str) -> bool:
         repository = JobCRUD(self.session)
         job = await repository.get_by_name(job_name, self.user_id)
         if not job or job.status in [JobStatus.success, JobStatus.error]:
@@ -43,7 +41,7 @@ class JobService:
 
     async def change_status(
         self, id_: uuid.UUID, status: JobStatus, details: dict | None = None
-    ):
+    ) -> Job:
         data: dict[str, Any] = dict(status=status)
         if details:
             data["details"] = details
