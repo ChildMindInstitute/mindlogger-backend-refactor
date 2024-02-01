@@ -161,7 +161,9 @@ def test_initial_single_selection_values_change(
 ) -> None:
     service = ResponseOptionChangeService()
     changes: list[str] = []
-    service.check_changes(ResponseType.SINGLESELECT, single_selection_values, changes)
+    service.check_changes(
+        ResponseType.SINGLESELECT, single_selection_values, changes
+    )
     assert changes == ["o1 | 0 option was added"]
 
 
@@ -375,7 +377,8 @@ def test_conditional_logic_added(conditional_logic: ConditionalLogic):
     item_name = condition.item_name
     value = condition.payload.value  # type: ignore
     assert changes == [
-        f"{parent_name}: If All: " f"{item_name} {condition_type} {value} was added"
+        f"{parent_name}: If All: "
+        f"{item_name} {condition_type} {value} was added"
     ]
 
 

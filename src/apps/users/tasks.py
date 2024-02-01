@@ -138,13 +138,15 @@ async def reencrypt_answers(
                             settings.task_answer_encryption.retry_timeout
                         )
                     retries -= 1
-                    await reencrypt_answers.kicker().with_labels(
-                        delay=retry_timeout
-                    ).kiq(
-                        user_id,
-                        email,
-                        old_password,
-                        new_password,
-                        retries=retries,
-                        retry_timeout=retry_timeout,
+                    await (
+                        reencrypt_answers.kicker()
+                        .with_labels(delay=retry_timeout)
+                        .kiq(
+                            user_id,
+                            email,
+                            old_password,
+                            new_password,
+                            retries=retries,
+                            retry_timeout=retry_timeout,
+                        )
                     )

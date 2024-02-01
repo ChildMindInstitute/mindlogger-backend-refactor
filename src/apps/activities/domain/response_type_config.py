@@ -425,7 +425,9 @@ ResponseTypeValueConfig = {}
 index = 0
 
 for response_type in ResponseType:
-    zipped_type_value = list(zip(ResponseValueConfigOptions, ResponseTypeConfigOptions))
+    zipped_type_value = list(
+        zip(ResponseValueConfigOptions, ResponseTypeConfigOptions)
+    )
 
     ResponseTypeValueConfig[response_type] = {
         "config": zipped_type_value[index][1],

@@ -602,7 +602,7 @@ class ReproFieldRadioStacked(ReproFieldBase):
         chunk_size = len(choices)
         vals = [
             # fmt: off
-            item_options[i: i + chunk_size]
+            item_options[i : i + chunk_size]
             for i in range(0, len(item_options), chunk_size)
             # fmt: on
         ]
@@ -696,10 +696,12 @@ class ReproFieldSliderBase(ReproFieldBase, ABC):
             # fmt: off
             ld_min_value_img=self.attr_processor.get_attr_value(
                 doc, "schema:minValueImg"
-            ) or None,
+            )
+            or None,
             ld_max_value_img=self.attr_processor.get_attr_value(
                 doc, "schema:maxValueImg"
-            ) or None,
+            )
+            or None,
             # fmt: on
             choices=self._get_ld_choices_formatted(doc),
         )

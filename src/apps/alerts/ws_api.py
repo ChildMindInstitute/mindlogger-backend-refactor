@@ -58,7 +58,9 @@ async def _handle_websocket(websocket, user_id, session):
                     f"{alert_message.applet_id}_{alert_message.version}"
                 ),
                 AppletsCRUD(session).get_by_id(alert_message.applet_id),
-                UserWorkspaceCRUD(session).get_by_user_id(respondent_access.owner_id),
+                UserWorkspaceCRUD(session).get_by_user_id(
+                    respondent_access.owner_id
+                ),
             )
         except Exception as e:
             traceback.print_tb(e.__traceback__)
@@ -69,7 +71,9 @@ async def _handle_websocket(websocket, user_id, session):
                 applet_id=str(alert_message.applet_id),
                 applet_name=applet_history.display_name,
                 version=alert_message.version,
-                secret_id=respondent_access.meta.get("secretUserId", "Anonymous"),
+                secret_id=respondent_access.meta.get(
+                    "secretUserId", "Anonymous"
+                ),
                 activity_id=str(alert_message.activity_id),
                 activity_item_id=str(alert_message.activity_item_id),
                 message=alert_message.message,

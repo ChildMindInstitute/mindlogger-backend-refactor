@@ -8,7 +8,9 @@ from apps.activities.domain.response_type_config import ResponseType
 
 async def main(session: AsyncSession, *args, **kwargs):
     query: Query = select(ActivityItemSchema)
-    query = query.where(ActivityItemSchema.response_type == ResponseType.SINGLESELECT)
+    query = query.where(
+        ActivityItemSchema.response_type == ResponseType.SINGLESELECT
+    )
     query = query.where(
         ActivityItemSchema.config["auto_advance"] == None  # noqa : E711
     )

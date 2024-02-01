@@ -126,10 +126,13 @@ class FlowHistoryService:
                     new,  # type: ignore
                     prev,  # type: ignore
                 )
-                changes_items = flow_item_change_service.generate_flow_items_update(  # noqa: E501
-                    self._group_and_sort_flows_or_items(
-                        getattr(new, "items", []) + getattr(prev, "items", [])
-                    ),  # type: ignore
+                changes_items = (
+                    flow_item_change_service.generate_flow_items_update(  # noqa: E501
+                        self._group_and_sort_flows_or_items(
+                            getattr(new, "items", [])
+                            + getattr(prev, "items", [])
+                        ),  # type: ignore
+                    )
                 )
 
                 if changes or changes_items:

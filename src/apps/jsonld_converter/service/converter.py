@@ -45,7 +45,9 @@ class JsonLDModelConverter(ContainsNestedMixin):
     :example:
         document_loader = requests_document_loader()  # sync loader
         _resolved_context_cache = LRUCache(maxsize=100)
-        context_resolver = ContextResolver(_resolved_context_cache, document_loader)  # noqa
+        context_resolver = ContextResolver(
+            _resolved_context_cache, document_loader
+        )
         settings = {"protocol_password": "password value"}
 
         converter = JsonLDModelConverter(context_resolver, document_loader)
@@ -56,7 +58,9 @@ class JsonLDModelConverter(ContainsNestedMixin):
         document_loader = get_document_loader()
         context_resolver = get_context_resolver(document_loader)
 
-        converter = get_jsonld_model_converter(document_loader, context_resolver)  # noqa
+        converter = get_jsonld_model_converter(
+            document_loader, context_resolver
+        )
         protocol = await converter.convert(doc)
     """
 

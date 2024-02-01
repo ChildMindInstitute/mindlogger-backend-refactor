@@ -364,9 +364,7 @@ class TestValidateSubscales:
         items: list[ActivityItemCreate],
         subscale_setting: SubscaleSetting,
     ):
-        items0_config: SingleSelectionConfig = items[
-            0
-        ].config  # type: ignore[assignment]
+        items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
         values = {"items": items, "subscale_setting": subscale_setting}
         assert values == validate_subscales(values)
@@ -378,9 +376,7 @@ class TestValidateSubscales:
         subscale: Subscale,
         subscale_item: SubscaleItem,
     ):
-        items0_config: SingleSelectionConfig = items[
-            0
-        ].config  # type: ignore[assignment]
+        items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
         subscale_item.name = "incorrect_item_name"
         subscale.items = [subscale_item]
@@ -394,9 +390,7 @@ class TestValidateSubscales:
         items: list[ActivityItemCreate],
         subscale_setting: SubscaleSetting,
     ):
-        items0_config: SingleSelectionConfig = items[
-            0
-        ].config  # type: ignore[assignment]
+        items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
         items[0].response_type = ResponseType.TIMERANGE
         values = {"items": items, "subscale_setting": subscale_setting}
@@ -419,9 +413,7 @@ class TestValidateSubscales:
         subscale: Subscale,
         subscale_item: SubscaleItem,
     ):
-        items0_config: SingleSelectionConfig = items[
-            0
-        ].config  # type: ignore[assignment]
+        items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
         subscale_item.type = SubscaleItemType.SUBSCALE
         subscale.items = [subscale_item]
@@ -437,9 +429,7 @@ class TestValidateSubscales:
         subscale: Subscale,
         subscale_item: SubscaleItem,
     ):
-        items0_config: SingleSelectionConfig = items[
-            0
-        ].config  # type: ignore[assignment]
+        items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
         subscale_item.name = "test subscale name"
         subscale_item.type = SubscaleItemType.SUBSCALE

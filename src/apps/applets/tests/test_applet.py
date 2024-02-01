@@ -374,7 +374,7 @@ class TestApplet(BaseTest):
                                 paletteName="default",
                                 options=[
                                     dict(
-                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
+                                        id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
                                         text="Very well",
                                         image=None,
                                         score=None,
@@ -383,7 +383,7 @@ class TestApplet(BaseTest):
                                         color=None,
                                     ),
                                     dict(
-                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
+                                        id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
                                         text="Well",
                                         image=None,
                                         score=None,
@@ -419,7 +419,7 @@ class TestApplet(BaseTest):
                                 paletteName=None,
                                 options=[
                                     dict(
-                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
+                                        id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
                                         text="Very well",
                                         image=None,
                                         score=None,
@@ -428,7 +428,7 @@ class TestApplet(BaseTest):
                                         color=None,
                                     ),
                                     dict(
-                                        # id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
+                                        id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
                                         text="Well",
                                         image=None,
                                         score=None,

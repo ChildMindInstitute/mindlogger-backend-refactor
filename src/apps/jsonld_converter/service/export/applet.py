@@ -24,7 +24,9 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
         return [ActivityExport, ActivityFlowExport]
 
-    async def export(self, model: AppletFull, expand: bool = False) -> ProtocolExportData:  # type: ignore  # noqa: E501
+    async def export(
+        self, model: AppletFull, expand: bool = False
+    ) -> ProtocolExportData:  # type: ignore  # noqa: E501
         ui, activity_flows = await asyncio.gather(
             self._build_ui_prop(model), self._build_activity_flows_prop(model)
         )

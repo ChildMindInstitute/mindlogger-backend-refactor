@@ -360,8 +360,10 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                 match, conditions = ConditionalLogicParser(expression).parse()
                 resolved_conditions = []
                 for condition in conditions:
-                    condition_item: ResolvesConditionalLogic = var_item_map.get(  # type: ignore # noqa: E501
-                        condition.var_name
+                    condition_item: ResolvesConditionalLogic = (
+                        var_item_map.get(  # type: ignore # noqa: E501
+                            condition.var_name
+                        )
                     )
                     if condition_item is None:
                         raise ConditionalLogicError(expression)
@@ -402,8 +404,10 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                     ).parse()
                     resolved_conditions = []
                     for condition in conditions:
-                        condition_item: ResolvesConditionalLogic = var_item_map.get(  # type: ignore # noqa: E501
-                            condition.var_name
+                        condition_item: ResolvesConditionalLogic = (
+                            var_item_map.get(  # type: ignore # noqa: E501
+                                condition.var_name
+                            )
                         )
                         if condition_item is None:
                             raise ConditionalLogicError(expression)

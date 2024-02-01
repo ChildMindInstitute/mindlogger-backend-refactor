@@ -1045,7 +1045,7 @@ class ScheduleService:
 
     async def _get_notifications_and_reminder(
         self, event_id: uuid.UUID
-    ) -> (PublicNotification | None):
+    ) -> PublicNotification | None:
         """Get notifications and reminder for event."""
         notifications = await NotificationCRUD(
             self.session

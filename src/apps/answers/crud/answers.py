@@ -219,8 +219,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query = query.order_by(AnswerItemSchema.created_at.desc())
         query = paging(query, page, limit)
 
-        coro_data, coro_count = self._execute(query), self._execute(
-            query_count
+        coro_data, coro_count = (
+            self._execute(query),
+            self._execute(query_count),
         )
 
         res, res_count = await asyncio.gather(coro_data, coro_count)
@@ -604,9 +605,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
         db_result = await self._execute(query)
         db_result = db_result.first()
-        flow_history_schema = (
-            db_result[0] if db_result else None
-        )  # type: ActivityFlowHistoriesSchema | None
+        flow_history_schema = db_result[0] if db_result else None  # type: ActivityFlowHistoriesSchema | None
         if not flow_history_schema:
             return False
         return flow_history_schema.is_single_report

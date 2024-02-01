@@ -18,7 +18,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 class LdAttributeProcessor:
     """
-    context: https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json  # noqa: E501
+    context: https://raw.githubusercontent.com/ChildMindInstitute/reproschema-context/master/context.json
     """
 
     TERMS = {

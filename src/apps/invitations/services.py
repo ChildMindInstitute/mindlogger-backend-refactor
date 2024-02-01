@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+from typing import cast
 
 from fastapi.exceptions import RequestValidationError
 from pydantic.error_wrappers import ErrorWrapper
@@ -64,8 +65,10 @@ class InvitationsService:
         )
 
     async def get(self, key: uuid.UUID) -> InvitationDetailGeneric | None:
+        self._user.email_encrypted = cast(str, self._user.email_encrypted)
         invitation = await self.invitations_crud.get_by_email_and_key(
-            self._user.email_encrypted, key  # type: ignore[arg-type]
+            self._user.email_encrypted,
+            key,
         )
         if not invitation:
             raise InvitationDoesNotExist()
@@ -117,10 +120,8 @@ class InvitationsService:
             "nickname": respondent_info.nickname,
         }
         pending_invitation = (
-            await (
-                self.invitations_crud.get_pending_invitation(
-                    schema.email, applet_id
-                )
+            await self.invitations_crud.get_pending_invitation(
+                schema.email, applet_id
             )
         )
         if pending_invitation:
@@ -206,10 +207,8 @@ class InvitationsService:
         }
 
         pending_invitation = (
-            await (
-                self.invitations_crud.get_pending_invitation(
-                    schema.email, applet_id
-                )
+            await self.invitations_crud.get_pending_invitation(
+                schema.email, applet_id
             )
         )
         if pending_invitation:
@@ -293,10 +292,8 @@ class InvitationsService:
         }
 
         pending_invitation = (
-            await (
-                self.invitations_crud.get_pending_invitation(
-                    schema.email, applet_id
-                )
+            await self.invitations_crud.get_pending_invitation(
+                schema.email, applet_id
             )
         )
         if pending_invitation:
@@ -419,9 +416,11 @@ class InvitationsService:
             if respondent not in exist_respondents:
                 raise RespondentDoesNotExist()
 
-    async def accept(self, key: uuid.UUID):
+    async def accept(self, key: uuid.UUID) -> None:
+        self._user.email_encrypted = cast(str, self._user.email_encrypted)
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
-            self._user.email_encrypted, key  # type: ignore[arg-type]
+            self._user.email_encrypted,
+            key,
         )
         if not invitation:
             raise InvitationDoesNotExist()
@@ -437,9 +436,11 @@ class InvitationsService:
             invitation.id, self._user.id
         )
 
-    async def decline(self, key: uuid.UUID):
+    async def decline(self, key: uuid.UUID) -> None:
+        self._user.email_encrypted = cast(str, self._user.email_encrypted)
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(
-            self._user.email_encrypted, key  # type: ignore[arg-type]
+            self._user.email_encrypted,
+            key,
         )
         if not invitation:
             raise InvitationDoesNotExist()

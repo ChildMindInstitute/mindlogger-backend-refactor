@@ -477,38 +477,39 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserSchema.first_name,
                 UserSchema.last_name,
                 UserSchema.is_anonymous_respondent,
-
                 func.coalesce(
                     UserSchema.last_seen_at, UserSchema.created_at
                 ).label("last_seen"),
-
                 func.array_remove(
-                    func.array_agg(
-                            func.distinct(field_nickname)
-                    ), None)
+                    func.array_agg(func.distinct(field_nickname)), None
+                )
                 .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
                 .label("nicknames"),
-
                 func.array_agg(
                     aggregate_order_by(
                         func.distinct(field_secret_user_id),
                         field_secret_user_id,
                     )
                 ).label("secret_ids"),
-
                 is_pinned.label("is_pinned"),
-
                 func.array_agg(
                     func.json_build_object(
-                        text("'applet_id'"), AppletSchema.id,
+                        text("'applet_id'"),
+                        AppletSchema.id,
                         text("'applet_display_name'"),
                         AppletSchema.display_name,  # noqa: E501
-                        text("'applet_image'"), AppletSchema.image,
-                        text("'access_id'"), UserAppletAccessSchema.id,
-                        text("'respondent_nickname'"), field_nickname,
-                        text("'respondent_secret_id'"), field_secret_user_id,
-                        text("'has_individual_schedule'"), schedule_exists,
-                        text("'encryption'"), AppletSchema.encryption,
+                        text("'applet_image'"),
+                        AppletSchema.image,
+                        text("'access_id'"),
+                        UserAppletAccessSchema.id,
+                        text("'respondent_nickname'"),
+                        field_nickname,
+                        text("'respondent_secret_id'"),
+                        field_secret_user_id,
+                        text("'has_individual_schedule'"),
+                        schedule_exists,
+                        text("'encryption'"),
+                        AppletSchema.encryption,
                     )
                 ).label("details"),
             )
@@ -604,33 +605,35 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserSchema.first_name,
                 UserSchema.last_name,
                 UserSchema.email_encrypted,
-
                 func.coalesce(
                     UserSchema.last_seen_at, UserSchema.created_at
                 ).label("last_seen"),
-
                 is_pinned.label("is_pinned"),
-
                 func.array_agg(
                     aggregate_order_by(
                         func.distinct(UserAppletAccessSchema.role),
-                        UserAppletAccessSchema.role
+                        UserAppletAccessSchema.role,
                     )
                 ).label("roles"),
-
                 func.array_agg(
                     aggregate_order_by(
                         func.json_build_object(
-                            text("'applet_id'"), AppletSchema.id,
+                            text("'applet_id'"),
+                            AppletSchema.id,
                             text("'applet_display_name'"),
                             AppletSchema.display_name,  # noqa: E501
-                            text("'applet_image'"), AppletSchema.image,
-                            text("'access_id'"), UserAppletAccessSchema.id,
-                            text("'role'"), UserAppletAccessSchema.role,
-                            text("'encryption'"), AppletSchema.encryption,
-                            text("'reviewer_respondents'"), UserAppletAccessSchema.reviewer_respondents,  # noqa: E501
+                            text("'applet_image'"),
+                            AppletSchema.image,
+                            text("'access_id'"),
+                            UserAppletAccessSchema.id,
+                            text("'role'"),
+                            UserAppletAccessSchema.role,
+                            text("'encryption'"),
+                            AppletSchema.encryption,
+                            text("'reviewer_respondents'"),
+                            UserAppletAccessSchema.reviewer_respondents,  # noqa: E501
                         ),
-                        AppletSchema.id
+                        AppletSchema.id,
                     )
                 ).label("applets"),
             )

@@ -62,7 +62,9 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             ActivityItemMultiSelectionRowsExport,
         ]
 
-    async def export(self, model: ActivityFull, expand: bool = False) -> ActivityExportData:  # type: ignore  # noqa: E501
+    async def export(
+        self, model: ActivityFull, expand: bool = False
+    ) -> ActivityExportData:  # type: ignore  # noqa: E501
         ui = await self._build_ui_prop(model)
         _id = self._build_id(model.name)
         doc = {
