@@ -69,4 +69,4 @@ class ReusableItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
         if not schema:
             raise ReusableItemChoiceDoeNotExist()
 
-        await self._delete(key="id", value=id_)
+        await self._delete(id=id_)

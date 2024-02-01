@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import Any, Collection, List
 
-from sqlalchemy import select, update
+from sqlalchemy import false, select, true, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
@@ -13,7 +13,6 @@ from apps.users.errors import (
     UserAlreadyExistError,
     UserIsDeletedError,
     UserNotFound,
-    UsersError,
 )
 from infrastructure.database.crud import BaseCRUD
 
@@ -22,12 +21,6 @@ class UsersCRUD(BaseCRUD[UserSchema]):
     schema_class = UserSchema
 
     async def _fetch(self, key: str, value: Any) -> User:
-        """Fetch user by id or email from the database."""
-
-        if key not in {"id", "email"}:
-            raise UsersError(key=key, value=value)
-
-        # Get user from the database
         if not (instance := await self._get(key, value)):
             raise UserNotFound
         # TODO: Align with client about the business logic
@@ -47,7 +40,6 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         return await self._fetch(key="email", value=email_hash)
 
     async def save(self, schema: UserSchema) -> UserSchema:
-        # Save user into the database
         try:
             instance: UserSchema = await self._create(schema)
         except IntegrityError:
@@ -58,7 +50,6 @@ class UsersCRUD(BaseCRUD[UserSchema]):
     async def update(
         self, user: User, update_schema: UserUpdateRequest
     ) -> User:
-        # Update user in database
         instance = await self._update_one(
             lookup="id",
             value=user.id,
@@ -84,7 +75,6 @@ class UsersCRUD(BaseCRUD[UserSchema]):
     async def update_encrypted_email(
         self, user: User, encrypted_email: str
     ) -> User:
-        # Update user in database
         instance = await self._update_one(
             lookup="id",
             value=user.id,
@@ -95,21 +85,15 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
         return user
 
-    async def delete(self, user: User) -> User:
-        # Update user in database
+    async def delete(self, user_id: uuid.UUID) -> UserSchema:
         instance = await self._update_one(
-            lookup="id", value=user.id, schema=UserSchema(is_deleted=True)
+            lookup="id", value=user_id, schema=UserSchema(is_deleted=True)
         )
-
-        # Create internal data model
-        user = User.from_orm(instance)
-
-        return user
+        return instance
 
     async def change_password(
         self, user: User, update_schema: UserChangePassword
     ) -> User:
-        # Update user in database
         instance = await self._update_one(
             lookup="id",
             value=user.id,
@@ -117,7 +101,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         )
         return User.from_orm(instance)
 
-    async def update_last_seen_by_id(self, id_: uuid.UUID):
+    async def update_last_seen_by_id(self, id_: uuid.UUID) -> None:
         query = update(UserSchema)
         query = query.where(UserSchema.id == id_)
         query = query.values(last_seen_at=datetime.datetime.utcnow())
@@ -126,7 +110,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
     async def exist_by_id(self, id_: uuid.UUID) -> bool:
         query = select(UserSchema)
         query = query.where(UserSchema.id == id_)
-        query = query.where(UserSchema.is_deleted == False)  # noqa: E712
+        query = query.where(UserSchema.is_deleted == false())
 
         db_result = await self._execute(query)
 
@@ -134,15 +118,13 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
     async def get_super_admin(self) -> UserSchema | None:
         query: Query = select(UserSchema)
-        query = query.where(UserSchema.is_super_admin == True)  # noqa: E712
+        query = query.where(UserSchema.is_super_admin == true())
         db_result = await self._execute(query)
         return db_result.scalars().one_or_none()
 
     async def get_anonymous_respondent(self) -> UserSchema | None:
         query: Query = select(UserSchema)
-        query = query.where(
-            UserSchema.is_anonymous_respondent == True  # noqa: E712
-        )
+        query = query.where(UserSchema.is_anonymous_respondent == true())
         db_result = await self._execute(query)
         return db_result.scalars().one_or_none()
 
@@ -150,7 +132,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         query: Query = select(UserSchema)
         query = query.where(UserSchema.id.in_(ids))
         db_result = await self._execute(query)
-        return db_result.scalars().all()  # noqa
+        return db_result.scalars().all()
 
     async def get_user_or_none_by_email(self, email: str) -> UserSchema | None:
         email_hash = hash_sha224(email)

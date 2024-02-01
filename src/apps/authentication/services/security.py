@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from jose import jwt
-from passlib.context import CryptContext
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import (
@@ -13,13 +12,12 @@ from apps.authentication.domain.token import (
 )
 from apps.authentication.errors import BadCredentials, InvalidCredentials
 from apps.authentication.services.core import TokensService
+from apps.shared.passlib import get_password_hash, verify
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from config import settings
 
 __all__ = ["AuthenticationService"]
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthenticationService:
@@ -62,20 +60,14 @@ class AuthenticationService:
     def verify_password(
         plain_password: str, hashed_password: str, raise_exception=True
     ) -> bool:
-        valid = pwd_context.verify(plain_password, hashed_password)
+        valid = verify(plain_password, hashed_password)
         if not valid and raise_exception:
             raise BadCredentials()
         return valid
 
     @staticmethod
-    def verify_password_and_hash(
-        plain_password: str, hashed_password: str
-    ) -> bool:
-        return pwd_context.verify(plain_password, hashed_password)
-
-    @staticmethod
     def get_password_hash(password: str) -> str:
-        return pwd_context.hash(password)
+        return get_password_hash(password)
 
     async def authenticate_user(self, user_login_schema: UserLoginRequest):
         user: User = await UsersCRUD(self.session).get_by_email(

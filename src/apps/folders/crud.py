@@ -169,4 +169,4 @@ class FolderAppletCRUD(BaseCRUD):
     schema_class = FolderAppletSchema
 
     async def delete_folder_applet_by_applet_id(self, applet_id: uuid.UUID):
-        await self._delete("applet_id", applet_id)
+        await self._delete(applet_id=applet_id)

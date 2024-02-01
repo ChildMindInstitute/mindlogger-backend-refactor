@@ -48,7 +48,7 @@ skip = '.venv,venv,env,migrate'
 src_paths = ["src"]
 
 [tool.pytest.ini_options]
-addopts = '-s -v --cache-clear'
+addopts = '-s -v'
 asyncio_mode = 'auto'
 cache_dir = '/tmp'
 python_files = 'tests.py test_*.py *_test.py'

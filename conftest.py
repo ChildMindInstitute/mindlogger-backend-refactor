@@ -1,3 +1,4 @@
+import datetime
 import os
 import uuid
 from typing import Any, AsyncGenerator, cast
@@ -9,6 +10,7 @@ from alembic.config import Config
 from fastapi import FastAPI
 from pytest import Parser
 from pytest_asyncio import is_async_test
+from pytest_mock import MockerFixture
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, SessionTransaction
@@ -29,6 +31,16 @@ pytest_plugins = [
     "apps.activities.tests.fixtures.scores_reports",
     "apps.users.tests.fixtures.users",
 ]
+
+
+# TODO: Instead of custom faketime for tests add function wrapper `now`
+# to use it instead of builtin datetime.datetime.utcnow
+class FakeTime(datetime.datetime):
+    current_utc = datetime.datetime(2024, 1, 1, 0, 0, 0)
+
+    @classmethod
+    def utcnow(cls):
+        return cls.current_utc
 
 
 alembic_configs = [Config("alembic.ini"), Config("alembic_arbitrary.ini")]
@@ -207,3 +219,9 @@ def mock_reencrypt_kiq(mocker):
 @pytest.fixture(scope="session")
 def uuid_zero() -> uuid.UUID:
     return uuid.UUID("00000000-0000-0000-0000-000000000000")
+
+
+@pytest.fixture
+def faketime(mocker: MockerFixture) -> type[FakeTime]:
+    mock = mocker.patch("datetime.datetime", new=FakeTime)
+    return mock
