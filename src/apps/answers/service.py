@@ -1223,11 +1223,11 @@ class AnswerService:
             subjects_ids, applet_id
         )
         for respondent in respondents:
-            curr_sub_ids = map(
+            respondent_subject_ids = map(
                 lambda x: x.subject_id,
                 respondent.details if respondent.details else [],
             )
-            opt_dates = map(lambda x: result.get(x), curr_sub_ids)
+            opt_dates = map(lambda x: result.get(x), respondent_subject_ids)
             dates: list[datetime.datetime] = list(
                 filter(None.__ne__, opt_dates)  # type: ignore
             )
