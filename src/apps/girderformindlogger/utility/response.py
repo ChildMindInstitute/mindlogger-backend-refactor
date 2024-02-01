@@ -589,7 +589,6 @@ def add_latest_daily_response(data, responses, tokens={}):
 def _oneResponsePerDatePerVersion(responses, offset):
     newResponses = {}
     for response in responses:
-
         df = pd.DataFrame(responses[response])
 
         df["datetime"] = df.date

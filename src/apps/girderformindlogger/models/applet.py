@@ -645,7 +645,6 @@ class Applet(FolderModel):
         # profiles = []
 
         if applet.get("meta", {}).get("applet", {}).get("deleted") == True:
-
             accountProfiles = list(
                 AccountProfile().find(
                     {
@@ -908,7 +907,6 @@ class Applet(FolderModel):
                 and user["email_encrypted"]
             )
         ):
-
             user["email"] = email
             user["email_encrypted"] = False
             UserModel().save(user)
@@ -1629,12 +1627,12 @@ class Applet(FolderModel):
                         if activity.get("ptr"):
                             if type(activity.get("ptr")) is dict:
                                 if "lines" in activity.get("ptr"):
-                                    for (i, item) in enumerate(
+                                    for i, item in enumerate(
                                         activity.get("ptr")["lines"]
                                     ):
                                         try:
                                             for key2 in item:
-                                                for (k, point) in enumerate(
+                                                for k, point in enumerate(
                                                     item[key2]
                                                 ):
                                                     ts = point.get("time", 0)
@@ -1656,7 +1654,7 @@ class Applet(FolderModel):
                                                     ]
                                         except:
                                             if "points" in item:
-                                                for (k, point) in enumerate(
+                                                for k, point in enumerate(
                                                     item.get("points")
                                                 ):
                                                     ts = point.get("time", 0)
@@ -1812,7 +1810,6 @@ class Applet(FolderModel):
         )
 
     def isCoordinator(self, appletId, user):
-
         try:
             user = Profile()._canonicalUser(appletId, user)
             return any(
@@ -1831,7 +1828,6 @@ class Applet(FolderModel):
         return self._hasRole(appletId, user, "reviewer")
 
     def _hasRole(self, appletId, user, role):
-
         user = Profile()._canonicalUser(appletId, user)
         profile = Profile().findOne(
             {"appletId": ObjectId(appletId), "userId": user["_id"]}
@@ -2307,7 +2303,6 @@ class Applet(FolderModel):
         from apps.girderformindlogger.models.invitation import Invitation
 
         try:
-
             if not isinstance(user, dict):
                 user = (
                     UserModel().load(

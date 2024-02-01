@@ -1,24 +1,41 @@
-[tool.black]
-target-version = ['py310']
+[tool.ruff]
+exclude = [
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "venv",
+    "src/infrastructure/database/migrations/versions",
+    "src/apps/girderformindlogger",
+    "src/apps/migrate",
+]
 line-length = 79
-exclude = '''
-(
-  /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | buck-out
-    | build
-    | dist
-    | migrations
-  )/
-                     # the root of the project
-)
-'''
+indent-width = 4
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "C901"]
+ignore = []
+
+[tool.ruff.format]
+skip-magic-trailing-comma = false
+indent-style = "space"
+line-ending = "auto"
+
+[tool.ruff.mccabe]
+max-complexity = 15
 
 [tool.isort]
 profile = "black"
@@ -44,34 +61,25 @@ env = [
     "DATABASE__PASSWORD=postgres",
     "DATABASE__USER=postgres",
     "DATABASE__DB=test",
-    "ARBITRARY_DB=test_arbitrary"
+    "ARBITRARY_DB=test_arbitrary",
 ]
 
 [tool.coverage.run]
-omit = [
-    "*/conftest.py",
-    "*/test_*.py",
-    "*/migrations/",
-]
+omit = ["*/conftest.py", "*/test_*.py", "*/migrations/"]
 
 [tool.mypy]
-plugins = [
-    "pydantic.mypy"
-]
+plugins = ["pydantic.mypy"]
 ignore_missing_imports = true
 python_version = '3.10'
 mypy_path = 'src'
-files = ['*.py',]
+files = ['*.py']
 warn_redundant_casts = true
 warn_unused_ignores = true
 show_error_codes = true
 namespace_packages = true
-exclude = [
-    "apps/girderformindlogger",
-    "apps/migrate"
-]
+exclude = ["apps/girderformindlogger", "apps/migrate"]
 
-# Silint "type import errors" as our 3rd-party libs does not have types
+# Silence "type import errors" as our 3rd-party libs does not have types
 # Check: https://mypy.readthedocs.io/en/latest/config_file.html#import-discovery
 follow_imports = 'silent'
 

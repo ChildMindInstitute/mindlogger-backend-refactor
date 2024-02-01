@@ -51,7 +51,6 @@ class _PluginMeta(type):
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-
             if not getattr(self, "_loaded", False):
                 # This block is executed on the first call to the function.
                 # The return value of the call is saved an attribute on the wrapper

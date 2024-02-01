@@ -231,6 +231,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 flow_history_id.label("flow_history_id"),
                 AnswerItemSchema.created_at,
                 reviewed_answer_id.label("reviewed_answer_id"),
+                reviewed_answer_id.label("reviewed_answer_id"),
+                AnswerSchema.client,
             )
             .select_from(AnswerSchema)
             .join(

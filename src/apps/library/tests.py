@@ -176,7 +176,7 @@ class TestLibrary(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
         result = response.json()["result"]
-        assert type(result["url"]) == str
+        assert isinstance(result["url"], str)
 
     async def test_library_update(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")

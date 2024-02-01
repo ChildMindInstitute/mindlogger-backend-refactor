@@ -1154,7 +1154,7 @@ class TestAnswerActivityItems(BaseTest):
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate",
-            "relation", "sourceSubjectId", "targetSubjectId",
+            "relation", "sourceSubjectId", "targetSubjectId", "client"
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on

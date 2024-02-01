@@ -845,7 +845,7 @@ class User(AESEncryption):
             )
         )
         for folder in childFolders:
-            for (filepath, file) in folderModel.fileList(
+            for filepath, file in folderModel.fileList(
                 folder, user, path, includeMetadata, subpath=True, data=data
             ):
                 yield (filepath, file)

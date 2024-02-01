@@ -3,9 +3,9 @@ fail_fast: true
 repos:
   - repo: local
     hooks:
-      - id: black
-        name: black
-        entry: black --check .
+      - id: ruff
+        name: ruff
+        entry: ruff check .
         language: system
         types: [python]
         pass_filenames: false
@@ -13,13 +13,6 @@ repos:
       - id: isort
         name: isort
         entry: isort --check-only .
-        language: system
-        types: [python]
-        pass_filenames: false
-
-      - id: flake8
-        name: flake8
-        entry: flake8 .
         language: system
         types: [python]
         pass_filenames: false

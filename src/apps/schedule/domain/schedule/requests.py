@@ -62,9 +62,10 @@ class EventUpdateRequest(BaseEvent, InternalModel):
     @root_validator
     def validate_optional_fields(cls, values):
         # if periodicity is Always, one_time_completion must be set.
-        if (
-            values.get("periodicity").type == PeriodicityType.ALWAYS
-            and not type(values.get("one_time_completion")) == bool
+        if values.get(
+            "periodicity"
+        ).type == PeriodicityType.ALWAYS and not isinstance(
+            values.get("one_time_completion"), bool
         ):
             raise OneTimeCompletionCaseError()
 
@@ -73,7 +74,7 @@ class EventUpdateRequest(BaseEvent, InternalModel):
             if (
                 not bool(values.get("start_time"))
                 or not bool(values.get("end_time"))
-                or not type(values.get("access_before_schedule")) == bool
+                or not isinstance(values.get("access_before_schedule"), bool)
             ):
                 raise StartEndTimeAccessBeforeScheduleCaseError()
 
