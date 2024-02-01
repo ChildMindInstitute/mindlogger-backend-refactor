@@ -22,6 +22,12 @@ PatchRegister.register(
     description="Slider tick marks and labels fix patch",
     manage_session=False,
 )
+PatchRegister.register(
+    file_path="m2_4906_populate_user_id_in_invitations.sql",
+    task_id="M2-4906",
+    description="Populate user_id column in declined/approved invitations",
+    manage_session=False,
+)
 
 
 app = typer.Typer()
@@ -91,22 +97,19 @@ async def exec(
 async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
     session_maker = session_manager.get_session()
     arbitrary = None
-    try:
-        async with session_maker() as session:
-            async with atomic(session):
-                if owner_id:
-                    try:
-                        arbitrary = await WorkspaceService(
-                            session, owner_id
-                        ).get_arbitrary_info_by_owner_id(owner_id)
-                        if not arbitrary:
-                            raise WorkspaceNotFoundError("Workspace not found")
+    async with session_maker() as session:
+        async with atomic(session):
+            if owner_id:
+                try:
+                    arbitrary = await WorkspaceService(
+                        session, owner_id
+                    ).get_arbitrary_info_by_owner_id(owner_id)
+                    if not arbitrary:
+                        raise WorkspaceNotFoundError("Workspace not found")
 
-                    except WorkspaceNotFoundError as e:
-                        print(wrap_error_msg(e))
-                        raise
-    finally:
-        await session_maker.remove()
+                except WorkspaceNotFoundError as e:
+                    print(wrap_error_msg(e))
+                    raise
 
     arbitrary_session_maker = None
     if arbitrary:
@@ -118,29 +121,26 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
 
     if patch.file_path.endswith(".sql"):
         # execute sql file
-        try:
-            async with session_maker() as session:
-                async with atomic(session):
-                    try:
-                        with open(
-                            (
-                                str(Path(__file__).parent.resolve())
-                                + "/patches/"
-                                + patch.file_path
-                            ),
-                            "r",
-                        ) as f:
-                            sql = f.read()
-                            await session.execute(sql)
-                            await session.commit()
-                            print(
-                                f"[bold green]Patch {patch.task_id} executed[/bold green]"  # noqa: E501
-                            )
-                            return
-                    except Exception as e:
-                        print(wrap_error_msg(e))
-        finally:
-            await session_maker.remove()
+        async with session_maker() as session:
+            async with atomic(session):
+                try:
+                    with open(
+                        (
+                            str(Path(__file__).parent.resolve())
+                            + "/patches/"
+                            + patch.file_path
+                        ),
+                        "r",
+                    ) as f:
+                        sql = f.read()
+                        await session.execute(sql)
+                        await session.commit()
+                        print(
+                            f"[bold green]Patch {patch.task_id} executed[/bold green]"  # noqa: E501
+                        )
+                        return
+                except Exception as e:
+                    print(wrap_error_msg(e))
     elif patch.file_path.endswith(".py"):
         try:
             # run main from the file
@@ -154,21 +154,16 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
             if patch.manage_session:
                 await patch_file.main(session_maker, arbitrary_session_maker)
             else:
-                try:
-                    async with session_maker() as session:
-                        async with atomic(session):
-                            if arbitrary_session_maker:
-                                async with arbitrary_session_maker() as arbitrary_session:  # noqa: E501
-                                    async with atomic(arbitrary_session):
-                                        await patch_file.main(
-                                            session, arbitrary_session
-                                        )
-                            else:
-                                await patch_file.main(session)
-                finally:
-                    await session_maker.remove()
-                    if arbitrary_session_maker:
-                        await arbitrary_session_maker.remove()
+                async with session_maker() as session:
+                    async with atomic(session):
+                        if arbitrary_session_maker:
+                            async with arbitrary_session_maker() as arbitrary_session:  # noqa: E501
+                                async with atomic(arbitrary_session):
+                                    await patch_file.main(
+                                        session, arbitrary_session
+                                    )
+                        else:
+                            await patch_file.main(session)
 
             print(
                 f"[bold green]Patch {patch.task_id} executed[/bold green]"  # noqa: E501

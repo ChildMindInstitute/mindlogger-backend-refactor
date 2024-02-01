@@ -1,7 +1,6 @@
 import uuid
 
 from apps.shared.test import BaseTest
-from infrastructure.database import rollback
 
 
 class TestReusableItem(BaseTest):
@@ -13,34 +12,28 @@ class TestReusableItem(BaseTest):
     delete_url = "activities/item_choices/{id}"
     retrieve_url = "activities/item_choices"
 
-    @rollback
-    async def test_create_item_choice(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_create_item_choice(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             token_name="Average age",
             token_value="21",
             input_type="radiobutton",
         )
 
-        response = await self.client.post(self.create_url, data=create_data)
+        response = await client.post(self.create_url, data=create_data)
 
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-    @rollback
-    async def test_recreate_item_choice(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_recreate_item_choice(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             token_name="Average age 2",
             token_value="21",
             input_type="radiobutton",
         )
 
-        response = await self.client.post(self.create_url, data=create_data)
+        response = await client.post(self.create_url, data=create_data)
 
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
@@ -51,7 +44,7 @@ class TestReusableItem(BaseTest):
             input_type="radiobutton",
         )
 
-        response = await self.client.post(
+        response = await client.post(
             self.create_url,
             data=create_data,
         )
@@ -63,73 +56,61 @@ class TestReusableItem(BaseTest):
             == "Reusable item choice already exist."
         )
 
-    @rollback
-    async def test_delete_item_choice(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_delete_item_choice(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             token_name="Average age 3",
             token_value="21",
             input_type="radiobutton",
         )
 
-        response = await self.client.post(self.create_url, data=create_data)
+        response = await client.post(self.create_url, data=create_data)
 
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.delete_url.format(id=response.json()["result"]["id"])
         )
 
         assert response.status_code == 204, response.json()
 
-    @rollback
-    async def test_delete_item_choice_does_not_exist(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_delete_item_choice_does_not_exist(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await self.client.delete(
+        response = await client.delete(
             self.delete_url.format(id=str(uuid.uuid4()))
         )
 
         assert response.status_code == 404, response.json()
 
-    @rollback
-    async def test_create_item_choice_with_long_int_value(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_create_item_choice_with_long_int_value(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             token_name="Average age",
             token_value=12321312312312323,
             input_type="radiobutton",
         )
 
-        response = await self.client.post(self.create_url, data=create_data)
+        response = await client.post(self.create_url, data=create_data)
 
         res_data = response.json()
         assert response.status_code == 422, res_data
 
-    @rollback
-    async def test_retrieve_item_choice(self):
-        await self.client.login(
-            self.login_url, "tom@mindlogger.com", "Test1234!"
-        )
+    async def test_retrieve_item_choice(self, client):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             token_name="Average age 3",
             token_value="21",
             input_type="radiobutton",
         )
 
-        response = await self.client.post(self.create_url, data=create_data)
+        response = await client.post(self.create_url, data=create_data)
         created_data = response.json()["result"]
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-        response = await self.client.get(self.retrieve_url)
+        response = await client.get(self.retrieve_url)
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 1
         assert response.json()["result"][0] == created_data

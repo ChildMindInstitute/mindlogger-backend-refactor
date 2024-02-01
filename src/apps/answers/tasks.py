@@ -42,13 +42,10 @@ async def create_report(
             arb_uri = await get_arbitrary_info(applet_id, session)
             if arb_uri:
                 arb_session_maker = session_manager.get_session(arb_uri)
-                try:
-                    async with arb_session_maker() as arb_session:
-                        response = await _create_report(
-                            submit_id, answer_id, session, arb_session
-                        )
-                finally:
-                    await arb_session_maker.remove()
+                async with arb_session_maker() as arb_session:
+                    response = await _create_report(
+                        submit_id, answer_id, session, arb_session
+                    )
             else:
                 response = await _create_report(submit_id, answer_id, session)
 
@@ -72,6 +69,3 @@ async def create_report(
     except Exception as e:
         traceback.print_exception(e)
         sentry_sdk.capture_exception(e)
-    finally:
-        if not isinstance(session_maker, AsyncSession):
-            await session_maker.remove()
