@@ -1045,7 +1045,7 @@ class ScheduleService:
 
     async def _get_notifications_and_reminder(
         self, event_id: uuid.UUID
-    ) -> (PublicNotification | None):
+    ) -> PublicNotification | None:
         """Get notifications and reminder for event."""
         notifications = await NotificationCRUD(
             self.session
@@ -1227,3 +1227,17 @@ class ScheduleService:
             activity_ids=activities_without_events,
             is_activity=True,
         )
+
+    async def get_default_respondents(
+        self, applet_id: uuid.UUID
+    ) -> list[uuid.UUID]:
+        all_respondents = await UserAppletAccessCRUD(
+            self.session
+        ).get_applet_users_by_roles(applet_id, [Role.RESPONDENT])
+        individual_respondents = await UserEventsCRUD(
+            self.session
+        ).get_user_ids_by_applet_id(applet_id)
+        default_respondents = list(
+            set(all_respondents) - set(individual_respondents)
+        )
+        return default_respondents

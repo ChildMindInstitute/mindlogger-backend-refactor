@@ -825,6 +825,19 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         query = query.where(UserEventsSchema.user_id == user_id)
         await self._execute(query)
 
+    async def get_user_ids_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> list[uuid.UUID]:
+        query: Query = select(distinct(UserEventsSchema))
+        query = query.join(
+            EventSchema, UserEventsSchema.event_id == EventSchema.id
+        )
+        query = query.where(EventSchema.applet_id == applet_id)
+        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        result = await self._execute(query)
+        result = result.scalars().all()
+        return [r.user_id for r in result]
+
 
 class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
     schema_class = ActivityEventsSchema

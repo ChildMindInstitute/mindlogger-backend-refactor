@@ -59,7 +59,7 @@ async def schedule_create(
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[schedule.respondent_id]
             if schedule.respondent_id
-            else None,
+            else await service.get_default_respondents(applet_id),
         )
     except FirebaseError as e:
         # mute error
@@ -150,6 +150,7 @@ async def schedule_delete_all(
             "Your schedule has been changed, click to update.",
             "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
+            respondent_ids=await service.get_default_respondents(applet_id),
         )
     except FirebaseError as e:
         # mute error
@@ -180,7 +181,9 @@ async def schedule_delete_by_id(
             "Your schedule has been changed, click to update.",
             "Your schedule has been changed, click to update.",
             FirebaseNotificationType.SCHEDULE_UPDATED,
-            respondent_ids=[respondent_id] if respondent_id else None,
+            respondent_ids=[respondent_id]
+            if respondent_id
+            else await service.get_default_respondents(applet_id),
         )
     except FirebaseError as e:
         # mute error
@@ -214,7 +217,7 @@ async def schedule_update(
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[schedule.respondent_id]
             if schedule.respondent_id
-            else None,
+            else await service.get_default_respondents(applet_id),
         )
     except FirebaseError as e:
         # mute error
