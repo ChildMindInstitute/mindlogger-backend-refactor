@@ -742,13 +742,6 @@ class EventCRUD(BaseCRUD[EventSchema]):
         db_result = await self._execute(query)
         return db_result.scalar()
 
-    async def get_all(self, applet_id: uuid.UUID) -> list[EventSchema]:
-        query: Query = select(EventSchema)
-        query = query.where(EventSchema.applet_id == applet_id)
-        query = query.where(EventSchema.is_deleted.is_(False))
-        result = await self._execute(query)
-        return result.scalars().all()
-
     async def get_all_by_activity_flow_ids(
         self,
         applet_id: uuid.UUID,
@@ -828,7 +821,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
     async def get_user_ids_by_applet_id(
         self, applet_id: uuid.UUID
     ) -> list[uuid.UUID]:
-        query: Query = select(distinct(UserEventsSchema))
+        query: Query = select(UserEventsSchema)
         query = query.join(
             EventSchema, UserEventsSchema.event_id == EventSchema.id
         )
