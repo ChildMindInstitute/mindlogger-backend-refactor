@@ -1205,12 +1205,13 @@ class AnswerService:
         respondents: list[WorkspaceRespondent],
         applet_id: uuid.UUID | None = None,
     ) -> list[WorkspaceRespondent]:
-        def get_subject_ids(r):
-            return list(map(lambda x: x.subject_id, respondent_item.details))
-
         subjects_ids = []
         for respondent_item in respondents:
-            subjects_ids = get_subject_ids(respondent_item)
+            if not respondent_item.details:
+                continue
+            subjects_ids = list(
+                map(lambda x: x.subject_id, respondent_item.details)
+            )
             subjects_ids += subjects_ids
         result = await AnswersCRUD(self.answer_session).get_last_activity(
             subjects_ids, applet_id
@@ -1228,6 +1229,9 @@ class AnswerService:
                 last_date = max(dates)
                 respondent.last_seen = last_date
         return respondents
+
+    async def delete_by_subject(self, subject_id: uuid.UUID):
+        await AnswersCRUD(self.answer_session).delete_by_subject(subject_id)
 
 
 class ReportServerService:
@@ -1457,6 +1461,9 @@ class ReportServerService:
                 dict(activityId=activity_id, answer=answer_item.answer)
             )
         return responses, [ai.user_public_key for ai in answer_items]
+
+    async def delete_by_subject(self, subject_id: uuid.UUID):
+        await AnswersCRUD(self.answers_session).delete_by_subject(subject_id)
 
 
 class ReportServerEncryption:

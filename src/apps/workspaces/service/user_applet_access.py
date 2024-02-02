@@ -450,3 +450,12 @@ class UserAppletAccessService:
     async def get_owner(self) -> UserAppletAccessSchema:
         crud = UserAppletAccessCRUD(self.session)
         return await crud.get_applet_owner(self._applet_id)
+
+    async def remove_access_by_user_and_applet_to_role(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID, role: Role
+    ):
+        await UserAppletAccessCRUD(
+            self.session
+        ).remove_access_by_user_and_applet_to_role(
+            user_id, [applet_id], [role]
+        )

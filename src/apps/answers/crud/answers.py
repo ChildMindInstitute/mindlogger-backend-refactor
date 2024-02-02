@@ -670,3 +670,14 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.applet_id == applet_id)
         result = await self._execute(query)
         return {t[0]: t[1] for t in result.all()}
+
+    async def delete_by_subject(self, subject_id: uuid.UUID):
+        query: Query = (
+            delete(AnswerSchema).where(
+                or_(
+                    AnswerSchema.target_subject_id == subject_id,
+                    AnswerSchema.source_subject_id == subject_id
+                )
+            )
+        )
+        await self._execute(query)

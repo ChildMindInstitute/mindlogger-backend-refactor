@@ -56,3 +56,7 @@ class SubjectFull(SubjectBase):
 class SubjectUpdateRequest(PublicModel):
     secret_user_id: str
     nickname: str | None
+
+
+class SubjectDeleteRequest(PublicModel):
+    delete_answers: bool
