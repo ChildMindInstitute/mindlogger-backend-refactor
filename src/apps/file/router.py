@@ -13,11 +13,7 @@ from apps.file.api.file import (
     upload,
 )
 from apps.file.domain import AnswerUploadedFile, FileExistenceResponse
-from apps.shared.domain import (
-    AUTHENTICATION_ERROR_RESPONSES,
-    DEFAULT_OPENAPI_RESPONSE,
-    ResponseMulti,
-)
+from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE, ResponseMulti
 
 router = APIRouter(prefix="/file", tags=["File"])
 
@@ -92,10 +88,6 @@ router.post(
     },
 )(logs_upload)
 
-router.get(
-    "/log-file/{user_email}/{device_id}", status_code=status.HTTP_200_OK
-)(logs_download)
+router.get("/log-file/{user_email}/{device_id}", status_code=status.HTTP_200_OK)(logs_download)
 
-router.post("/log-file/{device_id}/check", status_code=status.HTTP_200_OK)(
-    logs_exist_check
-)
+router.post("/log-file/{device_id}/check", status_code=status.HTTP_200_OK)(logs_exist_check)

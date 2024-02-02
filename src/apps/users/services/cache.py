@@ -49,16 +49,11 @@ class PasswordRecoveryCache(BaseCacheService[PasswordRecoveryInfo]):
 
         results: list[bytes] = await self.redis_client.mget(keys)
 
-        return [
-            CacheEntry[PasswordRecoveryInfo](**json.loads(result))
-            for result in results
-        ]
+        return [CacheEntry[PasswordRecoveryInfo](**json.loads(result)) for result in results]
 
     async def delete_all_entries(self, email: str):
         with suppress(CacheNotFound):
-            cache_entries: list[
-                CacheEntry[PasswordRecoveryInfo]
-            ] = await self.all(email=email)
+            cache_entries: list[CacheEntry[PasswordRecoveryInfo]] = await self.all(email=email)
             for cache_entry in cache_entries:
                 await self.delete(
                     email=cache_entry.instance.email,

@@ -1,4 +1,1 @@
-from apps.jsonld_converter.service.converter import (  # noqa: F401, F403
-    JsonLDModelConverter,
-    ModelJsonLDConverter,
-)
+from apps.jsonld_converter.service.converter import JsonLDModelConverter, ModelJsonLDConverter  # noqa: F401, F403

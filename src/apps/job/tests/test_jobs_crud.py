@@ -8,9 +8,7 @@ from apps.job.db.schemas import JobSchema
 from apps.job.domain import JobCreate
 
 
-async def test_create_job_with_details(
-    session: AsyncSession, job_create: JobCreate, job_details: dict[str, str]
-):
+async def test_create_job_with_details(session: AsyncSession, job_create: JobCreate, job_details: dict[str, str]):
     assert not job_create.details
     job_create.details = job_details
     crud = JobCRUD(session)
@@ -39,9 +37,7 @@ async def test_get_job_by_name(job: JobSchema, session: AsyncSession):
     assert j.id == job.id
 
 
-async def test_get_job_by_name__job_does_not_exist_with_name(
-    job: JobSchema, session: AsyncSession
-):
+async def test_get_job_by_name__job_does_not_exist_with_name(job: JobSchema, session: AsyncSession):
     crud = JobCRUD(session)
     j = await crud.get_by_name(job.name + "notexists", job.creator_id)
     assert j is None

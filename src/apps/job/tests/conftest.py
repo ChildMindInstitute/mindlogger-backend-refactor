@@ -20,9 +20,7 @@ def job_create(user_tom) -> JobCreate:
 
 
 @pytest.fixture()
-async def job(
-    session: AsyncSession, job_create: JobCreate
-) -> AsyncGenerator[JobSchema, Any]:
+async def job(session: AsyncSession, job_create: JobCreate) -> AsyncGenerator[JobSchema, Any]:
     job = await JobCRUD(session).create(job_create)
     yield JobSchema(**job.dict())
 

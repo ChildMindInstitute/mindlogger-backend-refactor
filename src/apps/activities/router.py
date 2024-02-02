@@ -1,28 +1,13 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.activities.api.activities import (
-    activity_retrieve,
-    applet_activities,
-    public_activity_retrieve,
-)
-from apps.activities.api.reusable_item_choices import (
-    item_choice_create,
-    item_choice_delete,
-    item_choice_retrieve,
-)
-from apps.activities.domain.activity import (
-    ActivitySingleLanguageWithItemsDetailPublic,
-)
-from apps.activities.domain.reusable_item_choices import (
-    PublicReusableItemChoice,
-)
+from apps.activities.api.activities import activity_retrieve, applet_activities, public_activity_retrieve
+from apps.activities.api.reusable_item_choices import item_choice_create, item_choice_delete, item_choice_retrieve
+from apps.activities.domain.activity import ActivitySingleLanguageWithItemsDetailPublic
+from apps.activities.domain.reusable_item_choices import PublicReusableItemChoice
 from apps.applets.domain.applet import AppletActivitiesDetailsPublic
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.domain.response import (
-    AUTHENTICATION_ERROR_RESPONSES,
-    DEFAULT_OPENAPI_RESPONSE,
-)
+from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE
 
 router = APIRouter(prefix="/activities", tags=["Activities"])
 public_router = APIRouter(prefix="/public/activities", tags=["Activities"])
@@ -62,9 +47,7 @@ router.get(
     "/{activity_id}",
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {
-            "model": Response[ActivitySingleLanguageWithItemsDetailPublic]
-        },
+        status.HTTP_200_OK: {"model": Response[ActivitySingleLanguageWithItemsDetailPublic]},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
@@ -74,9 +57,7 @@ public_router.get(
     "/{id_}",
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {
-            "model": Response[ActivitySingleLanguageWithItemsDetailPublic]
-        },
+        status.HTTP_200_OK: {"model": Response[ActivitySingleLanguageWithItemsDetailPublic]},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },

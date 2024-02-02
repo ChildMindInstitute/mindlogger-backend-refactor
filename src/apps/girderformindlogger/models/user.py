@@ -10,22 +10,10 @@ from passlib.context import CryptContext
 from passlib.totp import TOTP, TokenError
 
 from apps.girderformindlogger import events
-from apps.girderformindlogger.constants import (
-    USER_ROLES,
-    AccessType,
-    CoreEventHandler,
-    ServerMode,
-    TokenScope,
-)
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    ValidationException,
-)
+from apps.girderformindlogger.constants import USER_ROLES, AccessType, CoreEventHandler, ServerMode, TokenScope
+from apps.girderformindlogger.exceptions import AccessException, ValidationException
 from apps.girderformindlogger.models.account_profile import AccountProfile
-from apps.girderformindlogger.models.aes_encrypt import (
-    AccessControlledModel,
-    AESEncryption,
-)
+from apps.girderformindlogger.models.aes_encrypt import AccessControlledModel, AESEncryption
 from apps.girderformindlogger.models.setting import Setting
 from apps.girderformindlogger.settings import SettingKey
 from apps.girderformindlogger.utility import config, mail_utils
@@ -444,9 +432,7 @@ class User(AESEncryption):
             self.save(user)
 
     def getEncryptions(self, user, email, password):
-        from apps.girderformindlogger.models.applet import (
-            Applet as AppletModel,
-        )
+        from apps.girderformindlogger.models.applet import Applet as AppletModel
 
         accounts = AccountProfile().getAccounts(user["_id"])
 
@@ -566,9 +552,7 @@ class User(AESEncryption):
         :type public: bool
         :returns: The user document that was created.
         """
-        from apps.girderformindlogger.models.account_profile import (
-            AccountProfile,
-        )
+        from apps.girderformindlogger.models.account_profile import AccountProfile
         from apps.girderformindlogger.models.group import Group
         from apps.girderformindlogger.models.setting import Setting
 

@@ -7,12 +7,7 @@ from apps.girderformindlogger.models.collection import Collection
 from apps.girderformindlogger.models.user import User
 
 from ..constants import AccessType
-from ..exceptions import (
-    AccessException,
-    GirderException,
-    ResourcePathNotFound,
-    ValidationException,
-)
+from ..exceptions import AccessException, GirderException, ResourcePathNotFound, ValidationException
 from .model_importer import ModelImporter
 
 # Expose the ResourcePathNotFound exception as its original name

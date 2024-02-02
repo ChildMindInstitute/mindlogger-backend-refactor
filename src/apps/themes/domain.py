@@ -14,10 +14,7 @@ __all__ = [
 
 from pydantic import validator
 
-from apps.shared.domain.custom_validations import (
-    validate_color,
-    validate_image,
-)
+from apps.shared.domain.custom_validations import validate_color, validate_image
 from apps.shared.query_params import BaseQueryParams
 
 

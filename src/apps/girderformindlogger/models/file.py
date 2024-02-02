@@ -7,14 +7,8 @@ import six
 
 from apps.girderformindlogger import auditLogger, events
 from apps.girderformindlogger.constants import AccessType, CoreEventHandler
-from apps.girderformindlogger.exceptions import (
-    FilePathException,
-    ValidationException,
-)
-from apps.girderformindlogger.models.model_base import (
-    AccessControlledModel,
-    Model,
-)
+from apps.girderformindlogger.exceptions import FilePathException, ValidationException
+from apps.girderformindlogger.models.model_base import AccessControlledModel, Model
 from apps.girderformindlogger.models.setting import Setting
 from apps.girderformindlogger.settings import SettingKey
 from apps.girderformindlogger.utility import acl_mixin

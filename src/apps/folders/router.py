@@ -1,14 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.folders.api import (
-    folder_create,
-    folder_delete,
-    folder_list,
-    folder_pin,
-    folder_unpin,
-    folder_update_name,
-)
+from apps.folders.api import folder_create, folder_delete, folder_list, folder_pin, folder_unpin, folder_update_name
 from apps.folders.domain import FolderPublic
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import (
@@ -17,9 +10,7 @@ from apps.shared.domain.response import (
     NO_CONTENT_ERROR_RESPONSES,
 )
 
-router = APIRouter(
-    prefix="/workspaces/{workspace_id}/folders", tags=["Workspace folders"]
-)
+router = APIRouter(prefix="/workspaces/{workspace_id}/folders", tags=["Workspace folders"])
 
 router.get(
     "",

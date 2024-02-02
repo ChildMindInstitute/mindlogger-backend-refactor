@@ -192,9 +192,7 @@ class TestNotificationLogs(BaseTest):
         assert response["notificationInQueue"]
         assert response["scheduledNotifications"]
 
-    async def test_create_log_use_none_value_if_attribute_null_at_first_log(
-        self, client
-    ):
+    async def test_create_log_use_none_value_if_attribute_null_at_first_log(self, client):
         response = await client.post(
             self.logs_url,
             data=dict(
@@ -213,9 +211,7 @@ class TestNotificationLogs(BaseTest):
         assert response["notificationInQueue"]
         assert response["scheduledNotifications"]
 
-    async def test_create_log_use_previous_non_null_if_attribute_null(
-        self, client
-    ):
+    async def test_create_log_use_previous_non_null_if_attribute_null(self, client):
         payloads = [
             dict(
                 user_id="tom@mindlogger.com",
@@ -251,13 +247,9 @@ class TestNotificationLogs(BaseTest):
         assert response.status_code == 201, response.json()
         response = response.json()["result"]
         assert response["id"]
-        assert response["notificationDescriptions"] == [
-            {"name": "descriptions1"}
-        ]
+        assert response["notificationDescriptions"] == [{"name": "descriptions1"}]
         assert response["notificationInQueue"] == [{"name": "in_queue3"}]
-        assert response["scheduledNotifications"] == [
-            {"name": "notifications3"}
-        ]
+        assert response["scheduledNotifications"] == [{"name": "notifications3"}]
 
     async def test_create_log_allow_empty_array(self, client):
         payloads = [
@@ -309,9 +301,7 @@ class TestNotificationLogs(BaseTest):
             ),
         ),
     )
-    async def test_create_log_allow_empty_array_if_prev_is_none(
-        self, client, param, payloads
-    ):
+    async def test_create_log_allow_empty_array_if_prev_is_none(self, client, param, payloads):
         for payload in payloads:
             response = await client.post(self.logs_url, data=payload)
             assert response.status_code == 201

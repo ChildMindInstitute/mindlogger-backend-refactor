@@ -8,10 +8,7 @@ from pydantic import parse_obj_as
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import AnyCondition, ConditionType
-from apps.jsonld_converter.errors import (
-    ConditionalLogicError,
-    ConditionalLogicParsingError,
-)
+from apps.jsonld_converter.errors import ConditionalLogicError, ConditionalLogicParsingError
 
 
 @dataclasses.dataclass
@@ -88,18 +85,10 @@ class ConditionalLogicParser:
         )
 
         if not valid:
-            raise ConditionalLogicParsingError(
-                "Cannot process condition logic"
-            )
+            raise ConditionalLogicParsingError("Cannot process condition logic")
 
-        operator = (
-            ConditionType.BETWEEN
-            if bool_op == "&&"
-            else ConditionType.OUTSIDE_OF
-        )
-        self.parts.append(
-            ConditionData(var_left, operator, [val_left, val_right])
-        )
+        operator = ConditionType.BETWEEN if bool_op == "&&" else ConditionType.OUTSIDE_OF
+        self.parts.append(ConditionData(var_left, operator, [val_left, val_right]))
         return self.marker_processed
 
     def _process_operator(self, match_obj):
@@ -126,11 +115,7 @@ class ConditionalLogicParser:
             operator = "=="
 
         if var:
-            self.parts.append(
-                ConditionData(
-                    var, self._resolve_operator_value(operator), [value]
-                )
-            )
+            self.parts.append(ConditionData(var, self._resolve_operator_value(operator), [value]))
             return self.marker_processed
 
         raise ConditionalLogicParsingError("Cannot process condition logic")
@@ -211,9 +196,7 @@ class ConditionValueResolver:
             )
 
         if not payload:
-            raise NotImplementedError(
-                f'Condition type "{condition.type}" not supported'
-            )
+            raise NotImplementedError(f'Condition type "{condition.type}" not supported')
 
         data = dict(item_name=name, type=condition.type, payload=payload)
 
@@ -225,9 +208,7 @@ class ConditionBoolResolver:
     def resolve(cls, name: str, condition: ConditionData) -> AnyCondition:
         val = condition.values[0]
         if condition.type != ConditionType.EQUAL or not isinstance(val, bool):
-            raise NotImplementedError(
-                f'Condition type "{condition.type}" not supported'
-            )
+            raise NotImplementedError(f'Condition type "{condition.type}" not supported')
 
         data = dict(
             item_name=name,
@@ -251,9 +232,7 @@ class ConditionOptionResolver:
         elif condition.type == ConditionType.NOT_EQUAL:
             _type = ConditionType.NOT_EQUAL_TO_OPTION
         else:
-            raise NotImplementedError(
-                f'Condition type "{condition.type}" not supported'
-            )
+            raise NotImplementedError(f'Condition type "{condition.type}" not supported')
 
         data = dict(
             item_name=name,

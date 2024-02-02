@@ -51,10 +51,7 @@ class TestReusableItem(BaseTest):
 
         res_data = response.json()
         assert response.status_code == 400, res_data
-        assert (
-            res_data["result"][0]["message"]
-            == "Reusable item choice already exist."
-        )
+        assert res_data["result"][0]["message"] == "Reusable item choice already exist."
 
     async def test_delete_item_choice(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
@@ -69,18 +66,14 @@ class TestReusableItem(BaseTest):
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-        response = await client.delete(
-            self.delete_url.format(id=response.json()["result"]["id"])
-        )
+        response = await client.delete(self.delete_url.format(id=response.json()["result"]["id"]))
 
         assert response.status_code == 204, response.json()
 
     async def test_delete_item_choice_does_not_exist(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await client.delete(
-            self.delete_url.format(id=str(uuid.uuid4()))
-        )
+        response = await client.delete(self.delete_url.format(id=str(uuid.uuid4())))
 
         assert response.status_code == 404, response.json()
 

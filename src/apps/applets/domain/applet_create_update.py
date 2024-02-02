@@ -2,9 +2,7 @@ from pydantic import Field, root_validator
 
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.activity_update import ActivityUpdate
-from apps.activities.domain.custom_validation import (
-    validate_performance_task_type,
-)
+from apps.activities.domain.custom_validation import validate_performance_task_type
 from apps.activities.errors import (
     AssessmentLimitExceed,
     DuplicateActivityFlowNameError,
@@ -15,11 +13,7 @@ from apps.activities.errors import (
 )
 from apps.activity_flows.domain.flow_create import FlowCreate
 from apps.activity_flows.domain.flow_update import FlowUpdate
-from apps.applets.domain.base import (
-    AppletBase,
-    AppletReportConfigurationBase,
-    Encryption,
-)
+from apps.applets.domain.base import AppletBase, AppletReportConfigurationBase, Encryption
 from apps.shared.domain import InternalModel
 
 

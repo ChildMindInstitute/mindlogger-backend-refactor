@@ -7,9 +7,7 @@ from apps.users.services.user_device import UserDeviceService
 
 
 @pytest.fixture
-async def device_user_tom(
-    user_tom: UserSchema, session: AsyncSession
-) -> UserDeviceSchema | None:
+async def device_user_tom(user_tom: UserSchema, session: AsyncSession) -> UserDeviceSchema | None:
     service = UserDeviceService(session, user_tom.id)
     await service.add_device("deviceid")
     crud = UserDevicesCRUD(session)
@@ -25,9 +23,7 @@ async def test_add_user_device(user_tom: UserSchema, session: AsyncSession):
     assert device
 
 
-async def test_remove_user_device(
-    device_user_tom: UserDeviceSchema, session: AsyncSession
-):
+async def test_remove_user_device(device_user_tom: UserDeviceSchema, session: AsyncSession):
     service = UserDeviceService(session, device_user_tom.user_id)
     await service.remove_device(device_user_tom.device_id)
     crud = UserDevicesCRUD(session)
@@ -35,9 +31,7 @@ async def test_remove_user_device(
     assert not device
 
 
-async def test_add_user_device_previous_device_is_removed(
-    device_user_tom: UserDeviceSchema, session: AsyncSession
-):
+async def test_add_user_device_previous_device_is_removed(device_user_tom: UserDeviceSchema, session: AsyncSession):
     service = UserDeviceService(session, device_user_tom.user_id)
     await service.add_device("deviceid")
     crud = UserDevicesCRUD(session)

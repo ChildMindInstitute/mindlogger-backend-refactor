@@ -27,18 +27,9 @@ import traceback
 import cherrypy
 import six
 
-from apps.girderformindlogger.constants import (
-    LOG_BACKUP_COUNT,
-    LOG_ROOT,
-    MAX_LOG_SIZE,
-    TerminalColor,
-)
+from apps.girderformindlogger.constants import LOG_BACKUP_COUNT, LOG_ROOT, MAX_LOG_SIZE, TerminalColor
 from apps.girderformindlogger.utility import config, mkdir
-from apps.girderformindlogger.utility._cache import (
-    cache,
-    rateLimitBuffer,
-    requestCache,
-)
+from apps.girderformindlogger.utility._cache import cache, rateLimitBuffer, requestCache
 
 _quiet = False
 _originalStdOut = sys.stdout

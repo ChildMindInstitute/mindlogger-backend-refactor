@@ -17,9 +17,7 @@ class JobSchema(Base):
     )
 
     name = Column(Text, nullable=False)
-    creator_id = Column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
+    creator_id = Column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     # TODO: investigate why sqlalchemy inserts data with enum type very slow
     status = Column(Enum(JobStatus, name="job_status"), nullable=False)
     details = Column(JSONB(), nullable=True)

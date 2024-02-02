@@ -23,9 +23,7 @@ class UserService:
                 email=hash_sha224(settings.super_admin.email),
                 first_name=settings.super_admin.first_name,
                 last_name=settings.super_admin.last_name,
-                hashed_password=AuthenticationService.get_password_hash(
-                    settings.super_admin.password
-                ),
+                hashed_password=AuthenticationService.get_password_hash(settings.super_admin.password),
                 email_encrypted=settings.super_admin.email,
                 is_super_admin=True,
             )
@@ -45,9 +43,9 @@ class UserService:
                 email=hash_sha224(settings.anonymous_respondent.email),
                 first_name=settings.anonymous_respondent.first_name,
                 last_name=settings.anonymous_respondent.last_name,
-                hashed_password=AuthenticationService(
-                    self.session
-                ).get_password_hash(settings.anonymous_respondent.password),
+                hashed_password=AuthenticationService(self.session).get_password_hash(
+                    settings.anonymous_respondent.password
+                ),
                 email_encrypted=settings.anonymous_respondent.email,
                 is_anonymous_respondent=True,
             )

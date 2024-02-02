@@ -6,10 +6,7 @@ from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
 from apps.applets.db.schemas import AppletSchema
-from apps.workspaces.db.schemas import (
-    UserAppletAccessSchema,
-    UserWorkspaceSchema,
-)
+from apps.workspaces.db.schemas import UserAppletAccessSchema, UserWorkspaceSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import UserAnswersDBInfo
 from infrastructure.database.crud import BaseCRUD
@@ -21,16 +18,12 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
     schema_class = UserWorkspaceSchema
 
     async def get_by_user_id(self, user_id_: uuid.UUID) -> UserWorkspaceSchema:
-        query: Query = select(self.schema_class).filter(
-            self.schema_class.user_id == user_id_
-        )
+        query: Query = select(self.schema_class).filter(self.schema_class.user_id == user_id_)
         result: Result = await self._execute(query)
 
         return result.scalars().one_or_none()
 
-    async def get_by_ids(
-        self, ids: list[uuid.UUID]
-    ) -> list[UserWorkspaceSchema]:
+    async def get_by_ids(self, ids: list[uuid.UUID]) -> list[UserWorkspaceSchema]:
         query: Query = select(self.schema_class)
         query = query.filter(self.schema_class.user_id.in_(ids))
         db_result = await self._execute(query)
@@ -44,9 +37,7 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         """Return UserWorkspace instance."""
         return await self._create(schema)
 
-    async def update_by_user_id(
-        self, user_id: uuid.UUID, schema: UserWorkspaceSchema
-    ) -> UserWorkspaceSchema:
+    async def update_by_user_id(self, user_id: uuid.UUID, schema: UserWorkspaceSchema) -> UserWorkspaceSchema:
         instance = await self._update_one(
             lookup="user_id",
             value=user_id,
@@ -54,9 +45,7 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         )
         return instance
 
-    async def get_by_applet_id(
-        self, applet_id: uuid.UUID
-    ) -> UserWorkspaceSchema | None:
+    async def get_by_applet_id(self, applet_id: uuid.UUID) -> UserWorkspaceSchema | None:
         access_subquery: Query = select(UserAppletAccessSchema.owner_id)
         access_subquery = access_subquery.where(
             and_(
@@ -70,13 +59,9 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         res = db_result.scalars().first()
         return res
 
-    async def get_arbitraries_map_by_applet_ids(
-        self, applet_ids: list[uuid.UUID]
-    ) -> dict[str | None, list[uuid.UUID]]:
+    async def get_arbitraries_map_by_applet_ids(self, applet_ids: list[uuid.UUID]) -> dict[str | None, list[uuid.UUID]]:
         """Returning map {"arbitrary_uri": [applet_ids]}"""
-        applet_owner_map = await self._get_applet_owners_map_by_applet_ids(
-            applet_ids
-        )
+        applet_owner_map = await self._get_applet_owners_map_by_applet_ids(applet_ids)
         owner_ids = set(applet_owner_map.values())
 
         query: Query = select(UserWorkspaceSchema)
@@ -87,9 +72,7 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         user_arb_uri_map: dict[uuid.UUID, str] = dict()
         for user_workspace in res:
             user_arb_uri_map[user_workspace.user_id] = (
-                user_workspace.database_uri
-                if user_workspace.use_arbitrary
-                else None
+                user_workspace.database_uri if user_workspace.use_arbitrary else None
             )
 
         arb_uri_applet_ids_map: dict[str | None, list[uuid.UUID]] = dict()
@@ -101,9 +84,7 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
 
         return arb_uri_applet_ids_map
 
-    async def _get_applet_owners_map_by_applet_ids(
-        self, applet_ids: list[uuid.UUID]
-    ) -> dict[uuid.UUID, uuid.UUID]:
+    async def _get_applet_owners_map_by_applet_ids(self, applet_ids: list[uuid.UUID]) -> dict[uuid.UUID, uuid.UUID]:
         """Returning map {"applet_id": owner_id(user_id)}"""
         query: Query = select(UserAppletAccessSchema)
         query = query.where(
@@ -117,15 +98,11 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
 
         applet_owner_map: dict[uuid.UUID, uuid.UUID] = dict()
         for user_applet_access in res:
-            applet_owner_map[
-                user_applet_access.applet_id
-            ] = user_applet_access.owner_id
+            applet_owner_map[user_applet_access.applet_id] = user_applet_access.owner_id
 
         return applet_owner_map
 
-    async def get_user_answers_db_info(
-        self, user_id: uuid.UUID
-    ) -> list[UserAnswersDBInfo]:
+    async def get_user_answers_db_info(self, user_id: uuid.UUID) -> list[UserAnswersDBInfo]:
         query: Query = (
             select(
                 UserAppletAccessSchema.applet_id,

@@ -25,9 +25,7 @@ class PublicReusableItemChoice(_ReusableItemChoiceBase, PublicModel):
     id: uuid.UUID
 
 
-class ReusableItemChoiceInitializeCreate(
-    _ReusableItemChoiceBase, InternalModel
-):
+class ReusableItemChoiceInitializeCreate(_ReusableItemChoiceBase, InternalModel):
     pass
 
 

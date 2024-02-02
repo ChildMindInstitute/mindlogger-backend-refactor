@@ -138,22 +138,14 @@ PROFILE_FIELDS = ["_id", "firstName", "lastName", "schema:knows", "MRN"]
 
 
 def MODELS():
-    from apps.girderformindlogger.models.activity import (
-        Activity as ActivityModel,
-    )
+    from apps.girderformindlogger.models.activity import Activity as ActivityModel
     from apps.girderformindlogger.models.applet import Applet as AppletModel
     from apps.girderformindlogger.models.cache import Cache as CacheModel
-    from apps.girderformindlogger.models.collection import (
-        Collection as CollectionModel,
-    )
+    from apps.girderformindlogger.models.collection import Collection as CollectionModel
     from apps.girderformindlogger.models.folder import Folder as FolderModel
     from apps.girderformindlogger.models.item import Item as ItemModel
-    from apps.girderformindlogger.models.protocol import (
-        Protocol as ProtocolModel,
-    )
-    from apps.girderformindlogger.models.pushNotification import (
-        PushNotification as PushNotificationModel,
-    )
+    from apps.girderformindlogger.models.protocol import Protocol as ProtocolModel
+    from apps.girderformindlogger.models.pushNotification import PushNotification as PushNotificationModel
     from apps.girderformindlogger.models.screen import Screen as ScreenModel
     from apps.girderformindlogger.models.user import User as UserModel
 

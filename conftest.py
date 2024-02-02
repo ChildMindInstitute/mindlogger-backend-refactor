@@ -80,9 +80,7 @@ async def engine() -> AsyncGenerator[AsyncEngine, Any]:
 @pytest.fixture()
 async def arbitrary_engine() -> AsyncGenerator[AsyncEngine, Any]:
     host = settings.database.host
-    engine = build_engine(
-        f"postgresql+asyncpg://postgres:postgres@{host}:5432/test_arbitrary"
-    )
+    engine = build_engine(f"postgresql+asyncpg://postgres:postgres@{host}:5432/test_arbitrary")
     yield engine
     await engine.dispose()
 
@@ -94,12 +92,8 @@ async def session(engine: AsyncEngine) -> AsyncGenerator:
         await conn.begin_nested()
         async with AsyncSession(bind=conn) as async_session:
 
-            @event.listens_for(
-                async_session.sync_session, "after_transaction_end"
-            )
-            def end_savepoint(
-                session: Session, transaction: SessionTransaction
-            ) -> None:
+            @event.listens_for(async_session.sync_session, "after_transaction_end")
+            def end_savepoint(session: Session, transaction: SessionTransaction) -> None:
                 nonlocal conn
                 conn = cast(AsyncConnection, conn)
                 if conn.closed:
@@ -119,12 +113,8 @@ async def arbitrary_session(arbitrary_engine: AsyncEngine) -> AsyncGenerator:
         await conn.begin_nested()
         async with AsyncSession(bind=conn) as async_session:
 
-            @event.listens_for(
-                async_session.sync_session, "after_transaction_end"
-            )
-            def end_savepoint(
-                session: Session, transaction: SessionTransaction
-            ) -> None:
+            @event.listens_for(async_session.sync_session, "after_transaction_end")
+            def end_savepoint(session: Session, transaction: SessionTransaction) -> None:
                 if conn.closed:
                     return
                 if not conn.in_nested_transaction():
@@ -144,9 +134,7 @@ def client(session: AsyncSession, app: FastAPI) -> TestClient:
 
 
 @pytest.fixture
-def arbitrary_client(
-    app: FastAPI, session: AsyncSession, arbitrary_session: AsyncSession
-) -> TestClient:
+def arbitrary_client(app: FastAPI, session: AsyncSession, arbitrary_session: AsyncSession) -> TestClient:
     """Use only for tests which interact with arbitrary servers, because
     arbitrary (answers) session has higher prioritet then general session.
     """

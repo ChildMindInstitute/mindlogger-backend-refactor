@@ -39,9 +39,7 @@ class JobService:
 
         return True
 
-    async def change_status(
-        self, id_: uuid.UUID, status: JobStatus, details: dict | None = None
-    ) -> Job:
+    async def change_status(self, id_: uuid.UUID, status: JobStatus, details: dict | None = None) -> Job:
         data: dict[str, Any] = dict(status=status)
         if details:
             data["details"] = details

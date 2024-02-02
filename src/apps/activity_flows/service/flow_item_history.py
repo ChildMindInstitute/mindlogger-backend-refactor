@@ -2,10 +2,7 @@ import uuid
 
 from apps.activity_flows.crud import FlowItemHistoriesCRUD
 from apps.activity_flows.db.schemas import ActivityFlowItemHistorySchema
-from apps.activity_flows.domain.flow_full import (
-    ActivityFlowItemFull,
-    FlowItemHistoryFull,
-)
+from apps.activity_flows.domain.flow_full import ActivityFlowItemFull, FlowItemHistoryFull
 
 
 class FlowItemHistoryService:
@@ -30,27 +27,15 @@ class FlowItemHistoryService:
 
         await FlowItemHistoriesCRUD(self.session).create_many(schemas)
 
-    async def get_activity_ids_by_flow_id(
-        self, flow_id: uuid.UUID
-    ) -> list[str]:
+    async def get_activity_ids_by_flow_id(self, flow_id: uuid.UUID) -> list[str]:
         flow_id_version = f"{flow_id}_{self.version}"
-        schemas = await FlowItemHistoriesCRUD(self.session).get_by_flow_id(
-            flow_id_version
-        )
+        schemas = await FlowItemHistoriesCRUD(self.session).get_by_flow_id(flow_id_version)
 
         return [schema.activity_id for schema in schemas]
 
-    async def get_by_flow_ids(
-        self, flow_ids: list[uuid.UUID]
-    ) -> list[FlowItemHistoryFull]:
-        schemas = await FlowItemHistoriesCRUD(self.session).get_by_flow_ids(
-            [f"{pk}_{self.version}" for pk in flow_ids]
-        )
+    async def get_by_flow_ids(self, flow_ids: list[uuid.UUID]) -> list[FlowItemHistoryFull]:
+        schemas = await FlowItemHistoriesCRUD(self.session).get_by_flow_ids([f"{pk}_{self.version}" for pk in flow_ids])
         return [FlowItemHistoryFull.from_orm(schema) for schema in schemas]
 
-    async def get_by_flow_id_versions(
-        self, activity_id_versions: list[str]
-    ) -> list[FlowItemHistoryFull]:
-        return await FlowItemHistoriesCRUD(
-            self.session
-        ).get_by_flow_id_versions(activity_id_versions)
+    async def get_by_flow_id_versions(self, activity_id_versions: list[str]) -> list[FlowItemHistoryFull]:
+        return await FlowItemHistoriesCRUD(self.session).get_by_flow_id_versions(activity_id_versions)

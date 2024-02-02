@@ -45,9 +45,7 @@ async def _handle_websocket(websocket, user_id, session):
         except (ValidationError, TypeError):
             continue
         try:
-            respondent_access = await UserAppletAccessCRUD(
-                session
-            ).get_applet_role_by_user_id(
+            respondent_access = await UserAppletAccessCRUD(session).get_applet_role_by_user_id(
                 alert_message.applet_id,
                 alert_message.respondent_id,
                 Role.RESPONDENT,

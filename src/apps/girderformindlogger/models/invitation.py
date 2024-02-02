@@ -9,22 +9,12 @@ from bson.objectid import ObjectId
 
 from apps.girderformindlogger import events
 from apps.girderformindlogger.constants import USER_ROLES, AccessType
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    GirderException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import AccessException, GirderException, ValidationException
 from apps.girderformindlogger.i18n import t
 from apps.girderformindlogger.models.account_profile import AccountProfile
-from apps.girderformindlogger.models.aes_encrypt import (
-    AccessControlledModel,
-    AESEncryption,
-)
+from apps.girderformindlogger.models.aes_encrypt import AccessControlledModel, AESEncryption
 from apps.girderformindlogger.utility.model_importer import ModelImporter
-from apps.girderformindlogger.utility.progress import (
-    noProgress,
-    setResponseTimeLimit,
-)
+from apps.girderformindlogger.utility.progress import noProgress, setResponseTimeLimit
 
 
 class Invitation(AESEncryption):

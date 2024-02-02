@@ -1,11 +1,6 @@
 import uuid
 
-from apps.schedule.domain.schedule.base import (
-    BaseEvent,
-    BaseNotificationSetting,
-    BasePeriodicity,
-    BaseReminderSetting,
-)
+from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BasePeriodicity, BaseReminderSetting
 from apps.shared.domain import InternalModel
 
 __all__ = [

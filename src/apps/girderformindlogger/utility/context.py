@@ -1,6 +1,4 @@
-from apps.girderformindlogger.models.collection import (
-    Collection as CollectionModel,
-)
+from apps.girderformindlogger.models.collection import Collection as CollectionModel
 from apps.girderformindlogger.models.folder import Folder as FolderModel
 
 from . import jsonld_expander

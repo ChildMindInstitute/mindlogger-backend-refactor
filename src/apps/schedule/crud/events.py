@@ -28,10 +28,7 @@ from apps.schedule.domain.schedule.internal import (
     UserEvent,
     UserEventCreate,
 )
-from apps.schedule.domain.schedule.public import (
-    ActivityEventCount,
-    FlowEventCount,
-)
+from apps.schedule.domain.schedule.public import ActivityEventCount, FlowEventCount
 from apps.schedule.errors import (
     ActivityEventAlreadyExists,
     EventError,
@@ -56,9 +53,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         """Return event instance and the created information."""
 
         try:
-            instance: EventSchema = await self._create(
-                EventSchema(**schema.dict())
-            )
+            instance: EventSchema = await self._create(EventSchema(**schema.dict()))
         # Raise exception if applet doesn't exist
         except IntegrityError as e:
             raise EventError(message=str(e))
@@ -81,9 +76,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         event: Event = Event.from_orm(instance)
         return event
 
-    async def get_all_by_applet_id(
-        self, applet_id: uuid.UUID
-    ) -> list[EventSchema]:
+    async def get_all_by_applet_id(self, applet_id: uuid.UUID) -> list[EventSchema]:
         """Return event instance."""
         query: Query = select(EventSchema)
         query = query.where(EventSchema.applet_id == applet_id)
@@ -112,9 +105,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def get_public_by_applet_id(
-        self, applet_id: uuid.UUID
-    ) -> list[EventSchema]:
+    async def get_public_by_applet_id(self, applet_id: uuid.UUID) -> list[EventSchema]:
         """Return event instance."""
         query: Query = select(EventSchema)
         query = query.join(
@@ -152,9 +143,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         event: Event = Event.from_orm(instance)
         return event
 
-    async def get_all_by_applet_and_user(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
-    ) -> list[EventFull]:
+    async def get_all_by_applet_and_user(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> list[EventFull]:
         """Get events by applet_id and user_id"""
 
         query: Query = select(
@@ -406,9 +395,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def get_general_events_by_user(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
-    ) -> list[EventFull]:
+    async def get_general_events_by_user(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> list[EventFull]:
         """Get general events by applet_id and user_id"""
         # select flow_ids to exclude
         flow_ids = (
@@ -651,9 +638,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         return events_map, event_ids
 
-    async def count_general_events_by_user(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
-    ) -> int:
+    async def count_general_events_by_user(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> int:
         """Count general events by applet_id and user_id"""
         flow_ids = (
             select(distinct(FlowEventsSchema.flow_id))
@@ -723,9 +708,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         return db_result.scalar()
 
-    async def count_individual_events_by_user(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
-    ) -> int:
+    async def count_individual_events_by_user(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> int:
         """Count individual events by applet_id and user_id"""
 
         query: Query = select(func.count(EventSchema.id))
@@ -764,9 +747,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
                 ActivityEventsSchema,
                 ActivityEventsSchema.event_id == self.schema_class.id,
             )
-            query = query.where(
-                ActivityEventsSchema.activity_id.in_(activity_ids)
-            )
+            query = query.where(ActivityEventsSchema.activity_id.in_(activity_ids))
         else:
             query = query.join(
                 FlowEventsSchema,
@@ -785,13 +766,9 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
     async def save(self, schema: UserEventCreate) -> UserEvent:
         """Return user event instance and the created information."""
         try:
-            instance: UserEventsSchema = await self._create(
-                UserEventsSchema(**schema.dict())
-            )
+            instance: UserEventsSchema = await self._create(UserEventsSchema(**schema.dict()))
         except IntegrityError:
-            raise UserEventAlreadyExists(
-                user_id=schema.user_id, event_id=schema.event_id
-            )
+            raise UserEventAlreadyExists(user_id=schema.user_id, event_id=schema.event_id)
 
         user_event: UserEvent = UserEvent.from_orm(instance)
         return user_event
@@ -816,9 +793,7 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         query = query.where(UserEventsSchema.event_id.in_(event_ids))
         await self._execute(query)
 
-    async def delete_all_by_events_and_user(
-        self, event_ids: list[uuid.UUID], user_id: uuid.UUID
-    ):
+    async def delete_all_by_events_and_user(self, event_ids: list[uuid.UUID], user_id: uuid.UUID):
         """Delete all user events by event ids."""
         query: Query = delete(UserEventsSchema)
         query = query.where(UserEventsSchema.event_id.in_(event_ids))
@@ -833,13 +808,9 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         """Return activity event instance and the created information."""
 
         try:
-            instance: ActivityEventsSchema = await self._create(
-                ActivityEventsSchema(**schema.dict())
-            )
+            instance: ActivityEventsSchema = await self._create(ActivityEventsSchema(**schema.dict()))
         except IntegrityError:
-            raise ActivityEventAlreadyExists(
-                activity_id=schema.activity_id, event_id=schema.event_id
-            )
+            raise ActivityEventAlreadyExists(activity_id=schema.activity_id, event_id=schema.event_id)
 
         activity_event: ActivityEvent = ActivityEvent.from_orm(instance)
         return activity_event
@@ -865,9 +836,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         query = query.where(ActivityEventsSchema.event_id.in_(event_ids))
         await self._execute(query)
 
-    async def count_by_applet(
-        self, applet_id: uuid.UUID
-    ) -> list[ActivityEventCount]:
+    async def count_by_applet(self, applet_id: uuid.UUID) -> list[ActivityEventCount]:
         """Return activity ids with event count."""
 
         query: Query = select(
@@ -884,9 +853,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
             ),
             isouter=True,
         )
-        query = query.join(
-            EventSchema, ActivityEventsSchema.event_id == EventSchema.id
-        )
+        query = query.join(EventSchema, ActivityEventsSchema.event_id == EventSchema.id)
         query = query.join(
             PeriodicitySchema,
             EventSchema.periodicity_id == PeriodicitySchema.id,
@@ -909,9 +876,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
 
         return activity_event_counts
 
-    async def count_by_activity(
-        self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None
-    ) -> int:
+    async def count_by_activity(self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None) -> int:
         """Return event count."""
 
         query: Query = select(
@@ -932,9 +897,7 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         count: int = result.scalar()
         return count
 
-    async def get_by_event_ids(
-        self, event_ids: list[uuid.UUID]
-    ) -> list[uuid.UUID]:
+    async def get_by_event_ids(self, event_ids: list[uuid.UUID]) -> list[uuid.UUID]:
         """Return activity event instances."""
         query: Query = select(distinct(ActivityEventsSchema.activity_id))
         query = query.where(ActivityEventsSchema.event_id.in_(event_ids))
@@ -942,34 +905,21 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         activity_ids = result.scalars().all()
         return activity_ids
 
-    async def get_by_applet_id(
-        self, applet_id: uuid.UUID
-    ) -> list[ActivityEvent]:
+    async def get_by_applet_id(self, applet_id: uuid.UUID) -> list[ActivityEvent]:
         """Return activity event instances."""
         query: Query = select(ActivityEventsSchema)
-        query = query.join(
-            EventSchema, ActivityEventsSchema.event_id == EventSchema.id
-        )
+        query = query.join(EventSchema, ActivityEventsSchema.event_id == EventSchema.id)
         query = query.where(EventSchema.applet_id == applet_id)
         result = await self._execute(query)
         activity_events = result.scalars().all()
 
-        return [
-            ActivityEvent.from_orm(activity_event)
-            for activity_event in activity_events
-        ]
+        return [ActivityEvent.from_orm(activity_event) for activity_event in activity_events]
 
-    async def get_by_applet_and_user_id(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
-    ) -> list[ActivityEvent]:
+    async def get_by_applet_and_user_id(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> list[ActivityEvent]:
         """Return activity event instances."""
         query: Query = select(ActivityEventsSchema)
-        query = query.join(
-            EventSchema, ActivityEventsSchema.event_id == EventSchema.id
-        )
-        query = query.join(
-            UserEventsSchema, EventSchema.id == UserEventsSchema.event_id
-        )
+        query = query.join(EventSchema, ActivityEventsSchema.event_id == EventSchema.id)
+        query = query.join(UserEventsSchema, EventSchema.id == UserEventsSchema.event_id)
         query = query.join(
             ActivitySchema,
             ActivityEventsSchema.activity_id == ActivitySchema.id,
@@ -979,14 +929,9 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
         result = await self._execute(query)
         activity_events = result.scalars().all()
 
-        return [
-            ActivityEvent.from_orm(activity_event)
-            for activity_event in activity_events
-        ]
+        return [ActivityEvent.from_orm(activity_event) for activity_event in activity_events]
 
-    async def get_missing_events(
-        self, activity_ids: list[uuid.UUID]
-    ) -> list[uuid.UUID]:
+    async def get_missing_events(self, activity_ids: list[uuid.UUID]) -> list[uuid.UUID]:
         query: Query = select(ActivityEventsSchema.activity_id)
         query.join(
             ActivitySchema,
@@ -1007,13 +952,9 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
     async def save(self, schema: FlowEventCreate) -> FlowEvent:
         """Return flow event instance and the created information."""
         try:
-            instance: FlowEventsSchema = await self._create(
-                FlowEventsSchema(**schema.dict())
-            )
+            instance: FlowEventsSchema = await self._create(FlowEventsSchema(**schema.dict()))
         except IntegrityError:
-            raise FlowEventAlreadyExists(
-                flow_id=schema.flow_id, event_id=schema.event_id
-            )
+            raise FlowEventAlreadyExists(flow_id=schema.flow_id, event_id=schema.event_id)
 
         flow_event: FlowEvent = FlowEvent.from_orm(instance)
         return flow_event
@@ -1028,11 +969,7 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         try:
             flow_id: uuid.UUID = result.scalars().one_or_none()
         except MultipleResultsFound:
-            raise EventError(
-                message=f"Event{event_id} is used in multiple flows".format(
-                    event_id=event_id
-                )
-            )
+            raise EventError(message=f"Event{event_id} is used in multiple flows".format(event_id=event_id))
 
         return flow_id
 
@@ -1042,9 +979,7 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         query = query.where(FlowEventsSchema.event_id.in_(event_ids))
         await self._execute(query)
 
-    async def count_by_applet(
-        self, applet_id: uuid.UUID
-    ) -> list[FlowEventCount]:
+    async def count_by_applet(self, applet_id: uuid.UUID) -> list[FlowEventCount]:
         """Return flow ids with event count."""
 
         query: Query = select(
@@ -1062,9 +997,7 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
             ),
             isouter=True,
         )
-        query = query.join(
-            EventSchema, FlowEventsSchema.event_id == EventSchema.id
-        )
+        query = query.join(EventSchema, FlowEventsSchema.event_id == EventSchema.id)
         query = query.join(
             PeriodicitySchema,
             EventSchema.periodicity_id == PeriodicitySchema.id,
@@ -1075,9 +1008,7 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
             ActivityFlowSchema.is_deleted == False  # noqa: E712
         )
         query = query.filter(PeriodicitySchema.type != PeriodicityType.ALWAYS)
-        query = query.group_by(
-            ActivityFlowSchema.applet_id, ActivityFlowSchema.id
-        )
+        query = query.group_by(ActivityFlowSchema.applet_id, ActivityFlowSchema.id)
         result = await self._execute(query)
 
         flow_event_counts: list[FlowEventCount] = [
@@ -1091,9 +1022,7 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
 
         return flow_event_counts
 
-    async def get_by_event_ids(
-        self, event_ids: list[uuid.UUID]
-    ) -> list[uuid.UUID]:
+    async def get_by_event_ids(self, event_ids: list[uuid.UUID]) -> list[uuid.UUID]:
         """Return flow event instances."""
         query: Query = select(distinct(FlowEventsSchema.flow_id))
         query = query.where(FlowEventsSchema.event_id.in_(event_ids))
@@ -1101,9 +1030,7 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
         flow_ids = result.scalars().all()
         return flow_ids
 
-    async def count_by_flow(
-        self, flow_id: uuid.UUID, respondent_id: uuid.UUID | None
-    ) -> int:
+    async def count_by_flow(self, flow_id: uuid.UUID, respondent_id: uuid.UUID | None) -> int:
         """Return event count."""
 
         query: Query = select(
@@ -1127,26 +1054,18 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
     async def get_by_applet_id(self, applet_id: uuid.UUID) -> list[FlowEvent]:
         """Return flow event instances."""
         query: Query = select(FlowEventsSchema)
-        query = query.join(
-            EventSchema, FlowEventsSchema.event_id == EventSchema.id
-        )
+        query = query.join(EventSchema, FlowEventsSchema.event_id == EventSchema.id)
         query = query.where(EventSchema.applet_id == applet_id)
         result = await self._execute(query)
         flow_events = result.scalars().all()
 
         return [FlowEvent.from_orm(flow_event) for flow_event in flow_events]
 
-    async def get_by_applet_and_user_id(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
-    ) -> list[FlowEvent]:
+    async def get_by_applet_and_user_id(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> list[FlowEvent]:
         """Return flow event instances."""
         query: Query = select(FlowEventsSchema)
-        query = query.join(
-            EventSchema, FlowEventsSchema.event_id == EventSchema.id
-        )
-        query = query.join(
-            UserEventsSchema, EventSchema.id == UserEventsSchema.event_id
-        )
+        query = query.join(EventSchema, FlowEventsSchema.event_id == EventSchema.id)
+        query = query.join(UserEventsSchema, EventSchema.id == UserEventsSchema.event_id)
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(UserEventsSchema.user_id == user_id)
         result = await self._execute(query)

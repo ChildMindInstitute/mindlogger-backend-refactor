@@ -28,15 +28,11 @@ class PasswordRecoveryService:
         self._cache: PasswordRecoveryCache = PasswordRecoveryCache()
         self.session = session
 
-    async def send_password_recovery(
-        self, schema: PasswordRecoveryRequest
-    ) -> PublicUser:
+    async def send_password_recovery(self, schema: PasswordRecoveryRequest) -> PublicUser:
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
         if user.email_encrypted != schema.email:
-            user = await UsersCRUD(self.session).update_encrypted_email(
-                user, schema.email
-            )
+            user = await UsersCRUD(self.session).update_encrypted_email(user, schema.email)
         user.email_encrypted = cast(str, user.email_encrypted)
 
         # If already exist password recovery for this user in Redis,
@@ -80,8 +76,7 @@ class PasswordRecoveryService:
 
         message = MessageSchema(
             recipients=[user.email_encrypted],
-            subject="Girder for MindLogger (development instance): "
-            "Temporary access",
+            subject="Girder for MindLogger (development instance): " "Temporary access",
             body=service.get_template(
                 path="reset_password_en",
                 email=user.email_encrypted,
@@ -95,30 +90,20 @@ class PasswordRecoveryService:
 
         return public_user
 
-    async def approve(
-        self, schema: PasswordRecoveryApproveRequest
-    ) -> PublicUser:
+    async def approve(self, schema: PasswordRecoveryApproveRequest) -> PublicUser:
         try:
-            cache_entry: CacheEntry[
-                PasswordRecoveryInfo
-            ] = await self._cache.get(schema.email, schema.key)
+            cache_entry: CacheEntry[PasswordRecoveryInfo] = await self._cache.get(schema.email, schema.key)
         except CacheNotFound:
             raise PasswordRecoveryKeyNotFound()
 
         # Get user from the database
-        user: User = await UsersCRUD(self.session).get_by_email(
-            cache_entry.instance.email
-        )
+        user: User = await UsersCRUD(self.session).get_by_email(cache_entry.instance.email)
 
         # Update password for user
         user_change_password_schema = UserChangePassword(
-            hashed_password=AuthenticationService(
-                self.session
-            ).get_password_hash(schema.password)
+            hashed_password=AuthenticationService(self.session).get_password_hash(schema.password)
         )
-        user = await UsersCRUD(self.session).change_password(
-            user, user_change_password_schema
-        )
+        user = await UsersCRUD(self.session).change_password(user, user_change_password_schema)
 
         public_user = PublicUser.from_user(user)
 

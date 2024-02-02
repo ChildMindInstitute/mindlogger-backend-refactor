@@ -14,16 +14,9 @@ from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import PasswordRecoveryRequest, UserCreateRequest
-from apps.users.errors import (
-    PasswordHasSpacesError,
-    ReencryptionInProgressError,
-)
+from apps.users.errors import PasswordHasSpacesError, ReencryptionInProgressError
 from apps.users.router import router as user_router
-from apps.users.tests.factories import (
-    CacheEntryFactory,
-    PasswordRecoveryInfoFactory,
-    PasswordUpdateRequestFactory,
-)
+from apps.users.tests.factories import CacheEntryFactory, PasswordRecoveryInfoFactory, PasswordUpdateRequestFactory
 from config import settings
 from infrastructure.cache import PasswordRecoveryHealthCheckNotValid
 from infrastructure.utility import RedisCache
@@ -34,12 +27,8 @@ class TestPassword(BaseTest):
     user_create_url = user_router.url_path_for("user_create")
     password_update_url = user_router.url_path_for("password_update")
     password_recovery_url = user_router.url_path_for("password_recovery")
-    password_recovery_approve_url = user_router.url_path_for(
-        "password_recovery_approve"
-    )
-    password_recovery_healthcheck_url = user_router.url_path_for(
-        "password_recovery_healthcheck"
-    )
+    password_recovery_approve_url = user_router.url_path_for("password_recovery_approve")
+    password_recovery_healthcheck_url = user_router.url_path_for("password_recovery_healthcheck")
 
     create_request_user = UserCreateRequest(
         email="tom2@mindlogger.com",
@@ -57,13 +46,9 @@ class TestPassword(BaseTest):
 
     async def test_password_update(self, mock_reencrypt_kiq, client):
         # Creating new user
-        await client.post(
-            self.user_create_url, data=self.create_request_user.dict()
-        )
+        await client.post(self.user_create_url, data=self.create_request_user.dict())
 
-        login_request_user: UserLoginRequest = UserLoginRequest(
-            **self.create_request_user.dict()
-        )
+        login_request_user: UserLoginRequest = UserLoginRequest(**self.create_request_user.dict())
 
         # User get token
         await client.login(
@@ -72,12 +57,8 @@ class TestPassword(BaseTest):
         )
 
         # Password update
-        password_update_request = PasswordUpdateRequestFactory.build(
-            prev_password=self.create_request_user.password
-        )
-        response: HttpResponse = await client.put(
-            self.password_update_url, data=password_update_request.dict()
-        )
+        password_update_request = PasswordUpdateRequestFactory.build(prev_password=self.create_request_user.password)
+        response: HttpResponse = await client.put(self.password_update_url, data=password_update_request.dict())
 
         # User get token with new password
         login_request_user = UserLoginRequest(
@@ -101,15 +82,11 @@ class TestPassword(BaseTest):
         client: TestClient,
     ):
         # Creating new user
-        await client.post(
-            self.user_create_url, data=self.create_request_user.dict()
-        )
+        await client.post(self.user_create_url, data=self.create_request_user.dict())
 
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = (
-            PasswordRecoveryRequest(
-                email=self.create_request_user.dict()["email"]
-            )
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
+            email=self.create_request_user.dict()["email"]
         )
 
         response = await client.post(
@@ -120,19 +97,12 @@ class TestPassword(BaseTest):
         cache = RedisCache()
 
         assert response.status_code == status.HTTP_201_CREATED
-        keys = await cache.keys(
-            key="PasswordRecoveryCache:tom2@mindlogger.com*"
-        )
+        keys = await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*")
         assert len(keys) == 1
         assert password_recovery_request.email in keys[0]
         assert len(TestMail.mails) == 1
-        assert (
-            TestMail.mails[0].recipients[0] == password_recovery_request.email
-        )
-        assert (
-            TestMail.mails[0].subject
-            == "Girder for MindLogger (development instance): Temporary access"
-        )
+        assert TestMail.mails[0].recipients[0] == password_recovery_request.email
+        assert TestMail.mails[0].subject == "Girder for MindLogger (development instance): Temporary access"
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -141,15 +111,11 @@ class TestPassword(BaseTest):
 
         assert response.status_code == status.HTTP_201_CREATED
 
-        new_keys = await cache.keys(
-            key="PasswordRecoveryCache:tom2@mindlogger.com*"
-        )
+        new_keys = await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*")
         assert len(keys) == 1
         assert keys[0] != new_keys[0]
         assert len(TestMail.mails) == 2
-        assert (
-            TestMail.mails[0].recipients[0] == password_recovery_request.email
-        )
+        assert TestMail.mails[0].recipients[0] == password_recovery_request.email
 
     async def test_password_recovery_approve(
         self,
@@ -159,17 +125,13 @@ class TestPassword(BaseTest):
         cache = RedisCache()
 
         # Creating new user
-        internal_response = await client.post(
-            self.user_create_url, data=self.create_request_user.dict()
-        )
+        internal_response = await client.post(self.user_create_url, data=self.create_request_user.dict())
 
         expected_result = internal_response.json()
 
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = (
-            PasswordRecoveryRequest(
-                email=self.create_request_user.dict()["email"]
-            )
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
+            email=self.create_request_user.dict()["email"]
         )
 
         response = await client.post(
@@ -178,9 +140,7 @@ class TestPassword(BaseTest):
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        key = (
-            await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*")
-        )[0].split(":")[-1]
+        key = (await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*"))[0].split(":")[-1]
 
         data = {
             "email": self.create_request_user.dict()["email"],
@@ -193,9 +153,7 @@ class TestPassword(BaseTest):
             data=data,
         )
 
-        keys = await cache.keys(
-            key="PasswordRecoveryCache:tom2@mindlogger.com*"
-        )
+        keys = await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*")
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == expected_result
@@ -211,15 +169,11 @@ class TestPassword(BaseTest):
         settings.authentication.password_recover.expiration = 1
 
         # Creating new user
-        await client.post(
-            self.user_create_url, data=self.create_request_user.dict()
-        )
+        await client.post(self.user_create_url, data=self.create_request_user.dict())
 
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = (
-            PasswordRecoveryRequest(
-                email=self.create_request_user.dict()["email"]
-            )
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
+            email=self.create_request_user.dict()["email"]
         )
 
         response = await client.post(
@@ -228,9 +182,7 @@ class TestPassword(BaseTest):
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        key = (
-            await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*")
-        )[0].split(":")[-1]
+        key = (await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*"))[0].split(":")[-1]
         await asyncio.sleep(2)
 
         data = {
@@ -244,9 +196,7 @@ class TestPassword(BaseTest):
             data=data,
         )
 
-        keys = await cache.keys(
-            key="PasswordRecoveryCache:tom2@mindlogger.com*"
-        )
+        keys = await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert len(keys) == 0
@@ -298,35 +248,25 @@ class TestPassword(BaseTest):
         assert len(result) == 1
         assert result[0]["message"] == ReencryptionInProgressError.message
 
-    async def test_password_recovery__user_does_not_exists_error_is_muted(
-        self, client: TestClient
-    ):
+    async def test_password_recovery__user_does_not_exists_error_is_muted(self, client: TestClient):
         resp = await client.post(
             self.password_recovery_url,
             data={"email": "userdoesnotexist@example.com"},
         )
         assert resp.status_code == status.HTTP_201_CREATED
 
-    async def test_password_recovery_heathcheck_link_does_not_exists(
-        self, client: TestClient, uuid_zero: uuid.UUID
-    ):
+    async def test_password_recovery_heathcheck_link_does_not_exists(self, client: TestClient, uuid_zero: uuid.UUID):
         data = {"email": "email@example.com", "key": str(uuid_zero)}
-        resp = await client.get(
-            self.password_recovery_healthcheck_url, query=data
-        )
+        resp = await client.get(self.password_recovery_healthcheck_url, query=data)
         assert resp.status_code == status.HTTP_404_NOT_FOUND
         result = resp.json()["result"]
         assert len(result) == 1
-        assert (
-            result[0]["message"] == PasswordRecoveryHealthCheckNotValid.message
-        )
+        assert result[0]["message"] == PasswordRecoveryHealthCheckNotValid.message
 
     async def test_password_recovery_heathcheck_with_result(
         self, client: TestClient, uuid_zero: uuid.UUID, mocker: MockFixture
     ):
         data = {"email": "email@example.com", "key": str(uuid_zero)}
         mocker.patch("apps.users.services.PasswordRecoveryCache.get")
-        resp = await client.get(
-            self.password_recovery_healthcheck_url, query=data
-        )
+        resp = await client.get(self.password_recovery_healthcheck_url, query=data)
         assert resp.status_code == status.HTTP_200_OK

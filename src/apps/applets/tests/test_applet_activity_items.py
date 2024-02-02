@@ -4,10 +4,7 @@ import uuid
 import pytest
 
 from apps.activities import errors as activity_errors
-from apps.activities.domain.response_type_config import (
-    ResponseType,
-    SingleSelectionConfig,
-)
+from apps.activities.domain.response_type_config import ResponseType, SingleSelectionConfig
 from apps.activities.domain.response_values import SingleSelectionValues
 from apps.shared.test import BaseTest
 
@@ -926,31 +923,20 @@ class TestActivityItems(BaseTest):
                         en="Understand how was the morning",
                         fr="Understand how was the morning",
                     ),
-                    items=[
-                        dict(
-                            activity_key="577dbbda-3afc-"
-                            "4962-842b-8d8d11588bfe"
-                        )
-                    ],
+                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
                 )
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
 
-        response = await client.get(
-            self.applet_detail_url.format(pk=response.json()["result"]["id"])
-        )
+        response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
 
-    async def test_creating_applet_with_ab_trails_mobile_activity_items(
-        self, client
-    ):
+    async def test_creating_applet_with_ab_trails_mobile_activity_items(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             display_name="mobile_activity_applet",
@@ -1039,31 +1025,20 @@ class TestActivityItems(BaseTest):
                         en="description activityFlow",
                         fr="description activityFlow",
                     ),
-                    items=[
-                        dict(
-                            activity_key="577dbbda-3afc-"
-                            "4962-842b-8d8d11588bfe"
-                        )
-                    ],
+                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
                 )
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
 
-        response = await client.get(
-            self.applet_detail_url.format(pk=response.json()["result"]["id"])
-        )
+        response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
 
-    async def test_creating_applet_with_ab_trails_tablet_activity_items(
-        self, client
-    ):
+    async def test_creating_applet_with_ab_trails_tablet_activity_items(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = dict(
             display_name="tablet_activity_applet",
@@ -1152,26 +1127,17 @@ class TestActivityItems(BaseTest):
                         en="description activityFlow",
                         fr="description activityFlow",
                     ),
-                    items=[
-                        dict(
-                            activity_key="577dbbda-3afc-"
-                            "4962-842b-8d8d11588bfe"
-                        )
-                    ],
+                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
                 )
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
 
-        response = await client.get(
-            self.applet_detail_url.format(pk=response.json()["result"]["id"])
-        )
+        response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
 
     async def test_creating_applet_with_gyroscope_activity_items(self, client):
@@ -1217,10 +1183,8 @@ class TestActivityItems(BaseTest):
                         dict(
                             name="Gyroscope_Сalibration_Practice_instruction",
                             question=dict(
-                                en="Gyroscope Сalibration/Practice "
-                                "instruction text.",
-                                fr="Gyroscope Сalibration/Practice "
-                                "instruction text.",
+                                en="Gyroscope Сalibration/Practice " "instruction text.",
+                                fr="Gyroscope Сalibration/Practice " "instruction text.",
                             ),
                             response_type="message",
                             response_values=None,
@@ -1316,26 +1280,17 @@ class TestActivityItems(BaseTest):
                         en="description activityFlow",
                         fr="description activityFlow",
                     ),
-                    items=[
-                        dict(
-                            activity_key="577dbbda-3afc-"
-                            "4962-842b-8d8d11588bfe"
-                        )
-                    ],
+                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
                 )
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
 
-        response = await client.get(
-            self.applet_detail_url.format(pk=response.json()["result"]["id"])
-        )
+        response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
 
     async def test_creating_applet_with_touch_activity_items(self, client):
@@ -1381,10 +1336,8 @@ class TestActivityItems(BaseTest):
                         dict(
                             name="Touch_Сalibration_Practice_instruction",
                             question=dict(
-                                en="Touch Сalibration/Practice "
-                                "instruction text.",
-                                fr="Touch Сalibration/Practice "
-                                "instruction text.",
+                                en="Touch Сalibration/Practice " "instruction text.",
+                                fr="Touch Сalibration/Practice " "instruction text.",
                             ),
                             response_type="message",
                             response_values=None,
@@ -1480,26 +1433,17 @@ class TestActivityItems(BaseTest):
                         en="description activityFlow",
                         fr="description activityFlow",
                     ),
-                    items=[
-                        dict(
-                            activity_key="577dbbda-3afc-"
-                            "4962-842b-8d8d11588bfe"
-                        )
-                    ],
+                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
                 )
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
 
-        response = await client.get(
-            self.applet_detail_url.format(pk=response.json()["result"]["id"])
-        )
+        response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
 
     async def test_creating_applet_with_activity_items_condition(self, client):
@@ -1642,20 +1586,14 @@ class TestActivityItems(BaseTest):
                                         match="any",
                                         conditions=[
                                             dict(
-                                                item_name=(
-                                                    "activity_item_"
-                                                    "singleselect_score"
-                                                ),
+                                                item_name=("activity_item_" "singleselect_score"),
                                                 type="GREATER_THAN",
                                                 payload=dict(
                                                     value=1,
                                                 ),
                                             ),
                                             dict(
-                                                item_name=(
-                                                    "activity_item_"
-                                                    "singleselect_score"
-                                                ),
+                                                item_name=("activity_item_" "singleselect_score"),
                                                 type="GREATER_THAN",
                                                 payload=dict(
                                                     value=1,
@@ -2078,16 +2016,11 @@ class TestActivityItems(BaseTest):
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=create_data,
         )
         assert response.status_code == 400
-        assert (
-            response.json()["result"][0]["message"]
-            == activity_errors.IncorrectConditionItemIndexError.message
-        )
+        assert response.json()["result"][0]["message"] == activity_errors.IncorrectConditionItemIndexError.message
 
         text_item = create_data["activities"][0]["items"][1]
         slider_item_2 = create_data["activities"][0]["items"][6]
@@ -2095,39 +2028,27 @@ class TestActivityItems(BaseTest):
         create_data["activities"][0]["items"][6] = text_item
 
         response = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
         assert isinstance(
-            response.json()["result"]["activities"][0]["items"][6][
-                "conditionalLogic"
-            ],
+            response.json()["result"]["activities"][0]["items"][6]["conditionalLogic"],
             dict,
         )
         assert isinstance(
             response.json()["result"]["activities"][0]["scoresAndReports"],
             dict,
         )
-        assert isinstance(
-            response.json()["result"]["activities"][0]["subscaleSetting"], dict
-        )
+        assert isinstance(response.json()["result"]["activities"][0]["subscaleSetting"], dict)
 
-        response = await client.get(
-            self.applet_detail_url.format(pk=response.json()["result"]["id"])
-        )
+        response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
 
         activity_id = response.json()["result"]["activities"][0]["id"]
-        response = await client.get(
-            self.activity_detail_url.format(activity_id=activity_id)
-        )
+        response = await client.get(self.activity_detail_url.format(activity_id=activity_id))
         assert response.status_code == 200
-        assert isinstance(
-            response.json()["result"]["items"][6]["conditionalLogic"], dict
-        )
+        assert isinstance(response.json()["result"]["items"][6]["conditionalLogic"], dict)
 
     async def test_creating_activity_items_without_option_value(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
@@ -2343,43 +2264,27 @@ class TestActivityItems(BaseTest):
                         en="Understand how was the morning",
                         fr="Understand how was the morning",
                     ),
-                    items=[
-                        dict(
-                            activity_key="577dbbda-3afc-"
-                            "4962-842b-8d8d11588bfe"
-                        )
-                    ],
+                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
                 )
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
 
-        response = await client.get(
-            self.applet_detail_url.format(pk=response.json()["result"]["id"])
-        )
+        response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
         applet_id = response.json()["result"]["id"]
 
         response = await client.get(
-            self.activity_detail_url.format(
-                activity_id=response.json()["result"]["activities"][0]["id"]
-            )
+            self.activity_detail_url.format(activity_id=response.json()["result"]["activities"][0]["id"])
         )
         slider_rows_id = response.json()["result"]["items"][0]["id"]
 
         assert response.status_code == 200
-        assert (
-            response.json()["result"]["items"][3]["responseValues"]["options"][
-                0
-            ]["value"]
-            == 0
-        )
+        assert response.json()["result"]["items"][3]["responseValues"]["options"][0]["value"] == 0
 
         create_data["activities"][0]["items"][0] = dict(
             id=slider_rows_id,
@@ -2415,9 +2320,7 @@ class TestActivityItems(BaseTest):
         )
         assert response.status_code == 200
 
-    async def test_create_applet_with_flanker_preformance_task(
-        self, client, activity_flanker_data
-    ):
+    async def test_create_applet_with_flanker_preformance_task(self, client, activity_flanker_data):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -2436,18 +2339,13 @@ class TestActivityItems(BaseTest):
         )
 
         response = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
 
         assert response.json()["result"]["activities"][0]["isPerformanceTask"]
-        assert (
-            response.json()["result"]["activities"][0]["performanceTaskType"]
-            == "flanker"
-        )
+        assert response.json()["result"]["activities"][0]["performanceTaskType"] == "flanker"
 
         # Check that the 'get' after creating new applet returns correct data
         response = await client.get(
@@ -2458,14 +2356,9 @@ class TestActivityItems(BaseTest):
         )
         assert response.status_code == 200
         assert response.json()["result"]["activities"][0]["isPerformanceTask"]
-        assert (
-            response.json()["result"]["activities"][0]["performanceTaskType"]
-            == "flanker"
-        )
+        assert response.json()["result"]["activities"][0]["performanceTaskType"] == "flanker"
 
-    async def test_applet_add_performance_task_to_the_applet(
-        self, client, activity_flanker_data
-    ):
+    async def test_applet_add_performance_task_to_the_applet(self, client, activity_flanker_data):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -2512,9 +2405,7 @@ class TestActivityItems(BaseTest):
         )
 
         response = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=create_data,
         )
         assert response.status_code == 201
@@ -2559,86 +2450,53 @@ class TestActivityItems(BaseTest):
         assert flanker["isPerformanceTask"]
         assert flanker["performanceTaskType"] == "flanker"
 
-    async def test_create_applet_item_name_is_not_valid(
-        self, client, applet_minimal_data
-    ) -> None:
+    async def test_create_applet_item_name_is_not_valid(self, client, applet_minimal_data) -> None:
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         applet_minimal_data["activities"][0]["items"][0]["name"] = "%name"
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
         errors = resp.json()["result"]
         assert len(errors) == 1
-        assert (
-            errors[0]["message"]
-            == activity_errors.IncorrectNameCharactersError.message
-        )
+        assert errors[0]["message"] == activity_errors.IncorrectNameCharactersError.message
 
-    async def test_create_applet_item_config_not_valid(
-        self, client, applet_minimal_data
-    ) -> None:
+    async def test_create_applet_item_config_not_valid(self, client, applet_minimal_data) -> None:
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        del applet_minimal_data["activities"][0]["items"][0]["config"][
-            "add_scores"
-        ]
-        del applet_minimal_data["activities"][0]["items"][0]["config"][
-            "set_alerts"
-        ]
+        del applet_minimal_data["activities"][0]["items"][0]["config"]["add_scores"]
+        del applet_minimal_data["activities"][0]["items"][0]["config"]["set_alerts"]
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
         errors = resp.json()["result"]
         assert len(errors) == 1
-        assert errors[0][
-            "message"
-        ] == activity_errors.IncorrectConfigError.message.format(
-            type=SingleSelectionConfig
-        )
+        assert errors[0]["message"] == activity_errors.IncorrectConfigError.message.format(type=SingleSelectionConfig)
 
-    async def test_create_applet_not_valid_response_type(
-        self, client, applet_minimal_data
-    ) -> None:
+    async def test_create_applet_not_valid_response_type(self, client, applet_minimal_data) -> None:
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        applet_minimal_data["activities"][0]["items"][0][
-            "response_type"
-        ] = "NotValid"
+        applet_minimal_data["activities"][0]["items"][0]["response_type"] = "NotValid"
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
         errors = resp.json()["result"]
         assert len(errors) == 1
-        assert errors[0][
-            "message"
-        ] == activity_errors.IncorrectResponseValueError.message.format(
-            type=ResponseType
-        )
+        assert errors[0]["message"] == activity_errors.IncorrectResponseValueError.message.format(type=ResponseType)
 
     @pytest.mark.parametrize(
         "value,error_msg",
         (
             (
                 {},
-                activity_errors.IncorrectResponseValueError.message.format(
-                    type=SingleSelectionValues
-                ),
+                activity_errors.IncorrectResponseValueError.message.format(type=SingleSelectionValues),
             ),
             (
                 None,
-                activity_errors.IncorrectResponseValueError.message.format(
-                    type=SingleSelectionValues
-                ),
+                activity_errors.IncorrectResponseValueError.message.format(type=SingleSelectionValues),
             ),
         ),
     )
@@ -2646,16 +2504,10 @@ class TestActivityItems(BaseTest):
         self, client, applet_minimal_data, value, error_msg
     ) -> None:
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        applet_minimal_data["activities"][0]["items"][0][
-            "response_values"
-        ] = value
-        applet_minimal_data["activities"][0]["items"][0][
-            "response_type"
-        ] = ResponseType.SINGLESELECT
+        applet_minimal_data["activities"][0]["items"][0]["response_values"] = value
+        applet_minimal_data["activities"][0]["items"][0]["response_type"] = ResponseType.SINGLESELECT
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
@@ -2663,15 +2515,11 @@ class TestActivityItems(BaseTest):
         assert len(errors) == 1
         assert errors[0]["message"] == error_msg
 
-    async def test_create_applet_without_item_response_type(
-        self, client, applet_minimal_data
-    ) -> None:
+    async def test_create_applet_without_item_response_type(self, client, applet_minimal_data) -> None:
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         del applet_minimal_data["activities"][0]["items"][0]["response_type"]
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
@@ -2683,25 +2531,16 @@ class TestActivityItems(BaseTest):
         self, client, applet_minimal_data
     ) -> None:
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        applet_minimal_data["activities"][0]["items"][0]["config"][
-            "add_scores"
-        ] = True
-        applet_minimal_data["activities"][0]["items"][0][
-            "response_type"
-        ] = ResponseType.SINGLESELECT
+        applet_minimal_data["activities"][0]["items"][0]["config"]["add_scores"] = True
+        applet_minimal_data["activities"][0]["items"][0]["response_type"] = ResponseType.SINGLESELECT
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
         errors = resp.json()["result"]
         assert len(errors) == 1
-        assert (
-            errors[0]["message"]
-            == activity_errors.ScoreRequiredForResponseValueError.message
-        )
+        assert errors[0]["message"] == activity_errors.ScoreRequiredForResponseValueError.message
 
     async def test_create_applet_slider_response_values_add_scores_not_scores_in_response_values(  # noqa: E501
         self,
@@ -2712,19 +2551,11 @@ class TestActivityItems(BaseTest):
     ) -> None:
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         slider_config["add_scores"] = True
-        applet_minimal_data["activities"][0]["items"][0][
-            "config"
-        ] = slider_config
-        applet_minimal_data["activities"][0]["items"][0][
-            "response_type"
-        ] = ResponseType.SLIDER
-        applet_minimal_data["activities"][0]["items"][0][
-            "response_values"
-        ] = slider_response_values
+        applet_minimal_data["activities"][0]["items"][0]["config"] = slider_config
+        applet_minimal_data["activities"][0]["items"][0]["response_type"] = ResponseType.SLIDER
+        applet_minimal_data["activities"][0]["items"][0]["response_values"] = slider_response_values
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
@@ -2745,28 +2576,17 @@ class TestActivityItems(BaseTest):
         max_val = slider_response_values["max_value"]
         scores = [i for i in range(max_val - min_val)]
         slider_response_values["scores"] = scores
-        applet_minimal_data["activities"][0]["items"][0][
-            "config"
-        ] = slider_config
-        applet_minimal_data["activities"][0]["items"][0][
-            "response_type"
-        ] = ResponseType.SLIDER
-        applet_minimal_data["activities"][0]["items"][0][
-            "response_values"
-        ] = slider_response_values
+        applet_minimal_data["activities"][0]["items"][0]["config"] = slider_config
+        applet_minimal_data["activities"][0]["items"][0]["response_type"] = ResponseType.SLIDER
+        applet_minimal_data["activities"][0]["items"][0]["response_values"] = slider_response_values
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
         errors = resp.json()["result"]
         assert len(errors) == 1
-        assert (
-            errors[0]["message"]
-            == activity_errors.InvalidScoreLengthError.message
-        )
+        assert errors[0]["message"] == activity_errors.InvalidScoreLengthError.message
 
     async def test_create_applet_slider_rows_response_values_add_scores_true_no_scores(  # noqa: E501
         self,
@@ -2783,9 +2603,7 @@ class TestActivityItems(BaseTest):
         item["response_type"] = ResponseType.SLIDERROWS
         item["response_values"] = slider_rows_response_values
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
@@ -2804,30 +2622,21 @@ class TestActivityItems(BaseTest):
         slider_rows_config["add_scores"] = True
         min_val = slider_rows_response_values["rows"][0]["min_value"]
         max_val = slider_rows_response_values["rows"][0]["max_value"]
-        slider_rows_response_values["rows"][0]["scores"] = [
-            i for i in range(max_val - min_val)
-        ]
+        slider_rows_response_values["rows"][0]["scores"] = [i for i in range(max_val - min_val)]
         item = applet_minimal_data["activities"][0]["items"][0]
         item["config"] = slider_rows_config
         item["response_type"] = ResponseType.SLIDERROWS
         item["response_values"] = slider_rows_response_values
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
         errors = resp.json()["result"]
         assert len(errors) == 1
-        assert (
-            errors[0]["message"]
-            == activity_errors.InvalidScoreLengthError.message
-        )
+        assert errors[0]["message"] == activity_errors.InvalidScoreLengthError.message
 
-    @pytest.mark.parametrize(
-        "response_type", (ResponseType.SINGLESELECT, ResponseType.MULTISELECT)
-    )
+    @pytest.mark.parametrize("response_type", (ResponseType.SINGLESELECT, ResponseType.MULTISELECT))
     async def test_create_applet_single_multi_select_response_values_value_null_auto_set_value(  # noqa: E501
         self, client, applet_minimal_data, response_type
     ) -> None:
@@ -2840,9 +2649,7 @@ class TestActivityItems(BaseTest):
         item["response_values"]["options"].append(option2)
         item["response_type"] = response_type
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 201
@@ -2867,18 +2674,13 @@ class TestActivityItems(BaseTest):
         item["response_type"] = ResponseType.SINGLESELECTROWS
         item["response_values"] = single_select_rows_response_values
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
         errors = resp.json()["result"]
         assert len(errors) == 1
-        assert (
-            errors[0]["message"]
-            == activity_errors.DataMatrixRequiredError.message
-        )
+        assert errors[0]["message"] == activity_errors.DataMatrixRequiredError.message
 
     async def test_create_applet_flow_wrong_activity_key(  # noqa: E501
         self, client, applet_minimal_data
@@ -2897,47 +2699,28 @@ class TestActivityItems(BaseTest):
             )
         )
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
-        assert (
-            resp.status_code
-            == activity_errors.FlowItemActivityKeyNotFoundError.status_code
-        )
-        assert (
-            resp.json()["result"][0]["message"]
-            == activity_errors.FlowItemActivityKeyNotFoundError.message
-        )
+        assert resp.status_code == activity_errors.FlowItemActivityKeyNotFoundError.status_code
+        assert resp.json()["result"][0]["message"] == activity_errors.FlowItemActivityKeyNotFoundError.message
 
-        applet_minimal_data["activity_flows"][0]["items"][0][
-            "activity_key"
-        ] = activity_key
+        applet_minimal_data["activity_flows"][0]["items"][0]["activity_key"] = activity_key
         resp = await client.post(
-            self.applet_create_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-            ),
+            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 201
 
-    async def test_update_applet_duplicated_activity_item_name_is_not_allowed(
-        self, client, applet_minimal_data
-    ):
+    async def test_update_applet_duplicated_activity_item_name_is_not_allowed(self, client, applet_minimal_data):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         item = copy.deepcopy(applet_minimal_data["activities"][0]["items"][0])
         applet_minimal_data["activities"][0]["items"].append(item)
         resp = await client.put(
-            self.applet_detail_url.format(
-                pk="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=applet_minimal_data,
         )
         assert resp.status_code == 422
         result = resp.json()["result"]
         assert len(result) == 1
-        assert (
-            result[0]["message"]
-            == activity_errors.DuplicateActivityItemNameNameError.message
-        )
+        assert result[0]["message"] == activity_errors.DuplicateActivityItemNameNameError.message
