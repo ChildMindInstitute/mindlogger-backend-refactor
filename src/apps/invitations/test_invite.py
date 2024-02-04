@@ -44,6 +44,11 @@ def respondent_ids() -> list[str]:
 
 
 @pytest.fixture
+def subject_ids() -> list[str]:
+    return ["ee5e2f55-8e32-40af-8ef9-24e332c31d7c"]
+
+
+@pytest.fixture
 def invitation_base_data() -> dict[str, str]:
     return dict(
         email="patric@gmail.com",
@@ -89,10 +94,10 @@ def invitation_respondent_data(
 
 @pytest.fixture
 def invitation_reviewer_data(
-    invitation_base_data, respondent_ids
+    invitation_base_data, subject_ids
 ) -> InvitationReviewerRequest:
     return InvitationReviewerRequest(
-        **invitation_base_data, respondents=respondent_ids
+        **invitation_base_data, subjects=subject_ids
     )
 
 
@@ -114,6 +119,7 @@ class TestInvite(BaseTest):
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
         "invitations/fixtures/invitations.json",
+        "subjects/fixtures/subjects.json",
     ]
 
     login_url = "/auth/login"
@@ -258,6 +264,19 @@ class TestInvite(BaseTest):
         assert TestMail.mails[0].recipients == [invitation_reviewer_data.email]
         assert TestMail.mails[0].subject == "Applet 1 invitation"
 
+    async def test_admin_invite_reviewer_no_subject(
+        self, client, invitation_reviewer_data
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        invitation_reviewer_data.subjects = [uuid.uuid4()]
+        response = await client.post(
+            self.invite_reviewer_url.format(
+                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
+            ),
+            invitation_reviewer_data.dict(),
+        )
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+
     async def test_admin_invite_respondent_success(
         self, client, invitation_respondent_data
     ):
@@ -365,8 +384,6 @@ class TestInvite(BaseTest):
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [invitation_reviewer_data.email]
-        count = await SubjectsCrud(session).count()
-        assert count == 0
 
     async def test_manager_invite_respondent_success(
         self, client, invitation_respondent_data
@@ -949,24 +966,6 @@ class TestInvite(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == emsg
-
-    async def test_invite_reviewer_with_respondent_does_not_exist(
-        self, client, invitation_reviewer_data
-    ):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        invitation_reviewer_data.respondents = [
-            "00000000-0000-0000-0000-000000000000"
-        ]
-        response = await client.post(
-            self.invite_reviewer_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
-            invitation_reviewer_data.dict(),
-        )
-        assert response.status_code == http.HTTPStatus.BAD_REQUEST
-        result = response.json()["result"]
-        assert len(result) == 1
-        assert result[0]["message"] == RespondentDoesNotExist.message
 
     @pytest.mark.parametrize(
         "url,method",

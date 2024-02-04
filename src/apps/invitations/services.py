@@ -33,10 +33,10 @@ from apps.invitations.errors import (
     InvitationAlreadyProcessed,
     InvitationDoesNotExist,
     NonUniqueValue,
-    RespondentDoesNotExist,
 )
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.shared.exception import ValidationError
 from apps.shared.query_params import QueryParams
 from apps.subjects.crud import SubjectsCrud
 from apps.users import UsersCRUD
@@ -170,17 +170,16 @@ class InvitationsService:
         self, applet_id: uuid.UUID, schema: InvitationReviewerRequest
     ) -> InvitationDetailForReviewer:
         await self._is_validated_role_for_invitation(applet_id, Role.REVIEWER)
-        await self._do_respondents_exist(applet_id, schema.respondents)
+        await self._verify_applet_subjects(applet_id, schema.subjects)
 
-        respondents = [
-            str(respondent_id) for respondent_id in schema.respondents
-        ]
         # Get invited user if he exists. User will be linked with invitaion
         # by user_id in this case
         invited_user = await UsersCRUD(self.session).get_user_or_none_by_email(
             email=schema.email
         )
         invited_user_id = invited_user.id if invited_user is not None else None
+
+        meta = ReviewerMeta(subjects=list(map(str, schema.subjects or [])))
         payload = {
             "email": schema.email,
             "applet_id": applet_id,
@@ -192,7 +191,7 @@ class InvitationsService:
             "last_name": schema.last_name,
             "user_id": invited_user_id,
             "nickname": None,
-            "meta": ReviewerMeta(respondents=respondents).dict(),
+            "meta": meta.dict()
         }
 
         pending_invitation = (
@@ -255,7 +254,7 @@ class InvitationsService:
             role=invitation_internal.role,
             status=invitation_internal.status,
             key=invitation_internal.key,
-            respondents=schema.respondents,
+            subjects=schema.subjects,
             user_id=invitation_internal.user_id,
         )
 
@@ -402,21 +401,18 @@ class InvitationsService:
         if any(results):
             raise NonUniqueValue()
 
-    async def _do_respondents_exist(
+    async def _verify_applet_subjects(
         self,
         applet_id: uuid.UUID,
-        respondents: list[uuid.UUID],
+        subject_ids: list[uuid.UUID],
     ):
-        exist_respondents = await UserAppletAccessCRUD(
-            self.session
-        ).get_user_id_applet_and_role(
-            applet_id=applet_id,
-            role=Role.RESPONDENT,
-        )
+        if subject_ids:
+            existing_subject_ids = await SubjectsCrud(
+                self.session
+            ).reduce_applet_subject_ids(applet_id, subject_ids)
 
-        for respondent in respondents:
-            if respondent not in exist_respondents:
-                raise RespondentDoesNotExist()
+            if len(existing_subject_ids) != len(subject_ids):
+                raise ValidationError("Subject does not exist in applet")
 
     async def accept(self, key: uuid.UUID):
         invitation = await InvitationCRUD(self.session).get_by_email_and_key(

@@ -191,3 +191,13 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
             raise UniqueViolationError()
         schema.id = model_id
         return schema
+
+    async def reduce_applet_subject_ids(self, applet_id, subject_ids: list[uuid.UUID | str]) -> list[uuid.UUID]:
+        query = select(SubjectSchema.id).where(
+            SubjectSchema.id.in_(subject_ids),
+            SubjectSchema.applet_id == applet_id,
+            SubjectSchema.soft_exists()
+        )
+        res = await self._execute(query)
+
+        return res.scalars().all()
