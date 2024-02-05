@@ -245,7 +245,7 @@ class CheckAccessService:
     async def check_subject_answer_access(
         self, applet_id: uuid.UUID, subject_id: uuid.UUID | None
     ):
-        access = await AppletAccessCRUD(self.session).get_reviewer_access(
+        access = await AppletAccessCRUD(self.session).get_priority_access(
             applet_id, self.user_id
         )
         if not access:
@@ -255,7 +255,7 @@ class CheckAccessService:
             if not subject_id:
                 raise AccessDeniedError()
             allowed_subject_ids = access.meta.get("subjects", [])
-            if subject_id not in allowed_subject_ids:
+            if str(subject_id) not in allowed_subject_ids:
                 raise AccessDeniedError()
 
     async def check_answer_access(
@@ -278,3 +278,19 @@ class CheckAccessService:
             )
         else:
             await self.check_answer_review_access(applet_id)
+
+    async def check_subject_subject_access(
+        self, applet_id: uuid.UUID, subject_id: uuid.UUID | None
+    ):
+        access = await AppletAccessCRUD(self.session).get_priority_access(
+            applet_id, self.user_id
+        )
+        if not access:
+            raise AccessDeniedError()
+
+        if access.role == Role.REVIEWER:
+            if not subject_id:
+                raise AccessDeniedError()
+            allowed_subject_ids = access.meta.get("subjects", [])
+            if str(subject_id) not in allowed_subject_ids:
+                raise AccessDeniedError()

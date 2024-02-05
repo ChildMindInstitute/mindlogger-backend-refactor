@@ -9,10 +9,11 @@ from apps.shared.domain import (
 from apps.subjects.api import (
     add_respondent,
     create_subject,
+    get_subject,
     remove_respondent,
     update_subject,
 )
-from apps.subjects.domain import Subject, SubjectFull
+from apps.subjects.domain import Subject, SubjectFull, SubjectReadResponse
 
 router = APIRouter(prefix="/subjects", tags=["Subjects"])
 
@@ -29,14 +30,26 @@ router.post(
 
 router.put(
     "/{subject_id}",
-    response_model=Response[Subject],
+    response_model=Response[SubjectReadResponse],
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": Response[Subject]},
+        status.HTTP_200_OK: {"model": Response[SubjectReadResponse]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(update_subject)
+
+
+router.get(
+    "/{subject_id}",
+    response_model=Response[SubjectReadResponse],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[SubjectReadResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(get_subject)
 
 
 router.post(
