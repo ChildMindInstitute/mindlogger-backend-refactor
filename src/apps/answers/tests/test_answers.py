@@ -1,6 +1,7 @@
 import datetime
 import json
 
+import pytest
 from sqlalchemy import select
 
 from apps.answers.db.schemas import AnswerSchema
@@ -102,9 +103,12 @@ class TestAnswerActivityItems(BaseTest):
         published_values = await RedisCacheTest().get("channel_7484f34a-3acc-4ee6-8a94-fd7299502fa1")
         published_values = published_values or []
         assert len(published_values) == 1
+        # 2 because alert for lucy and for tom
         assert len(RedisCacheTest()._storage) == 2
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].subject == "Response alert"
+        # TODO: move to the fixtures with yield
+        RedisCacheTest._storage = {}
 
     async def test_get_latest_summary(self, mock_report_server_response, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
@@ -959,8 +963,9 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 0
 
-    async def test_answer_activity_items_create_for_not_respondent(self, mock_kiq_report, client):
-        await client.login(self.login_url, "patric@gmail.com", "Test1234")
+    @pytest.mark.usefixtures("mock_kiq_report", "user")
+    async def test_answer_activity_items_create_for_not_respondent(self, client):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
 
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
@@ -1516,11 +1521,8 @@ class TestAnswerActivityItems(BaseTest):
         assert apppet_1["version"] == "2.0.1"
         assert len(apppet_1["activities"]) == 0
 
-    async def test_summary_restricted_for_reviewer_if_external_respondent(
-        self,
-        mock_kiq_report,
-        client,
-    ):
+    @pytest.mark.usefixtures("user_reviewer_applet_one")
+    async def test_summary_restricted_for_reviewer_if_external_respondent(self, mock_kiq_report, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(
@@ -1557,7 +1559,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 201
 
         await client.logout()
-        await client.login(self.login_url, "reviewer@mail.com", "Test1234!")
+        await client.login(self.login_url, "user@example.com", "Test1234!")
 
         response = await client.get(
             self.summary_activities_url.format(

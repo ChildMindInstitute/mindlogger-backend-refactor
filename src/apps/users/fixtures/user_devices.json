@@ -39,24 +39,6 @@
   {
     "table": "user_devices",
     "fields": {
-      "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa5",
-      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa5",
-      "device_id": "device_id_5",
-      "updated_at": "2023-01-05T15:49:51.752113"
-    }
-  },
-  {
-    "table": "user_devices",
-    "fields": {
-      "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa6",
-      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa6",
-      "device_id": "device_id_6",
-      "updated_at": "2023-01-05T15:49:51.752113"
-    }
-  },
-  {
-    "table": "user_devices",
-    "fields": {
       "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa7",
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa7",
       "device_id": "device_id_7",

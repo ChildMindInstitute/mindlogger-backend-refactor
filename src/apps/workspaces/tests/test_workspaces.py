@@ -3,6 +3,7 @@ import uuid
 from apps.shared.test import BaseTest
 from apps.users.cruds.user import UsersCRUD
 from apps.users.db.schemas import UserSchema
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import AppletAccessDenied, InvalidAppletIDFilter
 from config import settings
@@ -317,15 +318,13 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 6
+        assert response.json()["count"] == 4
 
         plain_emails = [
-            "reviewer@mail.com",
             "tom@mindlogger.com",
             "lucy@gmail.com",
             "bob@gmail.com",
             "mike@gmail.com",
-            "mike2@gmail.com",
         ]
 
         for result in response.json()["result"]:
@@ -365,15 +364,13 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 6
+        assert response.json()["count"] == 4
 
         plain_emails = [
-            "reviewer@mail.com",
             "tom@mindlogger.com",
             "lucy@gmail.com",
             "bob@gmail.com",
             "mike@gmail.com",
-            "mike2@gmail.com",
         ]
 
         for result in response.json()["result"]:
@@ -626,15 +623,16 @@ class TestWorkspaces(BaseTest):
         response = await client.delete(self.remove_respondent_access, data=data)
         assert response.status_code == 200
 
-    async def test_workspace_editor_remove_respondent_access_error(self, client):
+    async def test_workspace_editor_remove_respondent_access_error(self, client, session, mike):
+        applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        roles_to_delete = [Role.OWNER, Role.COORDINATOR, Role.MANAGER, Role.SUPER_ADMIN, Role.REVIEWER]
+        await UserAppletAccessCRUD(session).delete_user_roles(uuid.UUID(applet_id), mike.id, roles_to_delete)
         # editor can remove respondent access
-        await client.login(self.login_url, "mike2@gmail.com", "Test1234")
+        await client.login(self.login_url, "mike@gmail.com", "Test1234")
 
         data = {
             "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
-            "applet_ids": [
-                "92917a56-d586-4613-b7aa-991f2c4b15b1",
-            ],
+            "applet_ids": [applet_id],
             "delete_responses": True,
         }
 

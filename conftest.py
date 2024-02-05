@@ -90,7 +90,9 @@ def pytest_sessionstart(session) -> None:
     before()
 
 
-def pytest_sessionfinish(session) -> None:
+@pytest.hookimpl(trylast=True)
+def pytest_sessionfinish(session, exitstatus) -> None:
+    # Don't run downgrade migrations
     keepdb = session.config.getvalue("keepdb")
     if not keepdb:
         after()

@@ -2,8 +2,6 @@ import asyncio
 import http
 import uuid
 
-import pytest
-
 from apps.activities import errors as activity_errors
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
@@ -1740,26 +1738,15 @@ class TestApplet(BaseTest):
         assert "singleSelect" in response.json()["result"]["activities"][0]["containsResponseTypes"]
         assert isinstance(response.json()["result"]["activities"][0]["itemCount"], int)
 
-    @pytest.mark.parametrize(
-        "email,password",
-        (
-            # Manager
-            ("lucy@gmail.com", "Test123"),
-            # Editor
-            ("mike2@gmail.com", "Test1234"),
-        ),
-    )
-    async def test_create_applet_in_another_workspace_not_owner(self, client, applet_minimal_data, email, password):
-        await client.login(self.login_url, email, password)
+    async def test_create_applet_in_another_workspace_not_owner(self, client, applet_minimal_data):
+        await client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await client.post(
             self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
             data=applet_minimal_data,
         )
         assert response.status_code == http.HTTPStatus.CREATED
 
-    async def test_create_applet_in_another_workspace_not_owner_user_is_not_invited(  # noqa: E501
-        self, client, applet_minimal_data
-    ):
+    async def test_create_applet_in_another_workspace_not_owner_user_is_not_invited(self, client, applet_minimal_data):
         await client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await client.post(
             self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa3"),
@@ -1770,7 +1757,7 @@ class TestApplet(BaseTest):
         assert len(result) == 1
         assert result[0]["message"] == AppletCreationAccessDenied.message
 
-    async def test_create_applet_in_another_workspace_not_owner_user_does_not_have_role_to_create_applet(  # noqa: E501
+    async def test_create_applet_in_another_workspace_not_owner_user_does_not_have_role_to_create_applet(
         self, client, applet_minimal_data
     ):
         await client.login(self.login_url, "bob@gmail.com", "Test1234!")

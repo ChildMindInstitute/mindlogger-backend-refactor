@@ -9,16 +9,9 @@ async def truncate_tables():
         for table_name in Base.metadata.tables:
             if table_name == "users":
                 continue
-            query = text(f"""TRUNCATE "{table_name}" CASCADE""")
-            await session.execute(query)
-        await session.commit()
-
-
-async def truncate_users():
-    Session = session_manager.get_session()
-    async with Session() as session:
-        for table_name in Base.metadata.tables:
-            if table_name == "users":
+            elif table_name == "users_workspaces":
+                query = text(f"delete from {table_name} where user_id != '57b63dfa-5cee-4a53-a69e-0a35407e601d'")
+            else:
                 query = text(f"""TRUNCATE "{table_name}" CASCADE""")
-                await session.execute(query)
+            await session.execute(query)
         await session.commit()

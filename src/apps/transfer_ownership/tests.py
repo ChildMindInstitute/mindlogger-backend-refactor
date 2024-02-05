@@ -2,6 +2,7 @@ import http
 import re
 import uuid
 
+import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -183,12 +184,13 @@ class TestTransfer(BaseTest):
         for key in report_settings_keys:
             assert resp_data[key]
 
-    async def test_reinvite_manager_after_transfer(self, client: TestClient):
+    @pytest.mark.usefixtures("user")
+    async def test_reinvite_manager_after_transfer(self, client: TestClient, user, user_create):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         request_data = dict(
-            email="patric@gmail.com",
-            first_name="Patric",
-            last_name="Daniel",
+            email=user_create.email,
+            first_name=user_create.first_name,
+            last_name=user_create.last_name,
             role=Role.MANAGER,
             language="en",
         )
@@ -202,7 +204,7 @@ class TestTransfer(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
 
         # accept manager invite
-        await client.login(self.login_url, "patric@gmail.com", "Test1234")
+        await client.login(self.login_url, user_create.email, "Test1234!")
         key = response.json()["result"]["key"]
         response = await client.post(self.invite_accept_url.format(key=key))
         assert response.status_code == http.HTTPStatus.OK
@@ -257,12 +259,12 @@ class TestTransfer(BaseTest):
         assert "mike@gmail.com" in emails
         assert Role.OWNER in email_role_map["mike@gmail.com"]
 
-        assert "patric@gmail.com" in emails
-        assert Role.MANAGER in email_role_map["patric@gmail.com"]
+        assert "user@example.com" in emails
+        assert Role.MANAGER in email_role_map["user@example.com"]
 
         # try sending manager invite,
         request_data = dict(
-            email="patric@gmail.com",
+            email="user@example.com",
             first_name="Patric",
             last_name="Daniel",
             role=Role.MANAGER,
