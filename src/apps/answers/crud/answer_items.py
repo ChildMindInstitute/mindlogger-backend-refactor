@@ -17,12 +17,12 @@ class _ActivityAnswerFilter(Filtering):
     identifiers = FilterField(AnswerItemSchema.identifier, method_name="filter_by_identifiers")
     versions = FilterField(AnswerSchema.version, Comparisons.IN)
 
-    def prepare_identifiers(self, value: str):
+    def prepare_identifiers(self, value: str) -> list[str] | None:
         if value == "":
             return None
         return value.split(",")
 
-    def prepare_versions(self, value: str):
+    def prepare_versions(self, value: str) -> list[str]:
         return value.split(",")
 
     def filter_by_identifiers(self, field, values: list | None):
@@ -34,7 +34,7 @@ class _ActivityAnswerFilter(Filtering):
 class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
     schema_class = AnswerItemSchema
 
-    async def create(self, schema: AnswerItemSchema):
+    async def create(self, schema: AnswerItemSchema) -> AnswerItemSchema:
         schema = await self._create(schema)
         return schema
 
@@ -59,6 +59,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(AnswerSchema.activity_history_id.in_(activity_history_ids))
+        query = query.order_by(AnswerItemSchema.created_at)
 
         db_result = await self._execute(query)
         return db_result.scalars().all()

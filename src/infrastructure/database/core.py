@@ -22,7 +22,8 @@ def build_engine(uri: str) -> AsyncEngine:
 
 
 class SessionManager:
-    def get_session(self, uri: str = settings.database.url) -> sessionmaker:
+    @staticmethod
+    def get_session(uri: str = settings.database.url) -> sessionmaker:
         return sessionmaker(
             build_engine(uri),
             class_=AsyncSession,

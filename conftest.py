@@ -1,7 +1,7 @@
 import datetime
 import os
 import uuid
-from typing import Any, AsyncGenerator, cast
+from typing import Any, AsyncGenerator, Callable, Generator, cast
 
 import pytest
 import taskiq_fastapi
@@ -29,7 +29,9 @@ pytest_plugins = [
     "apps.activities.tests.fixtures.items",
     "apps.activities.tests.fixtures.conditional_logic",
     "apps.activities.tests.fixtures.scores_reports",
+    "apps.activities.tests.fixtures.activities",
     "apps.users.tests.fixtures.users",
+    "apps.applets.tests.fixtures.applets",
 ]
 
 
@@ -55,11 +57,23 @@ def pytest_addoption(parser: Parser) -> None:
     )
 
 
-def pytest_sessionstart(session):
+def before():
+    os.environ["PYTEST_APP_TESTING"] = "1"
+    for alembic_cfg in alembic_configs:
+        command.upgrade(alembic_cfg, "head")
+
+
+def after():
+    for alembic_cfg in alembic_configs[::-1]:
+        command.downgrade(alembic_cfg, "base")
+    os.environ.pop("PYTEST_APP_TESTING", None)
+
+
+def pytest_sessionstart(session) -> None:
     before()
 
 
-def pytest_sessionfinish(session):
+def pytest_sessionfinish(session) -> None:
     keepdb = session.config.getvalue("keepdb")
     if not keepdb:
         after()
@@ -70,6 +84,12 @@ def app() -> FastAPI:
     return create_app()
 
 
+@pytest.fixture(scope="session")
+def arbitrary_db_url() -> str:
+    host = settings.database.host
+    return f"postgresql+asyncpg://postgres:postgres@{host}:5432/test_arbitrary"
+
+
 @pytest.fixture()
 async def engine() -> AsyncGenerator[AsyncEngine, Any]:
     engine = build_engine(settings.database.url)
@@ -78,9 +98,10 @@ async def engine() -> AsyncGenerator[AsyncEngine, Any]:
 
 
 @pytest.fixture()
-async def arbitrary_engine() -> AsyncGenerator[AsyncEngine, Any]:
-    host = settings.database.host
-    engine = build_engine(f"postgresql+asyncpg://postgres:postgres@{host}:5432/test_arbitrary")
+async def arbitrary_engine(
+    arbitrary_db_url: str,
+) -> AsyncGenerator[AsyncEngine, Any]:
+    engine = build_engine(arbitrary_db_url)
     yield engine
     await engine.dispose()
 
@@ -134,7 +155,9 @@ def client(session: AsyncSession, app: FastAPI) -> TestClient:
 
 
 @pytest.fixture
-def arbitrary_client(app: FastAPI, session: AsyncSession, arbitrary_session: AsyncSession) -> TestClient:
+def arbitrary_client(
+    app: FastAPI, session: AsyncSession, arbitrary_session: AsyncSession
+) -> Generator[TestClient, None, None]:
     """Use only for tests which interact with arbitrary servers, because
     arbitrary (answers) session has higher prioritet then general session.
     """
@@ -142,22 +165,11 @@ def arbitrary_client(app: FastAPI, session: AsyncSession, arbitrary_session: Asy
     app.dependency_overrides[get_answer_session] = lambda: arbitrary_session
     taskiq_fastapi.populate_dependency_context(broker, app)
     client = TestClient(app)
-    return client
+    yield client
+    app.dependency_overrides.pop(get_answer_session)
 
 
-def before():
-    os.environ["PYTEST_APP_TESTING"] = "1"
-    for alembic_cfg in alembic_configs:
-        command.upgrade(alembic_cfg, "head")
-
-
-def after():
-    for alembic_cfg in alembic_configs[::-1]:
-        command.downgrade(alembic_cfg, "base")
-    os.environ.pop("PYTEST_APP_TESTING")
-
-
-def pytest_collection_modifyitems(items):
+def pytest_collection_modifyitems(items) -> None:
     pytest_asyncio_tests = (item for item in items if is_async_test(item))
     session_scope_marker = pytest.mark.asyncio(scope="session")
     for async_test in pytest_asyncio_tests:
@@ -171,15 +183,17 @@ def remote_image() -> str:
 
 
 @pytest.fixture
-async def mock_kiq_report(mocker):
+async def mock_kiq_report(mocker) -> AsyncGenerator[Any, Any]:
     mock = mocker.patch("apps.answers.service.create_report.kiq")
     yield mock
-    mock.stop_all()
 
 
 @pytest.fixture
-async def mock_report_server_response(mocker):
-    def json_():
+async def mock_report_server_response(mocker) -> AsyncGenerator[Any, Any]:
+    Recipients = list[str]
+    FakeBody = dict[str, str | dict[str, str | Recipients]]
+
+    def json_() -> FakeBody:
         return dict(
             pdf="cGRmIGJvZHk=",
             email=dict(
@@ -194,14 +208,12 @@ async def mock_report_server_response(mocker):
     mock.return_value.__aenter__.return_value.status = 200
     mock.return_value.__aenter__.return_value.json.side_effect = json_
     yield mock
-    mock.stop_all()
 
 
 @pytest.fixture
-def mock_reencrypt_kiq(mocker):
+async def mock_reencrypt_kiq(mocker) -> AsyncGenerator[Any, Any]:
     mock = mocker.patch("apps.users.api.password.reencrypt_answers.kiq")
     yield mock
-    mock.stop_all()
 
 
 @pytest.fixture(scope="session")
@@ -212,4 +224,27 @@ def uuid_zero() -> uuid.UUID:
 @pytest.fixture
 def faketime(mocker: MockerFixture) -> type[FakeTime]:
     mock = mocker.patch("datetime.datetime", new=FakeTime)
+    return mock
+
+
+@pytest.fixture
+def mock_get_session(
+    session: AsyncSession,
+    arbitrary_session: AsyncSession,
+    mocker: MockerFixture,
+    arbitrary_db_url: str,
+) -> Callable[..., Callable[[], AsyncSession]]:
+    # Add stub for first argument, because orig get_session takes instanace as first argument after mock
+    def get_session(_, url: str = settings.database.url) -> Callable[[], AsyncSession]:
+        def f() -> AsyncSession:
+            if url == arbitrary_db_url:
+                return arbitrary_session
+            return session
+
+        return f
+
+    mock = mocker.patch(
+        "infrastructure.database.core.SessionManager.get_session",
+        new=get_session,
+    )
     return mock
