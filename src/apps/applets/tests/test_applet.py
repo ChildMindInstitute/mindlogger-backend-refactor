@@ -8,12 +8,12 @@ from apps.activities import errors as activity_errors
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.workspaces.errors import AppletCreationAccessDenied
+from config import settings
 from infrastructure.utility import FCMNotificationTest
 
 
 class TestApplet(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "users/fixtures/user_devices.json",
         "themes/fixtures/themes.json",
         "folders/fixtures/folders.json",
@@ -994,18 +994,22 @@ class TestApplet(BaseTest):
         assert response.json()["result"]["reportEmailBody"] == report_configuration["report_email_body"]
 
     async def test_publish_conceal_applet(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-
+        # NOTE: only superadmin can publish an applet
+        await client.login(self.login_url, settings.super_admin.email, settings.super_admin.password)
         response = await client.post(self.applet_publish_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         response = await client.get(self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["isPublished"] is True
 
+        # NOTE: only superadmin can conceal an applet
+        await client.login(self.login_url, settings.super_admin.email, settings.super_admin.password)
         response = await client.post(self.applet_conceal_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         response = await client.get(self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["isPublished"] is False

@@ -14,12 +14,14 @@ class UserService:
     def __init__(self, session) -> None:
         self.session = session
 
-    async def create_superuser(self) -> None:
+    # TODO: Remove later, keep for now for backward compatibility for tests
+    async def create_superuser(self, uuid_: uuid.UUID = uuid.uuid4()) -> None:
         crud = UsersCRUD(self.session)
         super_admin = await crud.get_super_admin()
         # Let's keep this frozen feature
         if super_admin is None:
             super_admin = UserSchema(
+                id=uuid_,
                 email=hash_sha224(settings.super_admin.email),
                 first_name=settings.super_admin.first_name,
                 last_name=settings.super_admin.last_name,
@@ -35,11 +37,13 @@ class UserService:
             )
             await UserWorkspaceCRUD(self.session).save(schema=workspace)
 
-    async def create_anonymous_respondent(self) -> None:
+    # TODO: Remove later, keep for now for backward compatibility for tests
+    async def create_anonymous_respondent(self, uuid_: uuid.UUID = uuid.uuid4()) -> None:
         crud = UsersCRUD(self.session)
         anonymous_respondent = await crud.get_anonymous_respondent()
         if not anonymous_respondent:
             anonymous_respondent = UserSchema(
+                id=uuid_,
                 email=hash_sha224(settings.anonymous_respondent.email),
                 first_name=settings.anonymous_respondent.first_name,
                 last_name=settings.anonymous_respondent.last_name,

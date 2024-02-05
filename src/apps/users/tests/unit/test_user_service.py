@@ -3,6 +3,7 @@ from typing import cast
 
 import pytest
 from pydantic import EmailStr
+from sqlalchemy import true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.shared.hashing import hash_sha224
@@ -14,10 +15,10 @@ from apps.users.services.user import UserService
 from config import settings
 
 
-async def test_get_user_by_id(session: AsyncSession, user_tom: UserSchema):
+async def test_get_user_by_id(session: AsyncSession, tom: UserSchema):
     srv = UserService(session)
-    result = await srv.get(user_tom.id)
-    assert result == User.from_orm(user_tom)
+    result = await srv.get(tom.id)
+    assert result == User.from_orm(tom)
 
 
 async def test_user_exists_by_id__user_does_not_exist(session: AsyncSession, uuid_zero: uuid.UUID):
@@ -28,16 +29,18 @@ async def test_user_exists_by_id__user_does_not_exist(session: AsyncSession, uui
 
 async def test_get_user_by_email(
     session: AsyncSession,
-    user_tom: UserSchema,
-    user_tom_create: UserCreate,
+    tom: UserSchema,
+    tom_create: UserCreate,
 ):
     srv = UserService(session)
-    result = await srv.get_by_email(user_tom_create.email)
-    assert result == User.from_orm(user_tom)
+    result = await srv.get_by_email(tom_create.email)
+    assert result == User.from_orm(tom)
 
 
 async def test_create_super_user_admin(session: AsyncSession):
     crud = UsersCRUD(session)
+    await crud._delete(is_super_admin=true())
+    await session.commit()
     assert await crud.get_super_admin() is None
     srv = UserService(session)
     await srv.create_superuser()
@@ -63,6 +66,7 @@ async def test_create_super_user_admin__created_only_once(
 
 async def test_create_anonymous_respondent(session: AsyncSession):
     crud = UsersCRUD(session)
+    await crud._delete(is_anonymous_respondent=true())
     assert await crud.get_anonymous_respondent() is None
     srv = UserService(session)
     await srv.create_anonymous_respondent()
@@ -80,9 +84,8 @@ async def test_create_anonymous_respondent__created_only_once(
 ):
     srv = UserService(session)
     await srv.create_anonymous_respondent()
+    await srv.create_anonymous_respondent()
     crud = UsersCRUD(session)
-    await crud.get_anonymous_respondent()
-    await crud.get_anonymous_respondent()
     count = await crud.count(is_anonymous_respondent=True)
     assert count == 1
 

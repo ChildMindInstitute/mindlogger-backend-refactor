@@ -102,7 +102,6 @@ def dummy_logs_payload() -> list[dict]:
 class TestNotificationLogs(BaseTest):
     logs_url = "/logs/notification"
     fixtures = [
-        "users/fixtures/users.json",
         "users/fixtures/user_devices.json",
     ]
 

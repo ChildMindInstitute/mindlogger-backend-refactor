@@ -292,7 +292,6 @@ class UserAccessService:
         applet_roles = await UserAppletAccessCRUD(self.session).get_workspace_applet_roles(
             owner_id, self._user_id, applet_ids
         )
-
         if is_super_admin:
             for applet_role in applet_roles:
                 if Role.OWNER in applet_role.roles:

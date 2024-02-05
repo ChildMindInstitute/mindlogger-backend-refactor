@@ -53,7 +53,6 @@ def applet_data():
 
 class TestLibrary(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "themes/fixtures/themes.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",

@@ -8,7 +8,6 @@ from apps.shared.test import BaseTest
 
 class TestAppletMoveToFolder(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",

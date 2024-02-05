@@ -35,6 +35,23 @@ pytest_plugins = [
 ]
 
 
+@pytest.fixture(scope="session")
+async def global_engine():
+    engine = build_engine(settings.database.url)
+    yield engine
+    await engine.dispose()
+
+
+@pytest.fixture(scope="session")
+async def global_session(global_engine: AsyncEngine):
+    """
+    Global session is used to create pre-defined objects in database for ALL pytest session.
+    Inside tests and for local/intermediate fixtures please use session fixture.
+    """
+    async with AsyncSession(bind=global_engine) as session:
+        yield session
+
+
 # TODO: Instead of custom faketime for tests add function wrapper `now`
 # to use it instead of builtin datetime.datetime.utcnow
 class FakeTime(datetime.datetime):

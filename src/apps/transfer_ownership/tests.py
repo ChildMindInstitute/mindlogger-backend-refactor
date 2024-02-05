@@ -16,7 +16,6 @@ from apps.transfer_ownership.errors import TransferEmailError
 
 class TestTransfer(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",

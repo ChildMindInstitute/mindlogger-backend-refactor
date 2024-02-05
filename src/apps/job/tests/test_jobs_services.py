@@ -55,32 +55,30 @@ async def test_change_status_without_details(
 
 
 async def test_get_or_create_owned__create_job_default_status_is_pending(
-    session: AsyncSession, user_tom: UserSchema
+    session: AsyncSession, tom: UserSchema
 ) -> None:
     job_name = "tomjob"
-    srv = JobService(session, user_tom.id)
+    srv = JobService(session, tom.id)
     job = await srv.get_or_create_owned(job_name)
     assert job.status == JobStatus.pending
-    assert job.creator_id == user_tom.id
+    assert job.creator_id == tom.id
     assert job.name == job_name
 
 
-async def test_get_or_create_owned__create_job_with_status_in_progress(
-    session: AsyncSession, user_tom: UserSchema
-) -> None:
+async def test_get_or_create_owned__create_job_with_status_in_progress(session: AsyncSession, tom: UserSchema) -> None:
     job_name = "tomjob"
-    srv = JobService(session, user_tom.id)
+    srv = JobService(session, tom.id)
     job = await srv.get_or_create_owned(job_name, status=JobStatus.in_progress)
     assert job.status == JobStatus.in_progress
 
 
 async def test_get_or_create_owned__create_job_with_details(
     session: AsyncSession,
-    user_tom: UserSchema,
+    tom: UserSchema,
     job_details: dict[str, str],
 ) -> None:
     job_name = "tomjob"
-    srv = JobService(session, user_tom.id)
+    srv = JobService(session, tom.id)
     job = await srv.get_or_create_owned(job_name, details=job_details)
     assert job.details == job_details
 

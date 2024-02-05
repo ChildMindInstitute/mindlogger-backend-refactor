@@ -12,7 +12,6 @@ from apps.shared.test import BaseTest
 
 class TestActivityItems(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "themes/fixtures/themes.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",

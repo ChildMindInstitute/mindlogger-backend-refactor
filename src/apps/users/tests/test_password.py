@@ -204,18 +204,18 @@ class TestPassword(BaseTest):
     async def test_update_password__password_contains_whitespaces(
         self,
         client: TestClient,
-        user_tom_create: UserCreateRequest,
-        user_tom: UserSchema,
+        tom_create: UserCreateRequest,
+        tom: UserSchema,
     ):
         await client.login(
             self.get_token_url,
-            user_tom_create.email,
-            user_tom_create.password,
+            tom_create.email,
+            tom_create.password,
         )
 
         data = {
-            "password": user_tom_create.password + " ",
-            "prev_password": user_tom_create.password,
+            "password": tom_create.password + " ",
+            "prev_password": tom_create.password,
         }
         resp = await client.put(self.password_update_url, data=data)
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
@@ -226,19 +226,19 @@ class TestPassword(BaseTest):
     async def test_update_password__reencryption_already_in_progress(
         self,
         client: TestClient,
-        user_tom_create: UserCreateRequest,
-        user_tom: UserSchema,
+        tom_create: UserCreateRequest,
+        tom: UserSchema,
         mocker: MockFixture,
     ):
         await client.login(
             self.get_token_url,
-            user_tom_create.email,
-            user_tom_create.password,
+            tom_create.email,
+            tom_create.password,
         )
 
         data = {
-            "password": user_tom_create.password,
-            "prev_password": user_tom_create.password,
+            "password": tom_create.password,
+            "prev_password": tom_create.password,
         }
         mock = mocker.patch("apps.job.service.JobService.is_job_in_progress")
         mock.__aenter__.return_value = True
