@@ -803,7 +803,7 @@ class TestWorkspaces(BaseTest):
         # is 'Mindlogger ChildMindInstitute'
         assert respondent["nickname"] == "Mindlogger ChildMindInstitute"
         assert respondent["secretUserId"] == (
-            "f0dd4996-e0eb-461f-b2f8-ba873a674782"
+            "f0dd4996-e0eb-461f-b2f8-ba873a674788"
         )
 
     async def test_applet_get_respondent_not_found(self, client):

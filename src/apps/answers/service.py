@@ -1462,9 +1462,6 @@ class ReportServerService:
             )
         return responses, [ai.user_public_key for ai in answer_items]
 
-    async def delete_by_subject(self, subject_id: uuid.UUID):
-        await AnswersCRUD(self.answers_session).delete_by_subject(subject_id)
-
 
 class ReportServerEncryption:
     _rate = 0.58

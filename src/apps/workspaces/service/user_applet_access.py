@@ -411,21 +411,16 @@ class UserAppletAccessService:
         owner_id: uuid.UUID,
     ) -> RespondentInfoPublic:
         crud = UserAppletAccessCRUD(self.session)
-        respondent_schema = await crud.get_respondent_by_applet_and_owner(
+        respondent_info = await crud.get_respondent_by_applet_and_owner(
             respondent_id, applet_id, owner_id
         )
-        if not respondent_schema:
+        if not respondent_info:
             raise NotFoundError()
 
-        if respondent_schema.meta:
-            return RespondentInfoPublic(
-                nickname=respondent_schema.nickname,
-                secret_user_id=respondent_schema.meta.get("secretUserId"),
-            )
-        else:
-            return RespondentInfoPublic(
-                nickname=respondent_schema.nickname, secret_user_id=None
-            )
+        return RespondentInfoPublic(
+            nickname=respondent_info[0],
+            secret_user_id=respondent_info[1],
+        )
 
     async def has_role(self, role: str) -> bool:
         manager_roles = set(Role.managers())
