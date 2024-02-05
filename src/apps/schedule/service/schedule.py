@@ -1231,13 +1231,7 @@ class ScheduleService:
     async def get_default_respondents(
         self, applet_id: uuid.UUID
     ) -> list[uuid.UUID]:
-        all_respondents = await UserAppletAccessCRUD(
+        default_respondents = await EventCRUD(
             self.session
-        ).get_applet_users_by_roles(applet_id, [Role.RESPONDENT])
-        individual_respondents = await UserEventsCRUD(
-            self.session
-        ).get_user_ids_by_applet_id(applet_id)
-        default_respondents = list(
-            set(all_respondents) - set(individual_respondents)
-        )
+        ).get_default_schedule_user_ids_by_applet_id(applet_id)
         return default_respondents

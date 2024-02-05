@@ -52,15 +52,19 @@ async def schedule_create(
         schedule = await service.create_schedule(schema, applet_id)
 
     try:
-        await applet_service.send_notification_to_applet_respondents(
-            applet_id,
-            "Your schedule has been changed, click to update.",
-            "Your schedule has been changed, click to update.",
-            FirebaseNotificationType.SCHEDULE_UPDATED,
-            respondent_ids=[schedule.respondent_id]
-            if schedule.respondent_id
-            else await service.get_default_respondents(applet_id),
-        )
+        respondent_ids = None
+        if schedule.respondent_id:
+            respondent_ids = [schedule.respondent_id]
+        else:
+            respondent_ids = await service.get_default_respondents(applet_id)
+        if respondent_ids:
+            await applet_service.send_notification_to_applet_respondents(
+                applet_id,
+                "Your schedule has been changed, click to update.",
+                "Your schedule has been changed, click to update.",
+                FirebaseNotificationType.SCHEDULE_UPDATED,
+                respondent_ids=respondent_ids,
+            )
     except FirebaseError as e:
         # mute error
         logger.exception(e)
@@ -145,13 +149,15 @@ async def schedule_delete_all(
         await service.delete_all_schedules(applet_id)
 
     try:
-        await applet_service.send_notification_to_applet_respondents(
-            applet_id,
-            "Your schedule has been changed, click to update.",
-            "Your schedule has been changed, click to update.",
-            FirebaseNotificationType.SCHEDULE_UPDATED,
-            respondent_ids=await service.get_default_respondents(applet_id),
-        )
+        respondent_ids = await service.get_default_respondents(applet_id)
+        if respondent_ids:
+            await applet_service.send_notification_to_applet_respondents(
+                applet_id,
+                "Your schedule has been changed, click to update.",
+                "Your schedule has been changed, click to update.",
+                FirebaseNotificationType.SCHEDULE_UPDATED,
+                respondent_ids=respondent_ids,
+            )
     except FirebaseError as e:
         # mute error
         logger.exception(e)
@@ -176,15 +182,20 @@ async def schedule_delete_by_id(
         )
 
     try:
-        await applet_service.send_notification_to_applet_respondents(
-            applet_id,
-            "Your schedule has been changed, click to update.",
-            "Your schedule has been changed, click to update.",
-            FirebaseNotificationType.SCHEDULE_UPDATED,
-            respondent_ids=[respondent_id]
-            if respondent_id
-            else await service.get_default_respondents(applet_id),
-        )
+        respondent_ids = None
+        if respondent_id:
+            respondent_ids = [respondent_id]
+        else:
+            respondent_ids = await service.get_default_respondents(applet_id)
+
+        if respondent_ids:
+            await applet_service.send_notification_to_applet_respondents(
+                applet_id,
+                "Your schedule has been changed, click to update.",
+                "Your schedule has been changed, click to update.",
+                FirebaseNotificationType.SCHEDULE_UPDATED,
+                respondent_ids=respondent_ids,
+            )
     except FirebaseError as e:
         # mute error
         logger.exception(e)
@@ -210,15 +221,20 @@ async def schedule_update(
         )
 
     try:
-        await applet_service.send_notification_to_applet_respondents(
-            applet_id,
-            "Your schedule has been changed, click to update.",
-            "Your schedule has been changed, click to update.",
-            FirebaseNotificationType.SCHEDULE_UPDATED,
-            respondent_ids=[schedule.respondent_id]
-            if schedule.respondent_id
-            else await service.get_default_respondents(applet_id),
-        )
+        respondent_ids = None
+        if schedule.respondent_id:
+            respondent_ids = [schedule.respondent_id]
+        else:
+            respondent_ids = await service.get_default_respondents(applet_id)
+
+        if respondent_ids:
+            await applet_service.send_notification_to_applet_respondents(
+                applet_id,
+                "Your schedule has been changed, click to update.",
+                "Your schedule has been changed, click to update.",
+                FirebaseNotificationType.SCHEDULE_UPDATED,
+                respondent_ids=respondent_ids,
+            )
     except FirebaseError as e:
         # mute error
         logger.exception(e)

@@ -39,6 +39,8 @@ from apps.schedule.errors import (
     FlowEventAlreadyExists,
     UserEventAlreadyExists,
 )
+from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.domain.constants import Role
 from infrastructure.database import BaseCRUD
 
 __all__ = [
@@ -771,6 +773,27 @@ class EventCRUD(BaseCRUD[EventSchema]):
         events = result.scalars().all()
         return events
 
+    async def get_default_schedule_user_ids_by_applet_id(
+        self, applet_id: uuid.UUID
+    ) -> list[uuid.UUID]:
+        """Return user ids for default schedule."""
+        individual_schedule_users = (
+            select(UserEventsSchema.user_id)
+            .join(EventSchema, UserEventsSchema.event_id == EventSchema.id)
+            .where(EventSchema.applet_id == applet_id)
+            .where(EventSchema.is_deleted == False)  # noqa: E712
+        )
+        query: Query = select(UserAppletAccessSchema.user_id.label("user_id"))
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
+        query = query.where(UserAppletAccessSchema.is_deleted == False)  # noqa: E712
+        query = query.where(
+            UserAppletAccessSchema.user_id.not_in(individual_schedule_users)
+        )
+        result = await self._execute(query)
+        result = result.scalars().all()
+        return result
+
 
 class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
     schema_class = UserEventsSchema
@@ -817,19 +840,6 @@ class UserEventsCRUD(BaseCRUD[UserEventsSchema]):
         query = query.where(UserEventsSchema.event_id.in_(event_ids))
         query = query.where(UserEventsSchema.user_id == user_id)
         await self._execute(query)
-
-    async def get_user_ids_by_applet_id(
-        self, applet_id: uuid.UUID
-    ) -> list[uuid.UUID]:
-        query: Query = select(UserEventsSchema)
-        query = query.join(
-            EventSchema, UserEventsSchema.event_id == EventSchema.id
-        )
-        query = query.where(EventSchema.applet_id == applet_id)
-        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
-        result = await self._execute(query)
-        result = result.scalars().all()
-        return [r.user_id for r in result]
 
 
 class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
