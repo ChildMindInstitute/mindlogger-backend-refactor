@@ -338,7 +338,7 @@ class ScheduleService:
 
         event_schemas: list[EventSchema] = await EventCRUD(
             self.session
-        ).get_all(applet_id)
+        ).get_all_by_applet_id_with_filter(applet_id)
         event_ids = [event_schema.id for event_schema in event_schemas]
         periodicity_ids = [
             event_schema.periodicity_id for event_schema in event_schemas
@@ -1045,7 +1045,7 @@ class ScheduleService:
 
     async def _get_notifications_and_reminder(
         self, event_id: uuid.UUID
-    ) -> (PublicNotification | None):
+    ) -> PublicNotification | None:
         """Get notifications and reminder for event."""
         notifications = await NotificationCRUD(
             self.session
@@ -1227,3 +1227,11 @@ class ScheduleService:
             activity_ids=activities_without_events,
             is_activity=True,
         )
+
+    async def get_default_respondents(
+        self, applet_id: uuid.UUID
+    ) -> list[uuid.UUID]:
+        default_respondents = await EventCRUD(
+            self.session
+        ).get_default_schedule_user_ids_by_applet_id(applet_id)
+        return default_respondents
