@@ -411,21 +411,16 @@ class UserAppletAccessService:
         owner_id: uuid.UUID,
     ) -> RespondentInfoPublic:
         crud = UserAppletAccessCRUD(self.session)
-        respondent_schema = await crud.get_respondent_by_applet_and_owner(
+        respondent_info = await crud.get_respondent_by_applet_and_owner(
             respondent_id, applet_id, owner_id
         )
-        if not respondent_schema:
+        if not respondent_info:
             raise NotFoundError()
 
-        if respondent_schema.meta:
-            return RespondentInfoPublic(
-                nickname=respondent_schema.nickname,
-                secret_user_id=respondent_schema.meta.get("secretUserId"),
-            )
-        else:
-            return RespondentInfoPublic(
-                nickname=respondent_schema.nickname, secret_user_id=None
-            )
+        return RespondentInfoPublic(
+            nickname=respondent_info[0],
+            secret_user_id=respondent_info[1],
+        )
 
     async def has_role(self, role: str) -> bool:
         manager_roles = set(Role.managers())
@@ -450,3 +445,12 @@ class UserAppletAccessService:
     async def get_owner(self) -> UserAppletAccessSchema:
         crud = UserAppletAccessCRUD(self.session)
         return await crud.get_applet_owner(self._applet_id)
+
+    async def remove_access_by_user_and_applet_to_role(
+        self, user_id: uuid.UUID, applet_id: uuid.UUID, role: Role
+    ):
+        await UserAppletAccessCRUD(
+            self.session
+        ).remove_access_by_user_and_applet_to_role(
+            user_id, [applet_id], [role]
+        )

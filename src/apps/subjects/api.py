@@ -3,6 +3,10 @@ import uuid
 from fastapi import Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.answers.deps.preprocess_arbitrary import (
+    get_answer_session_by_subject,
+)
+from apps.answers.service import AnswerService
 from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue
 from apps.shared.domain import Response
@@ -10,6 +14,7 @@ from apps.shared.exception import NotFoundError
 from apps.subjects.domain import (
     Subject,
     SubjectCreateRequest,
+    SubjectDeleteRequest,
     SubjectFull,
     SubjectReadResponse,
     SubjectRespondentCreate,
@@ -19,6 +24,7 @@ from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
+from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
@@ -127,6 +133,45 @@ async def update_subject(
         return Response(result=Subject.from_orm(subject))
 
 
+async def delete_subject(
+    subject_id: uuid.UUID,
+    params: SubjectDeleteRequest = Body(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    arbitrary_session: AsyncSession | None = Depends(
+        get_answer_session_by_subject
+    )
+):
+    subject_srv = SubjectsService(session, user.id)
+    subject = await subject_srv.get(subject_id)
+    if not subject:
+        raise NotFoundError()
+    # Check that user has right on applet
+    await UserAccessService(
+        session, user.id
+    ).validate_subject_delete_access(subject.applet_id)
+    async with atomic(session):
+        # Remove respondent role for user
+        await UserAppletAccessService(
+            session, user.id, subject.applet_id
+        ).remove_access_by_user_and_applet_to_role(
+            subject.user_id, subject.applet_id, Role.RESPONDENT
+        )
+
+        if params.delete_answers:
+            # Remove subject and answers
+            await SubjectsService(session, user.id).delete_hard(subject.id)
+            async with atomic(arbitrary_session):
+                await AnswerService(
+                    user_id=user.id,
+                    session=session,
+                    arbitrary_session=arbitrary_session
+                ).delete_by_subject(subject_id)
+        else:
+            # Delete subject (soft)
+            await SubjectsService(session, user.id).delete(subject.id)
+
+            
 async def get_subject(
     subject_id: uuid.UUID,
     user: User = Depends(get_current_user),

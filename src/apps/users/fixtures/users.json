@@ -204,5 +204,49 @@
       "plain_first_name": "Patric",
       "plain_last_name": "Davidson"
     }
+  },{
+    "table": "users",
+    "fields": {
+      "id": "965f1d93-e64a-4f67-b76b-8427f033a864",
+      "email": "6222b7a3e653fc0b17cdd9be920506cb2cfc50ee3e806b0a0acd0207",
+      "first_name": "7akmKRxW+U3E3hID75ILjA==",
+      "last_name": "QQg1VkkqPE+GN0yoNLoZJA==",
+      "hashed_password": "$2b$12$VLVGBIFeaegqdQ.aRmRy.e95dTsV8faMsudbs9r8PpnwHtyifV/9u",
+      "is_deleted": false,
+      "is_super_admin": false,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": false,
+      "email_encrypted": "v5OK2iXl/Rgiz1myAOe/uMGUFtHpDNPYxBRdv2vda9k="
+    },
+    "note": {
+      "Password": "Test1234!",
+      "plain_email": "pitbronson@mail.com",
+      "plain_first_name": "Pit",
+      "plain_last_name": "Bronson"
+    }
+  },{
+    "table": "users",
+    "fields": {
+      "id": "f17e92e9-d60b-4756-9ecf-74af5da05092",
+      "email": "988407b6011dcf6df6430b09e07514d83c97f4c9fa374503f57749a2",
+      "first_name": "pXLcpA5LMdt8EmgSTSikXA===",
+      "last_name": "QQg1VkkqPE+GN0yoNLoZJA==",
+      "hashed_password": "$2b$12$5pfF0jlIXzPr6cRAgIAP3OkLcYrNgQLBMGdj/zYWbLOY2hyWe9Req",
+      "is_deleted": false,
+      "is_super_admin": false,
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "last_seen_at": "2023-01-05T15:49:51.752113",
+      "is_anonymous_respondent": false,
+      "email_encrypted": "KadIE6AxXtSQqmTpqbtsEHRdRlAKmgdg3T9+yEggu28="
+    },
+    "note": {
+      "Password": "Test1234!",
+      "plain_email": "billbronson@mail.com",
+      "plain_first_name": "Bill",
+      "plain_last_name": "Bronson"
+    }
   }
 ]

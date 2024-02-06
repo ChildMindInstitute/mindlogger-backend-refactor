@@ -383,7 +383,7 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 6
+        assert response.json()["count"] == 7
 
         plain_emails = [
             "reviewer@mail.com",
@@ -392,6 +392,7 @@ class TestWorkspaces(BaseTest):
             "bob@gmail.com",
             "mike@gmail.com",
             "mike2@gmail.com",
+            "pitbronson@mail.com"
         ]
 
         for result in response.json()["result"]:
@@ -433,7 +434,7 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 6
+        assert response.json()["count"] == 7
 
         plain_emails = [
             "reviewer@mail.com",
@@ -442,6 +443,7 @@ class TestWorkspaces(BaseTest):
             "bob@gmail.com",
             "mike@gmail.com",
             "mike2@gmail.com",
+            "pitbronson@mail.com"
         ]
 
         for result in response.json()["result"]:
@@ -801,7 +803,7 @@ class TestWorkspaces(BaseTest):
         # is 'Mindlogger ChildMindInstitute'
         assert respondent["nickname"] == "Mindlogger ChildMindInstitute"
         assert respondent["secretUserId"] == (
-            "f0dd4996-e0eb-461f-b2f8-ba873a674782"
+            "f0dd4996-e0eb-461f-b2f8-ba873a674788"
         )
 
     async def test_applet_get_respondent_not_found(self, client):

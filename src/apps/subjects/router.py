@@ -9,6 +9,7 @@ from apps.shared.domain import (
 from apps.subjects.api import (
     add_respondent,
     create_subject,
+    delete_subject,
     get_subject,
     remove_respondent,
     update_subject,
@@ -39,6 +40,15 @@ router.put(
     },
 )(update_subject)
 
+router.delete(
+    "/{subject_id}",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_201_CREATED: {"model": Response[SubjectFull]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(delete_subject)
 
 router.get(
     "/{subject_id}",

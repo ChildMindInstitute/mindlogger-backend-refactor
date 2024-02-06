@@ -360,3 +360,8 @@ class UserAccessService:
         return await UserAppletAccessCRUD(self.session).get_management_applets(
             self._user_id, applet_ids
         )
+
+    async def validate_subject_delete_access(self, applet_id: uuid.UUID):
+        await self._validate_ownership(
+            [applet_id], [Role.OWNER, Role.MANAGER, Role.COORDINATOR]
+        )

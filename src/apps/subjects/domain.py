@@ -58,5 +58,9 @@ class SubjectUpdateRequest(PublicModel):
     nickname: str | None
 
 
+class SubjectDeleteRequest(PublicModel):
+    delete_answers: bool
+
+    
 class SubjectReadResponse(SubjectUpdateRequest):
     pass

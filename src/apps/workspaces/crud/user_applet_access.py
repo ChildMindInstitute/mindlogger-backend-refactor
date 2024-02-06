@@ -82,8 +82,8 @@ class _WorkspaceRespondentOrdering(Ordering):
 
 class _WorkspaceRespondentSearch(Searching):
     search_fields = [
-        func.array_agg(UserAppletAccessSchema.nickname),
-        func.array_agg(UserAppletAccessSchema.meta["secretUserId"].astext),
+        func.array_agg(SubjectSchema.nickname),
+        func.array_agg(SubjectSchema.secret_user_id),
     ]
 
 
@@ -1170,8 +1170,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         respondent_id: uuid.UUID,
         applet_id: uuid.UUID,
         owner_id: uuid.UUID,
-    ) -> UserAppletAccessSchema | None:
-        query: Query = select(UserAppletAccessSchema)
+    ) -> tuple[str, str] | None:
+        query: Query = select(
+            UserAppletAccessSchema.nickname,
+            SubjectSchema.secret_user_id
+        )
         query = query.where(
             UserAppletAccessSchema.owner_id == owner_id,
             UserAppletAccessSchema.applet_id == applet_id,
@@ -1179,8 +1182,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserAppletAccessSchema.role == Role.RESPONDENT,
             UserAppletAccessSchema.soft_exists(),
         )
+        query = query.join(
+            SubjectSchema,
+                SubjectSchema.user_id == UserAppletAccessSchema.user_id
+        )
         db_result = await self._execute(query)
-        db_result = db_result.first()  # noqa
+        db_result = db_result.all()  # noqa
         return db_result[0] if db_result else None
 
     async def get_management_applets(
