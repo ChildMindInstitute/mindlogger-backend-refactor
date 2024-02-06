@@ -1,7 +1,8 @@
 import uuid
 from typing import Any
 
-from sqlalchemy import delete, select, text, update
+from sqlalchemy import and_, delete, func, select, text, update
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
@@ -23,6 +24,7 @@ from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
+from apps.subjects.db.schemas import SubjectSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from infrastructure.database import BaseCRUD
 
@@ -83,12 +85,28 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         )
 
         query: Query = select(
-            InvitationSchema, AppletSchema.display_name.label("applet_name")
+            InvitationSchema,
+            AppletSchema.display_name.label("applet_name"),
+            SubjectSchema.secret_user_id.label("user_secret_id"),
+            SubjectSchema.nickname.label("nickname")
         )
         query = query.where(InvitationSchema.applet_id.in_(user_applet_ids))
         query = query.join(
             AppletSchema, AppletSchema.id == InvitationSchema.applet_id
         )
+
+        query = query.join(
+            SubjectSchema,
+            and_(
+                InvitationSchema.meta.has_key('subject_id'),
+                SubjectSchema.id == func.cast(
+                    InvitationSchema.meta['subject_id'].astext,
+                    UUID(as_uuid=True)
+                )
+            ),
+            isouter=True
+        )
+
         query = query.where(
             InvitationSchema.status == InvitationStatus.PENDING
         )
@@ -108,7 +126,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
 
         db_result = await self._execute(query)
         results = []
-        for invitation, applet_name in db_result.all():
+        for invitation, applet_name, secret_id, nickname in db_result.all():
             results.append(
                 InvitationDetail(
                     id=invitation.id,
@@ -123,7 +141,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     first_name=invitation.first_name,
                     last_name=invitation.last_name,
                     created_at=invitation.created_at,
-                    nickname=invitation.nickname,
+                    nickname=nickname,
+                    secret_user_id=secret_id
                 )
             )
         return results
