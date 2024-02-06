@@ -95,7 +95,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             AppletSchema, AppletSchema.id == InvitationSchema.applet_id
         )
 
-        query = query.join(
+        query = query.outerjoin(
             SubjectSchema,
             and_(
                 InvitationSchema.meta.has_key('subject_id'),
@@ -104,7 +104,6 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     UUID(as_uuid=True)
                 )
             ),
-            isouter=True
         )
 
         query = query.where(
