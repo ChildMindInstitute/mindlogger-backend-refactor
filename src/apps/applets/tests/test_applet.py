@@ -1,5 +1,7 @@
 import asyncio
+import collections
 import http
+import json
 import uuid
 
 from apps.activities import errors as activity_errors
@@ -12,7 +14,6 @@ from infrastructure.utility import FCMNotificationTest
 
 class TestApplet(BaseTest):
     fixtures = [
-        "users/fixtures/user_devices.json",
         "themes/fixtures/themes.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
@@ -742,7 +743,7 @@ class TestApplet(BaseTest):
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert response.json()["result"][0]["message"] == "Applet already exists."
 
-    async def test_update_applet(self, client, tom):
+    async def test_update_applet(self, client, tom, device_tom):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         update_data = dict(
             stream_enabled=True,
@@ -895,7 +896,12 @@ class TestApplet(BaseTest):
         assert response.status_code == http.HTTPStatus.OK, response.json()
         # assert len(TestMail.mails) == 1
         # assert TestMail.mails[0].subject == "Applet edit success!"
-        assert len(FCMNotificationTest.notifications) > 0
+        # TODO: move to fixtures
+        assert len(FCMNotificationTest.notifications) == 1
+        assert device_tom in FCMNotificationTest.notifications
+        notification = json.loads(FCMNotificationTest.notifications[device_tom][0])
+        assert notification["title"] == "Applet is updated."
+        FCMNotificationTest.notifications = collections.defaultdict(list)
 
         data = response.json()
         response = await client.put(
@@ -1047,7 +1053,7 @@ class TestApplet(BaseTest):
         assert response.json()["result"][1]["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b2"
         assert response.json()["result"][2]["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
 
-    async def test_applet_delete(self, client, tom):
+    async def test_applet_delete(self, client, tom, device_tom):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.delete(
             self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"),
@@ -1061,7 +1067,12 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 404, response.json()
 
-        assert len(FCMNotificationTest.notifications) > 0
+        # TODO: move to the fixtures
+        assert len(FCMNotificationTest.notifications) == 1
+        assert device_tom in FCMNotificationTest.notifications
+        notification = json.loads(FCMNotificationTest.notifications[device_tom][0])
+        assert notification["title"] == "Applet is deleted."
+        FCMNotificationTest.notifications = collections.defaultdict(list)
 
     async def test_applet_delete_by_manager(self, client):
         await client.login(self.login_url, "lucy@gmail.com", "Test123")

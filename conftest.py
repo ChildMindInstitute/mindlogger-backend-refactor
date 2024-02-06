@@ -32,6 +32,7 @@ pytest_plugins = [
     "apps.activities.tests.fixtures.activities",
     "apps.users.tests.fixtures.users",
     "apps.applets.tests.fixtures.applets",
+    "apps.users.tests.fixtures.user_devices",
 ]
 
 
