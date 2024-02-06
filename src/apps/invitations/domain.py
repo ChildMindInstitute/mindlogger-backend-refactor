@@ -188,6 +188,7 @@ class InvitationDetail(InvitationDetailBase):
 
     meta: dict
     nickname: str | None
+    secret_user_id: str | None
 
 
 class InvitationDetailRespondent(InvitationDetailBase):
@@ -272,6 +273,7 @@ class InvitationResponse(PublicModel):
     created_at: datetime
     meta: dict
     nickname: str | None
+    secret_user_id: str | None
 
 
 class _InvitationResponse(PublicModel):
