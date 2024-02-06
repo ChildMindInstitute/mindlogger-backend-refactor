@@ -307,7 +307,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return {row.id: SubjectExportData.from_orm(row) for row in data}
 
-    async def get_reviewer_access(
+    async def get_priority_access(
         self, applet_id: uuid.UUID, user_id: uuid.UUID
     ) -> UserAppletAccessSchema:
         query: Query = select(UserAppletAccessSchema)

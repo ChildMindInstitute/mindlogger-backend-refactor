@@ -271,6 +271,8 @@ class TestSubjects(BaseTest):
         url = self.subject_detail_url.format(subject_id=subject["id"])
         response = await client.put(url, body)
         assert response.status_code == exp_status
+        payload = response.json()
+        assert payload
         subject = await SubjectsCrud(session).get_by_id(subject["id"])
         if exp_status == http.HTTPStatus.OK:
             exp_secret_id = body.get("secretUserId")
@@ -386,3 +388,17 @@ class TestSubjects(BaseTest):
         delete_url = self.subject_detail_url.format(subject_id=subject_id)
         res = await client.delete(delete_url, data=dict(deleteAnswers=True))
         assert res.status_code == expected
+        
+    @pytest.mark.parametrize("subject_id,expected_code", (
+            ("7484f34a-3acc-4ee6-8a94-fd7299502fa6", http.HTTPStatus.OK),
+            ("ee96b767-4609-4b8b-93c5-e7b15b81c6f7", http.HTTPStatus.FORBIDDEN),
+            (uuid.uuid4(), http.HTTPStatus.NOT_FOUND)
+    ))
+    async def test_get_subject(self, client, subject_id, expected_code):
+        await client.login(self.login_url, "reviewer@mail.com", "Test1234!")
+        response = await client.get(
+            self.subject_detail_url.format(subject_id=subject_id)
+        )
+        assert response.status_code == expected_code
+        data = response.json()
+        assert data

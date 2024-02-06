@@ -16,6 +16,7 @@ from apps.subjects.domain import (
     SubjectCreateRequest,
     SubjectDeleteRequest,
     SubjectFull,
+    SubjectReadResponse,
     SubjectRespondentCreate,
     SubjectUpdateRequest,
 )
@@ -169,3 +170,21 @@ async def delete_subject(
         else:
             # Delete subject (soft)
             await SubjectsService(session, user.id).delete(subject.id)
+
+            
+async def get_subject(
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> Response[SubjectReadResponse]:
+    subject = await SubjectsService(session, user.id).get(subject_id)
+    if not subject:
+        raise NotFoundError()
+    await CheckAccessService(
+        session, user.id
+    ).check_subject_subject_access(subject.applet_id, subject_id)
+    return Response(
+        result=SubjectReadResponse(
+            secret_user_id=subject.secret_user_id,
+            nickname=subject.nickname
+    ))

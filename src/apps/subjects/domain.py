@@ -60,3 +60,7 @@ class SubjectUpdateRequest(PublicModel):
 
 class SubjectDeleteRequest(PublicModel):
     delete_answers: bool
+
+    
+class SubjectReadResponse(SubjectUpdateRequest):
+    pass

@@ -284,7 +284,7 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         data = response.json()
-        assert data["count"] == 5
+        assert data["count"] == 6
         assert data["result"][0]["nicknames"]
         assert data["result"][0]["secretIds"]
 
@@ -327,7 +327,7 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         data = response.json()
-        assert data["count"] == 4
+        assert data["count"] == 5
         assert data["result"][0]["nicknames"]
         assert data["result"][0]["secretIds"]
 
