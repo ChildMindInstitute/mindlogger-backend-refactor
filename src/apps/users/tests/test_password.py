@@ -12,8 +12,7 @@ from apps.authentication.router import router as auth_router
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
-from apps.users.db.schemas import UserSchema
-from apps.users.domain import PasswordRecoveryRequest, UserCreateRequest
+from apps.users.domain import PasswordRecoveryRequest, User, UserCreateRequest
 from apps.users.errors import PasswordHasSpacesError, ReencryptionInProgressError
 from apps.users.router import router as user_router
 from apps.users.tests.factories import CacheEntryFactory, PasswordRecoveryInfoFactory, PasswordUpdateRequestFactory
@@ -204,18 +203,18 @@ class TestPassword(BaseTest):
     async def test_update_password__password_contains_whitespaces(
         self,
         client: TestClient,
-        tom_create: UserCreateRequest,
-        tom: UserSchema,
+        user_create: UserCreateRequest,
+        user: User,
     ):
         await client.login(
             self.get_token_url,
-            tom_create.email,
-            tom_create.password,
+            user_create.email,
+            user_create.password,
         )
 
         data = {
-            "password": tom_create.password + " ",
-            "prev_password": tom_create.password,
+            "password": user_create.password + " ",
+            "prev_password": user_create.password,
         }
         resp = await client.put(self.password_update_url, data=data)
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
@@ -226,19 +225,19 @@ class TestPassword(BaseTest):
     async def test_update_password__reencryption_already_in_progress(
         self,
         client: TestClient,
-        tom_create: UserCreateRequest,
-        tom: UserSchema,
+        user_create: UserCreateRequest,
+        user: User,
         mocker: MockFixture,
     ):
         await client.login(
             self.get_token_url,
-            tom_create.email,
-            tom_create.password,
+            user_create.email,
+            user_create.password,
         )
 
         data = {
-            "password": tom_create.password,
-            "prev_password": tom_create.password,
+            "password": user_create.password,
+            "prev_password": user_create.password,
         }
         mock = mocker.patch("apps.job.service.JobService.is_job_in_progress")
         mock.__aenter__.return_value = True

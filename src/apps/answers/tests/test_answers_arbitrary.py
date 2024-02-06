@@ -242,7 +242,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await arbitrary_client.get(
             self.applet_submit_dates_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8"),
             dict(
-                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondentId=tom.id,
                 fromDate=datetime.date.today() - datetime.timedelta(days=10),
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
             ),
@@ -291,7 +291,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await arbitrary_client.get(
             self.applet_submit_dates_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8"),
             dict(
-                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondentId=tom.id,
                 fromDate=datetime.date.today() - datetime.timedelta(days=10),
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
             ),
@@ -413,7 +413,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8"),
             dict(
-                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondentId=tom.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -486,7 +486,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8"),
             dict(
-                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondentId=tom.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -591,7 +591,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8"),
             dict(
-                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondentId=tom.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -648,7 +648,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8"),
             dict(
-                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondentId=tom.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -731,7 +731,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8"),
             dict(
-                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondentId=tom.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -817,7 +817,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8"),
             dict(
-                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondentId=tom.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -1152,7 +1152,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8"),
             dict(
-                respondentId="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                respondentId=tom.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )

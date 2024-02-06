@@ -13,6 +13,7 @@ from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.errors import TransferEmailError
+from apps.users.domain import User
 
 
 class TestTransfer(BaseTest):
@@ -185,7 +186,7 @@ class TestTransfer(BaseTest):
             assert resp_data[key]
 
     @pytest.mark.usefixtures("user")
-    async def test_reinvite_manager_after_transfer(self, client: TestClient, user, user_create):
+    async def test_reinvite_manager_after_transfer(self, client: TestClient, user, user_create, mike):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         request_data = dict(
             email=user_create.email,
@@ -212,7 +213,7 @@ class TestTransfer(BaseTest):
         # transfer ownership to mike@gmail.com
         # initiate transfer
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        data = {"email": "mike@gmail.com"}
+        data = {"email": mike.email_encrypted}
 
         response = await client.post(
             self.transfer_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
@@ -232,7 +233,7 @@ class TestTransfer(BaseTest):
         key = key[0][4:-14]
 
         # accept transfer
-        await client.login(self.login_url, "mike@gmail.com", "Test1234")
+        await client.login(self.login_url, mike.email_encrypted, "Test1234")
         response = await client.post(
             self.response_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
@@ -244,7 +245,7 @@ class TestTransfer(BaseTest):
         # check managers list
         response = await client.get(
             self.workspace_applet_managers_list.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa4",
+                owner_id=mike.id,
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
             ),
         )
@@ -256,7 +257,7 @@ class TestTransfer(BaseTest):
             email_role_map[res["email"]] = res["roles"]
         emails = list(email_role_map.keys())
 
-        assert "mike@gmail.com" in emails
+        assert mike.email_encrypted in emails
         assert Role.OWNER in email_role_map["mike@gmail.com"]
 
         assert "user@example.com" in emails
@@ -299,7 +300,7 @@ class TestTransfer(BaseTest):
         assert transfer.from_user_id == uuid.UUID(from_user_id)
 
     # TODO: move these tests to the unit tests for service and crud
-    async def test_init_transfer__user_to_exists(self, client: TestClient, session: AsyncSession):
+    async def test_init_transfer__user_to_exists(self, client: TestClient, session: AsyncSession, lucy: User):
         resp = await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         from_user_id = resp.json()["result"]["user"]["id"]
         data = {"email": "lucy@gmail.com"}
@@ -316,7 +317,7 @@ class TestTransfer(BaseTest):
         key = str(re.findall(regex, body)[0][4:-14])
         crud = TransferCRUD(session)
         transfer = await crud.get_by_key(uuid.UUID(key))
-        assert transfer.to_user_id == uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa2")
+        assert transfer.to_user_id == lucy.id
         assert transfer.from_user_id == uuid.UUID(from_user_id)
 
     async def test_init_transfer_owner_invite_themself(self, client: TestClient):
