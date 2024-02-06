@@ -77,8 +77,7 @@ class InvitationReviewerRequest(_InvitationRequest):
     """
 
     subjects: list[uuid.UUID] = Field(
-        description="This field represents the list of users id's "
-        "which invited to the applet as a respondents",
+        description="This field represents the list of subject id's",
     )
     workspace_prefix: str | None = Field(
         description="This field represents the user workspace prefix. "

@@ -62,6 +62,7 @@ class AlertPublic(PublicModel):
 class AlertMessage(InternalModel):
     id: uuid.UUID
     respondent_id: uuid.UUID
+    subject_id: uuid.UUID
     applet_id: uuid.UUID
     version: str
     message: str

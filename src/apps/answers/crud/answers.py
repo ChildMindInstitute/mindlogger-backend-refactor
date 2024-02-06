@@ -91,10 +91,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query = query.where(
             func.date(AnswerSchema.created_at) == filters.created_date
         )
-        if filters.respondent_id:
-            query = query.where(
-                AnswerSchema.respondent_id == filters.respondent_id
-            )
         if filters.target_subject_id:
             query = query.where(
                 AnswerSchema.target_subject_id == filters.target_subject_id

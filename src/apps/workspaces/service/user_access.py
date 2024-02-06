@@ -1,11 +1,14 @@
 import uuid
+from gettext import gettext as _
 
 import config
 from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import UserAppletAccessCRUD
-from apps.invitations.errors import RespondentDoesNotExist, RespondentsNotSet
-from apps.shared.exception import AccessDeniedError
+from apps.invitations.domain import ReviewerMeta
+from apps.invitations.errors import RespondentsNotSet
+from apps.shared.exception import AccessDeniedError, ValidationError
 from apps.shared.query_params import QueryParams
+from apps.subjects.crud import SubjectsCrud
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role, UserPinRole
@@ -283,23 +286,18 @@ class UserAccessService:
                 for role in access.roles:
                     meta = {}
                     if role == Role.REVIEWER:
-                        if access.respondents:
-                            exist_respondents = await UserAppletAccessCRUD(
+                        if subject_ids := access.subjects:
+                            subject_ids = list(set(subject_ids))
+                            existing_subject_ids = await SubjectsCrud(
                                 self.session
-                            ).get_user_id_applet_and_role(
-                                applet_id=access.applet_id,
-                                role=Role.RESPONDENT,
-                            )
-                            for respondent in access.respondents:
-                                if respondent not in exist_respondents:
-                                    raise RespondentDoesNotExist()
-                            respondents = [
-                                str(respondent_id)
-                                for respondent_id in access.respondents
-                            ]
-                            meta.update(
-                                respondents=respondents,
-                            )
+                            ).reduce_applet_subject_ids(access.applet_id, subject_ids)
+
+                            if len(existing_subject_ids) != len(subject_ids):
+                                raise ValidationError(
+                                    _("Subject does not exist in applet"))
+
+                            meta = ReviewerMeta(
+                                subjects=list(map(str, subject_ids))).dict()
                         else:
                             raise RespondentsNotSet()
                     schemas.append(

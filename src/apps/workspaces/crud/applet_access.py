@@ -66,7 +66,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     UserAppletAccessSchema.role == Role.REVIEWER,
                     func.json_array_length(
                         func.cast(
-                            UserAppletAccessSchema.meta[text("'respondents'")],
+                            UserAppletAccessSchema.meta[text("'subjects'")],
                             JSON,
                         )
                     )

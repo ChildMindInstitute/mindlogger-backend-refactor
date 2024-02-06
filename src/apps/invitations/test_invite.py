@@ -19,7 +19,6 @@ from apps.invitations.errors import (
     InvitationDoesNotExist,
     ManagerInvitationExist,
     NonUniqueValue,
-    RespondentDoesNotExist,
     RespondentInvitationExist,
 )
 from apps.mailing.services import TestMail
@@ -36,11 +35,6 @@ def user_create_data() -> UserCreateRequest:
         last_name="Isaak",
         password="Test1234!",
     )
-
-
-@pytest.fixture
-def respondent_ids() -> list[str]:
-    return ["7484f34a-3acc-4ee6-8a94-fd7299502fa1"]
 
 
 @pytest.fixture

@@ -119,10 +119,9 @@ class S3PresignService:
         if str(self.applet_id) != applet_id:
             return False
 
-        if self.access:
-            if self.access.role == Role.REVIEWER:
-                return user_id in self.access.meta.get("respondents", [])
+        if self.access and self.access.role != Role.RESPONDENT:
             return True
+
         return False
 
     async def _check_access_to_legacy_url(self, url):
