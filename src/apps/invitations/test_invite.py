@@ -1031,11 +1031,11 @@ class TestInvite(BaseTest):
     ):
         subject_crud = SubjectsCrud(session)
         applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1")
-        mike_email = "mike2@gmail.com"
-        mike_id = uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa6")
+        user_email = "billbronson@mail.com"
+        user_id = uuid.UUID("f17e92e9-d60b-4756-9ecf-74af5da05092")
         # Create invitation to Mike
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        invitation_respondent_data.email = mike_email
+        invitation_respondent_data.email = user_email
         subjects_on_applet0 = await subject_crud.count(applet_id=applet_id)
         response = await client.post(
             self.invite_respondent_url.format(applet_id=applet_id),
@@ -1046,11 +1046,11 @@ class TestInvite(BaseTest):
         assert subjects_on_applet1 == (subjects_on_applet0 + 1)
         invitation = response.json()["result"]
         # Login as Mike and accept invitation
-        await client.login(self.login_url, mike_email, "Test1234")
+        await client.login(self.login_url, user_email, "Test1234!")
         url_accept = self.accept_url.format(key=invitation["key"])
         response = await client.post(url_accept)
         assert response.status_code == http.HTTPStatus.OK
-        subject = await subject_crud.get(mike_id, applet_id)
+        subject = await subject_crud.get(user_id, applet_id)
         assert subject
         subjects_on_applet2 = await subject_crud.count(applet_id=applet_id)
         assert subjects_on_applet2 == subjects_on_applet1
