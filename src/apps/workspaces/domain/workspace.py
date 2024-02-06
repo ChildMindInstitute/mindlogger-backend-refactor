@@ -103,7 +103,7 @@ class WorkspaceRespondent(InternalModel):
 class AppletRole(InternalModel):
     access_id: uuid.UUID
     role: Role
-    reviewer_respondents: list[str] | None = None
+    reviewer_subjects: list[str] | None = None
 
 
 class WorkspaceManagerApplet(InternalModel):
@@ -139,15 +139,15 @@ class WorkspaceManager(InternalModel):
                     "encryption": applet_role["encryption"],
                 }
 
-            respondents = []
+            subjects = []
             if applet_role["role"] == Role.REVIEWER:
-                respondents = applet_role["reviewer_respondents"]
+                subjects = applet_role["reviewer_subjects"]
 
             applet["roles"].append(
                 dict(
                     access_id=applet_role["access_id"],
                     role=applet_role["role"],
-                    reviewer_respondents=respondents,
+                    reviewer_subjects=subjects,
                 )
             )
             applets[applet_id] = applet

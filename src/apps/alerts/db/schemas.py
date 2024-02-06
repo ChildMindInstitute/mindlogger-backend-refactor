@@ -19,6 +19,10 @@ class AlertSchema(Base):
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=True,
     )
+    subject_id = Column(
+        ForeignKey("subjects.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
     is_watched = Column(Boolean(), nullable=False, default=False)
     applet_id = Column(
         ForeignKey("applets.id", ondelete="RESTRICT"),

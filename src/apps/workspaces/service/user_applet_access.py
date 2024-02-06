@@ -36,12 +36,6 @@ class UserAppletAccessService:
         self, role: Role, user_id: uuid.UUID
     ) -> dict:
         meta: dict = {}
-        if role == Role.RESPONDENT:
-            user = await UsersCRUD(self.session).get_by_id(user_id)
-            meta.update(
-                secretUserId=str(uuid.uuid4()),
-                nickname=f"{user.first_name} {user.last_name}",
-            )
 
         return meta
 
@@ -55,7 +49,6 @@ class UserAppletAccessService:
             return UserAppletAccess.from_orm(access_schema)
 
         meta = await self._get_default_role_meta(role, user_id)
-        nickname = meta.pop("nickname", None)
 
         access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
@@ -65,7 +58,6 @@ class UserAppletAccessService:
                 owner_id=self._user_id,
                 invitor_id=self._user_id,
                 meta=meta,
-                nickname=nickname,
             )
         )
         return UserAppletAccess.from_orm(access_schema)
@@ -129,7 +121,6 @@ class UserAppletAccessService:
             self.session
         ).get_applet_owner(invitation.applet_id)
         meta: dict = dict()
-        respondent_nickname = invitation.dict().get("nickname", None)
 
         if invitation.role in [Role.RESPONDENT, Role.REVIEWER]:
             meta = invitation.meta.dict(by_alias=True)  # type: ignore
@@ -149,7 +140,6 @@ class UserAppletAccessService:
                 owner_id=owner_access.user_id,
                 invitor_id=invitation.invitor_id,
                 meta=meta,
-                nickname=respondent_nickname,
                 is_deleted=False,
             ),
             where=UserAppletAccessSchema.soft_exists(exists=False),
@@ -159,10 +149,11 @@ class UserAppletAccessService:
                 invitation.applet_id, self._user_id, Role.RESPONDENT
             )
             if not has_respondent:
-                meta = await self._get_default_role_meta(
-                    Role.RESPONDENT, self._user_id
-                )
-                nickname = meta.pop("nickname", None)
+                user = await UsersCRUD(self.session).get_by_id(self._user_id)
+
+                secret_id = str(uuid.uuid4())
+                nickname = f"{user.first_name} {user.last_name}"
+
                 schema = UserAppletAccessSchema(
                     user_id=self._user_id,
                     applet_id=invitation.applet_id,
@@ -170,7 +161,6 @@ class UserAppletAccessService:
                     owner_id=owner_access.user_id,
                     invitor_id=invitation.invitor_id,
                     meta=meta,
-                    nickname=nickname,
                     is_deleted=False,
                 )
                 await UserAppletAccessCRUD(
@@ -185,7 +175,7 @@ class UserAppletAccessService:
                         user_id=self._user_id,
                         first_name=invitation.first_name,
                         last_name=invitation.last_name,
-                        secret_user_id=meta["secretUserId"],
+                        secret_user_id=secret_id,
                         nickname=nickname,
                     )
                 )

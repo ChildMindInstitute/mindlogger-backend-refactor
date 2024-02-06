@@ -13,7 +13,6 @@ class SummaryActivityFilter(BaseQueryParams):
 
 
 class AppletActivityFilter(BaseQueryParams):
-    respondent_id: uuid.UUID | None
     target_subject_id: uuid.UUID | None
     created_date: datetime.date
 

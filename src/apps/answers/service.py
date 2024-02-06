@@ -267,6 +267,7 @@ class AnswerService:
 
         await AnswerItemsCRUD(self.answer_session).create(item_answer)
         await self._create_alerts(
+            target_subject.id,
             answer.id,
             answer.applet_id,
             applet_answer.activity_id,
@@ -307,7 +308,7 @@ class AnswerService:
         filters: AppletActivityFilter,
     ) -> list[ReviewActivity]:
         await self._validate_applet_activity_access(
-            applet_id, filters.respondent_id
+            applet_id, filters.target_subject_id
         )
         answers = await AnswersCRUD(
             self.answer_session
@@ -364,7 +365,7 @@ class AnswerService:
         ).get_respondents_submit_dates(applet_id, filters)
 
     async def _validate_applet_activity_access(
-        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+        self, applet_id: uuid.UUID, subject_id: uuid.UUID | None
     ):
         assert self.user_id, "User id is required"
         await AppletsCRUD(self.session).get_by_id(applet_id)
@@ -376,9 +377,9 @@ class AnswerService:
                 self.session, self.user_id, applet_id
             ).get_access(Role.REVIEWER)
             assert access is not None
-            if not respondent_id:
+            if not subject_id:
                 raise AnswerAccessDeniedError()
-            if str(respondent_id) not in access.meta.get("respondents", []):
+            if str(subject_id) not in access.meta.get("subjects", []):
                 raise AnswerAccessDeniedError()
 
     async def get_by_id(
@@ -993,6 +994,7 @@ class AnswerService:
 
     async def _create_alerts(
         self,
+        subject_id: uuid.UUID,
         answer_id: uuid.UUID,
         applet_id: uuid.UUID,
         activity_id: uuid.UUID,
@@ -1004,7 +1006,7 @@ class AnswerService:
         cache = RedisCache()
         persons = await UserAppletAccessCRUD(
             self.session
-        ).get_responsible_persons(applet_id, self.user_id)
+        ).get_responsible_persons(applet_id, subject_id)
         alert_schemas = []
 
         for person in persons:
@@ -1013,6 +1015,7 @@ class AnswerService:
                     AlertSchema(
                         user_id=person.id,
                         respondent_id=self.user_id,
+                        subject_id=subject_id,
                         is_watched=False,
                         applet_id=applet_id,
                         version=version,
@@ -1032,6 +1035,7 @@ class AnswerService:
                     AlertMessage(
                         id=alert.id,
                         respondent_id=self.user_id,
+                        subject_id=self.user_id,
                         applet_id=applet_id,
                         version=version,
                         message=alert.alert_message,

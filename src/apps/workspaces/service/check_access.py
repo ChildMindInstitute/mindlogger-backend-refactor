@@ -1,7 +1,6 @@
 import uuid
 
 from apps.shared.exception import AccessDeniedError
-from apps.subjects.services import SubjectsService
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import (
@@ -261,18 +260,10 @@ class CheckAccessService:
     async def check_answer_access(
         self,
         applet_id: uuid.UUID,
-        respondent_id: uuid.UUID | None,
         target_subject_id: uuid.UUID | None,
         **kwargs,
     ):
-        if respondent_id:
-            subject = await SubjectsService(
-                self.session, self.user_id
-            ).get_by_user_and_applet(respondent_id, applet_id)
-            if not subject:
-                raise AccessDeniedError()
-            await self.check_subject_answer_access(applet_id, subject.id)
-        elif target_subject_id:
+        if target_subject_id:
             await self.check_subject_answer_access(
                 applet_id, target_subject_id
             )

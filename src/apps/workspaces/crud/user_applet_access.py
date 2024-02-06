@@ -440,7 +440,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(UserSchema)
         )
 
-        assigned_respondents = select(
+        assigned_respondents = select(  # TODO subjects
             literal_column("val").cast(UUID)
         ).select_from(
             func.jsonb_array_elements_text(
@@ -469,7 +469,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     ),
                     and_(
                         UserAppletAccessSchema.role == Role.REVIEWER,
-                        UserSchema.id == any_(assigned_respondents),
+                        UserSchema.id == any_(assigned_respondents),  # TODO subjects here
                     ),
                 ),
             )
@@ -656,7 +656,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                             text("'access_id'"), UserAppletAccessSchema.id,
                             text("'role'"), UserAppletAccessSchema.role,
                             text("'encryption'"), AppletSchema.encryption,
-                            text("'reviewer_respondents'"), UserAppletAccessSchema.reviewer_respondents,  # noqa: E501
+                            text("'reviewer_subjects'"), UserAppletAccessSchema.reviewer_subjects,  # noqa: E501
                         ),
                         AppletSchema.id
                     )
@@ -1119,7 +1119,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return parse_obj_as(list[AppletRoles], data)
 
     async def get_responsible_persons(
-        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+        self, applet_id: uuid.UUID, subject_id: uuid.UUID | None
     ) -> list[UserSchema]:
         query: Query = select(UserSchema)
         query = query.where(UserAppletAccessSchema.soft_exists())
@@ -1128,7 +1128,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserAppletAccessSchema,
             UserSchema.id == UserAppletAccessSchema.user_id,
         )
-        if respondent_id:
+        if subject_id:
             query = query.where(
                 or_(
                     UserAppletAccessSchema.role == Role.OWNER,
@@ -1136,7 +1136,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     and_(
                         UserAppletAccessSchema.role == Role.REVIEWER,
                         UserAppletAccessSchema.meta.contains(
-                            dict(respondents=[str(respondent_id)])
+                            dict(subjects=[str(subject_id)])
                         ),
                     ),
                 )

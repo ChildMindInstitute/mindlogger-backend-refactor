@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from pydantic import EmailStr, Field, root_validator
+from pydantic import EmailStr, Extra, Field, root_validator
 
 from apps.applets.domain import ManagersRole, Role
 from apps.invitations.constants import InvitationStatus
@@ -76,9 +76,8 @@ class InvitationReviewerRequest(_InvitationRequest):
     to the user for "reviewer" role.
     """
 
-    respondents: list[uuid.UUID] = Field(
-        description="This field represents the list of users id's "
-        "which invited to the applet as a respondents",
+    subjects: list[uuid.UUID] = Field(
+        description="This field represents the list of subject id's",
     )
     workspace_prefix: str | None = Field(
         description="This field represents the user workspace prefix. "
@@ -123,8 +122,10 @@ class ReviewerMeta(InternalModel):
     """This model is used for internal needs
     for representation reviewer meta information.
     """
+    class Config:
+        extra = Extra.ignore
 
-    respondents: list[str]
+    subjects: list[str]
 
 
 class Invitation(InternalModel):
@@ -236,7 +237,7 @@ class InvitationDetailForReviewer(_InvitationDetail):
 
     email: EmailStr
     role: Role = Role.REVIEWER
-    respondents: list[uuid.UUID]
+    subjects: list[uuid.UUID]
 
 
 class InvitationDetailForManagers(_InvitationDetail):
@@ -327,9 +328,8 @@ class InvitationReviewerResponse(_InvitationResponse):
     for reviewer role.
     """
 
-    respondents: list[uuid.UUID] = Field(
-        description="This field represents the list of users id's "
-        "which invited to the applet as a respondents",
+    subjects: list[uuid.UUID] = Field(
+        description="This field represents the list of subject id's"
     )
     role: Role = Role.REVIEWER
 
