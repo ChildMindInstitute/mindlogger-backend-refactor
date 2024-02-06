@@ -1,7 +1,6 @@
 import uuid
 
 from apps.shared.exception import AccessDeniedError
-from apps.subjects.services import SubjectsService
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import (

@@ -192,7 +192,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         schema.id = model_id
         return schema
 
-    async def reduce_applet_subject_ids(self, applet_id, subject_ids: list[uuid.UUID | str]) -> list[uuid.UUID]:
+    async def reduce_applet_subject_ids(self, applet_id, subject_ids: list[uuid.UUID] | list[str]) -> list[uuid.UUID]:
         query = select(SubjectSchema.id).where(
             SubjectSchema.id.in_(subject_ids),
             SubjectSchema.applet_id == applet_id,
