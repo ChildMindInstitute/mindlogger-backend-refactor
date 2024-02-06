@@ -1,5 +1,5 @@
 import os
-from typing import Any, AsyncGenerator, cast
+from typing import Any, AsyncGenerator, Generator, cast
 
 import pytest
 import taskiq_fastapi
@@ -12,7 +12,10 @@ from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, SessionTransaction
 
-from apps.answers.deps.preprocess_arbitrary import get_answer_session
+from apps.answers.deps.preprocess_arbitrary import (
+    get_answer_session,
+    get_answer_session_by_subject,
+)
 from apps.shared.test.client import TestClient
 from broker import broker
 from config import settings
@@ -132,15 +135,21 @@ def client(session: AsyncSession, app: FastAPI) -> TestClient:
 @pytest.fixture
 def arbitrary_client(
     app: FastAPI, session: AsyncSession, arbitrary_session: AsyncSession
-) -> TestClient:
+) -> Generator[TestClient, None, None]:
     """Use only for tests which interact with arbitrary servers, because
     arbitrary (answers) session has higher prioritet then general session.
     """
     app.dependency_overrides[get_session] = lambda: session
     app.dependency_overrides[get_answer_session] = lambda: arbitrary_session
+    app.dependency_overrides[get_answer_session_by_subject] = (
+        lambda: arbitrary_session
+    )
     taskiq_fastapi.populate_dependency_context(broker, app)
     client = TestClient(app)
-    return client
+    yield client
+    app.dependency_overrides.pop(get_answer_session_by_subject)
+    app.dependency_overrides.pop(get_answer_session)
+
 
 
 def before():

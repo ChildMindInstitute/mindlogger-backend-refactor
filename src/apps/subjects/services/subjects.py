@@ -177,3 +177,8 @@ class SubjectsService:
             user_id, applet_id
         )
         return Subject.from_orm(model) if model else None
+
+    async def delete_hard(self, id_: uuid.UUID):
+        await SubjectsCrud(self.session).delete(id_)
+
+

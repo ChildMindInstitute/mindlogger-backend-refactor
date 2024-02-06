@@ -1,10 +1,12 @@
 import http
+import json
 import uuid
 
 import pytest
 from asyncpg import UniqueViolationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.answers.crud.answers import AnswersCRUD
 from apps.shared.test import BaseTest
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.domain import (
@@ -56,11 +58,106 @@ def subject_updated_schema(subject_schema):
     )
 
 
+@pytest.fixture
+def answer_create_payload():
+    return dict(
+        submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
+        applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+        activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
+        version="1.0.0",
+        created_at=1690188731636,
+        answer=dict(
+            user_public_key="user key",
+            answer=json.dumps(
+                dict(
+                    value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                    additional_text=None,
+                )
+            ),
+            events=json.dumps(dict(events=["event1", "event2"])),
+            item_ids=[
+                "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+            ],
+            identifier="encrypted_identifier",
+            scheduled_time=1690188679657,
+            start_time=1690188679657,
+            end_time=1690188731636,
+            scheduledEventId="eventId",
+            localEndDate="2022-10-01",
+            localEndTime="12:35:00",
+        ),
+        alerts=[
+            dict(
+                activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                message="hello world",
+            )
+        ],
+        client=dict(
+            appId="mindlogger-mobile",
+            appVersion="0.21.48",
+            width=819,
+            height=1080,
+        ),
+    )
+
+
+@pytest.fixture
+def answer_create_arbitrary_payload():
+    return dict(
+        submit_id="270d86e0-2158-4d18-befd-86b3ce0122a1",
+        applet_id="92917a56-d586-4613-b7aa-991f2c4b15b8",
+        activity_id="cca523e4-ab59-4bbc-a0b8-5fcb2cdda58d",
+        version="1.1.0",
+        created_at=1690188731636,
+        answer=dict(
+            user_public_key="user key",
+            answer=json.dumps(
+                dict(
+                    value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                    additional_text=None,
+                )
+            ),
+            events=json.dumps(dict(events=["event1", "event2"])),
+            item_ids=[
+                "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+            ],
+            identifier="encrypted_identifier",
+            scheduled_time=1690188679657,
+            start_time=1690188679657,
+            end_time=1690188731636,
+        ),
+        alerts=[
+            dict(
+                activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                message="hello world",
+            )
+        ],
+        client=dict(
+            appId="mindlogger-mobile",
+            appVersion="0.21.48",
+            width=819,
+            height=1080,
+        ),
+    )
+
+
 class TestSubjects(BaseTest):
     fixtures = [
         "users/fixtures/users.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
+        "applets/fixtures/applet_histories.json",
+        "activities/fixtures/activities.json",
+        "activities/fixtures/activity_items.json",
+        "activity_flows/fixtures/activity_flows.json",
+        "activity_flows/fixtures/activity_flow_items.json",
+        "activities/fixtures/activity_histories.json",
+        "activities/fixtures/activity_item_histories.json",
+        "activity_flows/fixtures/activity_flow_histories.json",
+        "activity_flows/fixtures/activity_flow_item_histories.json",
+        "workspaces/fixtures/workspaces.json",
         "subjects/fixtures/subjects.json",
     ]
 
@@ -71,6 +168,7 @@ class TestSubjects(BaseTest):
     subject_respondent_details_url = (
         "/subjects/{subject_id}/respondents/{respondent_id}"
     )
+    answer_url = "/answers"
 
     async def test_create_subject(self, client, create_shell_body):
         creator_id = "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
@@ -217,3 +315,74 @@ class TestSubjects(BaseTest):
             actual = getattr(actual_subject, field_name)
             expected = getattr(original_subject, field_name)
             assert actual == expected
+
+    async def test_successfully_delete_subject_without_answers(
+        self, session, client, answer_create_payload, mock_kiq_report
+    ):
+        subject_id = uuid.UUID("ee5e2f55-8e32-40af-8ef9-24e332c31d7c")
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.post(
+            self.answer_url, data=answer_create_payload
+        )
+
+        assert response.status_code == http.HTTPStatus.CREATED
+        delete_url = self.subject_detail_url.format(subject_id=subject_id)
+        res = await client.delete(delete_url, data=dict(
+            deleteAnswers=False
+        ))
+        assert res.status_code == http.HTTPStatus.OK
+
+        subject = await SubjectsCrud(session).get_by_id(subject_id)
+        assert subject, subject.is_deleted
+        count = await AnswersCRUD(session).count(
+            target_subject_id=subject_id
+        )
+        assert count
+
+    async def test_successfully_delete_subject_with_answers(
+        self, session, client, answer_create_payload, mock_kiq_report
+    ):
+        subject_id = uuid.UUID("ee5e2f55-8e32-40af-8ef9-24e332c31d7c")
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        response = await client.post(
+            self.answer_url, data=answer_create_payload
+        )
+
+        assert response.status_code == http.HTTPStatus.CREATED
+        delete_url = self.subject_detail_url.format(subject_id=subject_id)
+        res = await client.delete(delete_url, data=dict(deleteAnswers=True))
+        assert res.status_code == http.HTTPStatus.OK
+        subject = await SubjectsCrud(session).get_by_id(subject_id)
+        assert not subject
+        count = await AnswersCRUD(session).count(
+            target_subject_id=subject_id
+        )
+        assert count == 0
+
+    @pytest.mark.parametrize("email,password,expected", (
+            # Owner
+            ("tom@mindlogger.com", "Test1234!", http.HTTPStatus.OK),
+            # Manager
+            ("lucy@gmail.com", "Test123", http.HTTPStatus.OK),
+            # Coordinator
+            ("bob@gmail.com", "Test1234!", http.HTTPStatus.OK),
+            # Editor
+            ("pitbronson@mail.com", "Test1234!", http.HTTPStatus.FORBIDDEN),
+            # Reviewer
+            ("billbronson@mail.com", "Test1234!", http.HTTPStatus.FORBIDDEN)
+    ))
+    async def test_error_try_delete_subject_by_not_owner(
+            self, 
+            session, 
+            client, 
+            answer_create_payload, 
+            mock_kiq_report,
+            email,
+            password,
+            expected
+    ):
+        subject_id = uuid.UUID("ee5e2f55-8e32-40af-8ef9-24e332c31d7c")
+        await client.login(self.login_url, email, password)
+        delete_url = self.subject_detail_url.format(subject_id=subject_id)
+        res = await client.delete(delete_url, data=dict(deleteAnswers=True))
+        assert res.status_code == expected
