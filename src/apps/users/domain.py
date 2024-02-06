@@ -22,7 +22,7 @@ __all__ = [
 ]
 
 
-class UserCreateRequest(InternalModel):
+class UserCreateRequest(PublicModel):
     """This model represents user `create request` data model."""
 
     email: EmailStr
