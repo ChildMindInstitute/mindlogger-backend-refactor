@@ -1,4 +1,5 @@
 import os
+import uuid
 from typing import Any, AsyncGenerator, Generator, cast
 
 import pytest
@@ -29,6 +30,7 @@ pytest_plugins = [
     "apps.activities.tests.fixtures.items",
     "apps.activities.tests.fixtures.conditional_logic",
     "apps.activities.tests.fixtures.scores_reports",
+    "apps.users.tests.fixtures.users",
 ]
 
 
@@ -209,3 +211,8 @@ def mock_reencrypt_kiq(mocker):
     mock = mocker.patch("apps.users.api.password.reencrypt_answers.kiq")
     yield mock
     mock.stop_all()
+
+
+@pytest.fixture(scope="session")
+def uuid_zero() -> uuid.UUID:
+    return uuid.UUID("00000000-0000-0000-0000-000000000000")

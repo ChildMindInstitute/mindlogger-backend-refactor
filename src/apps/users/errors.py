@@ -8,9 +8,7 @@ class UserNotFound(NotFoundError):
 
 
 class UserAlreadyExistError(ValidationError):
-    message = _(
-        "That email address is already associated with a MindLogger account."
-    )
+    message = _("That email address is already associated with a MindLogger account.")
 
 
 class EmailAddressError(ValidationError):
@@ -26,7 +24,7 @@ class PasswordRecoveryKeyNotFound(NotFoundError):
     message = _("Password recovery key not found.")
 
 
-class PasswordHasSpacesError(NotFoundError):
+class PasswordHasSpacesError(ValidationError):
     message = _("Password should not contain blank spaces")
 
 
