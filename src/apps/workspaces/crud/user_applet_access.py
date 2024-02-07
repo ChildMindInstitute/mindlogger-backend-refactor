@@ -560,6 +560,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(
             has_access,
             SubjectSchema.applet_id == applet_id if applet_id else True,
+            SubjectSchema.soft_exists()
         )
 
         query = query.group_by(
