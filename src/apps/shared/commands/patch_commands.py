@@ -35,6 +35,12 @@ PatchRegister.register(
     manage_session=False,
 )
 PatchRegister.register(
+    file_path="m2_4951_add_missing_job_status_to_the_job_status_enum.sql",
+    task_id="M2-4951",
+    description="Add missing job_status to the job_status enum",
+    manage_session=False,
+)
+PatchRegister.register(
     file_path="m2_4608_create_subjects.sql",
     task_id="M2-4608",
     description="[Subject] Create subject record for each respondent",
@@ -59,7 +65,6 @@ PatchRegister.register(
     task_id="M2-5116",
     description="[Subject] Populate alerts with subject ids",
 )
-
 
 app = typer.Typer()
 
@@ -147,7 +152,9 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
 
     arbitrary_session_maker = None
     if arbitrary:
-        arbitrary_session_maker = session_manager.get_session(arbitrary.database_uri)
+        arbitrary_session_maker = session_manager.get_session(
+            arbitrary.database_uri
+        )
 
     session_maker = session_manager.get_session()
 
@@ -177,7 +184,9 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
         try:
             # run main from the file
             patch_file = importlib.import_module(
-                str(__package__) + ".patches." + patch.file_path.replace(".py", ""),
+                str(__package__)
+                + ".patches."
+                + patch.file_path.replace(".py", ""),
             )
 
             # if manage_session is True, pass sessions to patch_file main
@@ -189,7 +198,9 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
                         if arbitrary_session_maker:
                             async with arbitrary_session_maker() as arbitrary_session:  # noqa: E501
                                 async with atomic(arbitrary_session):
-                                    await patch_file.main(session, arbitrary_session)
+                                    await patch_file.main(
+                                        session, arbitrary_session
+                                    )
                         else:
                             await patch_file.main(session)
 
