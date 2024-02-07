@@ -3,7 +3,6 @@ from apps.shared.test import BaseTest
 
 class TestAlert(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_histories.json",
         "applets/fixtures/applet_user_accesses.json",

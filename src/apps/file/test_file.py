@@ -31,7 +31,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @mock.patch("infrastructure.utility.cdn_arbitrary.ArbitraryS3CdnClient.upload")
     async def test_arbitrary_upload_to_s3_aws(self, mock_client: mock.MagicMock, session, client, **kwargs):
-        await client.login(self.login_url, "ivan@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.AWS, session)
 
         content = io.BytesIO(b"File content")
@@ -48,7 +48,7 @@ class TestAnswerActivityItems(BaseTest):
         return_value=(iter(("a", "b")), "txt"),
     )
     async def test_arbitrary_download_from_s3_aws(self, mock_client: mock.MagicMock, session, client, **kwargs):
-        await client.login(self.login_url, "ivan@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.AWS, session)
 
         response = await client.post(
@@ -60,7 +60,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @mock.patch("infrastructure.utility.cdn_arbitrary.ArbitraryGCPCdnClient.upload")
     async def test_arbitrary_upload_to_s3_gcp(self, mock_client: mock.MagicMock, session, client, **kwargs):
-        await client.login(self.login_url, "ivan@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.GCP, session)
         content = io.BytesIO(b"File content")
         response = await client.post(
@@ -76,7 +76,7 @@ class TestAnswerActivityItems(BaseTest):
         return_value=(iter(("a", "b")), "txt"),
     )
     async def test_arbitrary_download_from_s3_gcp(self, mock_client: mock.MagicMock, session, client, **kwargs):
-        await client.login(self.login_url, "ivan@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.GCP, session)
 
         response = await client.post(
@@ -99,7 +99,7 @@ class TestAnswerActivityItems(BaseTest):
         *args,
         **kwargs,
     ):
-        await client.login(self.login_url, "ivan@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.AZURE, session)
         content = io.BytesIO(b"File content")
         response = await client.post(
@@ -112,7 +112,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @mock.patch("infrastructure.utility.cdn_arbitrary.CDNClient.check_existence")
     async def test_default_storage_check_existence(self, mock_client: mock.MagicMock, session, client, **kwargs):
-        await client.login(self.login_url, "ivan@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         response = await client.post(
             self.existance_url.format(applet_id=self.applet_id),
             data={"files": [self.file_id]},
@@ -124,7 +124,7 @@ class TestAnswerActivityItems(BaseTest):
         "infrastructure.utility.cdn_arbitrary.ArbitraryS3CdnClient.check_existence"  # noqa
     )
     async def test_arbitary_s3_aws_check_existence(self, mock_client: mock.MagicMock, session, client, **kwargs):
-        await client.login(self.login_url, "ivan@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.AWS, session)
         response = await client.post(
             self.existance_url.format(applet_id=self.applet_id),

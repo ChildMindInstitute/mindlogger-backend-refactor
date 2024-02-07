@@ -12,7 +12,6 @@ from apps.shared.test import BaseTest
 
 class TestActivityItems(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "themes/fixtures/themes.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
@@ -31,8 +30,8 @@ class TestActivityItems(BaseTest):
     activity_detail_url = "activities/{activity_id}"
     applet_workspace_detail_url = "workspaces/{owner_id}/applets/{pk}"
 
-    async def test_creating_applet_with_activity_items(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_creating_applet_with_activity_items(self, client, tom):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         create_data = dict(
             display_name="User daily behave",
             encryption=dict(
@@ -569,7 +568,7 @@ class TestActivityItems(BaseTest):
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
@@ -577,8 +576,8 @@ class TestActivityItems(BaseTest):
         response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
 
-    async def test_creating_applet_with_ab_trails_mobile_activity_items(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_creating_applet_with_ab_trails_mobile_activity_items(self, client, tom):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         create_data = dict(
             display_name="mobile_activity_applet",
             encryption=dict(
@@ -671,7 +670,7 @@ class TestActivityItems(BaseTest):
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
@@ -679,8 +678,8 @@ class TestActivityItems(BaseTest):
         response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
 
-    async def test_creating_applet_with_ab_trails_tablet_activity_items(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_creating_applet_with_ab_trails_tablet_activity_items(self, client, tom):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         create_data = dict(
             display_name="tablet_activity_applet",
             encryption=dict(
@@ -773,7 +772,7 @@ class TestActivityItems(BaseTest):
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
@@ -781,8 +780,8 @@ class TestActivityItems(BaseTest):
         response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
 
-    async def test_creating_applet_with_gyroscope_activity_items(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_creating_applet_with_gyroscope_activity_items(self, client, tom):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         create_data = dict(
             display_name="gyroscope_activity_applet",
             encryption=dict(
@@ -926,7 +925,7 @@ class TestActivityItems(BaseTest):
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
@@ -934,8 +933,8 @@ class TestActivityItems(BaseTest):
         response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
 
-    async def test_creating_applet_with_touch_activity_items(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_creating_applet_with_touch_activity_items(self, client, tom):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         create_data = dict(
             display_name="touch_activity_applet",
             encryption=dict(
@@ -1079,7 +1078,7 @@ class TestActivityItems(BaseTest):
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
@@ -1087,8 +1086,8 @@ class TestActivityItems(BaseTest):
         response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == 200
 
-    async def test_creating_applet_with_activity_items_condition(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_creating_applet_with_activity_items_condition(self, client, tom):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         create_data = dict(
             display_name="User daily behave",
             encryption=dict(
@@ -1657,7 +1656,7 @@ class TestActivityItems(BaseTest):
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=create_data,
         )
         assert response.status_code == 400
@@ -1669,7 +1668,7 @@ class TestActivityItems(BaseTest):
         create_data["activities"][0]["items"][6] = text_item
 
         response = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
@@ -1691,8 +1690,8 @@ class TestActivityItems(BaseTest):
         assert response.status_code == 200
         assert isinstance(response.json()["result"]["items"][6]["conditionalLogic"], dict)
 
-    async def test_creating_activity_items_without_option_value(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_creating_activity_items_without_option_value(self, client, tom):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         create_data = dict(
             display_name="User daily behave",
             encryption=dict(
@@ -1910,7 +1909,7 @@ class TestActivityItems(BaseTest):
             ],
         )
         response = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
@@ -1961,8 +1960,8 @@ class TestActivityItems(BaseTest):
         )
         assert response.status_code == 200
 
-    async def test_create_applet_with_flanker_preformance_task(self, client, activity_flanker_data):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_create_applet_with_flanker_preformance_task(self, client, activity_flanker_data, tom):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
         create_data = dict(
             display_name="Flanker",
@@ -1980,7 +1979,7 @@ class TestActivityItems(BaseTest):
         )
 
         response = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
@@ -1991,7 +1990,7 @@ class TestActivityItems(BaseTest):
         # Check that the 'get' after creating new applet returns correct data
         response = await client.get(
             self.applet_workspace_detail_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                owner_id=tom.id,
                 pk=response.json()["result"]["id"],
             )
         )
@@ -1999,8 +1998,8 @@ class TestActivityItems(BaseTest):
         assert response.json()["result"]["activities"][0]["isPerformanceTask"]
         assert response.json()["result"]["activities"][0]["performanceTaskType"] == "flanker"
 
-    async def test_applet_add_performance_task_to_the_applet(self, client, activity_flanker_data):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_applet_add_performance_task_to_the_applet(self, client, activity_flanker_data, tom):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
         create_data = dict(
             display_name="Add flanker to existing applet",
@@ -2046,7 +2045,7 @@ class TestActivityItems(BaseTest):
         )
 
         response = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=create_data,
         )
         assert response.status_code == 201
@@ -2058,7 +2057,7 @@ class TestActivityItems(BaseTest):
         # it here
         response = await client.get(
             self.applet_workspace_detail_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                owner_id=tom.id,
                 pk=response.json()["result"]["id"],
             )
         )
@@ -2082,7 +2081,7 @@ class TestActivityItems(BaseTest):
         # Check the 'get' method
         response = await client.get(
             self.applet_workspace_detail_url.format(
-                owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+                owner_id=tom.id,
                 pk=response.json()["result"]["id"],
             )
         )
@@ -2092,12 +2091,12 @@ class TestActivityItems(BaseTest):
         assert flanker["performanceTaskType"] == "flanker"
 
     # TODO: move all validation test to the activity domain test
-    async def test_create_applet_item_name_is_not_valid(self, client, applet_minimal_data) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_create_applet_item_name_is_not_valid(self, client, applet_minimal_data, tom) -> None:
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         data["activities"][0]["items"][0]["name"] = "%name"
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 422
@@ -2105,13 +2104,13 @@ class TestActivityItems(BaseTest):
         assert len(errors) == 1
         assert errors[0]["message"] == activity_errors.IncorrectNameCharactersError.message
 
-    async def test_create_applet_item_config_not_valid(self, client, applet_minimal_data) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_create_applet_item_config_not_valid(self, client, applet_minimal_data, tom) -> None:
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         del data["activities"][0]["items"][0]["config"]["add_scores"]
         del data["activities"][0]["items"][0]["config"]["set_alerts"]
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 422
@@ -2119,12 +2118,12 @@ class TestActivityItems(BaseTest):
         assert len(errors) == 1
         assert errors[0]["message"] == activity_errors.IncorrectConfigError.message.format(type=SingleSelectionConfig)
 
-    async def test_create_applet_not_valid_response_type(self, client, applet_minimal_data) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_create_applet_not_valid_response_type(self, client, applet_minimal_data, tom) -> None:
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         data["activities"][0]["items"][0]["response_type"] = "NotValid"
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 422
@@ -2145,13 +2144,15 @@ class TestActivityItems(BaseTest):
             ),
         ),
     )
-    async def test_create_applet_not_valid_response_values(self, client, applet_minimal_data, value, error_msg) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_create_applet_not_valid_response_values(
+        self, client, applet_minimal_data, tom, value, error_msg
+    ) -> None:
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         data["activities"][0]["items"][0]["response_values"] = value
         data["activities"][0]["items"][0]["response_type"] = ResponseType.SINGLESELECT
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 422
@@ -2159,12 +2160,12 @@ class TestActivityItems(BaseTest):
         assert len(errors) == 1
         assert errors[0]["message"] == error_msg
 
-    async def test_create_applet_without_item_response_type(self, client, applet_minimal_data) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_create_applet_without_item_response_type(self, client, applet_minimal_data, tom) -> None:
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         del data["activities"][0]["items"][0]["response_type"]
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 422
@@ -2173,14 +2174,14 @@ class TestActivityItems(BaseTest):
         assert errors[0]["message"] == "field required"
 
     async def test_create_applet_single_select_add_scores_not_scores_in_response_values(
-        self, client, applet_minimal_data
+        self, client, applet_minimal_data, tom
     ) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         data["activities"][0]["items"][0]["config"]["add_scores"] = True
         data["activities"][0]["items"][0]["response_type"] = ResponseType.SINGLESELECT
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 422
@@ -2189,20 +2190,16 @@ class TestActivityItems(BaseTest):
         assert errors[0]["message"] == activity_errors.ScoreRequiredForResponseValueError.message
 
     async def test_create_applet_slider_response_values_add_scores_not_scores_in_response_values(
-        self,
-        client,
-        applet_minimal_data,
-        slider_response_values,
-        slider_config,
+        self, client, applet_minimal_data, slider_response_values, slider_config, tom
     ) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         slider_config.add_scores = True
         data["activities"][0]["items"][0]["config"] = slider_config.dict()
         data["activities"][0]["items"][0]["response_type"] = ResponseType.SLIDER
         data["activities"][0]["items"][0]["response_values"] = slider_response_values.dict()
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 422
@@ -2211,13 +2208,9 @@ class TestActivityItems(BaseTest):
         assert errors[0]["message"] == activity_errors.NullScoreError.message
 
     async def test_create_applet_slider_response_values_add_scores_scores_not_for_all_values(
-        self,
-        client,
-        applet_minimal_data,
-        slider_response_values,
-        slider_config,
+        self, client, applet_minimal_data, slider_response_values, slider_config, tom
     ) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         slider_config.add_scores = True
         min_val = slider_response_values.min_value
@@ -2229,7 +2222,7 @@ class TestActivityItems(BaseTest):
         data["activities"][0]["items"][0]["response_type"] = ResponseType.SLIDER
         data["activities"][0]["items"][0]["response_values"] = slider_response_values_data
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 422
@@ -2238,13 +2231,9 @@ class TestActivityItems(BaseTest):
         assert errors[0]["message"] == activity_errors.InvalidScoreLengthError.message
 
     async def test_create_applet_slider_rows_response_values_add_scores_true_no_scores(
-        self,
-        client,
-        applet_minimal_data,
-        slider_rows_response_values,
-        slider_rows_config,
+        self, client, applet_minimal_data, slider_rows_response_values, slider_rows_config, tom
     ) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         slider_rows_config_data = slider_rows_config.dict()
         slider_rows_response_values_data = slider_rows_response_values.dict()
@@ -2255,7 +2244,7 @@ class TestActivityItems(BaseTest):
         item["response_type"] = ResponseType.SLIDERROWS
         item["response_values"] = slider_rows_response_values_data
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 422
@@ -2264,13 +2253,9 @@ class TestActivityItems(BaseTest):
         assert errors[0]["message"] == activity_errors.NullScoreError.message
 
     async def test_create_applet_slider_rows_response_values_add_scores_true_scores_not_for_all_values(
-        self,
-        client,
-        applet_minimal_data,
-        slider_rows_response_values,
-        slider_rows_config,
+        self, client, applet_minimal_data, slider_rows_response_values, slider_rows_config, tom
     ) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         slider_rows_response_values_data = slider_rows_response_values.dict()
         slider_rows_config_data = slider_rows_config.dict()
@@ -2283,7 +2268,7 @@ class TestActivityItems(BaseTest):
         item["response_type"] = ResponseType.SLIDERROWS
         item["response_values"] = slider_rows_response_values_data
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 422
@@ -2293,9 +2278,9 @@ class TestActivityItems(BaseTest):
 
     @pytest.mark.parametrize("response_type", (ResponseType.SINGLESELECT, ResponseType.MULTISELECT))
     async def test_create_applet_single_multi_select_response_values_value_null_auto_set_value(
-        self, client, applet_minimal_data, response_type
+        self, client, applet_minimal_data, tom, response_type
     ) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         item = data["activities"][0]["items"][0]
         option = item["response_values"]["options"][0]
@@ -2305,7 +2290,7 @@ class TestActivityItems(BaseTest):
         item["response_values"]["options"].append(option2)
         item["response_type"] = response_type
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 201
@@ -2316,13 +2301,9 @@ class TestActivityItems(BaseTest):
             assert o["value"] == i
 
     async def test_create_applet_single_select_rows_response_values_add_alerts_no_datamatrix(
-        self,
-        client,
-        applet_minimal_data,
-        single_select_row_response_values,
-        single_select_row_config,
+        self, client, applet_minimal_data, single_select_row_response_values, single_select_row_config, tom
     ) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         single_select_row_config_data = single_select_row_config.dict()
         single_select_row_response_values_data = single_select_row_response_values.dict()
@@ -2333,7 +2314,7 @@ class TestActivityItems(BaseTest):
         item["response_type"] = ResponseType.SINGLESELECTROWS
         item["response_values"] = single_select_row_response_values_data
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 422
@@ -2341,8 +2322,8 @@ class TestActivityItems(BaseTest):
         assert len(errors) == 1
         assert errors[0]["message"] == activity_errors.DataMatrixRequiredError.message
 
-    async def test_create_applet_flow_wrong_activity_key(self, client, applet_minimal_data) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_create_applet_flow_wrong_activity_key(self, client, applet_minimal_data, tom) -> None:
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = applet_minimal_data.dict()
         activity_key = data["activities"][0]["key"]
         activity_wrong_key = uuid.uuid4()
@@ -2357,7 +2338,7 @@ class TestActivityItems(BaseTest):
             )
         )
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == activity_errors.FlowItemActivityKeyNotFoundError.status_code
@@ -2365,13 +2346,13 @@ class TestActivityItems(BaseTest):
 
         data["activity_flows"][0]["items"][0]["activity_key"] = activity_key
         resp = await client.post(
-            self.applet_create_url.format(owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
+            self.applet_create_url.format(owner_id=tom.id),
             data=data,
         )
         assert resp.status_code == 201
 
-    async def test_update_applet_duplicated_activity_item_name_is_not_allowed(self, client, applet_minimal_data):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_update_applet_duplicated_activity_item_name_is_not_allowed(self, client, applet_minimal_data, tom):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = AppletUpdate(**applet_minimal_data.dict(exclude_unset=True)).dict()
         item = copy.deepcopy(data["activities"][0]["items"][0])
         data["activities"][0]["items"].append(item)

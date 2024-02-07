@@ -14,12 +14,14 @@ class UserService:
     def __init__(self, session) -> None:
         self.session = session
 
-    async def create_superuser(self) -> None:
+    # TODO: Remove later, keep for now for backward compatibility for tests
+    async def create_superuser(self, test_id: uuid.UUID = uuid.uuid4()) -> None:
         crud = UsersCRUD(self.session)
         super_admin = await crud.get_super_admin()
         # Let's keep this frozen feature
         if super_admin is None:
             super_admin = UserSchema(
+                id=test_id,
                 email=hash_sha224(settings.super_admin.email),
                 first_name=settings.super_admin.first_name,
                 last_name=settings.super_admin.last_name,
@@ -35,11 +37,13 @@ class UserService:
             )
             await UserWorkspaceCRUD(self.session).save(schema=workspace)
 
-    async def create_anonymous_respondent(self) -> None:
+    # TODO: Remove later, keep for now for backward compatibility for tests
+    async def create_anonymous_respondent(self, test_id: uuid.UUID = uuid.uuid4()) -> None:
         crud = UsersCRUD(self.session)
         anonymous_respondent = await crud.get_anonymous_respondent()
         if not anonymous_respondent:
             anonymous_respondent = UserSchema(
+                id=test_id,
                 email=hash_sha224(settings.anonymous_respondent.email),
                 first_name=settings.anonymous_respondent.first_name,
                 last_name=settings.anonymous_respondent.last_name,
@@ -51,16 +55,26 @@ class UserService:
             )
             await crud.save(anonymous_respondent)
 
-    async def create_user(self, data: UserCreate) -> User:
-        user_schema = await UsersCRUD(self.session).save(
-            UserSchema(
+    # TODO: remove test_id, when all JSON fixtures are deleted
+    async def create_user(self, data: UserCreate, test_id: uuid.UUID | None = None) -> User:
+        if test_id is not None:
+            schema = UserSchema(
+                id=test_id,
                 email=data.hashed_email,
                 first_name=data.first_name,
                 last_name=data.last_name,
                 hashed_password=data.hashed_password,
                 email_encrypted=data.email,
             )
-        )
+        else:
+            schema = UserSchema(
+                email=data.hashed_email,
+                first_name=data.first_name,
+                last_name=data.last_name,
+                hashed_password=data.hashed_password,
+                email_encrypted=data.email,
+            )
+        user_schema = await UsersCRUD(self.session).save(schema)
 
         user: User = User.from_orm(user_schema)
         return user

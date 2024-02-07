@@ -4,8 +4,6 @@ from apps.shared.test import BaseTest
 
 
 class TestReusableItem(BaseTest):
-    fixtures = ["users/fixtures/users.json"]
-
     login_url = "/auth/login"
     create_url = "activities/item_choices"
     update_url = "activities/item_choices"

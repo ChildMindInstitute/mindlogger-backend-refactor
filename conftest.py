@@ -32,7 +32,25 @@ pytest_plugins = [
     "apps.activities.tests.fixtures.activities",
     "apps.users.tests.fixtures.users",
     "apps.applets.tests.fixtures.applets",
+    "apps.users.tests.fixtures.user_devices",
 ]
+
+
+@pytest.fixture(scope="session")
+async def global_engine():
+    engine = build_engine(settings.database.url)
+    yield engine
+    await engine.dispose()
+
+
+@pytest.fixture(scope="session")
+async def global_session(global_engine: AsyncEngine):
+    """
+    Global session is used to create pre-defined objects in database for ALL pytest session.
+    Inside tests and for local/intermediate fixtures please use session fixture.
+    """
+    async with AsyncSession(bind=global_engine) as session:
+        yield session
 
 
 # TODO: Instead of custom faketime for tests add function wrapper `now`
@@ -73,7 +91,9 @@ def pytest_sessionstart(session) -> None:
     before()
 
 
-def pytest_sessionfinish(session) -> None:
+@pytest.hookimpl(trylast=True)
+def pytest_sessionfinish(session, exitstatus) -> None:
+    # Don't run downgrade migrations
     keepdb = session.config.getvalue("keepdb")
     if not keepdb:
         after()
