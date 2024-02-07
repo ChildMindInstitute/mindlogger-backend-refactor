@@ -1,18 +1,20 @@
 import asyncio
 import datetime
 import uuid
-from unittest.mock import AsyncMock
+from unittest.mock import ANY, AsyncMock
 
 import pytest
 from httpx import Response as HttpResponse
 from pytest_mock import MockFixture
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.router import router as auth_router
 from apps.mailing.services import TestMail
 from apps.shared.test.client import TestClient
-from apps.users.domain import PasswordRecoveryRequest, UserCreate
+from apps.users.cruds.user import UsersCRUD
+from apps.users.domain import PasswordRecoveryRequest, User, UserCreate
 from apps.users.errors import PasswordHasSpacesError, ReencryptionInProgressError
 from apps.users.router import router as user_router
 from apps.users.tests.factories import CacheEntryFactory, PasswordRecoveryInfoFactory, PasswordUpdateRequestFactory
@@ -222,3 +224,14 @@ class TestPassword:
         mocker.patch("apps.users.services.PasswordRecoveryCache.get")
         resp = await client.get(self.password_recovery_healthcheck_url, query=data)
         assert resp.status_code == status.HTTP_200_OK
+
+    async def test_password_recovery__update_user_email_encrypted_if_no_email_encrypted(
+        self, client: TestClient, user_create: UserCreate, user: User, mocker: MockFixture, session: AsyncSession
+    ):
+        await client.login(self.get_token_url, user_create.email, user_create.password)
+        updated = await UsersCRUD(session).update_encrypted_email(user, "")
+        assert not updated.email_encrypted
+        spy = mocker.spy(UsersCRUD, "update_encrypted_email")
+        response = await client.post(url=self.password_recovery_url, data={"email": user_create.email})
+        assert response.status_code == status.HTTP_201_CREATED
+        spy.assert_awaited_once_with(ANY, ANY, user_create.email)

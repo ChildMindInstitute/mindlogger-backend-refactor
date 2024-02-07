@@ -136,12 +136,12 @@ async def mike(mike_create: UserCreate, global_session: AsyncSession, pytestconf
 @pytest.fixture(scope="session", autouse=True)
 async def anonym(global_session: AsyncSession, pytestconfig: Config):
     crud = UsersCRUD(global_session)
-    schema = await crud.get_super_admin()
+    schema = await crud.get_anonymous_respondent()
     if not schema:
         await UserService(global_session).create_anonymous_respondent(
             test_id=uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa7")
         )
-        schema = await crud.get_super_admin()
+        schema = await crud.get_anonymous_respondent()
     user = User.from_orm(schema)
     await global_session.commit()
     yield user
