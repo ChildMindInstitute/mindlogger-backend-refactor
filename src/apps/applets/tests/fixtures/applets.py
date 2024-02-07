@@ -2,7 +2,22 @@ import uuid
 
 import pytest
 
+from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.response_type_config import ResponseType
+from apps.applets.domain.applet_create_update import AppletCreate
+from apps.applets.domain.base import Encryption
+from apps.applets.tests import constants
+
+
+@pytest.fixture(scope="session")
+def encryption() -> Encryption:
+    return Encryption(
+        public_key=str(constants.TEST_PUBLIC_KEY),
+        prime=str(constants.TEST_PRIME),
+        base=str(constants.TEST_BASE),
+        # Account id is not used co can be random uuid
+        account_id=str(uuid.uuid4()),
+    )
 
 
 @pytest.fixture
@@ -73,7 +88,7 @@ def activity_flanker_data():
                     en="Flanker_Practise_1",
                     fr="Flanker_Practise_1",
                 ),
-                response_type="flanker",
+                response_type=ResponseType.FLANKER,
                 response_values=None,
                 config=dict(
                     stimulusTrials=[
@@ -180,186 +195,18 @@ def activity_flanker_data():
 
 
 @pytest.fixture
-def single_select_response_values():
-    return dict(
-        options=[
-            dict(
-                id=uuid.uuid4(),
-                text="text",
-                image=None,
-                score=None,
-                tooltip=None,
-                is_hidden=False,
-                color=None,
-                value=0,
-            )
-        ]
-    )
-
-
-@pytest.fixture
-def single_select_config():
-    return dict(
-        randomize_options=False,
-        timer=0,
-        add_scores=False,
-        set_alerts=False,
-        add_tooltip=False,
-        set_palette=False,
-        remove_back_button=False,
-        skippable_item=False,
-        additional_response_option=dict(
-            text_input_option=False,
-            text_input_required=False,
-        ),
-    )
-
-
-@pytest.fixture
-def applet_minimal_data(single_select_response_values, single_select_config):
-    return dict(
+def applet_minimal_data(encryption: Encryption, activity_create: ActivityCreate) -> AppletCreate:
+    return AppletCreate(
         display_name="minimal required data to create applet",
-        encryption=dict(
-            public_key=uuid.uuid4().hex,
-            prime=uuid.uuid4().hex,
-            base=uuid.uuid4().hex,
-            account_id=str(uuid.uuid4()),
-        ),
-        description=dict(en="description"),
-        activities=[
-            dict(
-                name="name",
-                key=uuid.uuid4(),
-                description=dict(en="description"),
-                items=[
-                    dict(
-                        name="item1",
-                        question=dict(en="question"),
-                        response_type=ResponseType.SINGLESELECT,
-                        response_values=single_select_response_values,
-                        config=single_select_config,
-                    ),
-                ],
-            )
-        ],
-        # Empty, but required
+        encryption=encryption,
+        activities=[activity_create],
         activity_flows=[],
-    )
-
-
-@pytest.fixture
-def slider_response_values():
-    return dict(
-        min_value=0,
-        max_value=10,
-        min_label="min_label",
-        max_label="max_label",
-        min_image=None,
-        max_image=None,
-        scores=None,
-        alerts=None,
-    )
-
-
-@pytest.fixture
-def slider_config():
-    return dict(
-        remove_back_button=False,
-        skippable_item=False,
-        add_scores=False,
-        set_alerts=False,
-        timer=1,
-        show_tick_labels=False,
-        show_tick_marks=False,
-        continuous_slider=False,
-        additional_response_option={
-            "text_input_option": False,
-            "text_input_required": False,
-        },
-    )
-
-
-@pytest.fixture
-def slider_rows_response_values():
-    return dict(
-        rows=[
-            {
-                "label": "label1",
-                "min_label": "min_label1",
-                "max_label": "max_label1",
-                "min_value": 0,
-                "max_value": 10,
-                "min_image": None,
-                "max_image": None,
-                "scores": None,
-                "alerts": None,
-            }
-        ]
-    )
-
-
-@pytest.fixture
-def slider_rows_config():
-    return dict(
-        remove_back_button=False,
-        skippable_item=False,
-        add_scores=False,
-        set_alerts=False,
-        timer=1,
-    )
-
-
-@pytest.fixture
-def single_select_rows_response_values():
-    return dict(
-        rows=[
-            {
-                "id": "17e69155-22cd-4484-8a49-364779ea9df1",
-                "row_name": "row1",
-                "row_image": None,
-                "tooltip": None,
-            },
-        ],
-        options=[
-            {
-                "id": "17e69155-22cd-4484-8a49-364779ea9de1",
-                "text": "option1",
-                "image": None,
-                "tooltip": None,
-            }
-        ],
-        data_matrix=[
-            {
-                "row_id": "17e69155-22cd-4484-8a49-364779ea9df1",
-                "options": [
-                    {
-                        "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
-                        "score": 1,
-                        "alert": "alert1",
-                    },
-                ],
-            },
-            {
-                "row_id": "17e69155-22cd-4484-8a49-364779ea9df2",
-                "options": [
-                    {
-                        "option_id": "17e69155-22cd-4484-8a49-364779ea9de1",
-                        "score": 3,
-                        "alert": None,
-                    },
-                ],
-            },
-        ],
-    )
-
-
-@pytest.fixture
-def single_select_rows_config():
-    return dict(
-        remove_back_button=False,
-        skippable_item=False,
-        add_scores=False,
-        set_alerts=False,
-        timer=1,
-        add_tooltip=False,
+        link=None,
+        require_login=False,
+        pinned_at=None,
+        retention_period=None,
+        retention_type=None,
+        stream_enabled=False,
+        stream_ip_address=None,
+        stream_port=None,
     )
