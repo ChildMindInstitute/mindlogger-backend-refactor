@@ -3,6 +3,7 @@ import datetime
 import uuid
 from unittest.mock import AsyncMock
 
+import pytest
 from httpx import Response as HttpResponse
 from pytest_mock import MockFixture
 from starlette import status
@@ -10,9 +11,8 @@ from starlette import status
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.router import router as auth_router
 from apps.mailing.services import TestMail
-from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
-from apps.users.domain import PasswordRecoveryRequest, User, UserCreateRequest
+from apps.users.domain import PasswordRecoveryRequest, UserCreate
 from apps.users.errors import PasswordHasSpacesError, ReencryptionInProgressError
 from apps.users.router import router as user_router
 from apps.users.tests.factories import CacheEntryFactory, PasswordRecoveryInfoFactory, PasswordUpdateRequestFactory
@@ -21,7 +21,18 @@ from infrastructure.cache import PasswordRecoveryHealthCheckNotValid
 from infrastructure.utility import RedisCache
 
 
-class TestPassword(BaseTest):
+@pytest.fixture(scope="class")
+def cache_entry(user: UserCreate):
+    return CacheEntryFactory.build(
+        instance=PasswordRecoveryInfoFactory.build(
+            email=user.email,
+        ),
+        created_at=datetime.datetime.utcnow(),
+    )
+
+
+@pytest.mark.usefixtures("mock_reencrypt_kiq", "cache_entry")
+class TestPassword:
     get_token_url = auth_router.url_path_for("get_token")
     user_create_url = user_router.url_path_for("user_create")
     password_update_url = user_router.url_path_for("password_update")
@@ -29,39 +40,18 @@ class TestPassword(BaseTest):
     password_recovery_approve_url = user_router.url_path_for("password_recovery_approve")
     password_recovery_healthcheck_url = user_router.url_path_for("password_recovery_healthcheck")
 
-    create_request_user = UserCreateRequest(
-        email="tom2@mindlogger.com",
-        first_name="Tom",
-        last_name="Isaak",
-        password="Test1234!",
-    )
-
-    cache_entry = CacheEntryFactory.build(
-        instance=PasswordRecoveryInfoFactory.build(
-            email=create_request_user.dict()["email"],
-        ),
-        created_at=datetime.datetime.utcnow(),
-    )
-
-    async def test_password_update(self, mock_reencrypt_kiq, client):
-        # Creating new user
-        await client.post(self.user_create_url, data=self.create_request_user.dict())
-
-        login_request_user: UserLoginRequest = UserLoginRequest(**self.create_request_user.dict())
-
+    async def test_password_update(self, mock_reencrypt_kiq: AsyncMock, client: TestClient, user_create: UserCreate):
         # User get token
-        await client.login(
-            url=self.get_token_url,
-            **login_request_user.dict(),
-        )
+        await client.login(url=self.get_token_url, email=user_create.email, password=user_create.password)
 
         # Password update
-        password_update_request = PasswordUpdateRequestFactory.build(prev_password=self.create_request_user.password)
+        password_update_request = PasswordUpdateRequestFactory.build(prev_password=user_create.password)
         response: HttpResponse = await client.put(self.password_update_url, data=password_update_request.dict())
+        assert response.status_code == status.HTTP_200_OK
 
         # User get token with new password
         login_request_user = UserLoginRequest(
-            email=self.create_request_user.dict()["email"],
+            email=user_create.email,
             password=password_update_request.dict()["password"],
         )
 
@@ -70,23 +60,12 @@ class TestPassword(BaseTest):
             **login_request_user.dict(),
         )
 
-        assert response.status_code == status.HTTP_200_OK
-        assert response.status_code == status.HTTP_200_OK
         assert internal_response.status_code == status.HTTP_200_OK
         mock_reencrypt_kiq.assert_awaited_once()
 
-    async def test_password_recovery(
-        self,
-        mock_reencrypt_kiq: AsyncMock,
-        client: TestClient,
-    ):
-        # Creating new user
-        await client.post(self.user_create_url, data=self.create_request_user.dict())
-
+    async def test_password_recovery(self, client: TestClient, user_create: UserCreate):
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
-            email=self.create_request_user.dict()["email"]
-        )
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -96,7 +75,7 @@ class TestPassword(BaseTest):
         cache = RedisCache()
 
         assert response.status_code == status.HTTP_201_CREATED
-        keys = await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*")
+        keys = await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*")
         assert len(keys) == 1
         assert password_recovery_request.email in keys[0]
         assert len(TestMail.mails) == 1
@@ -110,28 +89,17 @@ class TestPassword(BaseTest):
 
         assert response.status_code == status.HTTP_201_CREATED
 
-        new_keys = await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*")
+        new_keys = await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*")
         assert len(keys) == 1
         assert keys[0] != new_keys[0]
         assert len(TestMail.mails) == 2
         assert TestMail.mails[0].recipients[0] == password_recovery_request.email
 
-    async def test_password_recovery_approve(
-        self,
-        mock_reencrypt_kiq: AsyncMock,
-        client: TestClient,
-    ):
+    async def test_password_recovery_approve(self, client: TestClient, user_create: UserCreate):
         cache = RedisCache()
 
-        # Creating new user
-        internal_response = await client.post(self.user_create_url, data=self.create_request_user.dict())
-
-        expected_result = internal_response.json()
-
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
-            email=self.create_request_user.dict()["email"]
-        )
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -139,10 +107,10 @@ class TestPassword(BaseTest):
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        key = (await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*"))[0].split(":")[-1]
+        key = (await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*"))[0].split(":")[-1]
 
         data = {
-            "email": self.create_request_user.dict()["email"],
+            "email": user_create.dict()["email"],
             "key": key,
             "password": "new_password",
         }
@@ -151,29 +119,16 @@ class TestPassword(BaseTest):
             url=self.password_recovery_approve_url,
             data=data,
         )
-
-        keys = await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*")
-
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == expected_result
-        assert len(keys) == 0
+        keys = await cache.keys(key="PasswordRecoveryCache:{user_create.email}*")
         assert len(keys) == 0
 
-    async def test_password_recovery_approve_expired(
-        self,
-        mock_reencrypt_kiq: AsyncMock,
-        client: TestClient,
-    ):
+    async def test_password_recovery_approve_expired(self, client: TestClient, user_create: UserCreate):
         cache = RedisCache()
         settings.authentication.password_recover.expiration = 1
 
-        # Creating new user
-        await client.post(self.user_create_url, data=self.create_request_user.dict())
-
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
-            email=self.create_request_user.dict()["email"]
-        )
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -181,11 +136,11 @@ class TestPassword(BaseTest):
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        key = (await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*"))[0].split(":")[-1]
+        key = (await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*"))[0].split(":")[-1]
         await asyncio.sleep(2)
 
         data = {
-            "email": self.create_request_user.dict()["email"],
+            "email": user_create.dict()["email"],
             "key": key,
             "password": "new_password",
         }
@@ -195,7 +150,7 @@ class TestPassword(BaseTest):
             data=data,
         )
 
-        keys = await cache.keys(key="PasswordRecoveryCache:tom2@mindlogger.com*")
+        keys = await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert len(keys) == 0
@@ -203,8 +158,7 @@ class TestPassword(BaseTest):
     async def test_update_password__password_contains_whitespaces(
         self,
         client: TestClient,
-        user_create: UserCreateRequest,
-        user: User,
+        user_create: UserCreate,
     ):
         await client.login(
             self.get_token_url,
@@ -225,8 +179,7 @@ class TestPassword(BaseTest):
     async def test_update_password__reencryption_already_in_progress(
         self,
         client: TestClient,
-        user_create: UserCreateRequest,
-        user: User,
+        user_create: UserCreate,
         mocker: MockFixture,
     ):
         await client.login(

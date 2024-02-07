@@ -5,16 +5,15 @@ from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.users.cruds.user import UsersCRUD
-from apps.users.db.schemas import UserSchema
 from apps.users.domain import User, UserCreate
 from apps.users.errors import UserNotFound
 from apps.users.services.user import UserService
 
 
-async def test_get_user_by_id(session: AsyncSession, tom: UserSchema):
+async def test_get_user_by_id(session: AsyncSession, user: User):
     srv = UserService(session)
-    result = await srv.get(tom.id)
-    assert result == User.from_orm(tom)
+    result = await srv.get(user.id)
+    assert result == User.from_orm(user)
 
 
 async def test_user_exists_by_id__user_does_not_exist(session: AsyncSession, uuid_zero: uuid.UUID):
@@ -25,12 +24,12 @@ async def test_user_exists_by_id__user_does_not_exist(session: AsyncSession, uui
 
 async def test_get_user_by_email(
     session: AsyncSession,
-    tom: UserSchema,
-    tom_create: UserCreate,
+    user: User,
+    user_create: UserCreate,
 ):
     srv = UserService(session)
-    result = await srv.get_by_email(tom_create.email)
-    assert result == User.from_orm(tom)
+    result = await srv.get_by_email(user_create.email)
+    assert result == User.from_orm(user)
 
 
 async def test_create_super_user_admin__created_only_once(
