@@ -30,16 +30,11 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
         activity_names = set()
         activity_keys = set()
         flow_names = set()
-        assessments_count = 0
         for activity in activities:
             if activity.name in activity_names:
                 raise DuplicateActivityNameError()
             activity_names.add(activity.name)
             activity_keys.add(activity.key)
-            assessments_count += int(activity.is_reviewable)
-
-        # if assessments_count > 1:
-        #     raise AssessmentLimitExceed()
 
         for flow in flows:
             if flow.name in flow_names:

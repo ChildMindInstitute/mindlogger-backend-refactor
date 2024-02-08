@@ -1,27 +1,5 @@
 [
   {
-    "table": "users",
-    "fields": {
-      "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "email": "089283ca4ba572d41cda39d8016bc4bb96861bbe435b60000aae9008",
-      "first_name": "prbDwydMcRMIoZLNrTbkDQ==",
-      "last_name": "U8sjQrheUHgxOljs+f8rhQ==",
-      "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
-      "is_deleted": false,
-      "is_super_admin": true,
-      "created_at": "2023-01-05T15:49:51.752113",
-      "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113",
-      "email_encrypted": "9zsLa7lpd5dn32eoj35Kr3qHS0S0fsETNZMePt+Xvco="
-    },
-    "note": {
-      "Password": "Test1234!",
-      "plain_email": "tom@mindlogger.com",
-      "plain_first_name": "Tom",
-      "plain_last_name": "Isaak"
-    }
-  },
-  {
     "table": "applets",
     "fields": {
       "id": "92917a56-d586-4613-b7aa-991f2c4b15b1",

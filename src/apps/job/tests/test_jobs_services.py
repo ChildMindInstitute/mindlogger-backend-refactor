@@ -5,7 +5,7 @@ from apps.job.constants import JobStatus
 from apps.job.crud import JobCRUD
 from apps.job.db.schemas import JobSchema
 from apps.job.service import JobService
-from apps.users.db.schemas import UserSchema
+from apps.users.domain import User
 
 
 @pytest.mark.parametrize("status,", (JobStatus.in_progress, JobStatus.pending, JobStatus.retry))
@@ -54,33 +54,29 @@ async def test_change_status_without_details(
     assert job_updated.status == JobStatus.success
 
 
-async def test_get_or_create_owned__create_job_default_status_is_pending(
-    session: AsyncSession, user_tom: UserSchema
-) -> None:
-    job_name = "tomjob"
-    srv = JobService(session, user_tom.id)
+async def test_get_or_create_owned__create_job_default_status_is_pending(session: AsyncSession, user: User) -> None:
+    job_name = "userjob"
+    srv = JobService(session, user.id)
     job = await srv.get_or_create_owned(job_name)
     assert job.status == JobStatus.pending
-    assert job.creator_id == user_tom.id
+    assert job.creator_id == user.id
     assert job.name == job_name
 
 
-async def test_get_or_create_owned__create_job_with_status_in_progress(
-    session: AsyncSession, user_tom: UserSchema
-) -> None:
-    job_name = "tomjob"
-    srv = JobService(session, user_tom.id)
+async def test_get_or_create_owned__create_job_with_status_in_progress(session: AsyncSession, user: User) -> None:
+    job_name = "userjob"
+    srv = JobService(session, user.id)
     job = await srv.get_or_create_owned(job_name, status=JobStatus.in_progress)
     assert job.status == JobStatus.in_progress
 
 
 async def test_get_or_create_owned__create_job_with_details(
     session: AsyncSession,
-    user_tom: UserSchema,
+    user: User,
     job_details: dict[str, str],
 ) -> None:
-    job_name = "tomjob"
-    srv = JobService(session, user_tom.id)
+    job_name = "userjob"
+    srv = JobService(session, user.id)
     job = await srv.get_or_create_owned(job_name, details=job_details)
     assert job.details == job_details
 

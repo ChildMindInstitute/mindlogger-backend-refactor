@@ -22,7 +22,7 @@ __all__ = [
 ]
 
 
-class UserCreateRequest(InternalModel):
+class UserCreateRequest(PublicModel):
     """This model represents user `create request` data model."""
 
     email: EmailStr
@@ -54,7 +54,7 @@ class UserCreateRequest(InternalModel):
 class UserCreate(UserCreateRequest):
     # NOTE: pydantic before version 2 does not fully support properties.
     # but we can use them in our case, because we use properties directly
-    # and we don't user for this model method dict
+    # and we don't use for this model method dict
     @property
     def hashed_password(self) -> str:
         return get_password_hash(self.password)

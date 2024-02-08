@@ -63,6 +63,7 @@ env = [
     "DATABASE__USER=postgres",
     "DATABASE__DB=test",
     "ARBITRARY_DB=test_arbitrary",
+    "TASK_ANSWER_ENCRYPTION__BATCH_LIMIT=1",
 ]
 
 [tool.coverage.run]
