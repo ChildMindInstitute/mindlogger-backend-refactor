@@ -82,3 +82,11 @@ def test_change_password_passwords_contain_whitespace(field: str, value: str):
     data[field] = value
     with pytest.raises(errors.PasswordHasSpacesError):
         domain.ChangePasswordRequest(**data)
+
+
+def test_create_user_model_with_extra_fields__extra_field_ignored(
+    base_data: BaseData,
+):
+    base_data["confirm_password"] = "confirm_passsword"
+    user = domain.UserCreateRequest(**base_data)
+    assert not hasattr(user, "confirm_password")
