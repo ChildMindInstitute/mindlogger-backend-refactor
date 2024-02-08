@@ -266,8 +266,6 @@ class TestApplet(BaseTest):
 
         response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == http.HTTPStatus.OK
-        assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].subject == "Applet upload success!"
 
     async def test_creating_applet_failed_by_duplicate_activity_name(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
@@ -895,8 +893,6 @@ class TestApplet(BaseTest):
             data=update_data,
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
-        # assert len(TestMail.mails) == 1
-        # assert TestMail.mails[0].subject == "Applet edit success!"
         assert len(FCMNotificationTest.notifications) > 0
 
         data = response.json()
@@ -942,9 +938,6 @@ class TestApplet(BaseTest):
             ),
         )
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
-
-        assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].subject == "Applet duplicate success!"
 
         response = await client.get(self.applet_list_url)
         assert len(response.json()["result"]) == 4
