@@ -60,7 +60,7 @@ class TextConfig(_ScreenConfig, PublicModel):
         return value
 
 
-class _SelectionConfig(_ScreenConfig, PublicModel):
+class SingleSelectionConfig(_ScreenConfig, PublicModel):
     randomize_options: bool
     timer: NonNegativeInt | None
     add_scores: bool
@@ -71,12 +71,8 @@ class _SelectionConfig(_ScreenConfig, PublicModel):
     additional_response_option: AdditionalResponseOption
 
 
-class SingleSelectionConfig(_SelectionConfig, PublicModel):
-    auto_advance: bool = False
-
-
-class MultiSelectionConfig(_SelectionConfig, PublicModel):
-    pass
+class MultiSelectionConfig(SingleSelectionConfig, PublicModel):
+    is_none_above: bool
 
 
 class MessageConfig(PublicModel):
@@ -425,7 +421,9 @@ ResponseTypeValueConfig = {}
 index = 0
 
 for response_type in ResponseType:
-    zipped_type_value = list(zip(ResponseValueConfigOptions, ResponseTypeConfigOptions))
+    zipped_type_value = list(
+        zip(ResponseValueConfigOptions, ResponseTypeConfigOptions)
+    )
 
     ResponseTypeValueConfig[response_type] = {
         "config": zipped_type_value[index][1],
