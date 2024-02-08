@@ -1,15 +1,6 @@
 import uuid
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    text,
-)
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utils.types import IPAddressType
 
@@ -34,9 +25,7 @@ class _BaseAppletSchema:
     report_include_user_id = Column(Boolean(), default=False)
     report_include_case_id = Column(Boolean(), default=False)
     report_email_body = Column(Text())
-    extra_fields = Column(
-        JSONB(), default=dict, server_default=text("'{}'::jsonb")
-    )
+    extra_fields = Column(JSONB(), default=dict, server_default=text("'{}'::jsonb"))
 
     stream_enabled = Column(Boolean(), default=False)
     stream_ip_address = Column(IPAddressType())
@@ -53,9 +42,7 @@ class AppletSchema(_BaseAppletSchema, Base):
     retention_period = Column(Integer(), nullable=True)
     retention_type = Column(String(20), nullable=True)
     is_published = Column(Boolean(), default=False)
-    creator_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
-    )
+    creator_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
 
 
 class HistoryMixin:
@@ -79,6 +66,4 @@ class AppletHistorySchema(_BaseAppletSchema, HistoryMixin, Base):
     id = Column(UUID(as_uuid=True))
     display_name = Column(String(length=100))
 
-    user_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
-    )
+    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)

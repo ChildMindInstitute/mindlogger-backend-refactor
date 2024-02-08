@@ -10,9 +10,7 @@ class UserDevicesCRUD(BaseCRUD[UserDeviceSchema]):
     async def add_device(self, user_id: uuid.UUID, device_id: str) -> None:
         await self._delete(user_id=user_id, device_id=device_id)
 
-        await self._create(
-            UserDeviceSchema(user_id=user_id, device_id=device_id)
-        )
+        await self._create(UserDeviceSchema(user_id=user_id, device_id=device_id))
 
     async def remove_device(self, user_id: uuid.UUID, device_id: str) -> None:
         await self._delete(user_id=user_id, device_id=device_id)

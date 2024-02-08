@@ -20,10 +20,7 @@ def to_camelcase(payload: str) -> str:
     if "_" not in payload:
         return payload
 
-    return "".join(
-        word.capitalize() if index else word
-        for index, word in enumerate(payload.split("_"))
-    )
+    return "".join(word.capitalize() if index else word for index, word in enumerate(payload.split("_")))
 
 
 def camel_case(match_obj):

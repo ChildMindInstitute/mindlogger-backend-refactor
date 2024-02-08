@@ -6,11 +6,7 @@ from apps.shared.domain.response import (
     DEFAULT_OPENAPI_RESPONSE,
     NO_CONTENT_ERROR_RESPONSES,
 )
-from apps.transfer_ownership.api import (
-    transfer_accept,
-    transfer_decline,
-    transfer_initiate,
-)
+from apps.transfer_ownership.api import transfer_accept, transfer_decline, transfer_initiate
 
 router = APIRouter(prefix="/applets", tags=["Applets"])
 

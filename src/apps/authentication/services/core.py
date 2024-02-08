@@ -15,9 +15,7 @@ class TokensService:
 
     async def revoke(self, token: InternalToken, type_: TokenPurpose) -> None:
         now = datetime.datetime.utcnow()
-        ttl = token.payload.exp - int(
-            now.replace(tzinfo=datetime.timezone.utc).timestamp()
-        )
+        ttl = token.payload.exp - int(now.replace(tzinfo=datetime.timezone.utc).timestamp())
 
         if ttl > 1:
             revoked = await self.is_revoked(token)

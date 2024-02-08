@@ -5,11 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.workspaces.constants import StorageType
 from apps.workspaces.service import workspace
 from config import settings
-from infrastructure.utility.cdn_arbitrary import (
-    ArbitraryAzureCdnClient,
-    ArbitraryGCPCdnClient,
-    ArbitraryS3CdnClient,
-)
+from infrastructure.utility.cdn_arbitrary import ArbitraryAzureCdnClient, ArbitraryGCPCdnClient, ArbitraryS3CdnClient
 from infrastructure.utility.cdn_client import CDNClient
 from infrastructure.utility.cdn_config import CdnConfig
 

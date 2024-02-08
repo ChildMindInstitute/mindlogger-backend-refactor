@@ -17,9 +17,7 @@ class PeriodicityCRUD(BaseCRUD[PeriodicitySchema]):
 
     async def save(self, schema: PeriodicityRequest) -> Periodicity:
         """Return periodicity instance and the created information."""
-        instance: PeriodicitySchema = await self._create(
-            PeriodicitySchema(**schema.dict())
-        )
+        instance: PeriodicitySchema = await self._create(PeriodicitySchema(**schema.dict()))
         periodicity: Periodicity = Periodicity.from_orm(instance)
         return periodicity
 
@@ -38,9 +36,7 @@ class PeriodicityCRUD(BaseCRUD[PeriodicitySchema]):
         query = query.where(PeriodicitySchema.id.in_(periodicity_ids))
         await self._execute(query)
 
-    async def update(
-        self, pk: uuid.UUID, schema: PeriodicityRequest
-    ) -> Periodicity:
+    async def update(self, pk: uuid.UUID, schema: PeriodicityRequest) -> Periodicity:
         """Update periodicity instance."""
         instance = await self._update_one(
             lookup="id",

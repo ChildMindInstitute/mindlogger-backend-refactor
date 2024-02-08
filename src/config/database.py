@@ -11,7 +11,4 @@ class DatabaseSettings(BaseModel):
 
     @property
     def url(self) -> str:
-        return (
-            f"postgresql+asyncpg://{self.user}:{self.password}"
-            f"@{self.host}:{self.port}/{self.db}"
-        )
+        return f"postgresql+asyncpg://{self.user}:{self.password}" f"@{self.host}:{self.port}/{self.db}"

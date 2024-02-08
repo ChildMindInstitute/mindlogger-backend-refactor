@@ -6,10 +6,7 @@ from bson.objectid import ObjectId
 
 from apps.girderformindlogger import events, logger
 from apps.girderformindlogger.api import rest
-from apps.girderformindlogger.exceptions import (
-    GirderException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import GirderException, ValidationException
 from apps.girderformindlogger.models.model_base import Model
 from apps.girderformindlogger.settings import SettingKey
 from apps.girderformindlogger.utility import RequestBodyStream

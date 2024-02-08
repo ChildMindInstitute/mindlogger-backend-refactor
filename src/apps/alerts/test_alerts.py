@@ -3,7 +3,6 @@ from apps.shared.test import BaseTest
 
 class TestAlert(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_histories.json",
         "applets/fixtures/applet_user_accesses.json",
@@ -25,11 +24,7 @@ class TestAlert(BaseTest):
     async def test_watch_alert(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await client.post(
-            self.watch_alert_url.format(
-                alert_id="6f794861-0ff6-4c39-a3ed-602fd4e22c58"
-            )
-        )
+        response = await client.post(self.watch_alert_url.format(alert_id="6f794861-0ff6-4c39-a3ed-602fd4e22c58"))
         assert response.status_code == 200
 
         response = await client.get(self.alert_list_url)

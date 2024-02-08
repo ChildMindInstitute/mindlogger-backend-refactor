@@ -10,14 +10,8 @@ from rich.style import Style
 from rich.table import Table
 
 from apps.workspaces.constants import StorageType
-from apps.workspaces.domain.workspace import (
-    WorkspaceArbitraryCreate,
-    WorkspaceArbitraryFields,
-)
-from apps.workspaces.errors import (
-    ArbitraryServerSettingsError,
-    WorkspaceNotFoundError,
-)
+from apps.workspaces.domain.workspace import WorkspaceArbitraryCreate, WorkspaceArbitraryFields
+from apps.workspaces.errors import ArbitraryServerSettingsError, WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 
@@ -133,18 +127,11 @@ async def add(
     async with session_maker() as session:
         async with atomic(session):
             try:
-                await WorkspaceService(session, owner_id).set_arbitrary_server(
-                    data, rewrite=force
-                )
+                await WorkspaceService(session, owner_id).set_arbitrary_server(data, rewrite=force)
             except WorkspaceNotFoundError as e:
                 print(wrap_error_msg(e))
             except ArbitraryServerSettingsError as e:
-                print(
-                    wrap_error_msg(
-                        "Arbitrary server is already set. "
-                        "Use --force to rewrite."
-                    )
-                )
+                print(wrap_error_msg("Arbitrary server is already set. " "Use --force to rewrite."))
                 print_data_table(e.data)
             else:
                 print("[bold green]Success:[/bold green]")
@@ -154,27 +141,17 @@ async def add(
 @app.command(short_help="Show arbitrary server settings")
 @coro
 async def show(
-    owner_id: Optional[uuid.UUID] = typer.Argument(
-        None, help="Workspace owner id"
-    ),
+    owner_id: Optional[uuid.UUID] = typer.Argument(None, help="Workspace owner id"),
 ):
     session_maker = session_manager.get_session()
     async with session_maker() as session:
         if owner_id:
-            data = await WorkspaceService(
-                session, owner_id
-            ).get_arbitrary_info_by_owner_id(owner_id)
+            data = await WorkspaceService(session, owner_id).get_arbitrary_info_by_owner_id(owner_id)
             if not data:
-                print(
-                    "[bold green]"
-                    "Arbitrary server not configured"
-                    "[/bold green]"
-                )
+                print("[bold green]" "Arbitrary server not configured" "[/bold green]")
                 return
             print_data_table(WorkspaceArbitraryFields.from_orm(data))
         else:
-            workspaces = await WorkspaceService(
-                session, uuid.uuid4()
-            ).get_arbitrary_list()
+            workspaces = await WorkspaceService(session, uuid.uuid4()).get_arbitrary_list()
             for data in workspaces:
                 print_data_table(WorkspaceArbitraryFields.from_orm(data))

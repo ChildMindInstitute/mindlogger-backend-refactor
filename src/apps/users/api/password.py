@@ -23,10 +23,7 @@ from apps.users.errors import ReencryptionInProgressError, UserNotFound
 from apps.users.services import PasswordRecoveryCache, PasswordRecoveryService
 from apps.users.tasks import reencrypt_answers
 from config import settings
-from infrastructure.cache import (
-    CacheNotFound,
-    PasswordRecoveryHealthCheckNotValid,
-)
+from infrastructure.cache import CacheNotFound, PasswordRecoveryHealthCheckNotValid
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 
@@ -37,9 +34,7 @@ async def password_update(
     session=Depends(get_session),
 ) -> Response[PublicUser]:
     """General endpoint for update password for signin."""
-    reencryption_in_progress = await JobService(
-        session, user.id
-    ).is_job_in_progress("reencrypt_answers")
+    reencryption_in_progress = await JobService(session, user.id).is_job_in_progress("reencrypt_answers")
     if reencryption_in_progress:
         raise ReencryptionInProgressError()
 
@@ -49,23 +44,17 @@ async def password_update(
             user.hashed_password,
         )
 
-        password_hash: str = AuthenticationService.get_password_hash(
-            schema.password
-        )
+        password_hash: str = AuthenticationService.get_password_hash(schema.password)
         password = UserChangePassword(hashed_password=password_hash)
 
-        updated_user: User = await UsersCRUD(session).change_password(
-            user, password
-        )
+        updated_user: User = await UsersCRUD(session).change_password(user, password)
 
         # Create public representation of the internal user
         public_user = PublicUser.from_user(updated_user)
 
     email = user.email_encrypted
     retries = settings.task_answer_encryption.max_retries
-    await reencrypt_answers.kiq(
-        user.id, email, schema.prev_password, schema.password, retries=retries
-    )
+    await reencrypt_answers.kiq(user.id, email, schema.prev_password, schema.password, retries=retries)
 
     return Response[PublicUser](result=public_user)
 
@@ -80,9 +69,7 @@ async def password_recovery(
     # Send the password recovery the internal password recovery service
     async with atomic(session):
         try:
-            await PasswordRecoveryService(session).send_password_recovery(
-                schema
-            )
+            await PasswordRecoveryService(session).send_password_recovery(schema)
         except UserNotFound:
             pass  # mute error in terms of user enumeration vulnerability
 
@@ -98,9 +85,7 @@ async def password_recovery_approve(
     # Approve the password recovery
     # NOTE: also check if the data exists and tokens are not expired
     async with atomic(session):
-        public_user: PublicUser = await PasswordRecoveryService(
-            session
-        ).approve(schema)
+        public_user: PublicUser = await PasswordRecoveryService(session).approve(schema)
 
     return Response[PublicUser](result=public_user)
 

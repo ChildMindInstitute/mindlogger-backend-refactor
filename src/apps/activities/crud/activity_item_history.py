@@ -3,11 +3,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Query
 
-from apps.activities.db.schemas import (
-    ActivityHistorySchema,
-    ActivityItemHistorySchema,
-    ActivitySchema,
-)
+from apps.activities.db.schemas import ActivityHistorySchema, ActivityItemHistorySchema, ActivitySchema
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
 
@@ -23,14 +19,11 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
     ):
         await self._create_many(items)
 
-    async def retrieve_by_applet_version(
-        self, id_version: str
-    ) -> list[ActivityItemHistorySchema]:
+    async def retrieve_by_applet_version(self, id_version: str) -> list[ActivityItemHistorySchema]:
         query: Query = select(ActivityItemHistorySchema)
         query = query.join(
             ActivityHistorySchema,
-            ActivityHistorySchema.id_version
-            == ActivityItemHistorySchema.activity_id,
+            ActivityHistorySchema.id_version == ActivityItemHistorySchema.activity_id,
         )
         query = query.filter(ActivityHistorySchema.applet_id == id_version)
         query = query.order_by(
@@ -40,24 +33,16 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def get_by_activity_id_version(
-        self, activity_id: str
-    ) -> list[ActivityItemHistorySchema]:
+    async def get_by_activity_id_version(self, activity_id: str) -> list[ActivityItemHistorySchema]:
         query: Query = select(ActivityItemHistorySchema)
-        query = query.where(
-            ActivityItemHistorySchema.activity_id == activity_id
-        )
+        query = query.where(ActivityItemHistorySchema.activity_id == activity_id)
         query = query.order_by(ActivityItemHistorySchema.order.asc())
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_by_activity_id_versions(
-        self, id_versions: list[str]
-    ) -> list[ActivityItemHistorySchema]:
+    async def get_by_activity_id_versions(self, id_versions: list[str]) -> list[ActivityItemHistorySchema]:
         query: Query = select(ActivityItemHistorySchema)
-        query = query.where(
-            ActivityItemHistorySchema.activity_id.in_(id_versions)
-        )
+        query = query.where(ActivityItemHistorySchema.activity_id.in_(id_versions))
         query = query.order_by(ActivityItemHistorySchema.order.asc())
         db_result = await self._execute(query)
         return db_result.scalars().all()
@@ -68,9 +53,7 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
     ) -> list[ActivityItemHistorySchema]:
         subquery: Query = (
             select(ActivityHistorySchema.id_version)
-            .join(
-                ActivitySchema, ActivitySchema.id == ActivityHistorySchema.id
-            )
+            .join(ActivitySchema, ActivitySchema.id == ActivityHistorySchema.id)
             .where(
                 ActivitySchema.is_reviewable.is_(True),
                 ActivitySchema.applet_id == applet_id,
@@ -83,12 +66,9 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         query: Query = select(ActivityItemHistorySchema)
         query = query.join(
             ActivityHistorySchema,
-            ActivityHistorySchema.id_version
-            == ActivityItemHistorySchema.activity_id,
+            ActivityHistorySchema.id_version == ActivityItemHistorySchema.activity_id,
         )
-        query = query.join(
-            ActivitySchema, ActivitySchema.id == ActivityHistorySchema.id
-        )
+        query = query.join(ActivitySchema, ActivitySchema.id == ActivityHistorySchema.id)
         query = query.where(ActivitySchema.applet_id == applet_id)
         query = query.where(
             ActivityHistorySchema.is_reviewable == True,  # noqa: E712
@@ -100,20 +80,15 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         res = db_result.scalars().all()
         return res
 
-    async def get_assessment_activity_items(
-        self, id_version: str | None
-    ) -> list[ActivityItemHistorySchema | None]:
+    async def get_assessment_activity_items(self, id_version: str | None) -> list[ActivityItemHistorySchema | None]:
         if not id_version:
             return []  # pragma: no cover
         query: Query = select(ActivityItemHistorySchema)
         query = query.join(
             ActivityHistorySchema,
-            ActivityHistorySchema.id_version
-            == ActivityItemHistorySchema.activity_id,
+            ActivityHistorySchema.id_version == ActivityItemHistorySchema.activity_id,
         )
-        query = query.join(
-            ActivitySchema, ActivitySchema.id == ActivityHistorySchema.id
-        )
+        query = query.join(ActivitySchema, ActivitySchema.id == ActivityHistorySchema.id)
         query = query.where(
             ActivityHistorySchema.is_reviewable == True,  # noqa: E712
             ActivityHistorySchema.id_version == id_version,
@@ -128,15 +103,13 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         query: Query = select(ActivityItemHistorySchema)
         query = query.join(
             ActivityHistorySchema,
-            ActivityHistorySchema.id_version
-            == ActivityItemHistorySchema.activity_id,
+            ActivityHistorySchema.id_version == ActivityItemHistorySchema.activity_id,
         )
         query = query.where(ActivityHistorySchema.id == activity_id)
         if versions:
             query = query.join(
                 AppletHistorySchema,
-                AppletHistorySchema.id_version
-                == ActivityHistorySchema.applet_id,
+                AppletHistorySchema.id_version == ActivityHistorySchema.applet_id,
             )
             query = query.where(AppletHistorySchema.version.in_(versions))
         query = query.where(

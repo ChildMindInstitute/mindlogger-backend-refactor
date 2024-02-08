@@ -4,12 +4,7 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt
 
 from apps.authentication.domain.login import UserLoginRequest
-from apps.authentication.domain.token import (
-    InternalToken,
-    JWTClaim,
-    TokenPayload,
-    TokenPurpose,
-)
+from apps.authentication.domain.token import InternalToken, JWTClaim, TokenPayload, TokenPurpose
 from apps.authentication.errors import BadCredentials, InvalidCredentials
 from apps.authentication.services.core import TokensService
 from apps.shared.passlib import get_password_hash, verify
@@ -27,9 +22,7 @@ class AuthenticationService:
     @staticmethod
     def create_access_token(data: dict):
         to_encode = data.copy()
-        expires_delta = timedelta(
-            minutes=settings.authentication.access_token.expiration
-        )
+        expires_delta = timedelta(minutes=settings.authentication.access_token.expiration)
         expire = datetime.utcnow() + expires_delta
         to_encode.setdefault(JWTClaim.exp, expire)
         to_encode.setdefault(JWTClaim.jti, str(uuid.uuid4()))
@@ -43,9 +36,7 @@ class AuthenticationService:
     @staticmethod
     def create_refresh_token(data: dict):
         to_encode = data.copy()
-        expires_delta = timedelta(
-            minutes=settings.authentication.refresh_token.expiration
-        )
+        expires_delta = timedelta(minutes=settings.authentication.refresh_token.expiration)
         expire = datetime.utcnow() + expires_delta
         to_encode.setdefault(JWTClaim.exp, expire)
         to_encode.setdefault(JWTClaim.jti, str(uuid.uuid4()))
@@ -57,9 +48,7 @@ class AuthenticationService:
         return encoded_jwt
 
     @staticmethod
-    def verify_password(
-        plain_password: str, hashed_password: str, raise_exception=True
-    ) -> bool:
+    def verify_password(plain_password: str, hashed_password: str, raise_exception=True) -> bool:
         valid = verify(plain_password, hashed_password)
         if not valid and raise_exception:
             raise BadCredentials()
@@ -70,28 +59,18 @@ class AuthenticationService:
         return get_password_hash(password)
 
     async def authenticate_user(self, user_login_schema: UserLoginRequest):
-        user: User = await UsersCRUD(self.session).get_by_email(
-            email=user_login_schema.email
-        )
-        if not self.verify_password(
-            user_login_schema.password, user.hashed_password, False
-        ):
+        user: User = await UsersCRUD(self.session).get_by_email(email=user_login_schema.email)
+        if not self.verify_password(user_login_schema.password, user.hashed_password, False):
             raise InvalidCredentials()
         return user
 
-    def _get_refresh_token_by_access(
-        self, token: InternalToken
-    ) -> InternalToken | None:
+    def _get_refresh_token_by_access(self, token: InternalToken) -> InternalToken | None:
         if not token.payload.rjti:
             return None
 
         access_exp = datetime.utcfromtimestamp(token.payload.exp)
-        refresh_expires_delta = timedelta(
-            minutes=settings.authentication.refresh_token.expiration
-        )
-        access_expires_delta = timedelta(
-            minutes=settings.authentication.access_token.expiration
-        )
+        refresh_expires_delta = timedelta(minutes=settings.authentication.refresh_token.expiration)
+        access_expires_delta = timedelta(minutes=settings.authentication.access_token.expiration)
         expire = access_exp - access_expires_delta + refresh_expires_delta
         refresh_token = InternalToken(
             payload=TokenPayload(
@@ -107,9 +86,7 @@ class AuthenticationService:
         await TokensService(self.session).revoke(token, type_)
         if type_ == TokenPurpose.ACCESS:
             if refresh_token := self._get_refresh_token_by_access(token):
-                await TokensService(self.session).revoke(
-                    refresh_token, TokenPurpose.REFRESH
-                )
+                await TokensService(self.session).revoke(refresh_token, TokenPurpose.REFRESH)
 
     async def is_revoked(self, token: InternalToken):
         return await TokensService(self.session).is_revoked(token)

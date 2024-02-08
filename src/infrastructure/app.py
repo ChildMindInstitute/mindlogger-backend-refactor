@@ -79,8 +79,7 @@ middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
 def create_app():
     # Create base FastAPI application
     app = FastAPI(
-        description=f"Commit id: <b>{settings.commit_id}"
-        f"</b><br>Version: <b>{settings.version}</b>",
+        description=f"Commit id: <b>{settings.commit_id}" f"</b><br>Version: <b>{settings.version}</b>",
         debug=settings.debug,
     )
 
@@ -98,9 +97,7 @@ def create_app():
     for middleware, options in middlewares:
         app.add_middleware(middleware, **options)
 
-    app.add_exception_handler(
-        RequestValidationError, pydantic_validation_errors_handler
-    )
+    app.add_exception_handler(RequestValidationError, pydantic_validation_errors_handler)
     app.add_exception_handler(BaseError, custom_base_errors_handler)
     app.add_exception_handler(Exception, python_base_error_handler)
 

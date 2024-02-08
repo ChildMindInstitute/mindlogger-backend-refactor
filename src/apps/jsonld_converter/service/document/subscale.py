@@ -9,10 +9,7 @@ from apps.activities.domain.scores_reports import (
     SubScaleLookupTable,
     TotalScoreTable,
 )
-from apps.jsonld_converter.service.document.base import (
-    CommonFieldsMixin,
-    LdAttributeProcessor,
-)
+from apps.jsonld_converter.service.document.base import CommonFieldsMixin, LdAttributeProcessor
 from apps.jsonld_converter.service.domain import FinalSubscale
 
 
@@ -28,27 +25,13 @@ class LdSubscaleBase(CommonFieldsMixin, ABC):
 
     def __init__(self, doc: dict):
         self.doc = copy.deepcopy(doc)
-        self.ld_variable_name: str = self.attr_processor.get_attr_value(
-            doc, "reproschema:variableName"
-        )
-        self.ld_is_average_score: bool = (
-            self.attr_processor.get_attr_value(
-                doc, "reproschema:isAverageScore"
-            )
-            or False
-        )
+        self.ld_variable_name: str = self.attr_processor.get_attr_value(doc, "reproschema:variableName")
+        self.ld_is_average_score: bool = self.attr_processor.get_attr_value(doc, "reproschema:isAverageScore") or False
 
-        ld_lookup_table = (
-            self.attr_processor.get_attr_list(doc, "reproschema:lookupTable")
-            or []
-        )
-        self.lookup_table: list[dict] | None = self._get_lookup_table(
-            ld_lookup_table
-        )
+        ld_lookup_table = self.attr_processor.get_attr_list(doc, "reproschema:lookupTable") or []
+        self.lookup_table: list[dict] | None = self._get_lookup_table(ld_lookup_table)
 
-    def _get_lookup_table(
-        self, ld_lookup_table: list[dict]
-    ) -> list[dict] | None:
+    def _get_lookup_table(self, ld_lookup_table: list[dict]) -> list[dict] | None:
         lookup_table = []
         for doc in ld_lookup_table:
             lookup_table.append(self._get_lookup_table_row(doc))
@@ -61,17 +44,11 @@ class LdSubscaleBase(CommonFieldsMixin, ABC):
             score = score.replace("-", "~")
         return dict(
             raw_score=score,
-            output_text=self.attr_processor.get_translation(
-                doc, "reproschema:outputText", self.lang
-            ),
+            output_text=self.attr_processor.get_translation(doc, "reproschema:outputText", self.lang),
         )
 
     def _export_subscale_calculation_type(self) -> SubscaleCalculationType:
-        return (
-            SubscaleCalculationType.AVERAGE
-            if self.ld_is_average_score
-            else SubscaleCalculationType.SUM
-        )
+        return SubscaleCalculationType.AVERAGE if self.ld_is_average_score else SubscaleCalculationType.SUM
 
     @abstractmethod
     def export(self):
@@ -87,9 +64,7 @@ class LdSubscaleFinal(LdSubscaleBase):
                     item["raw_score"] = item["raw_score"].replace("~", "", 1)
                 score_table_data.append(
                     TotalScoreTable(
-                        raw_score=item[
-                            "raw_score"
-                        ],  # TODO check strange validation
+                        raw_score=item["raw_score"],  # TODO check strange validation
                         optional_text=item["output_text"] or None,
                     )
                 )
@@ -105,9 +80,7 @@ class LdSubscaleFinal(LdSubscaleBase):
 class LdSubscale(LdSubscaleBase):
     def __init__(self, doc):
         super().__init__(doc)
-        self.ld_js_expression = self.attr_processor.get_attr_value(
-            doc, "reproschema:jsExpression"
-        )
+        self.ld_js_expression = self.attr_processor.get_attr_value(doc, "reproschema:jsExpression")
 
     @classmethod
     def _get_score_items(cls, expression: str | None) -> list[SubscaleItem]:
@@ -119,9 +92,7 @@ class LdSubscale(LdSubscaleBase):
         for v in parts:
             v = v.strip()
             type_ = SubscaleItemType.ITEM
-            if (
-                v[0] == "(" and v[-1] == ")"
-            ):  # TODO shit logic, move to upper level
+            if v[0] == "(" and v[-1] == ")":  # TODO shit logic, move to upper level
                 v = v[1:-1]
                 type_ = SubscaleItemType.SUBSCALE
             items.append(SubscaleItem(name=v, type=type_))
@@ -131,13 +102,9 @@ class LdSubscale(LdSubscaleBase):
     def _get_lookup_table_row(self, doc: dict) -> dict:
         row = super()._get_lookup_table_row(doc)
         row.update(
-            age=self.attr_processor.get_attr_value(doc, "reproschema:age")
-            or None,
-            sex=self.attr_processor.get_attr_value(doc, "reproschema:sex")
-            or None,
-            score=self.attr_processor.get_attr_value(
-                doc, "reproschema:tScore"
-            ),
+            age=self.attr_processor.get_attr_value(doc, "reproschema:age") or None,
+            sex=self.attr_processor.get_attr_value(doc, "reproschema:sex") or None,
+            score=self.attr_processor.get_attr_value(doc, "reproschema:tScore"),
         )
         return row
 
@@ -150,9 +117,7 @@ class LdSubscale(LdSubscaleBase):
 
                 score_table_data.append(
                     SubScaleLookupTable(
-                        raw_score=item[
-                            "raw_score"
-                        ],  # TODO check strange validation
+                        raw_score=item["raw_score"],  # TODO check strange validation
                         optional_text=item["output_text"],
                         score=item["score"],
                         age=item["age"],

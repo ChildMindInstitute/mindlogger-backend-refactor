@@ -1,81 +1,12 @@
 [
   {
-    "table": "users",
-    "fields": {
-      "id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
-      "email": "5c88e00db1ec7020e8a0fd0f1dd225ff93e9088821d554d5fc437216",
-      "first_name": "PWrlro9d6WB767UVp43dNg==",
-      "last_name": "USpl8mH9r0f1/ffBdCO/jw==",
-      "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
-      "is_deleted": false,
-      "is_super_admin": false,
-      "created_at": "2023-08-07T12:39:38.111",
-      "updated_at": "2023-08-11T10:32:41.603",
-      "last_seen_at": "2023-08-11T10:32:41.602",
-      "is_anonymous_respondent": false,
-      "email_encrypted": "mWykF1OYv6Z/KkYLEA8lAbt7GQqBX7Xy57II/r9DqhM="
-    },
-    "note": {
-      "Password": "Test1234!",
-      "plain_email": "ivan@mindlogger.com",
-      "plain_first_name": "Ivan",
-      "plain_last_name": "K"
-    }
-  },
-  {
-    "table": "users",
-    "fields": {
-      "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa8",
-      "email": "a97eaac8af05b6b82d66a67a2ba0e5bbe928844832748c1aa74e3065",
-      "first_name": "xjYl6DpzZ1uq+KofwSTn7w==",
-      "last_name": "YRCR7GN7zM6TsUQOSLMmvw==",
-      "hashed_password": "$2b$12$sU9Wy1Qo.JokoEyY9PCLeeAQvejVV5j0xW0Mwxwr2VempxeRJejNy",
-      "is_deleted": false,
-      "is_super_admin": false,
-      "created_at": "2023-01-05T15:49:51.752113",
-      "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113",
-      "is_anonymous_respondent": true,
-      "email_encrypted": "wR8cW30TKhQwbCCddfawUoOe1rXUZYBl4bmgF7NWDu+qbYXlU9Qjcxb+AJugpF9+"
-    },
-    "note": {
-      "Password": "Test1234!",
-      "plain_email": "anoymous_respondent@mindlogger.com",
-      "plain_first_name": "Anonymous",
-      "plain_last_name": "Respondent"
-    }
-  },
-  {
-    "table": "users",
-    "fields": {
-      "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa5",
-      "email": "b11bf1419d7434b4b0da08c39a871eee65b614a34fb4830c066dfeed",
-      "first_name": "IgLF5PDUgQJm/mZkW5cpyA==",
-      "last_name": "0bajeWazqGcY10QHZlCriQ==",
-      "hashed_password": "$2b$12$7R66Y29xKAeuov2eqPTPJucTUMMCEPPmzCMIA6tBPyaf5vyctSyYG",
-      "is_deleted": false,
-      "is_super_admin": false,
-      "created_at": "2023-01-05T15:49:51.752113",
-      "updated_at": "2023-01-05T15:49:51.752113",
-      "last_seen_at": "2023-01-05T15:49:51.752113",
-      "is_anonymous_respondent": false,
-      "email_encrypted": "vott7BpTryWpGH5R8EAuur0jFrP8xWbHhSnyD99zCU0="
-    },
-    "note": {
-      "Password": "Test1234",
-      "plain_email": "patric@gmail.com",
-      "plain_first_name": "Patric",
-      "plain_last_name": "Davidson"
-    }
-  },
-  {
     "table": "users_workspaces",
     "fields": {
       "id": "8b83d791-0d27-42c5-8b1d-e0c8d7faf808",
       "created_at": "2023-08-07T12:39:38.116",
       "updated_at": "2023-08-07T12:39:38.116",
       "is_deleted": false,
-      "user_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "workspace_name": "eRPtCowGI0bcq4BEzB3lGA==",
       "is_modified": false,
       "database_uri": "ehwQOnQu9X8higAEDMzDhH9HB5a0jO4FsgU/awOCwMgFccefd2//Ek6e0bKAwvauf6pwAS+PWDChFns1WIyL/z4oH52gEIKpYsBjUmznqYc=",
@@ -137,10 +68,10 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "is_pinned": false,
-      "user_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
-      "owner_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
-      "invitor_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "respondent",
       "meta": {
         "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674781",
@@ -157,10 +88,10 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "is_pinned": false,
-      "user_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
-      "owner_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
-      "invitor_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "owner",
       "meta": {
         "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674781",
@@ -176,10 +107,10 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "is_pinned": false,
-      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa8",
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa7",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
-      "owner_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
-      "invitor_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "role": "respondent",
       "meta": {
         "nickname": "f0dd4996-e0eb-461f-b2f8-ba873a674781",
@@ -204,7 +135,7 @@
       "watermark": "",
       "theme_id": null,
       "version": "1.1.0",
-      "user_id": "6cde911e-8a57-47c0-b6b2-685b3664f418",
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "report_server_ip": "https://report-server.l.trackmage.com",
       "report_public_key": "-----BEGIN PUBLIC KEY-----\n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\nW2EFUykoTbF2EHjXjAO5b60CAwEAAQ==\n-----END PUBLIC KEY-----",
       "report_recipients": [

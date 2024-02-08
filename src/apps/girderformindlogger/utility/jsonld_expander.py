@@ -24,17 +24,11 @@ from apps.girderformindlogger.constants import (
     REPROLIB_PREFIXES,
     AccessType,
 )
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    ResourcePathNotFound,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import AccessException, ResourcePathNotFound, ValidationException
 from apps.girderformindlogger.models.activity import Activity as ActivityModel
 from apps.girderformindlogger.models.applet import Applet as AppletModel
 from apps.girderformindlogger.models.cache import Cache as CacheModel
-from apps.girderformindlogger.models.collection import (
-    Collection as CollectionModel,
-)
+from apps.girderformindlogger.models.collection import Collection as CollectionModel
 from apps.girderformindlogger.models.folder import Folder as FolderModel
 from apps.girderformindlogger.models.item import Item as ItemModel
 from apps.girderformindlogger.models.protocol import Protocol as ProtocolModel

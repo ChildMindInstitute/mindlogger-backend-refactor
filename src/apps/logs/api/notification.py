@@ -1,11 +1,7 @@
 from fastapi import Body, Depends
 
 from apps.logs.crud.notification import NotificationLogCRUD
-from apps.logs.domain import (
-    NotificationLogCreate,
-    NotificationLogQuery,
-    PublicNotificationLog,
-)
+from apps.logs.domain import NotificationLogCreate, NotificationLogQuery, PublicNotificationLog
 from apps.shared.domain import Response, ResponseMulti
 from apps.users.services.user import UserService
 from infrastructure.database import atomic
@@ -23,9 +19,7 @@ async def notification_log_create(
         # as email
         email = schema.user_id
         user = await UserService(session).get_by_email(email)
-        notification_log = await NotificationLogCRUD(session).save(
-            schema=schema, user_id=str(user.id)
-        )
+        notification_log = await NotificationLogCRUD(session).save(schema=schema, user_id=str(user.id))
 
     return Response(result=notification_log)
 
@@ -37,10 +31,6 @@ async def notification_log_retrieve(
     """Returns NotificationLogs of user and device"""
     async with atomic(session):
         user = await UserService(session).get_by_email(query.email)
-        notification_logs = await NotificationLogCRUD(session).filter(
-            query, user_id=str(user.id)
-        )
+        notification_logs = await NotificationLogCRUD(session).filter(query, user_id=str(user.id))
 
-    return ResponseMulti(
-        result=notification_logs, count=len(notification_logs)
-    )
+    return ResponseMulti(result=notification_logs, count=len(notification_logs))

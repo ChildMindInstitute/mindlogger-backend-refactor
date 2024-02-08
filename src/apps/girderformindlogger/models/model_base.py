@@ -21,11 +21,7 @@ from apps.girderformindlogger.constants import (
     AccessType,
     CoreEventHandler,
 )
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    ResourcePathNotFound,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import AccessException, ResourcePathNotFound, ValidationException
 from apps.girderformindlogger.external.mongodb_proxy import MongoProxy
 from apps.girderformindlogger.models import getDbConnection
 

@@ -6,11 +6,7 @@ from pydantic import parse_obj_as
 from apps.alerts.domain import AlertPublic, AlertResponseMulti
 from apps.alerts.service import AlertService
 from apps.authentication.deps import get_current_user
-from apps.shared.query_params import (
-    BaseQueryParams,
-    QueryParams,
-    parse_query_params,
-)
+from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
 from apps.users.domain import User
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session

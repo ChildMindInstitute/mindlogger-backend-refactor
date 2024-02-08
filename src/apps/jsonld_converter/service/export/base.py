@@ -3,10 +3,7 @@ from typing import Callable, Type
 
 from pyld import ContextResolver
 
-from apps.jsonld_converter.service.base import (
-    ContextResolverAwareMixin,
-    str_to_id,
-)
+from apps.jsonld_converter.service.base import ContextResolverAwareMixin, str_to_id
 from apps.jsonld_converter.service.domain import ModelExportData
 from apps.shared.domain import InternalModel
 
@@ -17,9 +14,7 @@ class ContainsNestedModelMixin(ABC, ContextResolverAwareMixin):
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
         ...
 
-    def get_supported_processor(
-        self, model: InternalModel
-    ) -> "BaseModelExport":
+    def get_supported_processor(self, model: InternalModel) -> "BaseModelExport":
         for candidate in self.get_supported_types():
             if candidate.supports(model):
                 return candidate(self.context_resolver, self.document_loader)  # type: ignore[arg-type]  # noqa: E501
@@ -50,9 +45,7 @@ class BaseModelExport(ABC, ContextResolverAwareMixin):
         ...
 
     @abstractmethod
-    async def export(
-        self, model: InternalModel, expand: bool = False
-    ) -> ModelExportData:
+    async def export(self, model: InternalModel, expand: bool = False) -> ModelExportData:
         ...
 
     async def _post_process(self, doc: dict, expand: bool):

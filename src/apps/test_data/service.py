@@ -3,20 +3,13 @@ import string
 import uuid
 from datetime import datetime, timedelta
 
-from apps.activities.domain.activity_create import (
-    ActivityCreate,
-    ActivityItemCreate,
-)
+from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
 from apps.activities.domain.response_type_config import ResponseType
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletService
-from apps.schedule.domain.constants import (
-    NotificationTriggerType,
-    PeriodicityType,
-    TimerType,
-)
+from apps.schedule.domain.constants import NotificationTriggerType, PeriodicityType, TimerType
 from apps.schedule.domain.schedule import (
     EventRequest,
     NotificationSettingRequest,
@@ -50,19 +43,9 @@ class TestDataService:
 
     async def create_applet(self, applet_generation: AppletGeneration):
         applet_create = self._generate_applet(applet_generation.encryption)
-        applet = await AppletService(self.session, self.user_id).create(
-            applet_create
-        )
-        entity_ids = [
-            {"id": activity.id, "is_activity": True}
-            for activity in applet.activities
-        ]
-        entity_ids.extend(
-            [
-                {"id": flow.id, "is_activity": False}
-                for flow in applet.activity_flows
-            ]
-        )
+        applet = await AppletService(self.session, self.user_id).create(applet_create)
+        entity_ids = [{"id": activity.id, "is_activity": True} for activity in applet.activities]
+        entity_ids.extend([{"id": flow.id, "is_activity": False} for flow in applet.activity_flows])
 
         await self._create_all_events(
             applet_id=applet.id,
@@ -82,9 +65,7 @@ class TestDataService:
 
     def _generate_applet(self, encryption: Encryption) -> AppletCreate:
         activities = self._generate_activities()
-        activity_flows = self._generate_activity_flows_from_activities(
-            activities
-        )
+        activity_flows = self._generate_activity_flows_from_activities(activities)
         applet_create = AppletCreate(
             display_name=f"Applet-{self.random_string()}-generated",
             # noqa: E501
@@ -143,9 +124,7 @@ class TestDataService:
 
         return activities
 
-    def _generate_activity_flows_from_activities(
-        self, activities: list[ActivityCreate], count=5
-    ) -> list[FlowCreate]:
+    def _generate_activity_flows_from_activities(self, activities: list[ActivityCreate], count=5) -> list[FlowCreate]:
         flows = []
         for index in range(count):
             flow_items = self._generate_flow_items(activities)
@@ -168,9 +147,7 @@ class TestDataService:
         items = []
         for index in range(count):
             response_config = self.generate_response_value_config(
-                type_=self.activity_item_options[
-                    index % len(self.activity_item_options)
-                ]
+                type_=self.activity_item_options[index % len(self.activity_item_options)]
             )
 
             items.append(
@@ -180,9 +157,7 @@ class TestDataService:
                         en=f"Activity item question {self.random_string()}",
                         fr=f"Activity item question {self.random_string()}",
                     ),
-                    response_type=self.activity_item_options[
-                        index % len(self.activity_item_options)
-                    ],
+                    response_type=self.activity_item_options[index % len(self.activity_item_options)],
                     response_values=response_config["response_values"],
                     config=response_config["config"],
                     is_hidden=self.random_boolean(),
@@ -315,13 +290,9 @@ class TestDataService:
 
         return result
 
-    def _generate_flow_items(
-        self, activities: list[ActivityCreate]
-    ) -> list[FlowItemCreate]:
+    def _generate_flow_items(self, activities: list[ActivityCreate]) -> list[FlowItemCreate]:
         items = []
-        for index in random.sample(
-            range(len(activities)), random.randint(1, len(activities))
-        ):
+        for index in random.sample(range(len(activities)), random.randint(1, len(activities))):
             items.append(FlowItemCreate(activity_key=activities[index].key))
 
         return items
@@ -375,9 +346,7 @@ class TestDataService:
                         to_time="09:00:00",
                     ),
                 ],
-                "reminder": ReminderSettingRequest(
-                    activity_incomplete=1, reminder_time="08:00:00"
-                ),
+                "reminder": ReminderSettingRequest(activity_incomplete=1, reminder_time="08:00:00"),
             },
         )
 
@@ -448,25 +417,17 @@ class TestDataService:
             # )
 
             # third event daily
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
                 ),
                 entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
-            default_event.periodicity.start_date = (
-                anchor_datetime.date() - timedelta(days=5)
-            )
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() - timedelta(days=3)
-            )
+            default_event.periodicity.start_date = anchor_datetime.date() - timedelta(days=5)
+            default_event.periodicity.end_date = anchor_datetime.date() - timedelta(days=3)
             default_event.periodicity.type = PeriodicityType.DAILY
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -475,25 +436,17 @@ class TestDataService:
             )
 
             # fourth event daily
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
                 ),
                 entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
-            default_event.periodicity.start_date = (
-                anchor_datetime.date() - timedelta(days=2)
-            )
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=2)
-            )
+            default_event.periodicity.start_date = anchor_datetime.date() - timedelta(days=2)
+            default_event.periodicity.end_date = anchor_datetime.date() + timedelta(days=2)
             default_event.periodicity.type = PeriodicityType.DAILY
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -502,25 +455,17 @@ class TestDataService:
             )
 
             # fifth event daily
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
                 ),
                 entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
-            default_event.periodicity.start_date = (
-                anchor_datetime.date() + timedelta(days=2)
-            )
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=5)
-            )
+            default_event.periodicity.start_date = anchor_datetime.date() + timedelta(days=2)
+            default_event.periodicity.end_date = anchor_datetime.date() + timedelta(days=5)
             default_event.periodicity.type = PeriodicityType.DAILY
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -528,9 +473,7 @@ class TestDataService:
                 )
             )
             # sixth event daily
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
@@ -541,32 +484,24 @@ class TestDataService:
             default_event.periodicity.type = PeriodicityType.DAILY
 
             default_event.periodicity.start_date = anchor_datetime.date()
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=30)
+            default_event.periodicity.end_date = anchor_datetime.date() + timedelta(days=30)
+
+            default_event.notification.notifications[0].at_time = (anchor_datetime + timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.notifications[1].from_time = (anchor_datetime + timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.notifications[1].to_time = (anchor_datetime + timedelta(minutes=120)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.reminder.reminder_time = (anchor_datetime + timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
             )
 
-            default_event.notification.notifications[0].at_time = (
-                anchor_datetime + timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
-            default_event.notification.notifications[1].from_time = (
-                anchor_datetime + timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
-            default_event.notification.notifications[1].to_time = (
-                anchor_datetime + timedelta(minutes=120)
-            ).strftime("%H:%M:%S")
-            default_event.notification.reminder.reminder_time = (
-                anchor_datetime + timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
-
-            default_event.start_time = (
-                anchor_datetime + timedelta(minutes=60)
-            ).strftime("%H:%M:%S")
-            default_event.end_time = (
-                anchor_datetime + timedelta(minutes=180)
-            ).strftime("%H:%M:%S")
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event.start_time = (anchor_datetime + timedelta(minutes=60)).strftime("%H:%M:%S")
+            default_event.end_time = (anchor_datetime + timedelta(minutes=180)).strftime("%H:%M:%S")
+            default_event = self._set_timer(default_event, current_entity_index)
 
             events.append(
                 await ScheduleService(self.session).create_schedule(
@@ -576,9 +511,7 @@ class TestDataService:
             )
 
             # seventh event daily
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
@@ -589,34 +522,26 @@ class TestDataService:
             default_event.periodicity.type = PeriodicityType.DAILY
 
             default_event.periodicity.start_date = anchor_datetime.date()
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=30)
+            default_event.periodicity.end_date = anchor_datetime.date() + timedelta(days=30)
+
+            default_event.notification.notifications[0].at_time = (anchor_datetime + timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.notifications[1].from_time = (anchor_datetime + timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.notifications[1].to_time = (anchor_datetime + timedelta(minutes=120)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.reminder.reminder_time = (anchor_datetime + timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
             )
 
-            default_event.notification.notifications[0].at_time = (
-                anchor_datetime + timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
-            default_event.notification.notifications[1].from_time = (
-                anchor_datetime + timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
-            default_event.notification.notifications[1].to_time = (
-                anchor_datetime + timedelta(minutes=120)
-            ).strftime("%H:%M:%S")
-            default_event.notification.reminder.reminder_time = (
-                anchor_datetime + timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
-
-            default_event.start_time = (
-                anchor_datetime + timedelta(minutes=60)
-            ).strftime("%H:%M:%S")
-            default_event.end_time = (
-                anchor_datetime + timedelta(minutes=180)
-            ).strftime("%H:%M:%S")
+            default_event.start_time = (anchor_datetime + timedelta(minutes=60)).strftime("%H:%M:%S")
+            default_event.end_time = (anchor_datetime + timedelta(minutes=180)).strftime("%H:%M:%S")
             default_event.access_before_schedule = True
 
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
 
             events.append(
                 await ScheduleService(self.session).create_schedule(
@@ -626,9 +551,7 @@ class TestDataService:
             )
 
             # eighth event daily
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
@@ -639,33 +562,25 @@ class TestDataService:
             default_event.periodicity.type = PeriodicityType.DAILY
 
             default_event.periodicity.start_date = anchor_datetime.date()
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=30)
+            default_event.periodicity.end_date = anchor_datetime.date() + timedelta(days=30)
+
+            default_event.notification.notifications[0].at_time = (anchor_datetime - timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.notifications[1].from_time = (anchor_datetime - timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.notifications[1].to_time = (anchor_datetime - timedelta(minutes=70)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.reminder.reminder_time = (anchor_datetime - timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
             )
 
-            default_event.notification.notifications[0].at_time = (
-                anchor_datetime - timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
-            default_event.notification.notifications[1].from_time = (
-                anchor_datetime - timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
-            default_event.notification.notifications[1].to_time = (
-                anchor_datetime - timedelta(minutes=70)
-            ).strftime("%H:%M:%S")
-            default_event.notification.reminder.reminder_time = (
-                anchor_datetime - timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
+            default_event.start_time = (anchor_datetime - timedelta(minutes=180)).strftime("%H:%M:%S")
+            default_event.end_time = (anchor_datetime - timedelta(minutes=60)).strftime("%H:%M:%S")
 
-            default_event.start_time = (
-                anchor_datetime - timedelta(minutes=180)
-            ).strftime("%H:%M:%S")
-            default_event.end_time = (
-                anchor_datetime - timedelta(minutes=60)
-            ).strftime("%H:%M:%S")
-
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
 
             events.append(
                 await ScheduleService(self.session).create_schedule(
@@ -675,9 +590,7 @@ class TestDataService:
             )
 
             # ninth event daily
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
@@ -688,33 +601,25 @@ class TestDataService:
             default_event.periodicity.type = PeriodicityType.DAILY
 
             default_event.periodicity.start_date = anchor_datetime.date()
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=30)
+            default_event.periodicity.end_date = anchor_datetime.date() + timedelta(days=30)
+
+            default_event.notification.notifications[0].at_time = (anchor_datetime + timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.notifications[1].from_time = (anchor_datetime + timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.notifications[1].to_time = (anchor_datetime + timedelta(minutes=120)).strftime(
+                "%H:%M:%S"
+            )
+            default_event.notification.reminder.reminder_time = (anchor_datetime + timedelta(minutes=90)).strftime(
+                "%H:%M:%S"
             )
 
-            default_event.notification.notifications[0].at_time = (
-                anchor_datetime + timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
-            default_event.notification.notifications[1].from_time = (
-                anchor_datetime + timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
-            default_event.notification.notifications[1].to_time = (
-                anchor_datetime + timedelta(minutes=120)
-            ).strftime("%H:%M:%S")
-            default_event.notification.reminder.reminder_time = (
-                anchor_datetime + timedelta(minutes=90)
-            ).strftime("%H:%M:%S")
+            default_event.start_time = (anchor_datetime - timedelta(minutes=180)).strftime("%H:%M:%S")
+            default_event.end_time = (anchor_datetime + timedelta(minutes=180)).strftime("%H:%M:%S")
 
-            default_event.start_time = (
-                anchor_datetime - timedelta(minutes=180)
-            ).strftime("%H:%M:%S")
-            default_event.end_time = (
-                anchor_datetime + timedelta(minutes=180)
-            ).strftime("%H:%M:%S")
-
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
 
             events.append(
                 await ScheduleService(self.session).create_schedule(
@@ -724,9 +629,7 @@ class TestDataService:
             )
 
             # tenth event weekly
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
@@ -734,14 +637,10 @@ class TestDataService:
                 entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
-            default_event.periodicity.selected_date = (
-                anchor_datetime.date() - timedelta(days=2)
-            )
+            default_event.periodicity.selected_date = anchor_datetime.date() - timedelta(days=2)
             default_event.periodicity.type = PeriodicityType.WEEKLY
 
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -750,9 +649,7 @@ class TestDataService:
             )
 
             # eleventh event weekly
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
@@ -762,9 +659,7 @@ class TestDataService:
 
             default_event.periodicity.selected_date = anchor_datetime.date()
             default_event.periodicity.type = PeriodicityType.WEEKLY
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -773,9 +668,7 @@ class TestDataService:
             )
 
             # twelfth event weekly
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
@@ -783,13 +676,9 @@ class TestDataService:
                 entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
             )
 
-            default_event.periodicity.selected_date = (
-                anchor_datetime.date() + timedelta(days=2)
-            )
+            default_event.periodicity.selected_date = anchor_datetime.date() + timedelta(days=2)
             default_event.periodicity.type = PeriodicityType.WEEKLY
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -798,9 +687,7 @@ class TestDataService:
             )
 
             # thirteenth event montly
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
@@ -811,9 +698,7 @@ class TestDataService:
             default_event.periodicity.selected_date = anchor_datetime.date()
             default_event.periodicity.type = PeriodicityType.MONTHLY
 
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -822,9 +707,7 @@ class TestDataService:
             )
 
             # fourteenth event weekdays
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
@@ -835,13 +718,9 @@ class TestDataService:
             default_event.periodicity.type = PeriodicityType.WEEKDAYS
 
             default_event.periodicity.start_date = anchor_datetime.date()
-            default_event.periodicity.end_date = (
-                anchor_datetime.date() + timedelta(days=30)
-            )
+            default_event.periodicity.end_date = anchor_datetime.date() + timedelta(days=30)
 
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -850,9 +729,7 @@ class TestDataService:
             )
 
             # fifteenth event once
-            current_entity_index = self._increment_index(
-                current_entity_index, len(entity_ids)
-            )
+            current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
                 is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
                     "is_activity"
@@ -863,9 +740,7 @@ class TestDataService:
             default_event.periodicity.selected_date = anchor_datetime.date()
             default_event.periodicity.type = PeriodicityType.ONCE
 
-            default_event = self._set_timer(
-                default_event, current_entity_index
-            )
+            default_event = self._set_timer(default_event, current_entity_index)
             events.append(
                 await ScheduleService(self.session).create_schedule(
                     applet_id=applet_id,
@@ -893,9 +768,7 @@ class TestDataService:
     async def delete_generated_applets(self):
         # delete applets with suffix '-generated'
 
-        old_applets = await AppletService(
-            self.session, self.user_id
-        ).get_list_by_single_language(
+        old_applets = await AppletService(self.session, self.user_id).get_list_by_single_language(
             language="en",
             query_params=QueryParams(filters={"roles": Role.OWNER}),
         )
@@ -903,6 +776,4 @@ class TestDataService:
         if old_applets:
             for old_applet in old_applets:
                 if old_applet.display_name.endswith("-generated"):
-                    await AppletService(
-                        self.session, self.user_id
-                    ).delete_applet_by_id(old_applet.id)
+                    await AppletService(self.session, self.user_id).delete_applet_by_id(old_applet.id)

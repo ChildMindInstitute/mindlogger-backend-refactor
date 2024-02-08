@@ -11,14 +11,8 @@ from bson.objectid import ObjectId
 
 from apps.girderformindlogger import events
 from apps.girderformindlogger.constants import USER_ROLES, AccessType
-from apps.girderformindlogger.exceptions import (
-    GirderException,
-    ValidationException,
-)
-from apps.girderformindlogger.models.model_base import (
-    AccessControlledModel,
-    Model,
-)
+from apps.girderformindlogger.exceptions import GirderException, ValidationException
+from apps.girderformindlogger.models.model_base import AccessControlledModel, Model
 from apps.girderformindlogger.utility.model_importer import ModelImporter
 
 

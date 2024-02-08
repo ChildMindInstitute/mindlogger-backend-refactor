@@ -2,24 +2,11 @@ import enum
 import uuid
 from typing import TypeVar
 
-from apps.activities.domain.activity_history import (
-    ActivityHistoryFull,
-    ActivityItemHistoryFull,
-)
-from apps.activities.domain.activity_item_history import (
-    ActivityItemHistoryChange,
-)
+from apps.activities.domain.activity_history import ActivityHistoryFull, ActivityItemHistoryFull
+from apps.activities.domain.activity_item_history import ActivityItemHistoryChange
 from apps.activities.domain.conditional_logic import ConditionalLogic
-from apps.activities.domain.conditions import (
-    Condition,
-    MinMaxPayload,
-    OptionPayload,
-    ValuePayload,
-)
-from apps.activities.domain.response_type_config import (
-    AdditionalResponseOption,
-    ResponseType,
-)
+from apps.activities.domain.conditions import Condition, MinMaxPayload, OptionPayload, ValuePayload
+from apps.activities.domain.response_type_config import AdditionalResponseOption, ResponseType
 from apps.shared.changes_generator import BaseChangeGenerator
 
 GT = TypeVar("GT", ActivityHistoryFull, ActivityItemHistoryFull)
@@ -32,9 +19,7 @@ class ChangeStatusEnum(str, enum.Enum):
     REMOVED = "removed"
 
 
-def group(
-    items: list[GT], new_version: str
-) -> dict[uuid.UUID, tuple[RGT, RGT]]:
+def group(items: list[GT], new_version: str) -> dict[uuid.UUID, tuple[RGT, RGT]]:
     groups_map: dict = dict()
     for item in items:
         group = groups_map.get(item.id)
@@ -97,13 +82,9 @@ class ConfigChangeService(BaseChangeGenerator):
                     self._populate_bool_changes(verbose_name, v, changes)
             elif val:
                 verbose_name = self.field_name_verbose_name_map[key]
-                changes.append(
-                    self._change_text_generator.set_text(verbose_name, val)
-                )
+                changes.append(self._change_text_generator.set_text(verbose_name, val))
 
-    def check_update_changes(
-        self, old_value, new_value, changes: list[str]
-    ) -> None:
+    def check_update_changes(self, old_value, new_value, changes: list[str]) -> None:
         if new_value == old_value:
             return
         for key, val in new_value:
@@ -121,9 +102,7 @@ class ConfigChangeService(BaseChangeGenerator):
                                 self._populate_bool_changes(vn, v, changes)
                 elif val != old_val:
                     vn = self.field_name_verbose_name_map[key]
-                    changes.append(
-                        self._change_text_generator.set_text(vn, val)
-                    )
+                    changes.append(self._change_text_generator.set_text(vn, val))
 
 
 class ResponseOptionChangeService(BaseChangeGenerator):
@@ -158,19 +137,11 @@ class ResponseOptionChangeService(BaseChangeGenerator):
             for k, v in old_options.items():
                 new = options.get(k)
                 if not new:
-                    changes.append(
-                        self._change_text_generator.removed_text(
-                            f"{v.text} | {v.value} option"
-                        )
-                    )
+                    changes.append(self._change_text_generator.removed_text(f"{v.text} | {v.value} option"))
             for k, v in options.items():
                 old = old_options.get(k)
                 if not old:
-                    changes.append(
-                        self._change_text_generator.added_text(
-                            f"{v.text} | {v.value} option"
-                        )
-                    )
+                    changes.append(self._change_text_generator.added_text(f"{v.text} | {v.value} option"))
                 elif old.text != v.text:
                     changes.append(
                         self._change_text_generator.changed_text(
@@ -184,21 +155,13 @@ class ResponseOptionChangeService(BaseChangeGenerator):
             for k, v in new_rows.items():
                 old_label = old_rows.get(k)
                 if not old_label:
-                    changes.append(
-                        self._change_text_generator.added_text(f"Row {v}")
-                    )
+                    changes.append(self._change_text_generator.added_text(f"Row {v}"))
                 elif old_label != v:
-                    changes.append(
-                        self._change_text_generator.changed_text(
-                            f"Row label {old_label}", v
-                        )
-                    )
+                    changes.append(self._change_text_generator.changed_text(f"Row label {old_label}", v))
             for k, v in old_rows.items():
                 new_label = new_rows.get(k)
                 if not new_label:
-                    changes.append(
-                        self._change_text_generator.removed_text(f"Row {v}")
-                    )
+                    changes.append(self._change_text_generator.removed_text(f"Row {v}"))
         elif type_ in (
             ResponseType.SINGLESELECTROWS,
             ResponseType.MULTISELECTROWS,
@@ -210,39 +173,23 @@ class ResponseOptionChangeService(BaseChangeGenerator):
             for k, v in new_rows.items():
                 old_row_name = old_rows.get(k)
                 if not old_row_name:
-                    changes.append(
-                        self._change_text_generator.added_text(f"Row {v}")
-                    )
+                    changes.append(self._change_text_generator.added_text(f"Row {v}"))
                 elif old_row_name != v:
-                    changes.append(
-                        self._change_text_generator.changed_text(
-                            f"Row name {old_row_name}", v
-                        )
-                    )
+                    changes.append(self._change_text_generator.changed_text(f"Row name {old_row_name}", v))
             for k, v in old_rows.items():
                 new_row_name = new_rows.get(k)
                 if not new_row_name:
-                    changes.append(
-                        self._change_text_generator.removed_text(f"Row {v}")
-                    )
+                    changes.append(self._change_text_generator.removed_text(f"Row {v}"))
             for k, v in new_options.items():
                 old_text = old_options.get(k)
                 if not old_text:
-                    changes.append(
-                        self._change_text_generator.added_text(f"{v} option")
-                    )
+                    changes.append(self._change_text_generator.added_text(f"{v} option"))
                 elif old_text != v:
-                    changes.append(
-                        self._change_text_generator.changed_text(
-                            f"Option text {old_text}", v
-                        )
-                    )
+                    changes.append(self._change_text_generator.changed_text(f"Option text {old_text}", v))
             for k, v in old_options.items():
                 new_text = new_options.get(k)
                 if not new_text:
-                    changes.append(
-                        self._change_text_generator.removed_text(f"{v} option")
-                    )
+                    changes.append(self._change_text_generator.removed_text(f"{v} option"))
 
     def __process_container_attr(
         self,
@@ -280,9 +227,7 @@ class ConditionalLogicChangeService(BaseChangeGenerator):
                 f"{condition.item_name} {condition_type} {self.__get_payload(condition)}"  # noqa: E501
             )
         message = message + ", ".join(conds)
-        changes.append(
-            getattr(self._change_text_generator, method_name)(message)
-        )
+        changes.append(getattr(self._change_text_generator, method_name)(message))
 
     def check_update_changes(
         self,
@@ -294,9 +239,7 @@ class ConditionalLogicChangeService(BaseChangeGenerator):
         if new_value and not old_value:
             self.check_changes(parent_field, new_value, changes)
         elif not new_value and old_value:
-            changes.append(
-                self._change_text_generator.removed_text(parent_field)
-            )
+            changes.append(self._change_text_generator.removed_text(parent_field))
         # Because we can not check conditional logic identity (there are no
         # any ids or other unique fields) we just write that logic was update
         # to the new value.
@@ -363,49 +306,33 @@ class ActivityItemChangeService(BaseChangeGenerator):
             if isinstance(value, bool):
                 self._populate_bool_changes(verbose_name, value, changes)
             elif field_name == "response_values":
-                self._resp_vals_change_service.check_changes(
-                    item.response_type, value, changes
-                )
+                self._resp_vals_change_service.check_changes(item.response_type, value, changes)
             elif field_name == "config":
                 self._conf_change_service.check_changes(value, changes)
             elif field_name == "conditional_logic":
                 if value:
-                    self._cond_logic_change_service.check_changes(
-                        verbose_name, value, changes
-                    )
+                    self._cond_logic_change_service.check_changes(verbose_name, value, changes)
             elif value:
-                changes.append(
-                    self._change_text_generator.changed_text(
-                        verbose_name, value, is_initial=True
-                    )
-                )
+                changes.append(self._change_text_generator.changed_text(verbose_name, value, is_initial=True))
 
         return changes
 
-    def get_changes(
-        self, items: list[ActivityItemHistoryFull]
-    ) -> list[ActivityItemHistoryChange]:
+    def get_changes(self, items: list[ActivityItemHistoryFull]) -> list[ActivityItemHistoryChange]:
         grouped = group(items, self._new_version)
 
         result: list[ActivityItemHistoryChange] = []
         for _, (old_item, new_item) in grouped.items():
             if not old_item and new_item:
-                change = self.init_change(
-                    new_item.name, ChangeStatusEnum.ADDED
-                )
+                change = self.init_change(new_item.name, ChangeStatusEnum.ADDED)
                 change.changes = self.get_changes_insert(new_item)
                 result.append(change)
             elif not new_item and old_item:
-                change = self.init_change(
-                    old_item.name, ChangeStatusEnum.REMOVED
-                )
+                change = self.init_change(old_item.name, ChangeStatusEnum.REMOVED)
                 result.append(change)
             elif new_item and old_item:
                 changes = self.get_changes_update(old_item, new_item)
                 if changes:
-                    change = self.init_change(
-                        new_item.name, ChangeStatusEnum.UPDATED
-                    )
+                    change = self.init_change(new_item.name, ChangeStatusEnum.UPDATED)
                     change.changes = changes
                     result.append(change)
 
@@ -428,22 +355,12 @@ class ActivityItemChangeService(BaseChangeGenerator):
                 if value != old_value:
                     self._populate_bool_changes(verbose_name, value, changes)
             elif field_name == "response_values":
-                self._resp_vals_change_service.check_changes_update(
-                    new_item.response_type, old_value, value, changes
-                )
+                self._resp_vals_change_service.check_changes_update(new_item.response_type, old_value, value, changes)
             elif field_name == "config":
-                self._conf_change_service.check_update_changes(
-                    old_value, value, changes
-                )
+                self._conf_change_service.check_update_changes(old_value, value, changes)
             elif field_name == "conditional_logic":
-                self._cond_logic_change_service.check_update_changes(
-                    verbose_name, old_value, value, changes
-                )
+                self._cond_logic_change_service.check_update_changes(verbose_name, old_value, value, changes)
             elif value and value != old_value:
-                changes.append(
-                    self._change_text_generator.changed_text(
-                        verbose_name, value
-                    )
-                )
+                changes.append(self._change_text_generator.changed_text(verbose_name, value))
 
         return changes

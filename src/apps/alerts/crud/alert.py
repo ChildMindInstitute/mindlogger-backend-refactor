@@ -8,10 +8,7 @@ from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.searching import Searching
-from apps.workspaces.db.schemas import (
-    UserAppletAccessSchema,
-    UserWorkspaceSchema,
-)
+from apps.workspaces.db.schemas import UserAppletAccessSchema, UserWorkspaceSchema
 from apps.workspaces.domain.constants import Role
 from infrastructure.database.crud import BaseCRUD
 
@@ -35,9 +32,7 @@ class _AlertOrdering(Ordering):
 class AlertCRUD(BaseCRUD[AlertSchema]):
     schema_class = AlertSchema
 
-    async def create_many(
-        self, schemas: list[AlertSchema]
-    ) -> list[AlertSchema]:
+    async def create_many(self, schemas: list[AlertSchema]) -> list[AlertSchema]:
         return await self._create_many(schemas)
 
     async def get_all_for_user(
@@ -83,9 +78,7 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
             UserWorkspaceSchema.user_id == UserAppletAccessSchema.owner_id,
             isouter=True,
         )
-        query = query.where(
-            AlertSchema.user_id == user_id, AppletSchema.is_deleted.is_(False)
-        )
+        query = query.where(AlertSchema.user_id == user_id, AppletSchema.is_deleted.is_(False))
         query = query.order_by(AlertSchema.created_at.desc())
         query = paging(query, page, limit)
 
@@ -93,15 +86,9 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         return db_result.all()
 
     async def get_all_for_user_count(self, user_id: uuid.UUID) -> dict:
-        query: Query = select(
-            AlertSchema.is_watched, func.count(AlertSchema.id).label("count")
-        )
-        query = query.join(
-            AppletSchema, AppletSchema.id == AlertSchema.applet_id
-        )
-        query = query.where(
-            AlertSchema.user_id == user_id, AppletSchema.is_deleted.is_(False)
-        )
+        query: Query = select(AlertSchema.is_watched, func.count(AlertSchema.id).label("count"))
+        query = query.join(AppletSchema, AppletSchema.id == AlertSchema.applet_id)
+        query = query.where(AlertSchema.user_id == user_id, AppletSchema.is_deleted.is_(False))
         query = query.group_by(AlertSchema.is_watched)
         db_result = await self._execute(query)
         db_result = db_result.all()

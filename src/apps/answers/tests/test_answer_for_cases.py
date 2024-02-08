@@ -7,12 +7,8 @@ class TestAnswerCases(BaseTest):
     login_url = "/auth/login"
     answer_url = "/answers"
 
-    async def test_answer_activity_items_create_for_respondent(
-        self, mock_kiq_report, client
-    ):
-        await self.load_data(
-            "answers/fixtures/duplicate_activity_in_flow.json"
-        )
+    async def test_answer_activity_items_create_for_respondent(self, mock_kiq_report, client):
+        await self.load_data("answers/fixtures/duplicate_activity_in_flow.json")
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = dict(

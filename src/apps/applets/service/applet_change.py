@@ -20,9 +20,7 @@ class AppletChangeService(BaseChangeGenerator):
         "stream_port": "Stream Port",
     }
 
-    def compare(
-        self, old_applet: AppletHistory, new_applet: AppletHistory
-    ) -> AppletHistoryChange:
+    def compare(self, old_applet: AppletHistory, new_applet: AppletHistory) -> AppletHistoryChange:
         change = AppletHistoryChange()
         if old_applet.version == new_applet.version:
             change.display_name = f"New applet {new_applet.display_name} added"
@@ -32,9 +30,7 @@ class AppletChangeService(BaseChangeGenerator):
             change.changes = self.get_changes(old_applet, new_applet)
         return change
 
-    def get_changes(
-        self, old_applet: AppletHistory | None, new_applet: AppletHistory
-    ) -> list[str]:
+    def get_changes(self, old_applet: AppletHistory | None, new_applet: AppletHistory) -> list[str]:
         changes = []
         for (
             field_name,
@@ -43,32 +39,18 @@ class AppletChangeService(BaseChangeGenerator):
             old_value = getattr(old_applet, field_name) if old_applet else None
             new_value = getattr(new_applet, field_name)
             # First just check that something was changed
-            if (
-                old_value in EMPTY_VALUES
-                and new_value in EMPTY_VALUES
-                or new_value == old_value
-            ):
+            if old_value in EMPTY_VALUES and new_value in EMPTY_VALUES or new_value == old_value:
                 continue
             if isinstance(new_value, bool):
-                changes.append(
-                    self._change_text_generator.set_bool(
-                        verbose_name, new_value
-                    )
-                )
+                changes.append(self._change_text_generator.set_bool(verbose_name, new_value))
             elif self._change_text_generator.is_considered_empty(new_value):
                 changes.append(
                     self._change_text_generator.cleared_text(verbose_name),
                 )
             elif self._change_text_generator.is_considered_empty(old_value):
                 changes.append(
-                    self._change_text_generator.changed_text(
-                        verbose_name, new_value, is_initial=True
-                    ),
+                    self._change_text_generator.changed_text(verbose_name, new_value, is_initial=True),
                 )
             else:
-                changes.append(
-                    self._change_text_generator.changed_text(
-                        verbose_name, new_value
-                    )
-                )
+                changes.append(self._change_text_generator.changed_text(verbose_name, new_value))
         return changes

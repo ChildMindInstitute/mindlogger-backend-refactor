@@ -5,16 +5,8 @@ import pytest
 
 from apps.activities.domain.activity_history import ActivityItemHistoryFull
 from apps.activities.domain.conditional_logic import ConditionalLogic, Match
-from apps.activities.domain.conditions import (
-    ConditionType,
-    EqualCondition,
-    ValuePayload,
-)
-from apps.activities.domain.response_type_config import (
-    AdditionalResponseOption,
-    ResponseType,
-    SingleSelectionConfig,
-)
+from apps.activities.domain.conditions import ConditionType, EqualCondition, ValuePayload
+from apps.activities.domain.response_type_config import AdditionalResponseOption, ResponseType, SingleSelectionConfig
 from apps.activities.domain.response_values import (
     SingleSelectionRowsValues,
     SingleSelectionValues,
@@ -79,9 +71,7 @@ def single_selection_config() -> SingleSelectionConfig:
         set_alerts=False,
         add_tooltip=False,
         add_tokens=False,
-        additional_response_option=AdditionalResponseOption(
-            text_input_option=False, text_input_required=False
-        ),
+        additional_response_option=AdditionalResponseOption(text_input_option=False, text_input_required=False),
         remove_back_button=False,
         set_palette=False,
         skippable_item=False,
@@ -147,9 +137,7 @@ def old_item(
 
 
 @pytest.fixture
-def new_item(
-    old_item: ActivityItemHistoryFull, new_id_version: str
-) -> ActivityItemHistoryFull:
+def new_item(old_item: ActivityItemHistoryFull, new_id_version: str) -> ActivityItemHistoryFull:
     new_item = old_item.copy(deep=True)
     new_item.id_version = new_id_version
     new_item.activity_id = new_id_version
@@ -173,9 +161,7 @@ def test_single_selection_values_update(
     new_ssv.options[0].text = new_text
     changes: list[str] = []
     service = ResponseOptionChangeService()
-    service.check_changes_update(
-        ResponseType.SINGLESELECT, single_selection_values, new_ssv, changes
-    )
+    service.check_changes_update(ResponseType.SINGLESELECT, single_selection_values, new_ssv, changes)
     assert len(changes) == 1
     assert changes[0] == f"o1 | 0 option text was changed to {new_text} | 0"
 
@@ -187,9 +173,7 @@ def test_single_selection_remove_insert_with_the_same_name(
     new_ssv.options[0].id = str(uuid.uuid4())
     changes: list[str] = []
     service = ResponseOptionChangeService()
-    service.check_changes_update(
-        ResponseType.SINGLESELECT, single_selection_values, new_ssv, changes
-    )
+    service.check_changes_update(ResponseType.SINGLESELECT, single_selection_values, new_ssv, changes)
     exp_changes = ["o1 | 0 option was removed", "o1 | 0 option was added"]
     assert changes == exp_changes
 
@@ -204,9 +188,7 @@ def test_single_selection_added_new_option(
     new_ssv.options.append(op)
     changes: list[str] = []
     service = ResponseOptionChangeService()
-    service.check_changes_update(
-        ResponseType.SINGLESELECT, single_selection_values, new_ssv, changes
-    )
+    service.check_changes_update(ResponseType.SINGLESELECT, single_selection_values, new_ssv, changes)
     assert changes == ["o2 | 0 option was added"]
 
 
@@ -228,9 +210,7 @@ def test_slider_rows_values_update(
     new.rows[0].label = new_label
     changes: list[str] = []
     service = ResponseOptionChangeService()
-    service.check_changes_update(
-        ResponseType.SLIDERROWS, slider_rows_values, new, changes
-    )
+    service.check_changes_update(ResponseType.SLIDERROWS, slider_rows_values, new, changes)
     assert len(changes) == 1
     assert changes[0] == f"Row label {old_label} was changed to {new_label}"
 
@@ -245,9 +225,7 @@ def test_slider_rows_values_added_new_row(
     new.rows.append(new_row)
     changes: list[str] = []
     service = ResponseOptionChangeService()
-    service.check_changes_update(
-        ResponseType.SLIDERROWS, slider_rows_values, new, changes
-    )
+    service.check_changes_update(ResponseType.SLIDERROWS, slider_rows_values, new, changes)
     assert len(changes) == 1
     assert changes == [f"Row {new_row.label} was added"]
 
@@ -260,9 +238,7 @@ def test_slider_rows_values_removed_row(
     label = slider_rows_values.rows[0].label
     changes: list[str] = []
     service = ResponseOptionChangeService()
-    service.check_changes_update(
-        ResponseType.SLIDERROWS, slider_rows_values, new, changes
-    )
+    service.check_changes_update(ResponseType.SLIDERROWS, slider_rows_values, new, changes)
     assert len(changes) == 1
     assert changes == [f"Row {label} was removed"]
 
@@ -274,9 +250,7 @@ def test_initial_single_select_rows_values(
     changes: list[str] = []
     row_name = single_select_rows_values.rows[0].row_name
     option_text = single_select_rows_values.options[0].text
-    service.check_changes(
-        ResponseType.SINGLESELECTROWS, single_select_rows_values, changes
-    )
+    service.check_changes(ResponseType.SINGLESELECTROWS, single_select_rows_values, changes)
     exp_changes = [
         f"Row {row_name} was added",
         f"{option_text} was added",
@@ -293,9 +267,7 @@ def test_single_select_rows_row_name_update(
     new = single_select_rows_values.copy(deep=True)
     new_name = "new row name"
     new.rows[0].row_name = new_name
-    service.check_changes_update(
-        ResponseType.SINGLESELECTROWS, single_select_rows_values, new, changes
-    )
+    service.check_changes_update(ResponseType.SINGLESELECTROWS, single_select_rows_values, new, changes)
     assert changes == [f"Row name {old_name} was changed to {new_name}"]
 
 
@@ -308,9 +280,7 @@ def test_single_select_rows_option_text_update(
     new = single_select_rows_values.copy(deep=True)
     new_text = "new"
     new.options[0].text = new_text
-    service.check_changes_update(
-        ResponseType.SINGLESELECTROWS, single_select_rows_values, new, changes
-    )
+    service.check_changes_update(ResponseType.SINGLESELECTROWS, single_select_rows_values, new, changes)
     assert changes == [f"Option text {old_text} was changed to {new_text}"]
 
 
@@ -333,9 +303,7 @@ def test_single_select_rows_new_response_value_was_added(
     new_attr = getattr(new, attr_name)[0].copy(deep=True)
     new_attr.id = str(uuid.uuid4())
     getattr(new, attr_name).append(new_attr)
-    service.check_changes_update(
-        ResponseType.SINGLESELECTROWS, single_select_rows_values, new, changes
-    )
+    service.check_changes_update(ResponseType.SINGLESELECTROWS, single_select_rows_values, new, changes)
     assert changes == exp_changes
 
 
@@ -357,34 +325,26 @@ def test_single_select_rows_new_response_value_was_removed(
     changes: list[str] = []
     new = single_select_rows_values.copy(deep=True)
     setattr(new, attr_name, [])
-    service.check_changes_update(
-        ResponseType.SINGLESELECTROWS, single_select_rows_values, new, changes
-    )
+    service.check_changes_update(ResponseType.SINGLESELECTROWS, single_select_rows_values, new, changes)
     assert changes == exp_changes
 
 
 def test_conditional_logic_added(conditional_logic: ConditionalLogic):
     service = ConditionalLogicChangeService()
     changes: list[str] = []
-    parent_name = ActivityItemChangeService.field_name_verbose_name_map[
-        "conditional_logic"
-    ]
+    parent_name = ActivityItemChangeService.field_name_verbose_name_map["conditional_logic"]
     service.check_changes(parent_name, conditional_logic, changes)
     condition = conditional_logic.conditions[0]
     condition_type = condition.type.lower().replace("_", " ")
     item_name = condition.item_name
     value = condition.payload.value  # type: ignore
-    assert changes == [
-        f"{parent_name}: If All: " f"{item_name} {condition_type} {value} was added"
-    ]
+    assert changes == [f"{parent_name}: If All: " f"{item_name} {condition_type} {value} was added"]
 
 
 def test_conditional_logic_changed(conditional_logic: ConditionalLogic):
     service = ConditionalLogicChangeService()
     changes: list[str] = []
-    parent_name = ActivityItemChangeService.field_name_verbose_name_map[
-        "conditional_logic"
-    ]
+    parent_name = ActivityItemChangeService.field_name_verbose_name_map["conditional_logic"]
     new = conditional_logic.copy(deep=True)
     new.match = Match.ANY
     service.check_update_changes(parent_name, conditional_logic, new, changes)
@@ -393,8 +353,7 @@ def test_conditional_logic_changed(conditional_logic: ConditionalLogic):
     item_name = condition.item_name
     value = condition.payload.value  # type: ignore
     assert changes == [
-        f"{parent_name}: If {new.match.capitalize()}: "
-        f"{item_name} {condition_type} {value} was updated"
+        f"{parent_name}: If {new.match.capitalize()}: " f"{item_name} {condition_type} {value} was updated"
     ]
 
 
@@ -403,9 +362,7 @@ def test_conditional_logic_removed(
 ) -> None:
     service = ConditionalLogicChangeService()
     changes: list[str] = []
-    parent_name = ActivityItemChangeService.field_name_verbose_name_map[
-        "conditional_logic"
-    ]
+    parent_name = ActivityItemChangeService.field_name_verbose_name_map["conditional_logic"]
     new = None
     service.check_update_changes(parent_name, conditional_logic, new, changes)
     assert changes == [f"{parent_name} was removed"]

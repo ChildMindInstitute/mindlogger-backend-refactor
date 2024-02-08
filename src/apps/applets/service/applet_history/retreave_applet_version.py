@@ -1,40 +1,19 @@
 import uuid
 
-from apps.activities.crud import (
-    ActivityHistoriesCRUD,
-    ActivityItemHistoriesCRUD,
-)
+from apps.activities.crud import ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsHistoryCRUD
 from apps.applets.crud import AppletHistoriesCRUD
-from apps.applets.domain.applets.history_detail import (
-    Activity,
-    ActivityFlow,
-    ActivityFlowItem,
-    ActivityItem,
-    Applet,
-)
+from apps.applets.domain.applets.history_detail import Activity, ActivityFlow, ActivityFlowItem, ActivityItem, Applet
 
 
-async def retrieve_applet_by_version(
-    session, applet_id: uuid.UUID, version: str
-) -> Applet:
+async def retrieve_applet_by_version(session, applet_id: uuid.UUID, version: str) -> Applet:
     id_version = f"{applet_id}_{version}"
 
-    applet_schema = await AppletHistoriesCRUD(
-        session
-    ).retrieve_by_applet_version(id_version)
-    activity_schemas = await ActivityHistoriesCRUD(
-        session
-    ).retrieve_by_applet_version(id_version)
-    activity_item_schemas = await ActivityItemHistoriesCRUD(
-        session
-    ).retrieve_by_applet_version(id_version)
-    flow_schemas = await FlowsHistoryCRUD(session).retrieve_by_applet_version(
-        id_version
-    )
-    flow_item_schemas = await FlowItemHistoriesCRUD(
-        session
-    ).retrieve_by_applet_version(id_version)
+    applet_schema = await AppletHistoriesCRUD(session).retrieve_by_applet_version(id_version)
+    activity_schemas = await ActivityHistoriesCRUD(session).retrieve_by_applet_version(id_version)
+    activity_item_schemas = await ActivityItemHistoriesCRUD(session).retrieve_by_applet_version(id_version)
+    flow_schemas = await FlowsHistoryCRUD(session).retrieve_by_applet_version(id_version)
+    flow_item_schemas = await FlowItemHistoriesCRUD(session).retrieve_by_applet_version(id_version)
     applet = Applet.from_orm(applet_schema)
 
     activity_map: dict[str, Activity] = dict()
@@ -46,9 +25,7 @@ async def retrieve_applet_by_version(
         activity_map[activity.id_version] = activity
 
     for activity_item_schema in activity_item_schemas:
-        activity_map[activity_item_schema.activity_id].items.append(
-            ActivityItem.from_orm(activity_item_schema)
-        )
+        activity_map[activity_item_schema.activity_id].items.append(ActivityItem.from_orm(activity_item_schema))
 
     for flow_schema in flow_schemas:
         flow = ActivityFlow.from_orm(flow_schema)

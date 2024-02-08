@@ -1,13 +1,4 @@
-from sqlalchemy import (
-    Boolean,
-    Column,
-    Date,
-    DateTime,
-    ForeignKey,
-    Text,
-    Time,
-    Unicode,
-)
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Text, Time, Unicode
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utils import StringEncryptedType
 

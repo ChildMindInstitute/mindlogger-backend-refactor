@@ -3,13 +3,7 @@ from fastapi import Body, Depends
 from apps.authentication.deps import get_current_user
 from apps.shared.domain.response import Response
 from apps.users.cruds.user import UsersCRUD
-from apps.users.domain import (
-    PublicUser,
-    User,
-    UserCreate,
-    UserCreateRequest,
-    UserUpdateRequest,
-)
+from apps.users.domain import PublicUser, User, UserCreate, UserCreateRequest, UserUpdateRequest
 from apps.users.services.user import UserService
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database.core import atomic
@@ -25,9 +19,7 @@ async def user_create(
         prepared_data = UserCreate(**user_create_schema.dict())
         user = await service.create_user(prepared_data)
         # Create default workspace for new user
-        await WorkspaceService(session, user.id).create_workspace_from_user(
-            user
-        )
+        await WorkspaceService(session, user.id).create_workspace_from_user(user)
     return Response(result=PublicUser.from_user(user))
 
 
@@ -46,9 +38,7 @@ async def user_update(
     session=Depends(get_session),
 ) -> Response[PublicUser]:
     async with atomic(session):
-        updated_user: User = await UsersCRUD(session).update(
-            user, user_update_schema
-        )
+        updated_user: User = await UsersCRUD(session).update(user, user_update_schema)
 
     # Create public representation of the internal user
     public_user = PublicUser.from_user(updated_user)

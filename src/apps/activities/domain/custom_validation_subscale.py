@@ -1,7 +1,4 @@
-from apps.activities.errors import (
-    InvalidRawScoreSubscaleError,
-    InvalidScoreSubscaleError,
-)
+from apps.activities.errors import InvalidRawScoreSubscaleError, InvalidScoreSubscaleError
 
 
 def validate_score_subscale_table(value: str):

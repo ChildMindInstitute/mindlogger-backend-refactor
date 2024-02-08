@@ -54,9 +54,7 @@ class ActivityMinimumInfo(InternalModel):
     order: int
 
 
-class ActivitySingleLanguageMobileDetailPublic(
-    ActivityMinimumInfo, InternalModel
-):
+class ActivitySingleLanguageMobileDetailPublic(ActivityMinimumInfo, InternalModel):
     is_reviewable: bool = False
     is_skippable: bool = False
     show_all_at_once: bool = False
@@ -76,9 +74,7 @@ class ActivitySingleLanguageWithItemsDetailPublic(ActivityBase, PublicModel):
     id: uuid.UUID
     order: int
     description: str  # type: ignore[assignment]
-    items: list[ActivityItemSingleLanguageDetailPublic] = Field(
-        default_factory=list
-    )
+    items: list[ActivityItemSingleLanguageDetailPublic] = Field(default_factory=list)
     created_at: datetime
 
 
@@ -94,9 +90,7 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
     is_hidden: bool | None = False
     response_is_editable: bool = False
     order: int
-    items: list[ActivityItemSingleLanguageDetailPublic] = Field(
-        default_factory=list
-    )
+    items: list[ActivityItemSingleLanguageDetailPublic] = Field(default_factory=list)
     scores_and_reports: ScoresAndReports | None = None
 
 

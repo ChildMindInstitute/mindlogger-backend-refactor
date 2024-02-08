@@ -112,9 +112,7 @@ def slider_rows_item_create(
 
 
 @pytest.fixture
-def text_item_create(
-    text_config: TextConfig, base_item_data: BaseItemData
-) -> ActivityItemCreate:
+def text_item_create(text_config: TextConfig, base_item_data: BaseItemData) -> ActivityItemCreate:
     return ActivityItemCreate(
         **base_item_data.dict(),
         response_type=ResponseType.TEXT,

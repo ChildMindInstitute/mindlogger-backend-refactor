@@ -26,9 +26,7 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
         schema = await self._get("id", id)
         return schema
 
-    async def get_by_applet_id_version(
-        self, applet_id_version: str
-    ) -> LibrarySchema | None:
+    async def get_by_applet_id_version(self, applet_id_version: str) -> LibrarySchema | None:
         schema = await self._get("applet_id_version", applet_id_version)
         return schema
 
@@ -37,12 +35,8 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
         if query_params.search:
             query = query.where(
                 or_(
-                    LibrarySchema.search_keywords.cast(Unicode()).ilike(
-                        f"%{query_params.search}%"
-                    ),
-                    LibrarySchema.keywords.cast(Unicode()).ilike(
-                        f"%{query_params.search}%"
-                    ),
+                    LibrarySchema.search_keywords.cast(Unicode()).ilike(f"%{query_params.search}%"),
+                    LibrarySchema.keywords.cast(Unicode()).ilike(f"%{query_params.search}%"),
                 )
             )
         results = await self._execute(query)
@@ -69,12 +63,8 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
         if query_params.search:
             query = query.where(
                 or_(
-                    LibrarySchema.search_keywords.cast(Unicode()).ilike(
-                        f"%{query_params.search}%"
-                    ),
-                    LibrarySchema.keywords.cast(Unicode()).ilike(
-                        f"%{query_params.search}%"
-                    ),
+                    LibrarySchema.search_keywords.cast(Unicode()).ilike(f"%{query_params.search}%"),
+                    LibrarySchema.keywords.cast(Unicode()).ilike(f"%{query_params.search}%"),
                 )
             )
         query = paging(query, query_params.page, query_params.limit)
