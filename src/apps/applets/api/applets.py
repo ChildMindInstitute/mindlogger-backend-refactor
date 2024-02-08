@@ -142,7 +142,6 @@ async def applet_update(
     schema: AppletUpdate = Body(...),
     session=Depends(get_session),
 ) -> Response[public_detail.Applet]:
-    # mail_service = MailingService()
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
