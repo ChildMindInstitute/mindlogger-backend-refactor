@@ -5,12 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.shared.exception import NotFoundError
 from apps.subjects.crud import SubjectsCrud, SubjectsRespondentsCrud
 from apps.subjects.db.schemas import SubjectRespondentSchema, SubjectSchema
-from apps.subjects.domain import (
-    Subject,
-    SubjectBase,
-    SubjectFull,
-    SubjectRespondent,
-)
+from apps.subjects.domain import Subject, SubjectBase, SubjectFull, SubjectRespondent
 from apps.users import UserSchema
 from apps.users.cruds.user import UsersCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD

@@ -1,11 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.shared.domain import (
-    AUTHENTICATION_ERROR_RESPONSES,
-    DEFAULT_OPENAPI_RESPONSE,
-    Response,
-)
+from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE, Response
 from apps.subjects.api import (
     add_respondent,
     create_subject,

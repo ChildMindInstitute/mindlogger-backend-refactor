@@ -22,9 +22,5 @@ class ActivityFlowItemHistorySchema(_BaseActivityFlow, Base):
 
     id_version = Column(String(), primary_key=True)
     id = Column(UUID(as_uuid=True))
-    activity_flow_id = Column(
-        ForeignKey("flow_histories.id_version", ondelete="RESTRICT")
-    )
-    activity_id = Column(
-        ForeignKey("activity_histories.id_version", ondelete="RESTRICT")
-    )
+    activity_flow_id = Column(ForeignKey("flow_histories.id_version", ondelete="RESTRICT"))
+    activity_id = Column(ForeignKey("activity_histories.id_version", ondelete="RESTRICT"))

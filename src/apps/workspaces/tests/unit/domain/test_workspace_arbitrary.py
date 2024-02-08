@@ -60,10 +60,7 @@ def test_arbitrary_workspace_aws_required_fields(
         WorkspaceArbitraryCreate(**data)
     errors = exc.value.errors()
     len(errors) == 1
-    assert (
-        errors[0]["msg"]
-        == "storage_access_key, storage_region are required for aws storage"
-    )
+    assert errors[0]["msg"] == "storage_access_key, storage_region are required for aws storage"
 
 
 @pytest.mark.parametrize(
@@ -80,6 +77,5 @@ def test_arbitrary_workspace_gcp_required_fields(
     errors = exc.value.errors()
     len(errors) == 1
     assert (
-        errors[0]["msg"]
-        == "storage_url, storage_bucket, storage_access_key are required for gcp storage"  # noqa: E501
+        errors[0]["msg"] == "storage_url, storage_bucket, storage_access_key are required for gcp storage"  # noqa: E501
     )

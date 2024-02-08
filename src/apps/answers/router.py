@@ -38,11 +38,7 @@ from apps.answers.domain import (
     PublicSummaryActivity,
     VersionPublic,
 )
-from apps.shared.domain import (
-    AUTHENTICATION_ERROR_RESPONSES,
-    Response,
-    ResponseMulti,
-)
+from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, Response, ResponseMulti
 from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE
 
 router = APIRouter(prefix="/answers", tags=["Answers"])
@@ -112,9 +108,7 @@ router.get(
     "/applet/{applet_id}/activities/{activity_id}/answers",
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {
-            "model": ResponseMulti[AppletActivityAnswerPublic]
-        },
+        status.HTTP_200_OK: {"model": ResponseMulti[AppletActivityAnswerPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -198,8 +192,7 @@ router.get(
 )(note_list)
 
 router.put(
-    "/applet/{applet_id}/answers/{answer_id}/activities/"
-    "{activity_id}/notes/{note_id}",
+    "/applet/{applet_id}/answers/{answer_id}/activities/" "{activity_id}/notes/{note_id}",
     # noqa: E501
     status_code=status.HTTP_200_OK,
     responses={
@@ -209,8 +202,7 @@ router.put(
 )(note_edit)
 
 router.delete(
-    "/applet/{applet_id}/answers/{answer_id}/activities/"
-    "{activity_id}/notes/{note_id}",
+    "/applet/{applet_id}/answers/{answer_id}/activities/" "{activity_id}/notes/{note_id}",
     # noqa: E501
     status_code=status.HTTP_204_NO_CONTENT,
     responses={

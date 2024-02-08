@@ -3,19 +3,7 @@ import typing
 import uuid
 from typing import Any
 
-from sqlalchemy import (
-    and_,
-    case,
-    distinct,
-    false,
-    literal,
-    null,
-    or_,
-    select,
-    text,
-    true,
-    update,
-)
+from sqlalchemy import and_, case, distinct, false, literal, null, or_, select, text, true, update
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
@@ -72,9 +60,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         instance: AppletSchema = await self._create(schema)
         return instance
 
-    async def update_by_id(
-        self, pk: uuid.UUID, schema: AppletSchema
-    ) -> AppletSchema:
+    async def update_by_id(self, pk: uuid.UUID, schema: AppletSchema) -> AppletSchema:
         instance = await self._update_one(
             lookup="id",
             value=pk,
@@ -98,9 +84,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         results = db_result.scalars().all()
         return results
 
-    async def get_by_link(
-        self, link: uuid.UUID, require_login: bool
-    ) -> AppletSchema | None:
+    async def get_by_link(self, link: uuid.UUID, require_login: bool) -> AppletSchema | None:
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.link == link)
         query = query.where(AppletSchema.require_login == require_login)
@@ -125,9 +109,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         instance = await self._fetch(key="id", value=id_)
         return instance
 
-    async def get_by_ids(
-        self, ids: typing.Iterable[uuid.UUID]
-    ) -> list[AppletSchema]:
+    async def get_by_ids(self, ids: typing.Iterable[uuid.UUID]) -> list[AppletSchema]:
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.id.in_(ids))
 
@@ -161,9 +143,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         return db_result.scalars().first() or False
 
-    async def get_by_key(
-        self, key: uuid.UUID, require_login=False
-    ) -> AppletSchema:
+    async def get_by_key(self, key: uuid.UUID, require_login=False) -> AppletSchema:
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.link == key)
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
@@ -181,29 +161,17 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         exclude_without_encryption: bool = False,
     ) -> list[AppletSchema]:
         accessible_applets_query = select(UserAppletAccessSchema.applet_id)
-        accessible_applets_query = accessible_applets_query.where(
-            UserAppletAccessSchema.user_id == user_id
-        )
-        accessible_applets_query = accessible_applets_query.where(
-            UserAppletAccessSchema.role.in_(roles)
-        )
-        accessible_applets_query = accessible_applets_query.where(
-            UserAppletAccessSchema.soft_exists()
-        )
+        accessible_applets_query = accessible_applets_query.where(UserAppletAccessSchema.user_id == user_id)
+        accessible_applets_query = accessible_applets_query.where(UserAppletAccessSchema.role.in_(roles))
+        accessible_applets_query = accessible_applets_query.where(UserAppletAccessSchema.soft_exists())
 
         query = select(AppletSchema)
         if query_params.filters:
-            query = query.where(
-                *_AppletFiltering().get_clauses(**query_params.filters)
-            )
+            query = query.where(*_AppletFiltering().get_clauses(**query_params.filters))
         if query_params.search:
-            query = query.where(
-                _AppletSearching().get_clauses(query_params.search)
-            )
+            query = query.where(_AppletSearching().get_clauses(query_params.search))
         if query_params.ordering:
-            query = query.order_by(
-                *_AppletOrdering().get_clauses(*query_params.ordering)
-            )
+            query = query.order_by(*_AppletOrdering().get_clauses(*query_params.ordering))
         query = query.where(AppletSchema.id.in_(accessible_applets_query))
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
         if exclude_without_encryption:
@@ -222,25 +190,15 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         exclude_without_encryption: bool = False,
     ) -> int:
         accessible_applets_query = select(UserAppletAccessSchema.applet_id)
-        accessible_applets_query = accessible_applets_query.where(
-            UserAppletAccessSchema.user_id == user_id
-        )
-        accessible_applets_query = accessible_applets_query.where(
-            UserAppletAccessSchema.role.in_(roles)
-        )
-        accessible_applets_query = accessible_applets_query.where(
-            UserAppletAccessSchema.soft_exists()
-        )
+        accessible_applets_query = accessible_applets_query.where(UserAppletAccessSchema.user_id == user_id)
+        accessible_applets_query = accessible_applets_query.where(UserAppletAccessSchema.role.in_(roles))
+        accessible_applets_query = accessible_applets_query.where(UserAppletAccessSchema.soft_exists())
 
         query = select(count(AppletSchema.id))
         if query_params.filters:
-            query = query.where(
-                *_AppletFiltering().get_clauses(**query_params.filters)
-            )
+            query = query.where(*_AppletFiltering().get_clauses(**query_params.filters))
         if query_params.search:
-            query = query.where(
-                _AppletSearching().get_clauses(query_params.search)
-            )
+            query = query.where(_AppletSearching().get_clauses(query_params.search))
         query = query.where(AppletSchema.id.in_(accessible_applets_query))
         query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
         if exclude_without_encryption:
@@ -288,18 +246,14 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             query = query.where(AppletSchema.id != exclude_applet_id)
         query = query.where(
             or_(
-                func.lower(AppletSchema.display_name).op("~")(
-                    f"{name} \\(\\d+\\)"
-                ),
+                func.lower(AppletSchema.display_name).op("~")(f"{name} \\(\\d+\\)"),
                 func.lower(AppletSchema.display_name) == name,
             )
         )
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def create_access_link(
-        self, applet_id: uuid.UUID, require_login: bool
-    ) -> str:
+    async def create_access_link(self, applet_id: uuid.UUID, require_login: bool) -> str:
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
         query = query.values(link=uuid.uuid4(), require_login=require_login)
@@ -316,9 +270,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.values(link=None, require_login=None)
         await self._execute(query)
 
-    async def set_data_retention(
-        self, applet_id: uuid.UUID, data_retention: AppletDataRetention
-    ):
+    async def set_data_retention(self, applet_id: uuid.UUID, data_retention: AppletDataRetention):
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
         query = query.values(
@@ -341,9 +293,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
         await self._execute(query)
 
-    async def set_report_configuration(
-        self, applet_id: uuid.UUID, schema: AppletReportConfiguration
-    ):
+    async def set_report_configuration(self, applet_id: uuid.UUID, schema: AppletReportConfiguration):
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
         query = query.values(
@@ -360,18 +310,10 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     async def get_folders_applets(
         self, owner_id: uuid.UUID, user_id: uuid.UUID, folder_id: uuid.UUID
     ) -> list[tuple[AppletSchema, bool]]:
-        access_query: Query = select(
-            UserAppletAccessSchema.applet_id, UserAppletAccessSchema.user_id
-        )
-        access_query = access_query.distinct(
-            UserAppletAccessSchema.applet_id, UserAppletAccessSchema.user_id
-        )
-        access_query = access_query.where(
-            UserAppletAccessSchema.owner_id == owner_id
-        )
-        access_query = access_query.where(
-            UserAppletAccessSchema.user_id == user_id
-        )
+        access_query: Query = select(UserAppletAccessSchema.applet_id, UserAppletAccessSchema.user_id)
+        access_query = access_query.distinct(UserAppletAccessSchema.applet_id, UserAppletAccessSchema.user_id)
+        access_query = access_query.where(UserAppletAccessSchema.owner_id == owner_id)
+        access_query = access_query.where(UserAppletAccessSchema.user_id == user_id)
         access_query = access_query.where(UserAppletAccessSchema.soft_exists())
         access_query = access_query.alias("access_query")
 
@@ -382,9 +324,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 else_=false(),
             ),
         )
-        query = query.join(
-            access_query, access_query.c.applet_id == AppletSchema.id
-        )
+        query = query.join(access_query, access_query.c.applet_id == AppletSchema.id)
         query = query.join(
             FolderAppletSchema,
             and_(
@@ -393,9 +333,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             ),
             isouter=True,
         )
-        query = query.join(
-            FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
-        )
+        query = query.join(FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id)
         query = query.where(FolderSchema.creator_id == user_id)
         query = query.where(access_query.c.user_id == user_id)
         query = query.order_by(
@@ -427,12 +365,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             FolderSchema.workspace_id == owner_id,
             AppletSchema.is_deleted.is_(False),
         )
-        workspace_applets_query = workspace_applets_query.group_by(
-            FolderAppletSchema.folder_id
-        )
-        workspace_applets_query = workspace_applets_query.alias(
-            "workspace_applets"
-        )
+        workspace_applets_query = workspace_applets_query.group_by(FolderAppletSchema.folder_id)
+        workspace_applets_query = workspace_applets_query.alias("workspace_applets")
         folders_query: Query = select(
             FolderSchema.id.label("id"),
             FolderSchema.name.label("name"),
@@ -444,9 +378,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             literal("").label("version"),
             literal("folder").label("type"),
             null().label("role"),
-            func.coalesce(workspace_applets_query.c.applet_count, 0).label(
-                "folders_applet_count"
-            ),
+            func.coalesce(workspace_applets_query.c.applet_count, 0).label("folders_applet_count"),
             literal("1").label("ordering"),
             null().label("description"),
             null().label("activity_count"),
@@ -458,9 +390,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             isouter=True,
         )
 
-        folders_query = folders_query.where(
-            FolderSchema.workspace_id == owner_id
-        )
+        folders_query = folders_query.where(FolderSchema.workspace_id == owner_id)
         return folders_query
 
     async def get_workspace_applets(
@@ -483,9 +413,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             int,
         ]
     ]:
-        access_subquery: Query = select(
-            UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
-        )
+        access_subquery: Query = select(UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role)
         access_subquery = access_subquery.where(
             and_(
                 UserAppletAccessSchema.soft_exists(),
@@ -505,12 +433,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 else_=10,
             ).asc(),
         )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.owner_id == owner_id
-        )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.user_id == user_id
-        )
+        access_subquery = access_subquery.where(UserAppletAccessSchema.owner_id == owner_id)
+        access_subquery = access_subquery.where(UserAppletAccessSchema.user_id == user_id)
         access_subquery = access_subquery.subquery().alias("access_sub_query")
 
         access_query: Query = select(access_subquery)
@@ -518,12 +442,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         access_query = access_query.alias("access_query")
 
         folder_applets_query: Query = select(FolderAppletSchema.applet_id)
-        folder_applets_query = folder_applets_query.join(
-            FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
-        )
-        folder_applets_query = folder_applets_query.where(
-            FolderSchema.creator_id == user_id
-        )
+        folder_applets_query = folder_applets_query.join(FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id)
+        folder_applets_query = folder_applets_query.where(FolderSchema.creator_id == user_id)
         activity_subquery = self._get_activity_subquery()
         query: Query = select(
             AppletSchema.id.label("id"),
@@ -594,25 +514,15 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             str,
         ]
     ]:
-        folders_query: Query = select(
-            FolderAppletSchema.applet_id, FolderSchema.id, FolderSchema.name
-        )
-        folders_query = folders_query.join(
-            FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
-        )
+        folders_query: Query = select(FolderAppletSchema.applet_id, FolderSchema.id, FolderSchema.name)
+        folders_query = folders_query.join(FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id)
         folders_query = folders_query.where(FolderSchema.creator_id == user_id)
-        folders_query = folders_query.where(
-            FolderSchema.workspace_id == owner_id
-        )
+        folders_query = folders_query.where(FolderSchema.workspace_id == owner_id)
 
         folders_query = folders_query.alias("folders")
 
-        access_subquery: Query = select(
-            UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
-        )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.soft_exists()
-        )
+        access_subquery: Query = select(UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role)
+        access_subquery = access_subquery.where(UserAppletAccessSchema.soft_exists())
         access_subquery = access_subquery.order_by(
             case(
                 (UserAppletAccessSchema.role == Role.OWNER, 1),
@@ -624,12 +534,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 else_=10,
             ).asc()
         )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.owner_id == owner_id
-        )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.user_id == user_id
-        )
+        access_subquery = access_subquery.where(UserAppletAccessSchema.owner_id == owner_id)
+        access_subquery = access_subquery.where(UserAppletAccessSchema.user_id == user_id)
         access_subquery = access_subquery.subquery().alias("access_sub_query")
 
         access_query: Query = select(access_subquery)
@@ -677,25 +583,15 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         user_id: uuid.UUID,
         search_text: str,
     ) -> int:
-        folders_query: Query = select(
-            FolderAppletSchema.applet_id, FolderSchema.id, FolderSchema.name
-        )
-        folders_query = folders_query.join(
-            FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
-        )
+        folders_query: Query = select(FolderAppletSchema.applet_id, FolderSchema.id, FolderSchema.name)
+        folders_query = folders_query.join(FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id)
         folders_query = folders_query.where(FolderSchema.creator_id == user_id)
-        folders_query = folders_query.where(
-            FolderSchema.workspace_id == owner_id
-        )
+        folders_query = folders_query.where(FolderSchema.workspace_id == owner_id)
 
         folders_query = folders_query.alias("folders")
 
-        access_subquery: Query = select(
-            UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
-        )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.soft_exists()
-        )
+        access_subquery: Query = select(UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role)
+        access_subquery = access_subquery.where(UserAppletAccessSchema.soft_exists())
         access_subquery = access_subquery.order_by(
             case(
                 (UserAppletAccessSchema.role == Role.OWNER, 1),
@@ -707,12 +603,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 else_=10,
             ).asc()
         )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.owner_id == owner_id
-        )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.user_id == user_id
-        )
+        access_subquery = access_subquery.where(UserAppletAccessSchema.owner_id == owner_id)
+        access_subquery = access_subquery.where(UserAppletAccessSchema.user_id == user_id)
         access_subquery = access_subquery.subquery().alias("access_sub_query")
 
         access_query: Query = select(access_subquery)
@@ -736,24 +628,16 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         db_result = await self._execute(select(func.count(query.c.id)))
         return db_result.scalars().first() or 0
 
-    async def get_workspace_applets_count(
-        self, owner_id: uuid.UUID, user_id: uuid.UUID
-    ) -> int:
+    async def get_workspace_applets_count(self, owner_id: uuid.UUID, user_id: uuid.UUID) -> int:
         workspace_applets_query: Query = select(
             FolderAppletSchema.folder_id,
         )
         workspace_applets_query = workspace_applets_query.join(
             FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
         )
-        workspace_applets_query = workspace_applets_query.where(
-            FolderSchema.workspace_id == owner_id
-        )
-        workspace_applets_query = workspace_applets_query.group_by(
-            FolderAppletSchema.folder_id
-        )
-        workspace_applets_query = workspace_applets_query.alias(
-            "workspace_applets"
-        )
+        workspace_applets_query = workspace_applets_query.where(FolderSchema.workspace_id == owner_id)
+        workspace_applets_query = workspace_applets_query.group_by(FolderAppletSchema.folder_id)
+        workspace_applets_query = workspace_applets_query.alias("workspace_applets")
 
         folders_query: Query = select(FolderSchema.id.label("id"))
         folders_query = folders_query.where(FolderSchema.creator_id == user_id)
@@ -762,13 +646,9 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             workspace_applets_query.c.folder_id == FolderSchema.id,
             isouter=True,
         )
-        folders_query = folders_query.where(
-            FolderSchema.workspace_id == owner_id
-        )
+        folders_query = folders_query.where(FolderSchema.workspace_id == owner_id)
 
-        access_subquery: Query = select(
-            UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
-        )
+        access_subquery: Query = select(UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role)
         access_subquery = access_subquery.where(
             UserAppletAccessSchema.is_deleted == False  # noqa
         )
@@ -783,12 +663,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 else_=10,
             ).asc()
         )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.owner_id == owner_id
-        )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.user_id == user_id
-        )
+        access_subquery = access_subquery.where(UserAppletAccessSchema.owner_id == owner_id)
+        access_subquery = access_subquery.where(UserAppletAccessSchema.user_id == user_id)
         access_subquery = access_subquery.subquery().alias("access_sub_query")
 
         access_query: Query = select(access_subquery)
@@ -796,12 +672,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         access_query = access_query.alias("access_query")
 
         folder_applets_query: Query = select(FolderAppletSchema.applet_id)
-        folder_applets_query = folder_applets_query.join(
-            FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
-        )
-        folder_applets_query = folder_applets_query.where(
-            FolderSchema.creator_id == user_id
-        )
+        folder_applets_query = folder_applets_query.join(FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id)
+        folder_applets_query = folder_applets_query.where(FolderSchema.creator_id == user_id)
 
         query: Query = select(AppletSchema.id.label("id"))
         query = query.join(
@@ -817,9 +689,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         db_result = await self._execute(select(func.count(query_union.c.id)))
         return db_result.scalars().first() or 0
 
-    async def update_display_name(
-        self, applet_id: uuid.UUID, display_name: str
-    ) -> None:
+    async def update_display_name(self, applet_id: uuid.UUID, display_name: str) -> None:
         query: Query = update(AppletSchema)
         query = query.where(AppletSchema.id == applet_id)
         query = query.values(
@@ -833,17 +703,13 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         respondent_ids: list[uuid.UUID] | None = None,
     ) -> list[str]:
         query: Query = select(UserDeviceSchema.device_id)
-        query = query.join(
-            UserSchema, UserSchema.id == UserDeviceSchema.user_id
-        )
+        query = query.join(UserSchema, UserSchema.id == UserDeviceSchema.user_id)
         query = query.join(
             UserAppletAccessSchema,
             UserAppletAccessSchema.user_id == UserSchema.id,
         )
         if respondent_ids:
-            query = query.where(
-                UserAppletAccessSchema.user_id.in_(respondent_ids)
-            )
+            query = query.where(UserAppletAccessSchema.user_id.in_(respondent_ids))
         query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.is_deleted == False)  # noqa
@@ -863,12 +729,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
     @staticmethod
     def _get_access_subquery(owner_id: uuid.UUID, user_id: uuid.UUID) -> Query:
-        access_subquery: Query = select(
-            UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role
-        )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.soft_exists()
-        )
+        access_subquery: Query = select(UserAppletAccessSchema.applet_id, UserAppletAccessSchema.role)
+        access_subquery = access_subquery.where(UserAppletAccessSchema.soft_exists())
         access_subquery = access_subquery.order_by(
             UserAppletAccessSchema.applet_id.asc(),
             case(
@@ -881,12 +743,8 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
                 else_=10,
             ).asc(),
         )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.owner_id == owner_id
-        )
-        access_subquery = access_subquery.where(
-            UserAppletAccessSchema.user_id == user_id
-        )
+        access_subquery = access_subquery.where(UserAppletAccessSchema.owner_id == owner_id)
+        access_subquery = access_subquery.where(UserAppletAccessSchema.user_id == user_id)
         access_subquery = access_subquery.subquery().alias("access_sub_query")
 
         access_query: Query = select(access_subquery)
@@ -894,9 +752,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         access_query = access_query.alias("access_query")
         return access_query
 
-    async def get_applets_flat_list(
-        self, owner_id: uuid.UUID, user_id: uuid.UUID, filters: QueryParams
-    ):
+    async def get_applets_flat_list(self, owner_id: uuid.UUID, user_id: uuid.UUID, filters: QueryParams):
         access_query = self._get_access_subquery(owner_id, user_id)
         activity_subquery = self._get_activity_subquery()
         query: Query = select(
@@ -940,9 +796,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         db_result = await self._execute(query)
         return db_result.all()
 
-    async def get_workspace_applets_flat_list_count(
-        self, owner_id: uuid.UUID, user_id: uuid.UUID
-    ) -> int:
+    async def get_workspace_applets_flat_list_count(self, owner_id: uuid.UUID, user_id: uuid.UUID) -> int:
         access_query = self._get_access_subquery(owner_id, user_id)
         query: Query = select(AppletSchema.id.label("id"))
         query = query.join(

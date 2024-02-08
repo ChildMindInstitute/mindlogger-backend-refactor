@@ -4,11 +4,7 @@ import pytest
 
 from apps.activities import errors
 from apps.activities.domain.activity_create import ActivityItemCreate
-from apps.activities.domain.response_type_config import (
-    DrawingConfig,
-    ResponseType,
-    TextConfig,
-)
+from apps.activities.domain.response_type_config import DrawingConfig, ResponseType, TextConfig
 from apps.activities.domain.response_values import (
     DrawingValues,
     NumberSelectionValues,
@@ -49,9 +45,7 @@ def test_create_activity_item_conditional_logic_can_not_be_hidden(
         )
 
 
-def test_create_activity_item_slider_alerts_provided_but_set_alerts_not_set(
-    slider_item_create, slider_value_alert
-):
+def test_create_activity_item_slider_alerts_provided_but_set_alerts_not_set(slider_item_create, slider_value_alert):
     data = slider_item_create.dict()
     data["response_values"]["alerts"] = [slider_value_alert.dict()]
     data["config"]["set_alerts"] = False
@@ -59,9 +53,7 @@ def test_create_activity_item_slider_alerts_provided_but_set_alerts_not_set(
         ActivityItemCreate(**data)
 
 
-def test_create_activity_item_slider_alerts_not_valid_alert_value(
-    slider_item_create, slider_value_alert
-):
+def test_create_activity_item_slider_alerts_not_valid_alert_value(slider_item_create, slider_value_alert):
     data = slider_item_create.dict()
     alert_data = slider_value_alert.dict()
     alert_data["value"] = None
@@ -86,9 +78,7 @@ def test_create_activity_item_slider_alerts_not_valid_alert_min_max_values(
         ActivityItemCreate(**data)
 
 
-def test_create_activity_item_slider_alerts_min_value_greater_then_max_value(
-    slider_item_create, slider_value_alert
-):
+def test_create_activity_item_slider_alerts_min_value_greater_then_max_value(slider_item_create, slider_value_alert):
     data = slider_item_create.dict()
     alert_data = slider_value_alert.dict()
     alert_data["min_value"] = 10
@@ -110,9 +100,7 @@ def test_create_activity_item_slider_min_value_greater_then_max_value(
         ActivityItemCreate(**data)
 
 
-def test_create_activity_item_slider_rows_with_alerts_value_is_none(
-    slider_rows_item_create, slider_value_alert
-):
+def test_create_activity_item_slider_rows_with_alerts_value_is_none(slider_rows_item_create, slider_value_alert):
     slider_value_alert.value = None
     alert_data = slider_value_alert.dict()
     data = slider_rows_item_create.dict()
@@ -132,9 +120,7 @@ def test_create_activity_item_slider_rows_with_alerts_value_is_not_none_but_aler
         ActivityItemCreate(**data)
 
 
-@pytest.mark.parametrize(
-    "fixture_name,", ("single_select_item_create", "multi_select_item_create")
-)
+@pytest.mark.parametrize("fixture_name,", ("single_select_item_create", "multi_select_item_create"))
 def test_create_activity_item_single_multi_select_alert_is_not_none_but_set_alerts_not_set(  # noqa: E501
     request,
     fixture_name,
@@ -241,9 +227,7 @@ def test_create_item_with_drawing_response_values_images_are_none(
     item = ActivityItemCreate(
         response_type=ResponseType.DRAWING,
         config=drawing_config,
-        response_values=DrawingValues(
-            drawing_background=None, drawing_example=None
-        ),
+        response_values=DrawingValues(drawing_background=None, drawing_example=None),
         **base_item_data.dict(),
     )
     item.response_values = cast(DrawingValues, item.response_values)
@@ -258,14 +242,10 @@ def test_create_item_single_select_row_option_with_image(
         SingleSelectionRowsValues,
         single_select_row_item_create.response_values,
     )
-    single_select_row_item_create.response_values.options[
-        0
-    ].image = remote_image
+    single_select_row_item_create.response_values.options[0].image = remote_image
     data = single_select_row_item_create.dict()
     item = ActivityItemCreate(**data)
-    item.response_values = cast(
-        SingleSelectionRowsValues, item.response_values
-    )
+    item.response_values = cast(SingleSelectionRowsValues, item.response_values)
     assert item.response_values.options[0].image == remote_image
 
 
@@ -276,14 +256,10 @@ def test_create_item_single_select_row_row_with_image(
         SingleSelectionRowsValues,
         single_select_row_item_create.response_values,
     )
-    single_select_row_item_create.response_values.rows[
-        0
-    ].row_image = remote_image
+    single_select_row_item_create.response_values.rows[0].row_image = remote_image
     data = single_select_row_item_create.dict()
     item = ActivityItemCreate(**data)
-    item.response_values = cast(
-        SingleSelectionRowsValues, item.response_values
-    )
+    item.response_values = cast(SingleSelectionRowsValues, item.response_values)
     assert item.response_values.rows[0].row_image == remote_image
 
 

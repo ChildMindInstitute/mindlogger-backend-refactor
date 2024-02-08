@@ -4,10 +4,7 @@ from copy import deepcopy
 from typing import Type
 from uuid import uuid4
 
-from apps.activities.domain.activity_create import (
-    ActivityCreate,
-    ActivityItemCreate,
-)
+from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
 from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.domain.scores_reports import (
     Score,
@@ -19,11 +16,7 @@ from apps.activities.domain.scores_reports import (
     SubscaleItemType,
     SubscaleSetting,
 )
-from apps.jsonld_converter.errors import (
-    ConditionalLogicError,
-    JsonLDNotSupportedError,
-    SubscaleParsingError,
-)
+from apps.jsonld_converter.errors import ConditionalLogicError, JsonLDNotSupportedError, SubscaleParsingError
 from apps.jsonld_converter.service.document.base import (
     CommonFieldsMixin,
     ContainsNestedMixin,
@@ -31,10 +24,7 @@ from apps.jsonld_converter.service.document.base import (
     LdKeyword,
     OrderAware,
 )
-from apps.jsonld_converter.service.document.conditional_logic import (
-    ConditionalLogicParser,
-    ResolvesConditionalLogic,
-)
+from apps.jsonld_converter.service.document.conditional_logic import ConditionalLogicParser, ResolvesConditionalLogic
 from apps.jsonld_converter.service.document.field import (
     ReproFieldABTrailIpad,
     ReproFieldABTrailMobile,
@@ -58,14 +48,8 @@ from apps.jsonld_converter.service.document.field import (
     ReproFieldVideo,
     ReproFieldVisualStimulusResponse,
 )
-from apps.jsonld_converter.service.document.report import (
-    ReproActivityScore,
-    ReproActivitySection,
-)
-from apps.jsonld_converter.service.document.subscale import (
-    LdSubscale,
-    LdSubscaleFinal,
-)
+from apps.jsonld_converter.service.document.report import ReproActivityScore, ReproActivitySection
+from apps.jsonld_converter.service.document.subscale import LdSubscale, LdSubscaleFinal
 from apps.jsonld_converter.service.domain import FinalSubscale
 
 
@@ -101,9 +85,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             "reproschema:Activity",
             *cls.attr_processor.resolve_key("reproschema:Activity"),
         ]
-        return cls.attr_processor.first(
-            doc.get(LdKeyword.type)
-        ) in ld_types and cls.supports_activity_type(doc)
+        return cls.attr_processor.first(doc.get(LdKeyword.type)) in ld_types and cls.supports_activity_type(doc)
 
     @classmethod
     def supports_activity_type(cls, doc: dict) -> bool:
@@ -112,9 +94,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
 
     @classmethod
     def get_activity_type(cls, doc: dict) -> str | None:
-        _type = cls.attr_processor.get_attr_value(
-            doc, "reproschema:activityType"
-        )
+        _type = cls.attr_processor.get_attr_value(doc, "reproschema:activityType")
         if not _type:
             # try fetch from compact
             _type = doc.get("activityType")
@@ -152,14 +132,10 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         self.ld_schema_version = self._get_ld_schema_version(processed_doc)
         self.ld_pref_label = self._get_ld_pref_label(processed_doc, drop=True)
         self.ld_alt_label = self._get_ld_alt_label(processed_doc, drop=True)
-        self.ld_description = self._get_ld_description(
-            processed_doc, drop=True
-        )
+        self.ld_description = self._get_ld_description(processed_doc, drop=True)
         self.ld_about = self._get_ld_about(processed_doc, drop=True)
         self.ld_image = self._get_ld_image(processed_doc, drop=True)
-        self.ld_splash = self.attr_processor.get_translation(
-            processed_doc, "schema:splash", lang=self.lang, drop=True
-        )
+        self.ld_splash = self.attr_processor.get_translation(processed_doc, "schema:splash", lang=self.lang, drop=True)
         self.ld_is_vis = self._is_visible(processed_doc, drop=True)
         self.ld_is_reviewer = self.attr_processor.get_attr_value(
             processed_doc, "reproschema:isReviewerActivity", drop=True
@@ -175,46 +151,30 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         self.is_export_allowed = self._is_export_allowed(allow_list)
         self.is_summary_disabled = self._is_summary_disabled(allow_list)
 
-        self.ld_report_include_item = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:reportIncludeItem"
-        )
+        self.ld_report_include_item = self.attr_processor.get_attr_value(processed_doc, "reproschema:reportIncludeItem")
 
-        self.properties = self._get_ld_properties_formatted(
-            processed_doc, drop=True
-        )
-        self.nested_by_order = await self._get_nested_items(
-            processed_doc, drop=True
-        )
+        self.properties = self._get_ld_properties_formatted(processed_doc, drop=True)
+        self.nested_by_order = await self._get_nested_items(processed_doc, drop=True)
         self.reports_by_order = await self._get_nested_items(
             processed_doc,
             drop=True,
             attr_container="reproschema:reports",
             skip_not_supported=False,
         )
-        self.final_subscale = self._get_final_subscale(
-            processed_doc, drop=True
-        )
+        self.final_subscale = self._get_final_subscale(processed_doc, drop=True)
         self.subscales = self._get_subscales(processed_doc, drop=True)
 
         self._load_extra(processed_doc)
 
-    def _get_final_subscale(
-        self, doc: dict, *, drop=False
-    ) -> FinalSubscale | None:
-        ld_final_subscale = self.attr_processor.get_attr_single(
-            doc, "reproschema:finalSubScale", drop=drop
-        )
+    def _get_final_subscale(self, doc: dict, *, drop=False) -> FinalSubscale | None:
+        ld_final_subscale = self.attr_processor.get_attr_single(doc, "reproschema:finalSubScale", drop=drop)
         if not ld_final_subscale:
             return None
 
         return LdSubscaleFinal(ld_final_subscale).export()
 
-    def _get_subscales(
-        self, doc: dict, *, drop=False
-    ) -> list[Subscale] | None:
-        ld_subscales = self.attr_processor.get_attr_list(
-            doc, "reproschema:subScales", drop=drop
-        )
+    def _get_subscales(self, doc: dict, *, drop=False) -> list[Subscale] | None:
+        ld_subscales = self.attr_processor.get_attr_list(doc, "reproschema:subScales", drop=drop)
         if not ld_subscales:
             return None
 
@@ -229,16 +189,9 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         skip_not_supported=True,
     ) -> list:
         nested_items: list = []
-        if items := self.attr_processor.get_attr_list(
-            doc, attr_container, drop=drop
-        ):
+        if items := self.attr_processor.get_attr_list(doc, attr_container, drop=drop):
             nested = await asyncio.gather(
-                *[
-                    self._load_nested_doc(
-                        item, skip_not_supported=skip_not_supported
-                    )
-                    for item in items
-                ],
+                *[self._load_nested_doc(item, skip_not_supported=skip_not_supported) for item in items],
                 return_exceptions=True,
             )
             nested_items = []
@@ -252,9 +205,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
 
     async def _load_nested_doc(self, doc: dict, *, skip_not_supported=True):
         try:
-            node = await self.load_supported_document(
-                doc, self.base_url, settings=self.settings
-            )
+            node = await self.load_supported_document(doc, self.base_url, settings=self.settings)
             # override from properties
             if node.ld_id in self.properties:
                 for prop, val in self.properties[node.ld_id].items():
@@ -288,9 +239,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
     def _export_items(self) -> list[ActivityItemCreate]:
         # capture field variables for conditional logic resolving
         var_item_map = {
-            item.ld_variable_name: item
-            for item in self.nested_by_order or []
-            if isinstance(item, ReproFieldBase)
+            item.ld_variable_name: item for item in self.nested_by_order or [] if isinstance(item, ReproFieldBase)
         }
         models = []
         for i, item in enumerate(var_item_map.values()):
@@ -302,9 +251,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             expression = item.ld_is_vis
             if isinstance(expression, str):
                 try:
-                    match, conditions = ConditionalLogicParser(
-                        expression
-                    ).parse()
+                    match, conditions = ConditionalLogicParser(expression).parse()
                     resolved_conditions = []
                     for condition in conditions:
                         condition_item: ReproFieldBase = var_item_map.get(  # type: ignore # noqa: E501
@@ -312,15 +259,9 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                         )
                         if condition_item is None:
                             raise ConditionalLogicError(expression)
-                        resolved_conditions.append(
-                            condition_item.resolve_condition(condition)
-                        )
-                    if (
-                        resolved_conditions
-                    ):  # if conditions are empty, thenconditional logic = None
-                        model.conditional_logic = ConditionalLogic(
-                            match=match, conditions=resolved_conditions
-                        )
+                        resolved_conditions.append(condition_item.resolve_condition(condition))
+                    if resolved_conditions:  # if conditions are empty, thenconditional logic = None
+                        model.conditional_logic = ConditionalLogic(match=match, conditions=resolved_conditions)
 
                 except ConditionalLogicError:
                     raise  # TODO
@@ -365,19 +306,13 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                     )
                     if condition_item is None:
                         raise ConditionalLogicError(expression)
-                    resolved_conditions.append(
-                        condition_item.resolve_condition(condition)
-                    )
+                    resolved_conditions.append(condition_item.resolve_condition(condition))
                 if resolved_conditions:
-                    model.conditional_logic = SectionConditionalLogic(
-                        match=match, conditions=resolved_conditions
-                    )
+                    model.conditional_logic = SectionConditionalLogic(match=match, conditions=resolved_conditions)
 
                 # replace variables with names
                 if model.items_print:
-                    model.items_print = self._resolve_item_names_by_vars(
-                        var_item_map, model.items_print
-                    )
+                    model.items_print = self._resolve_item_names_by_vars(var_item_map, model.items_print)
 
             except ConditionalLogicError:
                 raise  # TODO
@@ -397,9 +332,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                 try:
                     # resolve conditional logic expression with condition
                     # name and condition value
-                    match, conditions = ConditionalLogicParser(
-                        expression
-                    ).parse()
+                    match, conditions = ConditionalLogicParser(expression).parse()
                     resolved_conditions = []
                     for condition in conditions:
                         condition_item: ResolvesConditionalLogic = var_item_map.get(  # type: ignore # noqa: E501
@@ -407,18 +340,14 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                         )
                         if condition_item is None:
                             raise ConditionalLogicError(expression)
-                        resolved_conditions.append(
-                            condition_item.resolve_condition(condition)
-                        )
+                        resolved_conditions.append(condition_item.resolve_condition(condition))
 
                     conditional_model = ScoreConditionalLogic(
                         name=item.ld_pref_label or item.ld_alt_label,
                         id=item.ld_id,
                         flag_score=bool(item.ld_flag_score),
                         message=item.ld_message or None,
-                        items_print=self._resolve_item_names_by_vars(
-                            var_item_map, item.ld_print_items or []
-                        ),
+                        items_print=self._resolve_item_names_by_vars(var_item_map, item.ld_print_items or []),
                         match=match,
                         conditions=resolved_conditions,
                     )
@@ -429,13 +358,9 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
 
         model.conditional_logic = conditionals
         if model.items_print:
-            model.items_print = self._resolve_item_names_by_vars(
-                var_item_map, model.items_print
-            )
+            model.items_print = self._resolve_item_names_by_vars(var_item_map, model.items_print)
         if model.items_score:
-            model.items_score = self._resolve_item_names_by_vars(
-                var_item_map, model.items_score
-            )
+            model.items_score = self._resolve_item_names_by_vars(var_item_map, model.items_score)
 
         return model
 
@@ -483,9 +408,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
 
             # validate names, fix item type
             var_item_map = {
-                item.ld_variable_name: item
-                for item in self.nested_by_order or []
-                if isinstance(item, ReproFieldBase)
+                item.ld_variable_name: item for item in self.nested_by_order or [] if isinstance(item, ReproFieldBase)
             }
             subscale_names = [subscale.name for subscale in subscales]
             for subscale in subscales:
@@ -497,9 +420,7 @@ class ReproActivity(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                         if item.name in var_item_map:
                             item.type = SubscaleItemType.ITEM
                         else:
-                            raise SubscaleParsingError(
-                                f'Subscale name "{item.name}" not found'
-                            )
+                            raise SubscaleParsingError(f'Subscale name "{item.name}" not found')
                     else:
                         if item.name in var_item_map:
                             continue

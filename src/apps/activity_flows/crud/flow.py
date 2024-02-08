@@ -33,9 +33,7 @@ class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
         return await self._create_many(flow_schemas)
 
     async def delete_by_applet_id(self, applet_id: uuid.UUID):
-        query = delete(ActivityFlowSchema).where(
-            ActivityFlowSchema.applet_id == applet_id
-        )
+        query = delete(ActivityFlowSchema).where(ActivityFlowSchema.applet_id == applet_id)
         await self._execute(query)
 
     async def get_by_applet_id(self, applet_id) -> list[ActivityFlowSchema]:
@@ -46,9 +44,7 @@ class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
         return result.scalars().all()
 
     # Get by applet id and flow id
-    async def get_by_applet_id_and_flow_id(
-        self, applet_id: uuid.UUID, flow_id: uuid.UUID
-    ) -> ActivityFlowSchema:
+    async def get_by_applet_id_and_flow_id(self, applet_id: uuid.UUID, flow_id: uuid.UUID) -> ActivityFlowSchema:
         query: Query = select(ActivityFlowSchema)
         query = query.where(ActivityFlowSchema.applet_id == applet_id)
         query = query.where(ActivityFlowSchema.id == flow_id)
@@ -56,9 +52,7 @@ class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
         result = await self._execute(query)
         return result.scalars().first()
 
-    async def get_ids_by_applet_id(
-        self, applet_id: uuid.UUID
-    ) -> list[uuid.UUID]:
+    async def get_ids_by_applet_id(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
         query: Query = select(ActivityFlowSchema.id)
         query = query.where(ActivityFlowSchema.applet_id == applet_id)
 

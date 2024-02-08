@@ -265,9 +265,7 @@ def test_get_changes_new_applet_text_field_was_changed(
     assert changes[0] == "Applet Description was changed to New"
 
 
-def test_compare_two_applets(
-    applet: AppletHistory, applet_change_service: AppletChangeService
-):
+def test_compare_two_applets(applet: AppletHistory, applet_change_service: AppletChangeService):
     change = applet_change_service.compare(applet, applet)
     assert change.display_name == f"New applet {applet.display_name} added"
     assert change.changes == [f"Applet Name was set to {applet.display_name}"]

@@ -3,7 +3,6 @@ from apps.shared.test import BaseTest
 
 class TestSchedule(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
@@ -26,22 +25,14 @@ class TestSchedule(BaseTest):
     schedule_user_url = "users/me/events"
     schedule_detail_user_url = f"{schedule_user_url}/{{applet_id}}"
 
-    erspondent_schedules_user_two_weeks_url = (
-        "/users/me/respondent/current_events"
-    )
+    erspondent_schedules_user_two_weeks_url = "/users/me/respondent/current_events"
 
     schedule_url = f"{applet_detail_url}/events"
     schedule_import_url = f"{applet_detail_url}/events/import"
-    schedule_create_individual = (
-        f"{applet_detail_url}/events/individual/{{respondent_id}}"
-    )
+    schedule_create_individual = f"{applet_detail_url}/events/individual/{{respondent_id}}"
 
-    delete_user_url = (
-        f"{applet_detail_url}/events/delete_individual/{{respondent_id}}"
-    )
-    remove_ind_url = (
-        f"{applet_detail_url}/events/remove_individual/{{respondent_id}}"
-    )
+    delete_user_url = f"{applet_detail_url}/events/delete_individual/{{respondent_id}}"
+    remove_ind_url = f"{applet_detail_url}/events/remove_individual/{{respondent_id}}"
 
     schedule_detail_url = f"{applet_detail_url}/events/{{event_id}}"
 
@@ -79,9 +70,7 @@ class TestSchedule(BaseTest):
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
         assert response.status_code == 422
@@ -116,16 +105,14 @@ class TestSchedule(BaseTest):
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
         event = response.json()["result"]
         assert event["startTime"] == create_data["start_time"]
 
-    async def test_schedule_create_with_respondent_id(self, client):
+    async def test_schedule_create_with_respondent_id(self, client, lucy):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = {
             "start_time": "08:00:00",
@@ -140,15 +127,13 @@ class TestSchedule(BaseTest):
                 "end_date": "2023-09-01",
                 "selected_date": "2023-01-01",
             },
-            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "respondent_id": str(lucy.id),
             "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             "flow_id": None,
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
 
@@ -177,9 +162,7 @@ class TestSchedule(BaseTest):
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
 
@@ -188,14 +171,10 @@ class TestSchedule(BaseTest):
         assert event["respondentId"] == create_data["respondent_id"]
         assert event["flowId"] == create_data["flow_id"]
 
-    async def test_schedule_get_all(self, client):
+    async def test_schedule_get_all(self, client, lucy):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await client.get(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            )
-        )
+        response = await client.get(self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"))
 
         assert response.status_code == 200, response.json()
         events = response.json()["result"]
@@ -215,34 +194,26 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "respondent_id": str(lucy.id),
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5832",
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
 
         assert response.status_code == 201
 
-        response = await client.get(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            )
-        )
+        response = await client.get(self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"))
 
         assert response.status_code == 200, response.json()
         events = response.json()["result"]
         assert len(events) == events_count
 
         response = await client.get(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            )
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1")
             + "?respondentId=7484f34a-3acc-4ee6-8a94-fd7299502fa2"
         )
 
@@ -251,11 +222,7 @@ class TestSchedule(BaseTest):
         assert len(events) == 1
 
     async def test_public_schedule_get_all(self, client):
-        response = await client.get(
-            self.public_events_url.format(
-                key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"
-            )
-        )
+        response = await client.get(self.public_events_url.format(key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"))
 
         assert response.status_code == 200, response.json()
         events = response.json()["result"]
@@ -283,9 +250,7 @@ class TestSchedule(BaseTest):
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
         event_id = response.json()["result"]["id"]
@@ -304,11 +269,7 @@ class TestSchedule(BaseTest):
     async def test_schedule_delete_all(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await client.delete(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            )
-        )
+        response = await client.delete(self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"))
         assert response.status_code == 204
 
         create_data = {
@@ -330,22 +291,16 @@ class TestSchedule(BaseTest):
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
         assert response.status_code == 201, response.json()
 
-        response = await client.delete(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            )
-        )
+        response = await client.delete(self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"))
 
         assert response.status_code == 204
 
-    async def test_schedule_delete_detail(self, client):
+    async def test_schedule_delete_detail(self, client, lucy):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         create_data = {
@@ -361,15 +316,13 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "respondent_id": str(lucy.id),
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
         event = response.json()["result"]
@@ -383,7 +336,7 @@ class TestSchedule(BaseTest):
 
         assert response.status_code == 204
 
-    async def test_schedule_update_with_equal_start_end_time(self, client):
+    async def test_schedule_update_with_equal_start_end_time(self, client, lucy):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = {
             "start_time": "08:00:00",
@@ -398,7 +351,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "respondent_id": str(lucy.id),
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
             "notification": {
@@ -413,9 +366,7 @@ class TestSchedule(BaseTest):
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
         event = response.json()["result"]
@@ -440,7 +391,7 @@ class TestSchedule(BaseTest):
         )
         assert response.status_code == 422
 
-    async def test_schedule_update(self, client):
+    async def test_schedule_update(self, client, lucy):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = {
             "start_time": "08:00:00",
@@ -455,7 +406,7 @@ class TestSchedule(BaseTest):
                 "end_date": "2021-09-01",
                 "selected_date": "2023-09-01",
             },
-            "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+            "respondent_id": str(lucy.id),
             "activity_id": None,
             "flow_id": "3013dfb1-9202-4577-80f2-ba7450fb5831",
             "notification": {
@@ -470,9 +421,7 @@ class TestSchedule(BaseTest):
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
         event = response.json()["result"]
@@ -511,11 +460,7 @@ class TestSchedule(BaseTest):
     async def test_count(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await client.get(
-            self.count_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            )
-        )
+        response = await client.get(self.count_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"))
         assert response.status_code == 200
 
         create_data = {
@@ -537,9 +482,7 @@ class TestSchedule(BaseTest):
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
 
@@ -548,18 +491,14 @@ class TestSchedule(BaseTest):
         create_data["activity_id"] = "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
         create_data["flow_id"] = None
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
 
         assert response.status_code == 201
 
         response = await client.get(
-            self.count_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.count_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
         )
 
         assert response.status_code == 200
@@ -600,9 +539,7 @@ class TestSchedule(BaseTest):
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
         event_id = response.json()["result"]["id"]
@@ -615,10 +552,7 @@ class TestSchedule(BaseTest):
         )
 
         assert response.status_code == 200
-        assert (
-            response.json()["result"]["respondentId"]
-            == create_data["respondent_id"]
-        )
+        assert response.json()["result"]["respondentId"] == create_data["respondent_id"]
 
         response = await client.delete(
             self.delete_user_url.format(
@@ -647,9 +581,7 @@ class TestSchedule(BaseTest):
     async def test_respondent_schedules_get_user_two_weeks(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
-        response = await client.get(
-            self.erspondent_schedules_user_two_weeks_url
-        )
+        response = await client.get(self.erspondent_schedules_user_two_weeks_url)
 
         assert response.status_code == 200
         assert response.json()["count"] == 2
@@ -719,9 +651,7 @@ class TestSchedule(BaseTest):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         response = await client.get(
-            self.schedule_detail_user_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            )
+            self.schedule_detail_user_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1")
         )
         assert response.status_code == 200
 
@@ -756,9 +686,7 @@ class TestSchedule(BaseTest):
         }
 
         response = await client.post(
-            self.schedule_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
         event_id = response.json()["result"]["id"]
@@ -771,10 +699,7 @@ class TestSchedule(BaseTest):
         )
 
         assert response.status_code == 200
-        assert (
-            response.json()["result"]["respondentId"]
-            == create_data["respondent_id"]
-        )
+        assert response.json()["result"]["respondentId"] == create_data["respondent_id"]
 
         response = await client.delete(
             self.remove_ind_url.format(
@@ -793,7 +718,7 @@ class TestSchedule(BaseTest):
         )
         assert response.status_code == 404
 
-    async def test_schedule_import(self, client):
+    async def test_schedule_import(self, client, lucy):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         create_data = [
             {
@@ -809,7 +734,7 @@ class TestSchedule(BaseTest):
                     "end_date": "2023-09-01",
                     "selected_date": "2023-01-01",
                 },
-                "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+                "respondent_id": str(lucy.id),
                 "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
                 "flow_id": None,
             },
@@ -826,16 +751,14 @@ class TestSchedule(BaseTest):
                     "end_date": "2023-09-01",
                     "selected_date": "2023-01-01",
                 },
-                "respondent_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+                "respondent_id": str(lucy.id),
                 "activity_id": "09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
                 "flow_id": None,
             },
         ]
 
         response = await client.post(
-            self.schedule_import_url.format(
-                applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"
-            ),
+            self.schedule_import_url.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"),
             data=create_data,
         )
 
@@ -844,18 +767,16 @@ class TestSchedule(BaseTest):
         assert len(events) == 2
         assert events[0]["respondentId"] == create_data[0]["respondent_id"]
 
-    async def test_schedule_create_individual(self, client):
+    async def test_schedule_create_individual(self, client, lucy):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         response = await client.post(
             self.schedule_create_individual.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa2",
+                respondent_id=str(lucy.id),
             ),
         )
         assert response.status_code == 201
 
         events = response.json()["result"]
         assert len(events) == 3
-        assert (
-            events[0]["respondentId"] == "7484f34a-3acc-4ee6-8a94-fd7299502fa2"
-        )
+        assert events[0]["respondentId"] == str(lucy.id)

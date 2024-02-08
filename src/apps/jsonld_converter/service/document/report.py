@@ -3,17 +3,9 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 
 from apps.activities.domain.conditions import AnyCondition
-from apps.activities.domain.scores_reports import (
-    CalculationType,
-    Score,
-    Section,
-)
+from apps.activities.domain.scores_reports import CalculationType, Score, Section
 from apps.jsonld_converter.errors import ConditionalLogicError
-from apps.jsonld_converter.service.document.base import (
-    CommonFieldsMixin,
-    LdDocumentBase,
-    LdKeyword,
-)
+from apps.jsonld_converter.service.document.base import CommonFieldsMixin, LdDocumentBase, LdKeyword
 from apps.jsonld_converter.service.document.conditional_logic import (
     ConditionBoolResolver,
     ConditionData,
@@ -64,32 +56,20 @@ class ReportBase(LdDocumentBase, CommonFieldsMixin, ABC):
         processed_doc: dict = deepcopy(self.doc_expanded)
         await self._load_from_processed_doc(processed_doc, base_url)
 
-    async def _load_from_processed_doc(
-        self, processed_doc: dict, base_url: str | None = None
-    ):
+    async def _load_from_processed_doc(self, processed_doc: dict, base_url: str | None = None):
         assert self.ld_id
         self.ld_pref_label = self._get_ld_pref_label(processed_doc)
         self.ld_alt_label = self._get_ld_alt_label(processed_doc)
-        self.ld_message = self.attr_processor.get_translation(
-            processed_doc, "reproschema:message", self.lang
-        )
+        self.ld_message = self.attr_processor.get_translation(processed_doc, "reproschema:message", self.lang)
         self.print_items = self._get_print_items(processed_doc)
-        self.ld_variable_name = self.attr_processor.extract_compact_id(
-            self.ld_id
-        )
+        self.ld_variable_name = self.attr_processor.extract_compact_id(self.ld_id)
 
     def _get_print_items(self, doc: dict, *, drop=False) -> list[str]:
-        if items := self.attr_processor.get_attr_list(
-            doc, "reproschema:printItems", drop=drop
-        ):
+        if items := self.attr_processor.get_attr_list(doc, "reproschema:printItems", drop=drop):
             """
             Extract item names [???]
             """
-            return [
-                item.get(LdKeyword.value)
-                for item in items
-                if LdKeyword.value in item
-            ]
+            return [item.get(LdKeyword.value) for item in items if LdKeyword.value in item]
         return []
 
 
@@ -133,41 +113,23 @@ class ReproActivityScore(ReportBase, ResolvesConditionalLogic):
     def get_data_type(cls):
         return "score"
 
-    async def _load_from_processed_doc(
-        self, processed_doc: dict, base_url: str | None = None
-    ):
+    async def _load_from_processed_doc(self, processed_doc: dict, base_url: str | None = None):
         await super()._load_from_processed_doc(processed_doc, base_url)
-        self.ld_output_type = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:outputType"
-        )
-        self.ld_js_expression = self.attr_processor.get_attr_value(
-            processed_doc, "reproschema:jsExpression"
-        )
+        self.ld_output_type = self.attr_processor.get_attr_value(processed_doc, "reproschema:outputType")
+        self.ld_js_expression = self.attr_processor.get_attr_value(processed_doc, "reproschema:jsExpression")
         self.conditionals = self._get_conditionals(processed_doc)
 
-    def _get_conditionals(
-        self, doc: dict, *, drop=False
-    ) -> list[ConditionalItem]:
+    def _get_conditionals(self, doc: dict, *, drop=False) -> list[ConditionalItem]:
         conditionals = []
-        if items := self.attr_processor.get_attr_list(
-            doc, "reproschema:conditionals", drop=drop
-        ):
+        if items := self.attr_processor.get_attr_list(doc, "reproschema:conditionals", drop=drop):
             for item in items:
-                ld_expanded_id = self.attr_processor.first(
-                    item.get(LdKeyword.id)
-                )
+                ld_expanded_id = self.attr_processor.first(item.get(LdKeyword.id))
                 conditionals.append(
                     ConditionalItem(
-                        ld_id=self.attr_processor.extract_compact_id(
-                            ld_expanded_id
-                        ),
-                        ld_flag_score=self.attr_processor.get_attr_value(
-                            item, "reproschema:flagScore"
-                        ),
+                        ld_id=self.attr_processor.extract_compact_id(ld_expanded_id),
+                        ld_flag_score=self.attr_processor.get_attr_value(item, "reproschema:flagScore"),
                         ld_is_vis=self._is_visible(item),
-                        ld_message=self.attr_processor.get_translation(
-                            item, "reproschema:message", self.lang
-                        ),
+                        ld_message=self.attr_processor.get_translation(item, "reproschema:message", self.lang),
                         ld_pref_label=self._get_ld_pref_label(item),
                         ld_alt_label=self._get_ld_alt_label(item),
                         ld_print_items=self._get_print_items(item),
@@ -198,9 +160,7 @@ class ReproActivityScore(ReportBase, ResolvesConditionalLogic):
         return self.ld_variable_name
 
     def resolve_condition(self, condition: ConditionData) -> AnyCondition:
-        return ConditionValueResolver().resolve(
-            self.resolve_condition_name(), condition
-        )
+        return ConditionValueResolver().resolve(self.resolve_condition_name(), condition)
 
     def export(self) -> Score:
         assert self.ld_id
@@ -222,9 +182,7 @@ class ReproActivitySection(ReportBase):
     def get_data_type(cls):
         return "section"
 
-    async def _load_from_processed_doc(
-        self, processed_doc: dict, base_url: str | None = None
-    ):
+    async def _load_from_processed_doc(self, processed_doc: dict, base_url: str | None = None):
         await super()._load_from_processed_doc(processed_doc, base_url)
         self.ld_is_vis = self._is_visible(processed_doc, drop=True)
 

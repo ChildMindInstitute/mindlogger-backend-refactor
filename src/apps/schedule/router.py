@@ -18,11 +18,7 @@ from apps.schedule.api.schedule import (
     schedule_remove_individual_calendar,
     schedule_update,
 )
-from apps.schedule.domain.schedule.public import (
-    PublicEvent,
-    PublicEventByUser,
-    PublicEventCount,
-)
+from apps.schedule.domain.schedule.public import PublicEvent, PublicEventByUser, PublicEventCount
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,

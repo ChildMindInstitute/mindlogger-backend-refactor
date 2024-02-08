@@ -10,19 +10,13 @@ class InvitationSchema(Base):
     __tablename__ = "invitations"
 
     email = Column(StringEncryptedType(Unicode, get_key))
-    applet_id = Column(
-        ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
-    )
+    applet_id = Column(ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False)
     role = Column(String())
     key = Column(UUID(as_uuid=True))
-    invitor_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
-    )
+    invitor_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     status = Column(String())
     first_name = Column(StringEncryptedType(Unicode, get_key))
     last_name = Column(StringEncryptedType(Unicode, get_key))
     meta = Column(JSONB())
     nickname = Column(StringEncryptedType(Unicode, get_key))
-    user_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
-    )
+    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)

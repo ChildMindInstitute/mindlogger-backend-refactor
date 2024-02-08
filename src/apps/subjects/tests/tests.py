@@ -9,11 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.answers.crud.answers import AnswersCRUD
 from apps.shared.test import BaseTest
 from apps.subjects.crud import SubjectsCrud
-from apps.subjects.domain import (
-    Subject,
-    SubjectCreateRequest,
-    SubjectRespondentCreate,
-)
+from apps.subjects.domain import Subject, SubjectCreateRequest, SubjectRespondentCreate
 from apps.subjects.services import SubjectsService
 
 

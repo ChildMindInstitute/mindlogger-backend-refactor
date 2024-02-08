@@ -21,12 +21,8 @@ async def transfer_initiate(
     """Initiate a transfer of ownership of an applet."""
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_create_transfer_ownership_access(applet_id)
-        await TransferService(session, user).initiate_transfer(
-            applet_id, transfer
-        )
+        await CheckAccessService(session, user.id).check_create_transfer_ownership_access(applet_id)
+        await TransferService(session, user).initiate_transfer(applet_id, transfer)
 
 
 async def transfer_accept(

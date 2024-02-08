@@ -60,11 +60,7 @@ class Base(_Base):  # type: ignore
     is_deleted = Column(Boolean(), default=False)
 
     def __iter__(self):
-        return (
-            (key, val)
-            for key, val in self.__dict__.items()
-            if not key.startswith("_")
-        )
+        return ((key, val) for key, val in self.__dict__.items() if not key.startswith("_"))
 
     @hybrid_method
     def soft_exists(self, exists=True):

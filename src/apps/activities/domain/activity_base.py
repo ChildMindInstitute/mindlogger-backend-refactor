@@ -1,10 +1,7 @@
 from pydantic import BaseModel, Field
 
 from apps.activities.domain.response_type_config import PerformanceTaskType
-from apps.activities.domain.scores_reports import (
-    ScoresAndReports,
-    SubscaleSetting,
-)
+from apps.activities.domain.scores_reports import ScoresAndReports, SubscaleSetting
 from apps.shared.enums import Language
 
 

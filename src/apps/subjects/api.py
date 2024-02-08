@@ -3,9 +3,7 @@ import uuid
 from fastapi import Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.answers.deps.preprocess_arbitrary import (
-    get_answer_session_by_subject,
-)
+from apps.answers.deps.preprocess_arbitrary import get_answer_session_by_subject
 from apps.answers.service import AnswerService
 from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue

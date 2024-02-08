@@ -10,10 +10,7 @@ from bson.objectid import ObjectId
 
 from apps.girderformindlogger import events, logger
 from apps.girderformindlogger.constants import AccessType
-from apps.girderformindlogger.exceptions import (
-    GirderException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import GirderException, ValidationException
 from apps.girderformindlogger.models.model_base import Model
 from apps.girderformindlogger.utility import acl_mixin
 from apps.girderformindlogger.utility.model_importer import ModelImporter

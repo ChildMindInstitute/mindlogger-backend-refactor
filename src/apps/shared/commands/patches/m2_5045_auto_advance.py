@@ -18,7 +18,5 @@ async def main(session: AsyncSession, *args, **kwargs):
         item.config["auto_advance"] = True
 
         await session.execute(
-            update(ActivityItemSchema)
-            .where(ActivityItemSchema.id == item.id)
-            .values(config=item.config)
+            update(ActivityItemSchema).where(ActivityItemSchema.id == item.id).values(config=item.config)
         )
