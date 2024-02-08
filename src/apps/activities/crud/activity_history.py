@@ -35,6 +35,14 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
+    async def retrieve_activities_by_applet_id_versions(self, id_versions: list[str]) -> list[ActivityHistorySchema]:
+        query: Query = select(ActivityHistorySchema)
+        query = query.where(ActivityHistorySchema.applet_id.in_(id_versions))
+        query = query.where(ActivityHistorySchema.is_reviewable == false())
+        query = query.order_by(ActivityHistorySchema.order.asc())
+        result = await self._execute(query)
+        return result.scalars().all()
+
     async def retrieve_by_applet_ids(self, applet_versions: list[str]) -> list[ActivityHistorySchema]:
         """
         retrieve activities by applet id_version fields
