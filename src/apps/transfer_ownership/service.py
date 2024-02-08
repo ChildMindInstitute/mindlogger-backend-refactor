@@ -10,7 +10,7 @@ from apps.transfer_ownership.constants import TransferOwnershipStatus
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.domain import InitiateTransfer, Transfer
 from apps.transfer_ownership.errors import TransferEmailError
-from apps.users import UserNotFound, UsersCRUD
+from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from config import settings
@@ -34,25 +34,30 @@ class TransferService:
         if access.user_id != self._user.id:
             raise PermissionsError()
 
+        to_user = await UsersCRUD(self.session).get_user_or_none_by_email(
+            transfer_request.email
+        )
+
+        if to_user:
+            if to_user.id == self._user.id:
+                raise TransferEmailError()
+            receiver_name = f"{to_user.first_name} {to_user.last_name}"
+            path = "transfer_ownership_registered_user_en"
+            to_user_id = to_user.id
+        else:
+            path = "transfer_ownership_unregistered_user_en"
+            receiver_name = transfer_request.email
+            to_user_id = None
+
         transfer = Transfer(
             email=transfer_request.email,
             applet_id=applet_id,
             key=uuid.uuid4(),
             status=TransferOwnershipStatus.PENDING,
+            from_user_id=self._user.id,
+            to_user_id=to_user_id,
         )
         await TransferCRUD(self.session).create(transfer)
-        try:
-            receiver = await UsersCRUD(self.session).get_by_email(
-                transfer.email
-            )
-            if receiver.id == self._user.id:
-                raise TransferEmailError()
-            receiver_name = f"{receiver.first_name} {receiver.last_name}"
-        except UserNotFound:
-            path = "transfer_ownership_unregistered_user_en"
-            receiver_name = transfer.email
-        else:
-            path = "transfer_ownership_registered_user_en"
 
         url = self._generate_transfer_url()
 
@@ -104,7 +109,7 @@ class TransferService:
             ],
         )
 
-        await TransferCRUD(self.session).approve_by_key(key=key)
+        await TransferCRUD(self.session).approve_by_key(key, self._user.id)
         await TransferCRUD(self.session).decline_all_pending_by_applet_id(
             applet_id=transfer.applet_id
         )
@@ -175,4 +180,4 @@ class TransferService:
             raise PermissionsError()
 
         # delete transfer
-        await TransferCRUD(self.session).decline_by_key(key=key)
+        await TransferCRUD(self.session).decline_by_key(key, self._user.id)

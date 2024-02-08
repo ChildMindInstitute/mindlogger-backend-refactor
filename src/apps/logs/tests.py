@@ -129,7 +129,7 @@ class TestNotificationLogs(BaseTest):
         response = await client.get(self.logs_url, query=query)
 
         assert response.status_code == 200, response.json()
-        assert type(response.json()["result"]) == list
+        assert isinstance(response.json()["result"], list)
 
         create_data = dict(
             user_id="tom@mindlogger.com",

@@ -8,6 +8,8 @@ from infrastructure.database import BaseCRUD
 
 
 class JobCRUD(BaseCRUD[JobSchema]):
+    schema_class = JobSchema
+
     async def get_by_name(self, name: str, user_id: uuid.UUID) -> Job | None:
         query = (
             select(JobSchema)

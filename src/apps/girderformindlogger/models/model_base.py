@@ -1684,7 +1684,6 @@ class AccessControlledModel(Model):
         dirty = False
 
         for role in USER_ROLE_KEYS:
-
             for user in acList[role]["users"]:
                 userDoc = User().load(
                     decipherUser(user["id"]),

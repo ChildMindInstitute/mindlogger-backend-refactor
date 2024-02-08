@@ -1,12 +1,14 @@
 import pytest
+from pydantic import EmailError
 from starlette import status
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.router import router as auth_router
+from apps.shared.domain import to_camelcase
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
 from apps.users.domain import UserCreateRequest
-from apps.users.errors import UserIsDeletedError
+from apps.users.errors import PasswordHasSpacesError, UserIsDeletedError
 from apps.users.router import router as user_router
 from apps.users.tests.factories import UserUpdateRequestFactory
 
@@ -31,25 +33,11 @@ class TestUser(BaseTest):
         response = await client.post(
             self.user_create_url, data=self.create_request_user.dict()
         )
-        assert response.status_code == status.HTTP_201_CREATED, response.json()
-
-        password_spaces_create_request_user = self.create_request_user.dict()
-        password_spaces_create_request_user["password"] = "Test1234 !"
-        response = await client.post(
-            self.user_create_url, data=password_spaces_create_request_user
-        )
-        assert (
-            response.status_code == status.HTTP_404_NOT_FOUND
-        ), response.json()
-
-        not_valid_email_create_request_user = self.create_request_user.dict()
-        not_valid_email_create_request_user["email"] = "tom2@mindlogger@com"
-        response = await client.post(
-            self.user_create_url, data=not_valid_email_create_request_user
-        )
-        assert (
-            response.status_code == status.HTTP_400_BAD_REQUEST
-        ), response.json()
+        assert response.status_code == status.HTTP_201_CREATED
+        result = response.json()["result"]
+        for k, v in self.create_request_user:
+            if k != "password":
+                assert v == result[to_camelcase(k)]
 
     async def test_user_create_exist(self, client):
         # Creating new user
@@ -132,3 +120,21 @@ class TestUser(BaseTest):
             await UsersCRUD(session).get_by_email(login_request_user.email)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    async def test_create_user_password_contains_whitespaces(self, client):
+        data = self.create_request_user.dict()
+        data["password"] = "Test1234 !"
+        response = await client.post(self.user_create_url, data=data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == PasswordHasSpacesError.message
+
+    async def test_create_user_not_valid_email(self, client):
+        data = self.create_request_user.dict()
+        data["email"] = "tom2@mindlogger@com"
+        response = await client.post(self.user_create_url, data=data)
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == EmailError.msg_template

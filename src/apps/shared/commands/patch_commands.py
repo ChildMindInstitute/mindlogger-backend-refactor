@@ -28,6 +28,18 @@ PatchRegister.register(
     description="Populate user_id column in declined/approved invitations",
     manage_session=False,
 )
+PatchRegister.register(
+    file_path="m2_5045_auto_advance.py",
+    task_id="M2-5045",
+    description="Set auto_advance=True to all existing singleSelect items without auto_advance flag",  # noqa : E501
+    manage_session=False,
+)
+PatchRegister.register(
+    file_path="m2_4951_add_missing_job_status_to_the_job_status_enum.sql",
+    task_id="M2-4951",
+    description="Add missing job_status to the job_status enum",
+    manage_session=False,
+)
 
 
 app = typer.Typer()

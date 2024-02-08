@@ -19,11 +19,7 @@ from apps.users.domain import (
     User,
     UserChangePassword,
 )
-from apps.users.errors import (
-    PasswordHasSpacesError,
-    ReencryptionInProgressError,
-    UserNotFound,
-)
+from apps.users.errors import ReencryptionInProgressError, UserNotFound
 from apps.users.services import PasswordRecoveryCache, PasswordRecoveryService
 from apps.users.tasks import reencrypt_answers
 from config import settings
@@ -41,9 +37,6 @@ async def password_update(
     session=Depends(get_session),
 ) -> Response[PublicUser]:
     """General endpoint for update password for signin."""
-    if " " in schema.password:
-        raise PasswordHasSpacesError()
-
     reencryption_in_progress = await JobService(
         session, user.id
     ).is_job_in_progress("reencrypt_answers")
@@ -80,7 +73,7 @@ async def password_update(
 async def password_recovery(
     schema: PasswordRecoveryRequest = Body(...),
     session=Depends(get_session),
-):
+) -> EmptyResponse:
     """General endpoint for sending password recovery email
     and stored info in Redis.
     """
@@ -115,7 +108,7 @@ async def password_recovery_approve(
 async def password_recovery_healthcheck(
     email: Annotated[str, Query(max_length=100)] = Required,
     key: Annotated[uuid.UUID | str, Query(max_length=36)] = Required,
-):
+) -> None:
     """General endpoint to get the password recovery healthcheck."""
 
     try:

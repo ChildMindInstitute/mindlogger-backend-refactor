@@ -121,7 +121,6 @@ class WorkspaceService:
         applet_id: uuid.UUID | None,
         query_params: QueryParams,
     ) -> Tuple[list[WorkspaceManager], int]:
-
         # TODO: Investigate if we do need the search by email
         # hash the email is exist in the search
         # if query_params.search and EMAIL_REGEX.match(query_params.search):

@@ -6,4 +6,3 @@ class AnonymousRespondent(BaseModel):
     password: str = "anonymousRespondentPassword!"
     first_name: str = "Mindlogger"
     last_name: str = "ChildMindInstitute"
-    force_update: bool = False

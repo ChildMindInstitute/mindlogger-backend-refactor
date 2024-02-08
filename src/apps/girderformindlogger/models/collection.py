@@ -307,7 +307,7 @@ class Collection(AccessControlledModel):
             )
         )
         for folder in childFolders:
-            for (filepath, file) in folderModel.fileList(
+            for filepath, file in folderModel.fileList(
                 folder,
                 user,
                 path,

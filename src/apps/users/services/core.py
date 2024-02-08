@@ -1,5 +1,6 @@
 import urllib.parse
 import uuid
+from typing import cast
 
 from apps.authentication.services import AuthenticationService
 from apps.mailing.domain import MessageSchema
@@ -27,43 +28,33 @@ class PasswordRecoveryService:
         self._cache: PasswordRecoveryCache = PasswordRecoveryCache()
         self.session = session
 
-    async def fetch_all(self, email: str) -> list[PasswordRecoveryInfo]:
-        cache_entries: list[
-            CacheEntry[PasswordRecoveryInfo]
-        ] = await self._cache.all(email=email)
-
-        return [entry.instance for entry in cache_entries]
-
     async def send_password_recovery(
         self, schema: PasswordRecoveryRequest
     ) -> PublicUser:
-
-        # encrypted_email = encrypt(bytes(schema.email, "utf-8")).hex()
-
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
         if user.email_encrypted != schema.email:
             user = await UsersCRUD(self.session).update_encrypted_email(
                 user, schema.email
             )
+        user.email_encrypted = cast(str, user.email_encrypted)
 
         # If already exist password recovery for this user in Redis,
         # delete old password recovery, before generate and send new.
-        await self._cache.delete_all_entries(
-            email=user.email_encrypted  # type: ignore[arg-type]
-        )
+        await self._cache.delete_all_entries(email=user.email_encrypted)
 
         password_recovery_info = PasswordRecoveryInfo(
             email=user.email_encrypted,
             user_id=user.id,
             key=uuid.uuid3(
-                uuid.uuid4(), user.email_encrypted  # type: ignore[arg-type]
+                uuid.uuid4(),
+                user.email_encrypted,
             ),
         )
 
         # Build the cache key
         key: str = self._cache.build_key(
-            user.email_encrypted,  # type: ignore[arg-type]
+            user.email_encrypted,
             password_recovery_info.key,
         )
 
@@ -84,7 +75,7 @@ class PasswordRecoveryService:
             f"/{settings.service.urls.frontend.password_recovery_send}"
             f"?key={password_recovery_info.key}"
             f"&email="
-            f"{urllib.parse.quote(user.email_encrypted)}"  # type: ignore
+            f"{urllib.parse.quote(user.email_encrypted)}"
         )
 
         message = MessageSchema(
@@ -107,7 +98,6 @@ class PasswordRecoveryService:
     async def approve(
         self, schema: PasswordRecoveryApproveRequest
     ) -> PublicUser:
-
         try:
             cache_entry: CacheEntry[
                 PasswordRecoveryInfo

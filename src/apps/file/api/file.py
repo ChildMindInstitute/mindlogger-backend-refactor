@@ -93,7 +93,6 @@ async def _copy(file: UploadFile, path: str):
 
 
 async def convert_not_supported_audio(file: UploadFile):
-
     type_ = mimetypes.guess_type(file.filename)[0] or ""
     if type_.lower() == "video/webm":
         # store file, create task to convert
@@ -120,7 +119,6 @@ async def convert_not_supported_audio(file: UploadFile):
 
 
 async def convert_not_supported_image(file: UploadFile):
-
     type_ = mimetypes.guess_type(file.filename)[0] or ""
     if type_.lower() == "image/heic":
         # store file, create task to convert

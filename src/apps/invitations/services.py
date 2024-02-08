@@ -116,9 +116,11 @@ class InvitationsService:
             "meta": respondent_info.meta.dict(),
             "nickname": respondent_info.nickname,
         }
-        pending_invitation = await (
-            self.invitations_crud.get_pending_invitation(
-                schema.email, applet_id
+        pending_invitation = (
+            await (
+                self.invitations_crud.get_pending_invitation(
+                    schema.email, applet_id
+                )
             )
         )
         if pending_invitation:
@@ -203,9 +205,11 @@ class InvitationsService:
             "meta": ReviewerMeta(respondents=respondents).dict(),
         }
 
-        pending_invitation = await (
-            self.invitations_crud.get_pending_invitation(
-                schema.email, applet_id
+        pending_invitation = (
+            await (
+                self.invitations_crud.get_pending_invitation(
+                    schema.email, applet_id
+                )
             )
         )
         if pending_invitation:
@@ -288,9 +292,11 @@ class InvitationsService:
             "meta": {},
         }
 
-        pending_invitation = await (
-            self.invitations_crud.get_pending_invitation(
-                schema.email, applet_id
+        pending_invitation = (
+            await (
+                self.invitations_crud.get_pending_invitation(
+                    schema.email, applet_id
+                )
             )
         )
         if pending_invitation:

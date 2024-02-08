@@ -1,13 +1,15 @@
 import uuid
 
-from pydantic import BaseModel, EmailStr, Field, root_validator
+from pydantic import EmailStr, Field, root_validator, validator
 
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.domain.custom_validations import lowercase_email
+from apps.shared.hashing import hash_sha224
+from apps.shared.passlib import get_password_hash
+from apps.users.errors import PasswordHasSpacesError
 
 __all__ = [
     "PublicUser",
-    "UserCreate",
     "UserCreate",
     "User",
     "UserCreateRequest",
@@ -20,20 +22,10 @@ __all__ = [
 ]
 
 
-class _UserBase(BaseModel):
-    # Has this type because in the descendant classes the hash gets here
-    email: str
-
-    def __str__(self) -> str:
-        return self.email
-
-    @root_validator
-    def email_validation(cls, values):
-        return lowercase_email(values)
-
-
-class UserCreateRequest(_UserBase, PublicModel):
+class UserCreateRequest(PublicModel):
     """This model represents user `create request` data model."""
+
+    email: EmailStr
 
     first_name: str = Field(
         description="This field represents the user first name",
@@ -48,11 +40,28 @@ class UserCreateRequest(_UserBase, PublicModel):
         min_length=1,
     )
 
+    @validator("password")
+    def validate_password(cls, value: str) -> str:
+        if " " in value:
+            raise PasswordHasSpacesError()
+        return value
 
-class UserCreate(_UserBase, InternalModel):
-    first_name: str
-    last_name: str
-    hashed_password: str
+    @root_validator
+    def email_validation(cls, values):
+        return lowercase_email(values)
+
+
+class UserCreate(UserCreateRequest):
+    # NOTE: pydantic before version 2 does not fully support properties.
+    # but we can use them in our case, because we use properties directly
+    # and we don't user for this model method dict
+    @property
+    def hashed_password(self) -> str:
+        return get_password_hash(self.password)
+
+    @property
+    def hashed_email(self) -> str:
+        return hash_sha224(self.email)
 
 
 class UserUpdateRequest(InternalModel):
@@ -62,9 +71,13 @@ class UserUpdateRequest(InternalModel):
     last_name: str
 
 
-class User(UserCreate):
+class User(InternalModel):
+    email: str
+    first_name: str
+    last_name: str
     id: uuid.UUID
     is_super_admin: bool
+    hashed_password: str
     email_encrypted: str | None
 
 
@@ -91,6 +104,12 @@ class ChangePasswordRequest(InternalModel):
 
     password: str
     prev_password: str
+
+    @validator("password", "prev_password")
+    def validate_password(cls, value: str) -> str:
+        if " " in value:
+            raise PasswordHasSpacesError()
+        return value
 
 
 class UserChangePassword(InternalModel):

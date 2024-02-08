@@ -6,4 +6,3 @@ class SuperAdmin(BaseModel):
     password: str = "superAdminPassword!"
     first_name: str = "Mindlogger"
     last_name: str = "ChildMindInstitute"
-    force_update: bool = False

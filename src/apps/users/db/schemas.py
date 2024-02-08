@@ -26,8 +26,8 @@ class UserSchema(Base):
         Boolean(), default=False, server_default="false"
     )
 
-    def __repr__(self):
-        return f"UserSchema(id='{self.id}', email='{self.email}')"
+    def __repr__(self) -> str:
+        return f"UserSchema(id='{self.id}', email='{self.email}')"  # pragma: no cover # noqa: E501
 
 
 class UserDeviceSchema(Base):
