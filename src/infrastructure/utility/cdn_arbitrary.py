@@ -42,7 +42,8 @@ class ArbitraryAzureCdnClient(CDNClient):
         self.sec_key = sec_key
         super().__init__(CdnConfig(bucket=bucket), env)
 
-    def generate_key(self, scope, unique, filename):
+    @classmethod
+    def generate_key(cls, scope, unique, filename):
         return f"{scope}/{unique}/{filename}"
 
     def generate_private_url(self, key):

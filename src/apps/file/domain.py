@@ -1,3 +1,5 @@
+from pydantic import HttpUrl
+
 from apps.shared.domain import PublicModel
 
 
@@ -31,3 +33,17 @@ class FilePresignRequest(PublicModel):
 
 class LogFileExistenceResponse(FileExistenceResponse):
     file_size: int | None  # file size in bytes
+
+
+class FileNameRequest(PublicModel):
+    file_name: str
+
+
+class FileIdRequest(PublicModel):
+    file_id: str
+
+
+class PresignedUrl(PublicModel):
+    url: HttpUrl
+    # Use dict because fields can be different depend storage (AWS S3, Minio, GCS)
+    fields: dict[str, str]

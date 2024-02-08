@@ -1,4 +1,3 @@
-
 from pytest import fixture, mark
 
 from apps.shared.test import BaseTest
