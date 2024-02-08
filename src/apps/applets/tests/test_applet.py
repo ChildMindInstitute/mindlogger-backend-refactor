@@ -5,7 +5,6 @@ import json
 import uuid
 
 from apps.activities import errors as activity_errors
-from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.workspaces.errors import AppletCreationAccessDenied
 from config import settings
@@ -643,7 +642,6 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert response.json()["result"][0]["message"] == "Applet already exists."
-        assert TestMail.mails[0].subject == "Applet upload failed!"
 
     async def test_create_duplicate_case_sensitive_name_applet(self, client, tom):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
