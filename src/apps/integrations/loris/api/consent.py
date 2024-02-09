@@ -2,11 +2,7 @@ import uuid
 
 from fastapi import Body, Depends
 
-from apps.integrations.loris.domain import (
-    ConsentRequest,
-    ConsentUpdateRequest,
-    PublicConsent,
-)
+from apps.integrations.loris.domain import ConsentRequest, ConsentUpdateRequest, PublicConsent
 from apps.integrations.loris.service import ConsentService
 
 # from apps.authentication.deps import get_current_user
