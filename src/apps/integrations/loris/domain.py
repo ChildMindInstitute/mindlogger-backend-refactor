@@ -106,3 +106,14 @@ class ConsentRequest(ConsentCreate):
 
 class ConsentUpdateRequest(ConsentUpdate):
     pass
+
+
+class MlLorisUserRelationshipBase(InternalModel):
+    ml_user_uuid: uuid.UUID
+    loris_user_id: str
+
+class MlLorisUserRelationshipCreate(MlLorisUserRelationshipBase):
+    pass
+
+class MlLorisUserRelationship(MlLorisUserRelationshipBase):
+    pass

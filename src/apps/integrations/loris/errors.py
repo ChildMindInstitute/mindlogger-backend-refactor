@@ -1,10 +1,6 @@
 from gettext import gettext as _
 
-from apps.shared.exception import (
-    InternalServerError,
-    NotFoundError,
-    ValidationError,
-)
+from apps.shared.exception import InternalServerError, NotFoundError, ValidationError
 
 
 class LorisServerError(ValidationError):
@@ -17,3 +13,11 @@ class ConsentNotFoundError(NotFoundError):
 
 class ConsentError(InternalServerError):
     message = _("Consent service error.")
+
+
+class MlLorisUserRelationshipNotFoundError(NotFoundError):
+    message = _("No such user relationship with {key}={value}.")
+
+
+class MlLorisUserRelationshipError(InternalServerError):
+    message = _("MlLorisUserRelationship service error.")
