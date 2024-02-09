@@ -19,11 +19,14 @@ from apps.answers.errors import ReportServerError
 from apps.answers.service import ReportServerService
 from apps.applets.crud.applets import AppletsCRUD
 from apps.authentication.deps import get_current_user
-from apps.integrations.loris.domain import UnencryptedApplet
-from apps.integrations.loris.errors import LorisServerError
+from apps.integrations.loris.crud.user_relationship import MlLorisUserRelationshipCRUD
+from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
+from apps.integrations.loris.domain import MlLorisUserRelationship, UnencryptedApplet
+from apps.integrations.loris.errors import LorisServerError, MlLorisUserRelationshipNotFoundError
 from apps.users.domain import User
 
 # from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+from infrastructure.database.core import atomic
 from infrastructure.database.deps import get_session
 from infrastructure.logger import logger
 
@@ -56,7 +59,7 @@ LORIS_LOGIN_DATA = {
 }
 
 
-async def integration(applet_id: uuid.UUID, session, user):
+def _test_alert():
     # cache = RedisCache()
     # persons = await UserAppletAccessCRUD(
     #     session
@@ -106,60 +109,231 @@ async def integration(applet_id: uuid.UUID, session, user):
     # print("4" * 10)
     # 5/0
     ########################################
-    respondents = await AnswersCRUD(
-        session
-    ).get_respondents_by_applet_id_and_readiness_to_share_data(
-        applet_id=applet_id
-    )
-    if not respondents:
+    pass
+
+
+async def _login_to_loris() -> str:
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         logger.info(
-            f"Do not found any respondents for given applet: \
-                {str(applet_id)}. Finish."
+            f"Sending LOGIN request to the loris server {LORIS_LOGIN_URL}"
         )
-        return
+        start = time.time()
+        async with session.post(
+            LORIS_LOGIN_URL,
+            data=json.dumps(LORIS_LOGIN_DATA),
+        ) as resp:
+            duration = time.time() - start
+            if resp.status == 200:
+                logger.info(f"Successful request in {duration:.1f} seconds.")
+                response_data = await resp.json()
+                return response_data['token']
+            else:
+                logger.error(f"Failed request in {duration:.1f} seconds.")
+                error_message = await resp.text()
+                raise LorisServerError(message=error_message)
 
-    users_answers: dict = {}
-    for respondent in set(respondents):
-        try:
-            report_service = ReportServerService(session)
-            decrypted_answers: dict[
-                str, list
-            ] | None = await report_service.decrypt_data_for_loris(
-                applet_id, respondent
+async def _upload_schema_to_loris(schema: dict, headers: dict):
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        logger.info(
+            f"Sending UPLOAD SCHEMA request to the loris server "
+            f"{LORIS_ML_URL}"
+        )
+        start = time.time()
+        async with session.post(
+            LORIS_ML_URL,
+            data=UnencryptedApplet(**schema).json(),
+            headers=headers,
+        ) as resp:
+            duration = time.time() - start
+            if resp.status == 200:
+                logger.info(f"Successful request in {duration:.1f} seconds.")
+            else:
+                logger.error(f"Failed request in {duration:.1f} seconds.")
+                error_message = await resp.text()
+                raise LorisServerError(message=error_message)
+
+
+async def _create_candidate_and_visit(
+        headers: dict,
+        relationship_crud: MlLorisUserRelationshipCRUD,
+        ml_user_id: uuid.UUID) -> str:
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        logger.info(
+                f"Sending CREATE CANDIDATE request to the loris server "
+                f"{LORIS_CREATE_CANDIDATE}"
             )
-            if not decrypted_answers:
+        start = time.time()
+        _data_candidate = {
+            "Candidate": {
+                "Project": "loris",
+                "Site": "Mindlogger Integration Center",
+                "DoB": "1970-01-01",
+                "Sex": "Other",
+            }
+        }
+        async with session.post(
+            LORIS_CREATE_CANDIDATE,
+            data=json.dumps(_data_candidate),
+            headers=headers,
+        ) as resp:
+            duration = time.time() - start
+            if resp.status == 201:
                 logger.info(
-                    "Error during request to report server, no answers"
+                    f"Successful request in {duration:.1f} seconds."
                 )
-                return
-            _result_dict = {}
-            for item in decrypted_answers["result"]:
-                activity_id = item["activityId"]
-                data_info = item["data"]
+                candidate_data = await resp.json()
+                candidate_id = candidate_data["CandID"]
+            else:
+                logger.info(f"Failed request in {duration:.1f} seconds.")
+                error_message = await resp.text()
+                raise LorisServerError(message=error_message)
 
-                if not data_info:
-                    continue
+        async with atomic(relationship_crud.session):
+            await relationship_crud.save(
+                MlLorisUserRelationshipSchema(
+                    ml_user_uuid=ml_user_id,
+                    loris_user_id=candidate_id,
+                )
+            )
 
-                _result_dict[activity_id] = data_info
-            users_answers[str(respondent)] = _result_dict
-            # logger.info(f"Decrypted_answers for {respondent}: \
-            #             {json.dumps(decrypted_answers)}")
-        except ReportServerError as e:
-            logger.info(f"Error during request to report server: {e}")
-            return
+        logger.info(
+            f"Sending CREATE VISIT request to the loris server"
+            f"{LORIS_CREATE_VISIT.format(candidate_id, VISIT)}"
+        )
+        start = time.time()
+        _data_create_visit = {
+            "CandID": candidate_id,
+            "Visit": VISIT,
+            "Site": "Mindlogger Integration Center",
+            "Battery": "Control",
+            "Project": "loris",
+        }
+        async with session.put(
+            LORIS_CREATE_VISIT.format(candidate_id, VISIT),
+            data=json.dumps(_data_create_visit),
+            headers=headers,
+        ) as resp:
+            duration = time.time() - start
+            if resp.status == 201:
+                logger.info(
+                    f"Successful request in {duration:.1f} seconds."
+                )
+            else:
+                logger.info(f"Failed request in {duration:.1f} seconds.")
+                error_message = await resp.text()
+                raise LorisServerError(message=error_message)
 
+        logger.info(
+            f"Sending START VISIT request to the loris server "
+            f"{LORIS_START_VISIT.format(candidate_id, VISIT)}"
+        )
+        start = time.time()
+        _data_start_visit = {
+            "CandID": candidate_id,
+            "Visit": VISIT,
+            "Site": "Mindlogger Integration Center",
+            "Battery": "Control",
+            "Project": "loris",
+            "Cohort": "Control",
+            "Stages": {
+                "Visit": {
+                    "Date": str(datetime.date.today()),
+                    "Status": "In Progress",
+                }
+            },
+        }
+        async with session.patch(
+            LORIS_START_VISIT.format(candidate_id, VISIT),
+            data=json.dumps(_data_start_visit),
+            headers=headers,
+        ) as resp:
+            duration = time.time() - start
+            if resp.status == 204:
+                logger.info(
+                    f"Successful request in {duration:.1f} seconds."
+                )
+            else:
+                logger.info(f"Failed request in {duration:.1f} seconds.")
+                error_message = await resp.text()
+                raise LorisServerError(message=error_message)
+
+    return candidate_id
+
+
+async def _add_instrument_to_loris(headers: dict, candidate_id: str, applet_id: uuid.UUID):
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        logger.info(
+                f"Sending ADD INSTRUMENTS request to the loris server "
+                f"{LORIS_ADD_INSTRUMENTS.format(candidate_id, VISIT)}"
+            )
+        start = time.time()
+        _data_add_instruments = {
+            "Meta": {
+                "Candidate": candidate_id,
+                "Visit": VISIT,
+            },
+            "Instruments": [str(applet_id)],
+        }
+        async with session.post(
+            LORIS_ADD_INSTRUMENTS.format(candidate_id, VISIT),
+            data=json.dumps(_data_add_instruments),
+            headers=headers,
+        ) as resp:
+            duration = time.time() - start
+            if resp.status == 200:
+                logger.info(
+                    f"Successful request in {duration:.1f} seconds."
+                )
+            else:
+                logger.info(f"Failed request in {duration:.1f} seconds.")
+                error_message = await resp.text()
+                raise LorisServerError(message=error_message)
+
+
+async def _add_instrument_data_to_loris(headers: dict, candidate_id: str, applet_id: uuid.UUID, answer:dict):
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        logger.info(
+                f"Sending SEND INSTUMENT DATA request to the loris server "
+                f"{LORIS_INSTRUMENT_DATA.format(candidate_id, VISIT, str(applet_id))}"
+            )
+        start = time.time()
+        _data_instrument_data = {
+            "Meta": {
+                "Instrument": str(applet_id),
+                "Visit": VISIT,
+                "Candidate": candidate_id,
+                "DDE": True,
+            },
+            str(applet_id): answer,
+        }
+        async with session.put(
+            LORIS_INSTRUMENT_DATA.format(candidate_id, VISIT, str(applet_id)),
+            data=json.dumps(_data_instrument_data),
+            headers=headers,
+        ) as resp:
+            duration = time.time() - start
+            if resp.status == 204:
+                logger.info(
+                    f"Successful request in {duration:.1f} seconds."
+                )
+            else:
+                logger.info(f"Failed request in {duration:.1f} seconds.")
+                error_message = await resp.text()
+                logger.info(
+                    f"response is: "
+                    f"{error_message}\nstatus is: {resp.status}"
+                )
+                raise LorisServerError(message=error_message)
+
+
+async def _prepare_activities_and_answers(session, applet_id: uuid.UUID, users_answers:dict) -> tuple[list, dict]:
     activities_crud = ActivitiesCRUD(session)
     activities_items_crud = ActivityItemsCRUD(session)
-    applet_crud = AppletsCRUD(session)
-
-    applet = await applet_crud.get_by_id(applet_id)
-    loris_data = {
-        "id": applet_id,
-        "displayName": applet.display_name,
-        "description": list(applet.description.values())[0],
-        "activities": None,
-    }
-
     answers_for_loris_by_respondent: dict = {}
     activities: list = []
     applet_activities = await activities_crud.get_by_applet_id(applet_id)
@@ -208,207 +382,93 @@ async def integration(applet_id: uuid.UUID, session, user):
                     answers_for_loris_by_respondent[user].update(
                         answers_for_loris
                     )
+
+    return activities, answers_for_loris_by_respondent
+
+
+async def integration(applet_id: uuid.UUID, session, user):  # noqa: C901
+    respondents = await AnswersCRUD(
+        session
+    ).get_respondents_by_applet_id_and_readiness_to_share_data(
+        applet_id=applet_id
+    )
+    if not respondents:
+        logger.info(
+            f"Do not found any respondents for given applet: \
+                {str(applet_id)}. Finish."
+        )
+        return
+
+    users_answers: dict = {}
+    for respondent in set(respondents):
+        try:
+            report_service = ReportServerService(session)
+            decrypted_answers: dict[
+                str, list
+            ] | None = await report_service.decrypt_data_for_loris(
+                applet_id, respondent
+            )
+            if not decrypted_answers:
+                logger.info(
+                    "Error during request to report server, no answers"
+                )
+                return
+            _result_dict = {}
+            for item in decrypted_answers["result"]:
+                activity_id = item["activityId"]
+                data_info = item["data"]
+
+                if not data_info:
+                    continue
+
+                _result_dict[activity_id] = data_info
+            users_answers[str(respondent)] = _result_dict
+            # logger.info(f"Decrypted_answers for {respondent}: \
+            #             {json.dumps(decrypted_answers)}")
+        except ReportServerError as e:
+            logger.info(f"Error during request to report server: {e}")
+            return
+
+    applet_crud = AppletsCRUD(session)
+    applet = await applet_crud.get_by_id(applet_id)
+    loris_data = {
+        "id": applet_id,
+        "displayName": applet.display_name,
+        "description": list(applet.description.values())[0],
+        "activities": None,
+    }
+
+    answers_for_loris_by_respondent: dict
+    activities: list
+    activities, answers_for_loris_by_respondent = \
+        await _prepare_activities_and_answers(session, applet_id, users_answers)
     loris_data["activities"] = activities
 
-    timeout = aiohttp.ClientTimeout(total=60)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
+    token = await _login_to_loris()
+    headers = {
+        "Authorization": f"Bearer: {token}",
+        "Content-Type": "application/json",
+        "accept": "*/*",
+    }
+    await _upload_schema_to_loris(loris_data, headers)
+
+    for user, answer in answers_for_loris_by_respondent.items():
+        candidate_id: str
+        relationship_crud = MlLorisUserRelationshipCRUD(session)
+        try:
+            relationship: MlLorisUserRelationship = await relationship_crud.get_by_ml_user_id(uuid.UUID(user))
+            candidate_id = relationship.loris_user_id
+        except MlLorisUserRelationshipNotFoundError as e:
+            logger.info(f"Error: {e}. Need to create new candidate")
+            candidate_id = await _create_candidate_and_visit(headers, relationship_crud, uuid.UUID(user))
+
+        await _add_instrument_to_loris(headers, candidate_id, applet_id)
+        await _add_instrument_data_to_loris(headers, candidate_id, applet_id, answer)
+
         logger.info(
-            f"Sending LOGIN request to the loris server {LORIS_LOGIN_URL}"
+            f"Successfully send data for user: {user},"
+            f" with loris id: {candidate_id}"
         )
-        start = time.time()
-        async with session.post(
-            LORIS_LOGIN_URL,
-            data=json.dumps(LORIS_LOGIN_DATA),
-        ) as resp:
-            duration = time.time() - start
-            if resp.status == 200:
-                logger.info(f"Successful request in {duration:.1f} seconds.")
-                response_data = await resp.json()
-            else:
-                logger.error(f"Failed request in {duration:.1f} seconds.")
-                error_message = await resp.text()
-                raise LorisServerError(message=error_message)
-
-        headers = {
-            "Authorization": f"Bearer: {response_data['token']}",
-            "Content-Type": "application/json",
-            "accept": "*/*",
-        }
-        logger.info(
-            f"Sending UPLOAD SCHEMA request to the loris server "
-            f"{LORIS_ML_URL}"
-        )
-        start = time.time()
-        async with session.post(
-            LORIS_ML_URL,
-            data=UnencryptedApplet(**loris_data).json(),
-            headers=headers,
-        ) as resp:
-            duration = time.time() - start
-            if resp.status == 200:
-                logger.info(f"Successful request in {duration:.1f} seconds.")
-                response_data = await resp.json()
-            else:
-                logger.error(f"Failed request in {duration:.1f} seconds.")
-                error_message = await resp.text()
-                raise LorisServerError(message=error_message)
-
-        for user, answer in answers_for_loris_by_respondent.items():
-            logger.info(
-                f"Sending CREATE CANDIDATE request to the loris server "
-                f"{LORIS_CREATE_CANDIDATE}"
-            )
-            start = time.time()
-            _data_candidate = {
-                "Candidate": {
-                    "Project": "loris",
-                    "Site": "Data Coordinating Center",
-                    "DoB": "1970-01-01",
-                    "Sex": "Other",
-                }
-            }
-            async with session.post(
-                LORIS_CREATE_CANDIDATE,
-                data=json.dumps(_data_candidate),
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 201:
-                    logger.info(
-                        f"Successful request in {duration:.1f} seconds."
-                    )
-                    candidate_data = await resp.json()
-                    c_id = candidate_data["CandID"]
-                else:
-                    logger.info(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    raise LorisServerError(message=error_message)
-
-            logger.info(
-                f"Sending CREATE VISIT request to the loris server"
-                f"{LORIS_CREATE_VISIT.format(c_id, VISIT)}"
-            )
-            start = time.time()
-            _data_create_visit = {
-                "CandID": c_id,
-                "Visit": VISIT,
-                "Site": "Data Coordinating Center",
-                "Battery": "Control",
-                "Project": "loris",
-            }
-            async with session.put(
-                LORIS_CREATE_VISIT.format(c_id, VISIT),
-                data=json.dumps(_data_create_visit),
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 201:
-                    logger.info(
-                        f"Successful request in {duration:.1f} seconds."
-                    )
-                else:
-                    logger.info(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    raise LorisServerError(message=error_message)
-
-            logger.info(
-                f"Sending START VISIT request to the loris server "
-                f"{LORIS_START_VISIT.format(c_id, VISIT)}"
-            )
-            start = time.time()
-            _data_start_visit = {
-                "CandID": c_id,
-                "Visit": VISIT,
-                "Site": "Data Coordinating Center",
-                "Battery": "Control",
-                "Project": "loris",
-                "Cohort": "Control",
-                "Stages": {
-                    "Visit": {
-                        "Date": str(datetime.date.today()),
-                        "Status": "In Progress",
-                    }
-                },
-            }
-            async with session.patch(
-                LORIS_START_VISIT.format(c_id, VISIT),
-                data=json.dumps(_data_start_visit),
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 204:
-                    logger.info(
-                        f"Successful request in {duration:.1f} seconds."
-                    )
-                else:
-                    logger.info(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    raise LorisServerError(message=error_message)
-
-            logger.info(
-                f"Sending ADD INSTRUMENTS request to the loris server "
-                f"{LORIS_ADD_INSTRUMENTS.format(c_id, VISIT)}"
-            )
-            start = time.time()
-            _data_add_instruments = {
-                "Meta": {
-                    "Candidate": c_id,
-                    "Visit": VISIT,
-                },
-                "Instruments": [str(applet_id)],
-            }
-            async with session.post(
-                LORIS_ADD_INSTRUMENTS.format(c_id, VISIT),
-                data=json.dumps(_data_add_instruments),
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 200:
-                    logger.info(
-                        f"Successful request in {duration:.1f} seconds."
-                    )
-                else:
-                    logger.info(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    raise LorisServerError(message=error_message)
-
-            logger.info(
-                f"Sending SEND INSTUMENT DATA request to the loris server "
-                f"{LORIS_INSTRUMENT_DATA.format(c_id, VISIT, str(applet_id))}"
-            )
-            start = time.time()
-            _data_instrument_data = {
-                "Meta": {
-                    "Instrument": str(applet_id),
-                    "Visit": VISIT,
-                    "Candidate": c_id,
-                    "DDE": True,
-                },
-                str(applet_id): answer,
-            }
-            async with session.put(
-                LORIS_INSTRUMENT_DATA.format(c_id, VISIT, str(applet_id)),
-                data=json.dumps(_data_instrument_data),
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 204:
-                    logger.info(
-                        f"Successful request in {duration:.1f} seconds."
-                    )
-                else:
-                    logger.info(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    logger.info(
-                        f"response is: "
-                        f"{error_message}\nstatus is: {resp.status}"
-                    )
-                    raise LorisServerError(message=error_message)
-
-            logger.info(
-                f"Successfully send data for user: {user},"
-                f" with loris id: {c_id}"
-            )
 
     logger.info("All finished")
 
@@ -418,7 +478,6 @@ async def start_transmit_process(
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-    # ) -> Response:
 ):
     background_tasks.add_task(integration, applet_id, session, user)
     return HTTPResponse(status_code=status.HTTP_202_ACCEPTED)
@@ -427,7 +486,6 @@ async def start_transmit_process(
 async def send_schema(
     applet_id: uuid.UUID,
     session=Depends(get_session),
-    # ) -> Response:
 ):
     activities_crud = ActivitiesCRUD(session)
     activities_items_crud = ActivityItemsCRUD(session)
