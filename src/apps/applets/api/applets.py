@@ -128,11 +128,7 @@ async def applet_create(
             user_id=user.id, owner_id=owner_id, roles=[Role.EDITOR]
         )
         manager_role = Role.EDITOR if has_editor else None
-
-        try:
-            applet = await AppletService(session, owner_id).create(schema, user.id, manager_role)
-        except Exception:
-            raise
+        applet = await AppletService(session, owner_id).create(schema, user.id, manager_role)
     return Response(result=public_detail.Applet.from_orm(applet))
 
 
