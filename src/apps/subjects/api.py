@@ -10,14 +10,14 @@ from apps.answers.service import AnswerService
 from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue
 from apps.shared.domain import Response
-from apps.shared.exception import NotFoundError
+from apps.shared.exception import NotFoundError, ValidationError
+from apps.shared.response import EmptyResponse
 from apps.subjects.domain import (
     Subject,
     SubjectCreateRequest,
     SubjectDeleteRequest,
-    SubjectFull,
     SubjectReadResponse,
-    SubjectRespondentCreate,
+    SubjectRelationCreate,
     SubjectUpdateRequest,
 )
 from apps.subjects.services import SubjectsService
@@ -53,59 +53,54 @@ async def create_subject(
         return Response(result=Subject.from_orm(subject))
 
 
-async def add_respondent(
+async def create_relation(
     subject_id: uuid.UUID,
+    source_subject_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    schema: SubjectRespondentCreate = Body(...),
+    schema: SubjectRelationCreate = Body(...),
     session: AsyncSession = Depends(get_session),
-) -> Response[SubjectFull]:
-    subject_srv = SubjectsService(session, user.id)
-    subject = await subject_srv.get(subject_id)
+):
+    service = SubjectsService(session, user.id)
+    source_subject = await service.get(source_subject_id)
+    target_subject = await service.get(subject_id)
+    if not source_subject or not source_subject.soft_exists():
+        raise NotFoundError(f"Subject {source_subject_id} not found")
+    if not target_subject or not target_subject.soft_exists():
+        raise NotFoundError(f"Subject {subject_id} not found")
+    if source_subject.applet_id != target_subject.applet_id:
+        raise ValidationError("applet_id doesn't match")
+
+    await CheckAccessService(session, user.id).check_applet_invite_access(
+        target_subject.applet_id
+    )
+    async with atomic(session):
+        await service.create_relation(
+            subject_id,
+            source_subject_id,
+            schema.relation,
+        )
+        return EmptyResponse()
+
+
+async def delete_relation(
+    subject_id: uuid.UUID,
+    source_subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    service = SubjectsService(session, user.id)
+    subject = await service.get(subject_id)
+    if not subject:
+        raise NotFoundError()
+    subject = await service.get(source_subject_id)
     if not subject:
         raise NotFoundError()
     await CheckAccessService(session, user.id).check_applet_invite_access(
         subject.applet_id
     )
     async with atomic(session):
-        service = SubjectsService(session, user.id)
-        await service.check_exist(subject_id, subject.applet_id)
-        subject_full = await service.add_respondent(
-            respondent_id=schema.user_id,
-            subject_id=subject_id,
-            applet_id=subject.applet_id,
-            relation=schema.relation,
-        )
-        return Response(result=subject_full)
-
-
-async def remove_respondent(
-    subject_id: uuid.UUID,
-    respondent_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-) -> Response[SubjectFull]:
-    subject_srv = SubjectsService(session, user.id)
-    subject = await subject_srv.get(subject_id)
-    if not subject:
-        raise NotFoundError()
-    await CheckAccessService(session, user.id).check_applet_invite_access(
-        subject.applet_id
-    )
-    async with atomic(session):
-        service = SubjectsService(session, user.id)
-        subject = await service.get(subject_id)
-        if not subject:
-            raise NotFoundError()
-        await CheckAccessService(session, user.id).check_applet_invite_access(
-            subject.applet_id
-        )
-        access = await UserAppletAccessService(
-            session, respondent_id, subject.applet_id
-        ).get_access(Role.RESPONDENT)
-        if not access:
-            raise NotFoundError()
-        subject = await service.remove_respondent(access.id, subject_id)
-        return Response(result=subject)
+        await service.delete_relation(subject_id, source_subject_id)
+        return EmptyResponse()
 
 
 async def update_subject(
@@ -140,16 +135,16 @@ async def delete_subject(
     session: AsyncSession = Depends(get_session),
     arbitrary_session: AsyncSession | None = Depends(
         get_answer_session_by_subject
-    )
+    ),
 ):
     subject_srv = SubjectsService(session, user.id)
     subject = await subject_srv.get(subject_id)
     if not subject:
         raise NotFoundError()
     # Check that user has right on applet
-    await UserAccessService(
-        session, user.id
-    ).validate_subject_delete_access(subject.applet_id)
+    await UserAccessService(session, user.id).validate_subject_delete_access(
+        subject.applet_id
+    )
     async with atomic(session):
         # Remove respondent role for user
         await UserAppletAccessService(
@@ -165,13 +160,13 @@ async def delete_subject(
                 await AnswerService(
                     user_id=user.id,
                     session=session,
-                    arbitrary_session=arbitrary_session
+                    arbitrary_session=arbitrary_session,
                 ).delete_by_subject(subject_id)
         else:
             # Delete subject (soft)
             await SubjectsService(session, user.id).delete(subject.id)
 
-            
+
 async def get_subject(
     subject_id: uuid.UUID,
     user: User = Depends(get_current_user),
@@ -180,11 +175,11 @@ async def get_subject(
     subject = await SubjectsService(session, user.id).get(subject_id)
     if not subject:
         raise NotFoundError()
-    await CheckAccessService(
-        session, user.id
-    ).check_subject_subject_access(subject.applet_id, subject_id)
+    await CheckAccessService(session, user.id).check_subject_subject_access(
+        subject.applet_id, subject_id
+    )
     return Response(
         result=SubjectReadResponse(
-            secret_user_id=subject.secret_user_id,
-            nickname=subject.nickname
-    ))
+            secret_user_id=subject.secret_user_id, nickname=subject.nickname
+        )
+    )

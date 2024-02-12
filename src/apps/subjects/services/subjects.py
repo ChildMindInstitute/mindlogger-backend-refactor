@@ -2,19 +2,13 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.alerts.crud.alert import AlertCRUD
 from apps.shared.exception import NotFoundError
-from apps.subjects.crud import SubjectsCrud, SubjectsRespondentsCrud
-from apps.subjects.db.schemas import SubjectRespondentSchema, SubjectSchema
-from apps.subjects.domain import (
-    Subject,
-    SubjectBase,
-    SubjectFull,
-    SubjectRespondent,
-)
+from apps.subjects.crud import SubjectsCrud
+from apps.subjects.db.schemas import SubjectRelationSchema, SubjectSchema
+from apps.subjects.domain import Subject
 from apps.users import UserSchema
 from apps.users.cruds.user import UsersCRUD
-from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
-from apps.workspaces.domain.constants import Role
 
 __all__ = ["SubjectsService"]
 
@@ -49,6 +43,8 @@ class SubjectsService:
         return await SubjectsCrud(self.session).update(schema)
 
     async def delete(self, id_: uuid.UUID):
+        repository = SubjectsCrud(self.session)
+        await repository.delete_subject_relations(id_)
         return await SubjectsCrud(self.session).delete_by_id(id_)
 
     async def extend(self, subject_id: uuid.UUID) -> Subject | None:
@@ -66,54 +62,26 @@ class SubjectsService:
     async def get(self, id_: uuid.UUID) -> SubjectSchema | None:
         return await SubjectsCrud(self.session).get_by_id(id_)
 
-    async def get_full(self, subject_id: uuid.UUID):
-        subject = await self.get(subject_id)
-        subject_resp_crud = SubjectsRespondentsCrud(self.session)
-        respondents = await subject_resp_crud.list_by_subject(subject_id)
-        respondent_models = []
-        for respondent, user_id in respondents:
-            respondent_models.append(
-                SubjectRespondent(
-                    id=respondent.id,
-                    respondent_access_id=respondent.respondent_access_id,
-                    subject_id=respondent.subject_id,
-                    relation=respondent.relation,
-                    user_id=user_id,
-                )
-            )
-        return SubjectFull(
-            **SubjectBase.from_orm(subject).dict(), subjects=respondent_models
-        )
-
-    async def add_respondent(
+    async def create_relation(
         self,
-        respondent_id: uuid.UUID,
         subject_id: uuid.UUID,
-        applet_id: uuid.UUID,
+        source_subject_id: uuid.UUID,
         relation: str,
-    ) -> SubjectFull:
-        access = await UserAppletAccessCRUD(
-            self.session
-        ).get_applet_role_by_user_id(applet_id, respondent_id, Role.RESPONDENT)
-        assert access
-        subject_resp_crud = SubjectsRespondentsCrud(self.session)
-        await subject_resp_crud.create(
-            SubjectRespondentSchema(
-                respondent_access_id=access.id,
-                subject_id=subject_id,
+    ):
+        repository = SubjectsCrud(self.session)
+        await repository.create_relation(
+            SubjectRelationSchema(
+                source_subject_id=source_subject_id,
+                target_subject_id=subject_id,
                 relation=relation,
             )
         )
-        return await self.get_full(subject_id)
 
-    async def remove_respondent(
-        self, access_id: uuid.UUID, subject_id: uuid.UUID
+    async def delete_relation(
+        self, subject_id: uuid.UUID, source_subject_id: uuid.UUID
     ):
-        subject_resp_crud = SubjectsRespondentsCrud(self.session)
-        await subject_resp_crud.delete_from_applet(
-            subject_id=subject_id, access_id=access_id
-        )
-        return await self.get_full(subject_id)
+        repository = SubjectsCrud(self.session)
+        await repository.delete_relation(subject_id, source_subject_id)
 
     async def create_anonymous_subject(
         self, anonymous_user: UserSchema, applet_id: uuid.UUID
@@ -179,6 +147,8 @@ class SubjectsService:
         return Subject.from_orm(model) if model else None
 
     async def delete_hard(self, id_: uuid.UUID):
-        await SubjectsCrud(self.session).delete(id_)
+        await AlertCRUD(self.session).delete_by_subject(id_)
 
-
+        repository = SubjectsCrud(self.session)
+        await repository.delete_subject_relations(id_)
+        await repository.delete(id_)

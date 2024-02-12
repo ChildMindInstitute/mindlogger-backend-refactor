@@ -10,7 +10,8 @@ from infrastructure.database import session_manager
 async def update_answers(session):
     query = """
     update answers
-    set target_subject_id = (md5(applet_id::text || respondent_id::text))::uuid
+    set target_subject_id = (md5(applet_id::text || respondent_id::text))::uuid,
+        source_subject_id = (md5(applet_id::text || respondent_id::text))::uuid
     """
     await session.execute(query)
 

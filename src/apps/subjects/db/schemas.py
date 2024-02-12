@@ -4,7 +4,7 @@ from sqlalchemy_utils import StringEncryptedType
 from apps.shared.encryption import get_key
 from infrastructure.database.base import Base
 
-__all__ = ["SubjectSchema", "SubjectRespondentSchema"]
+__all__ = ["SubjectSchema", "SubjectRelationSchema"]
 
 
 class SubjectSchema(Base):
@@ -36,13 +36,25 @@ class SubjectSchema(Base):
     )
 
 
-class SubjectRespondentSchema(Base):
-    __tablename__ = "subject_respondents"
-    respondent_access_id = Column(
-        ForeignKey("user_applet_accesses.id", ondelete="RESTRICT"),
+class SubjectRelationSchema(Base):
+    __tablename__ = "subject_relations"
+    source_subject_id = Column(
+        ForeignKey("subjects.id", ondelete="RESTRICT"),
         nullable=False,
+        index=True,
     )
-    subject_id = Column(
-        ForeignKey("subjects.id", ondelete="RESTRICT"), nullable=False
+    target_subject_id = Column(
+        ForeignKey("subjects.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
-    relation = Column(String(length=20), unique=True)
+    relation = Column(String(length=20), nullable=False)
+
+    __table_args__ = (
+        Index(
+            "uq_subject_relations_source_target",
+            "source_subject_id",
+            "target_subject_id",
+            unique=True,
+        ),
+    )

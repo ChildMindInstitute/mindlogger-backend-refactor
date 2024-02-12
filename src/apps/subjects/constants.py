@@ -8,5 +8,5 @@ class SubjectStatus(str, Enum):
 
 
 class Relation(str, Enum):
-    # todo: TBD with team list of relation types
-    pass
+    self = "self"
+    admin = "admin"

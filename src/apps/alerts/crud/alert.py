@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import and_, delete, func, select, update
 from sqlalchemy.orm import Query
 
 from apps.alerts.db.schemas import AlertSchema
@@ -118,4 +118,8 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         query = query.where(AlertSchema.id == alert_id)
         query = query.values(is_watched=True)
 
+        await self._execute(query)
+
+    async def delete_by_subject(self, subject_id: uuid.UUID):
+        query = delete(AlertSchema).where(AlertSchema.subject_id == subject_id)
         await self._execute(query)
