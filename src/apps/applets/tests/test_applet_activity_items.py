@@ -4,10 +4,7 @@ import uuid
 import pytest
 
 from apps.activities import errors as activity_errors
-from apps.activities.domain.response_type_config import (
-    ResponseType,
-    SingleSelectionConfig,
-)
+from apps.activities.domain.response_type_config import ResponseType, SingleSelectionConfig
 from apps.activities.domain.response_values import SingleSelectionValues
 from apps.shared.test import BaseTest
 from infrastructure.database import rollback
