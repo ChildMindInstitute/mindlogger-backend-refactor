@@ -832,8 +832,9 @@ class TestActivityItems(BaseTest):
                             response_values=dict(
                                 palette_name="palette1",
                                 options=[
-                                    {"text": "option1", "value": 0},
-                                    {"text": "option2", "value": 1, "is_none_above": False}
+                                                {"text": "option1", "value": 0},
+                                                {"text": "option2", "value": 1},
+                                                {"text": "None of the above", "value": 2, "is_none_above": True}  # This is the new option.
                                 ],
                             ),
                             config=dict(
