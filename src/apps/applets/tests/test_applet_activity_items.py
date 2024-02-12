@@ -1,5 +1,6 @@
 import copy
 import uuid
+from typing import Any
 
 import pytest
 
@@ -371,6 +372,7 @@ def single_select_rows_config():
 
 
 class TestActivityItems(BaseTest):
+    client: Any
     fixtures = [
         "users/fixtures/users.json",
         "themes/fixtures/themes.json",
