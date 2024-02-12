@@ -833,8 +833,7 @@ class TestActivityItems(BaseTest):
                                 palette_name="palette1",
                                 options=[
                                                 {"text": "option1", "value": 0},
-                                                {"text": "option2", "value": 1},
-                                                {"text": "None of the above", "value": 2, "is_none_above": True}  # This is the new option.
+                                                {"text": "option2", "value": 1, "is_none_above": False} 
                                 ],
                             ),
                             config=dict(
@@ -2117,24 +2116,22 @@ class TestActivityItems(BaseTest):
             data=create_data,
         )
         assert response.status_code == 201, response.json()
-        assert (
-            type(
-                response.json()["result"]["activities"][0]["items"][6][
-                    "conditionalLogic"
-                ]
-            )
-            == dict
+
+        assert isinstance(
+            response.json()["result"]["activities"][0]["items"][6]["conditionalLogic"], 
+            dict
         )
-        assert (
-            type(
-                response.json()["result"]["activities"][0]["scoresAndReports"]
-            )
-            == dict
+
+        assert isinstance(
+            response.json()["result"]["activities"][0]["scoresAndReports"],
+            dict
         )
-        assert (
-            type(response.json()["result"]["activities"][0]["subscaleSetting"])
-            == dict
+
+        assert isinstance(
+            response.json()["result"]["activities"][0]["subscaleSetting"],
+            dict
         )
+
         response = await self.client.get(
             self.applet_detail_url.format(pk=response.json()["result"]["id"])
         )
@@ -2144,10 +2141,12 @@ class TestActivityItems(BaseTest):
         response = await self.client.get(
             self.activity_detail_url.format(activity_id=activity_id)
         )
+
         assert response.status_code == 200
-        assert (
-            type(response.json()["result"]["items"][6]["conditionalLogic"])
-            == dict
+
+        assert isinstance(
+            response.json()["result"]["items"][6]["conditionalLogic"],
+            dict
         )
 
     @rollback
