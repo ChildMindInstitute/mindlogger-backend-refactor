@@ -833,7 +833,7 @@ class TestActivityItems(BaseTest):
                                 palette_name="palette1",
                                 options=[
                                     {"text": "option1", "value": 0},
-                                    {"text": "option2", "value": 1},
+                                    {"text": "option2", "value": 1, "is_none_above": False}
                                 ],
                             ),
                             config=dict(
@@ -849,7 +849,6 @@ class TestActivityItems(BaseTest):
                                     "text_input_option": False,
                                     "text_input_required": False,
                                 },
-                                is_none_above=False,
                             ),
                         ),
                         dict(
